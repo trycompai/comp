@@ -1,3 +1,4 @@
+import { MembersTable } from "@/components/tables/members";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@bubba/ui/tabs";
 import { Suspense } from "react";
 
@@ -13,7 +14,9 @@ export function TeamMembers() {
         </TabsTrigger>
       </TabsList>
 
-      <TabsContent value="members">Test</TabsContent>
+      <TabsContent value="members">
+        <MembersTable />
+      </TabsContent>
 
       <TabsContent value="pending">Test 2</TabsContent>
     </Tabs>

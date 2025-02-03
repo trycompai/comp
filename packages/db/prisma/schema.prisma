@@ -695,10 +695,9 @@ model RiskAttachment {
 }
 
 enum MembershipRole {
-  owner
   admin
   member
-  viewer
+  auditor
 }
 
 model OrganizationMember {

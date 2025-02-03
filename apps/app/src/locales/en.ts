@@ -137,6 +137,14 @@ export default {
       },
     },
   },
+  roles: {
+    admin: "Admin",
+    member: "Member",
+    auditor: "Auditor",
+    error_changing_user_role: "Failed to change user role",
+    success_changing_user_role: "User role changed successfully",
+    no_members: "No members found",
+  },
   header: {
     discord: {
       button: "Join us on Discord",
@@ -473,6 +481,14 @@ export default {
     },
     members: {
       title: "Members",
+      remove_member: "Remove Member",
+      remove_member_success: "Member removed successfully",
+      remove_member_error: "Failed to remove member",
+      last_member_error: "Cannot remove yourself as the last member of the organization",
+      last_admin_error: "Cannot change role - organization must have at least one admin",
+      remove_member_description: "You are about to remove the following team member, are you sure you want to continue?",
+      cancel_button: "Cancel",
+      confirm_button: "Confirm",
     },
     billing: {
       title: "Billing",
