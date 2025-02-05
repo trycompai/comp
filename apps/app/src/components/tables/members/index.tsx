@@ -1,4 +1,3 @@
-import { getOrganizationUsersAction } from "@/actions/organization/get-organization-users-action";
 import { auth } from "@/auth";
 import { db } from "@bubba/db";
 import { redirect } from "next/navigation";

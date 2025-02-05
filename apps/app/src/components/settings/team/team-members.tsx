@@ -1,6 +1,5 @@
 import { MembersTable } from "@/components/tables/members";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@bubba/ui/tabs";
-import { Suspense } from "react";
 
 export function TeamMembers() {
   return (
