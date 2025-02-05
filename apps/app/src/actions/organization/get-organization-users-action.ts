@@ -7,6 +7,7 @@ interface User {
   id: string;
   name: string | null;
   image: string | null;
+  role: string;
 }
 
 export const getOrganizationUsersAction = authActionClient
@@ -31,6 +32,7 @@ export const getOrganizationUsersAction = authActionClient
             organizationId: ctx.user.organizationId,
           },
           select: {
+            role: true,
             user: {
               select: {
                 id: true,
@@ -48,10 +50,11 @@ export const getOrganizationUsersAction = authActionClient
 
         return {
           success: true,
-          data: users.map((user) => ({
-            id: user.user.id,
-            name: user.user.name || "",
-            image: user.user.image || "",
+          data: users.map((member) => ({
+            id: member.user.id,
+            name: member.user.name || "",
+            image: member.user.image || "",
+            role: member.role,
           })),
         };
       } catch (error) {

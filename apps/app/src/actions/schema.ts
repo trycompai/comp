@@ -3,6 +3,7 @@ import {
   RiskCategory,
   RiskStatus,
   RiskTaskStatus,
+  Role,
   VendorCategory,
   VendorStatus,
 } from "@bubba/db";
@@ -257,4 +258,15 @@ export const updatePolicySchema = z.object({
 
 export const assistantSettingsSchema = z.object({
   enabled: z.boolean().optional(),
+});
+
+export const changeUserRoleSchema = z.object({
+  userId: z.string(),
+  organizationId: z.string(),
+  role: z.nativeEnum(Role),
+});
+
+export const removeMemberSchema = z.object({
+  userId: z.string(),
+  organizationId: z.string(),
 });
