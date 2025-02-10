@@ -1,0 +1,195 @@
+{
+    "type": "doc",
+    "metadata": {
+      "controls": ["CC9.1", "CC8.1"]
+    },
+    "content": [
+      {
+        "type": "heading",
+        "attrs": { "level": 1 },
+        "content": [{ "type": "text", "text": "Business Continuity Policy" }]
+      },
+      {
+        "type": "heading",
+        "attrs": { "level": 2 },
+        "content": [{ "type": "text", "text": "Policy Information" }]
+      },
+      {
+        "type": "table",
+        "content": [
+          {
+            "type": "tableRow",
+            "content": [
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Organization" }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Last Review" }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Review Frequency" }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Approved By" }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Classification" }] }
+            ]
+          },
+          {
+            "type": "tableRow",
+            "content": [
+              { "type": "tableCell", "content": [{ "type": "text", "text": "{{organization}}" }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "{{date}}" }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Annual" }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Chief Information Security Officer" }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Confidential" }] }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "attrs": { "level": 2 },
+        "content": [{ "type": "text", "text": "Purpose and Scope" }]
+      },
+      {
+        "type": "orderedList",
+        "attrs": { "tight": true, "start": 1 },
+        "content": [
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "The purpose of this policy is to establish a framework for business continuity planning to ensure the organization can maintain operations during and after a disruptive event." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "This policy applies to all employees, contractors, and third parties involved in business continuity and disaster recovery processes." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "The policy covers preparedness, response, recovery, and resumption of critical business functions in the event of a disruption." }] }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "attrs": { "level": 2 },
+        "content": [{ "type": "text", "text": "Business Continuity Plan (BCP) Requirements" }]
+      },
+      {
+        "type": "orderedList",
+        "attrs": { "tight": true, "start": 1 },
+        "content": [
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "The organization must establish and maintain a Business Continuity Plan (BCP) to define how business operations will continue during and after an emergency." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "The BCP must identify critical business functions, personnel, and infrastructure required for operational continuity." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "BCP testing and exercises must be conducted at least annually to ensure readiness." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "All employees must be trained on their roles and responsibilities within the BCP." }] }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "attrs": { "level": 2 },
+        "content": [{ "type": "text", "text": "Disaster Recovery Planning" }]
+      },
+      {
+        "type": "orderedList",
+        "attrs": { "tight": true, "start": 1 },
+        "content": [
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "The organization must maintain a Disaster Recovery Plan (DRP) that defines how IT systems, applications, and data will be restored following a disruption." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "Backup procedures must be in place to ensure critical business data is recoverable in case of data loss or corruption." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "Disaster recovery tests must be conducted at least annually to validate system recovery capabilities." }] }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "attrs": { "level": 2 },
+        "content": [{ "type": "text", "text": "Incident Response and Communication" }]
+      },
+      {
+        "type": "orderedList",
+        "attrs": { "tight": true, "start": 1 },
+        "content": [
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "The organization must have an incident response plan outlining procedures for handling security incidents, system failures, or natural disasters." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "A designated Business Continuity Team (BCT) must oversee crisis management and ensure continuity measures are implemented." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "Employees must be informed of emergency procedures, including alternative work locations if needed." }] }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "attrs": { "level": 2 },
+        "content": [{ "type": "text", "text": "Compliance and Review" }]
+      },
+      {
+        "type": "orderedList",
+        "attrs": { "tight": true, "start": 1 },
+        "content": [
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "The Business Continuity Policy must be reviewed annually and updated as necessary." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "The organization must ensure compliance with industry regulations and standards related to business continuity and disaster recovery." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "Non-compliance with this policy may result in corrective actions, including training, enhanced security controls, or disciplinary measures." }] }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+  
