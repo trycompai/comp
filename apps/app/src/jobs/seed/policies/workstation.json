@@ -1,0 +1,206 @@
+{
+    "type": "doc",
+    "metadata": {
+      "controls": ["CC6.1", "CC6.2"]
+    },
+    "content": [
+      {
+        "type": "heading",
+        "attrs": { "level": 1 },
+        "content": [{ "type": "text", "text": "Workstation Policy" }]
+      },
+      {
+        "type": "heading",
+        "attrs": { "level": 2 },
+        "content": [{ "type": "text", "text": "Policy Information" }]
+      },
+      {
+        "type": "table",
+        "content": [
+          {
+            "type": "tableRow",
+            "content": [
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Organization" }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Last Review" }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Review Frequency" }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Approved By" }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Classification" }] }
+            ]
+          },
+          {
+            "type": "tableRow",
+            "content": [
+              { "type": "tableCell", "content": [{ "type": "text", "text": "{{organization}}" }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "{{date}}" }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Annual" }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Chief Information Security Officer" }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Confidential" }] }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "attrs": { "level": 2 },
+        "content": [{ "type": "text", "text": "Purpose and Scope" }]
+      },
+      {
+        "type": "orderedList",
+        "attrs": { "tight": true, "start": 1 },
+        "content": [
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "This policy defines best practices to reduce the risk of data loss or exposure through workstations." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "This policy applies to all employees and contractors using workstations." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "Workstations are defined as all company-owned and personal devices containing company data." }] }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "attrs": { "level": 2 },
+        "content": [{ "type": "text", "text": "Policy" }]
+      },
+      {
+        "type": "heading",
+        "attrs": { "level": 3 },
+        "content": [{ "type": "text", "text": "Workstation Device Requirements" }]
+      },
+      {
+        "type": "orderedList",
+        "attrs": { "tight": true, "start": 1 },
+        "content": [
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "Operating systems must be no more than one generation older than the current version." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "Devices must be encrypted at rest to protect company data." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "Devices must be locked when not in use or when an employee leaves the workstation." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "Workstations must be used for authorized business purposes only." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "Loss or destruction of devices must be reported immediately to IT." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "Laptops and desktop devices must run the latest version of IT-approved antivirus software." }] }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "attrs": { "level": 3 },
+        "content": [{ "type": "text", "text": "Desktop & Laptop Devices" }]
+      },
+      {
+        "type": "orderedList",
+        "attrs": { "tight": true, "start": 1 },
+        "content": [
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "Employees will be issued a desktop, laptop, or both based on their job duties." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "Contractors must provide their own laptops." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "Desktops and laptops must operate on macOS or Windows." }] }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "attrs": { "level": 3 },
+        "content": [{ "type": "text", "text": "Mobile Devices" }]
+      },
+      {
+        "type": "orderedList",
+        "attrs": { "tight": true, "start": 1 },
+        "content": [
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "Mobile devices must be operated as defined in the Removable Media Policy, Cloud Storage Policy, and Bring Your Own Device (BYOD) Policy." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "Mobile devices must operate on iOS or Android." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "Company data may only be accessed on mobile devices using Slack and Gmail." }] }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "attrs": { "level": 3 },
+        "content": [{ "type": "text", "text": "Removable Media" }]
+      },
+      {
+        "type": "orderedList",
+        "attrs": { "tight": true, "start": 1 },
+        "content": [
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "Removable media must be used as defined in the Removable Media Policy, Cloud Storage Policy, and Bring Your Own Device (BYOD) Policy." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "Removable media is permitted on approved devices as long as it does not conflict with other policies." }] }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+  
