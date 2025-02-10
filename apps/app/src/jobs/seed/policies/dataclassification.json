@@ -1,0 +1,164 @@
+{
+    "type": "doc",
+    "metadata": {
+      "controls": ["CC9.9", "CC8.1"]
+    },
+    "content": [
+      {
+        "type": "heading",
+        "attrs": { "level": 1 },
+        "content": [{ "type": "text", "text": "Data Classification Policy" }]
+      },
+      {
+        "type": "heading",
+        "attrs": { "level": 2 },
+        "content": [{ "type": "text", "text": "Policy Information" }]
+      },
+      {
+        "type": "table",
+        "content": [
+          {
+            "type": "tableRow",
+            "content": [
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Organization" }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Last Review" }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Review Frequency" }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Approved By" }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Classification" }] }
+            ]
+          },
+          {
+            "type": "tableRow",
+            "content": [
+              { "type": "tableCell", "content": [{ "type": "text", "text": "{{organization}}" }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "{{date}}" }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Annual" }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Chief Information Security Officer" }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Confidential" }] }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "attrs": { "level": 2 },
+        "content": [{ "type": "text", "text": "Purpose and Scope" }]
+      },
+      {
+        "type": "orderedList",
+        "attrs": { "tight": true, "start": 1 },
+        "content": [
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "The purpose of this policy is to establish guidelines for classifying, labeling, and handling data within the organization to ensure appropriate protection and compliance with legal, regulatory, and contractual requirements." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "This policy applies to all employees, contractors, and third parties who access, handle, or manage the organization’s data." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "All data within the organization, including electronic and physical records, falls under the scope of this policy." }] }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "attrs": { "level": 2 },
+        "content": [{ "type": "text", "text": "Data Classification Levels" }]
+      },
+      {
+        "type": "table",
+        "content": [
+          {
+            "type": "tableRow",
+            "content": [
+              { "type": "tableCell", "content": [{ "type": "text", "marks": [{ "type": "bold" }], "text": "Classification Level" }] },
+              { "type": "tableCell", "content": [{ "type": "text", "marks": [{ "type": "bold" }], "text": "Description" }] },
+              { "type": "tableCell", "content": [{ "type": "text", "marks": [{ "type": "bold" }], "text": "Access Restrictions" }] }
+            ]
+          },
+          {
+            "type": "tableRow",
+            "content": [
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Public" }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Information intended for public release that does not pose any risk to the organization if disclosed." }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Accessible to everyone." }] }
+            ]
+          },
+          {
+            "type": "tableRow",
+            "content": [
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Internal Use" }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Non-sensitive business information intended for internal use only." }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Accessible to employees and authorized third parties." }] }
+            ]
+          },
+          {
+            "type": "tableRow",
+            "content": [
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Restricted" }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Sensitive business information that could cause harm to the organization if disclosed." }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Accessible only to authorized personnel with a need-to-know basis." }] }
+            ]
+          },
+          {
+            "type": "tableRow",
+            "content": [
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Confidential" }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Highly sensitive information that could cause significant damage to the organization if disclosed." }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Strictly limited to specific individuals and requires additional security measures." }] }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "attrs": { "level": 2 },
+        "content": [{ "type": "text", "text": "Data Handling Requirements" }]
+      },
+      {
+        "type": "orderedList",
+        "attrs": { "tight": true, "start": 1 },
+        "content": [
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "Classified information must be labeled according to its classification level." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "Data must be protected in transit and at rest based on its classification." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "Access to classified information must be controlled based on the principle of least privilege." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "Confidential data must be encrypted and stored in secure locations." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "Employees handling classified data must adhere to security and compliance guidelines." }] }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+  
