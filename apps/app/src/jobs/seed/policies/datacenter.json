@@ -1,7 +1,7 @@
 {
     "type": "doc",
     "metadata": {
-      "controls": ["CC6.1", "CC6.2", "CC9.1"]
+      "controls": ["CC6.1", "CC6.2", "CC8.1", "CC7.1"]
     },
     "content": [
       {
