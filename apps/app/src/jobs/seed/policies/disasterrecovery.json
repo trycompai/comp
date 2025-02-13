@@ -1,0 +1,195 @@
+{
+    "type": "doc",
+    "metadata": {
+      "controls": ["CC9.1", "CC8.1"]
+    },
+    "content": [
+      {
+        "type": "heading",
+        "attrs": { "level": 1 },
+        "content": [{ "type": "text", "text": "Disaster Recovery Policy" }]
+      },
+      {
+        "type": "heading",
+        "attrs": { "level": 2 },
+        "content": [{ "type": "text", "text": "Policy Information" }]
+      },
+      {
+        "type": "table",
+        "content": [
+          {
+            "type": "tableRow",
+            "content": [
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Organization" }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Last Review" }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Review Frequency" }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Approved By" }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Classification" }] }
+            ]
+          },
+          {
+            "type": "tableRow",
+            "content": [
+              { "type": "tableCell", "content": [{ "type": "text", "text": "{{organization}}" }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "{{date}}" }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Annual" }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Chief Information Security Officer" }] },
+              { "type": "tableCell", "content": [{ "type": "text", "text": "Confidential" }] }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "attrs": { "level": 2 },
+        "content": [{ "type": "text", "text": "Purpose and Scope" }]
+      },
+      {
+        "type": "orderedList",
+        "attrs": { "tight": true, "start": 1 },
+        "content": [
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "The purpose of this policy is to establish a structured approach for disaster recovery (DR) planning to ensure that critical business operations can be resumed in the event of a disruption." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "This policy applies to all employees, contractors, and third parties responsible for IT infrastructure, data, and business continuity planning." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "The policy covers disaster recovery procedures for IT systems, applications, network infrastructure, and data." }] }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "attrs": { "level": 2 },
+        "content": [{ "type": "text", "text": "Disaster Recovery Planning Requirements" }]
+      },
+      {
+        "type": "orderedList",
+        "attrs": { "tight": true, "start": 1 },
+        "content": [
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "The organization must maintain a Disaster Recovery Plan (DRP) that defines recovery objectives, responsibilities, and procedures to restore operations following a disaster." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "The DRP must identify critical systems, applications, and personnel required for recovery." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "Recovery Time Objectives (RTO) and Recovery Point Objectives (RPO) must be established and tested periodically." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "Disaster recovery drills and tests must be conducted at least annually to ensure readiness." }] }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "attrs": { "level": 2 },
+        "content": [{ "type": "text", "text": "Backup and Data Protection" }]
+      },
+      {
+        "type": "orderedList",
+        "attrs": { "tight": true, "start": 1 },
+        "content": [
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "Critical business data must be backed up regularly and stored securely." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "Backups must be encrypted and stored in geographically separate locations." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "Backup restoration tests must be conducted periodically to verify data integrity and recovery procedures." }] }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "attrs": { "level": 2 },
+        "content": [{ "type": "text", "text": "Incident Response and Communication" }]
+      },
+      {
+        "type": "orderedList",
+        "attrs": { "tight": true, "start": 1 },
+        "content": [
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "The organization must have an incident response plan outlining procedures for disaster response and business continuity activation." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "A designated Disaster Recovery Team (DRT) must oversee crisis management and ensure recovery measures are implemented." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "Employees must be informed of emergency procedures, including alternative work arrangements if needed." }] }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "attrs": { "level": 2 },
+        "content": [{ "type": "text", "text": "Compliance and Review" }]
+      },
+      {
+        "type": "orderedList",
+        "attrs": { "tight": true, "start": 1 },
+        "content": [
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "The Disaster Recovery Policy must be reviewed annually and updated as necessary." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "The organization must ensure compliance with industry standards and regulatory requirements related to disaster recovery and business continuity." }] }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              { "type": "paragraph", "content": [{ "type": "text", "text": "Non-compliance with this policy may result in corrective actions, including training, enhanced security controls, or disciplinary measures." }] }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+  
