@@ -1,22 +1,23 @@
 import { auth } from "@/auth";
-import { DeleteOrganization } from "@/components/forms/organization/delete-organization";
-import { UpdateOrganizationName } from "@/components/forms/organization/update-organization-name";
-import { UpdateOrganizationWebsite } from "@/components/forms/organization/update-organization-website";
 import { IntegrationsHeader } from "@/components/integrations/integrations-header";
 import { IntegrationsServer } from "@/components/integrations/integrations.server";
 import { SkeletonLoader } from "@/components/skeleton-loader";
+import { getI18n } from "@/locales/server";
 import { db } from "@bubba/db";
 import type { Metadata } from "next";
+import { setStaticParamsLocale } from "next-international/server";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
-export const metadata: Metadata = {
-  title: "Integrations | Comp AI",
-};
+export default async function IntegrationsPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  setStaticParamsLocale(locale);
 
-export default async function OrganizationSettings() {
   const session = await auth();
-
   const [organization] = await Promise.all([
     db.organization.findUnique({
       where: {
@@ -38,4 +39,18 @@ export default async function OrganizationSettings() {
       </Suspense>
     </div>
   );
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  setStaticParamsLocale(locale);
+  const t = await getI18n();
+
+  return {
+    title: t("sidebar.integrations"),
+  };
 }

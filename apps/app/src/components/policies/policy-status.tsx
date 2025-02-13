@@ -16,7 +16,7 @@ export function PolicyStatus({ status }: { status: StatusType }) {
   return (
     <div className="flex items-center gap-2">
       <div
-        className={cn("size-2.5 rounded-full")}
+        className={cn("size-2.5")}
         style={{ backgroundColor: STATUS_COLORS[status] ?? "#ffc107" }}
       />
       {t(`policies.table.statuses.${status}`)}

@@ -84,50 +84,50 @@ export const authActionClient = actionClientWithMeta
       throw new Error("Unauthorized");
     }
 
-    if (
-      metadata.name !== "check-subdomain-availability" &&
-      metadata.name !== "create-organization"
-    ) {
-      if (!session.user.organizationId) {
-        throw new Error("Organization not found");
-      }
+    /*     if (
+          metadata.name !== "check-subdomain-availability" &&
+          metadata.name !== "create-organization"
+        ) {
+          if (!session.user.organizationId) {
+            throw new Error("Organization not found");
+          }
 
-      const auditData = {
-        userId: session.user.id,
-        email: session.user.email,
-        name: session.user.name,
-        organizationId: session.user.organizationId,
-        action: metadata.name,
-        ipAddress: headersList.get("x-forwarded-for") || null,
-        userAgent: headersList.get("user-agent") || null,
-      };
-
-      try {
-        await db.auditLog.create({
-          data: {
-            data: auditData,
+          const auditData = {
             userId: session.user.id,
+            email: session.user.email,
+            name: session.user.name,
             organizationId: session.user.organizationId,
-          },
-        });
+            action: metadata.name,
+            ipAddress: headersList.get("x-forwarded-for") || null,
+            userAgent: headersList.get("user-agent") || null,
+          };
 
-        if (metadata.track) {
-          await ServerAnalytics.track(
-            session.user.id,
-            metadata.track.event,
-            {
-              channel: metadata.track.channel,
-              email: session.user.email,
-              name: session.user.name,
-              organizationId: session.user.organizationId,
+          try {
+            await db.auditLog.create({
+              data: {
+                data: auditData,
+                userId: session.user.id,
+                organizationId: session.user.organizationId,
+              },
+            });
+
+            if (metadata.track) {
+              await ServerAnalytics.track(
+                session.user.id,
+                metadata.track.event,
+                {
+                  channel: metadata.track.channel,
+                  email: session.user.email,
+                  name: session.user.name,
+                  organizationId: session.user.organizationId,
+                }
+              );
             }
-          );
-        }
-      } catch (error) {
-        logger("Audit log error:", error);
-      }
+          } catch (error) {
+            logger("Audit log error:", error);
+          }
+        } */
 
-    }
     return next({
       ctx: {
         user: session.user,

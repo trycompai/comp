@@ -47,6 +47,7 @@ export const getFrameworkCategoriesAction = authActionClient
                   artifacts: true,
                 },
               },
+              requirements: true,
             },
           },
         },
@@ -60,12 +61,14 @@ export const getFrameworkCategoriesAction = authActionClient
             name: control.name,
             code: control.code,
             description: control.description,
-            categoryId: control.categoryId,
-            requiredArtifactTypes: control.requiredArtifactTypes,
+            domain: control.domain,
+            frameworkCategoryId: control.frameworkCategoryId,
             status: control.organizationControls[0]?.status || "not_started",
             artifacts: control.organizationControls[0]?.artifacts || [],
+            requiredArtifactTypes:
+              control.requirements?.map((req) => req.type) || [],
           })),
-        }),
+        })
       );
 
       return {

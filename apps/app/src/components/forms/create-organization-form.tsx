@@ -34,6 +34,7 @@ import {
   Loader2,
   XIcon,
 } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { useAction } from "next-safe-action/hooks";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -65,6 +66,8 @@ type FieldConfig = TextFieldConfig | CheckboxFieldConfig | SelectFieldConfig;
 
 export function Onboarding() {
   const t = useI18n();
+
+  const { data: session } = useSession();
   const [isCheckingName, setIsCheckingName] = useState(false);
   const [isNameAvailable, setIsNameAvailable] = useState<boolean | null>(null);
 
@@ -79,6 +82,11 @@ export function Onboarding() {
       title: t("onboarding.title"),
       description: t("onboarding.description"),
       fields: [
+        {
+          name: "fullName",
+          label: t("onboarding.fields.fullName.label"),
+          placeholder: t("onboarding.fields.fullName.placeholder"),
+        },
         {
           name: "name",
           label: t("onboarding.fields.name.label"),
@@ -131,7 +139,7 @@ export function Onboarding() {
     }
 
     setIsCheckingName(true);
-    const response = await checkAvailability.execute({ subdomain });
+    checkAvailability.execute({ subdomain });
   }, 500);
 
   const handleNext = async () => {
@@ -166,6 +174,7 @@ export function Onboarding() {
   const form = useForm<z.infer<typeof organizationSchema>>({
     resolver: zodResolver(organizationSchema),
     defaultValues: {
+      fullName: session?.user?.name ?? "",
       name: "",
       website: "",
       ...(hasVercelConfig ? { subdomain: "" } : {}),
@@ -301,13 +310,17 @@ export function Onboarding() {
                       isCheckingName && (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <Loader2 className="h-4 w-4 animate-spin" />
-                          <span className="text-xs">Checking availability</span>
+                          <span className="text-xs">
+                            {t("onboarding.check_availability")}
+                          </span>
                         </div>
                       )}
                     {fieldConfig.name === "subdomain" && isNameAvailable && (
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <CheckIcon className="h-4 w-4" />
-                        <span className="text-xs">Available</span>
+                        <span className="text-xs">
+                          {t("onboarding.available")}
+                        </span>
                       </div>
                     )}
                     {fieldConfig.name === "subdomain" &&
@@ -317,7 +330,9 @@ export function Onboarding() {
                       field.value && (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <XIcon className="h-4 w-4" />
-                          <span className="text-xs">Unavailable</span>
+                          <span className="text-xs">
+                            {t("onboarding.unavailable")}
+                          </span>
                         </div>
                       )}
                   </FormItem>

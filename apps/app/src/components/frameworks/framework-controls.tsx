@@ -34,6 +34,8 @@ export function FrameworkControls({
               data={category.controls.map((control) => ({
                 ...control,
                 frameworkId,
+                categoryId: category.id,
+                requiredArtifactTypes: [],
               }))}
             />
           </div>

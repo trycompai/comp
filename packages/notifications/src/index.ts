@@ -1,12 +1,12 @@
 import { Novu } from "@novu/node";
 import ky from "ky";
-import { nanoid } from "nanoid";
 
 const novu = new Novu(process.env.NOVU_API_KEY!);
 const novu_api = "https://api.novu.co/v1";
 
 export enum TriggerEvents {
   TaskReminderInApp = "task-reminder-inapp",
+  TaskReminderEmail = "task-reminder-email",
 }
 
 export enum NotificationTypes {
@@ -16,8 +16,8 @@ export enum NotificationTypes {
 type TriggerUser = {
   subscriberId: string;
   email: string;
-  fullName: string;
-  image: string;
+  fullName?: string | null;
+  image?: string | null;
   organizationId: string;
 }
 
@@ -26,7 +26,6 @@ type TriggerPayload = {
   payload: any;
   user: TriggerUser;
   replyTo?: string;
-  tenant?: string; // organization_id + user_id
 }
 
 type GetSubscriberPreferencesParams = {
@@ -44,23 +43,13 @@ type UpdateSubscriberPreferencesParams = {
 
 export async function trigger(data: TriggerPayload) {
   try {
-    const subscriberId = `${data.user.organizationId}_${data.user.subscriberId}`;
+    const subscriberId = data.user.subscriberId;
 
     await novu.trigger(data.name, {
       to: {
-        ...data.user,
         subscriberId
       },
       payload: data.payload,
-      tenant: data.tenant,
-      overrides: {
-        email: {
-          replyTo: data.replyTo,
-          headers: {
-            "X-Entity-Ref-ID": nanoid(),
-          }
-        }
-      }
     });
   } catch (error: any) {
     console.error('Novu trigger error:', {

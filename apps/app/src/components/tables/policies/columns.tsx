@@ -7,22 +7,14 @@ import {
 } from "@/components/policies/policy-status";
 import { StatusDate } from "@/components/status-date";
 import { useI18n } from "@/locales/client";
+import type { OrganizationPolicy, Policy } from "@bubba/db";
 import { Button } from "@bubba/ui/button";
 import type { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
 
-export type PolicyType = {
-  id: string;
-  name: string;
-  published: boolean;
-  needsReview: boolean;
-  lastUpdated: Date | null;
-  ownerId: string;
-  owner: {
-    image: string;
-    name: string;
-  };
-};
+export interface PolicyType extends OrganizationPolicy {
+  policy: Policy;
+}
 
 export function columns(): ColumnDef<PolicyType>[] {
   const t = useI18n();
@@ -33,14 +25,15 @@ export function columns(): ColumnDef<PolicyType>[] {
       accessorKey: "name",
       header: t("policies.table.name"),
       cell: ({ row }) => {
-        const status = row.original.published ? "published" : "draft";
+        const status =
+          row.original.status === "published" ? "published" : "draft";
 
         return (
           <div className="flex flex-col gap-1">
             <Button variant="link" className="p-0 justify-start" asChild>
               <Link href={`/policies/${row.original.id}`}>
                 <span className="font-medium overflow-hidden text-ellipsis whitespace-nowrap">
-                  {row.original.name}
+                  {row.original.policy.name}
                 </span>
               </Link>
             </Button>
@@ -58,7 +51,8 @@ export function columns(): ColumnDef<PolicyType>[] {
         <span className="hidden md:table-cell">{t("common.table.status")}</span>
       ),
       cell: ({ row }) => {
-        const status = row.original.published ? "published" : "draft";
+        const status =
+          row.original.status === "published" ? "published" : "draft";
 
         return (
           <div className="hidden md:flex items-center gap-2">
@@ -78,10 +72,11 @@ export function columns(): ColumnDef<PolicyType>[] {
       cell: ({ row }) => {
         return (
           <div className="hidden md:table-cell">
-            <AssignedUser
-              fullName={row.original.owner?.name}
-              avatarUrl={row.original.owner?.image}
-            />
+            {/* <AssignedUser
+              fullName={row.original.policy.owner?.name}
+              avatarUrl={row.original.policy.owner?.image}
+            /> */}
+            <p>Nothing for now</p>
           </div>
         );
       },
@@ -95,7 +90,7 @@ export function columns(): ColumnDef<PolicyType>[] {
         </span>
       ),
       cell: ({ row }) => {
-        const date = row.original.lastUpdated;
+        const date = row.original.updatedAt;
 
         return (
           <div className="hidden md:table-cell">

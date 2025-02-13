@@ -1,11 +1,21 @@
 import { auth } from "@/auth";
 import { RiskOverview } from "@/components/risks/charts/risk-overview";
 import { RisksByAssignee } from "@/components/risks/charts/risks-by-assignee";
+import { getI18n } from "@/locales/server";
 import { db } from "@bubba/db";
+import type { Metadata } from "next";
+import { setStaticParamsLocale } from "next-international/server";
 import { unstable_cache } from "next/cache";
 import { redirect } from "next/navigation";
 
-export default async function RiskManagement() {
+export default async function RiskManagement({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  setStaticParamsLocale(locale);
+
   const session = await auth();
 
   if (!session?.user?.organizationId) {
@@ -96,3 +106,17 @@ const getRiskOverview = unstable_cache(
   },
   ["risk-overview-cache"],
 );
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  setStaticParamsLocale(locale);
+  const t = await getI18n();
+
+  return {
+    title: t("sidebar.risk"),
+  };
+}

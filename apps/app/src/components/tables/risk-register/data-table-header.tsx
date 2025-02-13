@@ -59,7 +59,7 @@ export function DataTableHeader({ table, loading }: Props) {
   return (
     <TableHeader>
       <TableRow className="h-[45px] hover:bg-transparent">
-        {isVisible("title") && (
+        {isVisible("name") && (
           <TableHead className="min-w-[120px] px-3 md:px-4 py-2">
             <Button
               className="p-0 hover:bg-transparent space-x-2"

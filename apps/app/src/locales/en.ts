@@ -175,12 +175,37 @@ export default {
   sidebar: {
     overview: "Overview",
     policies: "Policies",
-    risk: "Risk",
+    risk: "Risk Management",
     vendors: "Vendors",
     integrations: "Integrations",
     settings: "Settings",
     evidence: "Evidence Tasks",
     people: "People",
+  },
+  sub_pages: {
+    risk: {
+      overview: "Risk Management",
+      register: "Risk Register",
+      risk_overview: "Risk Overview",
+      risk_comments: "Risk Comments",
+      tasks: {
+        task_overview: "Task Overview",
+      },
+    },
+    policies: {
+      all: "All Policies",
+      editor: "Policy Editor",
+    },
+    people: {
+      all: "People",
+      employee_details: "Employee Details",
+    },
+    settings: {
+      members: "Team Members",
+    },
+    frameworks: {
+      overview: "Frameworks",
+    },
   },
   auth: {
     title: "Automate SOC 2, ISO 27001 and GDPR compliance with AI.",
@@ -205,8 +230,11 @@ export default {
     title: "Create an organization",
     setup: "Setup",
     description: "Tell us a bit about your organization.",
-    unavailable: "Please choose a different subdomain. Only lowercase letters, numbers, and hyphens are allowed.",
     fields: {
+      fullName: {
+        label: "Your Name",
+        placeholder: "Your full name",
+      },
       name: {
         label: "Organization Name",
         placeholder: "Your organization name",
@@ -222,6 +250,9 @@ export default {
     },
     success: "Thanks, you're all set!",
     error: "Something went wrong, please try again.",
+    check_availability: "Checking availability",
+    available: "Available",
+    unavailable: "Unavailable",
   },
   overview: {
     title: "Overview",
@@ -561,6 +592,38 @@ export default {
   },
   frameworks: {
     title: "Frameworks",
+    overview: {
+      error: "Failed to load frameworks",
+      loading: "Loading frameworks...",
+      empty: {
+        title: "No frameworks selected",
+        description:
+          "Select frameworks to get started with your compliance journey",
+      },
+      progress: {
+        title: "Framework Progress",
+        empty: {
+          title: "No frameworks yet",
+          description:
+            "Get started by adding a compliance framework to track your progress",
+          action: "Add Framework",
+        },
+      },
+      grid: {
+        welcome: {
+          title: "Welcome to Comp AI",
+          description:
+            "Get started by selecting the compliance frameworks you would like to implement. We'll help you manage and track your compliance journey across multiple standards.",
+          action: "Get Started",
+        },
+        title: "Select Frameworks",
+        version: "Version",
+        actions: {
+          clear: "Clear",
+          confirm: "Confirm Selection",
+        },
+      },
+    },
     controls: {
       title: "Controls",
       description: "Review and manage compliance controls",

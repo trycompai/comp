@@ -18,14 +18,18 @@
     }
   },
   "dependencies": {
-    "@auth/prisma-adapter": "^2.7.2",
+    "@auth/prisma-adapter": "^2.7.4",
     "@neondatabase/serverless": "^0.10.4",
-    "@prisma/adapter-neon": "^6.1.0",
+    "@prisma/adapter-neon": "^6.3.1",
     "@prisma/client": "^6.3.1",
+    "@prisma/extension-accelerate": "^1.2.2",
     "prisma": "^6.3.1"
   },
   "devDependencies": {
     "@bubba/tsconfig": "workspace:*",
-    "typescript": "^5.0.0"
+    "typescript": "^5.7.3"
+  },
+  "prisma": {
+    "seed": "bun prisma/seed.ts"
   }
 }

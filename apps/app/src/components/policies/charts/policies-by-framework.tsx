@@ -1,5 +1,6 @@
 "use client";
 
+import { usePolicies } from "@/app/[locale]/(app)/(dashboard)/policies/hooks/usePolicies";
 import { useI18n } from "@/locales/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@bubba/ui/card";
 import {
@@ -10,17 +11,9 @@ import {
 } from "@bubba/ui/chart";
 import { Bar, BarChart, Cell, LabelList, XAxis, YAxis } from "recharts";
 
-interface PoliciesByFrameworkProps {
-  data: Array<{
-    name: string;
-    value: number;
-  }>;
-}
-
-export function PoliciesByFramework({ data }: PoliciesByFrameworkProps) {
+export function PoliciesByFramework() {
   const t = useI18n();
-
-  console.log("Chart Data:", data);
+  const { data } = usePolicies();
 
   const config = {
     "SOC 2": { label: "SOC 2" },
@@ -81,7 +74,7 @@ export function PoliciesByFramework({ data }: PoliciesByFrameworkProps) {
                 fontSize={12}
               />
               {data.map((entry) => (
-                <Cell key={entry.name} radius={8} />
+                <Cell key={entry.policyId} radius={8} />
               ))}
             </Bar>
           </BarChart>

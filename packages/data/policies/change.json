@@ -1,0 +1,503 @@
+{
+  "type": "doc",
+  "metadata": {
+    "id": "system-change-policy",
+    "slug": "system-change-policy",
+    "name": "System Change Policy",
+    "description": "This policy outlines the requirements for system changes.",
+    "usedBy": {
+      "soc2": ["CC3.4", "CC6.8", "CC7.1", "A1.1"]
+    }
+  },
+  "content": [
+    {
+      "type": "heading",
+      "attrs": {
+        "level": 1
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "System Change Policy"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "attrs": {
+        "level": 2
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Policy Information"
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "content": [
+        {
+          "type": "tableRow",
+          "content": [
+            {
+              "type": "tableCell",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Organization"
+                }
+              ]
+            },
+            {
+              "type": "tableCell",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Last Review"
+                }
+              ]
+            },
+            {
+              "type": "tableCell",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Review Frequency"
+                }
+              ]
+            },
+            {
+              "type": "tableCell",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Approved By"
+                }
+              ]
+            },
+            {
+              "type": "tableCell",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Classification"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "tableRow",
+          "content": [
+            {
+              "type": "tableCell",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "{{organization}}"
+                }
+              ]
+            },
+            {
+              "type": "tableCell",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "{{date}}"
+                }
+              ]
+            },
+            {
+              "type": "tableCell",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Annual"
+                }
+              ]
+            },
+            {
+              "type": "tableCell",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Chief Information Security Officer"
+                }
+              ]
+            },
+            {
+              "type": "tableCell",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Confidential"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "attrs": {
+        "level": 2
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Purpose and Scope"
+        }
+      ]
+    },
+    {
+      "type": "orderedList",
+      "attrs": {
+        "tight": true,
+        "start": 1
+      },
+      "content": [
+        {
+          "type": "listItem",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "This information security policy defines how changes to information systems are planned and implemented."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "listItem",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "This policy applies to the entire information security program at the organization (i.e. to all information and communications technology, as well as related documentation)."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "listItem",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "All employees, contractors, part-time and temporary workers, service providers, and those employed by others to perform work for the organization, or who have been granted to the organization's information and communications technology, must comply with this policy."
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "attrs": {
+        "level": 2
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Background"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "This policy defines specific requirements to ensure that changes to systems and applications are properly planned, evaluated, reviewed, approved, communicated, implemented, documented, and reviewed, thereby ensuring the greatest probability of success. Where changes are not successful, this document provides mechanisms for conducting post-implementation review such that future mistakes and errors can be prevented."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "attrs": {
+        "level": 2
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Policy"
+        }
+      ]
+    },
+    {
+      "type": "orderedList",
+      "attrs": {
+        "tight": true,
+        "start": 1
+      },
+      "content": [
+        {
+          "type": "listItem",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Any changes to the security architecture or customer data handling of a system must be formally requested in writing to the organization's Information Security Manager (ISM), and approved by the ISM and the Chief Information Officer (CIO)."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "listItem",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "All change requests must be documented."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "listItem",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "All change requests must be prioritized in terms of benefits, urgency, effort required, and potential impacts to the organization's operations."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "listItem",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "All implemented changes must be communicated to relevant users."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "listItem",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Change management must be conducted according to the following procedure:"
+                }
+              ]
+            },
+            {
+              "type": "orderedList",
+              "attrs": {
+                "tight": true,
+                "start": 1
+              },
+              "content": [
+                {
+                  "type": "listItem",
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": " Planning"
+                        },
+                        {
+                          "type": "text",
+                          "text": ": "
+                        },
+                        {
+                          "type": "text",
+                          "text": "plan the change, including the implementation design, scheduling, and implementation of a communications plan, testing plan, and roll-back plan."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": " Evaluation"
+                        },
+                        {
+                          "type": "text",
+                          "text": ": "
+                        },
+                        {
+                          "type": "text",
+                          "text": "evaluate the change, including priority level of the service and risk that the proposed change introduces to the system; determine the change type and the specific step-by-step process to implement the change."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": " Review"
+                        },
+                        {
+                          "type": "text",
+                          "text": ": "
+                        },
+                        {
+                          "type": "text",
+                          "text": "review the change plan amongst the CIO, ISM, Engineering Lead, and, if applicable, Business Unit Manager."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": " Approval"
+                        },
+                        {
+                          "type": "text",
+                          "text": ": "
+                        },
+                        {
+                          "type": "text",
+                          "text": "the CIO must approve the change plan."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": " Communication"
+                        },
+                        {
+                          "type": "text",
+                          "text": ": "
+                        },
+                        {
+                          "type": "text",
+                          "text": "communicate the change to all users of the system."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": " Implementation"
+                        },
+                        {
+                          "type": "text",
+                          "text": ": "
+                        },
+                        {
+                          "type": "text",
+                          "text": "test and implement the change."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": " Documentation"
+                        },
+                        {
+                          "type": "text",
+                          "text": ": "
+                        },
+                        {
+                          "type": "text",
+                          "text": "record the change and any post-implementation issues."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": " Post-change review"
+                        },
+                        {
+                          "type": "text",
+                          "text": ": "
+                        },
+                        {
+                          "type": "text",
+                          "text": "conduct a post-implementation review to determine how the change is impacting the organization, either positively or negatively. Discuss and document any lessons learned."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

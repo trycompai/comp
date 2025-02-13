@@ -9,7 +9,7 @@ export default withUt({
     extend: {
       colors: {
         fontFamily: {
-          sans: "var(--font-geist-sans)",
+          sans: "var(--font-general-sans)",
           mono: "var(--font-geist-mono)",
         },
         border: "hsl(var(--border))",

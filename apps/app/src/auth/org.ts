@@ -1,4 +1,3 @@
-import { soc2Seed } from "@/actions/soc2-seed";
 import { db } from "@bubba/db";
 import { stripe } from "./stripe";
 

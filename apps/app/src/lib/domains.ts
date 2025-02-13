@@ -12,7 +12,7 @@ export const addDomainToVercel = async (domain: string) => {
     {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${process.env.VERCEL_AUTH_TOKEN}`,
+        Authorization: `Bearer ${process.env.VERCEL_ACCESS_TOKEN}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -29,7 +29,7 @@ export const removeDomainFromVercelProject = async (domain: string) => {
     }`,
     {
       headers: {
-        Authorization: `Bearer ${process.env.VERCEL_AUTH_TOKEN}`,
+        Authorization: `Bearer ${process.env.VERCEL_ACCESS_TOKEN}`,
       },
       method: "DELETE",
     },
@@ -42,7 +42,7 @@ export const removeDomainFromVercelTeam = async (domain: string) => {
     }`,
     {
       headers: {
-        Authorization: `Bearer ${process.env.VERCEL_AUTH_TOKEN}`,
+        Authorization: `Bearer ${process.env.VERCEL_ACCESS_TOKEN}`,
       },
       method: "DELETE",
     },
@@ -59,7 +59,7 @@ export const getDomainResponse = async (
     {
       method: "GET",
       headers: {
-        Authorization: `Bearer ${process.env.VERCEL_AUTH_TOKEN}`,
+        Authorization: `Bearer ${process.env.VERCEL_ACCESS_TOKEN}`,
         "Content-Type": "application/json",
       },
     },
@@ -77,7 +77,7 @@ export const getConfigResponse = async (
     {
       method: "GET",
       headers: {
-        Authorization: `Bearer ${process.env.VERCEL_AUTH_TOKEN}`,
+        Authorization: `Bearer ${process.env.VERCEL_ACCESS_TOKEN}`,
         "Content-Type": "application/json",
       },
     },
@@ -94,7 +94,7 @@ export const verifyDomain = async (
     {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${process.env.VERCEL_AUTH_TOKEN}`,
+        Authorization: `Bearer ${process.env.VERCEL_ACCESS_TOKEN}`,
         "Content-Type": "application/json",
       },
     },

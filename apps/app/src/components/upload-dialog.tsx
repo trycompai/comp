@@ -45,6 +45,7 @@ export function UploadDialog({ taskId, riskId }: UploadDialogProps) {
       "x-risk-id": riskId,
       "x-task-id": taskId,
     },
+
     onClientUploadComplete: async () => {
       await revalidateTask.execute({ riskId, taskId });
     },
@@ -54,7 +55,7 @@ export function UploadDialog({ taskId, riskId }: UploadDialogProps) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline">
-          Upload files {files.length > 0 && `(${files.length})`}
+          Upload attachment {files.length > 0 && `(${files.length})`}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-xl">

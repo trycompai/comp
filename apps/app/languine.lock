@@ -122,12 +122,23 @@ files:
     theme.options.system: a45da96d0bf6575970f2d27af22be28a
     sidebar.overview: 3b878279a04dc47d60932cb294d96259
     sidebar.policies: 9e476387322a5c250893cf9c5c4ce78c
-    sidebar.risk: 59ca88f7b0e80cdd9af330af600a9ff6
+    sidebar.risk: 7228bb53bb7855d458965d2f15fc6cd7
     sidebar.vendors: dfcc5efe778e6340336015dc02617922
     sidebar.integrations: e01aecb528730f3bfe10f9d57f1317bf
     sidebar.settings: f4f70727dc34561dfde1a3c529b6205c
     sidebar.evidence: 63b1eb1a39194d82271ec937fba19714
     sidebar.people: 78386ec8f2845742c324a3d7d3e800ff
+    sub_pages.risk.overview: 7228bb53bb7855d458965d2f15fc6cd7
+    sub_pages.risk.register: e4c28136d96146bd5fe9dfe41214138c
+    sub_pages.risk.risk_overview: 5226ebb7d548f2d3a8f8c4fd08851405
+    sub_pages.risk.risk_comments: 354f3f4ded9791cb5e60cbef67f544a8
+    sub_pages.risk.tasks.task_overview: d5a893e5bfa69efefb2667f8e7ec600c
+    sub_pages.policies.all: 4992678c2f629035e5c3bcde296b596a
+    sub_pages.policies.editor: e2c974366aff19ed493a501108cbf948
+    sub_pages.people.all: 78386ec8f2845742c324a3d7d3e800ff
+    sub_pages.people.employee_details: 62fa24399196c3b1bcb1cf2cdf771da4
+    sub_pages.settings.members: 8196446d7293bfeb288d7c21e36a1886
+    sub_pages.frameworks.overview: 04fb5df59766a9852e5dd2d0430ca27e
     auth.title: 4b33d501b99fef8f85f32b942fcd0b1f
     auth.description: 1fd4b045f6d46683c611e45b8de4bcf6
     auth.options: 4dab36ac83853282fc0d7bae20c19e90
@@ -144,7 +155,8 @@ files:
     onboarding.title: deecac09e6560d6f0f98401d9852d514
     onboarding.setup: ad2376beebecdcf7846ba973fa1a005b
     onboarding.description: 7cd2a7692cfacbbea2045f2e6416b805
-    onboarding.unavailable: c321ca4d67424a3a48aaef9053753cc4
+    onboarding.fields.fullName.label: 614cffa523202658a898e34a5d94d05e
+    onboarding.fields.fullName.placeholder: df1fc96e5401396fe01e24363a9ec40d
     onboarding.fields.name.label: c1ca926603dc454ba981aa514db8402b
     onboarding.fields.name.placeholder: 0ad99cd46646d542668f0f40ab982477
     onboarding.fields.subdomain.label: beed05bccb8b6f21466910eb4a4f142b
@@ -153,6 +165,9 @@ files:
     onboarding.fields.website.placeholder: 4ebd8773cbf5dc2531d6b28b6fe32a26
     onboarding.success: 13ff66cec7127e895b2e463771341c13
     onboarding.error: 9e78ff392dee43a6c78a8c4e29ff4dc2
+    onboarding.check_availability: 118740af1c4521b917e29791d661db82
+    onboarding.available: 78945de8de090e90045d299651a68a9b
+    onboarding.unavailable: 453e6aa38d87b28ccae545967c53004f
     overview.title: 3b878279a04dc47d60932cb294d96259
     overview.framework_chart.title: 9c53d5a3379ee2c9bc7c1c55f54724b9
     overview.requirement_chart.title: 69d9304854b767112e32573d7eeddc24
@@ -364,6 +379,21 @@ files:
     user_menu.settings: f4f70727dc34561dfde1a3c529b6205c
     user_menu.teams: 1fe1b6cf4f52930c301b03e5a69c42c2
     frameworks.title: 04fb5df59766a9852e5dd2d0430ca27e
+    frameworks.overview.error: 4b391acbc8dd7f27c6b1a3a7424ca32b
+    frameworks.overview.loading: 5419fcb0c4ef464156ab6a3ddb84a1b2
+    frameworks.overview.empty.title: 52dfa6681993843928351cd9c5276ce0
+    frameworks.overview.empty.description: 12c6ccdede82f3bac2b486157ab5c98b
+    frameworks.overview.progress.title: 9c53d5a3379ee2c9bc7c1c55f54724b9
+    frameworks.overview.progress.empty.title: d58046b18909d6337ef6fa050b44f690
+    frameworks.overview.progress.empty.description: 6d27f139ab529d4ef3311f719a5e7c83
+    frameworks.overview.progress.empty.action: 1eb71b6f13a7af1f1c88fded44717525
+    frameworks.overview.grid.welcome.title: 54efd9605180a9a74e6d1a53529f858e
+    frameworks.overview.grid.welcome.description: 6d8ed4e08e874457c002a9db2075c813
+    frameworks.overview.grid.welcome.action: e0c4332e8c13be976552a059f106354f
+    frameworks.overview.grid.title: 55ffb038f3a6c5b740ec2b5ec6dd1733
+    frameworks.overview.grid.version: 34b6cd75171affba6957e308dcbd92be
+    frameworks.overview.grid.actions.clear: dc30bc0c7914db5918da4263fce93ad2
+    frameworks.overview.grid.actions.confirm: f1e36ba5764b8ddcf6064d977f0482bb
     frameworks.controls.title: 24b6472fcfa59cddd3f7bbc326582b5f
     frameworks.controls.description: de7fdb6cf858368e9e60bb991149b912
     frameworks.controls.table.status: ec53a8c4f07baed5d8825072c89799be

@@ -1,38 +1,29 @@
-import { auth } from "@/auth";
-import { FrameworkProgress } from "@/components/charts/framework-progress";
-import { RequirementStatus } from "@/components/charts/requirement-status";
-import { db } from "@bubba/db";
-import { redirect } from "next/navigation";
+import { getI18n } from "@/locales/server";
+import type { Metadata } from "next";
+import { setStaticParamsLocale } from "next-international/server";
+import { FrameworksOverview } from "./components/FrameworksOverview";
 
-export default async function DashboardPage() {
-  const session = await auth();
+export default async function DashboardPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  setStaticParamsLocale(locale);
 
-  if (!session?.user?.organizationId) {
-    redirect("/onboarding");
-  }
-
-  const { frameworks } = await getComplianceOverview(
-    session.user.organizationId,
-  );
-
-  return (
-    <div className="space-y-12">
-      <div className="grid gap-4 md:grid-cols-2">
-        <FrameworkProgress frameworks={frameworks} />
-        <RequirementStatus frameworks={frameworks} />
-      </div>
-    </div>
-  );
+  return <FrameworksOverview />;
 }
 
-async function getComplianceOverview(organizationId: string) {
-  const frameworks = await db.organizationFramework.findMany({
-    where: { organizationId },
-    include: {
-      organizationControl: true,
-      framework: true,
-    },
-  });
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  setStaticParamsLocale(locale);
+  const t = await getI18n();
 
-  return { frameworks };
+  return {
+    title: t("sidebar.overview"),
+  };
 }

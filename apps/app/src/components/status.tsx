@@ -20,7 +20,7 @@ export function Status({ status }: { status: StatusType }) {
   return (
     <div className="flex items-center gap-2">
       <div
-        className={cn("size-2.5 rounded-full ")}
+        className={cn("size-2.5")}
         style={{ backgroundColor: STATUS_COLORS[status] ?? "  " }}
       />
       {t(`common.status.${status}`)}

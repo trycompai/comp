@@ -28,69 +28,72 @@ function NotificationItem({
   description,
   createdAt,
   recordId,
+  from,
+  to,
   markMessageAsRead,
+  type,
 }: {
   id: string;
   setOpen: (open: boolean) => void;
-  description: string;
+  description: string | undefined;
   createdAt: string;
-  recordId?: string;
-  from?: string;
-  to?: string;
+  recordId: string | undefined;
+  from: string | undefined;
+  to: string | undefined;
   markMessageAsRead: (id: string) => void;
-  type?: string;
+  type: string | undefined;
 }) {
-  return (
-    <div className="flex items-between justify-between space-x-4 px-3 py-3 hover:bg-secondary">
-      <Link
-        className="flex items-between justify-between space-x-4"
-        onClick={() => setOpen(false)}
-        href={recordId ? `/tasks/${recordId}` : "#"}
-      >
-        <div>
-          <div className="h-9 w-9 flex items-center justify-center space-y-0 border rounded-full">
-            <Icons.Match />
-          </div>
-        </div>
-        <div>
-          <p className="text-sm">{description}</p>
-          <span className="text-xs text-muted">
-            {formatDistanceToNow(new Date(createdAt))} ago
-          </span>
-        </div>
-      </Link>
-      {markMessageAsRead && (
-        <div>
-          <Button
-            size="icon"
-            variant="secondary"
-            className="rounded-full bg-transparent hover:bg-[#1A1A1A]"
-            onClick={() => markMessageAsRead(id)}
+  switch (type) {
+    case "task":
+      return (
+        <div className="flex items-between justify-between space-x-4 px-3 py-3 hover:bg-secondary">
+          <Link
+            className="flex items-between justify-between space-x-4"
+            onClick={() => setOpen(false)}
+            href={`${recordId}`}
           >
-            <Icons.Inventory2 />
-          </Button>
+            <div>
+              <div className="h-9 w-9 flex items-center justify-center space-y-0 border rounded-full">
+                <Icons.Risk />
+              </div>
+            </div>
+            <div>
+              <p className="text-sm">{description}</p>
+              <span className="text-xs text-muted">
+                {formatDistanceToNow(new Date(createdAt))} ago
+              </span>
+            </div>
+          </Link>
+          {markMessageAsRead && (
+            <div>
+              <Button
+                size="icon"
+                variant="secondary"
+                className="rounded-full bg-transparent hover:bg-[#1A1A1A]"
+                onClick={() => markMessageAsRead(id)}
+              >
+                <Icons.Inventory2 />
+              </Button>
+            </div>
+          )}
         </div>
-      )}
-    </div>
-  );
+      );
+    default:
+      return null;
+  }
 }
 
 export function NotificationCenter() {
   const t = useI18n();
 
   const [isOpen, setOpen] = useState(false);
-
   const {
     hasUnseenNotifications,
     notifications,
     markMessageAsRead,
     markAllMessagesAsSeen,
     markAllMessagesAsRead,
-    subscriberId,
   } = useNotifications();
-
-  console.log(subscriberId);
-  console.log(notifications);
 
   const unreadNotifications = notifications.filter(
     (notification) => !notification.read,
@@ -164,9 +167,12 @@ export function NotificationCenter() {
                         id={notification.id}
                         markMessageAsRead={markMessageAsRead}
                         setOpen={setOpen}
-                        description={notification.payload.description || ""}
+                        description={notification.payload.description}
                         createdAt={notification.createdAt}
                         recordId={notification.payload.recordId}
+                        type={notification.payload.type}
+                        from={notification.payload?.from}
+                        to={notification.payload?.to}
                       />
                     );
                   })}
@@ -203,9 +209,12 @@ export function NotificationCenter() {
                         key={notification.id}
                         id={notification.id}
                         setOpen={setOpen}
-                        description={notification.payload.description || ""}
+                        description={notification.payload.description}
                         createdAt={notification.createdAt}
                         recordId={notification.payload.recordId}
+                        type={notification.payload.type}
+                        from={notification.payload?.from}
+                        to={notification.payload?.to}
                         markMessageAsRead={markMessageAsRead}
                       />
                     );

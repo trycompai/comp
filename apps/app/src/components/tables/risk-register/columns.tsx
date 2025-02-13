@@ -79,7 +79,7 @@ export function columns(): ColumnDef<RiskRegisterType>[] {
 
         return (
           <span className="hidden md:table-cell">
-            <Badge variant="secondary">
+            <Badge variant="tag">
               {department.replace(/_/g, " ").toUpperCase()}
             </Badge>
           </span>

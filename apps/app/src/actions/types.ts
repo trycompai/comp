@@ -4,6 +4,16 @@ export interface ActionResponse<T = any> {
   error?: string;
 }
 
+export type ActionData<T> =
+  | {
+      data: T;
+      error?: never;
+    }
+  | {
+      error: string;
+      data?: never;
+    };
+
 export type DomainVerificationStatusProps =
   | "Valid Configuration"
   | "Invalid Configuration"

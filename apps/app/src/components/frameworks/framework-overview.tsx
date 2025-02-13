@@ -27,7 +27,6 @@ export function FrameworkOverview({
   framework,
   organizationFramework,
 }: FrameworkOverviewProps) {
-  // Calculate compliance metrics
   const totalControls = framework.categories.reduce(
     (acc, cat) => acc + cat.controls.length,
     0,

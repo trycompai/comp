@@ -10,7 +10,6 @@ import { tasks } from "@trigger.dev/sdk/v3";
 import { revalidateTag } from "next/cache";
 import { authActionClient } from "../safe-action";
 import { organizationSchema } from "../schema";
-import { soc2Seed } from "../soc2-seed";
 
 export const createOrganizationAction = authActionClient
   .schema(organizationSchema)
@@ -32,7 +31,7 @@ export const createOrganizationAction = authActionClient
 
     const hasVercelConfig = Boolean(
       process.env.NEXT_PUBLIC_VERCEL_URL &&
-      process.env.VERCEL_AUTH_TOKEN &&
+      process.env.VERCEL_ACCESS_TOKEN &&
       process.env.VERCEL_TEAM_ID &&
       process.env.VERCEL_PROJECT_ID
     );
@@ -96,18 +95,14 @@ export const createOrganizationAction = authActionClient
         });
       });
 
-      await soc2Seed({
-        organizationId: organization.id,
-      });
-
-      await tasks.trigger<typeof createDefaultPoliciesTask>(
-        "create-default-policies",
-        {
-          ownerId: userId,
-          organizationId: organization.id,
-          organizationName: name,
-        },
-      );
+      // await tasks.trigger<typeof createDefaultPoliciesTask>(
+      //   "create-default-policies",
+      //   {
+      //     ownerId: userId,
+      //     organizationId: organization.id,
+      //     organizationName: name,
+      //   }
+      // );
 
       revalidateTag(`user_${userId}`);
       revalidateTag(`organization_${organizationId}`);

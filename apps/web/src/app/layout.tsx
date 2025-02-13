@@ -29,6 +29,8 @@ export const viewport = {
   ],
 };
 
+export const preferredRegion = ["auto"];
+
 export default function RootLayout({
   children,
 }: {

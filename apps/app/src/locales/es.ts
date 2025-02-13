@@ -173,7 +173,7 @@ export default {
   sidebar: {
     overview: "Resumen",
     policies: "Políticas",
-    risk: "Riesgo",
+    risk: "Gestión de Riesgos",
     vendors: "Proveedores",
     integrations: "Integraciones",
     settings: "Configuraciones",
@@ -213,11 +213,17 @@ export default {
       subdomain: {
         label: "Subdominio",
         placeholder: "ejemplo"
+      },
+      fullName: {
+        label: "Tu Nombre",
+        placeholder: "Tu nombre completo"
       }
     },
     success: "¡Gracias, estás listo!",
     error: "Algo salió mal, por favor intenta de nuevo.",
-    unavailable: "Por favor, elige un subdominio diferente. Solo se permiten letras minúsculas, números y guiones."
+    unavailable: "No disponible",
+    check_availability: "Verificando disponibilidad",
+    available: "Disponible"
   },
   overview: {
     title: "Resumen",
@@ -502,6 +508,35 @@ export default {
         compliant: "Cumple",
         non_compliant: "No cumple"
       }
+    },
+    overview: {
+      error: "Error al cargar los marcos",
+      loading: "Cargando marcos...",
+      empty: {
+        title: "No se han seleccionado marcos",
+        description: "Seleccione marcos para comenzar su viaje de cumplimiento"
+      },
+      progress: {
+        title: "Progreso del marco",
+        empty: {
+          title: "Aún no hay marcos",
+          description: "Comience agregando un marco de cumplimiento para rastrear su progreso",
+          action: "Agregar marco"
+        }
+      },
+      grid: {
+        welcome: {
+          title: "Bienvenido a Comp AI",
+          description: "Comience seleccionando los marcos de cumplimiento que le gustaría implementar. Le ayudaremos a gestionar y rastrear su viaje de cumplimiento a través de múltiples estándares.",
+          action: "Comenzar"
+        },
+        title: "Seleccionar marcos",
+        version: "Versión",
+        actions: {
+          clear: "Borrar",
+          confirm: "Confirmar selección"
+        }
+      }
     }
   },
   vendor: {
@@ -631,5 +666,30 @@ export default {
   },
   errors: {
     unexpected: "Algo salió mal, por favor intenta de nuevo"
+  },
+  sub_pages: {
+    risk: {
+      overview: "Gestión de Riesgos",
+      register: "Registro de Riesgos",
+      risk_overview: "Resumen de Riesgos",
+      risk_comments: "Comentarios sobre Riesgos",
+      tasks: {
+        task_overview: "Resumen de Tareas"
+      }
+    },
+    policies: {
+      all: "Todas las Políticas",
+      editor: "Editor de Políticas"
+    },
+    people: {
+      all: "Personas",
+      employee_details: "Detalles del Empleado"
+    },
+    settings: {
+      members: "Miembros del Equipo"
+    },
+    frameworks: {
+      overview: "Marcos"
+    }
   }
 } as const;

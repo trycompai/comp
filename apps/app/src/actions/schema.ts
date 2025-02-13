@@ -9,6 +9,7 @@ import {
 import { z } from "zod";
 
 export const organizationSchema = z.object({
+  fullName: z.string().min(1, "Full name is required"),
   name: z.string().min(1, "Name is required"),
   website: z.string().url("Must be a valid URL"),
   subdomain: z.string().min(1, "Subdomain is required").optional(),

@@ -61,7 +61,7 @@ export function RequirementStatus({ frameworks }: Props) {
         <div className="mt-4 2xl:grid 2xl:grid-cols-3 gap-4 text-sm">
           {data.map((item) => (
             <div key={item.name} className="flex items-center gap-2">
-              <div className={cn("h-3 w-3 rounded-full", item.colorClass)} />
+              <div className={cn("h-3 w-3", item.colorClass)} />
               <span>{item.name}</span>
               <span className="ml-auto font-medium">{item.value}</span>
             </div>

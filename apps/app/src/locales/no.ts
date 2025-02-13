@@ -173,7 +173,7 @@ export default {
   sidebar: {
     overview: "Oversikt",
     policies: "Retningslinjer",
-    risk: "Risiko",
+    risk: "Risikoledelse",
     vendors: "Leverandører",
     integrations: "Integrasjoner",
     settings: "Innstillinger",
@@ -213,11 +213,17 @@ export default {
       subdomain: {
         label: "Underdomene",
         placeholder: "eksempel"
+      },
+      fullName: {
+        label: "Ditt navn",
+        placeholder: "Ditt fulle navn"
       }
     },
     success: "Takk, du er klar!",
     error: "Noe gikk galt, vennligst prøv igjen.",
-    unavailable: "Vennligst velg et annet underdomene. Kun små bokstaver, tall og bindestreker er tillatt."
+    unavailable: "Ikke tilgjengelig",
+    check_availability: "Sjekker tilgjengelighet",
+    available: "Tilgjengelig"
   },
   overview: {
     title: "Oversikt",
@@ -502,6 +508,35 @@ export default {
         compliant: "Samsvarende",
         non_compliant: "Ikke samsvarende"
       }
+    },
+    overview: {
+      error: "Kunne ikke laste rammeverk",
+      loading: "Laster rammeverk...",
+      empty: {
+        title: "Ingen rammeverk valgt",
+        description: "Velg rammeverk for å komme i gang med din samsvarsreise"
+      },
+      progress: {
+        title: "Rammeverksprogresjon",
+        empty: {
+          title: "Ingen rammeverk ennå",
+          description: "Kom i gang ved å legge til et samsvarsrammeverk for å spore fremgangen din",
+          action: "Legg til rammeverk"
+        }
+      },
+      grid: {
+        welcome: {
+          title: "Velkommen til Comp AI",
+          description: "Kom i gang ved å velge samsvarsrammeverkene du ønsker å implementere. Vi hjelper deg med å administrere og spore samsvarsreisen din på tvers av flere standarder.",
+          action: "Kom i gang"
+        },
+        title: "Velg rammeverk",
+        version: "Versjon",
+        actions: {
+          clear: "Tøm",
+          confirm: "Bekreft valg"
+        }
+      }
     }
   },
   vendor: {
@@ -631,5 +666,30 @@ export default {
   },
   errors: {
     unexpected: "Noe gikk galt, vennligst prøv igjen"
+  },
+  sub_pages: {
+    risk: {
+      overview: "Risikoledelse",
+      register: "Risiko-register",
+      risk_overview: "Risikooversikt",
+      risk_comments: "Risiko-kommentarer",
+      tasks: {
+        task_overview: "Oppgaveoversikt"
+      }
+    },
+    policies: {
+      all: "Alle retningslinjer",
+      editor: "Retningslinje-redigerer"
+    },
+    people: {
+      all: "Personer",
+      employee_details: "Ansattdetaljer"
+    },
+    settings: {
+      members: "Teammedlemmer"
+    },
+    frameworks: {
+      overview: "Rammeverk"
+    }
   }
 } as const;

@@ -1,0 +1,1036 @@
+{
+  "CC1.1": {
+    "code": "CC1.1",
+    "name": "Board Oversight",
+    "description": "The board of directors demonstrates independence from management and exercises oversight of the development and performance of internal control.",
+    "domain": "Control Environment",
+    "categoryId": "CC1",
+    "requirements": [
+      {
+        "id": "CC1.1-policy",
+        "type": "policy",
+        "description": "Board oversight and governance policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "CC1.1-procedure",
+        "type": "procedure",
+        "description": "Board oversight procedures"
+      }
+    ]
+  },
+  "CC1.2": {
+    "code": "CC1.2",
+    "name": "Management Philosophy",
+    "description": "Management establishes, with board oversight, structures, reporting lines, and appropriate authorities and responsibilities in the pursuit of objectives.",
+    "domain": "Control Environment",
+    "categoryId": "CC1",
+    "requirements": [
+      {
+        "id": "CC1.2-policy",
+        "type": "policy",
+        "description": "Organizational structure and management policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "CC1.2-procedure",
+        "type": "procedure",
+        "description": "Management oversight procedures"
+      }
+    ]
+  },
+  "CC1.3": {
+    "code": "CC1.3",
+    "name": "Organizational Structure",
+    "description": "The organization demonstrates a commitment to attract, develop, and retain competent individuals in alignment with objectives.",
+    "domain": "Control Environment",
+    "categoryId": "CC1",
+    "requirements": [
+      {
+        "id": "CC1.3-policy",
+        "type": "policy",
+        "description": "Personnel management policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "CC1.3-procedure",
+        "type": "procedure",
+        "description": "Personnel management procedures"
+      }
+    ]
+  },
+  "CC1.4": {
+    "code": "CC1.4",
+    "name": "Personnel Policies",
+    "description": "The organization holds individuals accountable for their internal control responsibilities in the pursuit of objectives.",
+    "domain": "Control Environment",
+    "categoryId": "CC1",
+    "requirements": [
+      {
+        "id": "CC1.4-policy",
+        "type": "policy",
+        "description": "Personnel accountability policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "CC1.4-procedure",
+        "type": "procedure",
+        "description": "Personnel accountability procedures"
+      },
+      {
+        "id": "CC1.4-training",
+        "type": "training",
+        "description": "Personnel accountability training"
+      }
+    ]
+  },
+  "CC1.5": {
+    "code": "CC1.5",
+    "name": "Code of Conduct",
+    "description": "The organization demonstrates a commitment to integrity and ethical values.",
+    "domain": "Control Environment",
+    "categoryId": "CC1",
+    "requirements": [
+      {
+        "id": "CC1.5-policy",
+        "type": "policy",
+        "description": "Code of conduct policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "CC1.5-training",
+        "type": "training",
+        "description": "Ethics and integrity training"
+      }
+    ]
+  },
+  "CC2.1": {
+    "code": "CC2.1",
+    "name": "Information Quality",
+    "description": "The organization obtains or generates and uses relevant, quality information to support the functioning of internal control.",
+    "domain": "Communication",
+    "categoryId": "CC2",
+    "requirements": [
+      {
+        "id": "CC2.1-policy",
+        "type": "policy",
+        "description": "Information quality policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "CC2.1-procedure",
+        "type": "procedure",
+        "description": "Information management procedures"
+      },
+      {
+        "id": "CC2.1-evidence",
+        "type": "evidence",
+        "description": "Information quality metrics and reports"
+      }
+    ]
+  },
+  "CC2.2": {
+    "code": "CC2.2",
+    "name": "Internal Communication",
+    "description": "The organization internally communicates information, including objectives and responsibilities for internal control.",
+    "domain": "Communication",
+    "categoryId": "CC2",
+    "requirements": [
+      {
+        "id": "CC2.2-policy",
+        "type": "policy",
+        "description": "Internal communication policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "CC2.2-procedure",
+        "type": "procedure",
+        "description": "Communication procedures"
+      },
+      {
+        "id": "CC2.2-evidence",
+        "type": "evidence",
+        "description": "Internal communication records"
+      }
+    ]
+  },
+  "CC2.3": {
+    "code": "CC2.3",
+    "name": "External Communication",
+    "description": "The organization communicates with external parties regarding matters affecting the functioning of internal control.",
+    "domain": "Communication",
+    "categoryId": "CC2",
+    "requirements": [
+      {
+        "id": "CC2.3-policy",
+        "type": "policy",
+        "description": "External communication policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "CC2.3-procedure",
+        "type": "procedure",
+        "description": "External communication procedures"
+      },
+      {
+        "id": "CC2.3-evidence",
+        "type": "evidence",
+        "description": "External communication records"
+      }
+    ]
+  },
+  "CC3.1": {
+    "code": "CC3.1",
+    "name": "Risk Assessment Process",
+    "description": "The organization specifies objectives with sufficient clarity to enable the identification and assessment of risks relating to objectives.",
+    "domain": "Risk Assessment",
+    "categoryId": "CC3",
+    "requirements": [
+      {
+        "id": "CC3.1-policy",
+        "type": "policy",
+        "description": "Risk assessment policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "CC3.1-procedure",
+        "type": "procedure",
+        "description": "Risk assessment procedures"
+      },
+      {
+        "id": "CC3.1-evidence",
+        "type": "evidence",
+        "description": "Risk assessment documentation"
+      }
+    ]
+  },
+  "CC3.2": {
+    "code": "CC3.2",
+    "name": "Risk Identification",
+    "description": "The organization identifies risks to the achievement of its objectives across the entity and analyzes risks as a basis for determining how the risks should be managed.",
+    "domain": "Risk Assessment",
+    "categoryId": "CC3",
+    "requirements": [
+      {
+        "id": "CC3.2-policy",
+        "type": "policy",
+        "description": "Risk identification policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "CC3.2-procedure",
+        "type": "procedure",
+        "description": "Risk identification procedures"
+      },
+      {
+        "id": "CC3.2-evidence",
+        "type": "evidence",
+        "description": "Risk register and analysis"
+      }
+    ]
+  },
+  "CC3.3": {
+    "code": "CC3.3",
+    "name": "Fraud Risk Assessment",
+    "description": "The organization considers the potential for fraud in assessing risks to the achievement of objectives.",
+    "domain": "Risk Assessment",
+    "categoryId": "CC3",
+    "requirements": [
+      {
+        "id": "CC3.3-policy",
+        "type": "policy",
+        "description": "Fraud risk assessment policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "CC3.3-procedure",
+        "type": "procedure",
+        "description": "Fraud risk assessment procedures"
+      },
+      {
+        "id": "CC3.3-evidence",
+        "type": "evidence",
+        "description": "Fraud risk assessment reports"
+      }
+    ]
+  },
+  "CC3.4": {
+    "code": "CC3.4",
+    "name": "Change Management Risk",
+    "description": "The organization identifies and assesses changes that could significantly impact the system of internal control.",
+    "domain": "Risk Assessment",
+    "categoryId": "CC3",
+    "requirements": [
+      {
+        "id": "CC3.4-policy",
+        "type": "policy",
+        "description": "Change management risk policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "CC3.4-procedure",
+        "type": "procedure",
+        "description": "Change impact assessment procedures"
+      },
+      {
+        "id": "CC3.4-evidence",
+        "type": "evidence",
+        "description": "Change impact assessments"
+      }
+    ]
+  },
+  "CC4.1": {
+    "code": "CC4.1",
+    "name": "Control Monitoring",
+    "description": "The organization selects, develops, and performs ongoing and/or separate evaluations to ascertain whether the components of internal control are present and functioning.",
+    "domain": "Monitoring Activities",
+    "categoryId": "CC4",
+    "requirements": [
+      {
+        "id": "CC4.1-policy",
+        "type": "policy",
+        "description": "Control monitoring policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "CC4.1-procedure",
+        "type": "procedure",
+        "description": "Control monitoring procedures"
+      },
+      {
+        "id": "CC4.1-evidence",
+        "type": "evidence",
+        "description": "Control monitoring reports"
+      }
+    ]
+  },
+  "CC4.2": {
+    "code": "CC4.2",
+    "name": "Deficiency Management",
+    "description": "The organization evaluates and communicates internal control deficiencies in a timely manner to those parties responsible for taking corrective action.",
+    "domain": "Monitoring Activities",
+    "categoryId": "CC4",
+    "requirements": [
+      {
+        "id": "CC4.2-policy",
+        "type": "policy",
+        "description": "Deficiency management policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "CC4.2-procedure",
+        "type": "procedure",
+        "description": "Deficiency management procedures"
+      },
+      {
+        "id": "CC4.2-evidence",
+        "type": "evidence",
+        "description": "Deficiency tracking and resolution reports"
+      }
+    ]
+  },
+  "CC5.1": {
+    "code": "CC5.1",
+    "name": "Control Selection",
+    "description": "The organization selects and develops control activities that contribute to the mitigation of risks to the achievement of objectives to acceptable levels.",
+    "domain": "Control Activities",
+    "categoryId": "CC5",
+    "requirements": [
+      {
+        "id": "CC5.1-policy",
+        "type": "policy",
+        "description": "Control selection policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "CC5.1-procedure",
+        "type": "procedure",
+        "description": "Control selection procedures"
+      },
+      {
+        "id": "CC5.1-evidence",
+        "type": "evidence",
+        "description": "Control selection documentation"
+      }
+    ]
+  },
+  "CC5.2": {
+    "code": "CC5.2",
+    "name": "Technology Controls",
+    "description": "The organization selects and develops general control activities over technology to support the achievement of objectives.",
+    "domain": "Control Activities",
+    "categoryId": "CC5",
+    "requirements": [
+      {
+        "id": "CC5.2-policy",
+        "type": "policy",
+        "description": "Technology control policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "CC5.2-procedure",
+        "type": "procedure",
+        "description": "Technology control procedures"
+      },
+      {
+        "id": "CC5.2-evidence",
+        "type": "evidence",
+        "description": "Technology control documentation"
+      }
+    ]
+  },
+  "CC5.3": {
+    "code": "CC5.3",
+    "name": "Policy Implementation",
+    "description": "The organization deploys control activities through policies that establish what is expected and procedures that put policies into action.",
+    "domain": "Control Activities",
+    "categoryId": "CC5",
+    "requirements": [
+      {
+        "id": "CC5.3-policy",
+        "type": "policy",
+        "description": "Policy implementation framework",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "CC5.3-procedure",
+        "type": "procedure",
+        "description": "Policy implementation procedures"
+      },
+      {
+        "id": "CC5.3-evidence",
+        "type": "evidence",
+        "description": "Policy implementation records"
+      }
+    ]
+  },
+  "CC6.1": {
+    "code": "CC6.1",
+    "name": "Access Security",
+    "description": "The organization implements logical access security software, infrastructure, and architectures over protected information assets to protect them from security events.",
+    "domain": "Logical and Physical Access Controls",
+    "categoryId": "CC6",
+    "requirements": [
+      {
+        "id": "CC6.1-policy",
+        "type": "policy",
+        "description": "Access security policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "CC6.1-procedure",
+        "type": "procedure",
+        "description": "Access security procedures"
+      },
+      {
+        "id": "CC6.1-evidence",
+        "type": "evidence",
+        "description": "Access security configurations"
+      }
+    ]
+  },
+  "CC6.2": {
+    "code": "CC6.2",
+    "name": "Access Authentication",
+    "description": "Prior to issuing system credentials and granting system access, the organization registers and authorizes new internal and external users.",
+    "domain": "Logical and Physical Access Controls",
+    "categoryId": "CC6",
+    "requirements": [
+      {
+        "id": "CC6.2-policy",
+        "type": "policy",
+        "description": "User authentication policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "CC6.2-procedure",
+        "type": "procedure",
+        "description": "User authentication procedures"
+      },
+      {
+        "id": "CC6.2-evidence",
+        "type": "evidence",
+        "description": "User authentication records"
+      }
+    ]
+  },
+  "CC6.3": {
+    "code": "CC6.3",
+    "name": "Access Removal",
+    "description": "The organization removes access to protected information assets when appropriate.",
+    "domain": "Logical and Physical Access Controls",
+    "categoryId": "CC6",
+    "requirements": [
+      {
+        "id": "CC6.3-policy",
+        "type": "policy",
+        "description": "Access removal policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "CC6.3-procedure",
+        "type": "procedure",
+        "description": "Access removal procedures"
+      },
+      {
+        "id": "CC6.3-evidence",
+        "type": "evidence",
+        "description": "Access removal records"
+      }
+    ]
+  },
+  "CC6.4": {
+    "code": "CC6.4",
+    "name": "Access Review",
+    "description": "The organization evaluates and manages access to protected information assets on a periodic basis.",
+    "domain": "Logical and Physical Access Controls",
+    "categoryId": "CC6",
+    "requirements": [
+      {
+        "id": "CC6.4-policy",
+        "type": "policy",
+        "description": "Access review policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "CC6.4-procedure",
+        "type": "procedure",
+        "description": "Access review procedures"
+      },
+      {
+        "id": "CC6.4-evidence",
+        "type": "evidence",
+        "description": "Access review records"
+      }
+    ]
+  },
+  "CC6.5": {
+    "code": "CC6.5",
+    "name": "System Account Management",
+    "description": "The organization identifies and authenticates system users, devices, and other systems before allowing access.",
+    "domain": "Logical and Physical Access Controls",
+    "categoryId": "CC6",
+    "requirements": [
+      {
+        "id": "CC6.5-policy",
+        "type": "policy",
+        "description": "System account management policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "CC6.5-procedure",
+        "type": "procedure",
+        "description": "System account management procedures"
+      },
+      {
+        "id": "CC6.5-evidence",
+        "type": "evidence",
+        "description": "System account management records"
+      }
+    ]
+  },
+  "CC6.6": {
+    "code": "CC6.6",
+    "name": "Access Restrictions",
+    "description": "The organization restricts physical access to facilities and protected information assets.",
+    "domain": "Logical and Physical Access Controls",
+    "categoryId": "CC6",
+    "requirements": [
+      {
+        "id": "CC6.6-policy",
+        "type": "policy",
+        "description": "Physical access policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "CC6.6-procedure",
+        "type": "procedure",
+        "description": "Physical access procedures"
+      },
+      {
+        "id": "CC6.6-evidence",
+        "type": "evidence",
+        "description": "Physical access records"
+      }
+    ]
+  },
+  "CC6.7": {
+    "code": "CC6.7",
+    "name": "Information Asset Changes",
+    "description": "The organization manages changes to system components to minimize the risk of unauthorized changes.",
+    "domain": "Logical and Physical Access Controls",
+    "categoryId": "CC6",
+    "requirements": [
+      {
+        "id": "CC6.7-policy",
+        "type": "policy",
+        "description": "Change management policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "CC6.7-procedure",
+        "type": "procedure",
+        "description": "Change management procedures"
+      },
+      {
+        "id": "CC6.7-evidence",
+        "type": "evidence",
+        "description": "Change management records"
+      }
+    ]
+  },
+  "CC6.8": {
+    "code": "CC6.8",
+    "name": "Malicious Software Prevention",
+    "description": "The organization implements controls to prevent or detect and act upon the introduction of unauthorized or malicious software.",
+    "domain": "Logical and Physical Access Controls",
+    "categoryId": "CC6",
+    "requirements": [
+      {
+        "id": "CC6.8-policy",
+        "type": "policy",
+        "description": "Malware prevention policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "CC6.8-procedure",
+        "type": "procedure",
+        "description": "Malware prevention procedures"
+      },
+      {
+        "id": "CC6.8-evidence",
+        "type": "evidence",
+        "description": "Malware prevention configurations"
+      }
+    ]
+  },
+  "CC7.1": {
+    "code": "CC7.1",
+    "name": "Infrastructure Monitoring",
+    "description": "To detect and act upon security events in a timely manner, the organization monitors system capacity, security threats, changing regulatory requirements, and other system vulnerabilities.",
+    "domain": "System Operations",
+    "categoryId": "CC7",
+    "requirements": [
+      {
+        "id": "CC7.1-policy",
+        "type": "policy",
+        "description": "Infrastructure monitoring policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "CC7.1-procedure",
+        "type": "procedure",
+        "description": "Infrastructure monitoring procedures"
+      },
+      {
+        "id": "CC7.1-evidence",
+        "type": "evidence",
+        "description": "Infrastructure monitoring reports"
+      }
+    ]
+  },
+  "CC7.2": {
+    "code": "CC7.2",
+    "name": "Security Event Response",
+    "description": "The organization designs, develops, and implements policies and procedures to respond to security incidents and breaches.",
+    "domain": "System Operations",
+    "categoryId": "CC7",
+    "requirements": [
+      {
+        "id": "CC7.2-policy",
+        "type": "policy",
+        "description": "Incident response policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "CC7.2-procedure",
+        "type": "procedure",
+        "description": "Incident response procedures"
+      },
+      {
+        "id": "CC7.2-evidence",
+        "type": "evidence",
+        "description": "Incident response records"
+      }
+    ]
+  },
+  "CC7.3": {
+    "code": "CC7.3",
+    "name": "Security Event Recovery",
+    "description": "The organization implements recovery procedures to ensure timely restoration of systems or assets affected by security incidents.",
+    "domain": "System Operations",
+    "categoryId": "CC7",
+    "requirements": [
+      {
+        "id": "CC7.3-policy",
+        "type": "policy",
+        "description": "Recovery policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "CC7.3-procedure",
+        "type": "procedure",
+        "description": "Recovery procedures"
+      },
+      {
+        "id": "CC7.3-evidence",
+        "type": "evidence",
+        "description": "Recovery test results"
+      }
+    ]
+  },
+  "CC7.4": {
+    "code": "CC7.4",
+    "name": "Security Event Analysis",
+    "description": "The organization implements incident response activities to identify root causes of security incidents and develop remediation plans.",
+    "domain": "System Operations",
+    "categoryId": "CC7",
+    "requirements": [
+      {
+        "id": "CC7.4-policy",
+        "type": "policy",
+        "description": "Incident analysis policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "CC7.4-procedure",
+        "type": "procedure",
+        "description": "Incident analysis procedures"
+      },
+      {
+        "id": "CC7.4-evidence",
+        "type": "evidence",
+        "description": "Incident analysis reports"
+      }
+    ]
+  },
+  "CC7.5": {
+    "code": "CC7.5",
+    "name": "Security Event Communication",
+    "description": "The organization identifies, develops, and implements activities to communicate security incidents to affected parties.",
+    "domain": "System Operations",
+    "categoryId": "CC7",
+    "requirements": [
+      {
+        "id": "CC7.5-policy",
+        "type": "policy",
+        "description": "Security event communication policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "CC7.5-procedure",
+        "type": "procedure",
+        "description": "Security event communication procedures"
+      },
+      {
+        "id": "CC7.5-evidence",
+        "type": "evidence",
+        "description": "Security event communication records"
+      }
+    ]
+  },
+  "CC8.1": {
+    "code": "CC8.1",
+    "name": "Change Authorization",
+    "description": "The organization authorizes, designs, develops or acquires, configures, documents, tests, approves, and implements changes to infrastructure, data, software, and procedures.",
+    "domain": "Change Management",
+    "categoryId": "CC8",
+    "requirements": [
+      {
+        "id": "CC8.1-policy",
+        "type": "policy",
+        "description": "Change authorization policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "CC8.1-procedure",
+        "type": "procedure",
+        "description": "Change authorization procedures"
+      },
+      {
+        "id": "CC8.1-evidence",
+        "type": "evidence",
+        "description": "Change authorization records"
+      }
+    ]
+  },
+  "CC9.1": {
+    "code": "CC9.1",
+    "name": "Business Continuity Planning",
+    "description": "The organization identifies, develops, and implements activities to recover critical information technology resources.",
+    "domain": "Risk Mitigation",
+    "categoryId": "CC9",
+    "requirements": [
+      {
+        "id": "CC9.1-policy",
+        "type": "policy",
+        "description": "Business continuity policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "CC9.1-procedure",
+        "type": "procedure",
+        "description": "Business continuity procedures"
+      },
+      {
+        "id": "CC9.1-evidence",
+        "type": "evidence",
+        "description": "Business continuity plans"
+      }
+    ]
+  },
+  "CC9.2": {
+    "code": "CC9.2",
+    "name": "Vendor Risk Management",
+    "description": "The organization assesses and manages risks associated with vendors and business partners.",
+    "domain": "Risk Mitigation",
+    "categoryId": "CC9",
+    "requirements": [
+      {
+        "id": "CC9.2-policy",
+        "type": "policy",
+        "description": "Vendor risk management policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "CC9.2-procedure",
+        "type": "procedure",
+        "description": "Vendor risk management procedures"
+      },
+      {
+        "id": "CC9.2-evidence",
+        "type": "evidence",
+        "description": "Vendor risk assessments"
+      }
+    ]
+  },
+  "CC9.9": {
+    "code": "CC9.9",
+    "name": "Business Continuity and Disaster Recovery Testing",
+    "description": "The organization tests business continuity and disaster recovery plans, evaluates the test results, and updates the plans accordingly.",
+    "domain": "Risk Mitigation",
+    "categoryId": "CC9",
+    "requirements": [
+      {
+        "id": "CC9.9-policy",
+        "type": "policy",
+        "description": "BC/DR testing policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "CC9.9-procedure",
+        "type": "procedure",
+        "description": "BC/DR testing procedures"
+      },
+      {
+        "id": "CC9.9-evidence",
+        "type": "evidence",
+        "description": "BC/DR test results"
+      }
+    ]
+  },
+  "A1.1": {
+    "code": "A1.1",
+    "name": "Availability Commitments",
+    "description": "The entity maintains commitments to ensure systems are available for operation.",
+    "domain": "Availability",
+    "categoryId": "A1",
+    "requirements": []
+  },
+  "A1.2": {
+    "code": "A1.2",
+    "name": "Capacity Planning",
+    "description": "The entity monitors and manages system capacity to meet demands.",
+    "domain": "Availability",
+    "categoryId": "A1",
+    "requirements": []
+  },
+  "A1.3": {
+    "code": "A1.3",
+    "name": "Incident Recovery",
+    "description": "The entity has controls to restore system availability after incidents.",
+    "domain": "Availability",
+    "categoryId": "A1",
+    "requirements": []
+  },
+  "C1.1": {
+    "code": "C1.1",
+    "name": "Confidential Information Classification",
+    "description": "The entity classifies information to identify and protect confidential information.",
+    "domain": "Confidentiality",
+    "categoryId": "C1",
+    "requirements": [
+      {
+        "id": "C1.1-policy",
+        "type": "policy",
+        "description": "Information classification policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "C1.1-procedure",
+        "type": "procedure",
+        "description": "Information classification procedures"
+      }
+    ]
+  },
+  "C1.2": {
+    "code": "C1.2",
+    "name": "Access Restrictions for Confidential Data",
+    "description": "The entity restricts access to confidential information on a need-to-know basis.",
+    "domain": "Confidentiality",
+    "categoryId": "C1",
+    "requirements": [
+      {
+        "id": "C1.2-policy",
+        "type": "policy",
+        "description": "Confidential data access policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "C1.2-procedure",
+        "type": "procedure",
+        "description": "Confidential data access procedures"
+      }
+    ]
+  },
+  "C1.3": {
+    "code": "C1.3",
+    "name": "Confidential Data Disposal",
+    "description": "The entity securely disposes of confidential information when no longer needed.",
+    "domain": "Confidentiality",
+    "categoryId": "C1",
+    "requirements": [
+      {
+        "id": "C1.3-policy",
+        "type": "policy",
+        "description": "Data disposal policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "C1.3-procedure",
+        "type": "procedure",
+        "description": "Data disposal procedures"
+      }
+    ]
+  },
+  "PI1.1": {
+    "code": "PI1.1",
+    "name": "Accuracy and Completeness",
+    "description": "The entity ensures data is processed accurately and completely.",
+    "domain": "Processing Integrity",
+    "categoryId": "PI1",
+    "requirements": [
+      {
+        "id": "PI1.1-policy",
+        "type": "policy",
+        "description": "Data accuracy policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "PI1.1-procedure",
+        "type": "procedure",
+        "description": "Data accuracy procedures"
+      }
+    ]
+  },
+  "PI1.2": {
+    "code": "PI1.2",
+    "name": "Input, Processing, and Output Controls",
+    "description": "The entity validates the completeness and accuracy of data throughout processing.",
+    "domain": "Processing Integrity",
+    "categoryId": "PI1",
+    "requirements": [
+      {
+        "id": "PI1.2-policy",
+        "type": "policy",
+        "description": "Data processing controls policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "PI1.2-procedure",
+        "type": "procedure",
+        "description": "Data processing control procedures"
+      }
+    ]
+  },
+  "PI1.3": {
+    "code": "PI1.3",
+    "name": "Exception Handling",
+    "description": "The entity identifies and resolves processing exceptions in a timely manner.",
+    "domain": "Processing Integrity",
+    "categoryId": "PI1",
+    "requirements": [
+      {
+        "id": "PI1.3-policy",
+        "type": "policy",
+        "description": "Exception handling policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "PI1.3-procedure",
+        "type": "procedure",
+        "description": "Exception handling procedures"
+      }
+    ]
+  },
+  "P1.1": {
+    "code": "P1.1",
+    "name": "Privacy Notice",
+    "description": "The entity provides notice about the collection, use, and disclosure of personal information.",
+    "domain": "Privacy",
+    "categoryId": "P1",
+    "requirements": [
+      {
+        "id": "P1.1-policy",
+        "type": "policy",
+        "description": "Privacy notice policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "P1.1-procedure",
+        "type": "procedure",
+        "description": "Privacy notice procedures"
+      }
+    ]
+  },
+  "P1.2": {
+    "code": "P1.2",
+    "name": "Choice and Consent",
+    "description": "The entity obtains consent for personal information where required by policy or law.",
+    "domain": "Privacy",
+    "categoryId": "P1",
+    "requirements": [
+      {
+        "id": "P1.2-policy",
+        "type": "policy",
+        "description": "Consent policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "P1.2-procedure",
+        "type": "procedure",
+        "description": "Consent procedures"
+      }
+    ]
+  },
+  "P1.3": {
+    "code": "P1.3",
+    "name": "Data Retention and Disposal",
+    "description": "The entity retains personal information for only as long as needed and disposes of it securely.",
+    "domain": "Privacy",
+    "categoryId": "P1",
+    "requirements": [
+      {
+        "id": "P1.3-policy",
+        "type": "policy",
+        "description": "Data retention policy",
+        "policyId": "password_policy"
+      },
+      {
+        "id": "P1.3-procedure",
+        "type": "procedure",
+        "description": "Data retention procedures"
+      }
+    ]
+  }
+}

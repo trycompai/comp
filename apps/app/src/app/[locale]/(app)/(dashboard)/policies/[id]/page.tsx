@@ -1,58 +1,29 @@
-import { auth } from "@/auth";
 import { PolicyOverview } from "@/components/policies/policy-overview";
-import { db } from "@bubba/db";
-import { unstable_cache } from "next/cache";
-import { redirect } from "next/navigation";
+import { getI18n } from "@/locales/server";
+import type { Metadata } from "next";
+import { setStaticParamsLocale } from "next-international/server";
 
 interface PageProps {
-  params: Promise<{ id: string }>;
+  params: Promise<{ locale: string; id: string }>;
 }
 
 export default async function PolicyPage({ params }: PageProps) {
-  const session = await auth();
-  const { id } = await params;
+  const { locale, id } = await params;
+  setStaticParamsLocale(locale);
 
-  if (!session) {
-    redirect("/login");
-  }
-
-  if (!session.user.organizationId || !id) {
-    redirect("/");
-  }
-
-  const policy = await getPolicy(id, session.user.organizationId);
-
-  if (!policy) {
-    redirect("/policies");
-  }
-
-  const users = await getUsers(session.user.organizationId);
-
-  return <PolicyOverview policy={policy} />;
+  return <PolicyOverview policyId={id} />;
 }
 
-const getPolicy = unstable_cache(
-  async (id: string, organizationId: string) => {
-    const policy = await db.artifact.findUnique({
-      where: {
-        id,
-        type: "policy",
-        organizationId: organizationId,
-      },
-    });
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string; id: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  setStaticParamsLocale(locale);
+  const t = await getI18n();
 
-    return policy;
-  },
-  ["policy-cache"],
-);
-
-const getUsers = unstable_cache(
-  async (organizationId: string) => {
-    const users = await db.user.findMany({
-      where: { organizationId: organizationId },
-    });
-
-    return users;
-  },
-  ["users-cache"],
-);
+  return {
+    title: t("sub_pages.policies.editor"),
+  };
+}

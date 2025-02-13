@@ -17,7 +17,7 @@ interface ContentNode {
 
 // Simplified content processor that creates a new plain object
 function processContent(
-  content: ContentNode | ContentNode[],
+  content: ContentNode | ContentNode[]
 ): ContentNode | ContentNode[] {
   if (!content) return content;
 
@@ -74,8 +74,8 @@ export const updatePolicyAction = authActionClient
     }
 
     try {
-      const policy = await db.artifact.findUnique({
-        where: { id, type: "policy", organizationId: user.organizationId },
+      const policy = await db.organizationPolicy.findUnique({
+        where: { id, organizationId: user.organizationId },
       });
 
       if (!policy) {
@@ -87,12 +87,12 @@ export const updatePolicyAction = authActionClient
 
       // Create a new plain object from the content
       const processedContent = JSON.parse(
-        JSON.stringify(processContent(content as ContentNode)),
+        JSON.stringify(processContent(content as ContentNode))
       );
 
-      await db.artifact.update({
+      await db.organizationPolicy.update({
         where: { id },
-        data: { content: processedContent },
+        data: { content: processedContent.content },
       });
 
       revalidatePath(`/policies/${id}`);

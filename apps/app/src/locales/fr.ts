@@ -173,7 +173,7 @@ export default {
   sidebar: {
     overview: "Aperçu",
     policies: "Politiques",
-    risk: "Risque",
+    risk: "Gestion des Risques",
     vendors: "Fournisseurs",
     integrations: "Intégrations",
     settings: "Paramètres",
@@ -213,11 +213,17 @@ export default {
       subdomain: {
         label: "Sous-domaine",
         placeholder: "exemple"
+      },
+      fullName: {
+        label: "Votre Nom",
+        placeholder: "Votre nom complet"
       }
     },
     success: "Merci, vous êtes prêt !",
     error: "Une erreur s'est produite, veuillez réessayer.",
-    unavailable: "Veuillez choisir un autre sous-domaine. Seules les lettres minuscules, les chiffres et les tirets sont autorisés."
+    unavailable: "Indisponible",
+    check_availability: "Vérification de la disponibilité",
+    available: "Disponible"
   },
   overview: {
     title: "Aperçu",
@@ -502,6 +508,35 @@ export default {
         compliant: "Conforme",
         non_compliant: "Non conforme"
       }
+    },
+    overview: {
+      error: "Échec du chargement des cadres",
+      loading: "Chargement des cadres...",
+      empty: {
+        title: "Aucun cadre sélectionné",
+        description: "Sélectionnez des cadres pour commencer votre parcours de conformité"
+      },
+      progress: {
+        title: "Progression du cadre",
+        empty: {
+          title: "Aucun cadre pour le moment",
+          description: "Commencez par ajouter un cadre de conformité pour suivre vos progrès",
+          action: "Ajouter un cadre"
+        }
+      },
+      grid: {
+        welcome: {
+          title: "Bienvenue dans Comp AI",
+          description: "Commencez par sélectionner les cadres de conformité que vous souhaitez mettre en œuvre. Nous vous aiderons à gérer et à suivre votre parcours de conformité à travers plusieurs normes.",
+          action: "Commencer"
+        },
+        title: "Sélectionner des cadres",
+        version: "Version",
+        actions: {
+          clear: "Effacer",
+          confirm: "Confirmer la sélection"
+        }
+      }
     }
   },
   vendor: {
@@ -631,5 +666,30 @@ export default {
   },
   errors: {
     unexpected: "Une erreur s'est produite, veuillez réessayer"
+  },
+  sub_pages: {
+    risk: {
+      overview: "Gestion des Risques",
+      register: "Registre des Risques",
+      risk_overview: "Aperçu des Risques",
+      risk_comments: "Commentaires sur les Risques",
+      tasks: {
+        task_overview: "Aperçu des Tâches"
+      }
+    },
+    policies: {
+      all: "Toutes les Politiques",
+      editor: "Éditeur de Politique"
+    },
+    people: {
+      all: "Personnes",
+      employee_details: "Détails de l'Employé"
+    },
+    settings: {
+      members: "Membres de l'Équipe"
+    },
+    frameworks: {
+      overview: "Cadres"
+    }
   }
 } as const;

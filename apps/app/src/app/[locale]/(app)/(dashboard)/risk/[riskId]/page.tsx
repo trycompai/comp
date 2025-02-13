@@ -14,6 +14,8 @@ import { getServerColumnHeaders } from "@/components/tables/risk-tasks/server-co
 import { getI18n } from "@/locales/server";
 import { type RiskTaskStatus, db } from "@bubba/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@bubba/ui/card";
+import type { Metadata } from "next";
+import { setStaticParamsLocale } from "next-international/server";
 import { unstable_cache } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -25,7 +27,7 @@ interface PageProps {
     page?: string;
     per_page?: string;
   }>;
-  params: Promise<{ riskId: string }>;
+  params: Promise<{ riskId: string; locale: string }>;
 }
 
 export default async function RiskPage({ searchParams, params }: PageProps) {
@@ -232,3 +234,17 @@ const getUsers = unstable_cache(
   },
   ["users-cache"],
 );
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  setStaticParamsLocale(locale);
+  const t = await getI18n();
+
+  return {
+    title: t("sub_pages.risk.risk_overview"),
+  };
+}

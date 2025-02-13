@@ -35,8 +35,14 @@ const extensions = [...defaultExtensions, slashCommand];
 const PolicyEditor = ({
   policyId,
   content,
-}: { policyId: string; content: JSONContent }) => {
-  const [initialContent, setInitialContent] = useState<JSONContent>(content);
+}: {
+  policyId: string;
+  content: JSONContent;
+}) => {
+  const [initialContent, setInitialContent] = useState<JSONContent>({
+    type: "doc",
+    content: content as JSONContent[],
+  });
   const [saveStatus, setSaveStatus] = useState("Saved");
   const [charsCount, setCharsCount] = useState();
 
@@ -74,7 +80,7 @@ const PolicyEditor = ({
         content: json,
       });
     },
-    1000,
+    1000
   );
 
   if (!initialContent) return null;

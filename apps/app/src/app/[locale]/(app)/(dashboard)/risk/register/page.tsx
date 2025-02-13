@@ -11,11 +11,17 @@ import {
 import { FilterToolbar } from "@/components/tables/risk-register/filter-toolbar";
 import { Loading } from "@/components/tables/risk-register/loading";
 import { getServerColumnHeaders } from "@/components/tables/risk-register/server-columns";
+import { getI18n } from "@/locales/server";
 import { type Departments, type RiskStatus, db } from "@bubba/db";
+import type { Metadata } from "next";
+import { setStaticParamsLocale } from "next-international/server";
 import { unstable_cache } from "next/cache";
 import { redirect } from "next/navigation";
 
-interface PageProps {
+export default async function RiskRegisterPage({
+  searchParams,
+}: {
+  params: Promise<{ locale: string }>;
   searchParams: Promise<{
     search?: string;
     category?: string;
@@ -25,9 +31,7 @@ interface PageProps {
     page?: string;
     per_page?: string;
   }>;
-}
-
-export default async function RiskRegisterPage({ searchParams }: PageProps) {
+}) {
   const session = await auth();
   const organizationId = session?.user.organizationId;
   const columnHeaders = await getServerColumnHeaders();
@@ -178,3 +182,17 @@ const getRisks = unstable_cache(
   },
   ["risks-cache"],
 );
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  setStaticParamsLocale(locale);
+  const t = await getI18n();
+
+  return {
+    title: t("sub_pages.risk.register"),
+  };
+}

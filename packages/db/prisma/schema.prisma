@@ -7,7 +7,6 @@ generator client {
 datasource db {
   provider   = "postgresql"
   url        = env("DATABASE_URL")
-  extensions = [vector]
 }
 
 enum Tier {
@@ -28,6 +27,15 @@ enum Departments {
   it
   itsm
   qms
+}
+
+enum RequirementType {
+  policy
+  file
+  link
+  procedure
+  evidence
+  training
 }
 
 // Authentication and Organization
@@ -135,6 +143,7 @@ model Organization {
   VendorContact            VendorContact[]
   RiskAttachment           RiskAttachment[]
   members                  OrganizationMember[]
+  OrganizationPolicy       OrganizationPolicy[]
 
   @@index([stripeCustomerId])
 }
@@ -207,6 +216,7 @@ model Framework {
   categories            FrameworkCategory[]
   organizations         Organization[]
   OrganizationFramework OrganizationFramework[]
+  PolicyFramework       PolicyFramework[]
 
   @@index([id])
 }
@@ -247,14 +257,18 @@ model Control {
   code        String  @unique
   name        String
   description String?
+  domain      String?
 
-  categoryId String
-  category   FrameworkCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  organizationControls OrganizationControl[]
+  PolicyControl        PolicyControl[]
 
-  requiredArtifactTypes ArtifactType[] // What types of artifacts are needed
-  organizationControls  OrganizationControl[]
+  // NEW: Requirements associated with this control.
+  requirements ControlRequirement[]
 
-  @@index([categoryId])
+  frameworkCategoryId String?
+  frameworkCategory   FrameworkCategory? @relation(fields: [frameworkCategoryId], references: [id], onDelete: SetNull)
+
+  @@index([frameworkCategoryId])
 }
 
 model OrganizationControl {
@@ -418,6 +432,7 @@ model RiskMitigationTask {
   description String
   status      RiskTaskStatus @default(open)
   dueDate     DateTime?
+  notifiedAt  DateTime?
   completedAt DateTime?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
@@ -810,12 +825,128 @@ model Employee {
   userId String?
   user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  employeeTasks        EmployeeTask[]
-  RiskTaskAssignment   RiskTaskAssignment[]
-  VendorTaskAssignment VendorTaskAssignment[]
+  employeeTasks            EmployeeTask[]
+  RiskTaskAssignment       RiskTaskAssignment[]
+  VendorTaskAssignment     VendorTaskAssignment[]
+  EmployeePolicyAcceptance EmployeePolicyAcceptance[]
 
   @@unique([email, organizationId])
   @@index([organizationId])
   @@index([userId])
   @@index([department])
+}
+
+// --- Policy Templates and Files ---
+
+model Policy {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String?
+  content     Json[]
+  version     String?
+  usedBy      Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  policyFrameworks    PolicyFramework[]
+  employeeAcceptances EmployeePolicyAcceptance[]
+  policyFiles         PolicyFile[]
+  PolicyControl       PolicyControl[]
+  ControlRequirement  ControlRequirement[]
+  OrganizationPolicy  OrganizationPolicy[]
+}
+
+model PolicyFile {
+  id        String   @id @default(cuid())
+  policyId  String
+  fileName  String
+  fileUrl   String
+  fileType  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  policy Policy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+}
+
+// --- Policy to Framework Mapping ---
+
+model PolicyFramework {
+  id          String @id @default(cuid())
+  policyId    String
+  frameworkId String
+
+  policy    Policy    @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  framework Framework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+
+  @@unique([policyId, frameworkId])
+}
+
+// --- Employee Acceptance Tracking ---
+
+model EmployeePolicyAcceptance {
+  id         String    @id @default(cuid())
+  employeeId String
+  policyId   String
+  readAt     DateTime?
+  acceptedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  policy   Policy   @relation(fields: [policyId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, policyId])
+}
+
+model PolicyControl {
+  id        String @id @default(cuid())
+  policyId  String
+  controlId String
+
+  policy  Policy  @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  control Control @relation(fields: [controlId], references: [id], onDelete: Cascade)
+
+  @@unique([policyId, controlId])
+}
+
+model ControlRequirement {
+  id          String          @id @default(cuid())
+  controlId   String
+  control     Control         @relation(fields: [controlId], references: [id], onDelete: Cascade)
+  type        RequirementType
+  description String?
+  policyId    String?
+  policy      Policy?         @relation(fields: [policyId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([controlId])
+}
+
+enum PolicyStatus {
+  draft
+  published
+  archived
+}
+
+model OrganizationPolicy {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  status    PolicyStatus @default(draft)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  policyId String
+  policy   Policy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+
+  content Json[]
+
+  @@unique([organizationId, policyId])
+  @@index([organizationId])
+  @@index([policyId])
 }

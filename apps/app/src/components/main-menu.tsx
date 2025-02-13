@@ -23,7 +23,6 @@ import { useLongPress } from "use-long-press";
 const icons = {
   "/": () => <Icons.Overview size={22} />,
   "/settings": () => <Icons.Settings size={22} />,
-  "/evidence-tasks": () => <Icons.Evidence size={22} />,
   "/policies": () => <Icons.Policies size={22} />,
   "/risk": () => <Icons.Risk size={22} />,
   "/vendors": () => <Icons.Vendors size={22} />,
@@ -93,7 +92,7 @@ const Item = ({
                   isActive &&
                     "bg-[#F2F1EF] dark:bg-secondary border-[#DCDAD2] dark:border-[#2C2C2C]",
                   isCustomizing &&
-                    "bg-background border-[#DCDAD2] dark:border-[#2C2C2C]"
+                    "bg-background border-[#DCDAD2] dark:border-[#2C2C2C]",
                 )}
               >
                 <motion.div
@@ -117,7 +116,7 @@ const Item = ({
                     className={cn(
                       "flex space-x-3 p-0 items-center pl-2 md:pl-0",
                       isCustomizing &&
-                        "animate-[jiggle_0.3s_ease-in-out_infinite] transform-gpu pointer-events-none"
+                        "animate-[jiggle_0.3s_ease-in-out_infinite] transform-gpu pointer-events-none",
                     )}
                   >
                     <Icon />
@@ -180,11 +179,6 @@ export function MainMenu({ initialItems, onSelect }: Props) {
       disabled: false,
     },
     {
-      path: "/evidence-tasks",
-      name: t("sidebar.evidence"),
-      disabled: false,
-    },
-    {
       path: "/risk",
       name: t("sidebar.risk"),
       disabled: false,
@@ -213,7 +207,7 @@ export function MainMenu({ initialItems, onSelect }: Props) {
   const updateMenu = useAction(updateMenuAction);
 
   const hiddenItems = defaultItems.filter(
-    (item) => !items.some((i) => i.path === item.path)
+    (item) => !items.some((i) => i.path === item.path),
   );
 
   const onReorder = (
@@ -221,7 +215,7 @@ export function MainMenu({ initialItems, onSelect }: Props) {
       path: string;
       name: string;
       disabled: boolean;
-    }[]
+    }[],
   ) => {
     setItems(items);
   };
@@ -247,7 +241,7 @@ export function MainMenu({ initialItems, onSelect }: Props) {
     },
     {
       cancelOnMovement: 0,
-    }
+    },
   );
 
   const ref = useClickAway(() => {
@@ -311,7 +305,7 @@ export function MainMenu({ initialItems, onSelect }: Props) {
                     className={cn(
                       "border border-transparent w-[45px] h-[45px] flex items-center md:justify-center",
                       "hover:bg-secondary hover:border-[#DCDAD2] hover:dark:border-[#2C2C2C]",
-                      "bg-background border-[#DCDAD2] dark:border-[#2C2C2C]"
+                      "bg-background border-[#DCDAD2] dark:border-[#2C2C2C]",
                     )}
                   >
                     <div className="relative">

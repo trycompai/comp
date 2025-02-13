@@ -124,7 +124,7 @@ export function IntegrationsCard({
               {name}
             </CardTitle>
             {!active && (
-              <span className="text-muted-foreground text-[10px] px-3 py-1 rounded-full font-mono">
+              <span className="text-muted-foreground text-[10px] px-3 py-1 font-mono">
                 Coming soon
               </span>
             )}

@@ -8,6 +8,7 @@ import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
 import type { Metadata } from "next";
 import { SessionProvider } from "next-auth/react";
+import localFont from "next/font/local";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { Toaster } from "sonner";
 import { extractRouterConfig } from "uploadthing/server";
@@ -67,8 +68,14 @@ export const viewport = {
   ],
 };
 
-export const preferredRegion = ["fra1", "sfo1", "iad1"];
-export const maxDuration = 60;
+const font = localFont({
+  src: "/../../../public/fonts/GeneralSans-Variable.ttf",
+  display: "swap",
+  variable: "--font-general-sans",
+});
+
+export const preferredRegion = ["auto"];
+export const maxDuration = 5;
 
 if (env.NEXT_PUBLIC_POSTHOG_KEY && env.NEXT_PUBLIC_POSTHOG_HOST) {
   initializeServer({
@@ -91,7 +98,7 @@ export default async function Layout(props: {
     <html lang={locale} suppressHydrationWarning>
       <body
         className={cn(
-          `${GeistSans.variable} ${GeistMono.variable}`,
+          `${GeistMono.variable} ${font.variable}`,
           "whitespace-pre-line overscroll-none antialiased",
         )}
       >

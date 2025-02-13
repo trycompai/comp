@@ -1,4 +1,3 @@
-import { soc2Seed } from "@/actions/soc2-seed";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { db } from "@bubba/db";
 import { sendMagicLinkEmail } from "@bubba/email/lib/magic-link";
