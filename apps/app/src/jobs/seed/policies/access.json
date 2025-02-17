@@ -1,15 +1,7 @@
 {
   "type": "doc",
   "metadata": {
-    "id": "access-onboarding-and-termination-policy",
-    "slug": "access-onboarding-and-termination-policy",
-    "name": "Access Onboarding and Termination Policy",
-    "description": "This policy outlines the procedures for onboarding and offboarding users to technical infrastructure.",
-    "usedBy": {
-      "soc2": {
-        "CC6": ["CC6.1", "CC6.2", "CC6.3"]
-      }
-    }
+    "controls": ["CC6.1", "CC6.2", "CC6.4", "CC6.8"]
   },
   "content": [
     {
