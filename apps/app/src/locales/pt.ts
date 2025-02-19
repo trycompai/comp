@@ -179,7 +179,8 @@ export default {
     integrations: "Integrações",
     settings: "Configurações",
     evidence: "Tarefas de Evidência",
-    people: "Pessoas"
+    people: "Pessoas",
+    tests: "Testes na Nuvem"
   },
   auth: {
     title: "Automatize a conformidade com SOC 2, ISO 27001 e GDPR com IA.",
@@ -712,6 +713,52 @@ export default {
       replace: "Substituir seleção",
       insert: "Inserir abaixo",
       discard: "Descartar"
+    }
+  },
+  tests: {
+    name: "Testes na Nuvem",
+    title: "Testes na Nuvem",
+    actions: {
+      create: "Adicionar Teste na Nuvem",
+      clear: "Limpar filtros"
+    },
+    empty: {
+      no_tests: {
+        title: "Nenhum teste na nuvem ainda",
+        description: "Comece criando seu primeiro teste na nuvem."
+      },
+      no_results: {
+        title: "Nenhum resultado encontrado",
+        description: "Nenhum teste corresponde à sua pesquisa",
+        description_with_filters: "Tente ajustar seus filtros"
+      }
+    },
+    filters: {
+      search: "Pesquisar testes...",
+      role: "Filtrar por fornecedor"
+    },
+    register: {
+      title: "Adicionar Teste",
+      description: "Adicione um teste na nuvem à sua organização.",
+      email: {
+        label: "Endereço de e-mail",
+        placeholder: "Digite o endereço de e-mail"
+      },
+      role: {
+        label: "Função",
+        placeholder: "Selecione uma função"
+      },
+      name: {
+        label: "Nome",
+        placeholder: "Digite o nome"
+      },
+      department: {
+        label: "Departamento",
+        placeholder: "Selecione um departamento"
+      },
+      submit: "Adicionar Teste",
+      success: "Teste adicionado com sucesso",
+      error: "Falha ao adicionar teste"
     }
   }
 } as const;

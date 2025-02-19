@@ -179,7 +179,8 @@ export default {
     integrations: "Integraciones",
     settings: "Configuraciones",
     evidence: "Tareas de Evidencia",
-    people: "Personas"
+    people: "Personas",
+    tests: "Pruebas en la Nube"
   },
   auth: {
     title: "Automatiza el cumplimiento de SOC 2, ISO 27001 y GDPR con IA.",
@@ -712,6 +713,52 @@ export default {
       replace: "Reemplazar selección",
       insert: "Insertar abajo",
       discard: "Descartar"
+    }
+  },
+  tests: {
+    name: "Pruebas en la Nube",
+    title: "Pruebas en la Nube",
+    actions: {
+      create: "Agregar Prueba en la Nube",
+      clear: "Limpiar filtros"
+    },
+    empty: {
+      no_tests: {
+        title: "No hay pruebas en la nube aún",
+        description: "Comienza creando tu primera prueba en la nube."
+      },
+      no_results: {
+        title: "No se encontraron resultados",
+        description: "No hay pruebas que coincidan con tu búsqueda",
+        description_with_filters: "Intenta ajustar tus filtros"
+      }
+    },
+    filters: {
+      search: "Buscar pruebas...",
+      role: "Filtrar por proveedor"
+    },
+    register: {
+      title: "Agregar Prueba",
+      description: "Agrega una prueba en la nube a tu organización.",
+      email: {
+        label: "Dirección de correo electrónico",
+        placeholder: "Ingresa la dirección de correo electrónico"
+      },
+      role: {
+        label: "Rol",
+        placeholder: "Selecciona un rol"
+      },
+      name: {
+        label: "Nombre",
+        placeholder: "Ingresa el nombre"
+      },
+      department: {
+        label: "Departamento",
+        placeholder: "Selecciona un departamento"
+      },
+      submit: "Agregar Prueba",
+      success: "Prueba agregada con éxito",
+      error: "Error al agregar la prueba"
     }
   }
 } as const;

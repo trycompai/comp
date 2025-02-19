@@ -179,7 +179,8 @@ export default {
     integrations: "Intégrations",
     settings: "Paramètres",
     evidence: "Tâches de preuve",
-    people: "Personnes"
+    people: "Personnes",
+    tests: "Tests en nuage"
   },
   auth: {
     title: "Automatisez la conformité SOC 2, ISO 27001 et RGPD avec l'IA.",
@@ -712,6 +713,52 @@ export default {
       replace: "Remplacer la sélection",
       insert: "Insérer ci-dessous",
       discard: "Jeter"
+    }
+  },
+  tests: {
+    name: "Tests en nuage",
+    title: "Tests en nuage",
+    actions: {
+      create: "Ajouter un test en nuage",
+      clear: "Effacer les filtres"
+    },
+    empty: {
+      no_tests: {
+        title: "Aucun test en nuage pour l'instant",
+        description: "Commencez par créer votre premier test en nuage."
+      },
+      no_results: {
+        title: "Aucun résultat trouvé",
+        description: "Aucun test ne correspond à votre recherche",
+        description_with_filters: "Essayez d'ajuster vos filtres"
+      }
+    },
+    filters: {
+      search: "Rechercher des tests...",
+      role: "Filtrer par fournisseur"
+    },
+    register: {
+      title: "Ajouter un test",
+      description: "Ajoutez un test en nuage à votre organisation.",
+      email: {
+        label: "Adresse e-mail",
+        placeholder: "Entrez l'adresse e-mail"
+      },
+      role: {
+        label: "Rôle",
+        placeholder: "Sélectionnez un rôle"
+      },
+      name: {
+        label: "Nom",
+        placeholder: "Entrez le nom"
+      },
+      department: {
+        label: "Département",
+        placeholder: "Sélectionnez un département"
+      },
+      submit: "Ajouter un test",
+      success: "Test ajouté avec succès",
+      error: "Échec de l'ajout du test"
     }
   }
 } as const;

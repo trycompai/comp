@@ -179,7 +179,8 @@ export default {
     integrations: "Integrasjoner",
     settings: "Innstillinger",
     evidence: "Bevisoppgaver",
-    people: "Personer"
+    people: "Personer",
+    tests: "Skytester"
   },
   auth: {
     title: "Automatiser SOC 2, ISO 27001 og GDPR-overholdelse med AI.",
@@ -712,6 +713,52 @@ export default {
       replace: "Erstatt valg",
       insert: "Sett inn under",
       discard: "Forkast"
+    }
+  },
+  tests: {
+    name: "Skytester",
+    title: "Skytester",
+    actions: {
+      create: "Legg til skytest",
+      clear: "Fjern filtre"
+    },
+    empty: {
+      no_tests: {
+        title: "Ingen skytester ennå",
+        description: "Kom i gang med å opprette din første skytest."
+      },
+      no_results: {
+        title: "Ingen resultater funnet",
+        description: "Ingen tester samsvarer med søket ditt",
+        description_with_filters: "Prøv å justere filtrene dine"
+      }
+    },
+    filters: {
+      search: "Søk etter tester...",
+      role: "Filtrer etter leverandør"
+    },
+    register: {
+      title: "Legg til test",
+      description: "Legg til en skytest til organisasjonen din.",
+      email: {
+        label: "E-postadresse",
+        placeholder: "Skriv inn e-postadresse"
+      },
+      role: {
+        label: "Rolle",
+        placeholder: "Velg en rolle"
+      },
+      name: {
+        label: "Navn",
+        placeholder: "Skriv inn navn"
+      },
+      department: {
+        label: "Avdeling",
+        placeholder: "Velg en avdeling"
+      },
+      submit: "Legg til test",
+      success: "Testen ble lagt til med suksess",
+      error: "Kunne ikke legge til testen"
     }
   }
 } as const;
