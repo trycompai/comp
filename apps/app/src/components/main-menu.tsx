@@ -28,6 +28,7 @@ const icons = {
   "/vendors": () => <Icons.Vendors size={22} />,
   "/integrations": () => <Icons.Apps size={22} />,
   "/people": () => <Icons.Peolple size={22} />,
+  "/tests": () => <Icons.CloudSync size={22} />,
 };
 
 interface ItemProps {
@@ -181,6 +182,11 @@ export function MainMenu({ initialItems, onSelect }: Props) {
     {
       path: "/risk",
       name: t("sidebar.risk"),
+      disabled: false,
+    },
+    {
+      path: "/tests",
+      name: t("sidebar.tests"),
       disabled: false,
     },
     {

@@ -16,6 +16,7 @@ import {
   MdChevronLeft,
   MdChevronRight,
   MdClose,
+  MdCloudSync,
   MdDescription,
   MdDocumentScanner,
   MdDownloading,
@@ -731,4 +732,5 @@ export const Icons = {
   Files: MdOutlineInventory2,
   Vendors: MdOutlineStorefront,
   Evidence: MdOutlineFactCheck,
+  CloudSync: MdCloudSync,
 };

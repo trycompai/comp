@@ -182,6 +182,7 @@ export default {
     settings: "Settings",
     evidence: "Evidence Tasks",
     people: "People",
+    tests: "Cloud Tests",
   },
   sub_pages: {
     risk: {
@@ -580,6 +581,52 @@ export default {
     },
     billing: {
       title: "Billing",
+    },
+  },
+  tests: {
+    name: "Cloud Tests",
+    title: "Cloud Tests",
+    actions: {
+      create: "Add Cloud Test",
+      clear: "Clear filters",
+    },
+    empty: {
+      no_tests: {
+        title: "No cloud tests yet",
+        description: "Get started by creating your first cloud test.",
+      },
+      no_results: {
+        title: "No results found",
+        description: "No tests match your search",
+        description_with_filters: "Try adjusting your filters",
+      },
+    },
+    filters: {
+      search: "Search tests...",
+      role: "Filter by vendor",
+    },
+    register: {
+      title: "Add Test",
+      description: "Add an cloud test to your organization.",
+      email: {
+        label: "Email address",
+        placeholder: "Enter email address",
+      },
+      role: {
+        label: "Role",
+        placeholder: "Select a role",
+      },
+      name: {
+        label: "Name",
+        placeholder: "Enter name",
+      },
+      department: {
+        label: "Department",
+        placeholder: "Select a department",
+      },
+      submit: "Add Test",
+      success: "Test added successfully",
+      error: "Failed to add test",
     },
   },
   user_menu: {
