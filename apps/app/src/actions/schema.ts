@@ -282,3 +282,13 @@ export const createEmployeeSchema = z.object({
   externalEmployeeId: z.string().optional(),
   isActive: z.boolean().default(true),
 });
+
+export const registerTestSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email address"),
+  department: z.nativeEnum(Departments, {
+    required_error: "Department is required",
+  }),
+  externalEmployeeId: z.string().optional(),
+  isActive: z.boolean().default(true),
+});

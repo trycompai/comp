@@ -7,7 +7,7 @@ import {
 } from "@/components/tables/tests/empty-states";
 import { FilterToolbar } from "@/components/tables/tests/filter-toolbar";
 import { Loading } from "@/components/tables/tests/loading";
-import { useEmployees } from "../hooks/useEmployees";
+import { useEmployees } from "../../people/hooks/useEmployees";
 import { useSearchParams } from "next/navigation";
 import type { PersonType } from "@/components/tables/tests/columns";
 import { TestsListSkeleton } from "./TestsListSkeleton";

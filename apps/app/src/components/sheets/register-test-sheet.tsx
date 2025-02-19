@@ -35,9 +35,10 @@ const DEPARTMENTS: Departments[] = [
   "qms",
 ];
 
-export function InviteUserSheet() {
+
+export function RegisterTestSheet() {
   const t = useI18n();
-  const [open, setOpen] = useQueryState("invite-user-sheet");
+  const [open, setOpen] = useQueryState("register-test-sheet");
   const [email, setEmail] = useState("");
   const [department, setDepartment] = useState<Departments>("none");
   const [name, setName] = useState("");
@@ -53,7 +54,7 @@ export function InviteUserSheet() {
         department,
       });
 
-      toast.success(t("people.invite.success"));
+      toast.success(t("tests.register.success"));
       setOpen(null);
     } catch (error) {
       toast.error(t("errors.unexpected"));
@@ -68,18 +69,18 @@ export function InviteUserSheet() {
       <SheetContent>
         <form onSubmit={handleSubmit}>
           <SheetHeader>
-            <SheetTitle>{t("people.invite.title")}</SheetTitle>
+            <SheetTitle>{t("tests.register.title")}</SheetTitle>
             <SheetDescription>
-              {t("people.invite.description")}
+              {t("tests.register.description")}
             </SheetDescription>
           </SheetHeader>
 
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="name">{t("people.invite.name.label")}</Label>
+              <Label htmlFor="name">{t("tests.register.name.label")}</Label>
               <Input
                 id="name"
-                placeholder={t("people.invite.name.placeholder")}
+                placeholder={t("tests.register.name.placeholder")}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
@@ -87,11 +88,11 @@ export function InviteUserSheet() {
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="email">{t("people.invite.email.label")}</Label>
+              <Label htmlFor="email">{t("tests.register.email.label")}</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder={t("people.invite.email.placeholder")}
+                placeholder={t("tests.register.email.placeholder")}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -100,7 +101,7 @@ export function InviteUserSheet() {
 
             <div className="grid gap-2">
               <Label htmlFor="department">
-                {t("people.invite.department.label")}
+                {t("tests.register.department.label")}
               </Label>
               <Select
                 value={department}
@@ -108,7 +109,7 @@ export function InviteUserSheet() {
               >
                 <SelectTrigger id="department">
                   <SelectValue
-                    placeholder={t("people.invite.department.placeholder")}
+                    placeholder={t("tests.register.department.placeholder")}
                   />
                 </SelectTrigger>
                 <SelectContent>
@@ -129,8 +130,8 @@ export function InviteUserSheet() {
               isLoading={isMutating}
             >
               {isMutating
-                ? t("people.invite.submit")
-                : t("people.invite.submit")}
+                ? t("tests.register.submit")
+                : t("tests.register.submit")}
             </Button>
           </SheetFooter>
         </form>

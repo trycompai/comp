@@ -2,9 +2,9 @@
 
 import { db } from "@bubba/db";
 import { authActionClient } from "@/actions/safe-action";
-import { employeesInputSchema, appErrors } from "../types";
+import { employeesInputSchema, appErrors } from "../../people/types";
 
-export const getEmployees = authActionClient
+export const getTests = authActionClient
   .schema(employeesInputSchema)
   .metadata({
     name: "get-employees",

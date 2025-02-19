@@ -4,17 +4,17 @@ import { useCallback, useState } from "react";
 import useSWR from "swr";
 import { useSearchParams } from "next/navigation";
 
-import { getEmployees } from "../actions/get-tests";
+import { getTests } from "../actions/get-tests";
 
-import type { EmployeesResponse, AppError, EmployeesInput } from "../types";
-import { createEmployeeAction } from "@/actions/people/create-employee-action";
+import type { TestsResponse, AppError, TestsInput } from "../types";
+import { createTestAction } from "@/actions/tests/register-test-action";
 import type { Departments } from "@bubba/db";
 
 /** Fetcher function, same as before */
-async function fetchEmployees(
-  input: EmployeesInput
-): Promise<EmployeesResponse> {
-  const result = await getEmployees(input);
+async function fetchTests(
+  input: TestsInput
+): Promise<TestsResponse> {
+  const result = await getTests(input);
 
   if (!result) {
     const error: AppError = {
@@ -32,10 +32,10 @@ async function fetchEmployees(
     throw error;
   }
 
-  return result.data?.data as EmployeesResponse;
+  return result.data?.data as TestsResponse;
 }
 
-export function useEmployees() {
+export function useTests() {
   const searchParams = useSearchParams();
   const search = searchParams.get("search") || undefined;
   const role = searchParams.get("role") || undefined;
@@ -47,10 +47,10 @@ export function useEmployees() {
     data,
     error,
     isLoading,
-    mutate: revalidateEmployees,
-  } = useSWR<EmployeesResponse, AppError>(
-    ["employees", { search, role, page, per_page }],
-    () => fetchEmployees({ search, role, page, per_page }),
+    mutate: revalidateTests,
+  } = useSWR<TestsResponse, AppError>(
+    ["tests", { search, role, page, per_page }],
+    () => fetchTests({ search, role, page, per_page }),
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
@@ -64,8 +64,8 @@ export function useEmployees() {
    * Calls the server action to create an employee, then
    * revalidates the employees list if successful.
    */
-  const addEmployee = useCallback(
-    async (employeeData: {
+  const addTest = useCallback(
+    async (testData: {
       name: string;
       email: string;
       department?: string;
@@ -74,12 +74,12 @@ export function useEmployees() {
     }) => {
       setIsMutating(true);
       try {
-        const result = await createEmployeeAction({
-          name: employeeData.name,
-          email: employeeData.email,
-          department: employeeData.department as Departments,
-          externalEmployeeId: employeeData.externalEmployeeId,
-          isActive: employeeData.isActive,
+        const result = await createTestAction({
+          name: testData.name,
+          email: testData.email,
+          department: testData.department as Departments,
+          externalEmployeeId: testData.externalEmployeeId,
+          isActive: testData.isActive,
         });
 
         if (!result) {
@@ -92,9 +92,9 @@ export function useEmployees() {
 
         // If successful, revalidate the SWR data so the new employee appears.
         // (You could do an optimistic update here if desired.)
-        await revalidateEmployees();
+        await revalidateTests();
       } catch (err) {
-        console.error("createEmployeeAction failed:", err);
+        console.error("createTestAction failed:", err);
         // Surface the error upward if you like:
         throw err;
       } finally {
@@ -113,6 +113,6 @@ export function useEmployees() {
     /** Expose the revalidation if needed directly */
     revalidateEmployees,
     /** Expose the create employee action */
-    addEmployee,
+    addTest,
   };
 }

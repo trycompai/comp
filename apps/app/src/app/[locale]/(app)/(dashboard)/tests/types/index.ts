@@ -1,25 +1,25 @@
 import { z } from "zod";
 import type { Role } from "@bubba/db";
 
-export const employeeSchema = z.object({
+export const testSchema = z.object({
   id: z.string(),
   name: z.string(),
   email: z.string(),
   department: z.string().nullable(),
 });
 
-export const employeesInputSchema = z.object({
+export const testsInputSchema = z.object({
   search: z.string().optional(),
   role: z.string().optional(),
   page: z.number().default(1),
   per_page: z.number().default(10),
 });
 
-export type Employee = z.infer<typeof employeeSchema>;
-export type EmployeesInput = z.infer<typeof employeesInputSchema>;
+export type Test = z.infer<typeof testSchema>;
+export type TestsInput = z.infer<typeof testsInputSchema>;
 
-export interface EmployeesResponse {
-  employees: Employee[];
+export interface TestsResponse {
+  tests: Test[];
   total: number;
 }
 
