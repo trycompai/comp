@@ -6,7 +6,7 @@ import { cn } from "@bubba/ui/cn";
 import { Form, FormControl, FormField, FormItem } from "@bubba/ui/form";
 import { Input } from "@bubba/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, Mail } from "lucide-react";
+import { ArrowRight, Loader2, Mail } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -88,13 +88,14 @@ export function OtpSignIn({ className }: Props) {
           <Button
             type="submit"
             className="flex h-[40px] w-full space-x-2 px-6 py-4 font-medium active:scale-[0.98]"
+            disabled={isLoading}
           >
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <>
-                <Mail className="h-4 w-4" />
                 <span>{t("auth.email.button")}</span>
+                <ArrowRight className="h-4 w-4" />
               </>
             )}
           </Button>

@@ -12,6 +12,12 @@ export const auth = betterAuth({
   }),
   user: {
     modelName: "PortalUser",
+    additionalFields: {
+      organizationId: {
+        type: "string",
+        required: false,
+      }
+    },
   },
   session: {
     modelName: "PortalSession",

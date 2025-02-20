@@ -18,6 +18,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@bubba/ui/tooltip";
+import { useOrganizationControlRequirements } from "@/app/[locale]/(app)/(dashboard)/controls/[id]/hooks/useOrganizationControlRequirements";
 
 export type OrganizationControlType = {
   code: string;

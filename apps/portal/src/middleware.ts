@@ -36,6 +36,17 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  if (session?.user?.organizationId && newUrl.pathname === "/unauthorized") {
+    const url = new URL("/", request.url);
+
+    return NextResponse.redirect(url);
+  }
+
+  if (session && !session.user.organizationId && newUrl.pathname !== "/unauthorized") {
+    const url = new URL("/unauthorized", request.url);
+
+    return NextResponse.redirect(url);
+  }
 
   return response;
 }

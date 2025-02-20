@@ -110,7 +110,7 @@ export function MagicLinkSignIn({ className }: Props) {
 
           <Button
             type="submit"
-            className="flex h-[40px] w-full space-x-2 bg-primary px-6 py-4 font-medium text-secondary active:scale-[0.98]"
+            className="flex h-[40px] w-full space-x-2 px-6 py-4 font-medium active:scale-[0.98]"
           >
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />

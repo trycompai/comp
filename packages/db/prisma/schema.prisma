@@ -143,6 +143,7 @@ model Organization {
   members                  OrganizationMember[]
   OrganizationPolicy       OrganizationPolicy[]
   OrganizationCategory     OrganizationCategory[]
+  PortalUser               PortalUser[]
 
   @@index([stripeCustomerId])
 }
@@ -1016,6 +1017,8 @@ model PortalUser {
   sessions      PortalSession[]
   accounts      PortalAccount[]
   employees     Employee[]
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@unique([email])
   @@map("portal_user")

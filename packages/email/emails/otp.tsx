@@ -60,16 +60,25 @@ export const OTPVerificationEmail = ({ email, otp }: Props) => {
             </Heading>
 
             <Text className="text-[14px] leading-[24px] text-[#121212]">
-              Your one-time password for Comp AI
+              Hey there,
+              <br />
+              <br />
+              Your one-time password for Comp AI is: {otp}. Please do not share
+              this code with anyone.
             </Text>
 
-            <Text className="text-[14px] leading-[24px] break-all">{otp}</Text>
+            <Text className="text-[14px] leading-[24px] text-[#121212]">
+              If you did not request this password, you can safely ignore this
+              email. For support, please reach out to your IT / Security
+              department.
+            </Text>
 
             <br />
             <Section>
               <Text className="text-[12px] leading-[24px] text-[#666666]">
-                this login link was intended for{" "}
-                <span className="text-[#121212] ">{email}</span>.{" "}
+                This one time password was intended for{" "}
+                <span className="text-[#121212]">{email}</span> and expires in
+                10 minutes.
               </Text>
             </Section>
 

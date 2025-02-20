@@ -21,17 +21,15 @@ export default function Home() {
         <div className="flex flex-col items-center text-center space-y-6">
           <Logo />
 
-          <h1 className="max-w-[800px] text-4xl md:text-5xl font-semibold leading-tight tracking-tighter lg:leading-[1.1] mx-auto">
-            <Balancer>
-              Open Source Automation For SOC 2, ISO 27001 and GDPR
-            </Balancer>
+          <h1 className="max-w-[900px] text-4xl md:text-5xl font-semibold leading-tight tracking-tighter lg:leading-[1.1] mx-auto">
+            <Balancer>Get SOC 2, ISO 27001 and GDPR compliant</Balancer>
           </h1>
 
           <p className="text-lg md:text-xl font-light text-muted-foreground mt-6 mx-auto max-w-[800px]">
             <Balancer>
-              We're launching the first open-source compliance automation
-              platform that does everything you need to achieve and maintain
-              compliance with frameworks like SOC 2, ISO 27001, GDPR and more.
+              The open source compliance automation platform that does
+              everything you need to get compliant, fast. Open source
+              alternative to Drata & Vanta.
             </Balancer>
           </p>
 
