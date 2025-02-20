@@ -1,6 +1,9 @@
+import EmployeePortal from "@/app/components/overview/portal";
+import { auth } from "@/app/lib/auth";
 import { getI18n } from "@/app/locales/server";
 import type { Metadata } from "next";
 import { setStaticParamsLocale } from "next-international/server";
+import { headers } from "next/headers";
 
 export default async function Portal({
   params,
@@ -10,11 +13,11 @@ export default async function Portal({
   const { locale } = await params;
   setStaticParamsLocale(locale);
 
-  return (
-    <div>
-      <h1>Employee Portal</h1>
-    </div>
-  );
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  return <EmployeePortal user={session?.user ?? null} />;
 }
 
 export async function generateMetadata({
