@@ -738,8 +738,8 @@ export default {
       role: "Filtrar por proveedor"
     },
     register: {
-      title: "Agregar Prueba",
-      description: "Agrega una prueba en la nube a tu organización.",
+      title: "Agregar prueba en la nube",
+      description: "Configurar una nueva prueba de cumplimiento en la nube.",
       email: {
         label: "Dirección de correo electrónico",
         placeholder: "Ingresa la dirección de correo electrónico"
@@ -756,9 +756,37 @@ export default {
         label: "Departamento",
         placeholder: "Selecciona un departamento"
       },
-      submit: "Agregar Prueba",
-      success: "Prueba agregada con éxito",
-      error: "Error al agregar la prueba"
+      submit: "Crear prueba",
+      success: "Prueba creada con éxito",
+      error: "Error al agregar la prueba",
+      invalid_json: "Se proporcionó una configuración JSON no válida",
+      title_field: {
+        label: "Título de la prueba",
+        placeholder: "Ingrese el título de la prueba"
+      },
+      description_field: {
+        label: "Descripción",
+        placeholder: "Ingrese la descripción de la prueba"
+      },
+      provider: {
+        label: "Proveedor de nube",
+        placeholder: "Seleccione el proveedor de nube"
+      },
+      config: {
+        label: "Configuración de la prueba",
+        placeholder: "Ingrese la configuración JSON para la prueba"
+      },
+      auth_config: {
+        label: "Configuración de autenticación",
+        placeholder: "Ingrese la configuración JSON de autenticación"
+      }
+    },
+    table: {
+      title: "Título",
+      provider: "Proveedor",
+      status: "Estado",
+      lastRun: "Última ejecución",
+      no_results: "No se encontraron resultados"
     }
   }
 } as const;

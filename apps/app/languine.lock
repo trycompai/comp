@@ -384,19 +384,26 @@ files:
     tests.empty.no_results.description_with_filters: 2b70f835ed5a08e817ec9388ce25b41a
     tests.filters.search: ca55cc711b6e95604114b7ffdceb1e0e
     tests.filters.role: fe488cfbecfce1ba6ef7dda55e893b97
-    tests.register.title: 7059e77e8dffda9239c9dbf646341419
-    tests.register.description: e2065d4750ff6fb314374ec2b2656edf
-    tests.register.email.label: b357b524e740bc85b9790a0712d84a30
-    tests.register.email.placeholder: 0a7e62bed14b39cf005db653e04fb3b3
-    tests.register.role.label: bbbabdbe1b262f75d99d62880b953be1
-    tests.register.role.placeholder: 426f18770bd593d4e85931b6fef5cf56
-    tests.register.name.label: 49ee3087348e8d44e1feda1917443987
-    tests.register.name.placeholder: eae6805dee70fead7144e4fdaf9b9471
-    tests.register.department.label: 1d17cb9923b99f823da9f5a16dc460e5
-    tests.register.department.placeholder: aa4fd23252b4fcf84f40febb6271bf2b
-    tests.register.submit: 7059e77e8dffda9239c9dbf646341419
-    tests.register.success: 129a443ea148ca8331b9b74a76a09159
-    tests.register.error: 71bfccb69d71f88af353b28c0d782df5
+    tests.register.title: 348a2d59fd6abf9c9ba4e1ce664f6fc5
+    tests.register.description: 243d854430dae18b18e891b722bd0baf
+    tests.register.submit: c2c007afa9a53bf9d8074954247a01e3
+    tests.register.success: 10f2c6e0b8f85fe932302e8df155abba
+    tests.register.invalid_json: 7d7d080d041e180f8742b65d0df57224
+    tests.register.title_field.label: cc12f4fcabfb7564ef721f04a37bae6f
+    tests.register.title_field.placeholder: 8978c8715f7381e3007038001f13f3cd
+    tests.register.description_field.label: b5a7adde1af5c87d7fd797b6245c2a39
+    tests.register.description_field.placeholder: 8c04a8ab1664bdfb55cfc54d6f6c8a96
+    tests.register.provider.label: d8613296184195d6eec8552a09204d36
+    tests.register.provider.placeholder: 1ae27ac8ad91f0165c176c34dd34e81c
+    tests.register.config.label: 540caa299a719ee320cf416ffae7adca
+    tests.register.config.placeholder: cf8ec1376b10fe5a13fa36ebdcd497a7
+    tests.register.auth_config.label: 91f9d6a6e1f585d434d13e9f581d347b
+    tests.register.auth_config.placeholder: 6909c5abd5f0a9e9a96b4a0233722cd4
+    tests.table.title: b78a3223503896721cca1303f776159b
+    tests.table.provider: 27703c8f150ac4bb0a3a83a7857353af
+    tests.table.status: ec53a8c4f07baed5d8825072c89799be
+    tests.table.lastRun: 05a3a24340b7b9cc8d4e08f0ef4f4dd9
+    tests.table.no_results: e576c23d915755d83e2d1f47bd9f6c22
     user_menu.theme: d721757161f7f70c5b0949fdb6ec2c30
     user_menu.language: 4994a8ffeba4ac3140beb89e8d41f174
     user_menu.sign_out: c87aacf5673fada1108c9f809d354311

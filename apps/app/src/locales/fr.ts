@@ -738,8 +738,8 @@ export default {
       role: "Filtrer par fournisseur"
     },
     register: {
-      title: "Ajouter un test",
-      description: "Ajoutez un test en nuage à votre organisation.",
+      title: "Ajouter un test Cloud",
+      description: "Configurer un nouveau test de conformité cloud.",
       email: {
         label: "Adresse e-mail",
         placeholder: "Entrez l'adresse e-mail"
@@ -756,9 +756,37 @@ export default {
         label: "Département",
         placeholder: "Sélectionnez un département"
       },
-      submit: "Ajouter un test",
-      success: "Test ajouté avec succès",
-      error: "Échec de l'ajout du test"
+      submit: "Créer un test",
+      success: "Test créé avec succès",
+      error: "Échec de l'ajout du test",
+      invalid_json: "Configuration JSON invalide fournie",
+      title_field: {
+        label: "Titre du test",
+        placeholder: "Entrez le titre du test"
+      },
+      description_field: {
+        label: "Description",
+        placeholder: "Entrez la description du test"
+      },
+      provider: {
+        label: "Fournisseur Cloud",
+        placeholder: "Sélectionnez le fournisseur cloud"
+      },
+      config: {
+        label: "Configuration du test",
+        placeholder: "Entrez la configuration JSON pour le test"
+      },
+      auth_config: {
+        label: "Configuration d'authentification",
+        placeholder: "Entrez la configuration d'authentification JSON"
+      }
+    },
+    table: {
+      title: "Titre",
+      provider: "Fournisseur",
+      status: "Statut",
+      lastRun: "Dernière exécution",
+      no_results: "Aucun résultat trouvé"
     }
   }
 } as const;

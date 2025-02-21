@@ -738,8 +738,8 @@ export default {
       role: "Filtrar por fornecedor"
     },
     register: {
-      title: "Adicionar Teste",
-      description: "Adicione um teste na nuvem à sua organização.",
+      title: "Adicionar Teste na Nuvem",
+      description: "Configure um novo teste de conformidade na nuvem.",
       email: {
         label: "Endereço de e-mail",
         placeholder: "Digite o endereço de e-mail"
@@ -756,9 +756,37 @@ export default {
         label: "Departamento",
         placeholder: "Selecione um departamento"
       },
-      submit: "Adicionar Teste",
-      success: "Teste adicionado com sucesso",
-      error: "Falha ao adicionar teste"
+      submit: "Criar Teste",
+      success: "Teste criado com sucesso",
+      error: "Falha ao adicionar teste",
+      invalid_json: "Configuração JSON inválida fornecida",
+      title_field: {
+        label: "Título do Teste",
+        placeholder: "Digite o título do teste"
+      },
+      description_field: {
+        label: "Descrição",
+        placeholder: "Digite a descrição do teste"
+      },
+      provider: {
+        label: "Provedor de Nuvem",
+        placeholder: "Selecione o provedor de nuvem"
+      },
+      config: {
+        label: "Configuração do Teste",
+        placeholder: "Digite a configuração JSON para o teste"
+      },
+      auth_config: {
+        label: "Configuração de Autenticação",
+        placeholder: "Digite a configuração JSON de autenticação"
+      }
+    },
+    table: {
+      title: "Título",
+      provider: "Provedor",
+      status: "Status",
+      lastRun: "Última Execução",
+      no_results: "Nenhum resultado encontrado"
     }
   }
 } as const;

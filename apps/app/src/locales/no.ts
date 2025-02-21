@@ -738,8 +738,8 @@ export default {
       role: "Filtrer etter leverandør"
     },
     register: {
-      title: "Legg til test",
-      description: "Legg til en skytest til organisasjonen din.",
+      title: "Legg til skytest",
+      description: "Konfigurer en ny skyoverholdelsestest.",
       email: {
         label: "E-postadresse",
         placeholder: "Skriv inn e-postadresse"
@@ -756,9 +756,37 @@ export default {
         label: "Avdeling",
         placeholder: "Velg en avdeling"
       },
-      submit: "Legg til test",
-      success: "Testen ble lagt til med suksess",
-      error: "Kunne ikke legge til testen"
+      submit: "Opprett test",
+      success: "Test opprettet vellykket",
+      error: "Kunne ikke legge til testen",
+      invalid_json: "Ugyldig JSON-konfigurasjon gitt",
+      title_field: {
+        label: "Testtittel",
+        placeholder: "Skriv inn testtittel"
+      },
+      description_field: {
+        label: "Beskrivelse",
+        placeholder: "Skriv inn testbeskrivelse"
+      },
+      provider: {
+        label: "Skyleverandør",
+        placeholder: "Velg skyleverandør"
+      },
+      config: {
+        label: "Testkonfigurasjon",
+        placeholder: "Skriv inn JSON-konfigurasjon for testen"
+      },
+      auth_config: {
+        label: "Autentiseringskonfigurasjon",
+        placeholder: "Skriv inn JSON-autentiseringskonfigurasjon"
+      }
+    },
+    table: {
+      title: "Tittel",
+      provider: "Leverandør",
+      status: "Status",
+      lastRun: "Siste kjøring",
+      no_results: "Ingen resultater funnet"
     }
   }
 } as const;
