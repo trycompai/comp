@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { Role } from "@bubba/db";
+import type { CloudProvider, TestRunStatus } from "@prisma/client";
 
 export const testSchema = z.object({
   id: z.string(),
@@ -23,10 +24,23 @@ export interface TestsResponse {
   total: number;
 }
 
-export type AppError = {
-  code: "UNAUTHORIZED" | "UNEXPECTED_ERROR";
+export interface CloudTest {
+  id: string;
+  title: string;
+  description: string | null;
+  provider: CloudProvider;
+  status: string;
+  lastRun: Date | null;
+  lastRunStatus: TestRunStatus | null;
+  lastRunResult: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface AppError {
+  code: string;
   message: string;
-};
+}
 
 export const appErrors = {
   UNAUTHORIZED: {

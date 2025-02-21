@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { getServerColumnHeaders } from "@/components/tables/people/server-columns";
+import { getServerColumnHeaders } from "@/components/tables/tests/server-columns";
 import { getI18n } from "@/locales/server";
 import type { Metadata } from "next";
 import { setStaticParamsLocale } from "next-international/server";

@@ -1,32 +1,41 @@
 import { z } from "zod";
 
-export const employeeTaskSchema = z.object({
-  id: z.string(),
-  status: z.enum(["assigned", "in_progress", "completed", "overdue"]),
-  requiredTask: z.object({
-    id: z.string(),
-    name: z.string(),
-    description: z.string().nullable(),
-  }),
-});
+export const cloudProviderSchema = z.enum(["AWS", "AZURE", "GCP"]);
+export const testRunStatusSchema = z.enum(["PENDING", "IN_PROGRESS", "COMPLETED", "FAILED"]);
 
-export const employeeDetailsSchema = z.object({
+export const cloudTestSchema = z.object({
   id: z.string(),
-  name: z.string(),
-  email: z.string(),
-  department: z.string(),
+  title: z.string(),
+  description: z.string().nullable(),
+  provider: cloudProviderSchema,
+  status: z.string().default("draft"),
+  config: z.record(z.any()),
+  authConfig: z.record(z.any()),
+  organizationId: z.string(),
+  createdById: z.string(),
+  updatedById: z.string(),
   createdAt: z.date(),
-  isActive: z.boolean(),
-  employeeTasks: z.array(employeeTaskSchema),
+  updatedAt: z.date(),
 });
 
-export const employeeDetailsInputSchema = z.object({
-  employeeId: z.string(),
+export const cloudTestRunSchema = z.object({
+  id: z.string(),
+  status: testRunStatusSchema,
+  result: z.string().nullable(), // PASS, FAIL, ERROR
+  resultDetails: z.record(z.any()).nullable(),
+  startedAt: z.date().nullable(),
+  completedAt: z.date().nullable(),
+  cloudTestId: z.string(),
+  executedById: z.string(),
+  organizationId: z.string(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
 });
 
-export type EmployeeTask = z.infer<typeof employeeTaskSchema>;
-export type EmployeeDetails = z.infer<typeof employeeDetailsSchema>;
-export type EmployeeDetailsInput = z.infer<typeof employeeDetailsInputSchema>;
+export type CloudProvider = z.infer<typeof cloudProviderSchema>;
+export type TestRunStatus = z.infer<typeof testRunStatusSchema>;
+export type CloudTest = z.infer<typeof cloudTestSchema>;
+export type CloudTestRun = z.infer<typeof cloudTestRunSchema>;
 
 export type AppError = {
   code: "NOT_FOUND" | "UNAUTHORIZED" | "UNEXPECTED_ERROR";
@@ -36,11 +45,11 @@ export type AppError = {
 export const appErrors = {
   NOT_FOUND: {
     code: "NOT_FOUND" as const,
-    message: "Employee not found",
+    message: "Test not found",
   },
   UNAUTHORIZED: {
     code: "UNAUTHORIZED" as const,
-    message: "You are not authorized to view this employee",
+    message: "You are not authorized to view this test",
   },
   UNEXPECTED_ERROR: {
     code: "UNEXPECTED_ERROR" as const,

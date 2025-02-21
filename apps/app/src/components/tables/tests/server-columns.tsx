@@ -4,8 +4,9 @@ export async function getServerColumnHeaders() {
   const t = await getI18n();
 
   return {
-    name: t("people.table.name"),
-    email: t("people.table.email"),
-    department: t("people.table.department"),
+    title: t("tests.table.title"),
+    provider: t("tests.table.provider"),
+    status: t("tests.table.status"),
+    lastRun: t("tests.table.lastRun"),
   };
 }

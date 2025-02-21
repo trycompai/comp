@@ -606,27 +606,39 @@ export default {
       role: "Filter by vendor",
     },
     register: {
-      title: "Add Test",
-      description: "Add an cloud test to your organization.",
-      email: {
-        label: "Email address",
-        placeholder: "Enter email address",
+      title: "Add Cloud Test",
+      description: "Configure a new cloud compliance test.",
+      submit: "Create Test",
+      success: "Test created successfully",
+      invalid_json: "Invalid JSON configuration provided",
+      
+      title_field: {
+        label: "Test Title",
+        placeholder: "Enter test title"
       },
-      role: {
-        label: "Role",
-        placeholder: "Select a role",
+      description_field: {
+        label: "Description",
+        placeholder: "Enter test description"
       },
-      name: {
-        label: "Name",
-        placeholder: "Enter name",
+      provider: {
+        label: "Cloud Provider",
+        placeholder: "Select cloud provider"
       },
-      department: {
-        label: "Department",
-        placeholder: "Select a department",
+      config: {
+        label: "Test Configuration",
+        placeholder: "Enter JSON configuration for the test"
       },
-      submit: "Add Test",
-      success: "Test added successfully",
-      error: "Failed to add test",
+      auth_config: {
+        label: "Authentication Configuration", 
+        placeholder: "Enter JSON authentication configuration"
+      }
+    },
+    table: {
+      title: "Title",
+      provider: "Provider",
+      status: "Status",
+      lastRun: "Last Run",
+      no_results: "No results found",
     },
   },
   user_menu: {

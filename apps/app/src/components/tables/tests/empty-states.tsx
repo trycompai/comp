@@ -43,7 +43,7 @@ export function NoResults({ hasFilters }: Props) {
 
 export function NoTests() {
   const t = useI18n();
-  const [open, setOpen] = useQueryState("invite-user-sheet");
+  const [open, setOpen] = useQueryState("register-test-sheet");
 
   return (
     <div className="mt-24 absolute w-full top-0 left-0 flex items-center justify-center z-20">

@@ -1,6 +1,5 @@
 "use client";
 
-import { useEmployees } from "@/app/[locale]/(app)/(dashboard)/people/hooks/useEmployees";
 import { useI18n } from "@/locales/client";
 import { Button } from "@bubba/ui/button";
 import { Input } from "@bubba/ui/input";
@@ -20,44 +19,48 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@bubba/ui/sheet";
-import type { Departments } from "@prisma/client";
+import { Textarea } from "@bubba/ui/textarea";
+import type { CloudProvider } from "@prisma/client";
 import { useQueryState } from "nuqs";
 import { useState } from "react";
 import { toast } from "sonner";
 
-const DEPARTMENTS: Departments[] = [
-  "none",
-  "admin",
-  "gov",
-  "hr",
-  "it",
-  "itsm",
-  "qms",
-];
-
+const PROVIDERS: CloudProvider[] = ["AWS", "AZURE", "GCP"];
 
 export function RegisterTestSheet() {
   const t = useI18n();
   const [open, setOpen] = useQueryState("register-test-sheet");
-  const [email, setEmail] = useState("");
-  const [department, setDepartment] = useState<Departments>("none");
-  const [name, setName] = useState("");
-  const { addEmployee, isMutating } = useEmployees();
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [provider, setProvider] = useState<CloudProvider>("AWS");
+  const [config, setConfig] = useState("{}");
+  const [authConfig, setAuthConfig] = useState("{}");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
-      await addEmployee({
-        name,
-        email: email.trim(),
-        department,
-      });
+      // Validate JSON inputs
+      const configJson = JSON.parse(config);
+      const authConfigJson = JSON.parse(authConfig);
+
+      // TODO: Add your createTest mutation here
+      // await createTest({
+      //   title,
+      //   description,
+      //   provider,
+      //   config: configJson,
+      //   authConfig: authConfigJson,
+      // });
 
       toast.success(t("tests.register.success"));
       setOpen(null);
     } catch (error) {
-      toast.error(t("errors.unexpected"));
+      if (error instanceof SyntaxError) {
+        toast.error(t("tests.register.invalid_json"));
+      } else {
+        toast.error(t("errors.unexpected"));
+      }
     }
   };
 
@@ -77,61 +80,78 @@ export function RegisterTestSheet() {
 
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="name">{t("tests.register.name.label")}</Label>
+              <Label htmlFor="title">{t("tests.register.title_field.label")}</Label>
               <Input
-                id="name"
-                placeholder={t("tests.register.name.placeholder")}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                id="title"
+                placeholder={t("tests.register.title_field.placeholder")}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
                 required
               />
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="email">{t("tests.register.email.label")}</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder={t("tests.register.email.placeholder")}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
+              <Label htmlFor="description">{t("tests.register.description_field.label")}</Label>
+              <Textarea
+                id="description"
+                placeholder={t("tests.register.description_field.placeholder")}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
               />
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="department">
-                {t("tests.register.department.label")}
+              <Label htmlFor="provider">
+                {t("tests.register.provider.label")}
               </Label>
               <Select
-                value={department}
-                onValueChange={(value) => setDepartment(value as Departments)}
+                value={provider}
+                onValueChange={(value) => setProvider(value as CloudProvider)}
               >
-                <SelectTrigger id="department">
+                <SelectTrigger id="provider">
                   <SelectValue
-                    placeholder={t("tests.register.department.placeholder")}
+                    placeholder={t("tests.register.provider.placeholder")}
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {DEPARTMENTS.map((dept) => (
-                    <SelectItem key={dept} value={dept}>
-                      {dept.toUpperCase()}
+                  {PROVIDERS.map((prov) => (
+                    <SelectItem key={prov} value={prov}>
+                      {prov}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="config">{t("tests.register.config.label")}</Label>
+              <Textarea
+                id="config"
+                placeholder={t("tests.register.config.placeholder")}
+                value={config}
+                onChange={(e) => setConfig(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="authConfig">{t("tests.register.auth_config.label")}</Label>
+              <Textarea
+                id="authConfig"
+                placeholder={t("tests.register.auth_config.placeholder")}
+                value={authConfig}
+                onChange={(e) => setAuthConfig(e.target.value)}
+                required
+              />
             </div>
           </div>
 
           <SheetFooter>
             <Button
               type="submit"
-              disabled={isMutating || !email.trim()}
-              isLoading={isMutating}
+              disabled={!title.trim() || !config.trim() || !authConfig.trim()}
             >
-              {isMutating
-                ? t("tests.register.submit")
-                : t("tests.register.submit")}
+              {t("tests.register.submit")}
             </Button>
           </SheetFooter>
         </form>

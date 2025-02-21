@@ -18,63 +18,78 @@ import {
   TableRow,
 } from "@bubba/ui/table";
 import { useRouter } from "next/navigation";
-import type { PersonType } from "./columns";
+import type { TestType } from "./columns";
 import { DataTableHeader } from "./data-table-header";
 import { DataTablePagination } from "./data-table-pagination";
 
 interface DataTableProps {
   columnHeaders: {
-    name: string;
-    email: string;
-    department: string;
+    title: string;
+    provider: string;
+    status: string;
+    lastRun: string;
   };
-  data: PersonType[];
+  data: TestType[];
   pageCount: number;
   currentPage: number;
 }
 
-function getColumns(): ColumnDef<PersonType>[] {
+function getColumns(): ColumnDef<TestType>[] {
   const t = useI18n();
 
   return [
     {
-      id: "email",
-      accessorKey: "email",
+      id: "title",
+      accessorKey: "title",
       header: ({ column }) => (
         <TableHead>
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            {t("people.table.email")}
+            {t("tests.table.title")}
           </Button>
         </TableHead>
       ),
     },
     {
-      id: "name",
-      accessorKey: "name",
+      id: "provider",
+      accessorKey: "provider",
       header: ({ column }) => (
         <TableHead>
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            {t("people.table.name")}
+            {t("tests.table.provider")}
           </Button>
         </TableHead>
       ),
     },
     {
-      id: "department",
-      accessorKey: "department",
+      id: "status",
+      accessorKey: "status",
       header: ({ column }) => (
         <TableHead>
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            {t("people.table.department")}
+            {t("tests.table.status")}
+          </Button>
+        </TableHead>
+      ),
+    },
+    {
+      id: "lastRun",
+      accessorKey: "lastRun",
+      header: ({ column }) => (
+        <TableHead>
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            {t("tests.table.lastRun")}
           </Button>
         </TableHead>
       ),
@@ -93,7 +108,7 @@ export function DataTable({
   const columns = clientColumns.map((col) => ({
     ...col,
     header: columnHeaders[col.id as keyof typeof columnHeaders],
-    accessorFn: (row: PersonType) => row[col.id as keyof PersonType],
+    accessorFn: (row: TestType) => row[col.id as keyof TestType],
   }));
 
   const table = useReactTable({
@@ -117,8 +132,8 @@ export function DataTable({
                 data-state={row.getIsSelected() && "selected"}
                 className="cursor-pointer hover:bg-muted/50"
                 onClick={() => {
-                  const person = row.original;
-                  router.push(`/people/${person.id}`);
+                  const test = row.original;
+                  router.push(`/tests/${test.id}`);
                 }}
               >
                 {row.getVisibleCells().map((cell) => (
@@ -126,8 +141,10 @@ export function DataTable({
                     key={cell.id}
                     className={cn({
                       "hidden md:table-cell":
-                        cell.column.id === "email" ||
-                        cell.column.id === "department",
+                        cell.column.id === "title" ||
+                        cell.column.id === "provider" ||
+                        cell.column.id === "status" ||
+                        cell.column.id === "lastRun",
                     })}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}

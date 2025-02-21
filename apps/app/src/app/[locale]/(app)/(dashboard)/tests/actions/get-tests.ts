@@ -2,81 +2,115 @@
 
 import { db } from "@bubba/db";
 import { authActionClient } from "@/actions/safe-action";
-import { employeesInputSchema, appErrors } from "../../people/types";
+import { z } from "zod";
+
+const testsInputSchema = z.object({
+  search: z.string().optional(),
+  provider: z.enum(["AWS", "AZURE", "GCP"]).optional(),
+  status: z.string().optional(),
+  page: z.number().optional(),
+  per_page: z.number().optional(),
+});
 
 export const getTests = authActionClient
-  .schema(employeesInputSchema)
+  .schema(testsInputSchema)
   .metadata({
-    name: "get-employees",
+    name: "get-tests",
     track: {
-      event: "get-employees",
+      event: "get-tests",
       channel: "server",
     },
   })
   .action(async ({ parsedInput, ctx }) => {
-    const { search, role, page = 1, per_page = 10 } = parsedInput;
+    const { search, provider, status, page = 1, per_page = 10 } = parsedInput;
     const { user } = ctx;
 
     if (!user.organizationId) {
       return {
         success: false,
-        error: appErrors.UNAUTHORIZED.message,
+        error: "You are not authorized to view tests",
       };
     }
 
     try {
       const skip = (page - 1) * per_page;
 
-      const [employees, total] = await Promise.all([
-        db.employee.findMany({
+      const [tests, total] = await Promise.all([
+        db.cloudTest.findMany({
           where: {
             organizationId: user.organizationId,
             AND: [
               search
                 ? {
                     OR: [
-                      { name: { contains: search, mode: "insensitive" } },
-                      { email: { contains: search, mode: "insensitive" } },
+                      { title: { contains: search, mode: "insensitive" } },
+                      { description: { contains: search, mode: "insensitive" } },
                     ],
                   }
                 : {},
+              provider ? { provider } : {},
+              status ? { status } : {},
             ],
           },
           select: {
             id: true,
-            name: true,
-            email: true,
-            department: true,
+            title: true,
+            description: true,
+            provider: true,
+            status: true,
+            createdAt: true,
+            updatedAt: true,
+            runs: {
+              orderBy: { createdAt: 'desc' },
+              take: 1,
+              select: {
+                createdAt: true,
+                status: true,
+                result: true,
+              },
+            },
           },
           skip,
           take: per_page,
+          orderBy: { updatedAt: 'desc' },
         }),
-        db.employee.count({
+        db.cloudTest.count({
           where: {
             organizationId: user.organizationId,
             AND: [
               search
                 ? {
                     OR: [
-                      { name: { contains: search, mode: "insensitive" } },
-                      { email: { contains: search, mode: "insensitive" } },
+                      { title: { contains: search, mode: "insensitive" } },
+                      { description: { contains: search, mode: "insensitive" } },
                     ],
                   }
                 : {},
+              provider ? { provider } : {},
+              status ? { status } : {},
             ],
           },
         }),
       ]);
 
+      // Transform the data to include lastRun info
+      const transformedTests = tests.map(test => ({
+        ...test,
+        lastRun: test.runs[0]?.createdAt || null,
+        lastRunStatus: test.runs[0]?.status || null,
+        lastRunResult: test.runs[0]?.result || null,
+        runs: undefined, // Remove the runs array from the response
+      }));
+
       return {
         success: true,
-        data: { employees, total },
+        data: { tests: transformedTests, total },
       };
     } catch (error) {
-      console.error("Error fetching employees:", error);
+      console.error("Error fetching tests:", error);
       return {
         success: false,
-        error: appErrors.UNEXPECTED_ERROR.message,
+        error: "An unexpected error occurred",
       };
     }
   });

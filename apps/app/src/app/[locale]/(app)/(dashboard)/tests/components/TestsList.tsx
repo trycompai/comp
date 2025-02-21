@@ -1,33 +1,35 @@
 "use client";
 
-import { DataTable } from "@/components/tables/people/data-table";
+import { DataTable } from "@/components/tables/tests/data-table";
 import {
   NoResults,
   NoTests,
 } from "@/components/tables/tests/empty-states";
 import { FilterToolbar } from "@/components/tables/tests/filter-toolbar";
 import { Loading } from "@/components/tables/tests/loading";
-import { useEmployees } from "../../people/hooks/useEmployees";
+import { useTests } from "../hooks/useTests";
 import { useSearchParams } from "next/navigation";
-import type { PersonType } from "@/components/tables/tests/columns";
+import type { TestType } from "@/components/tables/tests/columns";
 import { TestsListSkeleton } from "./TestsListSkeleton";
 
 interface TestsListProps {
   columnHeaders: {
-    name: string;
-    email: string;
-    department: string;
+    title: string;
+    provider: string;
+    status: string;
+    lastRun: string;
   };
 }
 
 export function TestsList({ columnHeaders }: TestsListProps) {
   const searchParams = useSearchParams();
   const search = searchParams.get("search");
-  const role = searchParams.get("role");
+  const provider = searchParams.get("provider");
+  const status = searchParams.get("status");
   const per_page = Number(searchParams.get("per_page")) || 10;
   const page = Number(searchParams.get("page")) || 1;
 
-  const { employees, total, isLoading, error } = useEmployees();
+  const { tests, total, isLoading, error } = useTests();
 
   if (isLoading) {
     return <TestsListSkeleton />;
@@ -42,9 +44,9 @@ export function TestsList({ columnHeaders }: TestsListProps) {
     );
   }
 
-  const hasFilters = !!(search || role);
+  const hasFilters = !!(search || provider || status);
 
-  if (employees.length === 0 && !hasFilters) {
+  if (tests.length === 0 && !hasFilters) {
     return (
       <div className="relative overflow-hidden">
         <FilterToolbar isEmpty={true} />
@@ -56,11 +58,11 @@ export function TestsList({ columnHeaders }: TestsListProps) {
 
   return (
     <div className="relative">
-      <FilterToolbar isEmpty={employees.length === 0} />
-      {employees.length > 0 ? (
+      <FilterToolbar isEmpty={tests.length === 0} />
+      {tests.length > 0 ? (
         <DataTable
           columnHeaders={columnHeaders}
-          data={employees as PersonType[]}
+          data={tests as TestType[]}
           pageCount={Math.ceil(total / per_page)}
           currentPage={page}
         />
@@ -69,4 +71,4 @@ export function TestsList({ columnHeaders }: TestsListProps) {
       )}
     </div>
   );
-}
+} 
