@@ -3,14 +3,14 @@ import { getI18n } from "@/locales/server";
 import type { Metadata } from "next";
 import { setStaticParamsLocale } from "next-international/server";
 import { redirect } from "next/navigation";
-import { EmployeeDetails } from "./components/EmployeeDetails";
+import { CloudTestDetails } from "./components/CloudTestDetails";
 
 export default async function EmployeeDetailsPage({
   params,
 }: {
-  params: Promise<{ locale: string; employeeId: string }>;
+  params: Promise<{ locale: string; testId: string }>;
 }) {
-  const { locale, employeeId } = await params;
+  const { locale, testId } = await params;
   setStaticParamsLocale(locale);
 
   const session = await auth();
@@ -20,13 +20,13 @@ export default async function EmployeeDetailsPage({
     redirect("/");
   }
 
-  return <EmployeeDetails employeeId={employeeId} />;
+  return <CloudTestDetails testId={testId} />;
 }
 
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ locale: string; employeeId: string }>;
+  params: Promise<{ locale: string; testId: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
 
