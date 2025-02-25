@@ -7,9 +7,9 @@ export default {
   active: true,
   logo: Logo,
   short_description:
-    "Connect your Gusto account to Bubba to automate evidence collection for HR resources",
+    "Connect your Gusto account to Comp AI to automate evidence collection for HR resources",
   description:
-    "Integrating with Gusto allows you to automate evidence collection for employees, we'll run a daily read-only scan of your resources and store the results in Bubba.",
+    "Integrating with Gusto allows you to automate evidence collection for employees, we'll run a daily read-only scan of your resources and store the results in Comp AI.",
   images: [image],
   settings: [],
   config: {},

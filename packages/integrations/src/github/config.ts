@@ -7,9 +7,9 @@ export default {
   active: true,
   logo: Logo,
   short_description:
-    "Connect your GitHub account to Bubba to automate evidence collection for cloud resources",
+    "Connect your GitHub account to Comp AI to automate evidence collection for cloud resources",
   description:
-    "Integrating with GitHub allows you to automate evidence collection for any GitHub repositories you may have, we'll run a daily read-only scan of your repositories and store the results in Bubba.",
+    "Integrating with GitHub allows you to automate evidence collection for any GitHub repositories you may have, we'll run a daily read-only scan of your repositories and store the results in Comp AI.",
   images: [image],
   settings: [
     {
