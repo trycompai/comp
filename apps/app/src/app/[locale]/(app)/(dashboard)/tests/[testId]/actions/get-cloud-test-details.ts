@@ -20,74 +20,78 @@ export async function getCloudTestDetails(input: { testId: string }): Promise<Ac
   }
 
   try {
-    const cloudTest = await db.cloudTest.findUnique({
+    const integrationRun = await db.organizationIntegrationRun.findUnique({
       where: {
         id: testId,
         organizationId,
       },
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        provider: true,
-        status: true,
-        config: true,
-        authConfig: true,
-        createdAt: true,
-        updatedAt: true,
-        createdBy: {
+      include: {
+        organizationIntegration: true,
+        executedBy: {
           select: {
             id: true,
             name: true,
             email: true,
           },
-        },
-        updatedBy: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        runs: {
-          select: {
-            id: true,
-            status: true,
-            result: true,
-            resultDetails: true,
-            startedAt: true,
-            completedAt: true,
-            executedBy: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
-            },
-            createdAt: true,
-            updatedAt: true,
-          },
-          orderBy: {
-            createdAt: 'desc',
-          },
-          take: 10, // Limit to most recent 10 runs
         },
       },
     });
 
-    if (!cloudTest) {
+    if (!integrationRun) {
       return {
         success: false,
         error: appErrors.NOT_FOUND,
       };
     }
 
+    // Format the result to match the expected CloudTestResult structure
+    const result: CloudTestResult = {
+      id: integrationRun.id,
+      title: integrationRun.organizationIntegration.name,
+      description: typeof integrationRun.resultDetails === 'object' && integrationRun.resultDetails 
+        ? (integrationRun.resultDetails as any).description || "" 
+        : "",
+      provider: integrationRun.organizationIntegration.integration_id,
+      status: integrationRun.status,
+      config: integrationRun.organizationIntegration.settings,
+      authConfig: integrationRun.organizationIntegration.user_settings,
+      createdAt: integrationRun.createdAt,
+      updatedAt: integrationRun.updatedAt,
+      // Since we don't have created/updated by in the model, use executedBy for both
+      createdBy: {
+        id: integrationRun.executedBy.id,
+        name: integrationRun.executedBy.name,
+        email: integrationRun.executedBy.email,
+      },
+      updatedBy: {
+        id: integrationRun.executedBy.id,
+        name: integrationRun.executedBy.name,
+        email: integrationRun.executedBy.email,
+      },
+      // Since we're looking at a single run, create a runs array with just this run
+      runs: [{
+        id: integrationRun.id,
+        status: integrationRun.status,
+        result: integrationRun.result,
+        resultDetails: integrationRun.resultDetails,
+        startedAt: integrationRun.startedAt,
+        completedAt: integrationRun.completedAt,
+        executedBy: {
+          id: integrationRun.executedBy.id,
+          name: integrationRun.executedBy.name,
+          email: integrationRun.executedBy.email,
+        },
+        createdAt: integrationRun.createdAt,
+        updatedAt: integrationRun.updatedAt,
+      }],
+    };
+
     return {
       success: true,
-      data: cloudTest,
+      data: result,
     };
   } catch (error) {
-    console.error("Error fetching cloud test details:", error);
+    console.error("Error fetching integration run details:", error);
     return {
       success: false,
       error: appErrors.UNEXPECTED_ERROR,
