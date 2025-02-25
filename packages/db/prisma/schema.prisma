@@ -102,9 +102,7 @@ model User {
   RiskAttachment          RiskAttachment[]
   organizationMemberships OrganizationMember[]
   Employee                Employee[]
-  createdCloudTests       CloudTest[]           @relation("TestCreatedBy")
-  updatedCloudTests       CloudTest[]           @relation("TestUpdatedBy")
-  executedCloudTestRuns   CloudTestRun[]        @relation("TestExecutedBy")
+  executedOrganizationIntegrationRuns OrganizationIntegrationRun[] @relation("TestExecutedBy")
 
   @@index([email])
   @@index([organizationId])
@@ -147,8 +145,7 @@ model Organization {
   OrganizationPolicy       OrganizationPolicy[]
   OrganizationCategory     OrganizationCategory[]
   PortalUser               PortalUser[]
-  cloudTests               CloudTest[]
-  cloudTestRuns           CloudTestRun[]
+  OrganizationIntegrationRuns OrganizationIntegrationRun[]
 
   @@index([stripeCustomerId])
 }
@@ -162,6 +159,8 @@ model OrganizationIntegrations {
 
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  runs OrganizationIntegrationRun[]
 
   @@index([organizationId])
 }
@@ -1099,50 +1098,25 @@ enum TestResult {
   ERROR
 }
 
-model CloudTest {
-  id             String        @id @default(cuid())
-  title          String
-  description    String?
-  provider       CloudProvider
-  status         String        @default("draft")
-  config         Json          // Stores provider-specific configuration
-  authConfig     Json          // Stores authentication tokens, keys, etc.
-  organizationId String
-  createdById    String
-  updatedById    String
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+model OrganizationIntegrationRun {
+  id                       String        @id @default(cuid())
+  status                   TestRunStatus @default(PENDING)
+  result                   String?       // PASS, FAIL, ERROR
+  resultDetails            Json?         // Stores detailed test results
+  startedAt                DateTime?
+  completedAt              DateTime?
+  organizationIntegrationId String
+  executedById             String
+  organizationId           String
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  createdBy    User        @relation("TestCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
-  updatedBy    User        @relation("TestUpdatedBy", fields: [updatedById], references: [id], onDelete: Cascade)
-  runs         CloudTestRun[]
+  createdAt                DateTime      @default(now())
+  updatedAt                DateTime      @updatedAt
 
+  organizationIntegration  OrganizationIntegrations @relation(fields: [organizationIntegrationId], references: [id], onDelete: Cascade)
+  executedBy               User         @relation("TestExecutedBy", fields: [executedById], references: [id], onDelete: Cascade)
+  organization             Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationIntegrationId])
   @@index([organizationId])
-  @@index([createdById])
-  @@index([updatedById])
-  @@map("cloud_test")
-}
-
-model CloudTestRun {
-  id             String        @id @default(cuid())
-  status         TestRunStatus @default(PENDING)
-  result         String?       // PASS, FAIL, ERROR
-  resultDetails  Json?         // Stores detailed test results
-  startedAt      DateTime?
-  completedAt    DateTime?
-  cloudTestId    String
-  executedById   String
-  organizationId String
-
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-
-  cloudTest    CloudTest     @relation(fields: [cloudTestId], references: [id], onDelete: Cascade)
-  executedBy   User         @relation("TestExecutedBy", fields: [executedById], references: [id], onDelete: Cascade)
-  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  @@index([cloudTestId])
-  @@index([organizationId])
-  @@map("cloud_test_run")
+  @@map("Organization_integration_run")
 }
