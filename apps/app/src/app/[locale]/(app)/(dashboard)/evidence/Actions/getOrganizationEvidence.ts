@@ -36,6 +36,7 @@ export const getOrganizationEvidenceById = authActionClient
         },
         include: {
           evidence: true,
+          assignee: true,
         },
       });
 

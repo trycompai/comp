@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { FileUpload } from "./FileUpload";
 import { useFileUpload } from "../hooks/useFileUpload";
 import { useFileDelete } from "../hooks/useFileDelete";
@@ -49,6 +49,11 @@ export function FileSection({
   const handlePreviewClick = useCallback(
     async (fileUrl: string) => {
       try {
+        // Skip if already loading or loaded
+        if (previewStates[fileUrl]?.isLoading || previewStates[fileUrl]?.url) {
+          return;
+        }
+
         setPreviewStates((prev) => ({
           ...prev,
           [fileUrl]: { url: null, isLoading: true },
@@ -68,8 +73,25 @@ export function FileSection({
         }));
       }
     },
-    [getPreviewUrl]
+    [getPreviewUrl, previewStates]
   );
+
+  // Load all previews when component mounts or when fileUrls change
+  useEffect(() => {
+    // Only load previews for files that don't already have a preview state
+    const filesToLoad = fileUrls.filter((url) => !previewStates[url]);
+
+    if (filesToLoad.length > 0) {
+      // Load previews in sequence to avoid overwhelming the server
+      const loadPreviews = async () => {
+        for (const url of filesToLoad) {
+          await handlePreviewClick(url);
+        }
+      };
+
+      loadPreviews();
+    }
+  }, [fileUrls, handlePreviewClick, previewStates]);
 
   return (
     <div className="space-y-6">

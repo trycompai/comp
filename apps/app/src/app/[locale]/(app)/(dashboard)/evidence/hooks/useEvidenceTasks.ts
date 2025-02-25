@@ -3,13 +3,15 @@
 import useSWR from "swr";
 import { getOrganizationEvidenceTasks } from "../Actions/getOrganizationEvidenceTasks";
 import type { PaginationMetadata } from "../Actions/getOrganizationEvidenceTasks";
-import type { Frequency, OrganizationEvidence } from "@bubba/db";
+import type { Frequency, OrganizationEvidence, Departments } from "@bubba/db";
 
 // Define the props interface with clear types
 interface UseOrganizationEvidenceTasksProps {
   search?: string | null;
   status?: "published" | "draft" | null;
   frequency?: Frequency | null;
+  department?: Departments | null;
+  assigneeId?: string | null;
   page?: number;
   pageSize?: number;
 }
@@ -46,11 +48,37 @@ async function fetchEvidenceTasks(props: UseOrganizationEvidenceTasksProps) {
 export function useOrganizationEvidenceTasks(
   props: UseOrganizationEvidenceTasksProps = {}
 ): UseOrganizationEvidenceTasksResult {
-  const { search, status, frequency, page = 1, pageSize = 10 } = props;
+  const {
+    search,
+    status,
+    frequency,
+    department,
+    assigneeId,
+    page = 1,
+    pageSize = 10,
+  } = props;
 
   const { data, error, isLoading, mutate } = useSWR(
-    ["organization-evidence-tasks", search, status, frequency, page, pageSize],
-    () => fetchEvidenceTasks({ search, status, frequency, page, pageSize }),
+    [
+      "organization-evidence-tasks",
+      search,
+      status,
+      frequency,
+      department,
+      assigneeId,
+      page,
+      pageSize,
+    ],
+    () =>
+      fetchEvidenceTasks({
+        search,
+        status,
+        frequency,
+        department,
+        assigneeId,
+        page,
+        pageSize,
+      }),
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,

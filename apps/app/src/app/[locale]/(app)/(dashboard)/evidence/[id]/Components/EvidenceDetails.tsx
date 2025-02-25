@@ -9,7 +9,7 @@ import { Skeleton } from "@bubba/ui/skeleton";
 import { useOrganizationEvidence } from "../hooks/useOrganizationEvidence";
 import { FileSection } from "./FileSection";
 import { UrlSection } from "./UrlSection";
-import { ReviewDateCard } from "./ReviewDateCard";
+import { ReviewSection } from "./ReviewSection";
 import { publishEvidence } from "../Actions/publishEvidence";
 import { useAction } from "next-safe-action/hooks";
 import { toast } from "sonner";
@@ -42,11 +42,14 @@ export function EvidenceDetails({ id }: EvidenceDetailsProps) {
   if (isLoading) {
     return (
       <div className="w-full space-y-4">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" disabled>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <Skeleton className="h-8 w-48" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" disabled>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <Skeleton className="h-8 w-48" />
+          </div>
+          <Skeleton className="h-10 w-48" />
         </div>
         <Card>
           <CardHeader>
@@ -78,23 +81,7 @@ export function EvidenceDetails({ id }: EvidenceDetailsProps) {
           </Button>
           <h1 className="text-2xl font-bold">{evidence.name}</h1>
         </div>
-        {!evidence.published && (
-          <Button onClick={() => publishAction({ id })} disabled={isExecuting}>
-            {isExecuting ? "Publishing..." : "Publish"}
-          </Button>
-        )}
-      </div>
-
-      {evidence.frequency && (
-        <ReviewDateCard
-          lastPublishedAt={evidence.lastPublishedAt}
-          frequency={evidence.frequency}
-        />
-      )}
-
-      <Card>
-        <CardHeader className="flex-row items-center justify-between">
-          <div className="text-lg font-semibold">{evidence.evidence.name}</div>
+        <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             {evidence.published ? (
               <>
@@ -108,6 +95,29 @@ export function EvidenceDetails({ id }: EvidenceDetailsProps) {
               </>
             )}
           </div>
+          {!evidence.published && (
+            <Button
+              onClick={() => publishAction({ id })}
+              disabled={isExecuting}
+            >
+              {isExecuting ? "Publishing..." : "Publish"}
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <ReviewSection
+        evidenceId={id}
+        lastPublishedAt={evidence.lastPublishedAt}
+        frequency={evidence.frequency}
+        department={evidence.department || null}
+        currentAssigneeId={evidence.assigneeId}
+        onSuccess={handleMutate}
+      />
+
+      <Card>
+        <CardHeader className="flex-row items-center justify-between">
+          <div className="text-lg font-semibold">{evidence.evidence.name}</div>
         </CardHeader>
         <CardContent className="space-y-6">
           {evidence.description && (

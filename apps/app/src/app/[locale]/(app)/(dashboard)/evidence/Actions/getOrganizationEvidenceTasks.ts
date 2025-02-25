@@ -1,7 +1,7 @@
 "use server";
 
 import { authActionClient } from "@/actions/safe-action";
-import { db, Frequency } from "@bubba/db";
+import { db, Frequency, Departments } from "@bubba/db";
 import type { Prisma, OrganizationEvidence } from "@bubba/db";
 import { z } from "zod";
 
@@ -26,6 +26,8 @@ export const getOrganizationEvidenceTasks = authActionClient
       search: z.string().optional().nullable(),
       status: z.enum(["published", "draft"]).optional().nullable(),
       frequency: z.nativeEnum(Frequency).optional().nullable(),
+      department: z.nativeEnum(Departments).optional().nullable(),
+      assigneeId: z.string().optional().nullable(),
       page: z.number().int().positive().optional().default(1),
       pageSize: z.number().int().positive().optional().default(10),
     })
@@ -39,7 +41,15 @@ export const getOrganizationEvidenceTasks = authActionClient
   })
   .action(async ({ ctx, parsedInput }) => {
     const { user } = ctx;
-    const { search, status, frequency, page, pageSize } = parsedInput;
+    const {
+      search,
+      status,
+      frequency,
+      department,
+      assigneeId,
+      page,
+      pageSize,
+    } = parsedInput;
 
     if (!user.organizationId) {
       return {
@@ -57,6 +67,10 @@ export const getOrganizationEvidenceTasks = authActionClient
         ...(status === "draft" ? { published: false } : {}),
         // Frequency filter
         ...(frequency ? { frequency } : {}),
+        // Department filter
+        ...(department ? { department } : {}),
+        // Assignee filter
+        ...(assigneeId ? { assigneeId } : {}),
         // Search filter
         ...(search
           ? {
@@ -100,6 +114,14 @@ export const getOrganizationEvidenceTasks = authActionClient
         where: whereClause,
         include: {
           evidence: true,
+          assignee: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+            },
+          },
         },
         skip,
         take: pageSize,

@@ -108,6 +108,7 @@ model User {
   RiskAttachment          RiskAttachment[]
   organizationMemberships OrganizationMember[]
   Employee                Employee[]
+  AssignedEvidence        OrganizationEvidence[]
 
   @@index([email])
   @@index([organizationId])
@@ -1053,7 +1054,8 @@ model OrganizationEvidence {
   published       Boolean   @default(false)
   lastPublishedAt DateTime?
 
-  frequency Frequency?
+  frequency  Frequency?
+  department Departments? @default(none)
 
   fileUrls       String[]
   additionalUrls String[]
@@ -1065,8 +1067,12 @@ model OrganizationEvidence {
   evidence                       Evidence                         @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
   OrganizationControlRequirement OrganizationControlRequirement[]
 
+  assigneeId String?
+  assignee   User?   @relation(fields: [assigneeId], references: [id], onDelete: SetNull)
+
   @@unique([id])
   @@index([organizationId])
+  @@index([assigneeId])
 }
 
 // Employee Portal
