@@ -9,6 +9,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQueryState } from "nuqs";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { useDebounce } from "use-debounce";
+import Link from "next/link";
 
 interface FilterToolbarProps {
   isEmpty?: boolean;
@@ -69,9 +70,11 @@ export function FilterToolbar({ isEmpty }: FilterToolbarProps) {
         </div>
 
         <div className="md:hidden">
-          <Button onClick={() => setOpen("true")} variant="action">
-            <Plus className="h-4 w-4" />
-            {t("common.actions.addNew")}
+          <Button asChild variant="action">
+            <Link href="/integrations">
+              <Plus className="h-4 w-4" />
+              {t("common.actions.addNew")}
+            </Link>
           </Button>
         </div>
       </div>
@@ -92,9 +95,11 @@ export function FilterToolbar({ isEmpty }: FilterToolbarProps) {
           </Button>
         )}
 
-        <Button onClick={() => setOpen("true")} variant="action">
-          <Plus className="h-4 w-4" />
-          {t("common.actions.addNew")}
+        <Button asChild variant="action">
+          <Link href="/integrations">
+            <Plus className="h-4 w-4" />
+            {t("common.actions.addNew")}
+          </Link>
         </Button>
       </div>
 
