@@ -3,11 +3,12 @@
 import { db } from "@bubba/db";
 import { authActionClient } from "@/actions/safe-action";
 import { z } from "zod";
+import { TestRunStatus } from "@bubba/db";
 
 const testsInputSchema = z.object({
   search: z.string().optional(),
   provider: z.enum(["AWS", "AZURE", "GCP"]).optional(),
-  status: z.string().optional(),
+  status: z.nativeEnum(TestRunStatus).optional(),
   page: z.number().optional(),
   per_page: z.number().optional(),
 });
@@ -35,38 +36,53 @@ export const getTests = authActionClient
     try {
       const skip = (page - 1) * per_page;
 
-      const [tests, total] = await Promise.all([
-        db.cloudTest.findMany({
+      const [integrationRuns, total] = await Promise.all([
+        db.organizationIntegrationRun.findMany({
           where: {
             organizationId: user.organizationId,
             AND: [
               search
                 ? {
                     OR: [
-                      { title: { contains: search, mode: "insensitive" } },
-                      { description: { contains: search, mode: "insensitive" } },
+                      { 
+                        organizationIntegration: {
+                          name: { contains: search, mode: "insensitive" }
+                        }
+                      },
+                      { 
+                        resultDetails: { 
+                          path: ["description"], 
+                          string_contains: search 
+                        } 
+                      },
                     ],
                   }
                 : {},
-              provider ? { provider } : {},
-              status ? { status } : {},
+              provider 
+                ? { 
+                    organizationIntegration: { 
+                      integration_id: provider 
+                    } 
+                  } 
+                : {},
+              status 
+                ? { status: status } 
+                : {},
             ],
           },
-          select: {
-            id: true,
-            title: true,
-            description: true,
-            provider: true,
-            status: true,
-            createdAt: true,
-            updatedAt: true,
-            runs: {
-              orderBy: { createdAt: 'desc' },
-              take: 1,
+          include: {
+            organizationIntegration: {
               select: {
-                createdAt: true,
-                status: true,
-                result: true,
+                id: true,
+                name: true,
+                integration_id: true,
+              },
+            },
+            executedBy: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
               },
             },
           },
@@ -74,40 +90,74 @@ export const getTests = authActionClient
           take: per_page,
           orderBy: { updatedAt: 'desc' },
         }),
-        db.cloudTest.count({
+        db.organizationIntegrationRun.count({
           where: {
             organizationId: user.organizationId,
             AND: [
               search
                 ? {
                     OR: [
-                      { title: { contains: search, mode: "insensitive" } },
-                      { description: { contains: search, mode: "insensitive" } },
+                      { 
+                        organizationIntegration: {
+                          name: { contains: search, mode: "insensitive" }
+                        }
+                      },
+                      { 
+                        resultDetails: { 
+                          path: ["description"], 
+                          string_contains: search 
+                        } 
+                      },
                     ],
                   }
                 : {},
-              provider ? { provider } : {},
-              status ? { status } : {},
+              provider 
+                ? { 
+                    organizationIntegration: { 
+                      integration_id: provider 
+                    } 
+                  } 
+                : {},
+              status 
+                ? { status: status } 
+                : {},
             ],
           },
         }),
       ]);
 
-      // Transform the data to include lastRun info
-      const transformedTests = tests.map(test => ({
-        ...test,
-        lastRun: test.runs[0]?.createdAt || null,
-        lastRunStatus: test.runs[0]?.status || null,
-        lastRunResult: test.runs[0]?.result || null,
-        runs: undefined, // Remove the runs array from the response
-      }));
+      // Transform the data to include integration info
+      const transformedTests = integrationRuns.map((run) => {
+        const description = typeof run.resultDetails === 'object' && run.resultDetails 
+          ? (run.resultDetails as any).description || "" 
+          : "";
+          
+        return {
+          id: run.id,
+          title: run.organizationIntegration.name,
+          description,
+          provider: run.organizationIntegration.integration_id,
+          status: run.status,
+          result: run.result,
+          lastRun: run.startedAt,
+          lastRunStatus: run.status,
+          lastRunResult: run.result,
+          createdAt: run.createdAt,
+          updatedAt: run.updatedAt,
+          executedBy: {
+            id: run.executedBy.id,
+            name: run.executedBy.name,
+            email: run.executedBy.email,
+          },
+        };
+      });
 
       return {
         success: true,
         data: { tests: transformedTests, total },
       };
     } catch (error) {
-      console.error("Error fetching tests:", error);
+      console.error("Error fetching integration runs:", error);
       return {
         success: false,
         error: "An unexpected error occurred",
