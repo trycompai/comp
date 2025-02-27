@@ -3,7 +3,7 @@ import { SecurityHubClient, GetFindingsCommand, SecurityHubClientConfig, GetFind
 // 1. Configure the SecurityHub client with AWS credentials
 // For production, prefer using environment variables or AWS credential profiles rather than hardcoding
 const config: SecurityHubClientConfig = { 
-  region: "us-east-1",
+  region: process.env.AWS_REGION || "",
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
