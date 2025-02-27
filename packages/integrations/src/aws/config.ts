@@ -38,5 +38,5 @@ export default {
     },
   ],
   config: {},
-  category: "Cloud",
+  category: "Cloud"
 };

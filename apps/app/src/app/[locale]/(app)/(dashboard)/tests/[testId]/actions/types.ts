@@ -23,6 +23,7 @@ export type CloudTestResult = {
   authConfig: any;
   createdAt: Date;
   updatedAt: Date;
+  resultDetails: any;
   createdBy: {
     id: string;
     name: string | null;

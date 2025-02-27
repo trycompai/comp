@@ -67,9 +67,8 @@ export function CloudTestDetails({ testId }: CloudTestDetailsProps) {
   }
 
   if (!cloudTest) return null;
-
   // Format the test provider for display
-  const providerLabel = cloudTest.provider === "AWS" 
+  const providerLabel = cloudTest.provider === "aws" 
     ? "Amazon Web Services" 
     : cloudTest.provider === "AZURE" 
       ? "Microsoft Azure" 
@@ -82,8 +81,8 @@ export function CloudTestDetails({ testId }: CloudTestDetailsProps) {
         return <Badge className="bg-green-500">{status}</Badge>;
       case "DRAFT":
         return <Badge className="bg-yellow-500">{status}</Badge>;
-      case "ARCHIVED":
-        return <Badge className="bg-gray-500">{status}</Badge>;
+      case "FAILED":
+        return <Badge className="bg-red-500">{status}</Badge>;
       default:
         return <Badge>{status}</Badge>;
     }
@@ -194,7 +193,7 @@ export function CloudTestDetails({ testId }: CloudTestDetailsProps) {
                             <Badge
                               className={cn(
                                 run.result === "PASS" && "bg-green-500",
-                                run.result === "FAIL" && "bg-red-500",
+                                run.result === "FAILED" && "bg-red-500",
                                 run.result === "ERROR" && "bg-orange-500"
                               )}
                             >
@@ -229,14 +228,14 @@ export function CloudTestDetails({ testId }: CloudTestDetailsProps) {
         <TabsContent value="configuration" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>Test Configuration</CardTitle>
+              <CardTitle>Test Results</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div>
-                  <Label className="block mb-2">Provider Configuration</Label>
+                  <Label className="block mb-2">Provider Results</Label>
                   <pre className="bg-muted p-4 rounded-md overflow-auto text-sm">
-                    {JSON.stringify(cloudTest.config, null, 2)}
+                    {JSON.stringify(cloudTest.resultDetails, null, 2)}
                   </pre>
                 </div>
               </div>

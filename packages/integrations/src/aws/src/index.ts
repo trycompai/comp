@@ -1,23 +1,30 @@
-import { SecurityHubClient, GetFindingsCommand, SecurityHubClientConfig, GetFindingsCommandInput, GetFindingsCommandOutput } from "@aws-sdk/client-securityhub";
-
-// 1. Configure the SecurityHub client with AWS credentials
-// For production, prefer using environment variables or AWS credential profiles rather than hardcoding
-const config: SecurityHubClientConfig = { 
-  region: process.env.AWS_REGION || "",
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
-    sessionToken: process.env.AWS_SESSION_TOKEN || "" // Required for temporary credentials
-  }
-};
-const securityHubClient = new SecurityHubClient(config);
+import {
+  SecurityHubClient,
+  GetFindingsCommand,
+  SecurityHubClientConfig,
+  GetFindingsCommandInput,
+  GetFindingsCommandOutput
+} from "@aws-sdk/client-securityhub";
 
 /**
  * Fetches security findings from AWS Security Hub
  * @returns Promise containing an array of findings
  */
-async function fetchSecurityFindings(): Promise<any[]> {
+async function fetchSecurityFindings(AWS_REGION: string, AWS_ACCESS_KEY_ID: string, AWS_SECRET_ACCESS_KEY: string, AWS_SESSION_TOKEN: string): Promise<any[]> {
   try {
+    // 1. Configure the SecurityHub client with AWS credentials
+    // For production, prefer using environment variables or AWS credential profiles rather than hardcoding
+    const config: SecurityHubClientConfig = { 
+      region: AWS_REGION,
+      credentials: {
+        accessKeyId: AWS_ACCESS_KEY_ID,
+        secretAccessKey: AWS_SECRET_ACCESS_KEY,
+        sessionToken: AWS_SESSION_TOKEN // Required for temporary credentials
+      }
+    };
+    const securityHubClient = new SecurityHubClient(config);
+
+
     // 2. Define filters for the findings we want to retrieve.
     // Example: get only NEW (unresolved) findings for failed compliance controls.
     const params: GetFindingsCommandInput = {
@@ -53,14 +60,6 @@ async function fetchSecurityFindings(): Promise<any[]> {
     throw error;
   }
 }
-
-// Usage example
-fetchSecurityFindings().then((findings: any[]) => {
-  // 4. Process findings
-  findings.forEach((finding: any) => {
-    console.log(`${finding.Title} - ${finding.Severity?.Label} - ${finding.Compliance?.Status}`);
-  });
-});
 
 // Export the function for use in other modules
 export { fetchSecurityFindings };

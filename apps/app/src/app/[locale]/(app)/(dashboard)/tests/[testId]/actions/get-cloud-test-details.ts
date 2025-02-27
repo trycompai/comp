@@ -57,6 +57,7 @@ export async function getCloudTestDetails(input: { testId: string }): Promise<Ac
       provider: integrationResult.integration_id,
       status: integrationResult.status,
       config: integrationResult.settings,
+      resultDetails: integrationResult.resultDetails,
       authConfig: integrationResult.user_settings,
       createdAt: integrationResult.completedAt || new Date(),
       updatedAt: integrationResult.completedAt || new Date(),
