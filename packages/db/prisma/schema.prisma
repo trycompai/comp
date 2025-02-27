@@ -102,7 +102,6 @@ model User {
   RiskAttachment          RiskAttachment[]
   organizationMemberships OrganizationMember[]
   Employee                Employee[]
-  executedOrganizationIntegrationRuns OrganizationIntegrationRun[] @relation("TestExecutedBy")
 
   @@index([email])
   @@index([organizationId])
@@ -145,7 +144,7 @@ model Organization {
   OrganizationPolicy       OrganizationPolicy[]
   OrganizationCategory     OrganizationCategory[]
   PortalUser               PortalUser[]
-  OrganizationIntegrationRuns OrganizationIntegrationRun[]
+  OrganizationIntegrationResults OrganizationIntegrationResults[]
 
   @@index([stripeCustomerId])
 }
@@ -160,7 +159,7 @@ model OrganizationIntegrations {
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   
-  runs OrganizationIntegrationRun[]
+  results OrganizationIntegrationResults[]
 
   @@index([organizationId])
 }
@@ -1073,50 +1072,20 @@ model PortalVerification {
   @@map("portal_verification")
 }
 
-enum CloudProvider {
-  AWS
-  AZURE
-  GCP
-}
-
-enum TestStatus {
-  DRAFT
-  ACTIVE
-  ARCHIVED
-}
-
-enum TestRunStatus {
-  PENDING
-  IN_PROGRESS
-  COMPLETED
-  FAILED
-}
-
-enum TestResult {
-  PASS
-  FAIL
-  ERROR
-}
-
-model OrganizationIntegrationRun {
-  id                       String        @id @default(cuid())
-  status                   TestRunStatus @default(PENDING)
-  result                   String?       // PASS, FAIL, ERROR
-  resultDetails            Json?         // Stores detailed test results
-  startedAt                DateTime?
-  completedAt              DateTime?
+model OrganizationIntegrationResults {
+  id                        String        @id @default(cuid())
+  title                     String?
+  status                    String
+  label                     String?       // PASS, FAIL, ERROR
+  resultDetails             Json?         // Stores detailed test results
+  completedAt               DateTime?     @default(now())
   organizationIntegrationId String
-  executedById             String
-  organizationId           String
-
-  createdAt                DateTime      @default(now())
-  updatedAt                DateTime      @updatedAt
+  organizationId            String
 
   organizationIntegration  OrganizationIntegrations @relation(fields: [organizationIntegrationId], references: [id], onDelete: Cascade)
-  executedBy               User         @relation("TestExecutedBy", fields: [executedById], references: [id], onDelete: Cascade)
   organization             Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationIntegrationId])
   @@index([organizationId])
-  @@map("Organization_integration_run")
+  @@map("Organization_integration_results")
 }

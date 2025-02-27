@@ -818,18 +818,19 @@
     formdata-node "^4.3.2"
     node-fetch "^2.6.7"
 
-"@bubba/analytics@packages/analytics":
+"@bubba/analytics@^workspace:packages/analytics":
   version "workspace:packages/analytics"
   resolved "workspace:packages/analytics"
   dependencies:
     posthog-js "^1.215.3"
     posthog-node "^4.4.1"
 
-"@bubba/db@packages/db", "@bubba/db@workspace:*":
+"@bubba/db@^workspace:packages/db", "@bubba/db@workspace:*":
   version "workspace:packages/db"
   resolved "workspace:packages/db"
   devDependencies:
     "@bubba/tsconfig" "workspace:*"
+  devDependencies:
     typescript "^5.7.3"
   dependencies:
     "@auth/prisma-adapter" "^2.7.4"
@@ -839,7 +840,7 @@
     "@prisma/extension-accelerate" "^1.2.2"
     prisma "^6.3.1"
 
-"@bubba/email@packages/email":
+"@bubba/email@^workspace:packages/email":
   version "workspace:packages/email"
   resolved "workspace:packages/email"
   devDependencies:
@@ -859,7 +860,7 @@
     react-email "3.0.4"
     responsive-react-email "^0.0.5"
 
-"@bubba/integrations@packages/integrations":
+"@bubba/integrations@^workspace:packages/integrations":
   version "workspace:packages/integrations"
   resolved "workspace:packages/integrations"
   devDependencies:
@@ -873,14 +874,14 @@
     sharp "^0.33.5"
     zod "^3.24.2"
 
-"@bubba/kv@packages/kv":
+"@bubba/kv@^workspace:packages/kv":
   version "workspace:packages/kv"
   resolved "workspace:packages/kv"
   dependencies:
     "@upstash/redis" "^1.34.2"
     server-only "^0.0.1"
 
-"@bubba/notifications@packages/notifications", "@bubba/notifications@workspace:*":
+"@bubba/notifications@^workspace:packages/notifications", "@bubba/notifications@workspace:*":
   version "workspace:packages/notifications"
   resolved "workspace:packages/notifications"
   devDependencies:
@@ -889,11 +890,11 @@
     "@novu/node" "^2.0.1"
     nanoid "^5.0.7"
 
-"@bubba/tsconfig@packages/tsconfig", "@bubba/tsconfig@workspace:*":
+"@bubba/tsconfig@^workspace:packages/tsconfig", "@bubba/tsconfig@workspace:*":
   version "workspace:packages/tsconfig"
   resolved "workspace:packages/tsconfig"
 
-"@bubba/ui@packages/ui", "@bubba/ui@workspace:*":
+"@bubba/ui@^workspace:packages/ui", "@bubba/ui@workspace:*":
   version "workspace:packages/ui"
   resolved "workspace:packages/ui"
   devDependencies:
@@ -957,7 +958,7 @@
     use-callback-ref "^1.3.3"
     vaul "^1.0.0"
 
-"@bubba/utils@packages/utils", "@bubba/utils@workspace:*":
+"@bubba/utils@^workspace:packages/utils", "@bubba/utils@workspace:*":
   version "workspace:packages/utils"
   resolved "workspace:packages/utils"
   devDependencies:
@@ -1728,8 +1729,8 @@
   resolved "https://registry.npmjs.org/@nangohq/node/-/node-0.53.2.tgz"
   integrity sha512-QfBrtbv1dekI3RH+HX+43MGIRs36MNuWMdWS1RRFKjiCmIwKaOje6qjRj0UDjQYtokKcbt2id2sAAq8fmusjCQ==
   dependencies:
-    axios "^1.7.9"
     "@nangohq/types" "0.53.2"
+    axios "^1.7.9"
 
 "@nangohq/types@0.53.2":
   version "0.53.2"
@@ -1737,8 +1738,8 @@
   integrity sha512-G7oC4QsJrmLjAWQmvB7gY8hE0UMr8PofAY/pPsk/0sHIM1YWeealBI7RiPeN4UluArT7w+OoUvMQd+jtrTh9Lw==
   dependencies:
     axios "^1.7.9"
-    type-fest "4.32.0"
     json-schema "0.4.0"
+    type-fest "4.32.0"
 
 "@neondatabase/serverless@^0.10.4", "@neondatabase/serverless@^0.6.0 || ^0.7.0 || ^0.8.0 || ^0.9.0 || ^0.10.0":
   version "0.10.4"
@@ -3737,9 +3738,9 @@
   resolved "https://registry.npmjs.org/@smithy/util-base64/-/util-base64-4.0.0.tgz"
   integrity sha512-CvHfCmO2mchox9kjrtzoHkWHxjHZzaFojLc8quxXY7WAAMAg43nuxwv95tATVgQFNDwd4M9S1qFzj40Ul41Kmg==
   dependencies:
-    tslib "^2.6.2"
-    "@smithy/util-utf8" "^4.0.0"
     "@smithy/util-buffer-from" "^4.0.0"
+    "@smithy/util-utf8" "^4.0.0"
+    tslib "^2.6.2"
 
 "@smithy/util-body-length-browser@^4.0.0":
   version "4.0.0"
@@ -3760,16 +3761,16 @@
   resolved "https://registry.npmjs.org/@smithy/util-buffer-from/-/util-buffer-from-2.2.0.tgz"
   integrity sha512-IJdWBbTcMQ6DA0gdNhh/BwrLkDR+ADW5Kr1aZmd4k3DIF6ezMV4R2NIAmT08wQJ3yUK82thHWmC/TnK/wpMMIA==
   dependencies:
-    tslib "^2.6.2"
     "@smithy/is-array-buffer" "^2.2.0"
+    tslib "^2.6.2"
 
 "@smithy/util-buffer-from@^4.0.0":
   version "4.0.0"
   resolved "https://registry.npmjs.org/@smithy/util-buffer-from/-/util-buffer-from-4.0.0.tgz"
   integrity sha512-9TOQ7781sZvddgO8nxueKi3+yGvkY35kotA0Y6BWRajAv8jjmigQ1sBwz0UX47pQMYXJPahSKEKYFgt+rXdcug==
   dependencies:
-    tslib "^2.6.2"
     "@smithy/is-array-buffer" "^4.0.0"
+    tslib "^2.6.2"
 
 "@smithy/util-config-provider@^4.0.0":
   version "4.0.0"
@@ -3861,16 +3862,16 @@
   resolved "https://registry.npmjs.org/@smithy/util-utf8/-/util-utf8-2.3.0.tgz"
   integrity sha512-R8Rdn8Hy72KKcebgLiv8jQcQkXoLMOGGv5uI1/k0l+snqkOzQ1R0ChUBCxWMlBsFMekWjq0wRudIweFs7sKT5A==
   dependencies:
-    tslib "^2.6.2"
     "@smithy/util-buffer-from" "^2.2.0"
+    tslib "^2.6.2"
 
 "@smithy/util-utf8@^4.0.0":
   version "4.0.0"
   resolved "https://registry.npmjs.org/@smithy/util-utf8/-/util-utf8-4.0.0.tgz"
   integrity sha512-b+zebfKCfRdgNJDknHCob3O7FpeYQN6ZG6YLExMcasDHsCXlsXCEuiPZeLnJLpwa5dvPetGlnGCiMHuLwGvFow==
   dependencies:
-    tslib "^2.6.2"
     "@smithy/util-buffer-from" "^4.0.0"
+    tslib "^2.6.2"
 
 "@socket.io/component-emitter@~3.1.0":
   version "3.1.2"
@@ -4591,7 +4592,7 @@
   resolved "https://registry.npmjs.org/@types/range-parser/-/range-parser-1.2.7.tgz"
   integrity sha512-hKormJbkJqzQGhziax5PItDUTMAM9uE2XXQmM37dyd4hVM+5aVl7oVxMVUiVQn2oCQFN/LKCZdvSM0pFRqbSmQ==
 
-"@types/react@*", "@types/react@>=18", "@types/react@^16.8.0 || ^17.0.0 || ^18.0.0", "@types/react@^17.0.0 || ^18.0.0 || ^19.0.0", "@types/react@^19.0.0", "@types/react@^19.0.8":
+"@types/react@*", "@types/react@>=16.8", "@types/react@>=17.0.0", "@types/react@>=18", "@types/react@^16.8.0 || ^17.0.0 || ^18.0.0", "@types/react@^17.0.0 || ^18.0.0 || ^19.0.0", "@types/react@^19.0.0", "@types/react@^19.0.8":
   version "19.0.8"
   resolved "https://registry.npmjs.org/@types/react/-/react-19.0.8.tgz"
   integrity sha512-9P/o1IGdfmQxrujGbIMDyYaaCykhLKc0NGCtYcECNUr9UAaDe4gwvV9bR6tvd5Br1SG0j+PBpbKr2UYY8CwqSw==
@@ -5655,11 +5656,12 @@ commander@11.1.0:
   resolved "https://registry.npmjs.org/commander/-/commander-11.1.0.tgz"
   integrity sha512-yPVavfyCcRhmorC7rWlkHn15b4wDVgVmBA7kV4QVBsF7kv/9TKJAbAXVTxvTnwP8HHKjRCJDClKbciiYS7p0DQ==
 
-"comp.ai@apps/app":
+comp.ai@^workspace:apps/app:
   version "workspace:apps/app"
   resolved "workspace:apps/app"
   devDependencies:
     "@bubba/db" "workspace:*"
+  devDependencies:
     "@trigger.dev/build" "3.3.16"
     "@types/node" "^22.13.2"
     "@types/react" "^19.0.8"
@@ -5671,7 +5673,9 @@ commander@11.1.0:
     "@ai-sdk/openai" "^1.1.12"
     "@ai-sdk/provider" "^1.0.7"
     "@browserbasehq/sdk" "^2.3.0"
+  dependencies:
     "@bubba/notifications" "workspace:*"
+  dependencies:
     "@date-fns/tz" "^1.2.0"
     "@hookform/resolvers" "^3.10.0"
     "@nangohq/frontend" "^0.53.1"
@@ -8279,9 +8283,9 @@ keycon@^1.2.0:
   resolved "https://registry.npmjs.org/keycon/-/keycon-1.4.0.tgz"
   integrity sha512-p1NAIxiRMH3jYfTeXRs2uWbVJ1WpEjpi8ktzUyBJsX7/wn2qu2VRXktneBLNtKNxJmlUYxRi9gOJt1DuthXR7A==
   dependencies:
+    "@cfcs/core" "^0.0.6"
     "@daybrush/utils" "^1.7.1"
     "@scena/event-emitter" "^1.0.2"
-    "@cfcs/core" "^0.0.6"
     keycode "^2.2.0"
 
 kind-of@^3.0.2:
@@ -9431,10 +9435,10 @@ novel@^1.0.2:
     "@types/node" "^22.10.6"
     cmdk "^1.0.4"
     jotai "^2.11.0"
+    katex "^0.16.20"
     react-markdown "^9.0.3"
     react-moveable "^0.56.0"
     react-tweet "^3.2.1"
-    katex "^0.16.20"
     tippy.js "^6.3.7"
     tiptap-extension-global-drag-handle "^0.1.16"
     tunnel-rat "^0.1.2"
@@ -9933,12 +9937,13 @@ plist@^3.1.0:
     base64-js "^1.5.1"
     xmlbuilder "^15.1.1"
 
-"portal@apps/portal":
+portal@^workspace:apps/portal:
   version "workspace:apps/portal"
   resolved "workspace:apps/portal"
   devDependencies:
     "@bubba/db" "workspace:*"
     "@bubba/ui" "workspace:*"
+  devDependencies:
     "@types/node" "^22.13.2"
     "@types/react" "^19.0.8"
     "@types/react-dom" "^19.0.3"
@@ -12531,7 +12536,7 @@ wcwidth@^1.0.1:
   dependencies:
     defaults "^1.0.3"
 
-"web@apps/web":
+web@^workspace:apps/web:
   version "workspace:apps/web"
   resolved "workspace:apps/web"
   devDependencies:

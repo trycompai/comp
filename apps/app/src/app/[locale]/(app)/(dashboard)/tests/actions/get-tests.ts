@@ -3,12 +3,11 @@
 import { db } from "@bubba/db";
 import { authActionClient } from "@/actions/safe-action";
 import { z } from "zod";
-import { TestRunStatus } from "@bubba/db";
 
 const testsInputSchema = z.object({
   search: z.string().optional(),
   provider: z.enum(["AWS", "AZURE", "GCP"]).optional(),
-  status: z.nativeEnum(TestRunStatus).optional(),
+  status: z.string().optional(),
   page: z.number().optional(),
   per_page: z.number().optional(),
 });
@@ -36,39 +35,35 @@ export const getTests = authActionClient
     try {
       const skip = (page - 1) * per_page;
 
-      const [integrationRuns, total] = await Promise.all([
-        db.organizationIntegrationRun.findMany({
+      // Use the prisma client with correct model
+      const [integrationResults, total] = await Promise.all([
+        db.organizationIntegrationResults.findMany({
           where: {
             organizationId: user.organizationId,
-            AND: [
-              search
-                ? {
-                    OR: [
-                      { 
-                        organizationIntegration: {
-                          name: { contains: search, mode: "insensitive" }
-                        }
-                      },
-                      { 
-                        resultDetails: { 
-                          path: ["description"], 
-                          string_contains: search 
-                        } 
-                      },
-                    ],
-                  }
-                : {},
-              provider 
-                ? { 
-                    organizationIntegration: { 
-                      integration_id: provider 
-                    } 
-                  } 
-                : {},
-              status 
-                ? { status: status } 
-                : {},
-            ],
+            ...(search ? {
+              OR: [
+                {
+                  organizationIntegration: {
+                    name: {
+                      contains: search,
+                      mode: "insensitive",
+                    },
+                  },
+                },
+                {
+                  resultDetails: {
+                    path: ["description"],
+                    string_contains: search,
+                  },
+                },
+              ],
+            } : {}),
+            ...(provider ? {
+              organizationIntegration: {
+                integration_id: provider,
+              },
+            } : {}),
+            ...(status ? { label: status } : {}),
           },
           include: {
             organizationIntegration: {
@@ -78,77 +73,62 @@ export const getTests = authActionClient
                 integration_id: true,
               },
             },
-            executedBy: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
-            },
           },
           skip,
           take: per_page,
-          orderBy: { updatedAt: 'desc' },
+          orderBy: { completedAt: "desc" },
         }),
-        db.organizationIntegrationRun.count({
+        db.organizationIntegrationResults.count({
           where: {
             organizationId: user.organizationId,
-            AND: [
-              search
-                ? {
-                    OR: [
-                      { 
-                        organizationIntegration: {
-                          name: { contains: search, mode: "insensitive" }
-                        }
-                      },
-                      { 
-                        resultDetails: { 
-                          path: ["description"], 
-                          string_contains: search 
-                        } 
-                      },
-                    ],
-                  }
-                : {},
-              provider 
-                ? { 
-                    organizationIntegration: { 
-                      integration_id: provider 
-                    } 
-                  } 
-                : {},
-              status 
-                ? { status: status } 
-                : {},
-            ],
+            ...(search ? {
+              OR: [
+                {
+                  organizationIntegration: {
+                    name: {
+                      contains: search,
+                      mode: "insensitive",
+                    },
+                  },
+                },
+                {
+                  resultDetails: {
+                    path: ["description"],
+                    string_contains: search,
+                  },
+                },
+              ],
+            } : {}),
+            ...(provider ? {
+              organizationIntegration: {
+                integration_id: provider,
+              },
+            } : {}),
+            ...(status ? { label: status } : {}),
           },
         }),
       ]);
 
       // Transform the data to include integration info
-      const transformedTests = integrationRuns.map((run) => {
-        const description = typeof run.resultDetails === 'object' && run.resultDetails 
-          ? (run.resultDetails as any).description || "" 
+      const transformedTests = integrationResults.map((result) => {
+        const description = typeof result.resultDetails === 'object' && result.resultDetails 
+          ? (result.resultDetails as any).description || "" 
           : "";
           
         return {
-          id: run.id,
-          title: run.organizationIntegration.name,
+          id: result.id,
+          title: result.title || result.organizationIntegration.name,
           description,
-          provider: run.organizationIntegration.integration_id,
-          status: run.status,
-          result: run.result,
-          lastRun: run.startedAt,
-          lastRunStatus: run.status,
-          lastRunResult: run.result,
-          createdAt: run.createdAt,
-          updatedAt: run.updatedAt,
-          executedBy: {
-            id: run.executedBy.id,
-            name: run.executedBy.name,
-            email: run.executedBy.email,
-          },
+          provider: result.organizationIntegration.integration_id,
+          status: result.status,
+          result: result.label,
+          lastRun: result.completedAt,
+          lastRunStatus: result.status,
+          lastRunResult: result.label,
+          createdAt: result.completedAt || new Date(),
+          updatedAt: result.completedAt || new Date(),
+          // The executedBy information is no longer available in the new schema
+          executedBy: null,
         };
       });
 
@@ -157,7 +137,7 @@ export const getTests = authActionClient
         data: { tests: transformedTests, total },
       };
     } catch (error) {
-      console.error("Error fetching integration runs:", error);
+      console.error("Error fetching integration results:", error);
       return {
         success: false,
         error: "An unexpected error occurred",
