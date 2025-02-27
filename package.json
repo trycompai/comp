@@ -25,6 +25,7 @@
     "packages/*"
   ],
   "dependencies": {
+    "@aws-sdk/client-securityhub": "^3.751.0",
     "@manypkg/cli": "^0.23.0",
     "@nangohq/node": "^0.53.1",
     "gitmoji": "^1.1.1",
