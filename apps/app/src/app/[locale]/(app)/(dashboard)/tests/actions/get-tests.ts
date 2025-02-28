@@ -3,6 +3,7 @@
 import { db } from "@bubba/db";
 import { authActionClient } from "@/actions/safe-action";
 import { z } from "zod";
+import { AssignedUser } from "@/components/assigned-user";
 
 const testsInputSchema = z.object({
   search: z.string().optional(),
@@ -52,7 +53,7 @@ export const getTests = authActionClient
                 },
                 {
                   resultDetails: {
-                    path: ["description"],
+                    path: ["Title"],
                     string_contains: search,
                   },
                 },
@@ -110,25 +111,16 @@ export const getTests = authActionClient
       ]);
 
       // Transform the data to include integration info
-      const transformedTests = integrationResults.map((result) => {
-        const description = typeof result.resultDetails === 'object' && result.resultDetails 
-          ? (result.resultDetails as any).description || "" 
-          : "";
-          
+      const transformedTests = integrationResults.map((result: any) => {
         return {
           id: result.id,
+          severity: result.label,
+          result: result.status,
           title: result.title || result.organizationIntegration.name,
-          description,
           provider: result.organizationIntegration.integration_id,
-          status: result.status,
-          result: result.label,
-          lastRun: result.completedAt,
-          lastRunStatus: result.status,
-          lastRunResult: result.label,
           createdAt: result.completedAt || new Date(),
-          updatedAt: result.completedAt || new Date(),
           // The executedBy information is no longer available in the new schema
-          executedBy: null,
+          assignedUser: null,
         };
       });
 

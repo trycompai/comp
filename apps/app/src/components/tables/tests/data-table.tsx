@@ -39,6 +39,34 @@ function getColumns(): ColumnDef<TestType>[] {
 
   return [
     {
+      id: "severity",
+      accessorKey: "severity",
+      header: ({ column }) => (
+        <TableHead>
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            {t("tests.table.severity")}
+          </Button>
+        </TableHead>
+      ),
+    },
+    {
+      id: "result",
+      accessorKey: "result",
+      header: ({ column }) => (
+        <TableHead>
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            {t("tests.table.result")}
+          </Button>
+        </TableHead>
+      ),
+    },
+    {
       id: "title",
       accessorKey: "title",
       header: ({ column }) => (
@@ -67,33 +95,33 @@ function getColumns(): ColumnDef<TestType>[] {
       ),
     },
     {
-      id: "status",
-      accessorKey: "status",
+      id: "createdAt",
+      accessorKey: "createdAt",
       header: ({ column }) => (
         <TableHead>
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            {t("tests.table.status")}
+            {t("tests.table.createdAt")}
           </Button>
         </TableHead>
       ),
     },
     {
-      id: "lastRun",
-      accessorKey: "lastRun",
+      id: "assignedUser",
+      accessorKey: "assignedUser",
       header: ({ column }) => (
         <TableHead>
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            {t("tests.table.lastRun")}
+            {t("tests.table.assignedUser")}
           </Button>
         </TableHead>
       ),
-    },
+    }
   ];
 }
 
@@ -144,7 +172,9 @@ export function DataTable({
                         cell.column.id === "title" ||
                         cell.column.id === "provider" ||
                         cell.column.id === "status" ||
-                        cell.column.id === "lastRun",
+                        cell.column.id === "result" ||
+                        cell.column.id === "createdAt" ||
+                        cell.column.id === "assignedUser",
                     })}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}

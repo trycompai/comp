@@ -636,8 +636,11 @@ export default {
     table: {
       title: "Title",
       provider: "Provider",
-      status: "Status",
-      lastRun: "Last Run",
+      severity: "Severity",
+      result: "Result",
+      createdAt: "Created At",
+      assignedUser: "Assigned User",
+      assignedUserEmpty: "Not Assigned",
       no_results: "No results found",
     },
   },
