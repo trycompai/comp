@@ -786,7 +786,12 @@ export default {
       provider: "Proveedor",
       status: "Estado",
       lastRun: "Última ejecución",
-      no_results: "No se encontraron resultados"
+      no_results: "No se encontraron resultados",
+      severity: "Severidad",
+      result: "Resultado",
+      createdAt: "Creado En",
+      assignedUser: "Usuario Asignado",
+      assignedUserEmpty: "No Asignado"
     }
   }
 } as const;

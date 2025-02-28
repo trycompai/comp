@@ -786,7 +786,12 @@ export default {
       provider: "Leverandør",
       status: "Status",
       lastRun: "Siste kjøring",
-      no_results: "Ingen resultater funnet"
+      no_results: "Ingen resultater funnet",
+      severity: "Alvorlighetsgrad",
+      result: "Resultat",
+      createdAt: "Opprettet den",
+      assignedUser: "Tildelt bruker",
+      assignedUserEmpty: "Ikke tildelt"
     }
   }
 } as const;
