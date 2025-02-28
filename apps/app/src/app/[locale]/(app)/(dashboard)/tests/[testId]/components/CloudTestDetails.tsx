@@ -124,44 +124,33 @@ export function CloudTestDetails({ testId }: CloudTestDetailsProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Test Details</CardTitle>
+          <CardTitle>Concerns</CardTitle>
         </CardHeader>
         <CardContent className="p-6">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-2">
-              <Label>Created By</Label>
-              <p>{cloudTest.createdBy.name || cloudTest.createdBy.email || "Unknown"}</p>
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label>Last Updated By</Label>
-              <p>{cloudTest.updatedBy.name || cloudTest.updatedBy.email || "Unknown"}</p>
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label>Created At</Label>
-              <p>
-                {formatDate(cloudTest.createdAt.toISOString(), "MMM d, yyyy HH:mm")}
-              </p>
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label>Last Updated</Label>
-              <p>
-                {formatDate(cloudTest.updatedAt.toISOString(), "MMM d, yyyy HH:mm")}
-              </p>
-            </div>
-          </div>
+          {cloudTest.resultDetails?.Description}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Remediation</CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
+          <p>{cloudTest.resultDetails?.Remediation?.Recommendation?.Text}</p>
+          {cloudTest.resultDetails?.Remediation?.Recommendation?.Url}
         </CardContent>
       </Card>
 
       <Tabs defaultValue="runs">
         <TabsList>
-          <TabsTrigger value="runs">Test Runs</TabsTrigger>
-          <TabsTrigger value="configuration">Configuration</TabsTrigger>
+          <TabsTrigger value="runs">Resources</TabsTrigger>
+          <TabsTrigger value="configuration">Test Results</TabsTrigger>
         </TabsList>
 
         <TabsContent value="runs" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>Test Run History</CardTitle>
+              <CardTitle>Resources</CardTitle>
             </CardHeader>
             <CardContent>
               {cloudTest.runs.length === 0 ? (
@@ -172,50 +161,36 @@ export function CloudTestDetails({ testId }: CloudTestDetailsProps) {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Result</TableHead>
-                      <TableHead>Started</TableHead>
-                      <TableHead>Completed</TableHead>
-                      <TableHead>Executed By</TableHead>
+                      <TableHead>Id</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Region</TableHead>
+                      <TableHead>Partition</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {cloudTest.runs.map((run) => (
+                    {cloudTest.resultDetails?.Resources.map((run) => (
                       <TableRow key={run.id}>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            {getRunStatusIcon(run.status, run.result)}
-                            {run.status}
+                            {run.Id}
                           </div>
                         </TableCell>
                         <TableCell>
-                          {run.result ? (
-                            <Badge
-                              className={cn(
-                                run.result === "PASS" && "bg-green-500",
-                                run.result === "FAILED" && "bg-red-500",
-                                run.result === "ERROR" && "bg-orange-500"
-                              )}
-                            >
-                              {run.result}
-                            </Badge>
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          )}
+                          <div className="flex items-center gap-2">
+                            {run.Type}
+                          </div>
                         </TableCell>
                         <TableCell>
-                          {run.startedAt 
-                            ? formatDate(run.startedAt.toISOString(), "MMM d, yyyy HH:mm") 
-                            : "-"}
+                          <div className="flex items-center gap-2">
+                            {run.Region}
+                          </div>
                         </TableCell>
                         <TableCell>
-                          {run.completedAt 
-                            ? formatDate(run.completedAt.toISOString(), "MMM d, yyyy HH:mm") 
-                            : "-"}
+                          <div className="flex items-center gap-2">
+                            {run.Partition}
+                          </div>
                         </TableCell>
-                        <TableCell>
-                          {run.executedBy?.name || run.executedBy?.email || "System"}
-                        </TableCell>
+                      
                       </TableRow>
                     ))}
                   </TableBody>
