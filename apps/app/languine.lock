@@ -401,8 +401,11 @@ files:
     tests.register.auth_config.placeholder: 6909c5abd5f0a9e9a96b4a0233722cd4
     tests.table.title: b78a3223503896721cca1303f776159b
     tests.table.provider: 27703c8f150ac4bb0a3a83a7857353af
-    tests.table.status: ec53a8c4f07baed5d8825072c89799be
-    tests.table.lastRun: 05a3a24340b7b9cc8d4e08f0ef4f4dd9
+    tests.table.severity: 007cc9547ae8884ad597cd92ba505422
+    tests.table.result: 8eea62084ca7e541d918e823422bd82e
+    tests.table.createdAt: 6e9a375edaa0f55f2b86e1f415a33172
+    tests.table.assignedUser: 28a7de43bb5297bf6122425d52210f93
+    tests.table.assignedUserEmpty: f5dcfb95878279f84cc6bf4de3090dbb
     tests.table.no_results: e576c23d915755d83e2d1f47bd9f6c22
     user_menu.theme: d721757161f7f70c5b0949fdb6ec2c30
     user_menu.language: 4994a8ffeba4ac3140beb89e8d41f174
