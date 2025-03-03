@@ -1,4 +1,3 @@
-import { CloudProvider } from "@bubba/db";
 import { AppError as ActionAppError } from "./actions/types";
 
 // Re-export types from actions/types.ts for backward compatibility
