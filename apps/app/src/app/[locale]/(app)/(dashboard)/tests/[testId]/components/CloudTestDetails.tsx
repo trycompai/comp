@@ -154,7 +154,7 @@ export function CloudTestDetails({ testId }: CloudTestDetailsProps) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {cloudTest.resultDetails?.Resources.map((run) => (
+                    {cloudTest.resultDetails?.Resources.map((run: any) => (
                       <TableRow key={run.id}>
                         <TableCell>
                           <div className="flex items-center gap-2">
