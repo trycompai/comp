@@ -1,6 +1,4 @@
 import { z } from "zod";
-import type { Role } from "@bubba/db";
-import type { CloudProvider, TestRunStatus } from "@prisma/client";
 
 export const testSchema = z.object({
   id: z.string(),

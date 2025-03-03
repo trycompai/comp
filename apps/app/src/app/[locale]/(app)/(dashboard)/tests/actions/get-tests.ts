@@ -3,7 +3,6 @@
 import { db } from "@bubba/db";
 import { authActionClient } from "@/actions/safe-action";
 import { z } from "zod";
-import { AssignedUser } from "@/components/assigned-user";
 
 const testsInputSchema = z.object({
   search: z.string().optional(),
