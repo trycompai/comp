@@ -1,5 +1,4 @@
 "use client";
-
 import { useState } from "react";
 import useSWR from "swr";
 import { useSearchParams } from "next/navigation";
@@ -14,7 +13,7 @@ interface TestsResponse {
 
 interface TestsInput {
   search?: string;
-  provider?: string;
+  provider?: "AWS" | "AZURE" | "GCP";
   status?: string;
   page?: number;
   per_page?: number;
@@ -40,13 +39,24 @@ async function fetchTests(input: TestsInput): Promise<TestsResponse> {
     throw error;
   }
 
+  if (!result.data) {
+    const error: AppError = {
+      code: "UNEXPECTED_ERROR",
+      message: "No data returned from server",
+    };
+    throw error;
+  }
+
   return result.data.data as TestsResponse;
 }
 
 export function useTests() {
   const searchParams = useSearchParams();
   const search = searchParams.get("search") || undefined;
-  const provider = searchParams.get("provider") || undefined;
+  const providerParam = searchParams.get("provider") || undefined;
+  const provider = providerParam && ["AWS", "AZURE", "GCP"].includes(providerParam) 
+    ? providerParam as "AWS" | "AZURE" | "GCP" 
+    : undefined;
   const status = searchParams.get("status") || undefined;
   const page = Number(searchParams.get("page")) || 1;
   const per_page = Number(searchParams.get("per_page")) || 10;
