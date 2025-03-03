@@ -720,7 +720,8 @@ export default {
     title: "Testes na Nuvem",
     actions: {
       create: "Adicionar Teste na Nuvem",
-      clear: "Limpar filtros"
+      clear: "Limpar filtros",
+      refresh: "Atualizar"
     },
     empty: {
       no_tests: {

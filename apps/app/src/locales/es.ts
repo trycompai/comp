@@ -720,7 +720,8 @@ export default {
     title: "Pruebas en la Nube",
     actions: {
       create: "Agregar Prueba en la Nube",
-      clear: "Limpiar filtros"
+      clear: "Limpiar filtros",
+      refresh: "Actualizar"
     },
     empty: {
       no_tests: {

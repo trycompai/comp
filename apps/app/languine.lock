@@ -377,6 +377,7 @@ files:
     tests.title: 107f3983ed2f362df6195c163001fe7b
     tests.actions.create: 348a2d59fd6abf9c9ba4e1ce664f6fc5
     tests.actions.clear: 0b275442d6556cff30b75f37f1918899
+    tests.actions.refresh: 63a6a88c066880c5ac42394a22803ca6
     tests.empty.no_tests.title: 32aca943b703843c5449d5ebb8f82845
     tests.empty.no_tests.description: b96a1b141b00cb3def88e4b16db515aa
     tests.empty.no_results.title: e576c23d915755d83e2d1f47bd9f6c22

@@ -720,7 +720,8 @@ export default {
     title: "Tests en nuage",
     actions: {
       create: "Ajouter un test en nuage",
-      clear: "Effacer les filtres"
+      clear: "Effacer les filtres",
+      refresh: "Rafraîchir"
     },
     empty: {
       no_tests: {
