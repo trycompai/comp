@@ -1,22 +1,13 @@
 "use client";
 
-import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@bubba/ui/card";
 import { useI18n } from "@/locales/client";
-import { cn } from "@bubba/ui/cn";
 import { useCloudTestDetails } from "../../hooks/useCloudTest";
 import { Skeleton } from "@bubba/ui/skeleton";
 import { AlertCircle, CheckCircle2, Clock, Info, Play, XCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@bubba/ui/alert";
 import { Label } from "@bubba/ui/label";
-import { formatDate } from "@/utils/format";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@bubba/ui/tabs";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@bubba/ui/accordion";
 import { Badge } from "@bubba/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@bubba/ui/table";
 
@@ -126,7 +117,7 @@ export function CloudTestDetails({ testId }: CloudTestDetailsProps) {
         <CardHeader>
           <CardTitle>Concerns</CardTitle>
         </CardHeader>
-        <CardContent className="p-6">
+        <CardContent className="p-3">
           {cloudTest.resultDetails?.Description}
         </CardContent>
       </Card>
@@ -135,29 +126,24 @@ export function CloudTestDetails({ testId }: CloudTestDetailsProps) {
         <CardHeader>
           <CardTitle>Remediation</CardTitle>
         </CardHeader>
-        <CardContent className="p-6">
+        <CardContent className="p-3">
           <p>{cloudTest.resultDetails?.Remediation?.Recommendation?.Text}</p>
           {cloudTest.resultDetails?.Remediation?.Recommendation?.Url}
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="runs">
+      <Tabs defaultValue="resources">
         <TabsList>
-          <TabsTrigger value="runs">Resources</TabsTrigger>
-          <TabsTrigger value="configuration">Test Results</TabsTrigger>
+          <TabsTrigger value="resources">Resources</TabsTrigger>
+          <TabsTrigger value="raw-log">Raw Log</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="runs" className="mt-6">
+        <TabsContent value="resources" className="mt-6">
           <Card>
             <CardHeader>
               <CardTitle>Resources</CardTitle>
             </CardHeader>
             <CardContent>
-              {cloudTest.runs.length === 0 ? (
-                <div className="text-center py-6 text-muted-foreground">
-                  <p>No test runs recorded yet</p>
-                </div>
-              ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -195,12 +181,11 @@ export function CloudTestDetails({ testId }: CloudTestDetailsProps) {
                     ))}
                   </TableBody>
                 </Table>
-              )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="configuration" className="mt-6">
+        <TabsContent value="raw-log" className="mt-6">
           <Card>
             <CardHeader>
               <CardTitle>Test Results</CardTitle>

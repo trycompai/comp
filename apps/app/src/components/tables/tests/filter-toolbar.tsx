@@ -70,12 +70,11 @@ export function FilterToolbar({ isEmpty }: FilterToolbarProps) {
         </div>
 
         <div className="md:hidden">
-          {/* <Button asChild variant="action">
+          {<Button asChild variant="action">
             <Link href="/integrations">
-              <Plus className="h-4 w-4" />
-              {t("common.actions.addNew")}
+              {t("tests.actions.refresh")}
             </Link>
-          </Button> */}
+          </Button>}
         </div>
       </div>
 
@@ -94,13 +93,12 @@ export function FilterToolbar({ isEmpty }: FilterToolbarProps) {
             {t("common.actions.clear")}
           </Button>
         )}
-{/* 
+{
         <Button asChild variant="action">
           <Link href="/integrations">
-            <Plus className="h-4 w-4" />
-            {t("common.actions.addNew")}
+            {t("tests.actions.refresh")}
           </Link>
-        </Button> */}
+        </Button> }
       </div>
 
       <RegisterTestSheet />

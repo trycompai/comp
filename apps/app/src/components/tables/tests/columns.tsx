@@ -6,17 +6,15 @@ export interface TestType {
   id: string;
   title: string;
   description: string | null;
-  provider: CloudProvider;
+  provider: string;
   status: string;
-  config: Record<string, unknown>;
-  authConfig: Record<string, unknown>;
-  createdAt: Date;
-  updatedAt: Date;
-  runs?: {
-    status: string;
-    result: string | null;
-    completedAt: Date | null;
-  }[];
+  resultDetails: any;
+  label: string | null;
+  assignedUserId: {
+    id: string;
+    name: string | null;
+    email: string | null;
+  };
 }
 
 // Note: Column definitions have been moved to data-table.tsx

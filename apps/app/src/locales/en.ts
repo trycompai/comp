@@ -589,6 +589,7 @@ export default {
     actions: {
       create: "Add Cloud Test",
       clear: "Clear filters",
+      refresh: "Refresh",
     },
     empty: {
       no_tests: {
