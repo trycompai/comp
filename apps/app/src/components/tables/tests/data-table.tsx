@@ -24,10 +24,12 @@ import { DataTablePagination } from "./data-table-pagination";
 
 interface DataTableProps {
   columnHeaders: {
+    severity: string;
+    result: string;
     title: string;
     provider: string;
-    status: string;
-    lastRun: string;
+    createdAt: string;
+    assignedUser: string;
   };
   data: TestType[];
   pageCount: number;
@@ -169,10 +171,10 @@ export function DataTable({
                     key={cell.id}
                     className={cn({
                       "hidden md:table-cell":
+                        cell.column.id === "severity" ||
+                        cell.column.id === "result" ||
                         cell.column.id === "title" ||
                         cell.column.id === "provider" ||
-                        cell.column.id === "status" ||
-                        cell.column.id === "result" ||
                         cell.column.id === "createdAt" ||
                         cell.column.id === "assignedUser",
                     })}

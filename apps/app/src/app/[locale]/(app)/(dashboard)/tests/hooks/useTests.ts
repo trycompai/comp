@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import useSWR from "swr";
 import { useSearchParams } from "next/navigation";
 
@@ -68,56 +68,12 @@ export function useTests() {
   /** Track local mutation loading state */
   const [isMutating, setIsMutating] = useState(false);
 
-  /**
-   * Calls the server action to create a test, then
-   * revalidates the tests list if successful.
-   */
-  const createTest = useCallback(
-    async (testData: {
-      title: string;
-      description?: string;
-      provider: "AWS" | "AZURE" | "GCP";
-      config: Record<string, unknown>;
-      authConfig: Record<string, unknown>;
-    }) => {
-      setIsMutating(true);
-      try {
-        // TODO: Implement createTestAction
-        // const result = await createTestAction({
-        //   title: testData.title,
-        //   description: testData.description,
-        //   provider: testData.provider,
-        //   config: testData.config,
-        //   authConfig: testData.authConfig,
-        // });
-
-        // if (!result) {
-        //   throw new Error("Failed to create test");
-        // }
-
-        // if (result.serverError) {
-        //   throw new Error(result.serverError || "Failed to create test");
-        // }
-
-        // If successful, revalidate the SWR data
-        await revalidateTests();
-      } catch (err) {
-        console.error("createTestAction failed:", err);
-        throw err;
-      } finally {
-        setIsMutating(false);
-      }
-    },
-    [revalidateTests]
-  );
   
   return {
     tests: data?.tests ?? [],
     total: data?.total ?? 0,
     isLoading,
     isMutating,
-    error,
-    revalidateTests,
-    createTest,
+    error
   };
 } 

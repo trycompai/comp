@@ -4,20 +4,21 @@ import type { CloudProvider, TestRunStatus } from "@prisma/client";
 
 export const testSchema = z.object({
   id: z.string(),
-  name: z.string(),
-  email: z.string(),
-  department: z.string().nullable(),
-});
-
-export const testsInputSchema = z.object({
-  search: z.string().optional(),
-  role: z.string().optional(),
-  page: z.number().default(1),
-  per_page: z.number().default(10),
+  title: z.string(),
+  description: z.string().nullable(),
+  provider: z.string(),
+  results: z.string(),
+  resultDetails: z.any(),
+  label: z.string().nullable(),
+  completedAt: z.date(),
+  assignedUserId: z.object({
+    id: z.string(),
+    name: z.string().nullable(),
+    email: z.string().nullable(),
+  })
 });
 
 export type Test = z.infer<typeof testSchema>;
-export type TestsInput = z.infer<typeof testsInputSchema>;
 
 export interface TestsResponse {
   tests: Test[];
@@ -28,13 +29,15 @@ export interface CloudTest {
   id: string;
   title: string;
   description: string | null;
-  provider: CloudProvider;
+  provider: string;
   status: string;
-  lastRun: Date | null;
-  lastRunStatus: TestRunStatus | null;
-  lastRunResult: string | null;
-  createdAt: Date;
-  updatedAt: Date;
+  resultDetails: any;
+  label: string | null;
+  assignedUserId: {
+    id: string;
+    name: string | null;
+    email: string | null;
+  };
 }
 
 export interface AppError {

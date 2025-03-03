@@ -14,10 +14,12 @@ import { TestsListSkeleton } from "./TestsListSkeleton";
 
 interface TestsListProps {
   columnHeaders: {
+    severity: string;
+    result: string;
     title: string;
     provider: string;
-    status: string;
-    lastRun: string;
+    createdAt: string;
+    assignedUser: string;
   };
 }
 
