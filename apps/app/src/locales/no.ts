@@ -720,7 +720,8 @@ export default {
     title: "Skytester",
     actions: {
       create: "Legg til skytest",
-      clear: "Fjern filtre"
+      clear: "Fjern filtre",
+      refresh: "Oppdater"
     },
     empty: {
       no_tests: {
