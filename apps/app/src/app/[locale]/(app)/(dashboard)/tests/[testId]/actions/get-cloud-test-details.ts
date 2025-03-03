@@ -56,26 +56,10 @@ export async function getCloudTestDetails(input: { testId: string }): Promise<Ac
         : "",
       provider: integrationResult.integration_id,
       status: integrationResult.status,
-      config: integrationResult.settings,
       resultDetails: integrationResult.resultDetails,
-      authConfig: integrationResult.user_settings,
-      createdAt: integrationResult.completedAt || new Date(),
-      updatedAt: integrationResult.completedAt || new Date(),
-      // Use placeholder user to match the required type
-      createdBy: placeholderUser,
-      updatedBy: placeholderUser,
+      label: integrationResult.label,
+      assignedUserId: placeholderUser,
       // Since we're looking at a single result entry
-      runs: [{
-        id: integrationResult.id,
-        status: integrationResult.status,
-        result: integrationResult.label,
-        resultDetails: integrationResult.resultDetails,
-        startedAt: integrationResult.completedAt, // Use completedAt as a fallback
-        completedAt: integrationResult.completedAt,
-        executedBy: placeholderUser, // Use placeholder user object
-        createdAt: integrationResult.completedAt || new Date(),
-        updatedAt: integrationResult.completedAt || new Date(),
-      }],
     };
 
     return {

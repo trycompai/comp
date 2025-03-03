@@ -8,7 +8,7 @@ CREATE TABLE "Organization_integration_results" (
     "completedAt" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP,
     "organizationIntegrationId" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
-    "assignedUserId" TEXT NOT NULL,
+    "assignedUserId" TEXT,
 
     CONSTRAINT "Organization_integration_results_pkey" PRIMARY KEY ("id")
 );

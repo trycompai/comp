@@ -102,7 +102,7 @@ model User {
   RiskAttachment          RiskAttachment[]
   organizationMemberships OrganizationMember[]
   Employee                Employee[]
-  OrganizationIntegrationResults OrganizationIntegrationResults[]
+  integrationResults      OrganizationIntegrationResults[]
 
   @@index([email])
   @@index([organizationId])
@@ -1082,9 +1082,9 @@ model OrganizationIntegrationResults {
   completedAt               DateTime?     @default(now())
   organizationIntegrationId String
   organizationId            String
-  assignedUserId            String
+  assignedUserId            String?
 
-  assignedUser             User           @relation(fields: [assignedUserId], references: [id], onDelete: Cascade)
+  assignedUser             User?          @relation(fields: [assignedUserId], references: [id], onDelete: Cascade)
   organizationIntegration  OrganizationIntegrations @relation(fields: [organizationIntegrationId], references: [id], onDelete: Cascade)
   organization             Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 

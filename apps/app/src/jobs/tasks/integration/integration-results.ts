@@ -107,14 +107,25 @@ export const sendIntegrationResults = schemaTask({
 
           // Store the integration results using model name that matches the database
           for (const result of results) {
-            await db.OrganizationIntegrationResults.create({
+            // First verify the integration exists
+            const existingIntegration = await db.organizationIntegrations.findUnique({
+              where: { id: integration.id }
+            });
+            
+            if (!existingIntegration) {
+              logger.error(`Integration with ID ${integration.id} not found`);
+              continue;
+            }
+            
+            await db.organizationIntegrationResults.create({
               data: {
                 title: result?.Title,
-                status: result?.Compliance?.Status,
-                label: result?.Severity?.Label,
+                status: result?.Compliance?.Status || 'unknown',
+                label: result?.Severity?.Label || 'INFO',
                 resultDetails: result || { error: "No result returned" },
-                organizationIntegrationId: integration.id,
+                organizationIntegrationId: existingIntegration.id,
                 organizationId: integration.organization.id,
+                // assignedUserId is now optional, so we don't need to provide it
               }
             });
           }
@@ -133,16 +144,22 @@ export const sendIntegrationResults = schemaTask({
       logger.error(`Error running integration: ${error}`);
       
       // Record the failure using model name that matches the database
-      await db.OrganizationIntegrationResults.create({
-        data: {
-          title: `${integration.name} Security Check`,
-          status: 'error',
-          label: 'ERROR',
-          resultDetails: { error: error instanceof Error ? error.message : String(error) },
-          organizationIntegrationId: integration.id,
-          organizationId: integration.organization.id,
-        }
-      });
+      try {
+        
+        await db.organizationIntegrationResults.create({
+          data: {
+            title: `${integration.name} Security Check`,
+            status: 'error',
+            label: 'ERROR',
+            resultDetails: { error: error instanceof Error ? error.message : String(error) },
+            organizationIntegrationId: integration.integration_id,
+            organizationId: integration.organization.id,
+            // assignedUserId is now optional, so we don't need to provide it
+          }
+        });
+      } catch (createError) {
+        logger.error(`Failed to create error record: ${createError}`);
+      }
       
       return { 
         success: false, 

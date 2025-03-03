@@ -19,36 +19,13 @@ export type CloudTestResult = {
   description: string | null;
   provider: string;
   status: string;
-  config: any;
-  authConfig: any;
-  createdAt: Date;
-  updatedAt: Date;
   resultDetails: any;
-  createdBy: {
+  label: string | null;
+  assignedUserId: {
     id: string;
     name: string | null;
     email: string | null;
   };
-  updatedBy: {
-    id: string;
-    name: string | null;
-    email: string | null;
-  };
-  runs: Array<{
-    id: string;
-    status: string;
-    result: string | null;
-    resultDetails: any | null;
-    startedAt: Date | null;
-    completedAt: Date | null;
-    executedBy: {
-      id: string;
-      name: string | null;
-      email: string | null;
-    };
-    createdAt: Date;
-    updatedAt: Date;
-  }>;
 };
 
 // Type-safe action response
