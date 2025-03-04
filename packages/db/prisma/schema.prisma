@@ -63,6 +63,7 @@ model User {
   sessions                Session[]
   TaskAttachment          TaskAttachment[]
   TaskComments            TaskComments[]
+  PolicyComments          PolicyComments[]
   organization            Organization?          @relation("CurrentOrganization", fields: [organizationId], references: [id])
   VendorComment           VendorComment[]
   VendorMitigationTask    VendorMitigationTask[]
@@ -102,6 +103,7 @@ model Organization {
   RiskMitigationTask       RiskMitigationTask[]
   TaskAttachment           TaskAttachment[]
   TaskComments             TaskComments[]
+  PolicyComments           PolicyComments[]
   users                    User[]                     @relation("CurrentOrganization")
   VendorComment            VendorComment[]
   VendorContact            VendorContact[]
@@ -738,6 +740,7 @@ model OrganizationPolicy {
   frequency                      Frequency?
   lastPublishedAt                DateTime?
   OrganizationControlRequirement OrganizationControlRequirement[]
+  PolicyComments                 PolicyComments[]
   organization                   Organization                     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   policy                         Policy                           @relation(fields: [policyId], references: [id], onDelete: Cascade)
   ownerId                        String?
@@ -880,6 +883,22 @@ model OrganizationApiKey {
 
   @@index([organizationId])
   @@index([key])
+}
+
+model PolicyComments {
+  id                   String             @id @default(cuid())
+  organizationPolicyId String
+  ownerId              String
+  organizationId       String
+  content              String
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  organization         Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  owner                User               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  organizationPolicy   OrganizationPolicy @relation(fields: [organizationPolicyId], references: [id], onDelete: Cascade)
+
+  @@index([organizationPolicyId])
+  @@index([organizationId])
 }
 
 enum Tier {

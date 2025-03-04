@@ -309,3 +309,17 @@ export const apiKeySchema = z.object({
     .max(64, { message: "Name must be less than 64 characters" }),
   expiresAt: z.enum(["30days", "90days", "1year", "never"]),
 });
+
+export const createPolicyCommentSchema = z.object({
+  policyId: z.string().min(1, {
+    message: "Policy ID is required",
+  }),
+  content: z
+    .string()
+    .min(1, {
+      message: "Comment content is required",
+    })
+    .max(1000, {
+      message: "Comment content should be at most 1000 characters",
+    }),
+});
