@@ -28,7 +28,15 @@ export type Test = z.infer<typeof testSchema>;
 export type TestsInput = z.infer<typeof testsInputSchema>;
 
 export interface TestsResponse {
-  tests: Test[];
+  tests: {
+    id: string;
+    severity: string | null;
+    result: string;
+    title: string;
+    provider: string;
+    createdAt: Date;
+    assignedUser: null;
+  }[];
   total: number;
 }
 
