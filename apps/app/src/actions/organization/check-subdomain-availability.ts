@@ -20,21 +20,21 @@ export const checkSubdomainAvailability = authActionClient
         where: {
           subdomain: {
             equals: subdomain,
-            mode: 'insensitive'
+            mode: "insensitive",
           },
         },
-        select: { id: true }
+        select: { id: true },
       });
 
       return {
         success: true,
-        data: !subdomainExists
+        data: !subdomainExists,
       };
     } catch (error) {
-      console.error('Prisma error:', error);
+      console.error("Prisma error:", error);
       return {
         success: false,
-        error: "Failed to check subdomain availability"
+        error: "Failed to check subdomain availability",
       };
     }
   });

@@ -1,8 +1,8 @@
 import { auth } from "@/auth";
 import { setStaticParamsLocale } from "next-international/server";
 import { redirect } from "next/navigation";
-import { FrameworkOverview } from "./Components/FrameworkOverview";
-import { FrameworkControls } from "./Components/FrameworkControls";
+import { FrameworkOverview } from "./components/FrameworkOverview";
+import { FrameworkControls } from "./components/FrameworkControls";
 
 interface PageProps {
   params: Promise<{

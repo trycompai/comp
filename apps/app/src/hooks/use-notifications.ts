@@ -15,7 +15,7 @@ interface Notification {
     from?: string;
     to?: string;
     [key: string]: any; // Allow for other payload fields
-  }
+  };
 }
 
 export function useNotifications() {
@@ -39,8 +39,8 @@ export function useNotifications() {
       );
 
       headlessService.markAllMessagesAsRead({
-        listener: () => { },
-        onError: () => { },
+        listener: () => {},
+        onError: () => {},
       });
     }
   };
@@ -64,8 +64,8 @@ export function useNotifications() {
 
       headlessService.markNotificationsAsRead({
         messageId: [messageId],
-        listener: (result) => { },
-        onError: (error) => { },
+        listener: (result) => {},
+        onError: (error) => {},
       });
     }
   };
@@ -75,7 +75,7 @@ export function useNotifications() {
 
     if (headlessService) {
       headlessService.fetchNotifications({
-        listener: () => { },
+        listener: () => {},
         onSuccess: (response) => {
           setLoading(false);
           setNotifications(
@@ -84,8 +84,8 @@ export function useNotifications() {
               read: msg.read,
               seen: msg.seen,
               createdAt: msg.createdAt,
-              payload: msg.payload || {} // Handle case where payload might be empty
-            }))
+              payload: msg.payload || {}, // Handle case where payload might be empty
+            })),
           );
         },
       });
@@ -103,8 +103,8 @@ export function useNotifications() {
         })),
       );
       headlessService.markAllMessagesAsSeen({
-        listener: () => { },
-        onError: () => { },
+        listener: () => {},
+        onError: () => {},
       });
     }
   };
@@ -122,7 +122,7 @@ export function useNotifications() {
       headlessService.listenNotificationReceive({
         listener: () => {
           fetchNotifications();
-        }
+        },
       });
     }
   }, [headlessServiceRef.current]);
@@ -135,14 +135,14 @@ export function useNotifications() {
       });
 
       headlessService.initializeSession({
-        listener: () => { },
+        listener: () => {},
         onSuccess: () => {
-          console.log('Novu session initialized successfully');
+          console.log("Novu session initialized successfully");
           headlessServiceRef.current = headlessService;
           fetchNotifications();
         },
         onError: (error) => {
-          console.error('Failed to initialize Novu session:', error);
+          console.error("Failed to initialize Novu session:", error);
         },
       });
     }
@@ -153,7 +153,9 @@ export function useNotifications() {
     markAllMessagesAsRead,
     markMessageAsRead,
     markAllMessagesAsSeen,
-    hasUnseenNotifications: notifications.some((notification) => !notification.seen),
+    hasUnseenNotifications: notifications.some(
+      (notification) => !notification.seen,
+    ),
     notifications,
     subscriberId,
   };

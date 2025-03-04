@@ -3,14 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack -p 3002",
+    "dev": "NODE_OPTIONS='--inspect' next dev --turbopack -p 3002",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
     "better-auth": "^1.1.18",
-    "next": "15.1.7",
+    "next": "^15.2.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-otp-input": "^3.1.1"

@@ -5,7 +5,7 @@ export const newOrganizationTask = schemaTask({
   id: "new-organization",
   schema: z.object({
     organizationId: z.string(),
-    userId: z.string()
+    userId: z.string(),
   }),
   run: async ({ organizationId, userId }) => {
     logger.info("New organization task started", {

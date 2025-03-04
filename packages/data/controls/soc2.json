@@ -11,7 +11,8 @@
         "type": "policy",
         "name": "Corporate Governance Policy",
         "description": "Reference to the Corporate Governance Policy that defines board oversight responsibilities, roles, review frequency, and reporting requirements.",
-        "policyId": "corporate_governance"
+        "policyId": "corporate_governance",
+        "frequency": "yearly"
       },
       {
         "id": "CC1.1-procedure",
@@ -23,7 +24,8 @@
         "id": "CC1.1-evidence",
         "type": "evidence",
         "name": "Board Meeting Documentation",
-        "description": "Minutes of board meetings and oversight reports demonstrating active review of internal controls."
+        "description": "Minutes of board meetings and oversight reports demonstrating active review of internal controls.",
+        "frequency": "quarterly"
       }
     ]
   },
@@ -39,7 +41,8 @@
         "type": "policy",
         "name": "Corporate Governance Policy",
         "description": "Reference to the Corporate Governance Policy that outlines management responsibilities and the organizational structure for effective oversight.",
-        "policyId": "corporate_governance"
+        "policyId": "corporate_governance",
+        "frequency": "yearly"
       },
       {
         "id": "CC1.2-procedure",
@@ -57,7 +60,8 @@
         "id": "CC1.2-evidence",
         "type": "evidence",
         "name": "Management Structure Documentation",
-        "description": "Organizational charts, management meeting minutes, and training records."
+        "description": "Organizational charts, management meeting minutes, and training records.",
+        "frequency": "yearly"
       }
     ]
   },
@@ -73,7 +77,8 @@
         "type": "policy",
         "name": "Human Resources Policy",
         "description": "Reference to the Human Resources Policy that defines recruitment, retention, and competency requirements.",
-        "policyId": "human_resources"
+        "policyId": "human_resources",
+        "frequency": "yearly"
       },
       {
         "id": "CC1.3-procedure",
@@ -85,7 +90,8 @@
         "id": "CC1.3-evidence",
         "type": "evidence",
         "name": "HR Documentation",
-        "description": "HR records, training logs, and performance evaluations."
+        "description": "HR records, training logs, and performance evaluations.",
+        "frequency": "yearly"
       }
     ]
   },
@@ -101,7 +107,8 @@
         "type": "policy",
         "name": "Human Resources Policy",
         "description": "Reference to the Human Resources Policy that outlines roles, responsibilities, and disciplinary measures.",
-        "policyId": "human_resources"
+        "policyId": "human_resources",
+        "frequency": "yearly"
       },
       {
         "id": "CC1.4-procedure",
@@ -119,7 +126,8 @@
         "id": "CC1.4-evidence",
         "type": "evidence",
         "name": "Personnel Compliance Documentation",
-        "description": "Employee acknowledgment forms, training records, and disciplinary documentation."
+        "description": "Employee acknowledgment forms, training records, and disciplinary documentation.",
+        "frequency": "yearly"
       }
     ]
   },
@@ -135,7 +143,8 @@
         "type": "policy",
         "name": "Corporate Governance Policy",
         "description": "Reference to the Corporate Governance Policy (or a dedicated Code of Conduct within it) that defines ethical behavior and compliance expectations.",
-        "policyId": "corporate_governance"
+        "policyId": "corporate_governance",
+        "frequency": "yearly"
       },
       {
         "id": "CC1.5-procedure",
@@ -153,7 +162,8 @@
         "id": "CC1.5-evidence",
         "type": "evidence",
         "name": "Ethics Compliance Documentation",
-        "description": "Signed acknowledgment forms, training completion records, and records of investigations or disciplinary actions."
+        "description": "Signed acknowledgment forms, training completion records, and records of investigations or disciplinary actions.",
+        "frequency": "yearly"
       }
     ]
   },
@@ -169,7 +179,8 @@
         "type": "policy",
         "name": "Information Security Policy",
         "description": "Reference to the Information Security Policy that outlines data accuracy, completeness, and timeliness requirements.",
-        "policyId": "information_security"
+        "policyId": "information_security",
+        "frequency": "yearly"
       },
       {
         "id": "CC2.1-procedure",
@@ -181,7 +192,8 @@
         "id": "CC2.1-evidence",
         "type": "evidence",
         "name": "Data Quality Documentation",
-        "description": "Data quality reports, audit logs, and records of corrective actions."
+        "description": "Data quality reports, audit logs, and records of corrective actions.",
+        "frequency": "quarterly"
       }
     ]
   },
@@ -197,7 +209,8 @@
         "type": "policy",
         "name": "Corporate Governance Policy",
         "description": "Reference to the Corporate Governance Policy that includes guidelines for internal communications of control objectives.",
-        "policyId": "corporate_governance"
+        "policyId": "corporate_governance",
+        "frequency": "yearly"
       },
       {
         "id": "CC2.2-procedure",
@@ -209,7 +222,8 @@
         "id": "CC2.2-evidence",
         "type": "evidence",
         "name": "Communication Records",
-        "description": "Communication logs, email distributions, and meeting minutes."
+        "description": "Communication logs, email distributions, and meeting minutes.",
+        "frequency": "quarterly"
       }
     ]
   },
@@ -225,7 +239,8 @@
         "type": "policy",
         "name": "Corporate Governance Policy",
         "description": "Reference to the Corporate Governance Policy that outlines external communication guidelines for control-related matters.",
-        "policyId": "corporate_governance"
+        "policyId": "corporate_governance",
+        "frequency": "yearly"
       },
       {
         "id": "CC2.3-procedure",
@@ -237,7 +252,8 @@
         "id": "CC2.3-evidence",
         "type": "evidence",
         "name": "External Communication Records",
-        "description": "Records of external communications, press releases, and stakeholder correspondence."
+        "description": "Records of external communications, press releases, and stakeholder correspondence.",
+        "frequency": "yearly"
       }
     ]
   },
@@ -253,7 +269,8 @@
         "type": "policy",
         "name": "Risk Management Policy",
         "description": "Reference to the Risk Management Policy that defines methodologies, frequency, and scope for risk assessments.",
-        "policyId": "risk_management"
+        "policyId": "risk_management",
+        "frequency": "yearly"
       },
       {
         "id": "CC3.1-procedure",
@@ -265,7 +282,8 @@
         "id": "CC3.1-evidence",
         "type": "evidence",
         "name": "Risk Assessment Documentation",
-        "description": "Risk assessment reports, risk registers, and management review minutes."
+        "description": "Risk assessment reports, risk registers, and management review minutes.",
+        "frequency": "yearly"
       }
     ]
   },
@@ -281,7 +299,8 @@
         "type": "policy",
         "name": "Risk Management Policy",
         "description": "Reference to the Risk Management Policy requiring systematic identification of risks across all business areas.",
-        "policyId": "risk_management"
+        "policyId": "risk_management",
+        "frequency": "yearly"
       },
       {
         "id": "CC3.2-procedure",
@@ -293,7 +312,8 @@
         "id": "CC3.2-evidence",
         "type": "evidence",
         "name": "Risk Identification Records",
-        "description": "Risk register entries, workshop records, and risk analysis documentation."
+        "description": "Risk register entries, workshop records, and risk analysis documentation.",
+        "frequency": "yearly"
       }
     ]
   },
@@ -309,7 +329,8 @@
         "type": "policy",
         "name": "Risk Management Policy",
         "description": "Reference to the Risk Management Policy with provisions for assessing and mitigating fraud risks.",
-        "policyId": "risk_management"
+        "policyId": "risk_management",
+        "frequency": "yearly"
       },
       {
         "id": "CC3.3-procedure",
@@ -321,7 +342,8 @@
         "id": "CC3.3-evidence",
         "type": "evidence",
         "name": "Fraud Risk Documentation",
-        "description": "Fraud risk assessment reports, internal audit findings, and remediation tracking records."
+        "description": "Fraud risk assessment reports, internal audit findings, and remediation tracking records.",
+        "frequency": "yearly"
       }
     ]
   },
@@ -337,7 +359,8 @@
         "type": "policy",
         "name": "Change Management Policy",
         "description": "Reference to the Change Management Policy that outlines how risks associated with changes are evaluated.",
-        "policyId": "change_management"
+        "policyId": "change_management",
+        "frequency": "yearly"
       },
       {
         "id": "CC3.4-procedure",
@@ -349,7 +372,8 @@
         "id": "CC3.4-evidence",
         "type": "evidence",
         "name": "Change Risk Documentation",
-        "description": "Change impact assessments, risk logs, and management approval records."
+        "description": "Change impact assessments, risk logs, and management approval records.",
+        "frequency": "yearly"
       }
     ]
   },
@@ -365,7 +389,8 @@
         "type": "policy",
         "name": "Information Security Policy",
         "description": "Reference to the Information Security Policy that outlines monitoring requirements for internal controls.",
-        "policyId": "information_security"
+        "policyId": "information_security",
+        "frequency": "yearly"
       },
       {
         "id": "CC4.1-procedure",
@@ -377,7 +402,8 @@
         "id": "CC4.1-evidence",
         "type": "evidence",
         "name": "Control Testing Documentation",
-        "description": "Internal audit reports, control testing records, and management review documentation."
+        "description": "Internal audit reports, control testing records, and management review documentation.",
+        "frequency": "quarterly"
       }
     ]
   },
@@ -393,7 +419,8 @@
         "type": "policy",
         "name": "Risk Management Policy",
         "description": "Reference to the Risk Management Policy that establishes a framework for identifying, reporting, and remediating control deficiencies.",
-        "policyId": "risk_management"
+        "policyId": "risk_management",
+        "frequency": "yearly"
       },
       {
         "id": "CC4.2-procedure",
@@ -405,7 +432,8 @@
         "id": "CC4.2-evidence",
         "type": "evidence",
         "name": "Deficiency Management Records",
-        "description": "Deficiency logs, remediation plans, and follow-up audit reports."
+        "description": "Deficiency logs, remediation plans, and follow-up audit reports.",
+        "frequency": "quarterly"
       }
     ]
   },
@@ -421,7 +449,8 @@
         "type": "policy",
         "name": "Information Security Policy",
         "description": "Reference to the Information Security Policy that outlines criteria for the design and selection of controls.",
-        "policyId": "information_security"
+        "policyId": "information_security",
+        "frequency": "yearly"
       },
       {
         "id": "CC5.1-procedure",
@@ -433,7 +462,8 @@
         "id": "CC5.1-evidence",
         "type": "evidence",
         "name": "Control Implementation Records",
-        "description": "Control design documents, implementation records, and risk mitigation assessments."
+        "description": "Control design documents, implementation records, and risk mitigation assessments.",
+        "frequency": "yearly"
       }
     ]
   },
@@ -449,7 +479,8 @@
         "type": "policy",
         "name": "Information Security Policy",
         "description": "Reference to the Information Security Policy that specifies baseline security configurations and technology management practices.",
-        "policyId": "information_security"
+        "policyId": "information_security",
+        "frequency": "yearly"
       },
       {
         "id": "CC5.2-procedure",
@@ -461,7 +492,8 @@
         "id": "CC5.2-evidence",
         "type": "evidence",
         "name": "Technology Control Records",
-        "description": "System configuration records, monitoring reports, and technology audit logs."
+        "description": "System configuration records, monitoring reports, and technology audit logs.",
+        "frequency": "quarterly"
       }
     ]
   },
@@ -477,7 +509,8 @@
         "type": "policy",
         "name": "Corporate Governance Policy",
         "description": "Reference to the Corporate Governance Policy that outlines how policies are communicated, enforced, and monitored.",
-        "policyId": "corporate_governance"
+        "policyId": "corporate_governance",
+        "frequency": "yearly"
       },
       {
         "id": "CC5.3-procedure",
@@ -489,7 +522,8 @@
         "id": "CC5.3-evidence",
         "type": "evidence",
         "name": "Policy Implementation Records",
-        "description": "Policy distribution records, training logs, and compliance monitoring reports."
+        "description": "Policy distribution records, training logs, and compliance monitoring reports.",
+        "frequency": "yearly"
       }
     ]
   },
@@ -505,7 +539,8 @@
         "type": "policy",
         "name": "Access Control Policy",
         "description": "Reference to the Access Control Policy that defines controls for network and system access including segmentation and firewalls.",
-        "policyId": "access_control"
+        "policyId": "access_control",
+        "frequency": "yearly"
       },
       {
         "id": "CC6.1-procedure",
@@ -517,7 +552,8 @@
         "id": "CC6.1-evidence",
         "type": "evidence",
         "name": "Access Control Records",
-        "description": "Access control configurations, firewall logs, and system access review reports."
+        "description": "Access control configurations, firewall logs, and system access review reports.",
+        "frequency": "quarterly"
       }
     ]
   },
@@ -533,7 +569,8 @@
         "type": "policy",
         "name": "Access Control Policy",
         "description": "Reference to the Access Control Policy requiring strong authentication methods including passwords and multi-factor authentication.",
-        "policyId": "access_control"
+        "policyId": "access_control",
+        "frequency": "yearly"
       },
       {
         "id": "CC6.2-procedure",
@@ -545,7 +582,8 @@
         "id": "CC6.2-evidence",
         "type": "evidence",
         "name": "Authentication Records",
-        "description": "Authentication logs, MFA configuration records, and user account management records."
+        "description": "Authentication logs, MFA configuration records, and user account management records.",
+        "frequency": "quarterly"
       }
     ]
   },
@@ -561,7 +599,8 @@
         "type": "policy",
         "name": "Access Control Policy",
         "description": "Reference to the Access Control Policy detailing prompt revocation of user access upon termination or role change.",
-        "policyId": "access_control"
+        "policyId": "access_control",
+        "frequency": "yearly"
       },
       {
         "id": "CC6.3-procedure",
@@ -573,7 +612,8 @@
         "id": "CC6.3-evidence",
         "type": "evidence",
         "name": "Access Removal Records",
-        "description": "User termination logs, de-provisioning records, and access review reports."
+        "description": "User termination logs, de-provisioning records, and access review reports.",
+        "frequency": "quarterly"
       }
     ]
   },
@@ -589,7 +629,8 @@
         "type": "policy",
         "name": "Access Control Policy",
         "description": "Reference to the Access Control Policy mandating periodic reviews of user access rights and privileges.",
-        "policyId": "access_control"
+        "policyId": "access_control",
+        "frequency": "yearly"
       },
       {
         "id": "CC6.4-procedure",
@@ -601,7 +642,8 @@
         "id": "CC6.4-evidence",
         "type": "evidence",
         "name": "Access Review Records",
-        "description": "Access review logs, user access reports, and management sign-off documentation."
+        "description": "Access review logs, user access reports, and management sign-off documentation.",
+        "frequency": "quarterly"
       }
     ]
   },
@@ -617,7 +659,8 @@
         "type": "policy",
         "name": "Access Control Policy",
         "description": "Reference to the Access Control Policy that defines processes for creating, maintaining, and terminating system accounts.",
-        "policyId": "access_control"
+        "policyId": "access_control",
+        "frequency": "yearly"
       },
       {
         "id": "CC6.5-procedure",
@@ -629,7 +672,8 @@
         "id": "CC6.5-evidence",
         "type": "evidence",
         "name": "Account Management Records",
-        "description": "Account provisioning logs, privileged account review reports, and system audit logs."
+        "description": "Account provisioning logs, privileged account review reports, and system audit logs.",
+        "frequency": "quarterly"
       }
     ]
   },
@@ -645,7 +689,8 @@
         "type": "policy",
         "name": "Access Control Policy",
         "description": "Reference to the Access Control Policy that establishes requirements for securing facilities and restricting physical entry to sensitive areas.",
-        "policyId": "access_control"
+        "policyId": "access_control",
+        "frequency": "yearly"
       },
       {
         "id": "CC6.6-procedure",
@@ -657,7 +702,8 @@
         "id": "CC6.6-evidence",
         "type": "evidence",
         "name": "Physical Access Records",
-        "description": "Facility access logs, visitor sign-in records, and security camera reports."
+        "description": "Facility access logs, visitor sign-in records, and security camera reports.",
+        "frequency": "quarterly"
       }
     ]
   },
@@ -673,7 +719,8 @@
         "type": "policy",
         "name": "Change Management Policy",
         "description": "Reference to the Change Management Policy that governs modifications to information assets.",
-        "policyId": "change_management"
+        "policyId": "change_management",
+        "frequency": "yearly"
       },
       {
         "id": "CC6.7-procedure",
@@ -685,7 +732,8 @@
         "id": "CC6.7-evidence",
         "type": "evidence",
         "name": "Change Management Records",
-        "description": "Change logs, approval records, and configuration management documentation."
+        "description": "Change logs, approval records, and configuration management documentation.",
+        "frequency": "yearly"
       }
     ]
   },
@@ -701,7 +749,8 @@
         "type": "policy",
         "name": "Information Security Policy",
         "description": "Reference to the Information Security Policy that requires the use of antivirus, anti-malware, and threat detection solutions.",
-        "policyId": "information_security"
+        "policyId": "information_security",
+        "frequency": "yearly"
       },
       {
         "id": "CC6.8-procedure",
@@ -713,7 +762,8 @@
         "id": "CC6.8-evidence",
         "type": "evidence",
         "name": "Malware Prevention Records",
-        "description": "Antivirus logs, malware detection alerts, and remediation records."
+        "description": "Antivirus logs, malware detection alerts, and remediation records.",
+        "frequency": "quarterly"
       }
     ]
   },
@@ -729,7 +779,8 @@
         "type": "policy",
         "name": "Information Security Policy",
         "description": "Reference to the Information Security Policy that outlines monitoring requirements for infrastructure and systems.",
-        "policyId": "information_security"
+        "policyId": "information_security",
+        "frequency": "yearly"
       },
       {
         "id": "CC7.1-procedure",
@@ -741,7 +792,8 @@
         "id": "CC7.1-evidence",
         "type": "evidence",
         "name": "Infrastructure Monitoring Records",
-        "description": "Monitoring tool reports, alert logs, and incident tracking records."
+        "description": "Monitoring tool reports, alert logs, and incident tracking records.",
+        "frequency": "quarterly"
       }
     ]
   },
@@ -757,7 +809,8 @@
         "type": "policy",
         "name": "Incident Response Policy",
         "description": "Reference to the Incident Response Policy that defines roles, responsibilities, and procedures for addressing security events.",
-        "policyId": "incident_response"
+        "policyId": "incident_response",
+        "frequency": "yearly"
       },
       {
         "id": "CC7.2-procedure",
@@ -769,7 +822,8 @@
         "id": "CC7.2-evidence",
         "type": "evidence",
         "name": "Incident Response Records",
-        "description": "Incident logs, response drill reports, and post-incident review documentation."
+        "description": "Incident logs, response drill reports, and post-incident review documentation.",
+        "frequency": "yearly"
       }
     ]
   },
@@ -785,7 +839,8 @@
         "type": "policy",
         "name": "Business Continuity Policy",
         "description": "Reference to the Business Continuity & Disaster Recovery Policy that outlines strategies for restoring systems and data.",
-        "policyId": "business_continuity"
+        "policyId": "business_continuity",
+        "frequency": "yearly"
       },
       {
         "id": "CC7.3-procedure",
@@ -796,7 +851,9 @@
       {
         "id": "CC7.3-evidence",
         "type": "evidence",
-        "description": "Recovery test results, restoration logs, and incident recovery reports."
+        "name": "Recovery Records",
+        "description": "Recovery test results, restoration logs, and incident recovery reports.",
+        "frequency": "yearly"
       }
     ]
   },
@@ -811,7 +868,8 @@
         "id": "CC7.4-policy",
         "type": "policy",
         "description": "Reference to the Incident Response Policy that requires root cause analysis for security incidents.",
-        "policyId": "incident_response"
+        "policyId": "incident_response",
+        "frequency": "yearly"
       },
       {
         "id": "CC7.4-procedure",
@@ -821,7 +879,9 @@
       {
         "id": "CC7.4-evidence",
         "type": "evidence",
-        "description": "Incident analysis reports, lessons learned documentation, and remediation tracking records."
+        "name": "Incident Analysis Records",
+        "description": "Incident analysis reports, lessons learned documentation, and remediation tracking records.",
+        "frequency": "yearly"
       }
     ]
   },
@@ -836,7 +896,8 @@
         "id": "CC7.5-policy",
         "type": "policy",
         "description": "Reference to the Incident Response Policy that defines processes for internal and external incident notifications.",
-        "policyId": "incident_response"
+        "policyId": "incident_response",
+        "frequency": "yearly"
       },
       {
         "id": "CC7.5-procedure",
@@ -846,7 +907,9 @@
       {
         "id": "CC7.5-evidence",
         "type": "evidence",
-        "description": "Communication logs, notifications, and records of stakeholder communications during incidents."
+        "name": "Incident Communication Records",
+        "description": "Communication logs, notifications, and records of stakeholder communications during incidents.",
+        "frequency": "yearly"
       }
     ]
   },
@@ -861,7 +924,8 @@
         "id": "CC8.1-policy",
         "type": "policy",
         "description": "Reference to the Change Management Policy that establishes controls for reviewing, approving, and documenting changes.",
-        "policyId": "change_management"
+        "policyId": "change_management",
+        "frequency": "yearly"
       },
       {
         "id": "CC8.1-procedure",
@@ -871,7 +935,9 @@
       {
         "id": "CC8.1-evidence",
         "type": "evidence",
-        "description": "Change request logs, approval records, and post-change review reports."
+        "name": "Change Request Logs",
+        "description": "Change request logs, approval records, and post-change review reports.",
+        "frequency": "yearly"
       }
     ]
   },
@@ -886,7 +952,8 @@
         "id": "CC9.1-policy",
         "type": "policy",
         "description": "Reference to the Business Continuity & Disaster Recovery Policy that outlines recovery objectives, strategies, and responsibilities.",
-        "policyId": "business_continuity"
+        "policyId": "business_continuity",
+        "frequency": "yearly"
       },
       {
         "id": "CC9.1-procedure",
@@ -896,7 +963,9 @@
       {
         "id": "CC9.1-evidence",
         "type": "evidence",
-        "description": "Business continuity plans, BIA reports, and disaster recovery test results."
+        "name": "Business Continuity Plans",
+        "description": "Business continuity plans, BIA reports, and disaster recovery test results.",
+        "frequency": "yearly"
       }
     ]
   },
@@ -911,7 +980,8 @@
         "id": "CC9.2-policy",
         "type": "policy",
         "description": "Reference to the Vendor Risk Management Policy outlining criteria for vendor selection, risk assessment, and ongoing monitoring.",
-        "policyId": "vendor_risk_management"
+        "policyId": "vendor_risk_management",
+        "frequency": "yearly"
       },
       {
         "id": "CC9.2-procedure",
@@ -921,7 +991,9 @@
       {
         "id": "CC9.2-evidence",
         "type": "evidence",
-        "description": "Vendor risk assessment reports, due diligence records, and contract reviews."
+        "name": "Vendor Risk Assessment Records",
+        "description": "Vendor risk assessment reports, due diligence records, and contract reviews.",
+        "frequency": "yearly"
       }
     ]
   },
@@ -936,7 +1008,8 @@
         "id": "CC9.9-policy",
         "type": "policy",
         "description": "Reference to the Business Continuity & Disaster Recovery Policy that defines testing frequency, methodologies, and remediation procedures.",
-        "policyId": "business_continuity"
+        "policyId": "business_continuity",
+        "frequency": "yearly"
       },
       {
         "id": "CC9.9-procedure",
@@ -946,7 +1019,9 @@
       {
         "id": "CC9.9-evidence",
         "type": "evidence",
-        "description": "Test reports, remediation logs, and updated BC/DR plans."
+        "name": "Business Continuity and Disaster Recovery Testing Records",
+        "description": "Test reports, remediation logs, and updated BC/DR plans.",
+        "frequency": "yearly"
       }
     ]
   },
@@ -961,7 +1036,8 @@
         "id": "A1.1-policy",
         "type": "policy",
         "description": "Reference to the Availability Policy that outlines uptime, performance, and service level requirements.",
-        "policyId": "availability"
+        "policyId": "availability",
+        "frequency": "yearly"
       },
       {
         "id": "A1.1-procedure",
@@ -971,7 +1047,9 @@
       {
         "id": "A1.1-evidence",
         "type": "evidence",
-        "description": "Uptime reports, incident logs, and SLA monitoring records."
+        "name": "Uptime Reports",
+        "description": "Uptime reports, incident logs, and SLA monitoring records.",
+        "frequency": "quarterly"
       }
     ]
   },
@@ -986,7 +1064,8 @@
         "id": "A1.2-policy",
         "type": "policy",
         "description": "Reference to the Availability Policy defining procedures for monitoring, forecasting, and managing system capacity.",
-        "policyId": "availability"
+        "policyId": "availability",
+        "frequency": "yearly"
       },
       {
         "id": "A1.2-procedure",
@@ -996,7 +1075,9 @@
       {
         "id": "A1.2-evidence",
         "type": "evidence",
-        "description": "Capacity reports, trend analysis, and resource utilization logs."
+        "name": "Capacity Reports",
+        "description": "Capacity reports, trend analysis, and resource utilization logs.",
+        "frequency": "quarterly"
       }
     ]
   },
@@ -1011,7 +1092,8 @@
         "id": "A1.3-policy",
         "type": "policy",
         "description": "Reference to the Business Continuity & Disaster Recovery Policy that outlines procedures to restore services after an outage.",
-        "policyId": "business_continuity"
+        "policyId": "business_continuity",
+        "frequency": "yearly"
       },
       {
         "id": "A1.3-procedure",
@@ -1021,7 +1103,9 @@
       {
         "id": "A1.3-evidence",
         "type": "evidence",
-        "description": "Incident recovery test results, post-incident reviews, and restoration logs."
+        "name": "Incident Recovery Records",
+        "description": "Incident recovery test results, post-incident reviews, and restoration logs.",
+        "frequency": "yearly"
       }
     ]
   },
@@ -1036,7 +1120,8 @@
         "id": "C1.1-policy",
         "type": "policy",
         "description": "Reference to the Data Classification Policy that outlines classification levels and handling requirements for confidential information.",
-        "policyId": "data_classification"
+        "policyId": "data_classification",
+        "frequency": "yearly"
       },
       {
         "id": "C1.1-procedure",
@@ -1046,7 +1131,9 @@
       {
         "id": "C1.1-evidence",
         "type": "evidence",
-        "description": "Data classification records, labeling practices, and access control lists for confidential information."
+        "name": "Data Classification Records",
+        "description": "Data classification records, labeling practices, and access control lists for confidential information.",
+        "frequency": "yearly"
       }
     ]
   },
@@ -1061,7 +1148,8 @@
         "id": "C1.2-policy",
         "type": "policy",
         "description": "Reference to the Data Classification Policy which includes controls for restricting access to confidential information.",
-        "policyId": "data_classification"
+        "policyId": "data_classification",
+        "frequency": "yearly"
       },
       {
         "id": "C1.2-procedure",
@@ -1071,7 +1159,9 @@
       {
         "id": "C1.2-evidence",
         "type": "evidence",
-        "description": "Access logs, periodic access reviews, and certification records."
+        "name": "Access Logs",
+        "description": "Access logs, periodic access reviews, and certification records.",
+        "frequency": "quarterly"
       }
     ]
   },
@@ -1086,7 +1176,8 @@
         "id": "C1.3-policy",
         "type": "policy",
         "description": "Reference to the Data Classification Policy which includes provisions for secure data disposal.",
-        "policyId": "data_classification"
+        "policyId": "data_classification",
+        "frequency": "yearly"
       },
       {
         "id": "C1.3-procedure",
@@ -1096,7 +1187,9 @@
       {
         "id": "C1.3-evidence",
         "type": "evidence",
-        "description": "Disposal records, certificates of destruction, and audit logs."
+        "name": "Disposal Records",
+        "description": "Disposal records, certificates of destruction, and audit logs.",
+        "frequency": "yearly"
       }
     ]
   },
@@ -1111,7 +1204,8 @@
         "id": "PI1.1-policy",
         "type": "policy",
         "description": "Reference to the Information Security Policy that addresses data accuracy and completeness.",
-        "policyId": "information_security"
+        "policyId": "information_security",
+        "frequency": "yearly"
       },
       {
         "id": "PI1.1-procedure",
@@ -1121,7 +1215,9 @@
       {
         "id": "PI1.1-evidence",
         "type": "evidence",
-        "description": "Data validation reports, exception logs, and audit records."
+        "name": "Data Validation Records",
+        "description": "Data validation reports, exception logs, and audit records.",
+        "frequency": "quarterly"
       }
     ]
   },
@@ -1136,7 +1232,8 @@
         "id": "PI1.2-policy",
         "type": "policy",
         "description": "Reference to the Information Security Policy that outlines controls over data processing.",
-        "policyId": "information_security"
+        "policyId": "information_security",
+        "frequency": "yearly"
       },
       {
         "id": "PI1.2-procedure",
@@ -1146,7 +1243,9 @@
       {
         "id": "PI1.2-evidence",
         "type": "evidence",
-        "description": "Data processing logs, validation reports, and exception handling records."
+        "name": "Data Processing Logs",
+        "description": "Data processing logs, validation reports, and exception handling records.",
+        "frequency": "quarterly"
       }
     ]
   },
@@ -1161,7 +1260,8 @@
         "id": "PI1.3-policy",
         "type": "policy",
         "description": "Reference to the Information Security Policy that outlines procedures for handling processing exceptions.",
-        "policyId": "information_security"
+        "policyId": "information_security",
+        "frequency": "yearly"
       },
       {
         "id": "PI1.3-procedure",
@@ -1171,7 +1271,9 @@
       {
         "id": "PI1.3-evidence",
         "type": "evidence",
-        "description": "Exception logs, resolution documentation, and process improvement records."
+        "name": "Exception Logs",
+        "description": "Exception logs, resolution documentation, and process improvement records.",
+        "frequency": "quarterly"
       }
     ]
   },
@@ -1186,7 +1288,8 @@
         "id": "P1.1-policy",
         "type": "policy",
         "description": "Reference to the Privacy Policy that informs individuals about personal data collection, usage, and disclosure practices.",
-        "policyId": "privacy"
+        "policyId": "privacy",
+        "frequency": "yearly"
       },
       {
         "id": "P1.1-procedure",
@@ -1196,7 +1299,9 @@
       {
         "id": "P1.1-evidence",
         "type": "evidence",
-        "description": "Copies of the privacy notice, version history, and distribution logs."
+        "name": "Privacy Notice",
+        "description": "Copies of the privacy notice, version history, and distribution logs.",
+        "frequency": "yearly"
       }
     ]
   },
@@ -1211,7 +1316,8 @@
         "id": "P1.2-policy",
         "type": "policy",
         "description": "Reference to the Privacy Policy that requires explicit consent for the collection and processing of personal data.",
-        "policyId": "privacy"
+        "policyId": "privacy",
+        "frequency": "yearly"
       },
       {
         "id": "P1.2-procedure",
@@ -1221,7 +1327,9 @@
       {
         "id": "P1.2-evidence",
         "type": "evidence",
-        "description": "Consent records, opt-in logs, and audit trails for consent management."
+        "name": "Consent Records",
+        "description": "Consent records, opt-in logs, and audit trails for consent management.",
+        "frequency": "yearly"
       }
     ]
   },
@@ -1236,7 +1344,8 @@
         "id": "P1.3-policy",
         "type": "policy",
         "description": "Reference to the Privacy Policy that defines retention periods and secure disposal methods for personal data.",
-        "policyId": "privacy"
+        "policyId": "privacy",
+        "frequency": "yearly"
       },
       {
         "id": "P1.3-procedure",
@@ -1246,7 +1355,9 @@
       {
         "id": "P1.3-evidence",
         "type": "evidence",
-        "description": "Retention schedules, disposal logs, and certificates of data destruction."
+        "name": "Retention Schedules",
+        "description": "Retention schedules, disposal logs, and certificates of data destruction.",
+        "frequency": "yearly"
       }
     ]
   }

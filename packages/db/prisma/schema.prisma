@@ -9,6 +9,902 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Account {
+  id                       String  @id @default(cuid())
+  userId                   String
+  type                     String
+  provider                 String
+  providerAccountId        String
+  refresh_token            String?
+  access_token             String?
+  expires_at               Int?
+  token_type               String?
+  scope                    String?
+  id_token                 String?
+  session_state            String?
+  refresh_token_expires_in Int?
+  user                     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model User {
+  id                      String                 @id @default(cuid())
+  name                    String?
+  full_name               String?
+  email                   String?                @unique
+  role                    Role                   @default(member)
+  onboarded               Boolean                @default(false)
+  emailVerified           DateTime?
+  image                   String?
+  lastLogin               DateTime?
+  organizationId          String?
+  accounts                Account[]
+  Artifact                Artifact[]
+  AuditLog                AuditLog[]
+  Employee                Employee[]
+  AssignedEvidence        OrganizationEvidence[]
+  organizationMemberships OrganizationMember[]
+  Risk                    Risk[]
+  RiskAttachment          RiskAttachment[]
+  RiskComment             RiskComment[]
+  RiskMitigationTask      RiskMitigationTask[]
+  sessions                Session[]
+  TaskAttachment          TaskAttachment[]
+  TaskComments            TaskComments[]
+  PolicyComments          PolicyComments[]
+  organization            Organization?          @relation("CurrentOrganization", fields: [organizationId], references: [id])
+  VendorComment           VendorComment[]
+  VendorMitigationTask    VendorMitigationTask[]
+  VendorRiskAssessment    VendorRiskAssessment[]
+  VendorTaskAttachment    VendorTaskAttachment[]
+  VendorTaskComments      VendorTaskComments[]
+  Vendors                 Vendors[]
+  OrganizationPolicy      OrganizationPolicy[]
+  integrationResults      OrganizationIntegrationResults[]
+
+  @@index([email])
+  @@index([organizationId])
+}
+
+model Organization {
+  id                       String                     @id @default(cuid())
+  stripeCustomerId         String?
+  name                     String
+  subdomain                String                     @unique
+  website                  String
+  tier                     Tier                       @default(free)
+  policiesCreated          Boolean                    @default(false)
+  frameworkId              String?
+  Artifact                 Artifact[]
+  AuditLog                 AuditLog[]
+  employees                Employee[]
+  Framework                Framework?                 @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  OrganizationCategory     OrganizationCategory[]
+  OrganizationControl      OrganizationControl[]
+  OrganizationEvidence     OrganizationEvidence[]
+  OrganizationFramework    OrganizationFramework[]
+  OrganizationIntegrations OrganizationIntegrations[]
+  members                  OrganizationMember[]
+  OrganizationPolicy       OrganizationPolicy[]
+  Risk                     Risk[]
+  RiskAttachment           RiskAttachment[]
+  RiskComment              RiskComment[]
+  RiskMitigationTask       RiskMitigationTask[]
+  TaskAttachment           TaskAttachment[]
+  TaskComments             TaskComments[]
+  PolicyComments           PolicyComments[]
+  users                    User[]                     @relation("CurrentOrganization")
+  VendorComment            VendorComment[]
+  VendorContact            VendorContact[]
+  VendorMitigationTask     VendorMitigationTask[]
+  VendorRiskAssessment     VendorRiskAssessment[]
+  VendorTaskAttachment     VendorTaskAttachment[]
+  VendorTaskComments       VendorTaskComments[]
+  Vendors                  Vendors[]
+  PortalUser               PortalUser[]
+  apiKeys                  OrganizationApiKey[]
+  OrganizationIntegrationResults OrganizationIntegrationResults[]
+
+  @@index([stripeCustomerId])
+}
+
+model OrganizationIntegrations {
+  id             String       @id @default(cuid())
+  name           String       @unique
+  integration_id String
+  settings       Json
+  user_settings  Json
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  results OrganizationIntegrationResults[]
+
+  @@index([organizationId])
+}
+
+model AuditLog {
+  id             String       @id @default(cuid())
+  timestamp      DateTime     @default(now())
+  userId         String
+  organizationId String
+  data           Json
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([organizationId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Framework {
+  id                    String                  @id @default(cuid())
+  name                  String                  @unique
+  description           String?
+  version               String
+  categories            FrameworkCategory[]
+  organizations         Organization[]
+  OrganizationCategory  OrganizationCategory[]
+  OrganizationFramework OrganizationFramework[]
+  PolicyFramework       PolicyFramework[]
+  OrganizationEvidence  OrganizationEvidence[]
+
+  @@index([id])
+}
+
+model OrganizationFramework {
+  id                  String                @id @default(cuid())
+  organizationId      String
+  frameworkId         String
+  status              FrameworkStatus       @default(not_started)
+  adoptedAt           DateTime              @default(now())
+  lastAssessed        DateTime?
+  nextAssessment      DateTime?
+  organizationControl OrganizationControl[]
+  framework           Framework             @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  organization        Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, frameworkId])
+}
+
+model FrameworkCategory {
+  id          String    @id @default(cuid())
+  name        String
+  code        String    @unique
+  description String?
+  frameworkId String
+  controls    Control[]
+  framework   Framework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+
+  @@index([frameworkId])
+}
+
+model Control {
+  id                   String                @id @default(cuid())
+  code                 String                @unique
+  name                 String
+  description          String?
+  domain               String?
+  frameworkCategoryId  String?
+  frameworkCategory    FrameworkCategory?    @relation(fields: [frameworkCategoryId], references: [id])
+  requirements         ControlRequirement[]
+  organizationControls OrganizationControl[]
+  PolicyControl        PolicyControl[]
+
+  @@index([frameworkCategoryId])
+}
+
+model OrganizationControl {
+  id                             String                           @id @default(cuid())
+  organizationId                 String
+  controlId                      String
+  status                         ComplianceStatus                 @default(not_started)
+  lastReviewDate                 DateTime?
+  nextReviewDate                 DateTime?
+  organizationFrameworkId        String?
+  organizationCategoryId         String?
+  artifacts                      ControlArtifact[]
+  control                        Control                          @relation(fields: [controlId], references: [id], onDelete: Cascade)
+  OrganizationCategory           OrganizationCategory?            @relation(fields: [organizationCategoryId], references: [id])
+  OrganizationFramework          OrganizationFramework?           @relation(fields: [organizationFrameworkId], references: [id])
+  organization                   Organization                     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  OrganizationControlRequirement OrganizationControlRequirement[]
+
+  @@index([organizationId])
+  @@index([organizationFrameworkId])
+  @@index([controlId])
+}
+
+model Artifact {
+  id             String            @id @default(cuid())
+  name           String
+  published      Boolean           @default(false)
+  needsReview    Boolean           @default(true)
+  department     Departments       @default(none)
+  type           ArtifactType
+  content        Json?
+  fileUrl        String?
+  version        Int               @default(1)
+  lastUpdated    DateTime?
+  organizationId String
+  ownerId        String?
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  owner          User?             @relation(fields: [ownerId], references: [id])
+  controls       ControlArtifact[]
+
+  @@index([organizationId])
+  @@index([type])
+}
+
+model ControlArtifact {
+  id                    String              @id @default(cuid())
+  organizationControlId String
+  artifactId            String
+  artifact              Artifact            @relation(fields: [artifactId], references: [id], onDelete: Cascade)
+  organizationControl   OrganizationControl @relation(fields: [organizationControlId], references: [id], onDelete: Cascade)
+
+  @@index([organizationControlId])
+  @@index([artifactId])
+}
+
+model Risk {
+  id                   String                 @id @default(cuid())
+  title                String
+  description          String
+  category             RiskCategory
+  department           Departments?
+  status               RiskStatus             @default(open)
+  probability          Int                    @default(0)
+  impact               Int                    @default(0)
+  residual_probability Int                    @default(0)
+  residual_impact      Int                    @default(0)
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  organizationId       String
+  ownerId              String?
+  organization         Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  owner                User?                  @relation(fields: [ownerId], references: [id])
+  attachments          RiskAttachment[]
+  comments             RiskComment[]
+  mitigationTasks      RiskMitigationTask[]
+  treatmentStrategy    RiskTreatmentStrategy?
+  TaskComments         TaskComments[]
+
+  @@index([organizationId])
+  @@index([ownerId])
+  @@index([category])
+  @@index([status])
+}
+
+model RiskComment {
+  id             String       @id @default(cuid())
+  riskId         String
+  ownerId        String
+  organizationId String
+  content        String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  owner          User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  risk           Risk         @relation(fields: [riskId], references: [id], onDelete: Cascade)
+
+  @@index([riskId])
+  @@index([ownerId])
+  @@index([organizationId])
+}
+
+model RiskMitigationTask {
+  id             String               @id @default(cuid())
+  title          String
+  description    String
+  status         RiskTaskStatus       @default(open)
+  dueDate        DateTime?
+  notifiedAt     DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  riskId         String
+  ownerId        String?
+  organizationId String
+  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  owner          User?                @relation(fields: [ownerId], references: [id])
+  risk           Risk                 @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  assignments    RiskTaskAssignment[]
+  TaskAttachment TaskAttachment[]
+  TaskComments   TaskComments[]
+
+  @@index([riskId])
+  @@index([ownerId])
+  @@index([organizationId])
+}
+
+model TaskComments {
+  id                   String             @id @default(cuid())
+  riskId               String
+  riskMitigationTaskId String
+  ownerId              String
+  organizationId       String
+  content              String
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  organization         Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  owner                User               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  risk                 Risk               @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  riskMitigationTask   RiskMitigationTask @relation(fields: [riskMitigationTaskId], references: [id], onDelete: Cascade)
+
+  @@index([riskId])
+  @@index([riskMitigationTaskId])
+  @@index([organizationId])
+}
+
+model TaskAttachment {
+  id                   String             @id @default(cuid())
+  riskMitigationTaskId String
+  name                 String
+  fileUrl              String
+  fileKey              String?
+  type                 RiskAttachmentType @default(file)
+  uploadedAt           DateTime           @default(now())
+  ownerId              String?
+  organizationId       String
+  organization         Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  owner                User?              @relation(fields: [ownerId], references: [id])
+  riskMitigationTask   RiskMitigationTask @relation(fields: [riskMitigationTaskId], references: [id], onDelete: Cascade)
+
+  @@index([riskMitigationTaskId])
+  @@index([organizationId])
+}
+
+model RiskTreatmentStrategy {
+  id          String        @id @default(cuid())
+  type        TreatmentType
+  description String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  riskId      String        @unique
+  risk        Risk          @relation(fields: [riskId], references: [id], onDelete: Cascade)
+
+  @@index([riskId])
+}
+
+model Vendors {
+  id                   String                 @id @default(cuid())
+  name                 String
+  website              String
+  description          String
+  category             VendorCategory
+  status               VendorStatus           @default(not_assessed)
+  inherent_risk        VendorInherentRisk     @default(unknown)
+  residual_risk        VendorResidualRisk     @default(unknown)
+  lastAssessed         DateTime?
+  nextAssessment       DateTime?
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  ownerId              String?
+  organizationId       String
+  VendorComment        VendorComment[]
+  VendorContact        VendorContact[]
+  VendorMitigationTask VendorMitigationTask[]
+  VendorRiskAssessment VendorRiskAssessment[]
+  organization         Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  owner                User?                  @relation(fields: [ownerId], references: [id])
+
+  @@index([organizationId])
+  @@index([ownerId])
+  @@index([category])
+  @@index([status])
+}
+
+model VendorContact {
+  id             String       @id @default(cuid())
+  vendorId       String
+  name           String
+  email          String
+  role           String
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  vendor         Vendors      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+  @@index([organizationId])
+}
+
+model VendorComment {
+  id             String       @id @default(cuid())
+  vendorId       String
+  ownerId        String
+  organizationId String
+  content        String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  owner          User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  vendor         Vendors      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+  @@index([ownerId])
+  @@index([organizationId])
+}
+
+model VendorMitigationTask {
+  id                   String                 @id @default(cuid())
+  title                String
+  description          String
+  status               RiskTaskStatus         @default(open)
+  dueDate              DateTime?
+  completedAt          DateTime?
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  ownerId              String?
+  vendorId             String
+  organizationId       String
+  organization         Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  owner                User?                  @relation(fields: [ownerId], references: [id])
+  vendor               Vendors                @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  assignments          VendorTaskAssignment[]
+  VendorTaskAttachment VendorTaskAttachment[]
+  VendorTaskComments   VendorTaskComments[]
+
+  @@index([vendorId])
+  @@index([ownerId])
+  @@index([organizationId])
+}
+
+model VendorTaskComments {
+  id                     String               @id @default(cuid())
+  vendorMitigationTaskId String
+  ownerId                String
+  organizationId         String
+  content                String
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+  organization           Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  owner                  User                 @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  vendorMitigationTask   VendorMitigationTask @relation(fields: [vendorMitigationTaskId], references: [id], onDelete: Cascade)
+
+  @@index([vendorMitigationTaskId])
+  @@index([organizationId])
+}
+
+model VendorTaskAttachment {
+  id                     String               @id @default(cuid())
+  vendorMitigationTaskId String
+  name                   String
+  fileUrl                String
+  fileKey                String?
+  type                   RiskAttachmentType   @default(file)
+  uploadedAt             DateTime             @default(now())
+  ownerId                String?
+  organizationId         String
+  organization           Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  owner                  User?                @relation(fields: [ownerId], references: [id])
+  vendorMitigationTask   VendorMitigationTask @relation(fields: [vendorMitigationTaskId], references: [id], onDelete: Cascade)
+
+  @@index([vendorMitigationTaskId])
+  @@index([organizationId])
+}
+
+model VendorRiskAssessment {
+  id             String       @id @default(cuid())
+  vendorId       String
+  ownerId        String?
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  owner          User?        @relation(fields: [ownerId], references: [id])
+  vendor         Vendors      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+  @@index([organizationId])
+}
+
+model RiskAttachment {
+  id             String             @id @default(cuid())
+  riskId         String
+  name           String
+  fileUrl        String
+  fileKey        String?
+  type           RiskAttachmentType @default(file)
+  uploadedAt     DateTime           @default(now())
+  ownerId        String?
+  organizationId String
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  owner          User?              @relation(fields: [ownerId], references: [id])
+  risk           Risk               @relation(fields: [riskId], references: [id], onDelete: Cascade)
+
+  @@index([riskId])
+  @@index([organizationId])
+}
+
+model OrganizationMember {
+  id             String         @id @default(cuid())
+  role           MembershipRole @default(member)
+  invitedEmail   String?
+  accepted       Boolean        @default(false)
+  department     Departments    @default(none)
+  joinedAt       DateTime       @default(now())
+  lastActive     DateTime?
+  userId         String
+  organizationId String
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@index([organizationId])
+  @@index([userId])
+}
+
+model RiskTaskAssignment {
+  id         String             @id @default(cuid())
+  assignedAt DateTime           @default(now())
+  taskId     String
+  employeeId String
+  employee   Employee           @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  task       RiskMitigationTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, employeeId])
+  @@index([taskId])
+  @@index([employeeId])
+}
+
+model VendorTaskAssignment {
+  id         String               @id @default(cuid())
+  assignedAt DateTime             @default(now())
+  taskId     String
+  employeeId String
+  employee   Employee             @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  task       VendorMitigationTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, employeeId])
+  @@index([taskId])
+  @@index([employeeId])
+}
+
+model EmployeeRequiredTask {
+  id            String         @id @default(cuid())
+  code          String         @unique
+  name          String
+  description   String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  employeeTasks EmployeeTask[]
+}
+
+model EmployeeTask {
+  id                String               @id @default(cuid())
+  employeeId        String
+  requiredTaskId    String
+  status            EmployeeTaskStatus   @default(assigned)
+  completedAt       DateTime?
+  overrideCompliant Boolean              @default(false)
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  employee          Employee             @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  requiredTask      EmployeeRequiredTask @relation(fields: [requiredTaskId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, requiredTaskId])
+}
+
+model Employee {
+  id                       String                     @id @default(cuid())
+  name                     String
+  email                    String
+  department               Departments                @default(none)
+  isActive                 Boolean                    @default(true)
+  externalEmployeeId       String?
+  createdAt                DateTime                   @default(now())
+  updatedAt                DateTime                   @updatedAt
+  organizationId           String
+  userId                   String?
+  linkId                   String?
+  link                     PortalUser?                @relation(fields: [linkId], references: [id])
+  organization             Organization               @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user                     User?                      @relation(fields: [userId], references: [id])
+  EmployeePolicyAcceptance EmployeePolicyAcceptance[]
+  employeeTasks            EmployeeTask[]
+  RiskTaskAssignment       RiskTaskAssignment[]
+  VendorTaskAssignment     VendorTaskAssignment[]
+
+  @@unique([email, organizationId])
+  @@index([organizationId])
+  @@index([userId])
+  @@index([department])
+}
+
+model Policy {
+  id                  String                     @id @default(cuid())
+  slug                String                     @unique
+  name                String
+  description         String?
+  content             Json[]
+  version             String?
+  usedBy              Json
+  createdAt           DateTime                   @default(now())
+  updatedAt           DateTime                   @updatedAt
+  frequency           Frequency?
+  ControlRequirement  ControlRequirement[]
+  employeeAcceptances EmployeePolicyAcceptance[]
+  OrganizationPolicy  OrganizationPolicy[]
+  PolicyControl       PolicyControl[]
+  policyFiles         PolicyFile[]
+  policyFrameworks    PolicyFramework[]
+}
+
+model PolicyFile {
+  id        String   @id @default(cuid())
+  policyId  String
+  fileName  String
+  fileUrl   String
+  fileType  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  policy    Policy   @relation(fields: [policyId], references: [id], onDelete: Cascade)
+}
+
+model PolicyFramework {
+  id          String    @id @default(cuid())
+  policyId    String
+  frameworkId String
+  framework   Framework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  policy      Policy    @relation(fields: [policyId], references: [id], onDelete: Cascade)
+
+  @@unique([policyId, frameworkId])
+}
+
+model EmployeePolicyAcceptance {
+  id         String    @id @default(cuid())
+  employeeId String
+  policyId   String
+  readAt     DateTime?
+  acceptedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  policy     Policy    @relation(fields: [policyId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, policyId])
+}
+
+model PolicyControl {
+  id        String  @id @default(cuid())
+  policyId  String
+  controlId String
+  control   Control @relation(fields: [controlId], references: [id], onDelete: Cascade)
+  policy    Policy  @relation(fields: [policyId], references: [id], onDelete: Cascade)
+
+  @@unique([policyId, controlId])
+}
+
+model ControlRequirement {
+  id                             String                           @id @default(cuid())
+  controlId                      String
+  type                           RequirementType
+  description                    String?
+  policyId                       String?
+  createdAt                      DateTime                         @default(now())
+  updatedAt                      DateTime                         @updatedAt
+  name                           String                           @default("")
+  evidenceId                     String?
+  frequency                      Frequency?
+  control                        Control                          @relation(fields: [controlId], references: [id], onDelete: Cascade)
+  evidence                       Evidence?                        @relation(fields: [evidenceId], references: [id])
+  policy                         Policy?                          @relation(fields: [policyId], references: [id])
+  OrganizationControlRequirement OrganizationControlRequirement[]
+
+  @@index([controlId])
+}
+
+model OrganizationControlRequirement {
+  id                    String          @id @default(cuid())
+  organizationControlId String
+  controlRequirementId  String
+  content               Json?
+  createdAt             DateTime        @default(now())
+  description           String?
+  fileUrl               String?
+  published             Boolean         @default(false)
+  type                  RequirementType
+  updatedAt             DateTime        @updatedAt
+
+  organizationPolicyId   String?
+  organizationEvidenceId String?
+  controlRequirement     ControlRequirement    @relation(fields: [controlRequirementId], references: [id], onDelete: Cascade)
+  organizationControl    OrganizationControl   @relation(fields: [organizationControlId], references: [id], onDelete: Cascade)
+  organizationEvidence   OrganizationEvidence? @relation(fields: [organizationEvidenceId], references: [id], onDelete: Cascade)
+  organizationPolicy     OrganizationPolicy?   @relation(fields: [organizationPolicyId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationControlId, controlRequirementId])
+}
+
+model OrganizationPolicy {
+  id                             String                           @id @default(cuid())
+  organizationId                 String
+  status                         PolicyStatus                     @default(draft)
+  createdAt                      DateTime                         @default(now())
+  updatedAt                      DateTime                         @updatedAt
+  policyId                       String
+  content                        Json[]
+  frequency                      Frequency?
+  lastPublishedAt                DateTime?
+  OrganizationControlRequirement OrganizationControlRequirement[]
+  PolicyComments                 PolicyComments[]
+  organization                   Organization                     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  policy                         Policy                           @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  ownerId                        String?
+  owner                          User?                            @relation(fields: [ownerId], references: [id])
+  department                     Departments?
+  reviewDate                     DateTime?
+
+  @@unique([organizationId, policyId])
+  @@index([organizationId])
+  @@index([policyId])
+}
+
+model OrganizationCategory {
+  id                  String                @id @unique @default(cuid())
+  name                String
+  description         String?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  organizationId      String
+  frameworkId         String
+  framework           Framework             @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  organization        Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationControl OrganizationControl[]
+
+  @@index([organizationId])
+}
+
+model Evidence {
+  id                   String                 @id @unique @default(cuid())
+  name                 String
+  description          String?
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  frequency            Frequency?
+  ControlRequirement   ControlRequirement[]
+  OrganizationEvidence OrganizationEvidence[]
+}
+
+model OrganizationEvidence {
+  id              String       @id @unique @default(cuid())
+  name            String
+  description     String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  published       Boolean      @default(false)
+  organizationId  String
+  additionalUrls  String[]
+  evidenceId      String
+  fileUrls        String[]
+  frequency       Frequency?
+  lastPublishedAt DateTime?
+  assigneeId      String?
+  department      Departments? @default(none)
+  isNotRelevant   Boolean      @default(false)
+
+  frameworkId String
+  framework   Framework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+
+  OrganizationControlRequirement OrganizationControlRequirement[]
+  assignee                       User?                            @relation(fields: [assigneeId], references: [id])
+  evidence                       Evidence                         @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
+  organization                   Organization                     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([assigneeId])
+}
+
+model PortalUser {
+  id             String          @id
+  name           String
+  email          String          @unique
+  emailVerified  Boolean
+  image          String?
+  createdAt      DateTime
+  updatedAt      DateTime
+  organizationId String?
+  employees      Employee[]
+  accounts       PortalAccount[]
+  sessions       PortalSession[]
+  organization   Organization?   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("portal_user")
+}
+
+model PortalSession {
+  id        String     @id
+  expiresAt DateTime
+  token     String     @unique
+  createdAt DateTime
+  updatedAt DateTime
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      PortalUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("portal_session")
+}
+
+model PortalAccount {
+  id                    String     @id
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime
+  updatedAt             DateTime
+  user                  PortalUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("portal_account")
+}
+
+model PortalVerification {
+  id         String    @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime?
+  updatedAt  DateTime?
+
+  @@map("portal_verification")
+}
+
+model OrganizationApiKey {
+  id             String       @id @default(cuid())
+  name           String // A friendly name for the API key
+  key            String       @unique // The hashed API key
+  salt           String? // Salt used for hashing the API key (nullable for backward compatibility)
+  createdAt      DateTime     @default(now())
+  expiresAt      DateTime? // Optional expiration date
+  lastUsedAt     DateTime? // Track when the key was last used
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  isActive       Boolean      @default(true)
+
+  @@index([organizationId])
+  @@index([key])
+}
+
+model PolicyComments {
+  id                   String             @id @default(cuid())
+  organizationPolicyId String
+  ownerId              String
+  organizationId       String
+  content              String
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  organization         Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  owner                User               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  organizationPolicy   OrganizationPolicy @relation(fields: [organizationPolicyId], references: [id], onDelete: Cascade)
+
+  @@index([organizationPolicyId])
+  @@index([organizationId])
+}
+
 enum Tier {
   free
   pro
@@ -38,158 +934,12 @@ enum RequirementType {
   training
 }
 
-model Account {
-  id                       String  @id @default(cuid())
-  userId                   String
-  type                     String
-  provider                 String
-  providerAccountId        String
-  refresh_token            String?
-  access_token             String?
-  expires_at               Int?
-  token_type               String?
-  scope                    String?
-  id_token                 String?
-  session_state            String?
-  refresh_token_expires_in Int?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
-  @@index([userId])
+enum Frequency {
+  monthly
+  quarterly
+  yearly
 }
 
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-}
-
-model User {
-  id            String    @id @default(cuid())
-  name          String?
-  full_name     String?
-  email         String?   @unique
-  role          Role      @default(member)
-  onboarded     Boolean   @default(false)
-  emailVerified DateTime?
-  image         String?
-  lastLogin     DateTime?
-
-  organizationId String?
-  organization   Organization? @relation("CurrentOrganization", fields: [organizationId], references: [id], onDelete: SetNull)
-
-  accounts                Account[]
-  sessions                Session[]
-  Risk                    Risk[]
-  RiskMitigationTask      RiskMitigationTask[]
-  RiskComment             RiskComment[]
-  AuditLog                AuditLog[]
-  TaskAttachment          TaskAttachment[]
-  TaskComments            TaskComments[]
-  Artifact                Artifact[]
-  VendorComment           VendorComment[]
-  VendorMitigationTask    VendorMitigationTask[]
-  VendorTaskComments      VendorTaskComments[]
-  VendorTaskAttachment    VendorTaskAttachment[]
-  Vendors                 Vendors[]
-  VendorRiskAssessment    VendorRiskAssessment[]
-  RiskAttachment          RiskAttachment[]
-  organizationMemberships OrganizationMember[]
-  Employee                Employee[]
-  integrationResults      OrganizationIntegrationResults[]
-
-  @@index([email])
-  @@index([organizationId])
-}
-
-model Organization {
-  id               String  @id @default(cuid())
-  stripeCustomerId String?
-  name             String
-  subdomain        String  @unique
-  website          String
-  tier             Tier    @default(free)
-  policiesCreated  Boolean @default(false)
-
-  users User[] @relation("CurrentOrganization")
-
-  Risk               Risk[]
-  AuditLog           AuditLog[]
-  RiskMitigationTask RiskMitigationTask[]
-  TaskAttachment     TaskAttachment[]
-  TaskComments       TaskComments[]
-  RiskComment        RiskComment[]
-  employees          Employee[]
-
-  Framework                Framework?                 @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
-  frameworkId              String?
-  OrganizationControl      OrganizationControl[]
-  Artifact                 Artifact[]
-  OrganizationFramework    OrganizationFramework[]
-  OrganizationIntegrations OrganizationIntegrations[]
-  Vendors                  Vendors[]
-  VendorComment            VendorComment[]
-  VendorMitigationTask     VendorMitigationTask[]
-  VendorTaskComments       VendorTaskComments[]
-  VendorTaskAttachment     VendorTaskAttachment[]
-  VendorRiskAssessment     VendorRiskAssessment[]
-  VendorContact            VendorContact[]
-  RiskAttachment           RiskAttachment[]
-  members                  OrganizationMember[]
-  OrganizationPolicy       OrganizationPolicy[]
-  OrganizationCategory     OrganizationCategory[]
-  PortalUser               PortalUser[]
-  OrganizationIntegrationResults OrganizationIntegrationResults[]
-
-  @@index([stripeCustomerId])
-}
-
-model OrganizationIntegrations {
-  id             String @id @default(cuid())
-  name           String @unique
-  integration_id String
-  settings       Json
-  user_settings  Json
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  
-  results OrganizationIntegrationResults[]
-
-  @@index([organizationId])
-}
-
-model AuditLog {
-  id String @id @default(cuid())
-
-  timestamp DateTime @default(now())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  data Json
-
-  @@index([userId])
-  @@index([organizationId])
-}
-
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-
-  @@unique([identifier, token])
-}
-
-// Frameworks and Controls
 enum FrameworkStatus {
   not_started
   in_progress
@@ -210,133 +960,6 @@ enum ArtifactType {
   procedure
   training
 }
-
-model Framework {
-  id          String  @id @default(cuid())
-  name        String  @unique // e.g., "GDPR", "SOC 2"
-  description String?
-  version     String // e.g., "2016/679" for GDPR
-
-  categories            FrameworkCategory[]
-  organizations         Organization[]
-  OrganizationFramework OrganizationFramework[]
-  PolicyFramework       PolicyFramework[]
-  OrganizationCategory  OrganizationCategory[]
-
-  @@index([id])
-}
-
-model OrganizationFramework {
-  id             String       @id @default(cuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  frameworkId    String
-  framework      Framework    @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
-
-  status         FrameworkStatus @default(not_started)
-  adoptedAt      DateTime        @default(now())
-  lastAssessed   DateTime?
-  nextAssessment DateTime?
-
-  organizationControl OrganizationControl[]
-
-  @@unique([organizationId, frameworkId])
-}
-
-model FrameworkCategory {
-  id          String  @id @default(cuid())
-  name        String
-  code        String  @unique
-  description String?
-
-  frameworkId String
-  framework   Framework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
-
-  controls Control[]
-
-  @@index([frameworkId])
-}
-
-model Control {
-  id          String  @id @default(cuid())
-  code        String  @unique
-  name        String
-  description String?
-  domain      String?
-
-  organizationControls OrganizationControl[]
-  PolicyControl        PolicyControl[]
-
-  // NEW: Requirements associated with this control.
-  requirements ControlRequirement[]
-
-  frameworkCategoryId String?
-  frameworkCategory   FrameworkCategory? @relation(fields: [frameworkCategoryId], references: [id], onDelete: SetNull)
-
-  @@index([frameworkCategoryId])
-}
-
-model OrganizationControl {
-  id             String       @id @default(cuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  controlId      String
-  control        Control      @relation(fields: [controlId], references: [id], onDelete: Cascade)
-
-  status         ComplianceStatus @default(not_started)
-  lastReviewDate DateTime?
-  nextReviewDate DateTime?
-
-  artifacts                      ControlArtifact[]
-  OrganizationFramework          OrganizationFramework?           @relation(fields: [organizationFrameworkId], references: [id])
-  organizationFrameworkId        String?
-  OrganizationCategory           OrganizationCategory?            @relation(fields: [organizationCategoryId], references: [id])
-  organizationCategoryId         String?
-  OrganizationControlRequirement OrganizationControlRequirement[]
-
-  @@index([organizationId])
-  @@index([organizationFrameworkId])
-  @@index([controlId])
-}
-
-model Artifact {
-  id          String  @id @default(cuid())
-  name        String
-  published   Boolean @default(false)
-  needsReview Boolean @default(true)
-
-  department Departments @default(none)
-
-  type        ArtifactType
-  content     Json?
-  fileUrl     String?
-  version     Int          @default(1)
-  lastUpdated DateTime?
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  ownerId String?
-  owner   User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull)
-
-  controls ControlArtifact[]
-
-  @@index([organizationId])
-  @@index([type])
-}
-
-model ControlArtifact {
-  id                    String              @id @default(cuid())
-  organizationControlId String
-  organizationControl   OrganizationControl @relation(fields: [organizationControlId], references: [id], onDelete: Cascade)
-  artifactId            String
-  artifact              Artifact            @relation(fields: [artifactId], references: [id], onDelete: Cascade)
-
-  @@index([organizationControlId])
-  @@index([artifactId])
-}
-
-// Risk Register
 
 enum RiskLevel {
   low
@@ -382,144 +1005,6 @@ enum RiskAttachmentType {
   url
 }
 
-model Risk {
-  id                   String       @id @default(cuid())
-  title                String
-  description          String
-  category             RiskCategory
-  department           Departments?
-  status               RiskStatus   @default(open)
-  probability          Int          @default(0)
-  impact               Int          @default(0)
-  residual_probability Int          @default(0)
-  residual_impact      Int          @default(0)
-  createdAt            DateTime     @default(now())
-  updatedAt            DateTime     @updatedAt
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  ownerId        String?
-  owner          User?        @relation(fields: [ownerId], references: [id], onDelete: SetNull)
-
-  mitigationTasks   RiskMitigationTask[]
-  comments          RiskComment[]
-  treatmentStrategy RiskTreatmentStrategy?
-  TaskComments      TaskComments[]
-  attachments       RiskAttachment[]
-
-  @@index([organizationId])
-  @@index([ownerId])
-  @@index([category])
-  @@index([status])
-}
-
-model RiskComment {
-  id String @id @default(cuid())
-
-  riskId String
-  risk   Risk   @relation(fields: [riskId], references: [id], onDelete: Cascade)
-
-  ownerId String
-  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  content   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([riskId])
-  @@index([ownerId])
-  @@index([organizationId])
-}
-
-model RiskMitigationTask {
-  id          String         @id @default(cuid())
-  title       String
-  description String
-  status      RiskTaskStatus @default(open)
-  dueDate     DateTime?
-  notifiedAt  DateTime?
-  completedAt DateTime?
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-
-  riskId  String
-  risk    Risk    @relation(fields: [riskId], references: [id], onDelete: Cascade)
-  ownerId String?
-  owner   User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull)
-
-  // Many-to-many relationship through join table
-  assignments RiskTaskAssignment[]
-
-  organizationId String
-  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  TaskAttachment TaskAttachment[]
-  TaskComments   TaskComments[]
-
-  @@index([riskId])
-  @@index([ownerId])
-  @@index([organizationId])
-}
-
-model TaskComments {
-  id String @id @default(cuid())
-
-  riskId String
-  risk   Risk   @relation(fields: [riskId], references: [id], onDelete: Cascade)
-
-  riskMitigationTaskId String
-  riskMitigationTask   RiskMitigationTask @relation(fields: [riskMitigationTaskId], references: [id], onDelete: Cascade)
-
-  ownerId String
-  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  content   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([riskId])
-  @@index([riskMitigationTaskId])
-  @@index([organizationId])
-}
-
-model TaskAttachment {
-  id String @id @default(cuid())
-
-  riskMitigationTaskId String
-  riskMitigationTask   RiskMitigationTask @relation(fields: [riskMitigationTaskId], references: [id], onDelete: Cascade)
-
-  name           String
-  fileUrl        String
-  fileKey        String?
-  type           RiskAttachmentType @default(file)
-  uploadedAt     DateTime           @default(now())
-  ownerId        String?
-  owner          User?              @relation(fields: [ownerId], references: [id], onDelete: SetNull)
-  organizationId String
-  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  @@index([riskMitigationTaskId])
-  @@index([organizationId])
-}
-
-model RiskTreatmentStrategy {
-  id          String        @id @default(cuid())
-  type        TreatmentType
-  description String
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-
-  riskId String @unique
-  risk   Risk   @relation(fields: [riskId], references: [id], onDelete: Cascade)
-
-  @@index([riskId])
-}
-
 enum VendorCategory {
   cloud
   infrastructure
@@ -551,237 +1036,11 @@ enum VendorResidualRisk {
   unknown
 }
 
-model Vendors {
-  id            String             @id @default(cuid())
-  name          String
-  website       String
-  description   String
-  category      VendorCategory
-  status        VendorStatus       @default(not_assessed)
-  inherent_risk VendorInherentRisk @default(unknown)
-  residual_risk VendorResidualRisk @default(unknown)
-
-  lastAssessed   DateTime?
-  nextAssessment DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-
-  ownerId        String?
-  owner          User?        @relation(fields: [ownerId], references: [id], onDelete: SetNull)
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  VendorComment        VendorComment[]
-  VendorMitigationTask VendorMitigationTask[]
-  VendorRiskAssessment VendorRiskAssessment[]
-  VendorContact        VendorContact[]
-
-  @@index([organizationId])
-  @@index([ownerId])
-  @@index([category])
-  @@index([status])
-}
-
-model VendorContact {
-  id String @id @default(cuid())
-
-  vendorId String
-  vendor   Vendors @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-
-  name  String
-  email String
-  role  String
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  @@index([vendorId])
-  @@index([organizationId])
-}
-
-model VendorComment {
-  id String @id @default(cuid())
-
-  vendorId String
-  vendor   Vendors @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-
-  ownerId String
-  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  content   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([vendorId])
-  @@index([ownerId])
-  @@index([organizationId])
-}
-
-model VendorMitigationTask {
-  id          String         @id @default(cuid())
-  title       String
-  description String
-  status      RiskTaskStatus @default(open)
-  dueDate     DateTime?
-  completedAt DateTime?
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-
-  ownerId  String?
-  owner    User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull)
-  vendorId String
-  vendor   Vendors @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-
-  // Many-to-many relationship through join table
-  assignments VendorTaskAssignment[]
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  VendorTaskAttachment VendorTaskAttachment[]
-  VendorTaskComments   VendorTaskComments[]
-
-  @@index([vendorId])
-  @@index([ownerId])
-  @@index([organizationId])
-}
-
-model VendorTaskComments {
-  id String @id @default(cuid())
-
-  vendorMitigationTaskId String
-  vendorMitigationTask   VendorMitigationTask @relation(fields: [vendorMitigationTaskId], references: [id], onDelete: Cascade)
-
-  ownerId String
-  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  content   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([vendorMitigationTaskId])
-  @@index([organizationId])
-}
-
-model VendorTaskAttachment {
-  id String @id @default(cuid())
-
-  vendorMitigationTaskId String
-  vendorMitigationTask   VendorMitigationTask @relation(fields: [vendorMitigationTaskId], references: [id], onDelete: Cascade)
-
-  name           String
-  fileUrl        String
-  fileKey        String?
-  type           RiskAttachmentType @default(file)
-  uploadedAt     DateTime           @default(now())
-  ownerId        String?
-  owner          User?              @relation(fields: [ownerId], references: [id], onDelete: SetNull)
-  organizationId String
-  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  @@index([vendorMitigationTaskId])
-  @@index([organizationId])
-}
-
-model VendorRiskAssessment {
-  id String @id @default(cuid())
-
-  vendorId String
-  vendor   Vendors @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-
-  ownerId String?
-  owner   User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull)
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  @@index([vendorId])
-  @@index([organizationId])
-}
-
-model RiskAttachment {
-  id String @id @default(cuid())
-
-  riskId String
-  risk   Risk   @relation(fields: [riskId], references: [id], onDelete: Cascade)
-
-  name           String
-  fileUrl        String
-  fileKey        String?
-  type           RiskAttachmentType @default(file)
-  uploadedAt     DateTime           @default(now())
-  ownerId        String?
-  owner          User?              @relation(fields: [ownerId], references: [id], onDelete: SetNull)
-  organizationId String
-  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  @@index([riskId])
-  @@index([organizationId])
-}
-
 enum MembershipRole {
   owner
   admin
   member
   viewer
-}
-
-model OrganizationMember {
-  id           String         @id @default(cuid())
-  role         MembershipRole @default(member)
-  invitedEmail String?
-  accepted     Boolean        @default(false)
-  department   Departments    @default(none)
-  joinedAt     DateTime       @default(now())
-  lastActive   DateTime?
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, organizationId])
-  @@index([organizationId])
-  @@index([userId])
-}
-
-// Join table for risk task assignments
-model RiskTaskAssignment {
-  id         String   @id @default(cuid())
-  assignedAt DateTime @default(now())
-
-  taskId String
-  task   RiskMitigationTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
-
-  employeeId String
-  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-
-  @@unique([taskId, employeeId])
-  @@index([taskId])
-  @@index([employeeId])
-}
-
-// Join table for vendor task assignments
-model VendorTaskAssignment {
-  id         String   @id @default(cuid())
-  assignedAt DateTime @default(now())
-
-  taskId String
-  task   VendorMitigationTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
-
-  employeeId String
-  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-
-  @@unique([taskId, employeeId])
-  @@index([taskId])
-  @@index([employeeId])
 }
 
 enum EmployeeTaskStatus {
@@ -791,287 +1050,13 @@ enum EmployeeTaskStatus {
   overdue
 }
 
-model EmployeeRequiredTask {
-  id          String   @id @default(cuid())
-  code        String   @unique // e.g. "SEC-TRAINING", "NDA-SIGN"
-  name        String // e.g. "Security Awareness Training"
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  employeeTasks EmployeeTask[]
-}
-
-model EmployeeTask {
-  id                String               @id @default(cuid())
-  employeeId        String
-  employee          Employee             @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  requiredTaskId    String
-  requiredTask      EmployeeRequiredTask @relation(fields: [requiredTaskId], references: [id], onDelete: Cascade)
-  status            EmployeeTaskStatus   @default(assigned)
-  completedAt       DateTime?
-  overrideCompliant Boolean              @default(false)
-  createdAt         DateTime             @default(now())
-  updatedAt         DateTime             @updatedAt
-
-  @@unique([employeeId, requiredTaskId])
-}
-
-model Employee {
-  id                 String      @id @default(cuid())
-  name               String
-  email              String
-  department         Departments @default(none)
-  isActive           Boolean     @default(true)
-  externalEmployeeId String?
-  createdAt          DateTime    @default(now())
-  updatedAt          DateTime    @updatedAt
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  userId String?
-  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  linkId String?
-  link   PortalUser? @relation(fields: [linkId], references: [id], onDelete: SetNull)
-
-  employeeTasks            EmployeeTask[]
-  RiskTaskAssignment       RiskTaskAssignment[]
-  VendorTaskAssignment     VendorTaskAssignment[]
-  EmployeePolicyAcceptance EmployeePolicyAcceptance[]
-
-  @@unique([email, organizationId])
-  @@index([organizationId])
-  @@index([userId])
-  @@index([department])
-}
-
-// --- Policy Templates and Files ---
-
-model Policy {
-  id          String   @id @default(cuid())
-  slug        String   @unique
-  name        String
-  description String?
-  content     Json[]
-  version     String?
-  usedBy      Json
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  policyFrameworks    PolicyFramework[]
-  employeeAcceptances EmployeePolicyAcceptance[]
-  policyFiles         PolicyFile[]
-  PolicyControl       PolicyControl[]
-  ControlRequirement  ControlRequirement[]
-  OrganizationPolicy  OrganizationPolicy[]
-}
-
-model PolicyFile {
-  id        String   @id @default(cuid())
-  policyId  String
-  fileName  String
-  fileUrl   String
-  fileType  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  policy Policy @relation(fields: [policyId], references: [id], onDelete: Cascade)
-}
-
-// --- Policy to Framework Mapping ---
-
-model PolicyFramework {
-  id          String @id @default(cuid())
-  policyId    String
-  frameworkId String
-
-  policy    Policy    @relation(fields: [policyId], references: [id], onDelete: Cascade)
-  framework Framework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
-
-  @@unique([policyId, frameworkId])
-}
-
-// --- Employee Acceptance Tracking ---
-
-model EmployeePolicyAcceptance {
-  id         String    @id @default(cuid())
-  employeeId String
-  policyId   String
-  readAt     DateTime?
-  acceptedAt DateTime?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-
-  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  policy   Policy   @relation(fields: [policyId], references: [id], onDelete: Cascade)
-
-  @@unique([employeeId, policyId])
-}
-
-model PolicyControl {
-  id        String @id @default(cuid())
-  policyId  String
-  controlId String
-
-  policy  Policy  @relation(fields: [policyId], references: [id], onDelete: Cascade)
-  control Control @relation(fields: [controlId], references: [id], onDelete: Cascade)
-
-  @@unique([policyId, controlId])
-}
-
-model ControlRequirement {
-  id          String          @id @default(cuid())
-  name        String?
-  controlId   String
-  control     Control         @relation(fields: [controlId], references: [id], onDelete: Cascade)
-  type        RequirementType
-  description String?
-  policyId    String?
-  policy      Policy?         @relation(fields: [policyId], references: [id], onDelete: SetNull)
-
-  createdAt                      DateTime                         @default(now())
-  updatedAt                      DateTime                         @updatedAt
-  OrganizationControlRequirement OrganizationControlRequirement[]
-
-  @@index([controlId])
-}
-
-model OrganizationControlRequirement {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  type        RequirementType
-  description String?
-
-  published Boolean @default(false)
-  content   Json?
-  fileUrl   String?
-
-  organizationControlId String
-  organizationControl   OrganizationControl @relation(fields: [organizationControlId], references: [id], onDelete: Cascade)
-
-  controlRequirementId String
-  controlRequirement   ControlRequirement @relation(fields: [controlRequirementId], references: [id], onDelete: Cascade)
-
-  organizationPolicyId String?
-  organizationPolicy   OrganizationPolicy? @relation(fields: [organizationPolicyId], references: [id], onDelete: Cascade)
-
-  @@unique([organizationControlId, controlRequirementId])
-}
-
 enum PolicyStatus {
   draft
   published
   archived
+  needs_review
 }
 
-model OrganizationPolicy {
-  id             String       @id @default(cuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  status    PolicyStatus @default(draft)
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
-
-  policyId String
-  policy   Policy @relation(fields: [policyId], references: [id], onDelete: Cascade)
-
-  content                        Json[]
-  OrganizationControlRequirement OrganizationControlRequirement[]
-
-  @@unique([organizationId, policyId])
-  @@index([organizationId])
-  @@index([policyId])
-}
-
-model OrganizationCategory {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  frameworkId String
-  framework   Framework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
-
-  organizationControl OrganizationControl[]
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  @@unique([id])
-  @@index([organizationId])
-}
-
-// Employee Portal
-
-model PortalUser {
-  id            String    @id
-  name          String
-  email         String
-  emailVerified Boolean
-  image         String?
-  createdAt     DateTime
-  updatedAt     DateTime
-  sessions      PortalSession[]
-  accounts      PortalAccount[]
-  employees     Employee[]
-  organizationId String?
-  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  @@unique([email])
-  @@map("portal_user")
-}
-
-model PortalSession {
-  id        String   @id
-  expiresAt DateTime
-  token     String
-  createdAt DateTime
-  updatedAt DateTime
-  ipAddress String?
-  userAgent String?
-  userId    String
-  user      PortalUser     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([token])
-  @@map("portal_session")
-}
-
-model PortalAccount {
-  id                    String    @id
-  accountId             String
-  providerId            String
-  userId                String
-  user                  PortalUser      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  accessToken           String?
-  refreshToken          String?
-  idToken               String?
-  accessTokenExpiresAt  DateTime?
-  refreshTokenExpiresAt DateTime?
-  scope                 String?
-  password              String?
-  createdAt             DateTime
-  updatedAt             DateTime
-
-  @@map("portal_account")
-}
-
-model PortalVerification {
-  id         String    @id
-  identifier String
-  value      String
-  expiresAt  DateTime
-  createdAt  DateTime?
-  updatedAt  DateTime?
-
-  @@map("portal_verification")
-}
 
 model OrganizationIntegrationResults {
   id                        String        @id @default(cuid())

@@ -214,9 +214,8 @@ export function Onboarding() {
                     </FormLabel>
                     <FormControl>
                       {fieldConfig.name === "subdomain" ? (
-                        <div className="relative flex rounded-md">
+                        <div className="relative flex">
                           <Input
-                            className="rounded-r-none"
                             autoCorrect="off"
                             placeholder={fieldConfig.placeholder}
                             {...field}
@@ -227,7 +226,7 @@ export function Onboarding() {
                             }}
                           />
                           {env.NEXT_PUBLIC_VERCEL_URL && (
-                            <div className="inline-flex items-center rounded-r-md border border-l-0 border-input bg-muted px-3 text-sm text-muted-foreground">
+                            <div className="inline-flex items-center border border-l border-input bg-muted px-3 text-sm text-muted-foreground">
                               .{env.NEXT_PUBLIC_VERCEL_URL}
                             </div>
                           )}

@@ -28,6 +28,8 @@ const icons = {
   "/vendors": () => <Icons.Vendors size={22} />,
   "/integrations": () => <Icons.Apps size={22} />,
   "/people": () => <Icons.Peolple size={22} />,
+  "/evidence": () => <Icons.Evidence size={22} />,
+  "/evidence/overview": () => <Icons.Evidence size={22} />,
   "/tests": () => <Icons.CloudSync size={22} />,
 };
 
@@ -172,6 +174,11 @@ export function MainMenu({ initialItems, onSelect }: Props) {
     {
       path: "/policies",
       name: t("sidebar.policies"),
+      disabled: false,
+    },
+    {
+      path: "/evidence/overview",
+      name: t("sidebar.evidence"),
       disabled: false,
     },
     {

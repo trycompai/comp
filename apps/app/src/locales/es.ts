@@ -25,14 +25,14 @@ export default {
       error: "Error",
       next: "Siguiente",
       complete: "Completar",
-      addNew: "Agregar Nuevo"
+      addNew: "Agregar nuevo"
     },
     assignee: {
-      label: "Asignado a",
+      label: "Asignado",
       placeholder: "Seleccionar asignado"
     },
     date: {
-      pick: "Seleccionar una fecha",
+      pick: "Elegir una fecha",
       due_date: "Fecha de vencimiento"
     },
     status: {
@@ -40,17 +40,18 @@ export default {
       pending: "Pendiente",
       closed: "Cerrado",
       archived: "Archivado",
-      compliant: "Cumplido",
-      non_compliant: "No Cumplido",
-      not_started: "No Iniciado",
-      in_progress: "En Progreso",
+      compliant: "Cumplidor",
+      non_compliant: "No cumplidor",
+      not_started: "No iniciado",
+      in_progress: "En progreso",
       published: "Publicado",
-      needs_review: "Necesita Revisión",
+      needs_review: "Necesita revisión",
       draft: "Borrador",
-      not_assessed: "No Evaluado",
+      not_assessed: "No evaluado",
       assessed: "Evaluado",
       active: "Activo",
-      inactive: "Inactivo"
+      inactive: "Inactivo",
+      title: "Estado"
     },
     filters: {
       clear: "Limpiar filtros",
@@ -58,7 +59,7 @@ export default {
       status: "Estado",
       department: "Departamento",
       owner: {
-        label: "Asignado a",
+        label: "Asignado",
         placeholder: "Filtrar por asignado"
       }
     },
@@ -72,7 +73,7 @@ export default {
     },
     empty_states: {
       no_results: {
-        title: "Sin resultados",
+        title: "No se encontraron resultados",
         title_tasks: "No se encontraron tareas",
         title_risks: "No se encontraron riesgos",
         description: "Intenta otra búsqueda o ajusta los filtros",
@@ -99,33 +100,33 @@ export default {
       title: "Comentarios",
       description: "Agrega un comentario utilizando el formulario a continuación.",
       add: "Nuevo comentario",
-      "new": "Nuevo Comentario",
-      save: "Guardar Comentario",
+      "new": "Nuevo comentario",
+      save: "Guardar comentario",
       success: "Comentario agregado con éxito",
       error: "Error al agregar comentario",
       placeholder: "Escribe tu comentario aquí...",
       empty: {
-        title: "Sin comentarios aún",
+        title: "No hay comentarios aún",
         description: "Sé el primero en agregar un comentario"
       }
     },
     attachments: {
       title: "Adjuntos",
-      description: "Agrega un archivo haciendo clic en 'Agregar Adjunto'.",
-      upload: "Subir archivo adjunto",
+      description: "Agrega un archivo haciendo clic en 'Agregar adjunto'.",
+      upload: "Subir adjunto",
       upload_description: "Sube un adjunto o agrega un enlace a un recurso externo.",
       drop: "Suelta los archivos aquí",
       drop_description: "Suelta archivos aquí o haz clic para elegir archivos de tu dispositivo.",
-      drop_files_description: "Los archivos pueden tener un tamaño de hasta ",
+      drop_files_description: "Los archivos pueden ser de hasta ",
       empty: {
-        title: "Sin adjuntos",
-        description: "Agrega un archivo haciendo clic en 'Agregar Adjunto'."
+        title: "No hay adjuntos",
+        description: "Agrega un archivo haciendo clic en 'Agregar adjunto'."
       },
       toasts: {
         error: "Algo salió mal, por favor intenta de nuevo.",
         error_uploading_files: "No se puede subir más de 1 archivo a la vez",
         error_uploading_files_multiple: "No se pueden subir más de 10 archivos",
-        error_no_files_selected: "No se seleccionaron archivos",
+        error_no_files_selected: "No se han seleccionado archivos",
         error_file_rejected: "El archivo {file} fue rechazado",
         error_failed_to_upload_files: "Error al subir archivos",
         error_failed_to_upload_files_multiple: "Error al subir archivos",
@@ -143,6 +144,19 @@ export default {
       archive: "Archivo",
       archive_all: "Archivar todo",
       no_notifications: "No hay nuevas notificaciones"
+    },
+    edit: "Editar",
+    errors: {
+      unexpected_error: "Ocurrió un error inesperado"
+    },
+    description: "Descripción",
+    last_updated: "Última actualización",
+    frequency: {
+      daily: "Diario",
+      weekly: "Semanal",
+      monthly: "Mensual",
+      quarterly: "Trimestral",
+      yearly: "Anual"
     }
   },
   header: {
@@ -156,13 +170,13 @@ export default {
       placeholder: "Ideas para mejorar esta página o problemas que estás experimentando.",
       success: "¡Gracias por tus comentarios!",
       error: "Error al enviar comentarios - ¿intentar de nuevo?",
-      send: "Enviar Comentarios"
+      send: "Enviar comentarios"
     }
   },
   not_found: {
     title: "404 - Página no encontrada",
     description: "La página que buscas no existe.",
-    "return": "Regresar al panel"
+    "return": "Volver al panel de control"
   },
   theme: {
     options: {
@@ -238,57 +252,91 @@ export default {
   },
   policies: {
     dashboard: {
-      title: "Panel",
+      title: "Panel de Control",
       all: "Todas las Políticas",
-      policy_status: "Estado de la Política",
+      policy_status: "Política por Estado",
       policies_by_assignee: "Políticas por Asignado",
-      policies_by_framework: "Políticas por Marco"
+      policies_by_framework: "Políticas por Marco",
+      sub_pages: {
+        overview: "Resumen",
+        edit_policy: "Editar Política"
+      }
     },
     table: {
-      name: "Nombre de la Política",
+      name: "Nombre de la política",
       statuses: {
         draft: "Borrador",
-        published: "Publicado"
+        published: "Publicado",
+        archived: "Archivado"
       },
       filters: {
         owner: {
-          label: "Asignado",
-          placeholder: "Filtrar por asignado"
+          label: "Responsable",
+          placeholder: "Filtrar por responsable"
         }
       }
     },
     filters: {
       search: "Buscar políticas...",
-      all: "Todas las Políticas"
+      all: "Todas las políticas"
     },
     status: {
       draft: "Borrador",
       published: "Publicado",
-      needs_review: "Necesita Revisión"
+      needs_review: "Necesita revisión",
+      archived: "Archivado"
     },
-    policies: "políticas"
+    policies: "políticas",
+    title: "Políticas",
+    create_new: "Crear nueva política",
+    search_placeholder: "Buscar políticas...",
+    status_filter: "Filtrar por estado",
+    all_statuses: "Todos los estados",
+    no_policies_title: "No hay políticas aún",
+    no_policies_description: "Comienza creando tu primera política",
+    create_first: "Crear primera política",
+    no_description: "No se proporcionó descripción",
+    last_updated: "Última actualización: {{date}}",
+    save: "Guardar",
+    saving: "Guardando...",
+    saved_success: "Política guardada con éxito",
+    saved_error: "Error al guardar la política",
+    overview: {
+      title: "Resumen de la Política",
+      form: {
+        update_policy: "Actualizar Política",
+        update_policy_description: "Actualiza el título o la descripción de la política.",
+        update_policy_success: "Política actualizada con éxito",
+        update_policy_error: "Error al actualizar la política",
+        update_policy_title: "Nombre de la Política",
+        review_frequency: "Frecuencia de Revisión",
+        review_frequency_placeholder: "Selecciona una frecuencia de revisión",
+        review_date: "Fecha de revisión",
+        review_date_placeholder: "Seleccionar una fecha de revisión"
+      }
+    }
   },
   evidence_tasks: {
-    evidence_tasks: "Tareas de Evidencia",
+    evidence_tasks: "Tareas de evidencia",
     overview: "Resumen"
   },
   risk: {
     risks: "riesgos",
     overview: "Resumen",
-    create: "Crear Nuevo Riesgo",
+    create: "Crear nuevo riesgo",
     vendor: {
-      title: "Gestión de Proveedores",
+      title: "Gestión de proveedores",
       dashboard: {
-        title: "Panel de Proveedores",
-        overview: "Resumen de Proveedores",
-        vendor_status: "Estado del Proveedor",
-        vendor_category: "Categorías de Proveedores",
-        vendors_by_assignee: "Proveedores por Asignado",
+        title: "Tablero de proveedores",
+        overview: "Resumen del proveedor",
+        vendor_status: "Estado del proveedor",
+        vendor_category: "Categorías de proveedores",
+        vendors_by_assignee: "Proveedores por responsable",
         inherent_risk_description: "Nivel de riesgo inicial antes de aplicar controles",
         residual_risk_description: "Nivel de riesgo restante después de aplicar controles"
       },
       register: {
-        title: "Registro de Proveedores",
+        title: "Registro de proveedores",
         table: {
           name: "Nombre",
           category: "Categoría",
@@ -297,30 +345,30 @@ export default {
         }
       },
       assessment: {
-        title: "Evaluación de Proveedores",
+        title: "Evaluación del proveedor",
         update_success: "Evaluación de riesgo del proveedor actualizada con éxito",
         update_error: "Error al actualizar la evaluación de riesgo del proveedor",
-        inherent_risk: "Riesgo Inherente",
-        residual_risk: "Riesgo Residual"
+        inherent_risk: "Riesgo inherente",
+        residual_risk: "Riesgo residual"
       },
       form: {
-        vendor_details: "Detalles del Proveedor",
+        vendor_details: "Detalles del proveedor",
         vendor_name: "Nombre",
-        vendor_name_placeholder: "Ingresa el nombre del proveedor",
+        vendor_name_placeholder: "Ingrese el nombre del proveedor",
         vendor_website: "Sitio web",
-        vendor_website_placeholder: "Ingresa el sitio web del proveedor",
+        vendor_website_placeholder: "Ingrese el sitio web del proveedor",
         vendor_description: "Descripción",
-        vendor_description_placeholder: "Ingresa la descripción del proveedor",
+        vendor_description_placeholder: "Ingrese la descripción del proveedor",
         vendor_category: "Categoría",
-        vendor_category_placeholder: "Selecciona categoría",
+        vendor_category_placeholder: "Seleccionar categoría",
         vendor_status: "Estado",
-        vendor_status_placeholder: "Selecciona estado",
+        vendor_status_placeholder: "Seleccionar estado",
         create_vendor_success: "Proveedor creado con éxito",
         create_vendor_error: "Error al crear el proveedor",
-        update_vendor: "Actualizar Proveedor",
+        update_vendor: "Actualizar proveedor",
         update_vendor_success: "Proveedor actualizado con éxito",
         update_vendor_error: "Error al actualizar el proveedor",
-        add_comment: "Agregar Comentario"
+        add_comment: "Agregar comentario"
       },
       table: {
         name: "Nombre",
@@ -336,7 +384,7 @@ export default {
       },
       empty_states: {
         no_vendors: {
-          title: "Aún no hay proveedores",
+          title: "No hay proveedores aún",
           description: "Comienza creando tu primer proveedor"
         },
         no_results: {
@@ -346,17 +394,17 @@ export default {
         }
       },
       actions: {
-        create: "Crear Proveedor"
+        create: "Crear proveedor"
       },
       status: {
-        not_assessed: "No Evaluado",
-        in_progress: "En Progreso",
+        not_assessed: "No evaluado",
+        in_progress: "En progreso",
         assessed: "Evaluado"
       },
       category: {
         cloud: "Nube",
         infrastructure: "Infraestructura",
-        software_as_a_service: "Software como Servicio",
+        software_as_a_service: "Software como servicio",
         finance: "Finanzas",
         marketing: "Marketing",
         sales: "Ventas",
@@ -364,21 +412,21 @@ export default {
         other: "Otro"
       },
       risk_level: {
-        low: "Bajo Riesgo",
-        medium: "Riesgo Medio",
-        high: "Alto Riesgo",
-        unknown: "Riesgo Desconocido"
+        low: "Riesgo bajo",
+        medium: "Riesgo medio",
+        high: "Riesgo alto",
+        unknown: "Riesgo desconocido"
       }
     },
     dashboard: {
       title: "Tablero",
-      overview: "Resumen de Riesgos",
+      overview: "Resumen de riesgos",
       risk_status: "Estado del Riesgo",
       risks_by_department: "Riesgos por Departamento",
       risks_by_assignee: "Riesgos por Asignado",
-      inherent_risk_description: "El riesgo inherente se calcula como probabilidad * impacto. Calculado antes de aplicar cualquier control.",
-      residual_risk_description: "El riesgo residual se calcula como probabilidad * impacto. Este es el nivel de riesgo después de aplicar controles.",
-      risk_assessment_description: "Compara los niveles de riesgo inherente y residual"
+      inherent_risk_description: "El riesgo inherente se calcula como probabilidad * impacto. Calculado antes de que se apliquen controles.",
+      residual_risk_description: "El riesgo residual se calcula como probabilidad * impacto. Este es el nivel de riesgo después de que se aplican controles.",
+      risk_assessment_description: "Comparar los niveles de riesgo inherente y residual"
     },
     register: {
       title: "Registro de Riesgos",
@@ -401,11 +449,11 @@ export default {
     },
     form: {
       update_inherent_risk: "Guardar Riesgo Inherente",
-      update_inherent_risk_description: "Actualiza el riesgo inherente del riesgo. Este es el nivel de riesgo antes de aplicar cualquier control.",
+      update_inherent_risk_description: "Actualiza el riesgo inherente del riesgo. Este es el nivel de riesgo antes de que se apliquen controles.",
       update_inherent_risk_success: "Riesgo inherente actualizado con éxito",
       update_inherent_risk_error: "Error al actualizar el riesgo inherente",
       update_residual_risk: "Guardar Riesgo Residual",
-      update_residual_risk_description: "Actualiza el riesgo residual del riesgo. Este es el nivel de riesgo después de aplicar controles.",
+      update_residual_risk_description: "Actualiza el riesgo residual del riesgo. Este es el nivel de riesgo después de que se aplican controles.",
       update_residual_risk_success: "Riesgo residual actualizado con éxito",
       update_residual_risk_error: "Error al actualizar el riesgo residual",
       update_risk: "Actualizar Riesgo",
@@ -449,7 +497,7 @@ export default {
         update_description: "Actualiza el título o la descripción de la tarea."
       },
       empty: {
-        description_create: "Crea una tarea de mitigación para este riesgo, agrega un plan de tratamiento y asígnala a un miembro del equipo."
+        description_create: "Crea una tarea de mitigación para este riesgo, añade un plan de tratamiento y asígnalo a un miembro del equipo."
       }
     }
   },
@@ -459,8 +507,8 @@ export default {
       org_name: "Nombre de la organización",
       org_name_description: "Este es el nombre visible de tu organización. Debes usar el nombre legal de tu organización.",
       org_name_tip: "Por favor, usa un máximo de 32 caracteres.",
-      org_website: "Sitio web de la organización",
-      org_website_description: "Esta es la URL oficial del sitio web de tu organización. Asegúrate de incluir la URL completa con https://.",
+      org_website: "Sitio Web de la Organización",
+      org_website_description: "Esta es la URL del sitio web oficial de tu organización. Asegúrate de incluir la URL completa con https://.",
       org_website_tip: "Por favor, ingresa una URL válida incluyendo https://",
       org_website_error: "Error al actualizar el sitio web de la organización",
       org_website_updated: "Sitio web de la organización actualizado",
@@ -483,6 +531,52 @@ export default {
     },
     billing: {
       title: "Facturación"
+    },
+    api_keys: {
+      title: "Claves API",
+      description: "Administra las claves API para el acceso programático a los datos de tu organización.",
+      list_title: "Claves API",
+      list_description: "Las claves API permiten el acceso seguro a los datos de tu organización a través de nuestra API.",
+      create: "Crear clave API",
+      create_title: "Crear clave API",
+      create_description: "Crea una nueva clave API para el acceso programático a los datos de tu organización.",
+      created_title: "Clave API creada",
+      created_description: "Tu clave API ha sido creada. Asegúrate de copiarla ahora, ya que no podrás volver a verla.",
+      name: "Nombre",
+      name_label: "Nombre",
+      name_placeholder: "Ingresa un nombre para esta clave API",
+      expiration: "Expiración",
+      expiration_placeholder: "Selecciona la expiración",
+      expires_label: "Expira",
+      expires_placeholder: "Selecciona la expiración",
+      expires_30days: "30 días",
+      expires_90days: "90 días",
+      expires_1year: "1 año",
+      expires_never: "Nunca",
+      thirty_days: "30 días",
+      ninety_days: "90 días",
+      one_year: "1 año",
+      your_key: "Tu clave API",
+      api_key: "Clave API",
+      save_warning: "Esta clave solo se mostrará una vez. Asegúrate de copiarla ahora.",
+      copied: "Clave API copiada al portapapeles",
+      close_confirm: "¿Estás seguro de que deseas cerrar? No podrás volver a ver esta clave API.",
+      revoke_confirm: "¿Estás seguro de que deseas revocar esta clave API? Esta acción no se puede deshacer.",
+      revoke_title: "Revocar clave API",
+      revoke: "Revocar",
+      created: "Creada",
+      expires: "Expira",
+      last_used: "Último uso",
+      actions: "Acciones",
+      never: "Nunca",
+      never_used: "Nunca utilizada",
+      no_keys: "No se encontraron claves API. Crea una para comenzar.",
+      security_note: "Las claves API proporcionan acceso completo a los datos de tu organización. Mantenlas seguras y cámbialas regularmente.",
+      fetch_error: "Error al obtener las claves API",
+      create_error: "Error al crear la clave API",
+      revoked_success: "Clave API revocada con éxito",
+      revoked_error: "Error al revocar la clave API",
+      done: "Hecho"
     }
   },
   user_menu: {
@@ -498,7 +592,7 @@ export default {
     title: "Marcos",
     controls: {
       title: "Controles",
-      description: "Revisa y gestiona los controles de cumplimiento",
+      description: "Revisar y gestionar controles de cumplimiento",
       table: {
         status: "Estado",
         control: "Control",
@@ -506,57 +600,55 @@ export default {
         actions: "Acciones"
       },
       statuses: {
-        not_started: "No iniciado",
-        compliant: "Cumple",
-        non_compliant: "No cumple",
+        not_started: "No Comenzado",
         completed: "Completado",
         in_progress: "En Progreso"
       }
     },
     overview: {
-      error: "Error al cargar los marcos",
+      error: "Error al cargar marcos",
       loading: "Cargando marcos...",
       empty: {
         title: "No se han seleccionado marcos",
-        description: "Seleccione marcos para comenzar su viaje de cumplimiento"
+        description: "Selecciona marcos para comenzar tu viaje de cumplimiento"
       },
       progress: {
-        title: "Progreso del marco",
+        title: "Progreso del Marco",
         empty: {
           title: "Aún no hay marcos",
-          description: "Comience agregando un marco de cumplimiento para rastrear su progreso",
-          action: "Agregar marco"
+          description: "Comienza agregando un marco de cumplimiento para rastrear tu progreso",
+          action: "Agregar Marco"
         }
       },
       grid: {
         welcome: {
           title: "Bienvenido a Comp AI",
-          description: "Comience seleccionando los marcos de cumplimiento que le gustaría implementar. Le ayudaremos a gestionar y rastrear su viaje de cumplimiento a través de múltiples estándares.",
+          description: "Comienza seleccionando los marcos de cumplimiento que te gustaría implementar. Te ayudaremos a gestionar y rastrear tu viaje de cumplimiento a través de múltiples estándares.",
           action: "Comenzar"
         },
-        title: "Seleccionar marcos",
+        title: "Seleccionar Marcos",
         version: "Versión",
         actions: {
           clear: "Borrar",
-          confirm: "Confirmar selección"
+          confirm: "Confirmar Selección"
         }
       }
     }
   },
   vendor: {
     title: "Tablero",
-    register_title: "Gestión de proveedores",
+    register_title: "Gestión de Proveedores",
     dashboard: {
       title: "Tablero",
-      overview: "Resumen del proveedor",
-      vendor_status: "Estado del proveedor",
-      vendor_category: "Categorías de proveedores",
-      vendors_by_assignee: "Proveedores por asignado",
+      overview: "Resumen del Proveedor",
+      vendor_status: "Estado del Proveedor",
+      vendor_category: "Categorías de Proveedores",
+      vendors_by_assignee: "Proveedores por Asignado",
       inherent_risk_description: "Nivel de riesgo inicial antes de aplicar controles",
       residual_risk_description: "Nivel de riesgo restante después de aplicar controles"
     },
     register: {
-      title: "Registro de proveedores",
+      title: "Registro de Proveedores",
       table: {
         name: "Nombre",
         category: "Categoría",
@@ -576,7 +668,7 @@ export default {
     },
     vendors: "proveedores",
     form: {
-      vendor_details: "Detalles del proveedor",
+      vendor_details: "Detalles del Proveedor",
       vendor_name: "Nombre",
       vendor_name_placeholder: "Ingresa el nombre del proveedor",
       vendor_website: "Sitio web",
@@ -584,19 +676,19 @@ export default {
       vendor_description: "Descripción",
       vendor_description_placeholder: "Ingresa la descripción del proveedor",
       vendor_category: "Categoría",
-      vendor_category_placeholder: "Selecciona categoría",
+      vendor_category_placeholder: "Seleccionar categoría",
       vendor_status: "Estado",
-      vendor_status_placeholder: "Selecciona estado",
+      vendor_status_placeholder: "Seleccionar estado",
       create_vendor_success: "Proveedor creado con éxito",
       create_vendor_error: "Error al crear el proveedor",
       update_vendor_success: "Proveedor actualizado con éxito",
       update_vendor_error: "Error al actualizar el proveedor",
-      contacts: "Contactos del proveedor",
-      contact_name: "Nombre del contacto",
-      contact_email: "Correo electrónico del contacto",
-      contact_role: "Rol del contacto",
-      add_contact: "Agregar contacto",
-      new_contact: "Nuevo contacto",
+      contacts: "Contactos del Proveedor",
+      contact_name: "Nombre del Contacto",
+      contact_email: "Correo Electrónico del Contacto",
+      contact_role: "Rol del Contacto",
+      add_contact: "Agregar Contacto",
+      new_contact: "Nuevo Contacto",
       min_one_contact_required: "Un proveedor debe tener al menos un contacto"
     },
     empty_states: {
@@ -606,7 +698,7 @@ export default {
       },
       no_results: {
         title: "No se encontraron resultados",
-        description: "No hay proveedores que coincidan con tu búsqueda",
+        description: "Ningún proveedor coincide con tu búsqueda",
         description_with_filters: "Intenta ajustar tus filtros"
       }
     }
@@ -616,7 +708,7 @@ export default {
     details: {
       taskProgress: "Progreso de la Tarea",
       tasks: "Tareas",
-      noTasks: "Aún no hay tareas asignadas"
+      noTasks: "No hay tareas asignadas aún"
     },
     description: "Gestiona a los miembros de tu equipo y sus roles.",
     filters: {
@@ -624,18 +716,18 @@ export default {
       role: "Filtrar por rol"
     },
     actions: {
-      invite: "Agregar empleado",
+      invite: "Agregar Empleado",
       clear: "Limpiar filtros"
     },
     table: {
       name: "Nombre",
-      email: "Correo electrónico",
+      email: "Correo Electrónico",
       department: "Departamento",
-      externalId: "ID externo"
+      externalId: "ID Externo"
     },
     empty: {
       no_employees: {
-        title: "Aún no hay empleados",
+        title: "No hay empleados aún",
         description: "Comienza invitando a tu primer miembro del equipo."
       },
       no_results: {
@@ -645,7 +737,7 @@ export default {
       }
     },
     invite: {
-      title: "Agregar empleado",
+      title: "Agregar Empleado",
       description: "Agrega un empleado a tu organización.",
       email: {
         label: "Dirección de correo electrónico",
@@ -663,7 +755,7 @@ export default {
         label: "Departamento",
         placeholder: "Selecciona un departamento"
       },
-      submit: "Agregar empleado",
+      submit: "Agregar Empleado",
       success: "Empleado agregado con éxito",
       error: "Error al agregar empleado"
     }
@@ -683,7 +775,8 @@ export default {
     },
     policies: {
       all: "Todas las Políticas",
-      editor: "Editor de Políticas"
+      editor: "Editor de Políticas",
+      policy_details: "Detalles de la Política"
     },
     people: {
       all: "Personas",
@@ -694,6 +787,11 @@ export default {
     },
     frameworks: {
       overview: "Marcos"
+    },
+    evidence: {
+      title: "Evidencia",
+      list: "Lista de Evidencia",
+      overview: "Resumen de Evidencia"
     }
   },
   editor: {
@@ -702,7 +800,7 @@ export default {
       thinking_spinner: "La IA está pensando",
       edit_or_generate: "Editar o generar...",
       tell_ai_what_to_do_next: "Dile a la IA qué hacer a continuación",
-      request_limit_reached: "Has alcanzado tu límite de solicitudes para el día."
+      request_limit_reached: "Ha alcanzado su límite de solicitudes para el día."
     },
     ai_selector: {
       improve: "Mejorar la redacción",
@@ -713,6 +811,79 @@ export default {
       replace: "Reemplazar selección",
       insert: "Insertar abajo",
       discard: "Descartar"
+    }
+  },
+  evidence: {
+    title: "Evidencia",
+    list: "Toda la Evidencia",
+    overview: "Resumen de Evidencia",
+    edit: "Editar Evidencia",
+    dashboard: {
+      layout: "Tablero",
+      layout_back_button: "Atrás",
+      title: "Tablero de Evidencia",
+      by_department: "Por Departamento",
+      by_assignee: "Por Asignado",
+      by_framework: "Por Marco"
+    },
+    items: "elementos",
+    status: {
+      up_to_date: "Actualizado",
+      needs_review: "Necesita Revisión",
+      draft: "Borrador",
+      empty: "Vacío"
+    },
+    departments: {
+      none: "Sin Categorizar",
+      admin: "Administración",
+      gov: "Gobernanza",
+      hr: "Recursos Humanos",
+      it: "Tecnologías de la Información",
+      itsm: "Gestión de Servicios de TI",
+      qms: "Gestión de Calidad"
+    },
+    details: {
+      review_section: "Revisar Información",
+      content: "Contenido de Evidencia"
+    }
+  },
+  upload: {
+    fileSection: {
+      filesUploaded: "{count} archivo(s) subido(s)",
+      upload: "{count} archivo(s) subido(s)"
+    },
+    fileUpload: {
+      uploadingText: "Subiendo...",
+      dropFileHere: "Suelta el archivo aquí",
+      releaseToUpload: "Suelta para subir",
+      addFiles: "Agregar Archivos",
+      uploadAdditionalEvidence: "Subir un archivo",
+      dragDropOrClick: "Arrastra y suelta o haz clic para subir",
+      dropFileHereAlt: "Suelta el archivo aquí",
+      dragDropOrClickToSelect: "Arrastra y suelta un archivo aquí, o haz clic para seleccionar",
+      maxFileSize: "Tamaño máximo de archivo: {size}MB",
+      uploadingFile: "Subiendo archivo..."
+    },
+    fileCard: {
+      preview: "Vista previa",
+      previewNotAvailable: "Vista previa no disponible. Haz clic en el botón de descarga para ver el archivo.",
+      filePreview: "Vista previa del archivo: {fileName}",
+      openFile: "Abrir archivo",
+      deleteFile: "Eliminar archivo",
+      deleteFileConfirmTitle: "Eliminar Archivo",
+      deleteFileConfirmDescription: "¿Estás seguro de que deseas eliminar este archivo? Esta acción no se puede deshacer."
+    },
+    fileUrl: {
+      additionalLinks: "Enlaces Adicionales",
+      add: "Agregar",
+      linksAdded: "{count} enlace{s} añadido{s}",
+      enterUrl: "Ingresa la URL",
+      addAnotherLink: "Agregar Otro Enlace",
+      saveLinks: "Guardar Enlaces",
+      urlBadge: "URL",
+      copyLink: "Copiar enlace",
+      openLink: "Abrir enlace",
+      deleteLink: "Eliminar enlace"
     }
   },
   tests: {

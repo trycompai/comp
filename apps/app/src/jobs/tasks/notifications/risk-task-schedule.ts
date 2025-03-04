@@ -37,10 +37,14 @@ export const sendRiskTaskSchedule = schedules.task({
     });
 
     const triggerPayloads = tasks
-      .filter((task): task is (typeof task & {
-        owner: { id: string; email: string; organizationId: string }
-      }) => Boolean(task.owner?.email && task.owner.organizationId))
-      .map(task => ({
+      .filter(
+        (
+          task,
+        ): task is typeof task & {
+          owner: { id: string; email: string; organizationId: string };
+        } => Boolean(task.owner?.email && task.owner.organizationId),
+      )
+      .map((task) => ({
         payload: {
           task: {
             id: task.id,
@@ -48,16 +52,13 @@ export const sendRiskTaskSchedule = schedules.task({
             dueDate: task.dueDate || new Date(),
             owner: task.owner,
             riskId: task.riskId,
-          }
-        }
+          },
+        },
       }));
 
     if (triggerPayloads.length > 0) {
       try {
-
-        await sendRiskTaskNotification.batchTrigger(
-          triggerPayloads,
-        );
+        await sendRiskTaskNotification.batchTrigger(triggerPayloads);
 
         logger.info(`Triggered ${triggerPayloads.length} task notifications`);
       } catch (error) {
@@ -77,5 +78,5 @@ export const sendRiskTaskSchedule = schedules.task({
       totalTasks: tasks.length,
       triggeredTasks: triggerPayloads.length,
     };
-  }
+  },
 });

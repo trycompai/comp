@@ -4,7 +4,10 @@
 
 import { createOrganizationAndConnectUser } from "@/auth/org";
 import type { createDefaultPoliciesTask } from "@/jobs/tasks/organization/create-default-policies";
-import { addDomainToVercel, removeDomainFromVercelProject } from "@/lib/domains";
+import {
+  addDomainToVercel,
+  removeDomainFromVercelProject,
+} from "@/lib/domains";
 import { db } from "@bubba/db";
 import { tasks } from "@trigger.dev/sdk/v3";
 import { revalidateTag } from "next/cache";
@@ -31,14 +34,16 @@ export const createOrganizationAction = authActionClient
 
     const hasVercelConfig = Boolean(
       process.env.NEXT_PUBLIC_VERCEL_URL &&
-      process.env.VERCEL_ACCESS_TOKEN &&
-      process.env.VERCEL_TEAM_ID &&
-      process.env.VERCEL_PROJECT_ID
+        process.env.VERCEL_ACCESS_TOKEN &&
+        process.env.VERCEL_TEAM_ID &&
+        process.env.VERCEL_PROJECT_ID,
     );
 
     if (hasVercelConfig && subdomain) {
       try {
-        await addDomainToVercel(`${subdomain}.${process.env.NEXT_PUBLIC_VERCEL_URL}`);
+        await addDomainToVercel(
+          `${subdomain}.${process.env.NEXT_PUBLIC_VERCEL_URL}`,
+        );
       } catch (error) {
         console.error("Failed to add domain to Vercel:", error);
         throw new Error("Failed to set up subdomain");
@@ -49,7 +54,7 @@ export const createOrganizationAction = authActionClient
       await createOrganizationAndConnectUser({
         userId,
         normalizedEmail: ctx.user.email!,
-        subdomain: hasVercelConfig ? (subdomain || "") : "",
+        subdomain: hasVercelConfig ? subdomain || "" : "",
       });
     }
 
@@ -76,12 +81,12 @@ export const createOrganizationAction = authActionClient
           update: {
             name,
             website,
-            subdomain: hasVercelConfig ? (subdomain || "") : "",
+            subdomain: hasVercelConfig ? subdomain || "" : "",
           },
           create: {
             name,
             website,
-            subdomain: hasVercelConfig ? (subdomain || "") : "",
+            subdomain: hasVercelConfig ? subdomain || "" : "",
           },
         });
 
@@ -113,9 +118,14 @@ export const createOrganizationAction = authActionClient
     } catch (error) {
       if (hasVercelConfig && subdomain) {
         try {
-          await removeDomainFromVercelProject(`${subdomain}.${process.env.NEXT_PUBLIC_VERCEL_URL}`);
+          await removeDomainFromVercelProject(
+            `${subdomain}.${process.env.NEXT_PUBLIC_VERCEL_URL}`,
+          );
         } catch (cleanupError) {
-          console.error("Failed to clean up subdomain after error:", cleanupError);
+          console.error(
+            "Failed to clean up subdomain after error:",
+            cleanupError,
+          );
         }
       }
 

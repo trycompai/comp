@@ -28,6 +28,7 @@ export function TaskComment({
           <div className="flex items-center justify-between gap-2">
             {t("common.comments.title")}
             <Button variant="action" onClick={() => setOpen("true")}>
+              <MessageSquare className="h-4 w-4" />
               {t("common.comments.add")}
             </Button>
           </div>

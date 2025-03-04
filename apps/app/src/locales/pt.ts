@@ -50,7 +50,8 @@ export default {
       not_assessed: "Não Avaliado",
       assessed: "Avaliado",
       active: "Ativo",
-      inactive: "Inativo"
+      inactive: "Inativo",
+      title: "Status"
     },
     filters: {
       clear: "Limpar filtros",
@@ -72,7 +73,7 @@ export default {
     },
     empty_states: {
       no_results: {
-        title: "Nenhum resultado",
+        title: "Nenhum resultado encontrado",
         title_tasks: "Nenhuma tarefa encontrada",
         title_risks: "Nenhum risco encontrado",
         description: "Tente outra pesquisa ou ajuste os filtros",
@@ -143,6 +144,19 @@ export default {
       archive: "Arquivo",
       archive_all: "Arquivar tudo",
       no_notifications: "Sem novas notificações"
+    },
+    edit: "Editar",
+    errors: {
+      unexpected_error: "Ocorreu um erro inesperado"
+    },
+    description: "Descrição",
+    last_updated: "Última atualização",
+    frequency: {
+      daily: "Diário",
+      weekly: "Semanal",
+      monthly: "Mensal",
+      quarterly: "Trimestral",
+      yearly: "Anual"
     }
   },
   header: {
@@ -240,15 +254,20 @@ export default {
     dashboard: {
       title: "Painel",
       all: "Todas as Políticas",
-      policy_status: "Status da Política",
+      policy_status: "Política por Status",
       policies_by_assignee: "Políticas por Responsável",
-      policies_by_framework: "Políticas por Framework"
+      policies_by_framework: "Políticas por Framework",
+      sub_pages: {
+        overview: "Visão Geral",
+        edit_policy: "Editar Política"
+      }
     },
     table: {
       name: "Nome da Política",
       statuses: {
         draft: "Rascunho",
-        published: "Publicado"
+        published: "Publicado",
+        archived: "Arquivado"
       },
       filters: {
         owner: {
@@ -264,9 +283,38 @@ export default {
     status: {
       draft: "Rascunho",
       published: "Publicado",
-      needs_review: "Necessita Revisão"
+      needs_review: "Necessita Revisão",
+      archived: "Arquivado"
     },
-    policies: "políticas"
+    policies: "políticas",
+    title: "Políticas",
+    create_new: "Criar nova política",
+    search_placeholder: "Pesquisar políticas...",
+    status_filter: "Filtrar por status",
+    all_statuses: "Todos os status",
+    no_policies_title: "Nenhuma política ainda",
+    no_policies_description: "Comece criando sua primeira política",
+    create_first: "Criar primeira política",
+    no_description: "Nenhuma descrição fornecida",
+    last_updated: "Última atualização: {{date}}",
+    save: "Salvar",
+    saving: "Salvando...",
+    saved_success: "Política salva com sucesso",
+    saved_error: "Falha ao salvar a política",
+    overview: {
+      title: "Visão Geral da Política",
+      form: {
+        update_policy: "Atualizar Política",
+        update_policy_description: "Atualize o título ou a descrição da política.",
+        update_policy_success: "Política atualizada com sucesso",
+        update_policy_error: "Falha ao atualizar a política",
+        update_policy_title: "Nome da Política",
+        review_frequency: "Frequência de Revisão",
+        review_frequency_placeholder: "Selecione uma frequência de revisão",
+        review_date: "Data da Revisão",
+        review_date_placeholder: "Selecione uma data de revisão"
+      }
+    }
   },
   evidence_tasks: {
     evidence_tasks: "Tarefas de Evidência",
@@ -483,6 +531,52 @@ export default {
     },
     billing: {
       title: "Faturamento"
+    },
+    api_keys: {
+      title: "Chaves da API",
+      description: "Gerencie chaves da API para acesso programático aos dados da sua organização.",
+      list_title: "Chaves da API",
+      list_description: "As chaves da API permitem acesso seguro aos dados da sua organização através da nossa API.",
+      create: "Criar Chave da API",
+      create_title: "Criar Chave da API",
+      create_description: "Crie uma nova chave da API para acesso programático aos dados da sua organização.",
+      created_title: "Chave da API Criada",
+      created_description: "Sua chave da API foi criada. Certifique-se de copiá-la agora, pois você não poderá vê-la novamente.",
+      name: "Nome",
+      name_label: "Nome",
+      name_placeholder: "Insira um nome para esta chave da API",
+      expiration: "Expiração",
+      expiration_placeholder: "Selecione a expiração",
+      expires_label: "Expira",
+      expires_placeholder: "Selecione a expiração",
+      expires_30days: "30 dias",
+      expires_90days: "90 dias",
+      expires_1year: "1 ano",
+      expires_never: "Nunca",
+      thirty_days: "30 dias",
+      ninety_days: "90 dias",
+      one_year: "1 ano",
+      your_key: "Sua Chave da API",
+      api_key: "Chave da API",
+      save_warning: "Esta chave será exibida apenas uma vez. Certifique-se de copiá-la agora.",
+      copied: "Chave da API copiada para a área de transferência",
+      close_confirm: "Você tem certeza de que deseja fechar? Você não poderá ver esta chave da API novamente.",
+      revoke_confirm: "Você tem certeza de que deseja revogar esta chave da API? Esta ação não pode ser desfeita.",
+      revoke_title: "Revogar Chave da API",
+      revoke: "Revogar",
+      created: "Criada",
+      expires: "Expira",
+      last_used: "Último Uso",
+      actions: "Ações",
+      never: "Nunca",
+      never_used: "Nunca usada",
+      no_keys: "Nenhuma chave da API encontrada. Crie uma para começar.",
+      security_note: "As chaves da API fornecem acesso total aos dados da sua organização. Mantenha-as seguras e rotacione-as regularmente.",
+      fetch_error: "Falha ao buscar chaves da API",
+      create_error: "Falha ao criar chave da API",
+      revoked_success: "Chave da API revogada com sucesso",
+      revoked_error: "Falha ao revogar chave da API",
+      done: "Concluído"
     }
   },
   user_menu: {
@@ -507,8 +601,6 @@ export default {
       },
       statuses: {
         not_started: "Não Iniciado",
-        compliant: "Conforme",
-        non_compliant: "Não Conforme",
         completed: "Concluído",
         in_progress: "Em Andamento"
       }
@@ -683,7 +775,8 @@ export default {
     },
     policies: {
       all: "Todas as Políticas",
-      editor: "Editor de Políticas"
+      editor: "Editor de Políticas",
+      policy_details: "Detalhes da política"
     },
     people: {
       all: "Pessoas",
@@ -694,6 +787,11 @@ export default {
     },
     frameworks: {
       overview: "Estruturas"
+    },
+    evidence: {
+      title: "Evidência",
+      list: "Lista de Evidências",
+      overview: "Visão Geral das Evidências"
     }
   },
   editor: {
@@ -713,6 +811,49 @@ export default {
       replace: "Substituir seleção",
       insert: "Inserir abaixo",
       discard: "Descartar"
+    }
+  },
+  evidence: {
+    title: "Tarefas de Evidência",
+    list: "Todas as Evidências"
+  },
+  upload: {
+    fileSection: {
+      filesUploaded: "{count} arquivo(s) enviado(s)",
+      upload: "{count} arquivo(s) enviado(s)"
+    },
+    fileUpload: {
+      uploadingText: "Enviando...",
+      dropFileHere: "Solte o arquivo aqui",
+      releaseToUpload: "Solte para enviar",
+      addFiles: "Adicionar Arquivos",
+      uploadAdditionalEvidence: "Enviar um arquivo",
+      dragDropOrClick: "Arraste e solte ou clique para enviar",
+      dropFileHereAlt: "Solte o arquivo aqui",
+      dragDropOrClickToSelect: "Arraste e solte um arquivo aqui ou clique para selecionar",
+      maxFileSize: "Tamanho máximo do arquivo: {size}MB",
+      uploadingFile: "Enviando arquivo..."
+    },
+    fileCard: {
+      preview: "Pré-visualização",
+      previewNotAvailable: "Pré-visualização não disponível. Clique no botão de download para visualizar o arquivo.",
+      filePreview: "Pré-visualização do arquivo: {fileName}",
+      openFile: "Abrir arquivo",
+      deleteFile: "Excluir arquivo",
+      deleteFileConfirmTitle: "Excluir Arquivo",
+      deleteFileConfirmDescription: "Você tem certeza de que deseja excluir este arquivo? Esta ação não pode ser desfeita."
+    },
+    fileUrl: {
+      additionalLinks: "Links Adicionais",
+      add: "Adicionar",
+      linksAdded: "{count} link{s} adicionado",
+      enterUrl: "Digite a URL",
+      addAnotherLink: "Adicionar Outro Link",
+      saveLinks: "Salvar Links",
+      urlBadge: "URL",
+      copyLink: "Copiar link",
+      openLink: "Abrir link",
+      deleteLink: "Excluir link"
     }
   },
   tests: {

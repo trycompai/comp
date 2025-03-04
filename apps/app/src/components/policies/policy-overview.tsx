@@ -1,50 +1,64 @@
 "use client";
 
-import { publishPolicy } from "@/app/[locale]/(app)/(dashboard)/policies/[id]/actions/publish-policy";
-import { usePolicy } from "@/app/[locale]/(app)/(dashboard)/policies/hooks/usePolicy";
+import { useI18n } from "@/locales/client";
+import type { OrganizationPolicy, Policy, User } from "@bubba/db";
+import { Alert, AlertDescription, AlertTitle } from "@bubba/ui/alert";
 import { Button } from "@bubba/ui/button";
-import { Separator } from "@bubba/ui/separator";
-import { useAction } from "next-safe-action/hooks";
-import type { JSONContent } from "novel";
-import { toast } from "sonner";
+import { Card, CardContent, CardHeader, CardTitle } from "@bubba/ui/card";
+import { Icons } from "@bubba/ui/icons";
+import { PencilIcon } from "lucide-react";
+import { useQueryState } from "nuqs";
+import { PolicyOverviewSheet } from "./sheets/policy-overview-sheet";
+import { UpdatePolicyOverview } from "../forms/policies/policy-overview";
 
-export function PolicyOverview({ policyId }: { policyId: string }) {
-  const { data: policy } = usePolicy({ policyId });
+export function PolicyOverview({
+	policy,
+	users,
+}: {
+	policy: OrganizationPolicy & {
+		policy: Policy;
+	};
+	users: User[];
+}) {
+	const t = useI18n();
+	const [open, setOpen] = useQueryState("policy-overview-sheet");
 
-  const { execute, isExecuting } = useAction(
-    () => publishPolicy({ id: policyId }),
-    {
-      onSuccess: () => {
-        toast.success("Policy published successfully");
-      },
-    },
-  );
+	return (
+		<div className="space-y-4">
+			<Alert>
+				<Icons.Policies className="h-4 w-4" />
+				<AlertTitle>
+					<div className="flex items-center justify-between gap-2">
+						{policy.policy.name}
+						<Button
+							size="icon"
+							variant="ghost"
+							className="p-0 m-0 size-auto"
+							onClick={() => setOpen("true")}
+						>
+							<PencilIcon className="h-3 w-3" />
+						</Button>
+					</div>
+				</AlertTitle>
+				<AlertDescription className="mt-4">
+					{policy.policy.description}
+				</AlertDescription>
+			</Alert>
 
-  if (!policy) return null;
+			<Card>
+				<CardHeader>
+					<CardTitle>
+						<div className="flex items-center justify-between gap-2">
+							{t("policies.overview.title")}
+						</div>
+					</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<UpdatePolicyOverview organizationPolicy={policy} users={users} />
+				</CardContent>
+			</Card>
 
-  const content = policy.content as JSONContent;
-
-  if (!content) return null;
-
-  return (
-    <div className="h-[calc(100vh-8rem)] flex flex-col py-4 gap-4">
-      <div className="flex justify-end">
-        <Button
-          variant="secondary"
-          className="w-fit"
-          onClick={() => execute({ id: policyId })}
-        >
-          {isExecuting ? "Publishing..." : "Publish"}
-        </Button>
-      </div>
-      <Separator />
-      <div className="flex-1">
-        <div className="min-h-0 h-auto">
-          <div className="relative min-h-[1100px] w-full mx-auto border border-border bg-background">
-            Editor
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+			<PolicyOverviewSheet policy={policy} />
+		</div>
+	);
 }

@@ -5,8 +5,7 @@ export async function getServerColumnHeaders() {
 
   return {
     name: t("policies.table.name"),
-    lastUpdated: t("common.table.last_updated"),
-    status: t("common.table.status"),
-    ownerId: t("common.table.assigned_to"),
+    status: t("common.status.title"),
+    updatedAt: t("common.last_updated"),
   };
 }

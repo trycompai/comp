@@ -8,7 +8,7 @@ export default {
   },
   language: {
     title: "Langues",
-    description: "Changez la langue utilisée dans l'interface utilisateur.",
+    description: "Changer la langue utilisée dans l'interface utilisateur.",
     placeholder: "Sélectionner la langue"
   },
   common: {
@@ -24,11 +24,11 @@ export default {
       success: "Succès",
       error: "Erreur",
       next: "Suivant",
-      complete: "Terminer",
-      addNew: "Ajouter Nouveau"
+      complete: "Compléter",
+      addNew: "Ajouter nouveau"
     },
     assignee: {
-      label: "Assigné à",
+      label: "Assigné",
       placeholder: "Sélectionner l'assigné"
     },
     date: {
@@ -50,15 +50,16 @@ export default {
       not_assessed: "Non évalué",
       assessed: "Évalué",
       active: "Actif",
-      inactive: "Inactif"
+      inactive: "Inactif",
+      title: "Statut"
     },
     filters: {
       clear: "Effacer les filtres",
-      search: "Rechercher...",
+      search: "Recherche...",
       status: "Statut",
       department: "Département",
       owner: {
-        label: "Assigné à",
+        label: "Assigné",
         placeholder: "Filtrer par assigné"
       }
     },
@@ -72,7 +73,7 @@ export default {
     },
     empty_states: {
       no_results: {
-        title: "Aucun résultat",
+        title: "Aucun résultat trouvé",
         title_tasks: "Aucune tâche trouvée",
         title_risks: "Aucun risque trouvé",
         description: "Essayez une autre recherche ou ajustez les filtres",
@@ -112,17 +113,17 @@ export default {
     attachments: {
       title: "Pièces jointes",
       description: "Ajoutez un fichier en cliquant sur 'Ajouter une pièce jointe'.",
-      upload: "Télécharger une pièce jointe",
+      upload: "Télécharger la pièce jointe",
       upload_description: "Téléchargez une pièce jointe ou ajoutez un lien vers une ressource externe.",
       drop: "Déposez les fichiers ici",
-      drop_description: "Déposez des fichiers ici ou cliquez pour choisir des fichiers sur votre appareil.",
-      drop_files_description: "Les fichiers peuvent aller jusqu'à ",
+      drop_description: "Déposez des fichiers ici ou cliquez pour choisir des fichiers depuis votre appareil.",
+      drop_files_description: "Les fichiers peuvent faire jusqu'à ",
       empty: {
         title: "Aucune pièce jointe",
         description: "Ajoutez un fichier en cliquant sur 'Ajouter une pièce jointe'."
       },
       toasts: {
-        error: "Une erreur s'est produite, veuillez réessayer.",
+        error: "Quelque chose a mal tourné, veuillez réessayer.",
         error_uploading_files: "Impossible de télécharger plus d'un fichier à la fois",
         error_uploading_files_multiple: "Impossible de télécharger plus de 10 fichiers",
         error_no_files_selected: "Aucun fichier sélectionné",
@@ -143,6 +144,19 @@ export default {
       archive: "Archive",
       archive_all: "Archiver tout",
       no_notifications: "Aucune nouvelle notification"
+    },
+    edit: "Modifier",
+    errors: {
+      unexpected_error: "Une erreur inattendue est survenue"
+    },
+    description: "Description",
+    last_updated: "Dernière mise à jour",
+    frequency: {
+      daily: "Quotidien",
+      weekly: "Hebdomadaire",
+      monthly: "Mensuel",
+      quarterly: "Trimestriel",
+      yearly: "Annuel"
     }
   },
   header: {
@@ -155,8 +169,8 @@ export default {
       description: "Nous reviendrons vers vous dès que possible",
       placeholder: "Idées pour améliorer cette page ou problèmes que vous rencontrez.",
       success: "Merci pour vos retours !",
-      error: "Erreur lors de l'envoi du retour - réessayer ?",
-      send: "Envoyer un retour"
+      error: "Erreur lors de l'envoi des retours - réessayer ?",
+      send: "Envoyer des retours"
     }
   },
   not_found: {
@@ -174,7 +188,7 @@ export default {
   sidebar: {
     overview: "Aperçu",
     policies: "Politiques",
-    risk: "Gestion des Risques",
+    risk: "Gestion des risques",
     vendors: "Fournisseurs",
     integrations: "Intégrations",
     settings: "Paramètres",
@@ -189,7 +203,7 @@ export default {
     google: "Continuer avec Google",
     email: {
       description: "Entrez votre adresse e-mail pour continuer.",
-      placeholder: "Entrez l'adresse e-mail",
+      placeholder: "Entrer l'adresse e-mail",
       button: "Continuer avec l'e-mail",
       magic_link_sent: "Lien magique envoyé",
       magic_link_description: "Vérifiez votre boîte de réception pour un lien magique.",
@@ -209,20 +223,20 @@ export default {
         placeholder: "Le nom de votre organisation"
       },
       website: {
-        label: "Site Web",
-        placeholder: "Le site Web de votre organisation"
+        label: "Site web",
+        placeholder: "Le site web de votre organisation"
       },
       subdomain: {
         label: "Sous-domaine",
         placeholder: "exemple"
       },
       fullName: {
-        label: "Votre Nom",
+        label: "Votre nom",
         placeholder: "Votre nom complet"
       }
     },
     success: "Merci, vous êtes prêt !",
-    error: "Une erreur s'est produite, veuillez réessayer.",
+    error: "Quelque chose s'est mal passé, veuillez réessayer.",
     unavailable: "Indisponible",
     check_availability: "Vérification de la disponibilité",
     available: "Disponible"
@@ -233,22 +247,27 @@ export default {
       title: "Progrès du cadre"
     },
     requirement_chart: {
-      title: "État de conformité"
+      title: "Statut de conformité"
     }
   },
   policies: {
     dashboard: {
       title: "Tableau de bord",
       all: "Toutes les politiques",
-      policy_status: "État de la politique",
+      policy_status: "Politique par statut",
       policies_by_assignee: "Politiques par responsable",
-      policies_by_framework: "Politiques par cadre"
+      policies_by_framework: "Politiques par cadre",
+      sub_pages: {
+        overview: "Aperçu",
+        edit_policy: "Modifier la politique"
+      }
     },
     table: {
       name: "Nom de la politique",
       statuses: {
         draft: "Brouillon",
-        published: "Publié"
+        published: "Publié",
+        archived: "Archivé"
       },
       filters: {
         owner: {
@@ -264,9 +283,38 @@ export default {
     status: {
       draft: "Brouillon",
       published: "Publié",
-      needs_review: "Nécessite une révision"
+      needs_review: "Besoin de révision",
+      archived: "Archivé"
     },
-    policies: "politiques"
+    policies: "politiques",
+    title: "Politiques",
+    create_new: "Créer une nouvelle politique",
+    search_placeholder: "Rechercher des politiques...",
+    status_filter: "Filtrer par statut",
+    all_statuses: "Tous les statuts",
+    no_policies_title: "Aucune politique pour le moment",
+    no_policies_description: "Commencez par créer votre première politique",
+    create_first: "Créer la première politique",
+    no_description: "Aucune description fournie",
+    last_updated: "Dernière mise à jour : {{date}}",
+    save: "Enregistrer",
+    saving: "Enregistrement...",
+    saved_success: "Politique enregistrée avec succès",
+    saved_error: "Échec de l'enregistrement de la politique",
+    overview: {
+      title: "Aperçu de la politique",
+      form: {
+        update_policy: "Mettre à jour la politique",
+        update_policy_description: "Mettez à jour le titre ou la description de la politique.",
+        update_policy_success: "Politique mise à jour avec succès",
+        update_policy_error: "Échec de la mise à jour de la politique",
+        update_policy_title: "Nom de la politique",
+        review_frequency: "Fréquence de révision",
+        review_frequency_placeholder: "Sélectionnez une fréquence de révision",
+        review_date: "Date de révision",
+        review_date_placeholder: "Sélectionnez une date de révision"
+      }
+    }
   },
   evidence_tasks: {
     evidence_tasks: "Tâches de preuve",
@@ -281,7 +329,7 @@ export default {
       dashboard: {
         title: "Tableau de bord des fournisseurs",
         overview: "Aperçu des fournisseurs",
-        vendor_status: "État du fournisseur",
+        vendor_status: "Statut du fournisseur",
         vendor_category: "Catégories de fournisseurs",
         vendors_by_assignee: "Fournisseurs par responsable",
         inherent_risk_description: "Niveau de risque initial avant l'application de tout contrôle",
@@ -307,14 +355,14 @@ export default {
         vendor_details: "Détails du fournisseur",
         vendor_name: "Nom",
         vendor_name_placeholder: "Entrez le nom du fournisseur",
-        vendor_website: "Site Web",
-        vendor_website_placeholder: "Entrez le site Web du fournisseur",
+        vendor_website: "Site web",
+        vendor_website_placeholder: "Entrez le site web du fournisseur",
         vendor_description: "Description",
         vendor_description_placeholder: "Entrez la description du fournisseur",
         vendor_category: "Catégorie",
-        vendor_category_placeholder: "Sélectionnez une catégorie",
+        vendor_category_placeholder: "Sélectionner une catégorie",
         vendor_status: "Statut",
-        vendor_status_placeholder: "Sélectionnez un statut",
+        vendor_status_placeholder: "Sélectionner un statut",
         create_vendor_success: "Fournisseur créé avec succès",
         create_vendor_error: "Échec de la création du fournisseur",
         update_vendor: "Mettre à jour le fournisseur",
@@ -373,9 +421,9 @@ export default {
     dashboard: {
       title: "Tableau de bord",
       overview: "Aperçu des risques",
-      risk_status: "Statut des risques",
+      risk_status: "Statut du risque",
       risks_by_department: "Risques par département",
-      risks_by_assignee: "Risques par responsable",
+      risks_by_assignee: "Risques par assigné",
       inherent_risk_description: "Le risque inhérent est calculé comme probabilité * impact. Calculé avant l'application de tout contrôle.",
       residual_risk_description: "Le risque résiduel est calculé comme probabilité * impact. C'est le niveau de risque après l'application des contrôles.",
       risk_assessment_description: "Comparer les niveaux de risque inhérent et résiduel"
@@ -388,7 +436,7 @@ export default {
       empty: {
         no_risks: {
           title: "Créez un risque pour commencer",
-          description: "Suivez et évaluez les risques, créez et assignez des tâches d'atténuation à votre équipe, et gérez votre registre des risques dans une interface simple."
+          description: "Suivez et évaluez les risques, créez et assignez des tâches d'atténuation pour votre équipe, et gérez votre registre des risques dans une interface simple."
         },
         create_risk: "Créer un risque"
       }
@@ -457,10 +505,10 @@ export default {
     general: {
       title: "Général",
       org_name: "Nom de l'organisation",
-      org_name_description: "Ceci est le nom visible de votre organisation. Vous devez utiliser le nom légal de votre organisation.",
+      org_name_description: "C'est le nom visible de votre organisation. Vous devez utiliser le nom légal de votre organisation.",
       org_name_tip: "Veuillez utiliser un maximum de 32 caractères.",
       org_website: "Site Web de l'organisation",
-      org_website_description: "Ceci est l'URL du site Web officiel de votre organisation. Assurez-vous d'inclure l'URL complète avec https://.",
+      org_website_description: "C'est l'URL du site Web officiel de votre organisation. Assurez-vous d'inclure l'URL complète avec https://.",
       org_website_tip: "Veuillez entrer une URL valide incluant https://",
       org_website_error: "Erreur lors de la mise à jour du site Web de l'organisation",
       org_website_updated: "Site Web de l'organisation mis à jour",
@@ -483,6 +531,52 @@ export default {
     },
     billing: {
       title: "Facturation"
+    },
+    api_keys: {
+      title: "Clés API",
+      description: "Gérez les clés API pour un accès programmatique aux données de votre organisation.",
+      list_title: "Clés API",
+      list_description: "Les clés API permettent un accès sécurisé aux données de votre organisation via notre API.",
+      create: "Créer une clé API",
+      create_title: "Créer une clé API",
+      create_description: "Créez une nouvelle clé API pour un accès programmatique aux données de votre organisation.",
+      created_title: "Clé API créée",
+      created_description: "Votre clé API a été créée. Assurez-vous de la copier maintenant car vous ne pourrez plus la voir.",
+      name: "Nom",
+      name_label: "Nom",
+      name_placeholder: "Entrez un nom pour cette clé API",
+      expiration: "Expiration",
+      expiration_placeholder: "Sélectionner l'expiration",
+      expires_label: "Expire",
+      expires_placeholder: "Sélectionner l'expiration",
+      expires_30days: "30 jours",
+      expires_90days: "90 jours",
+      expires_1year: "1 an",
+      expires_never: "Jamais",
+      thirty_days: "30 jours",
+      ninety_days: "90 jours",
+      one_year: "1 an",
+      your_key: "Votre clé API",
+      api_key: "Clé API",
+      save_warning: "Cette clé ne sera affichée qu'une seule fois. Assurez-vous de la copier maintenant.",
+      copied: "Clé API copiée dans le presse-papiers",
+      close_confirm: "Êtes-vous sûr de vouloir fermer ? Vous ne pourrez plus voir cette clé API.",
+      revoke_confirm: "Êtes-vous sûr de vouloir révoquer cette clé API ? Cette action ne peut pas être annulée.",
+      revoke_title: "Révoquer la clé API",
+      revoke: "Révoquer",
+      created: "Créée",
+      expires: "Expire",
+      last_used: "Dernière utilisation",
+      actions: "Actions",
+      never: "Jamais",
+      never_used: "Jamais utilisée",
+      no_keys: "Aucune clé API trouvée. Créez-en une pour commencer.",
+      security_note: "Les clés API fournissent un accès complet aux données de votre organisation. Gardez-les sécurisées et renouvelez-les régulièrement.",
+      fetch_error: "Échec de la récupération des clés API",
+      create_error: "Échec de la création de la clé API",
+      revoked_success: "Clé API révoquée avec succès",
+      revoked_error: "Échec de la révocation de la clé API",
+      done: "Terminé"
     }
   },
   user_menu: {
@@ -490,7 +584,7 @@ export default {
     language: "Langue",
     sign_out: "Se déconnecter",
     account: "Compte",
-    support: "Support",
+    support: "Assistance",
     settings: "Paramètres",
     teams: "Équipes"
   },
@@ -498,7 +592,7 @@ export default {
     title: "Cadres",
     controls: {
       title: "Contrôles",
-      description: "Examinez et gérez les contrôles de conformité",
+      description: "Examiner et gérer les contrôles de conformité",
       table: {
         status: "Statut",
         control: "Contrôle",
@@ -507,8 +601,6 @@ export default {
       },
       statuses: {
         not_started: "Non commencé",
-        compliant: "Conforme",
-        non_compliant: "Non conforme",
         completed: "Terminé",
         in_progress: "En cours"
       }
@@ -523,7 +615,7 @@ export default {
       progress: {
         title: "Progression du cadre",
         empty: {
-          title: "Aucun cadre pour le moment",
+          title: "Pas encore de cadres",
           description: "Commencez par ajouter un cadre de conformité pour suivre vos progrès",
           action: "Ajouter un cadre"
         }
@@ -549,7 +641,7 @@ export default {
     dashboard: {
       title: "Tableau de bord",
       overview: "Aperçu des fournisseurs",
-      vendor_status: "Statut des fournisseurs",
+      vendor_status: "Statut du fournisseur",
       vendor_category: "Catégories de fournisseurs",
       vendors_by_assignee: "Fournisseurs par responsable",
       inherent_risk_description: "Niveau de risque initial avant l'application de tout contrôle",
@@ -571,7 +663,7 @@ export default {
       finance: "Finance",
       marketing: "Marketing",
       sales: "Ventes",
-      hr: "RH",
+      hr: "Ressources humaines",
       other: "Autre"
     },
     vendors: "fournisseurs",
@@ -579,14 +671,14 @@ export default {
       vendor_details: "Détails du fournisseur",
       vendor_name: "Nom",
       vendor_name_placeholder: "Entrez le nom du fournisseur",
-      vendor_website: "Site Web",
-      vendor_website_placeholder: "Entrez le site Web du fournisseur",
+      vendor_website: "Site web",
+      vendor_website_placeholder: "Entrez le site web du fournisseur",
       vendor_description: "Description",
       vendor_description_placeholder: "Entrez la description du fournisseur",
       vendor_category: "Catégorie",
-      vendor_category_placeholder: "Sélectionnez une catégorie",
+      vendor_category_placeholder: "Sélectionner une catégorie",
       vendor_status: "Statut",
-      vendor_status_placeholder: "Sélectionnez un statut",
+      vendor_status_placeholder: "Sélectionner un statut",
       create_vendor_success: "Fournisseur créé avec succès",
       create_vendor_error: "Échec de la création du fournisseur",
       update_vendor_success: "Fournisseur mis à jour avec succès",
@@ -601,7 +693,7 @@ export default {
     },
     empty_states: {
       no_vendors: {
-        title: "Aucun fournisseur pour le moment",
+        title: "Pas encore de fournisseurs",
         description: "Commencez par créer votre premier fournisseur"
       },
       no_results: {
@@ -614,7 +706,7 @@ export default {
   people: {
     title: "Personnes",
     details: {
-      taskProgress: "Progression des tâches",
+      taskProgress: "Progression de la tâche",
       tasks: "Tâches",
       noTasks: "Aucune tâche assignée pour le moment"
     },
@@ -669,31 +761,37 @@ export default {
     }
   },
   errors: {
-    unexpected: "Une erreur s'est produite, veuillez réessayer"
+    unexpected: "Quelque chose s'est mal passé, veuillez réessayer"
   },
   sub_pages: {
     risk: {
-      overview: "Gestion des Risques",
-      register: "Registre des Risques",
-      risk_overview: "Aperçu des Risques",
-      risk_comments: "Commentaires sur les Risques",
+      overview: "Gestion des risques",
+      register: "Registre des risques",
+      risk_overview: "Aperçu des risques",
+      risk_comments: "Commentaires sur les risques",
       tasks: {
-        task_overview: "Aperçu des Tâches"
+        task_overview: "Aperçu des tâches"
       }
     },
     policies: {
-      all: "Toutes les Politiques",
-      editor: "Éditeur de Politique"
+      all: "Toutes les politiques",
+      editor: "Éditeur de politique",
+      policy_details: "Détails de la politique"
     },
     people: {
       all: "Personnes",
-      employee_details: "Détails de l'Employé"
+      employee_details: "Détails de l'employé"
     },
     settings: {
-      members: "Membres de l'Équipe"
+      members: "Membres de l'équipe"
     },
     frameworks: {
       overview: "Cadres"
+    },
+    evidence: {
+      title: "Preuve",
+      list: "Liste des preuves",
+      overview: "Aperçu des preuves"
     }
   },
   editor: {
@@ -707,12 +805,85 @@ export default {
     ai_selector: {
       improve: "Améliorer l'écriture",
       fix: "Corriger la grammaire",
-      shorter: "Rendre plus court",
-      longer: "Rendre plus long",
-      "continue": "Continuer à écrire",
+      shorter: "Raccourcir",
+      longer: "Allonger",
+      "continue": "Continuer l'écriture",
       replace: "Remplacer la sélection",
       insert: "Insérer ci-dessous",
       discard: "Jeter"
+    }
+  },
+  evidence: {
+    title: "Preuve",
+    list: "Toutes les preuves",
+    overview: "Aperçu des preuves",
+    edit: "Modifier la preuve",
+    dashboard: {
+      layout: "Tableau de bord",
+      layout_back_button: "Retour",
+      title: "Tableau de bord des preuves",
+      by_department: "Par département",
+      by_assignee: "Par responsable",
+      by_framework: "Par cadre"
+    },
+    items: "articles",
+    status: {
+      up_to_date: "À jour",
+      needs_review: "Nécessite une révision",
+      draft: "Brouillon",
+      empty: "Vide"
+    },
+    departments: {
+      none: "Non classé",
+      admin: "Administration",
+      gov: "Gouvernance",
+      hr: "Ressources humaines",
+      it: "Technologies de l'information",
+      itsm: "Gestion des services informatiques",
+      qms: "Gestion de la qualité"
+    },
+    details: {
+      review_section: "Informations de révision",
+      content: "Contenu de la preuve"
+    }
+  },
+  upload: {
+    fileSection: {
+      filesUploaded: "{count} fichier(s) téléchargé(s)",
+      upload: "{count} fichier(s) téléchargé(s)"
+    },
+    fileUpload: {
+      uploadingText: "Téléchargement en cours...",
+      dropFileHere: "Déposez le fichier ici",
+      releaseToUpload: "Relâchez pour télécharger",
+      addFiles: "Ajouter des fichiers",
+      uploadAdditionalEvidence: "Télécharger un fichier",
+      dragDropOrClick: "Glissez-déposez ou cliquez pour télécharger",
+      dropFileHereAlt: "Déposez le fichier ici",
+      dragDropOrClickToSelect: "Glissez-déposez un fichier ici, ou cliquez pour sélectionner",
+      maxFileSize: "Taille maximale du fichier : {size} Mo",
+      uploadingFile: "Téléchargement du fichier..."
+    },
+    fileCard: {
+      preview: "Aperçu",
+      previewNotAvailable: "Aperçu non disponible. Cliquez sur le bouton de téléchargement pour voir le fichier.",
+      filePreview: "Aperçu du fichier : {fileName}",
+      openFile: "Ouvrir le fichier",
+      deleteFile: "Supprimer le fichier",
+      deleteFileConfirmTitle: "Supprimer le fichier",
+      deleteFileConfirmDescription: "Êtes-vous sûr de vouloir supprimer ce fichier ? Cette action ne peut pas être annulée."
+    },
+    fileUrl: {
+      additionalLinks: "Liens supplémentaires",
+      add: "Ajouter",
+      linksAdded: "{count} lien{s} ajouté{s}",
+      enterUrl: "Entrez l'URL",
+      addAnotherLink: "Ajouter un autre lien",
+      saveLinks: "Enregistrer les liens",
+      urlBadge: "URL",
+      copyLink: "Copier le lien",
+      openLink: "Ouvrir le lien",
+      deleteLink: "Supprimer le lien"
     }
   },
   tests: {

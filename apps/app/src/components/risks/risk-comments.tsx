@@ -47,7 +47,7 @@ export function RiskComments({
               return (
                 <div
                   key={comment.id}
-                  className="group relative flex flex-col gap-3 rounded-lg border bg-card p-4 shadow-sm transition-colors"
+                  className="group relative flex flex-col gap-3 border bg-card p-4 shadow-sm transition-colors"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">

@@ -5,6 +5,7 @@
     "slug": "data-classification-policy",
     "name": "Data Classification Policy",
     "description": "This policy establishes a framework for classifying data based on sensitivity and defines handling requirements for each classification level.",
+    "frequency": "yearly",
     "usedBy": {
       "soc2": ["C1.1", "C1.2", "C1.3"]
     }

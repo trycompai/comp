@@ -5,7 +5,7 @@ import { getEmployeeDetails } from "../[employeeId]/actions/get-employee-details
 import type { EmployeeDetails, AppError } from "../[employeeId]/types";
 
 async function fetchEmployeeDetails(
-  employeeId: string
+  employeeId: string,
 ): Promise<EmployeeDetails> {
   const result = await getEmployeeDetails({ employeeId });
 
@@ -35,7 +35,7 @@ export function useEmployeeDetails(employeeId: string) {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
-    }
+    },
   );
 
   return {

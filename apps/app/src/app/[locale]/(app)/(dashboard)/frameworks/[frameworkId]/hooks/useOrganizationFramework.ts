@@ -2,12 +2,12 @@
 
 import useSWR from "swr";
 import {
-  FrameworkWithControls,
+  type FrameworkWithControls,
   getOrganizationFramework,
-} from "../Actions/getOrganizationFramework";
+} from "../actions/getOrganizationFramework";
 
 async function fetchOrganizationFramework(
-  frameworkId: string
+  frameworkId: string,
 ): Promise<FrameworkWithControls> {
   const result = await getOrganizationFramework({ frameworkId });
 
@@ -30,7 +30,7 @@ export function useOrganizationFramework(frameworkId: string) {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
-    }
+    },
   );
 
   return {

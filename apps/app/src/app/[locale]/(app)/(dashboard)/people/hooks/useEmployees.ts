@@ -12,7 +12,7 @@ import type { Departments } from "@bubba/db";
 
 /** Fetcher function, same as before */
 async function fetchEmployees(
-  input: EmployeesInput
+  input: EmployeesInput,
 ): Promise<EmployeesResponse> {
   const result = await getEmployees(input);
 
@@ -54,7 +54,7 @@ export function useEmployees() {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
-    }
+    },
   );
 
   /** Track local mutation (creating an employee) loading state */
@@ -101,7 +101,7 @@ export function useEmployees() {
         setIsMutating(false);
       }
     },
-    [revalidateEmployees]
+    [revalidateEmployees],
   );
 
   return {

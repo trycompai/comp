@@ -5,6 +5,7 @@
     "slug": "disaster-recovery",
     "name": "Disaster Recovery Policy",
     "description": "This policy outlines the requirements for disaster recovery planning to ensure that critical business operations can be resumed in the event of a disruption.",
+    "frequency": "yearly",
     "usedBy": {
       "soc2": ["CC9.1", "CC8.1"]
     }

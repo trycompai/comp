@@ -4,6 +4,7 @@ import { db } from "@bubba/db";
 import { Avatar, AvatarFallback, AvatarImage } from "@bubba/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@bubba/ui/card";
 import { ScrollArea } from "@bubba/ui/scroll-area";
+import { unstable_cache } from "next/cache";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -166,23 +167,27 @@ export async function RisksByAssignee({ organizationId }: Props) {
   );
 }
 
-async function userData(organizationId: string) {
-  return await db.user.findMany({
-    where: {
-      organizationId,
-      Risk: {
-        some: {},
-      },
-    },
-    select: {
-      id: true,
-      name: true,
-      image: true,
-      Risk: {
-        select: {
-          status: true,
+const userData = unstable_cache(
+  async (organizationId: string) => {
+    return await db.user.findMany({
+      where: {
+        organizationId,
+        Risk: {
+          some: {},
         },
       },
-    },
-  });
-}
+      select: {
+        id: true,
+        name: true,
+        image: true,
+        Risk: {
+          select: {
+            status: true,
+          },
+        },
+      },
+    });
+  },
+  ["users-with-risks"],
+  { tags: ["risks", "users"] },
+);

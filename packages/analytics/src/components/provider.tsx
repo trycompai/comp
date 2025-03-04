@@ -2,39 +2,56 @@
 
 import posthog from "posthog-js";
 import { PostHogProvider as PHProvider } from "posthog-js/react";
-import { useEffect } from "react";
-import { Analytics } from "..";
+import { Suspense, useEffect, useState } from "react";
 import { PostHogPageView } from "./page-view";
 
 interface ProviderProps {
-  children: React.ReactNode;
-  apiKey: string;
-  apiHost: string;
-  userId?: string;
+	children: React.ReactNode;
+	apiKey: string;
+	apiHost: string;
+	userId?: string;
 }
 
 export function AnalyticsProvider({
-  children,
-  apiKey,
-  apiHost,
-  userId,
+	children,
+	apiKey,
+	apiHost,
+	userId,
 }: ProviderProps) {
-  useEffect(() => {
-    const posthog = Analytics.init({ apiKey, apiHost });
+	const [isInitialized, setIsInitialized] = useState(false);
 
-    if (userId) {
-      posthog?.identify(userId);
-    }
+	useEffect(() => {
+		if (typeof window === "undefined") return;
 
-    return () => {
-      posthog?.reset();
-    };
-  }, [apiKey, apiHost, userId]);
+		try {
+			posthog.init(apiKey, {
+				api_host: apiHost,
+				loaded: (ph) => {
+					if (userId) {
+						ph.identify(userId);
+					}
+					setIsInitialized(true);
+				},
+			});
 
-  return (
-    <PHProvider client={posthog}>
-      <PostHogPageView />
-      {children}
-    </PHProvider>
-  );
+			return () => {
+				posthog.reset();
+			};
+		} catch (error) {
+			setIsInitialized(true); // Still set to true to avoid blocking rendering
+		}
+	}, [apiKey, apiHost, userId]);
+
+	if (!isInitialized) {
+		return <>{children}</>;
+	}
+
+	return (
+		<Suspense fallback={null}>
+			<PHProvider client={posthog}>
+				<PostHogPageView />
+				{children}
+			</PHProvider>
+		</Suspense>
+	);
 }

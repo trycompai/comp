@@ -1,4 +1,4 @@
-import type { JsonArray } from "@prisma/client/runtime/library";
+import type { Frequency } from "@prisma/client";
 
 export interface Framework {
   name: string;
@@ -18,6 +18,7 @@ export interface Requirement {
   description: string;
   policyId?: string;
   name?: string;
+  frequency?: Frequency;
 }
 
 export interface Control {
@@ -46,6 +47,7 @@ export interface Policy {
     usedBy: {
       [key: string]: string[];
     };
+    frequency?: Frequency;
   };
   content: Array<{
     type: string;

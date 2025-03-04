@@ -3,16 +3,12 @@ import { cn } from "@bubba/ui/cn";
 import "@bubba/ui/globals.css";
 import { env } from "@/env.mjs";
 import { initializeServer } from "@bubba/analytics/src/server";
-import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
 import { GeistMono } from "geist/font/mono";
-import { GeistSans } from "geist/font/sans";
 import type { Metadata } from "next";
 import { SessionProvider } from "next-auth/react";
 import localFont from "next/font/local";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { Toaster } from "sonner";
-import { extractRouterConfig } from "uploadthing/server";
-import { fileUploader } from "../api/uploadthing/core";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
@@ -105,7 +101,6 @@ export default async function Layout(props: {
         <NuqsAdapter>
           <SessionProvider>
             <Providers locale={locale}>
-              <NextSSRPlugin routerConfig={extractRouterConfig(fileUploader)} />
               <main>{children}</main>
             </Providers>
           </SessionProvider>

@@ -1,7 +1,7 @@
 "use client";
 
 import useSWR from "swr";
-import { getOrganizationCategories } from "../Actions/getOrganizationCategories";
+import { getOrganizationCategories } from "../actions/getOrganizationCategories";
 
 async function fetchOrganizationCategories(frameworkId: string) {
   const result = await getOrganizationCategories({ frameworkId });
@@ -25,7 +25,7 @@ export function useOrganizationCategories(frameworkId: string) {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
-    }
+    },
   );
 
   return {

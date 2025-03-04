@@ -5,6 +5,7 @@
     "slug": "privacy-policy",
     "name": "Privacy Policy",
     "description": "This policy describes how the organization collects, uses, discloses, and protects personal information in compliance with applicable privacy regulations.",
+    "frequency": "yearly",
     "usedBy": {
       "soc2": ["P1.1", "P1.2", "P1.3"]
     }

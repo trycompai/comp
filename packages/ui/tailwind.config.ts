@@ -46,6 +46,12 @@ export default withUt({
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        chart: {
+          closed: "hsl(var(--chart-closed))",
+          pending: "hsl(var(--chart-pending))",
+          open: "hsl(var(--chart-open))",
+          archived: "hsl(var(--chart-archived))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

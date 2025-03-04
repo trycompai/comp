@@ -1,19 +1,15 @@
 "use client";
 
 import {
-  type ColumnDef,
   flexRender,
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { Suspense } from "react";
-
 import { cn } from "@bubba/ui/cn";
 import { Table, TableBody, TableCell, TableRow } from "@bubba/ui/table";
 import { type RiskRegisterType, columns as getColumns } from "./columns";
 import { DataTableHeader } from "./data-table-header";
 import { DataTablePagination } from "./data-table-pagination";
-import { Loading } from "./loading";
 
 interface DataTableProps<TData, TValue> {
   columnHeaders: {

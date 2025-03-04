@@ -45,7 +45,7 @@ export function DataTableHeader({ table, loading }: Props) {
 
       router.replace(`${pathname}?${params.toString()}`);
     },
-    [searchParams, router, pathname]
+    [searchParams, router, pathname],
   );
 
   const isVisible = (id: string) =>

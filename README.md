@@ -1,7 +1,7 @@
 <!-- PROJECT LOGO -->
 <p align="center">
   <a href="https://github.com/trycompai/comp">
-   <img src="https://avatars.githubusercontent.com/u/184552964?s=200&v=4" alt="Logo">
+   <img src="https://trycomp.ai/logo.png" alt="Logo">
   </a>
 
   <h3 align="center">Comp AI</h3>

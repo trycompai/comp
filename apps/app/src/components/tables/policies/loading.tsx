@@ -25,9 +25,19 @@ export function Loading({ isEmpty }: { isEmpty: boolean }) {
                     className={cn("h-3.5 w-[80%]", isEmpty && "animate-none")}
                   />
                 </TableCell>
-                <TableCell className="w-[200px]">
+                <TableCell className="w-[120px] hidden md:table-cell">
                   <Skeleton
                     className={cn("h-3.5 w-[70%]", isEmpty && "animate-none")}
+                  />
+                </TableCell>
+                <TableCell className="w-[400px] hidden md:table-cell">
+                  <Skeleton
+                    className={cn("h-3.5 w-[90%]", isEmpty && "animate-none")}
+                  />
+                </TableCell>
+                <TableCell className="w-[150px] hidden md:table-cell">
+                  <Skeleton
+                    className={cn("h-3.5 w-[60%]", isEmpty && "animate-none")}
                   />
                 </TableCell>
               </TableRow>

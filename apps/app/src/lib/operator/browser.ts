@@ -21,7 +21,7 @@ async function getBrowser(sessionId: string) {
 }
 
 export async function getOrCreateBrowser(
-  sessionId: string
+  sessionId: string,
 ): Promise<BrowserSession> {
   const existing = sessions.get(sessionId);
   if (existing) {

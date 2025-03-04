@@ -52,7 +52,7 @@ export function useFrameworks() {
         setIsMutating(false);
       }
     },
-    [revalidateFrameworks]
+    [revalidateFrameworks],
   );
 
   return {

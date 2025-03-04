@@ -5,6 +5,7 @@
     "slug": "workstation",
     "name": "Workstation Policy",
     "description": "This policy outlines the requirements for workstations to ensure secure, reliable, and high-quality software development practices.",
+    "frequency": "yearly",
     "usedBy": {
       "soc2": ["CC6.2", "CC6.7", "CC7.2"]
     }

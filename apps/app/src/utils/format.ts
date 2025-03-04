@@ -82,7 +82,7 @@ export function calculateAvgBurnRate(data: BurnRateData[] | null) {
 
 export function formatDate(date: string, dateFormat?: string) {
   if (isSameYear(new Date(), new Date(date))) {
-    return format(new Date(date), "MMM d");
+    return format(new Date(date), "MMM dd, yyyy");
   }
 
   return format(new Date(date), dateFormat ?? "P");

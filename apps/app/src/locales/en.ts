@@ -12,6 +12,13 @@ export default {
     pt: "Portuguese",
   },
   common: {
+    frequency: {
+      daily: "Daily",
+      weekly: "Weekly",
+      monthly: "Monthly",
+      quarterly: "Quarterly",
+      yearly: "Yearly",
+    },
     notifications: {
       inbox: "Inbox",
       archive: "Archive",
@@ -57,6 +64,7 @@ export default {
       assessed: "Assessed",
       active: "Active",
       inactive: "Inactive",
+      title: "Status",
     },
     filters: {
       clear: "Clear filters",
@@ -78,7 +86,7 @@ export default {
     },
     empty_states: {
       no_results: {
-        title: "No results",
+        title: "No results found",
         title_tasks: "No tasks found",
         title_risks: "No risks found",
         description: "Try another search, or adjusting the filters",
@@ -146,6 +154,12 @@ export default {
         remove_file: "Remove file",
       },
     },
+    edit: "Edit",
+    errors: {
+      unexpected_error: "An unexpected error occurred",
+    },
+    description: "Description",
+    last_updated: "Last Updated",
   },
   header: {
     discord: {
@@ -185,6 +199,11 @@ export default {
     tests: "Cloud Tests",
   },
   sub_pages: {
+    evidence: {
+      title: "Evidence",
+      list: "Evidence List",
+      overview: "Evidence Overview",
+    },
     risk: {
       overview: "Risk Management",
       register: "Risk Register",
@@ -197,6 +216,7 @@ export default {
     policies: {
       all: "All Policies",
       editor: "Policy Editor",
+      policy_details: "Policy Details",
     },
     people: {
       all: "People",
@@ -269,15 +289,34 @@ export default {
     dashboard: {
       title: "Dashboard",
       all: "All Policies",
-      policy_status: "Policy Status",
+      policy_status: "Policy by Status",
       policies_by_assignee: "Policies by Assignee",
       policies_by_framework: "Policies by Framework",
+      sub_pages: {
+        overview: "Overview",
+        edit_policy: "Edit Policy",
+      },
+    },
+    overview: {
+      title: "Policy Overview",
+      form: {
+        update_policy: "Update Policy",
+        update_policy_description: "Update the policy title or description.",
+        update_policy_success: "Policy updated successfully",
+        update_policy_error: "Failed to update policy",
+        update_policy_title: "Policy Name",
+        review_frequency: "Review Frequency",
+        review_frequency_placeholder: "Select a review frequency",
+        review_date: "Review Date",
+        review_date_placeholder: "Select a review date",
+      },
     },
     table: {
       name: "Policy Name",
       statuses: {
         draft: "Draft",
         published: "Published",
+        archived: "Archived",
       },
       filters: {
         owner: {
@@ -294,8 +333,23 @@ export default {
       draft: "Draft",
       published: "Published",
       needs_review: "Needs Review",
+      archived: "Archived",
     },
     policies: "policies",
+    title: "Policies",
+    create_new: "Create New Policy",
+    search_placeholder: "Search policies...",
+    status_filter: "Filter by status",
+    all_statuses: "All statuses",
+    no_policies_title: "No policies yet",
+    no_policies_description: "Get started by creating your first policy",
+    create_first: "Create first policy",
+    no_description: "No description provided",
+    last_updated: "Last updated: {{date}}",
+    save: "Save",
+    saving: "Saving...",
+    saved_success: "Policy saved successfully",
+    saved_error: "Failed to save policy",
   },
   evidence_tasks: {
     evidence_tasks: "Evidence Tasks",
@@ -579,6 +633,60 @@ export default {
     members: {
       title: "Members",
     },
+    api_keys: {
+      title: "API Keys",
+      description:
+        "Manage API keys for programmatic access to your organization's data.",
+      list_title: "API Keys",
+      list_description:
+        "API keys allow secure access to your organization's data via our API.",
+      create: "Create API Key",
+      create_title: "Create API Key",
+      create_description:
+        "Create a new API key for programmatic access to your organization's data.",
+      created_title: "API Key Created",
+      created_description:
+        "Your API key has been created. Make sure to copy it now as you won't be able to see it again.",
+      name: "Name",
+      name_label: "Name",
+      name_placeholder: "Enter a name for this API key",
+      expiration: "Expiration",
+      expiration_placeholder: "Select expiration",
+      expires_label: "Expires",
+      expires_placeholder: "Select expiration",
+      expires_30days: "30 days",
+      expires_90days: "90 days",
+      expires_1year: "1 year",
+      expires_never: "Never",
+      thirty_days: "30 days",
+      ninety_days: "90 days",
+      one_year: "1 year",
+      your_key: "Your API Key",
+      api_key: "API Key",
+      save_warning:
+        "This key will only be shown once. Make sure to copy it now.",
+      copied: "API key copied to clipboard",
+      close_confirm:
+        "Are you sure you want to close? You won't be able to see this API key again.",
+      revoke_confirm:
+        "Are you sure you want to revoke this API key? This action cannot be undone.",
+      revoke_title: "Revoke API Key",
+      revoke: "Revoke",
+      created: "Created",
+      expires: "Expires",
+      last_used: "Last Used",
+      actions: "Actions",
+      never: "Never",
+      never_used: "Never used",
+      no_keys: "No API keys found. Create one to get started.",
+      security_note:
+        "API keys provide full access to your organization's data. Keep them secure and rotate them regularly.",
+      fetch_error: "Failed to fetch API keys",
+      create_error: "Failed to create API key",
+      revoked_success: "API key revoked successfully",
+      revoked_error: "Failed to revoke API key",
+      done: "Done",
+    },
     billing: {
       title: "Billing",
     },
@@ -794,6 +902,40 @@ export default {
       replace: "Replace selection",
       insert: "Insert below",
       discard: "Discard",
+    },
+  },
+  evidence: {
+    title: "Evidence",
+    list: "All Evidence",
+    overview: "Evidence Overview",
+    edit: "Edit Evidence",
+    dashboard: {
+      layout: "Dashboard",
+      layout_back_button: "Back",
+      title: "Evidence Dashboard",
+      by_department: "By Department",
+      by_assignee: "By Assignee",
+      by_framework: "By Framework",
+    },
+    items: "items",
+    status: {
+      up_to_date: "Up to Date",
+      needs_review: "Needs Review",
+      draft: "Draft",
+      empty: "Empty",
+    },
+    departments: {
+      none: "Uncategorized",
+      admin: "Administration",
+      gov: "Governance",
+      hr: "Human Resources",
+      it: "Information Technology",
+      itsm: "IT Service Management",
+      qms: "Quality Management",
+    },
+    details: {
+      review_section: "Review Information",
+      content: "Evidence Content",
     },
   },
 } as const;

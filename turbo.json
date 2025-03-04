@@ -16,7 +16,6 @@
         "DATABASE_URL",
         "OPENAI_API_KEY",
         "RESEND_API_KEY",
-        "OPENPANEL_SECRET_KEY",
         "UPSTASH_REDIS_REST_URL",
         "UPSTASH_REDIS_REST_TOKEN",
         "NEXT_PUBLIC_OPENPANEL_CLIENT_ID",
@@ -24,7 +23,6 @@
         "STRIPE_WEBHOOK_SECRET",
         "RESEND_API_KEY",
         "RESEND_AUDIENCE_ID",
-        "UPLOADTHING_TOKEN",
         "NEXT_PUBLIC_GOOGLE_TAG_ID",
         "DISCORD_WEBHOOK_URL",
         "TRIGGER_SECRET_KEY",
@@ -35,7 +33,11 @@
         "NOVU_API_KEY",
         "ZAP_WEBHOOK_URL",
         "BETTER_AUTH_SECRET",
-        "BETTER_AUTH_URL"
+        "BETTER_AUTH_URL",
+        "AWS_BUCKET_NAME",
+        "AWS_REGION",
+        "AWS_ACCESS_KEY_ID",
+        "AWS_SECRET_ACCESS_KEY"
       ],
       "inputs": [
         "$TURBO_DEFAULT$",

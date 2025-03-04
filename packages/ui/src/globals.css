@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 0 0% 98%;
     --foreground: 240 10% 3.9%;
     --card: 0 0% 100%;
     --card-foreground: 240 10% 3.9%;
@@ -34,6 +34,12 @@
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
 
+    --chart-closed: #00DC73;
+    --chart-pending: #0BA5E9;
+    --chart-open: #FFC007;
+    --chart-archived: #64748B;
+    --chart-needs_review: #FF0000;
+
     /* Keeping the novel-highlight colors as they were */
     --novel-highlight-default: #ffffff;
     --novel-highlight-purple: #f6f3f8;
@@ -47,34 +53,31 @@
   }
 
   .dark {
-    --background: 240 10% 3.9%;
+    --background: 228 10.2% 9.61%;
     --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
+    --card: 228 10% 10%;
     --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
+    --popover: 228 10% 10%;
     --popover-foreground: 0 0% 98%;
     --primary: 155 100% 43%;
     --primary-foreground: 240 3% 10%;
-    --secondary: 240 3.7% 15.9%;
+    --secondary:  225 10% 20%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
+    --muted:  225 10% 20%;
+    --muted-foreground: 210 1.1% 64.7%;
+    --accent:  225 10% 20%;
     --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 60% 50%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
+    --border: 225 10% 20%;
+    --input: 225 2% 36%;
+    --ring: 151 100% 43%;
 
-    /* Keeping the success/warning/chart colors as they were */
-    --success: 142 76% 36%;
-    --warning: 45 89% 53%;
-    --chart-1: 359 2% 90%;
-    --chart-2: 240 1% 74%;
-    --chart-3: 240 1% 58%;
-    --chart-4: 240 1% 42%;
-    --chart-5: 240 2% 26%;
+    --chart-1: #2662d9;
+    --chart-2: #00DC73;
+    --chart-3: #FFC007;
+    --chart-4: ##af57db;
+    --chart-5: ##e23670;
 
     /* Keeping the novel-highlight colors as they were */
     --novel-highlight-default: #000000;
@@ -86,6 +89,11 @@
     --novel-highlight-orange: #5c3a1a;
     --novel-highlight-pink: #5c1a3a;
     --novel-highlight-gray: #3a3a3a;
+
+    --chart-closed: #00DC73;
+    --chart-pending: #0BA5E9;
+    --chart-open: #FFC007;
+    --chart-archived: #64748B;
   }
 
 @layer components {
@@ -110,6 +118,52 @@
   body {
     font-family: var(--font-sans), system-ui, sans-serif;
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .grid-pattern {
+    background-image:
+      linear-gradient(to right, hsl(var(--primary) / 0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--primary) / 0.03) 1px, transparent 1px);
+    background-size: 14% 14%;
+    @apply opacity-100;
+  }
+
+  .grid-fade-mask {
+    mask-image: linear-gradient(
+      to top,
+      hsl(var(--accent) / 100%) 40%,
+      hsl(var(--accent) / 80%) 60%,
+      hsl(var(--accent) / 0%) 85%
+    );
+    -webkit-mask-image: linear-gradient(
+      to top,
+      hsl(var(--accent) / 100%) 40%,
+      hsl(var(--accent) / 80%) 60%,
+      hsl(var(--accent) / 0%) 85%
+    );
+  }
+
+  .dotted-border {
+    background-image:
+      linear-gradient(to right, var(--accent) 50%, transparent 50%),
+      linear-gradient(to bottom, var(--accent) 50%, transparent 50%),
+      linear-gradient(to left, var(--accent) 50%, transparent 50%),
+      linear-gradient(to top, var(--accent) 50%, transparent 50%);
+    background-position: top, right, bottom, left;
+    background-size: 20px 1px, 1px 20px, 20px 1px, 1px 20px;
+    background-repeat: repeat-x, repeat-y, repeat-x, repeat-y;
+  }
+
+  .shaped-gradient {
+    background-image: radial-gradient(
+      ellipse 75% 50% at 50% 100%,
+      hsl(var(--accent) / 90%) 0%,
+      hsl(var(--accent) / 60%) 30%,
+      hsl(var(--accent) / 30%) 60%,
+      transparent 80%
+    );
   }
 }
 

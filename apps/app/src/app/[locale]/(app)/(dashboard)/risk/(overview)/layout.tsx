@@ -9,7 +9,7 @@ export default async function Layout({
   const t = await getI18n();
 
   return (
-    <div className="max-w-[1200px]">
+    <div className="max-w-[1200px] m-auto">
       <SecondaryMenu
         items={[
           { path: "/risk", label: t("risk.dashboard.title") },

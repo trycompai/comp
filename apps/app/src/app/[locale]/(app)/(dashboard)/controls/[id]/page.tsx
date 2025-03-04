@@ -1,4 +1,4 @@
-import { SingleControl } from "./Components/SingleControl";
+import { SingleControl } from "./components/SingleControl";
 
 interface PageProps {
   params: Promise<{ id: string }>;

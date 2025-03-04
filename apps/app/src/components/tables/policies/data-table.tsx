@@ -1,13 +1,14 @@
 "use client";
 
-import { Table, TableBody, TableCell, TableRow } from "@bubba/ui/table";
 import {
   flexRender,
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
 import { Suspense } from "react";
-import { cn } from "../../../../../../packages/ui/src/utils";
+
+import { cn } from "@bubba/ui/cn";
+import { Table, TableBody, TableCell, TableRow } from "@bubba/ui/table";
 import { type PolicyType, columns as getColumns } from "./columns";
 import { DataTableHeader } from "./data-table-header";
 import { DataTablePagination } from "./data-table-pagination";
@@ -16,8 +17,8 @@ import { Loading } from "./loading";
 interface DataTableProps<TData, TValue> {
   columnHeaders: {
     name: string;
-    lastUpdated: string;
     status: string;
+    updatedAt: string;
   };
   data: TData[];
   pageCount: number;
@@ -61,16 +62,15 @@ export function DataTable<TData, TValue>({
                     <TableCell
                       key={cell.id}
                       className={cn(
-                        (cell.column.id === "lastUpdated" ||
-                          cell.column.id === "ownerId" ||
-                          cell.column.id === "assignedTo" ||
-                          cell.column.id === "published") &&
-                          "hidden md:table-cell"
+                        (cell.column.id === "description" ||
+                          cell.column.id === "updatedAt" ||
+                          cell.column.id === "status") &&
+                          "hidden md:table-cell",
                       )}
                     >
                       {flexRender(
                         cell.column.columnDef.cell,
-                        cell.getContext()
+                        cell.getContext(),
                       )}
                     </TableCell>
                   ))}
@@ -82,7 +82,7 @@ export function DataTable<TData, TValue>({
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  No policies found.
+                  No results.
                 </TableCell>
               </TableRow>
             )}

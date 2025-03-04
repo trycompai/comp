@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
-import type { RequirementType, Prisma } from "@prisma/client";
+import type { Frequency, Prisma } from "@prisma/client";
+import { RequirementType } from "@prisma/client";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import fs from "node:fs";
@@ -19,6 +20,8 @@ async function main() {
     await prisma.organizationCategory.deleteMany();
     await prisma.organizationControl.deleteMany();
     await prisma.organizationPolicy.deleteMany();
+    await prisma.organizationControlRequirement.deleteMany();
+    await prisma.organizationEvidence.deleteMany();
 
     await prisma.policy.deleteMany();
     await prisma.policyControl.deleteMany();
@@ -30,7 +33,8 @@ async function main() {
     await prisma.framework.deleteMany();
     await prisma.frameworkCategory.deleteMany();
 
-    await prisma.organizationControlRequirement.deleteMany();
+    await prisma.evidence.deleteMany();
+
     console.log("✅ Database cleaned");
   }
 
@@ -45,6 +49,10 @@ async function main() {
   console.log("\n🔗 Seeding policy frameworks...");
   await seedPolicyFramework();
   console.log("✅ Policy frameworks seeded");
+
+  console.log("\n🔗 Seeding evidence");
+  await seedEvidence();
+  console.log("✅ Evidence seeded");
 
   console.log("\n🎉 All data seeded successfully!");
 }
@@ -102,6 +110,7 @@ async function seedPolicies() {
           description: policyData.metadata.description,
           content: policyData.content as Prisma.InputJsonValue[],
           usedBy: policyData.metadata.usedBy as Prisma.InputJsonValue,
+          frequency: policyData.metadata?.frequency ?? null,
         },
         create: {
           id: policyData.metadata.id,
@@ -110,6 +119,7 @@ async function seedPolicies() {
           description: policyData.metadata.description,
           content: policyData.content as Prisma.InputJsonValue[],
           usedBy: policyData.metadata.usedBy as Prisma.InputJsonValue,
+          frequency: policyData.metadata?.frequency ?? null,
         },
       });
       console.log(`  ✅ ${file} processed`);
@@ -284,6 +294,7 @@ async function seedFrameworkCategoryControls(
             (requirement.type as RequirementType) === "policy"
               ? requirement.policyId
               : null,
+          frequency: requirement?.frequency ?? null,
         },
         update: {
           name: requirement.name,
@@ -292,6 +303,7 @@ async function seedFrameworkCategoryControls(
             (requirement.type as RequirementType) === "policy"
               ? requirement.policyId
               : null,
+          frequency: requirement?.frequency ?? null,
         },
       });
     }
@@ -361,5 +373,49 @@ async function seedPolicyFramework() {
       }
     }
     console.log(`  ✅ Policy ${policy.name} mapped`);
+  }
+}
+
+async function seedEvidence() {
+  const evidenceRequirements = await prisma.controlRequirement.findMany({
+    where: {
+      type: RequirementType.evidence,
+    },
+  });
+
+  console.log(`🔄 Processing ${evidenceRequirements.length} evidences`);
+
+  for (const evidenceReq of evidenceRequirements) {
+    console.log(`  ⏳ Processing evidence: ${evidenceReq.name}...`);
+
+    // Create the evidence record with the same ID as the requirement
+    const evidence = await prisma.evidence.upsert({
+      where: {
+        id: evidenceReq.id,
+      },
+      update: {
+        name: evidenceReq.name,
+        description: evidenceReq.description,
+        frequency: evidenceReq.frequency ?? null,
+      },
+      create: {
+        id: evidenceReq.id,
+        name: evidenceReq.name,
+        description: evidenceReq.description,
+        frequency: evidenceReq.frequency ?? null,
+      },
+    });
+
+    // Update the control requirement to link back to the evidence
+    await prisma.controlRequirement.update({
+      where: {
+        id: evidenceReq.id,
+      },
+      data: {
+        evidenceId: evidence.id,
+      },
+    });
+
+    console.log(`  ✅ Evidence ${evidenceReq.name} processed and linked`);
   }
 }

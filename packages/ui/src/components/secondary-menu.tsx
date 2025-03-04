@@ -8,6 +8,7 @@ import {
 } from "@bubba/ui/tooltip";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import { cn } from "../utils";
 
 interface SecondaryMenuProps {
@@ -18,9 +19,18 @@ interface SecondaryMenuProps {
     query?: Record<string, string>;
   }[];
   isChild?: boolean;
+  showBackButton?: boolean;
+  backButtonHref?: string;
+  backButtonLabel?: string;
 }
 
-export function SecondaryMenu({ items, isChild }: SecondaryMenuProps) {
+export function SecondaryMenu({
+  items,
+  isChild,
+  showBackButton,
+  backButtonHref = "/",
+  backButtonLabel = "Back",
+}: SecondaryMenuProps) {
   const pathname = usePathname();
 
   function getPathSegments(path: string) {
@@ -47,6 +57,17 @@ export function SecondaryMenu({ items, isChild }: SecondaryMenuProps) {
           isChild ? "space-x-3" : "space-x-6",
         )}
       >
+        {showBackButton && (
+          <li>
+            <Link
+              href={backButtonHref}
+              className="flex items-center gap-1 hover:text-foreground/80 transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>{backButtonLabel}</span>
+            </Link>
+          </li>
+        )}
         {items.map((item) => {
           const isDisabled = item.enabled === false;
 

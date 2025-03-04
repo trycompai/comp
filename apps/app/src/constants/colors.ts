@@ -1,9 +1,9 @@
-export const RISK_COLORS = {
+export const COLORS = {
   // Status colors
-  open: "#ffc107", // Warning yellow
-  in_progress: "#0ea5e9", // Sky blue
-  closed: "#22c55e", // Success green
-  archived: "#6b7280", // Gray
+  open: "#FFC007", // Warning yellow
+  in_progress: "#2662d9", // Sky blue
+  closed: "#00DC73", // Success green
+  archived: "#5c1a3a", // Gray
 
   // Department colors
   admin: "#0ea5e9", // Sky blue

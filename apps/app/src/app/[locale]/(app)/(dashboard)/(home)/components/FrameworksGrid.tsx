@@ -71,13 +71,13 @@ export function FrameworkGrid({ frameworks, onSubmit }: FrameworkGridProps) {
                 "relative flex flex-col p-4 rounded-lg border cursor-pointer transition-colors",
                 selectedFrameworks.includes(framework.id)
                   ? "border-primary bg-primary/5"
-                  : "hover:border-muted-foreground/25"
+                  : "hover:border-muted-foreground/25",
               )}
               onClick={() => {
                 setSelectedFrameworks((prev) =>
                   prev.includes(framework.id)
                     ? prev.filter((id) => id !== framework.id)
-                    : [...prev, framework.id]
+                    : [...prev, framework.id],
                 );
               }}
             >

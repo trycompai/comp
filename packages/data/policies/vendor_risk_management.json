@@ -5,6 +5,7 @@
     "slug": "vendor-risk-management-policy",
     "name": "Vendor Risk Management Policy",
     "description": "This policy outlines the criteria and procedures for evaluating, selecting, and monitoring third-party vendors to manage risks associated with external service providers.",
+    "frequency": "yearly",
     "usedBy": {
       "soc2": ["CC9.2"]
     }

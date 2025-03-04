@@ -1,7 +1,7 @@
 "use client";
 
 import useSWR from "swr";
-import { getOrganizationControlProgress } from "../Actions/getOrganizationControlProgress";
+import { getOrganizationControlProgress } from "../actions/getOrganizationControlProgress";
 
 async function fetchOrganizationControlProgress(controlId: string) {
   const result = await getOrganizationControlProgress({ controlId });
@@ -20,7 +20,7 @@ export function useOrganizationControlProgress(controlId: string) {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
-    }
+    },
   );
 
   return {

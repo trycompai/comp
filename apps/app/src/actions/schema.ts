@@ -1,5 +1,7 @@
 import {
   Departments,
+  Frequency,
+  PolicyStatus,
   RiskCategory,
   RiskStatus,
   RiskTaskStatus,
@@ -16,19 +18,21 @@ export const organizationSchema = z.object({
 });
 
 export const organizationNameSchema = z.object({
-  name: z.string()
+  name: z
+    .string()
     .min(1, "Organization name is required")
-    .max(255, "Organization name cannot exceed 255 characters")
+    .max(255, "Organization name cannot exceed 255 characters"),
 });
 
 export const subdomainAvailabilitySchema = z.object({
-  subdomain: z.string()
+  subdomain: z
+    .string()
     .min(1, "Subdomain is required")
     .max(255, "Subdomain cannot exceed 255 characters")
     .regex(/^[a-z0-9-]+$/, {
       message:
         "Subdomain can only contain lowercase letters, numbers, and hyphens",
-    })
+    }),
 });
 
 export const uploadSchema = z.object({
@@ -281,6 +285,43 @@ export const createEmployeeSchema = z.object({
   }),
   externalEmployeeId: z.string().optional(),
   isActive: z.boolean().default(true),
+});
+
+export const updatePolicyOverviewSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  description: z.string(),
+});
+
+export const updatePolicyFormSchema = z.object({
+  id: z.string(),
+  status: z.nativeEnum(PolicyStatus),
+  ownerId: z.string(),
+  department: z.nativeEnum(Departments),
+  review_frequency: z.nativeEnum(Frequency),
+  review_date: z.date(),
+});
+
+export const apiKeySchema = z.object({
+  name: z
+    .string()
+    .min(1, { message: "Name is required" })
+    .max(64, { message: "Name must be less than 64 characters" }),
+  expiresAt: z.enum(["30days", "90days", "1year", "never"]),
+});
+
+export const createPolicyCommentSchema = z.object({
+  policyId: z.string().min(1, {
+    message: "Policy ID is required",
+  }),
+  content: z
+    .string()
+    .min(1, {
+      message: "Comment content is required",
+    })
+    .max(1000, {
+      message: "Comment content should be at most 1000 characters",
+    }),
 });
 
 export const registerTestSchema = z.object({

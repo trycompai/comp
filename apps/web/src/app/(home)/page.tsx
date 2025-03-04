@@ -1,57 +1,41 @@
 import { WaitlistForm } from "@/app/components/waitlist-form";
-import { Button } from "@bubba/ui/button";
-import type { Metadata } from "next";
-import Link from "next/link";
 import Balancer from "react-wrap-balancer";
-import Logo from "../components/logo";
-
-export const metadata: Metadata = {
-  title: "Comp AI - Get SOC 2, ISO 27001 and GDPR compliant",
-  description:
-    "The open-source compliance automation platform for SOC 2, ISO 27001, GDPR and more.",
-  alternates: {
-    canonical: "https://trycomp.ai",
-  },
-};
+import WhyUs from "../components/why-us";
+import OurSolution from "../components/our-solution";
+import HowItWorks from "../components/how-it-works";
+import CTA from "../components/cta";
 
 export default function Home() {
   return (
     <section className="w-full">
-      <div className="container mx-auto px-4 py-16 md:py-24">
+      <div className="container mx-auto px-8 mt-24">
         <div className="flex flex-col items-center text-center space-y-6">
-          <Logo />
-
-          <h1 className="max-w-[900px] text-4xl md:text-5xl font-semibold leading-tight tracking-tighter lg:leading-[1.1] mx-auto">
-            <Balancer>Get SOC 2, ISO 27001 and GDPR compliant</Balancer>
+          <h1 className="text-4xl md:text-6xl font-medium leading-tight tracking-tighter lg:leading-[1.1] mx-auto">
+            <Balancer>Open Source Compliance Automation Platform</Balancer>
           </h1>
-
-          <p className="text-lg md:text-xl font-light text-muted-foreground mt-6 mx-auto max-w-[800px]">
+          <p className="text-lg md:text-xl font-light text-muted-foreground mt-6 mx-auto">
             <Balancer>
-              The open source compliance automation platform that does
-              everything you need to get compliant, fast. Open source
-              alternative to Drata & Vanta.
+              Get audit ready, fast. Automate compliance with frameworks like
+              SOC 2, ISO 27001, and GDPR - in weeks, not months. Open source
+              competitor to Drata & Vanta.
             </Balancer>
           </p>
-
-          <div className="mt-10 w-full max-w-md">
-            <WaitlistForm />
-          </div>
-
-          <div className="mt-12 w-full max-w-[800px]">
-            <div className="mt-8 flex justify-center">
-              <Button variant="action">
-                <Link
-                  href="https://discord.gg/compai"
-                  className="flex items-center gap-2"
-                >
-                  Join us on Discord
-                  <span>→</span>
-                </Link>
-              </Button>
-            </div>
-          </div>
         </div>
       </div>
+
+      <div className="mt-10 container mx-auto px-8 max-w-[550px]">
+        <WaitlistForm />
+      </div>
+
+      <WhyUs />
+
+      <div className="from-accent/20 to-background bg-gradient-to-b">
+        <OurSolution />
+      </div>
+
+      <HowItWorks />
+
+      <CTA />
     </section>
   );
 }

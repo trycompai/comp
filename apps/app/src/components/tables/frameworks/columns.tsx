@@ -32,11 +32,14 @@ export type OrganizationControlType = {
     organizationPolicy: {
       status: "draft" | "published" | "archived";
     } | null;
+    organizationEvidence: {
+      published: boolean;
+    } | null;
   })[];
 };
 
 function getControlStatus(
-  requirements: OrganizationControlType["requirements"]
+  requirements: OrganizationControlType["requirements"],
 ): StatusType {
   if (!requirements || requirements.length === 0) return "not_started";
 
@@ -48,7 +51,7 @@ function getControlStatus(
       case "file":
         return !!req.fileUrl;
       case "evidence":
-        return !!req.content;
+        return req.organizationEvidence?.published === true;
       default:
         return req.published;
     }
@@ -109,7 +112,7 @@ export function columns(): ColumnDef<OrganizationControlType>[] {
             case "file":
               return !!req.fileUrl;
             case "evidence":
-              return !!req.content;
+              return req.organizationEvidence?.published === true;
             default:
               return req.published;
           }
@@ -128,7 +131,7 @@ export function columns(): ColumnDef<OrganizationControlType>[] {
                   <p>
                     Progress:{" "}
                     {Math.round(
-                      (completedRequirements / totalRequirements) * 100
+                      (completedRequirements / totalRequirements) * 100,
                     ) || 0}
                     %
                   </p>

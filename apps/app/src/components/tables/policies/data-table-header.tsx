@@ -72,53 +72,34 @@ export function DataTableHeader({ table, loading }: Props) {
           </TableHead>
         )}
 
-        {isVisible("published") && (
+        {isVisible("status") && (
           <TableHead className="min-w-[120px] px-3 md:px-4 py-2 hidden md:table-cell">
             <Button
               className="p-0 hover:bg-transparent space-x-2"
               variant="ghost"
-              onClick={() => createSortQuery("published")}
+              onClick={() => createSortQuery("status")}
             >
-              <span>{t("common.table.status")}</span>
-              {"published" === column && value === "asc" && (
+              <span>{t("common.status.title")}</span>
+              {"status" === column && value === "asc" && (
                 <ArrowDown size={16} />
               )}
-              {"published" === column && value === "desc" && (
-                <ArrowUp size={16} />
-              )}
+              {"status" === column && value === "desc" && <ArrowUp size={16} />}
             </Button>
           </TableHead>
         )}
 
-        {isVisible("ownerId") && (
+        {isVisible("updatedAt") && (
           <TableHead className="min-w-[120px] px-3 md:px-4 py-2 hidden md:table-cell">
             <Button
               className="p-0 hover:bg-transparent space-x-2"
               variant="ghost"
-              onClick={() => createSortQuery("ownerId")}
+              onClick={() => createSortQuery("updatedAt")}
             >
-              <span>{t("common.table.assigned_to")}</span>
-              {"ownerId" === column && value === "asc" && (
+              <span>{t("common.last_updated")}</span>
+              {"updatedAt" === column && value === "asc" && (
                 <ArrowDown size={16} />
               )}
-              {"ownerId" === column && value === "desc" && (
-                <ArrowUp size={16} />
-              )}
-            </Button>
-          </TableHead>
-        )}
-        {isVisible("lastUpdated") && (
-          <TableHead className="min-w-[60px] px-3 md:px-4 py-2 hidden md:table-cell">
-            <Button
-              className="p-0 hover:bg-transparent space-x-2"
-              variant="ghost"
-              onClick={() => createSortQuery("lastUpdated")}
-            >
-              <span>{t("common.table.last_updated")}</span>
-              {"lastUpdated" === column && value === "asc" && (
-                <ArrowDown size={16} />
-              )}
-              {"lastUpdated" === column && value === "desc" && (
+              {"updatedAt" === column && value === "desc" && (
                 <ArrowUp size={16} />
               )}
             </Button>

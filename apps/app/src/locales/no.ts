@@ -24,7 +24,7 @@ export default {
       success: "Suksess",
       error: "Feil",
       next: "Neste",
-      complete: "Fullfør",
+      complete: "Fullført",
       addNew: "Legg til ny"
     },
     assignee: {
@@ -45,12 +45,13 @@ export default {
       not_started: "Ikke startet",
       in_progress: "Pågår",
       published: "Publisert",
-      needs_review: "Trenger vurdering",
+      needs_review: "Trenger gjennomgang",
       draft: "Utkast",
       not_assessed: "Ikke vurdert",
       assessed: "Vurdert",
       active: "Aktiv",
-      inactive: "Inaktiv"
+      inactive: "Inaktiv",
+      title: "Status"
     },
     filters: {
       clear: "Tøm filtre",
@@ -65,14 +66,14 @@ export default {
     table: {
       title: "Tittel",
       status: "Status",
-      assigned_to: "Tildelt Til",
+      assigned_to: "Tildelt til",
       due_date: "Forfallsdato",
       last_updated: "Sist oppdatert",
       no_results: "Ingen resultater funnet"
     },
     empty_states: {
       no_results: {
-        title: "Ingen resultater",
+        title: "Ingen resultater funnet",
         title_tasks: "Ingen oppgaver funnet",
         title_risks: "Ingen risikoer funnet",
         description: "Prøv et annet søk, eller juster filtrene",
@@ -82,7 +83,7 @@ export default {
       },
       no_items: {
         title: "Ingen elementer funnet",
-        description: "Prøv å justere søket eller filtrene"
+        description: "Prøv å justere søket ditt eller filtrene"
       }
     },
     pagination: {
@@ -101,9 +102,9 @@ export default {
       add: "Ny kommentar",
       "new": "Ny kommentar",
       save: "Lagre kommentar",
-      success: "Kommentar lagt til",
+      success: "Kommentar lagt til med suksess",
       error: "Kunne ikke legge til kommentar",
-      placeholder: "Skriv din kommentar her...",
+      placeholder: "Skriv kommentaren din her...",
       empty: {
         title: "Ingen kommentarer ennå",
         description: "Vær den første til å legge til en kommentar"
@@ -127,12 +128,12 @@ export default {
         error_uploading_files_multiple: "Kan ikke laste opp mer enn 10 filer",
         error_no_files_selected: "Ingen filer valgt",
         error_file_rejected: "Fil {file} ble avvist",
-        error_failed_to_upload_files: "Kunne ikke laste opp filer",
-        error_failed_to_upload_files_multiple: "Kunne ikke laste opp filer",
-        error_failed_to_upload_files_single: "Kunne ikke laste opp fil",
-        success_uploading_files: "Filer lastet opp",
-        success_uploading_files_multiple: "Filer lastet opp",
-        success_uploading_files_single: "Fil lastet opp",
+        error_failed_to_upload_files: "Feil ved opplasting av filer",
+        error_failed_to_upload_files_multiple: "Feil ved opplasting av filer",
+        error_failed_to_upload_files_single: "Feil ved opplasting av fil",
+        success_uploading_files: "Filer lastet opp med suksess",
+        success_uploading_files_multiple: "Filer lastet opp med suksess",
+        success_uploading_files_single: "Fil lastet opp med suksess",
         success_uploading_files_target: "Filer lastet opp",
         uploading_files: "Laster opp {target}...",
         remove_file: "Fjern fil"
@@ -143,6 +144,19 @@ export default {
       archive: "Arkiv",
       archive_all: "Arkiver alt",
       no_notifications: "Ingen nye varsler"
+    },
+    edit: "Rediger",
+    errors: {
+      unexpected_error: "En uventet feil oppstod"
+    },
+    description: "Beskrivelse",
+    last_updated: "Sist oppdatert",
+    frequency: {
+      daily: "Daglig",
+      weekly: "Ukentlig",
+      monthly: "Månedlig",
+      quarterly: "Kvartalsvis",
+      yearly: "Årlig"
     }
   },
   header: {
@@ -152,7 +166,7 @@ export default {
     feedback: {
       button: "Tilbakemelding",
       title: "Takk for tilbakemeldingen!",
-      description: "Vi kommer tilbake til deg så snart som mulig",
+      description: "Vi vil komme tilbake til deg så snart som mulig",
       placeholder: "Ideer for å forbedre denne siden eller problemer du opplever.",
       success: "Takk for tilbakemeldingen!",
       error: "Feil ved sending av tilbakemelding - prøv igjen?",
@@ -197,7 +211,7 @@ export default {
       success: "E-post sendt - sjekk innboksen din!",
       error: "Feil ved sending av e-post - prøv igjen?"
     },
-    terms: "Ved å klikke på fortsett, bekrefter du at du har lest og godtar vilkårene for bruk og personvernerklæringen."
+    terms: "Ved å klikke på fortsett, bekrefter du at du har lest og godtar vilkårene for tjenesten og personvernerklæringen."
   },
   onboarding: {
     title: "Opprett en organisasjon",
@@ -230,7 +244,7 @@ export default {
   overview: {
     title: "Oversikt",
     framework_chart: {
-      title: "Rammeverk Fremdrift"
+      title: "Fremdrift i rammeverket"
     },
     requirement_chart: {
       title: "Overholdelsesstatus"
@@ -240,15 +254,20 @@ export default {
     dashboard: {
       title: "Dashbord",
       all: "Alle retningslinjer",
-      policy_status: "Retningslinjestatus",
+      policy_status: "Retningslinje etter status",
       policies_by_assignee: "Retningslinjer etter tildelt",
-      policies_by_framework: "Retningslinjer etter rammeverk"
+      policies_by_framework: "Retningslinjer etter rammeverk",
+      sub_pages: {
+        overview: "Oversikt",
+        edit_policy: "Rediger retningslinje"
+      }
     },
     table: {
-      name: "Retningslinjenavn",
+      name: "Policy Navn",
       statuses: {
         draft: "Utkast",
-        published: "Publisert"
+        published: "Publisert",
+        archived: "Arkivert"
       },
       filters: {
         owner: {
@@ -258,15 +277,44 @@ export default {
       }
     },
     filters: {
-      search: "Søk etter retningslinjer...",
-      all: "Alle retningslinjer"
+      search: "Søk etter policyer...",
+      all: "Alle Policyer"
     },
     status: {
       draft: "Utkast",
       published: "Publisert",
-      needs_review: "Trenger gjennomgang"
+      needs_review: "Trenger Gjennomgang",
+      archived: "Arkivert"
     },
-    policies: "retningslinjer"
+    policies: "policyer",
+    title: "Policyer",
+    create_new: "Opprett Ny Policy",
+    search_placeholder: "Søk etter policyer...",
+    status_filter: "Filtrer etter status",
+    all_statuses: "Alle statuser",
+    no_policies_title: "Ingen policyer ennå",
+    no_policies_description: "Kom i gang med å opprette din første policy",
+    create_first: "Opprett første policy",
+    no_description: "Ingen beskrivelse gitt",
+    last_updated: "Sist oppdatert: {{date}}",
+    save: "Lagre",
+    saving: "Lagrer...",
+    saved_success: "Policy lagret vellykket",
+    saved_error: "Feil ved lagring av policy",
+    overview: {
+      title: "Retningslinjeoversikt",
+      form: {
+        update_policy: "Oppdater retningslinje",
+        update_policy_description: "Oppdater retningslinjetittelen eller beskrivelsen.",
+        update_policy_success: "Retningslinje oppdatert med suksess",
+        update_policy_error: "Feil ved oppdatering av retningslinje",
+        update_policy_title: "Retningslinjenavn",
+        review_frequency: "Gjennomgangsfrekvens",
+        review_frequency_placeholder: "Velg en gjennomgangsfrekvens",
+        review_date: "Gjennomgangsdato",
+        review_date_placeholder: "Velg en gjennomgangsdato"
+      }
+    }
   },
   evidence_tasks: {
     evidence_tasks: "Bevisoppgaver",
@@ -275,7 +323,7 @@ export default {
   risk: {
     risks: "risikoer",
     overview: "Oversikt",
-    create: "Opprett ny risiko",
+    create: "Opprett Ny Risiko",
     vendor: {
       title: "Leverandøradministrasjon",
       dashboard: {
@@ -283,7 +331,7 @@ export default {
         overview: "Leverandøroversikt",
         vendor_status: "Leverandørstatus",
         vendor_category: "Leverandørkategorier",
-        vendors_by_assignee: "Leverandører etter tildelt",
+        vendors_by_assignee: "Leverandører etter Tildelt",
         inherent_risk_description: "Innledende risikonivå før noen kontroller er anvendt",
         residual_risk_description: "Gjenstående risikonivå etter at kontroller er anvendt"
       },
@@ -298,17 +346,17 @@ export default {
       },
       assessment: {
         title: "Leverandørvurdering",
-        update_success: "Leverandørvurdering oppdatert vellykket",
-        update_error: "Feil ved oppdatering av leverandørvurdering",
-        inherent_risk: "Inherent risiko",
-        residual_risk: "Gjenstående risiko"
+        update_success: "Leverandørens risikovurdering oppdatert vellykket",
+        update_error: "Feil ved oppdatering av leverandørens risikovurdering",
+        inherent_risk: "Inherent Risiko",
+        residual_risk: "Residual Risiko"
       },
       form: {
         vendor_details: "Leverandørdetaljer",
         vendor_name: "Navn",
         vendor_name_placeholder: "Skriv inn leverandørnavn",
         vendor_website: "Nettsted",
-        vendor_website_placeholder: "Skriv inn leverandørnettsted",
+        vendor_website_placeholder: "Skriv inn leverandørens nettsted",
         vendor_description: "Beskrivelse",
         vendor_description_placeholder: "Skriv inn leverandørbeskrivelse",
         vendor_category: "Kategori",
@@ -318,8 +366,8 @@ export default {
         create_vendor_success: "Leverandør opprettet vellykket",
         create_vendor_error: "Feil ved oppretting av leverandør",
         update_vendor: "Oppdater Leverandør",
-        update_vendor_success: "Leverandør oppdatert",
-        update_vendor_error: "Kunne ikke oppdatere leverandør",
+        update_vendor_success: "Leverandør oppdatert vellykket",
+        update_vendor_error: "Feil ved oppdatering av leverandør",
         add_comment: "Legg til Kommentar"
       },
       table: {
@@ -341,7 +389,7 @@ export default {
         },
         no_results: {
           title: "Ingen resultater funnet",
-          description: "Ingen leverandører matcher søket ditt",
+          description: "Ingen leverandører samsvarer med søket ditt",
           description_with_filters: "Prøv å justere filtrene dine"
         }
       },
@@ -350,14 +398,14 @@ export default {
       },
       status: {
         not_assessed: "Ikke Vurdert",
-        in_progress: "Under Behandling",
+        in_progress: "Pågår",
         assessed: "Vurdert"
       },
       category: {
         cloud: "Sky",
         infrastructure: "Infrastruktur",
         software_as_a_service: "Programvare som en Tjeneste",
-        finance: "Finans",
+        finance: "Økonomi",
         marketing: "Markedsføring",
         sales: "Salg",
         hr: "HR",
@@ -388,7 +436,7 @@ export default {
       empty: {
         no_risks: {
           title: "Opprett en risiko for å komme i gang",
-          description: "Følg med på og vurder risikoer, opprett og tildel tiltak for teamet ditt, og administrer risiko registeret ditt i ett enkelt grensesnitt."
+          description: "Spor og vurder risikoer, opprett og tildel tiltak for teamet ditt, og administrer risikoregisteret ditt alt i ett enkelt grensesnitt."
         },
         create_risk: "Opprett en risiko"
       }
@@ -401,18 +449,18 @@ export default {
     },
     form: {
       update_inherent_risk: "Lagre Inherent Risiko",
-      update_inherent_risk_description: "Oppdater den inherent risikoen for risikoen. Dette er risikonivået før noen kontroller er anvendt.",
-      update_inherent_risk_success: "Inherent risiko oppdatert",
+      update_inherent_risk_description: "Oppdater den inherente risikoen for risikoen. Dette er risikonivået før noen kontroller er anvendt.",
+      update_inherent_risk_success: "Inherent risiko oppdatert vellykket",
       update_inherent_risk_error: "Kunne ikke oppdatere inherent risiko",
       update_residual_risk: "Lagre Residual Risiko",
-      update_residual_risk_description: "Oppdater den residual risikoen for risikoen. Dette er risikonivået etter at kontroller er anvendt.",
-      update_residual_risk_success: "Residual risiko oppdatert",
+      update_residual_risk_description: "Oppdater den residuale risikoen for risikoen. Dette er risikonivået etter at kontroller er anvendt.",
+      update_residual_risk_success: "Residual risiko oppdatert vellykket",
       update_residual_risk_error: "Kunne ikke oppdatere residual risiko",
       update_risk: "Oppdater Risiko",
       update_risk_description: "Oppdater risikotittelen eller beskrivelsen.",
-      update_risk_success: "Risiko oppdatert",
+      update_risk_success: "Risiko oppdatert vellykket",
       update_risk_error: "Kunne ikke oppdatere risiko",
-      create_risk_success: "Risiko opprettet",
+      create_risk_success: "Risiko opprettet vellykket",
       create_risk_error: "Kunne ikke opprette risiko",
       risk_details: "Risiko Detaljer",
       risk_title: "Risiko Tittel",
@@ -429,7 +477,7 @@ export default {
     tasks: {
       title: "Oppgaver",
       attachments: "Vedlegg",
-      overview: "Oppgaveoversikt",
+      overview: "Oppgave Oversikt",
       form: {
         title: "Oppgave Detaljer",
         task_title: "Oppgave Tittel",
@@ -440,7 +488,7 @@ export default {
         description_description: "Skriv inn en beskrivelse for oppgaven",
         due_date: "Forfallsdato",
         due_date_description: "Velg forfallsdato for oppgaven",
-        success: "Oppgave opprettet",
+        success: "Oppgave opprettet vellykket",
         error: "Kunne ikke opprette oppgave"
       },
       sheet: {
@@ -458,18 +506,18 @@ export default {
       title: "Generelt",
       org_name: "Organisasjonsnavn",
       org_name_description: "Dette er organisasjonens synlige navn. Du bør bruke det juridiske navnet på organisasjonen din.",
-      org_name_tip: "Vennligst bruk maks 32 tegn.",
-      org_website: "Organisasjonsnettsted",
-      org_website_description: "Dette er organisasjonens offisielle nettsted-URL. Sørg for å inkludere hele URL-en med https://.",
+      org_name_tip: "Vennligst bruk maksimalt 32 tegn.",
+      org_website: "Organisasjonens Nettsted",
+      org_website_description: "Dette er organisasjonens offisielle nettsted-URL. Sørg for å inkludere den fullstendige URL-en med https://.",
       org_website_tip: "Vennligst skriv inn en gyldig URL inkludert https://",
-      org_website_error: "Feil ved oppdatering av organisasjonsnettsted",
-      org_website_updated: "Organisasjonsnettsted oppdatert",
+      org_website_error: "Feil ved oppdatering av organisasjonens nettsted",
+      org_website_updated: "Organisasjonens nettsted oppdatert",
       org_delete: "Slett organisasjon",
-      org_delete_description: "Fjern organisasjonen din og alt innhold permanent fra Comp AI-plattformen. Denne handlingen kan ikke angres - vennligst fortsett med forsiktighet.",
+      org_delete_description: "Fjern permanent organisasjonen din og alt innholdet fra Comp AI-plattformen. Denne handlingen kan ikke angres - vennligst fortsett med forsiktighet.",
       org_delete_alert_title: "Er du helt sikker?",
-      org_delete_alert_description: "Denne handlingen kan ikke angres. Dette vil permanent slette organisasjonen din og fjerne dataene dine fra våre servere.",
+      org_delete_alert_description: "Denne handlingen kan ikke angres. Dette vil permanent slette organisasjonen din og fjerne dataene dine fra serverne våre.",
       org_delete_error: "Feil ved sletting av organisasjon",
-      org_delete_success: "Organisasjon slettet",
+      org_delete_success: "Organisasjonen er slettet",
       org_name_updated: "Organisasjonsnavn oppdatert",
       org_name_error: "Feil ved oppdatering av organisasjonsnavn",
       save_button: "Lagre",
@@ -483,6 +531,52 @@ export default {
     },
     billing: {
       title: "Fakturering"
+    },
+    api_keys: {
+      title: "API-nøkler",
+      description: "Administrer API-nøkler for programmatisk tilgang til dataene i organisasjonen din.",
+      list_title: "API-nøkler",
+      list_description: "API-nøkler gir sikker tilgang til dataene i organisasjonen din via vårt API.",
+      create: "Opprett API-nøkkel",
+      create_title: "Opprett API-nøkkel",
+      create_description: "Opprett en ny API-nøkkel for programmatisk tilgang til dataene i organisasjonen din.",
+      created_title: "API-nøkkel opprettet",
+      created_description: "API-nøkkelen din har blitt opprettet. Sørg for å kopiere den nå, da du ikke vil kunne se den igjen.",
+      name: "Navn",
+      name_label: "Navn",
+      name_placeholder: "Skriv inn et navn for denne API-nøkkelen",
+      expiration: "Utløp",
+      expiration_placeholder: "Velg utløp",
+      expires_label: "Utløper",
+      expires_placeholder: "Velg utløp",
+      expires_30days: "30 dager",
+      expires_90days: "90 dager",
+      expires_1year: "1 år",
+      expires_never: "Aldri",
+      thirty_days: "30 dager",
+      ninety_days: "90 dager",
+      one_year: "1 år",
+      your_key: "Din API-nøkkel",
+      api_key: "API-nøkkel",
+      save_warning: "Denne nøkkelen vil kun bli vist én gang. Sørg for å kopiere den nå.",
+      copied: "API-nøkkel kopiert til utklippstavlen",
+      close_confirm: "Er du sikker på at du vil lukke? Du vil ikke kunne se denne API-nøkkelen igjen.",
+      revoke_confirm: "Er du sikker på at du vil tilbakekalle denne API-nøkkelen? Denne handlingen kan ikke angres.",
+      revoke_title: "Tilbakekall API-nøkkel",
+      revoke: "Tilbakekall",
+      created: "Opprettet",
+      expires: "Utløper",
+      last_used: "Sist brukt",
+      actions: "Handlinger",
+      never: "Aldri",
+      never_used: "Aldri brukt",
+      no_keys: "Ingen API-nøkler funnet. Opprett en for å komme i gang.",
+      security_note: "API-nøkler gir full tilgang til dataene i organisasjonen din. Hold dem sikre og roter dem regelmessig.",
+      fetch_error: "Feil ved henting av API-nøkler",
+      create_error: "Feil ved oppretting av API-nøkkel",
+      revoked_success: "API-nøkkel tilbakekalt med suksess",
+      revoked_error: "Feil ved tilbakekalling av API-nøkkel",
+      done: "Ferdig"
     }
   },
   user_menu: {
@@ -507,8 +601,6 @@ export default {
       },
       statuses: {
         not_started: "Ikke startet",
-        compliant: "Samsvarende",
-        non_compliant: "Ikke samsvarende",
         completed: "Fullført",
         in_progress: "Pågår"
       }
@@ -524,14 +616,14 @@ export default {
         title: "Rammeverksprogresjon",
         empty: {
           title: "Ingen rammeverk ennå",
-          description: "Kom i gang ved å legge til et samsvarsrammeverk for å spore fremgangen din",
+          description: "Kom i gang med å legge til et samsvarsrammeverk for å spore fremdriften din",
           action: "Legg til rammeverk"
         }
       },
       grid: {
         welcome: {
           title: "Velkommen til Comp AI",
-          description: "Kom i gang ved å velge samsvarsrammeverkene du ønsker å implementere. Vi hjelper deg med å administrere og spore samsvarsreisen din på tvers av flere standarder.",
+          description: "Kom i gang med å velge samsvarsrammeverkene du ønsker å implementere. Vi hjelper deg med å administrere og spore samsvarsreisen din på tvers av flere standarder.",
           action: "Kom i gang"
         },
         title: "Velg rammeverk",
@@ -551,7 +643,7 @@ export default {
       overview: "Leverandøroversikt",
       vendor_status: "Leverandørstatus",
       vendor_category: "Leverandørkategorier",
-      vendors_by_assignee: "Leverandører etter tildelt",
+      vendors_by_assignee: "Leverandører etter ansvarlig",
       inherent_risk_description: "Innledende risikonivå før noen kontroller er anvendt",
       residual_risk_description: "Gjenstående risikonivå etter at kontroller er anvendt"
     },
@@ -587,14 +679,14 @@ export default {
       vendor_category_placeholder: "Velg kategori",
       vendor_status: "Status",
       vendor_status_placeholder: "Velg status",
-      create_vendor_success: "Leverandør opprettet",
+      create_vendor_success: "Leverandør opprettet med suksess",
       create_vendor_error: "Kunne ikke opprette leverandør",
-      update_vendor_success: "Leverandør oppdatert",
+      update_vendor_success: "Leverandør oppdatert med suksess",
       update_vendor_error: "Kunne ikke oppdatere leverandør",
       contacts: "Leverandørkontakter",
-      contact_name: "Kontaktpersonens navn",
-      contact_email: "Kontaktpersonens e-post",
-      contact_role: "Kontaktpersonens rolle",
+      contact_name: "Kontaktperson",
+      contact_email: "Kontakt-e-post",
+      contact_role: "Kontaktrolle",
       add_contact: "Legg til kontakt",
       new_contact: "Ny kontakt",
       min_one_contact_required: "En leverandør må ha minst én kontakt"
@@ -614,7 +706,7 @@ export default {
   people: {
     title: "Personer",
     details: {
-      taskProgress: "Oppgavefremdrift",
+      taskProgress: "Oppgave Fremdrift",
       tasks: "Oppgaver",
       noTasks: "Ingen oppgaver tildelt ennå"
     },
@@ -624,7 +716,7 @@ export default {
       role: "Filtrer etter rolle"
     },
     actions: {
-      invite: "Legg til ansatt",
+      invite: "Legg til Ansatt",
       clear: "Fjern filtre"
     },
     table: {
@@ -645,7 +737,7 @@ export default {
       }
     },
     invite: {
-      title: "Legg til ansatt",
+      title: "Legg til Ansatt",
       description: "Legg til en ansatt i organisasjonen din.",
       email: {
         label: "E-postadresse",
@@ -663,8 +755,8 @@ export default {
         label: "Avdeling",
         placeholder: "Velg en avdeling"
       },
-      submit: "Legg til ansatt",
-      success: "Ansatt lagt til",
+      submit: "Legg til Ansatt",
+      success: "Ansatt lagt til vellykket",
       error: "Kunne ikke legge til ansatt"
     }
   },
@@ -683,17 +775,23 @@ export default {
     },
     policies: {
       all: "Alle retningslinjer",
-      editor: "Retningslinje-redigerer"
+      editor: "Retningslinje-redigerer",
+      policy_details: "Retningslinjedetaljer"
     },
     people: {
       all: "Personer",
-      employee_details: "Ansattdetaljer"
+      employee_details: "Ansatt-detaljer"
     },
     settings: {
       members: "Teammedlemmer"
     },
     frameworks: {
-      overview: "Rammeverk"
+      overview: "Rammer"
+    },
+    evidence: {
+      title: "Bevis",
+      list: "Bevisliste",
+      overview: "Bevisoversikt"
     }
   },
   editor: {
@@ -701,7 +799,7 @@ export default {
       thinking: "AI tenker",
       thinking_spinner: "AI tenker",
       edit_or_generate: "Rediger eller generer...",
-      tell_ai_what_to_do_next: "Fortell AI hva den skal gjøre neste gang",
+      tell_ai_what_to_do_next: "Fortell AI hva den skal gjøre neste",
       request_limit_reached: "Du har nådd forespørselgrensen for dagen."
     },
     ai_selector: {
@@ -713,6 +811,79 @@ export default {
       replace: "Erstatt valg",
       insert: "Sett inn under",
       discard: "Forkast"
+    }
+  },
+  evidence: {
+    title: "Bevis",
+    list: "Alle Bevis",
+    overview: "Oversikt over Bevis",
+    edit: "Rediger Bevis",
+    dashboard: {
+      layout: "Dashbord",
+      layout_back_button: "Tilbake",
+      title: "Bevis Dashbord",
+      by_department: "Etter Avdeling",
+      by_assignee: "Etter Tildelt",
+      by_framework: "Etter Rammeverk"
+    },
+    items: "elementer",
+    status: {
+      up_to_date: "Oppdatert",
+      needs_review: "Trenger Gjennomgang",
+      draft: "Utkast",
+      empty: "Tom"
+    },
+    departments: {
+      none: "Uklassifisert",
+      admin: "Administrasjon",
+      gov: "Styring",
+      hr: "Personal",
+      it: "Informasjonsteknologi",
+      itsm: "IT-tjenesteforvaltning",
+      qms: "Kvalitetsforvaltning"
+    },
+    details: {
+      review_section: "Gjennomgå Informasjon",
+      content: "Bevisinnhold"
+    }
+  },
+  upload: {
+    fileSection: {
+      filesUploaded: "{count} fil(er) lastet opp",
+      upload: "{count} fil(er) lastet opp"
+    },
+    fileUpload: {
+      uploadingText: "Laster opp...",
+      dropFileHere: "Slipp fil her",
+      releaseToUpload: "Slipp for å laste opp",
+      addFiles: "Legg til filer",
+      uploadAdditionalEvidence: "Last opp en fil",
+      dragDropOrClick: "Dra og slipp eller klikk for å laste opp",
+      dropFileHereAlt: "Slipp filen her",
+      dragDropOrClickToSelect: "Dra og slipp en fil her, eller klikk for å velge",
+      maxFileSize: "Maks filstørrelse: {size}MB",
+      uploadingFile: "Laster opp fil..."
+    },
+    fileCard: {
+      preview: "Forhåndsvisning",
+      previewNotAvailable: "Forhåndsvisning ikke tilgjengelig. Klikk på nedlastingsknappen for å se filen.",
+      filePreview: "Filforhåndsvisning: {fileName}",
+      openFile: "Åpne fil",
+      deleteFile: "Slett fil",
+      deleteFileConfirmTitle: "Slett fil",
+      deleteFileConfirmDescription: "Er du sikker på at du vil slette denne filen? Denne handlingen kan ikke angres."
+    },
+    fileUrl: {
+      additionalLinks: "Ytterligere lenker",
+      add: "Legg til",
+      linksAdded: "{count} lenke{S} lagt til",
+      enterUrl: "Skriv inn URL",
+      addAnotherLink: "Legg til en annen lenke",
+      saveLinks: "Lagre lenker",
+      urlBadge: "URL",
+      copyLink: "Kopier lenke",
+      openLink: "Åpne lenke",
+      deleteLink: "Slett lenke"
     }
   },
   tests: {

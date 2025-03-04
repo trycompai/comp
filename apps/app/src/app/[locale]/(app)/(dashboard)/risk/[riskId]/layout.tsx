@@ -27,11 +27,10 @@ export default async function Layout({ children, params }: LayoutProps) {
   }
 
   return (
-    <div className="max-w-[1200px] space-y-4">
-      <Title title={risk.title} href="/risk/register" />
-
+    <div className="max-w-[1200px] space-y-4 m-auto">
       <SecondaryMenu
-        isChild
+        showBackButton
+        backButtonHref="/risk/register"
         items={[
           { path: `/risk/${riskId.riskId}`, label: t("risk.overview") },
           {

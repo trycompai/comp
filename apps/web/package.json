@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack -p 3000",
+    "dev": "NODE_OPTIONS='--inspect' next dev --turbopack -p 3000",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -19,7 +19,7 @@
     "ky": "^1.7.5",
     "lucide-react": "^0.469.0",
     "motion": "^11.18.2",
-    "next": "^15.1.7",
+    "next": "^15.2.0",
     "next-turnstile": "^1.0.2",
     "posthog-js": "^1.217.2",
     "posthog-node": "^4.5.2",
@@ -32,6 +32,7 @@
     "uuid": "^11.0.5"
   },
   "devDependencies": {
+    "@bubba/analytics": "workspace:*",
     "@trigger.dev/build": "^3.3.15",
     "@types/node": "^22.13.2",
     "@types/react": "^19.0.8",

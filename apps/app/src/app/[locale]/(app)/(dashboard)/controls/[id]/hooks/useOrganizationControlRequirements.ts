@@ -1,7 +1,7 @@
 "use client";
 
 import useSWR from "swr";
-import { getOrganizationControlRequirements } from "../Actions/getOrganizationControlRequirements";
+import { getOrganizationControlRequirements } from "../actions/getOrganizationControlRequirements";
 
 async function fetchOrganizationControlRequirements(controlId: string) {
   const result = await getOrganizationControlRequirements({ controlId });
@@ -25,7 +25,7 @@ export function useOrganizationControlRequirements(controlId: string) {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
-    }
+    },
   );
 
   return {

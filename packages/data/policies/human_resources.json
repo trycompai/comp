@@ -5,6 +5,7 @@
     "slug": "human-resources-policy",
     "name": "Human Resources Policy",
     "description": "This policy outlines the principles and practices for recruitment, employee management, performance evaluations, and the enforcement of internal control responsibilities.",
+    "frequency": "yearly",
     "usedBy": {
       "soc2": ["CC1.3", "CC1.4"]
     }

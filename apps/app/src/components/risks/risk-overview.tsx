@@ -1,7 +1,7 @@
 "use client";
 
 import { useI18n } from "@/locales/client";
-import type { Risk, RiskMitigationTask, User } from "@bubba/db";
+import type { Risk, User } from "@bubba/db";
 import { Alert, AlertDescription, AlertTitle } from "@bubba/ui/alert";
 import { Button } from "@bubba/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@bubba/ui/card";
@@ -10,8 +10,6 @@ import { PencilIcon } from "lucide-react";
 import { useQueryState } from "nuqs";
 import { UpdateRiskOverview } from "../forms/risks/risk-overview";
 import { RiskOverviewSheet } from "../sheets/risk-overview-sheet";
-import { InherentRiskChart } from "./charts/inherent-risk-chart";
-import { ResidualRiskChart } from "./charts/residual-risk-chart";
 
 export function RiskOverview({
   risk,

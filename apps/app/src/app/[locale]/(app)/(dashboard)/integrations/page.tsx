@@ -31,7 +31,7 @@ export default async function IntegrationsPage({
   }
 
   return (
-    <div className="mt-4 max-w-[1200px]">
+    <div className="mt-4 max-w-[1200px] m-auto">
       <IntegrationsHeader />
 
       <Suspense fallback={<SkeletonLoader amount={2} />}>

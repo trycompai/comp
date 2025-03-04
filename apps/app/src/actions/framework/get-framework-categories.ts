@@ -2,14 +2,7 @@
 
 import type {
   TransformedCategory,
-  TransformedControl,
 } from "@/types/framework";
-import type {
-  ComplianceStatus,
-  Control,
-  FrameworkCategory,
-  OrganizationControl,
-} from "@bubba/db";
 import { db } from "@bubba/db";
 import { z } from "zod";
 import { authActionClient } from "../safe-action";
@@ -68,7 +61,7 @@ export const getFrameworkCategoriesAction = authActionClient
             requiredArtifactTypes:
               control.requirements?.map((req) => req.type) || [],
           })),
-        })
+        }),
       );
 
       return {
