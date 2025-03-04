@@ -8,7 +8,7 @@ import {
   FilterDropdown,
   PaginationControls,
   SearchInput,
-} from "./EvidenceFilters";
+} from "./evidencefilters";
 import { SkeletonTable } from "./SkeletonTable";
 import { EvidenceSummaryCards } from "./EvidenceSummaryCards";
 
