@@ -26,7 +26,7 @@
 
 ## About
 
-# Security and compliance, open.
+# Security and compliance, open source.
 
 We're building the first open source compliance automation platform that helps companies of any size work towards, manage and achieve compliance with common standards like SOC 2, ISO 27001 and GDPR.
 
