@@ -1,6 +1,5 @@
 "use client";
 
-import { RegisterTestSheet } from "@/components/sheets/register-test-sheet";
 import { useI18n } from "@/locales/client";
 import { Button } from "@bubba/ui/button";
 import { Input } from "@bubba/ui/input";
@@ -20,7 +19,6 @@ export function FilterToolbar({ isEmpty }: FilterToolbarProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const t = useI18n();
-  const [open, setOpen] = useQueryState("register-test-sheet");
   const [isPending, startTransition] = useTransition();
   const [inputValue, setInputValue] = useState(
     searchParams?.get("search") ?? "",
@@ -100,8 +98,6 @@ export function FilterToolbar({ isEmpty }: FilterToolbarProps) {
           </Link>
         </Button> }
       </div>
-
-      <RegisterTestSheet />
     </div>
   );
 }

@@ -43,7 +43,6 @@ export function NoResults({ hasFilters }: Props) {
 
 export function NoTests() {
   const t = useI18n();
-  const [open, setOpen] = useQueryState("register-test-sheet");
 
   return (
     <div className="mt-24 absolute w-full top-0 left-0 flex items-center justify-center z-20">
@@ -55,10 +54,6 @@ export function NoTests() {
         <p className="text-sm text-muted-foreground mb-6">
           {t("tests.empty.no_tests.description")}
         </p>
-        <Button onClick={() => setOpen("true")} className="flex">
-          <Plus className="h-4 w-4 mr-2" />
-          {t("tests.actions.create")}
-        </Button>
       </div>
 
       <InviteUserSheet />
