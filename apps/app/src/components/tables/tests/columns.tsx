@@ -1,21 +1,15 @@
 "use client";
 
-import type { CloudProvider } from "@bubba/db";
-
 export interface TestType {
   id: string;
+  severity: string | null;
+  result: string;
   title: string;
-  description: string | null;
   provider: string;
-  status: string;
-  resultDetails: any;
-  label: string | null;
-  assignedUserId: {
-    id: string;
-    name: string | null;
-    email: string | null;
-  };
+  createdAt: Date;
+  assignedUser: null;
 }
+
 
 // Note: Column definitions have been moved to data-table.tsx
 // This file now only exports the TestType interface
