@@ -254,12 +254,12 @@ export default {
     dashboard: {
       title: "Panel de Control",
       all: "Todas las Políticas",
-      policy_status: "Política por Estado",
+      policy_status: "Política por estado",
       policies_by_assignee: "Políticas por Asignado",
       policies_by_framework: "Políticas por Marco",
       sub_pages: {
         overview: "Resumen",
-        edit_policy: "Editar Política"
+        edit_policy: "Editar política"
       }
     },
     table: {
@@ -302,17 +302,17 @@ export default {
     saved_success: "Política guardada con éxito",
     saved_error: "Error al guardar la política",
     overview: {
-      title: "Resumen de la Política",
+      title: "Resumen de la política",
       form: {
-        update_policy: "Actualizar Política",
+        update_policy: "Actualizar política",
         update_policy_description: "Actualiza el título o la descripción de la política.",
         update_policy_success: "Política actualizada con éxito",
         update_policy_error: "Error al actualizar la política",
-        update_policy_title: "Nombre de la Política",
-        review_frequency: "Frecuencia de Revisión",
+        update_policy_title: "Nombre de la política",
+        review_frequency: "Frecuencia de revisión",
         review_frequency_placeholder: "Selecciona una frecuencia de revisión",
         review_date: "Fecha de revisión",
-        review_date_placeholder: "Seleccionar una fecha de revisión"
+        review_date_placeholder: "Selecciona una fecha de revisión"
       }
     }
   },
@@ -534,7 +534,7 @@ export default {
     },
     api_keys: {
       title: "Claves API",
-      description: "Administra las claves API para el acceso programático a los datos de tu organización.",
+      description: "Gestiona las claves API para el acceso programático a los datos de tu organización.",
       list_title: "Claves API",
       list_description: "Las claves API permiten el acceso seguro a los datos de tu organización a través de nuestra API.",
       create: "Crear clave API",
@@ -546,9 +546,9 @@ export default {
       name_label: "Nombre",
       name_placeholder: "Ingresa un nombre para esta clave API",
       expiration: "Expiración",
-      expiration_placeholder: "Selecciona la expiración",
+      expiration_placeholder: "Selecciona expiración",
       expires_label: "Expira",
-      expires_placeholder: "Selecciona la expiración",
+      expires_placeholder: "Selecciona expiración",
       expires_30days: "30 días",
       expires_90days: "90 días",
       expires_1year: "1 año",
@@ -560,7 +560,7 @@ export default {
       api_key: "Clave API",
       save_warning: "Esta clave solo se mostrará una vez. Asegúrate de copiarla ahora.",
       copied: "Clave API copiada al portapapeles",
-      close_confirm: "¿Estás seguro de que deseas cerrar? No podrás volver a ver esta clave API.",
+      close_confirm: "¿Estás seguro de que deseas cerrar? No podrás ver esta clave API nuevamente.",
       revoke_confirm: "¿Estás seguro de que deseas revocar esta clave API? Esta acción no se puede deshacer.",
       revoke_title: "Revocar clave API",
       revoke: "Revocar",
@@ -572,10 +572,10 @@ export default {
       never_used: "Nunca utilizada",
       no_keys: "No se encontraron claves API. Crea una para comenzar.",
       security_note: "Las claves API proporcionan acceso completo a los datos de tu organización. Mantenlas seguras y cámbialas regularmente.",
-      fetch_error: "Error al obtener las claves API",
-      create_error: "Error al crear la clave API",
+      fetch_error: "Error al obtener claves API",
+      create_error: "Error al crear clave API",
       revoked_success: "Clave API revocada con éxito",
-      revoked_error: "Error al revocar la clave API",
+      revoked_error: "Error al revocar clave API",
       done: "Hecho"
     }
   },
@@ -776,7 +776,7 @@ export default {
     policies: {
       all: "Todas las Políticas",
       editor: "Editor de Políticas",
-      policy_details: "Detalles de la Política"
+      policy_details: "Detalles de la política"
     },
     people: {
       all: "Personas",
@@ -790,8 +790,8 @@ export default {
     },
     evidence: {
       title: "Evidencia",
-      list: "Lista de Evidencia",
-      overview: "Resumen de Evidencia"
+      list: "Lista de evidencias",
+      overview: "Resumen de evidencias"
     }
   },
   editor: {
@@ -815,16 +815,16 @@ export default {
   },
   evidence: {
     title: "Evidencia",
-    list: "Toda la Evidencia",
-    overview: "Resumen de Evidencia",
-    edit: "Editar Evidencia",
+    list: "Toda la evidencia",
+    overview: "Resumen de evidencias",
+    edit: "Editar evidencia",
     dashboard: {
       layout: "Tablero",
       layout_back_button: "Atrás",
-      title: "Tablero de Evidencia",
-      by_department: "Por Departamento",
-      by_assignee: "Por Asignado",
-      by_framework: "Por Marco"
+      title: "Tablero de evidencias",
+      by_department: "Por departamento",
+      by_assignee: "Por asignado",
+      by_framework: "Por marco"
     },
     items: "elementos",
     status: {
@@ -843,7 +843,7 @@ export default {
       qms: "Gestión de Calidad"
     },
     details: {
-      review_section: "Revisar Información",
+      review_section: "Información de Revisión",
       content: "Contenido de Evidencia"
     }
   },

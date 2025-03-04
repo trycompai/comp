@@ -254,12 +254,12 @@ export default {
     dashboard: {
       title: "Dashbord",
       all: "Alle retningslinjer",
-      policy_status: "Retningslinje etter status",
+      policy_status: "Policy etter Status",
       policies_by_assignee: "Retningslinjer etter tildelt",
       policies_by_framework: "Retningslinjer etter rammeverk",
       sub_pages: {
         overview: "Oversikt",
-        edit_policy: "Rediger retningslinje"
+        edit_policy: "Rediger Policy"
       }
     },
     table: {
@@ -287,28 +287,28 @@ export default {
       archived: "Arkivert"
     },
     policies: "policyer",
-    title: "Policyer",
+    title: "Policies",
     create_new: "Opprett Ny Policy",
-    search_placeholder: "Søk etter policyer...",
+    search_placeholder: "Søk etter policies...",
     status_filter: "Filtrer etter status",
     all_statuses: "Alle statuser",
-    no_policies_title: "Ingen policyer ennå",
+    no_policies_title: "Ingen policies ennå",
     no_policies_description: "Kom i gang med å opprette din første policy",
     create_first: "Opprett første policy",
     no_description: "Ingen beskrivelse gitt",
     last_updated: "Sist oppdatert: {{date}}",
     save: "Lagre",
     saving: "Lagrer...",
-    saved_success: "Policy lagret vellykket",
-    saved_error: "Feil ved lagring av policy",
+    saved_success: "Policy lagret",
+    saved_error: "Kunne ikke lagre policy",
     overview: {
-      title: "Retningslinjeoversikt",
+      title: "Policy Oversikt",
       form: {
-        update_policy: "Oppdater retningslinje",
-        update_policy_description: "Oppdater retningslinjetittelen eller beskrivelsen.",
-        update_policy_success: "Retningslinje oppdatert med suksess",
-        update_policy_error: "Feil ved oppdatering av retningslinje",
-        update_policy_title: "Retningslinjenavn",
+        update_policy: "Oppdater Policy",
+        update_policy_description: "Oppdater policyens tittel eller beskrivelse.",
+        update_policy_success: "Policy oppdatert",
+        update_policy_error: "Kunne ikke oppdatere policy",
+        update_policy_title: "Policy Navn",
         review_frequency: "Gjennomgangsfrekvens",
         review_frequency_placeholder: "Velg en gjennomgangsfrekvens",
         review_date: "Gjennomgangsdato",
@@ -540,8 +540,8 @@ export default {
       create: "Opprett API-nøkkel",
       create_title: "Opprett API-nøkkel",
       create_description: "Opprett en ny API-nøkkel for programmatisk tilgang til dataene i organisasjonen din.",
-      created_title: "API-nøkkel opprettet",
-      created_description: "API-nøkkelen din har blitt opprettet. Sørg for å kopiere den nå, da du ikke vil kunne se den igjen.",
+      created_title: "API-nøkkel Opprettet",
+      created_description: "Din API-nøkkel har blitt opprettet. Sørg for å kopiere den nå, da du ikke vil kunne se den igjen.",
       name: "Navn",
       name_label: "Navn",
       name_placeholder: "Skriv inn et navn for denne API-nøkkelen",
@@ -566,16 +566,16 @@ export default {
       revoke: "Tilbakekall",
       created: "Opprettet",
       expires: "Utløper",
-      last_used: "Sist brukt",
+      last_used: "Sist Brukt",
       actions: "Handlinger",
       never: "Aldri",
       never_used: "Aldri brukt",
       no_keys: "Ingen API-nøkler funnet. Opprett en for å komme i gang.",
       security_note: "API-nøkler gir full tilgang til dataene i organisasjonen din. Hold dem sikre og roter dem regelmessig.",
-      fetch_error: "Feil ved henting av API-nøkler",
-      create_error: "Feil ved oppretting av API-nøkkel",
-      revoked_success: "API-nøkkel tilbakekalt med suksess",
-      revoked_error: "Feil ved tilbakekalling av API-nøkkel",
+      fetch_error: "Kunne ikke hente API-nøkler",
+      create_error: "Kunne ikke opprette API-nøkkel",
+      revoked_success: "API-nøkkel tilbakekalt",
+      revoked_error: "Kunne ikke tilbakekalle API-nøkkel",
       done: "Ferdig"
     }
   },
@@ -776,7 +776,7 @@ export default {
     policies: {
       all: "Alle retningslinjer",
       editor: "Retningslinje-redigerer",
-      policy_details: "Retningslinjedetaljer"
+      policy_details: "Policy Detaljer"
     },
     people: {
       all: "Personer",
@@ -816,7 +816,7 @@ export default {
   evidence: {
     title: "Bevis",
     list: "Alle Bevis",
-    overview: "Oversikt over Bevis",
+    overview: "Bevisoversikt",
     edit: "Rediger Bevis",
     dashboard: {
       layout: "Dashbord",
@@ -829,7 +829,7 @@ export default {
     items: "elementer",
     status: {
       up_to_date: "Oppdatert",
-      needs_review: "Trenger Gjennomgang",
+      needs_review: "Trenger gjennomgang",
       draft: "Utkast",
       empty: "Tom"
     },
@@ -843,7 +843,7 @@ export default {
       qms: "Kvalitetsforvaltning"
     },
     details: {
-      review_section: "Gjennomgå Informasjon",
+      review_section: "Gjennomgangsinformasjon",
       content: "Bevisinnhold"
     }
   },

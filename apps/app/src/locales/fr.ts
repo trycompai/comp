@@ -546,9 +546,9 @@ export default {
       name_label: "Nom",
       name_placeholder: "Entrez un nom pour cette clé API",
       expiration: "Expiration",
-      expiration_placeholder: "Sélectionner l'expiration",
+      expiration_placeholder: "Sélectionnez l'expiration",
       expires_label: "Expire",
-      expires_placeholder: "Sélectionner l'expiration",
+      expires_placeholder: "Sélectionnez l'expiration",
       expires_30days: "30 jours",
       expires_90days: "90 jours",
       expires_1year: "1 an",
@@ -564,12 +564,12 @@ export default {
       revoke_confirm: "Êtes-vous sûr de vouloir révoquer cette clé API ? Cette action ne peut pas être annulée.",
       revoke_title: "Révoquer la clé API",
       revoke: "Révoquer",
-      created: "Créée",
+      created: "Créé",
       expires: "Expire",
       last_used: "Dernière utilisation",
       actions: "Actions",
       never: "Jamais",
-      never_used: "Jamais utilisée",
+      never_used: "Jamais utilisé",
       no_keys: "Aucune clé API trouvée. Créez-en une pour commencer.",
       security_note: "Les clés API fournissent un accès complet aux données de votre organisation. Gardez-les sécurisées et renouvelez-les régulièrement.",
       fetch_error: "Échec de la récupération des clés API",
@@ -826,7 +826,7 @@ export default {
       by_assignee: "Par responsable",
       by_framework: "Par cadre"
     },
-    items: "articles",
+    items: "éléments",
     status: {
       up_to_date: "À jour",
       needs_review: "Nécessite une révision",
@@ -844,7 +844,7 @@ export default {
     },
     details: {
       review_section: "Informations de révision",
-      content: "Contenu de la preuve"
+      content: "Contenu de preuve"
     }
   },
   upload: {

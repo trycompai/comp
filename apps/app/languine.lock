@@ -9,6 +9,11 @@ files:
     languages.fr: ad225f707802ba118c22987186dd38e8
     languages.no: da550ca06bcacbd30b7c6ed32c864c70
     languages.pt: 30e32c7c4cf434e9c75e60c14c442541
+    common.frequency.daily: c512b685438f41daa7386329a3b8f8d3
+    common.frequency.weekly: 6c25e6a6da95b3d583c6ec4c3f82ed4d
+    common.frequency.monthly: 9030e39f00132d583da4122532e509e9
+    common.frequency.quarterly: be92c62702dcec6751c101b5adb0ce3b
+    common.frequency.yearly: cf5ea7953dc47105e0eb179dbefaaf46
     common.notifications.inbox: 3882d32c66e7e768145ecd8f104b0c08
     common.notifications.archive: e727b00944f81e1d0a95c12886ac4641
     common.notifications.archive_all: 449e2fbab2a05e2f9f3cc1717f58eee0
@@ -45,6 +50,7 @@ files:
     common.status.assessed: 2c051fa737a0d6c7274f4508448b7f8a
     common.status.active: 4d3d769b812b6faa6b76e1a8abaece2d
     common.status.inactive: 3cab03c00dbd11bc3569afa0748013f0
+    common.status.title: ec53a8c4f07baed5d8825072c89799be
     common.filters.clear: 0b275442d6556cff30b75f37f1918899
     common.filters.search: 2a37324bb4c331c859044121df3f576b
     common.filters.status: ec53a8c4f07baed5d8825072c89799be
@@ -57,7 +63,7 @@ files:
     common.table.due_date: 14c841eea7774b78caf79c58989f9625
     common.table.last_updated: 4221d3e17c6eca2ca6337251a3cf9c4e
     common.table.no_results: e576c23d915755d83e2d1f47bd9f6c22
-    common.empty_states.no_results.title: c49c29bb6656c1f25f2cfac84f83b5ba
+    common.empty_states.no_results.title: e576c23d915755d83e2d1f47bd9f6c22
     common.empty_states.no_results.title_tasks: 8edbb9c85d4b7cce148cb9a886dc1213
     common.empty_states.no_results.title_risks: 20c62e3370120c70750d361567eacc26
     common.empty_states.no_results.description: 3d7c5718545b591caa83edfd8d5f42b0
@@ -107,6 +113,10 @@ files:
     common.attachments.toasts.success_uploading_files_target: 293fc6e4068205eefc9df77baa941b5f
     common.attachments.toasts.uploading_files: a538c6cacc535cf165533cc65510248f
     common.attachments.toasts.remove_file: b21f085d08623fc7a5a9da204cc66c8c
+    common.edit: 7dce122004969d56ae2e0245cb754d35
+    common.errors.unexpected_error: 9789e322478c6f2d59e93d020808642a
+    common.description: b5a7adde1af5c87d7fd797b6245c2a39
+    common.last_updated: 4221d3e17c6eca2ca6337251a3cf9c4e
     header.discord.button: 1d403edd5e9a373b882ebba790de6f05
     header.feedback.button: bea4c2c8eb82d05891ddd71584881b56
     header.feedback.title: d62968e1245fc470aa53ae9e5646215a
@@ -130,6 +140,9 @@ files:
     sidebar.evidence: 63b1eb1a39194d82271ec937fba19714
     sidebar.people: 78386ec8f2845742c324a3d7d3e800ff
     sidebar.tests: 107f3983ed2f362df6195c163001fe7b
+    sub_pages.evidence.title: c7b2a4d55fbea4d044644cf5b2b45d29
+    sub_pages.evidence.list: d2b5512c16318cc8738eff7dbe7de9ca
+    sub_pages.evidence.overview: 376eeb70e956ecef2611d88a28269c5b
     sub_pages.risk.overview: 7228bb53bb7855d458965d2f15fc6cd7
     sub_pages.risk.register: e4c28136d96146bd5fe9dfe41214138c
     sub_pages.risk.risk_overview: 5226ebb7d548f2d3a8f8c4fd08851405
@@ -137,6 +150,7 @@ files:
     sub_pages.risk.tasks.task_overview: d5a893e5bfa69efefb2667f8e7ec600c
     sub_pages.policies.all: 4992678c2f629035e5c3bcde296b596a
     sub_pages.policies.editor: e2c974366aff19ed493a501108cbf948
+    sub_pages.policies.policy_details: 8178fb068d06b0f32a7b0103e832b231
     sub_pages.people.all: 78386ec8f2845742c324a3d7d3e800ff
     sub_pages.people.employee_details: 62fa24399196c3b1bcb1cf2cdf771da4
     sub_pages.settings.members: 8196446d7293bfeb288d7c21e36a1886
@@ -175,12 +189,25 @@ files:
     overview.requirement_chart.title: 69d9304854b767112e32573d7eeddc24
     policies.dashboard.title: 2938c7f7e560ed972f8a4f68e80ff834
     policies.dashboard.all: 4992678c2f629035e5c3bcde296b596a
-    policies.dashboard.policy_status: 52786fa7ae1ab7c63781647461d378ae
+    policies.dashboard.policy_status: 62bd1c8670133f413764396fbb6fb915
     policies.dashboard.policies_by_assignee: 78a5313bf44384663f9ddf1253a26d02
     policies.dashboard.policies_by_framework: b6c2212b46c6baa166b653aae7d5b014
+    policies.dashboard.sub_pages.overview: 3b878279a04dc47d60932cb294d96259
+    policies.dashboard.sub_pages.edit_policy: 49f0aa41a6a6350d9888573e1435281d
+    policies.overview.title: 70969d63756e17e0a4fff52300b4f2ae
+    policies.overview.form.update_policy: 7de565d9eb96fe141ef7482d77bdb4c7
+    policies.overview.form.update_policy_description: 7b66e59bef3e4d699fc4569c01c18366
+    policies.overview.form.update_policy_success: 9e251bb8955d7db5e5935856c11798ab
+    policies.overview.form.update_policy_error: a287c230191e50a5c67ccc27696a8c6c
+    policies.overview.form.update_policy_title: 002f7378a5fcfc2f66cfea851a7fd5f4
+    policies.overview.form.review_frequency: 54a9e105043639a3c97397b407aa8367
+    policies.overview.form.review_frequency_placeholder: e15b23026dcebfa15a44f21070396880
+    policies.overview.form.review_date: 43629fb18eed3c436735459e66be4225
+    policies.overview.form.review_date_placeholder: c57e1d47519b366741cb8cb65cc0a51d
     policies.table.name: 002f7378a5fcfc2f66cfea851a7fd5f4
     policies.table.statuses.draft: f03ab16cd58372c77ba45a3d9a5a1cb9
     policies.table.statuses.published: 9b9d8a976b42e0bd66381797644943d5
+    policies.table.statuses.archived: 7d69b3cb4cada18ae61811304f8fbcb5
     policies.table.filters.owner.label: 780f85493892dc48b674ac9da8974133
     policies.table.filters.owner.placeholder: 40f417d9ebe868b7aa1e61f27775a03e
     policies.filters.search: 417253920390e1fdb5f07216a44d61c7
@@ -188,7 +215,22 @@ files:
     policies.status.draft: f03ab16cd58372c77ba45a3d9a5a1cb9
     policies.status.published: 9b9d8a976b42e0bd66381797644943d5
     policies.status.needs_review: 994f197b212a0f4dc844cc3534e889c2
+    policies.status.archived: 7d69b3cb4cada18ae61811304f8fbcb5
     policies.policies: 94422fa6b0fe23d0ab463703c0022a63
+    policies.title: 9e476387322a5c250893cf9c5c4ce78c
+    policies.create_new: 5ff074c18e92b64ab9bad69c28267285
+    policies.search_placeholder: 417253920390e1fdb5f07216a44d61c7
+    policies.status_filter: 5dd5cd6670a0fc8e47a47aa94d27b8b2
+    policies.all_statuses: 96e3d398260724e0a83da53a2e9f20e7
+    policies.no_policies_title: 329794e590e4bbc42f2f5ae965a8ba9f
+    policies.no_policies_description: c6800f5122f4ff305c7923edebca30be
+    policies.create_first: 6d12b685797010c6f339f916c7c87adb
+    policies.no_description: 64edba81920f6b19c899f22f474e03d1
+    policies.last_updated: d4f9ce5adf5b871e10882a482927aa55
+    policies.save: c9cc8cce247e49bae79f15173ce97354
+    policies.saving: 575f5f86d2c7ea113c6710c1037c4465
+    policies.saved_success: 32ecb65fc52361d4131583219aee82ed
+    policies.saved_error: 07daa040d0eb0ae927dc05af1b6f3747
     evidence_tasks.evidence_tasks: 63b1eb1a39194d82271ec937fba19714
     evidence_tasks.overview: 3b878279a04dc47d60932cb294d96259
     risk.risks: 2bb550bd7d03efff73cd7152d6092af1
@@ -372,6 +414,50 @@ files:
     settings.general.delete_confirm_tip: 97e957e2354c8329aa437ed16be68eef
     settings.general.cancel_button: ea4788705e6873b424c65e91c2846b19
     settings.members.title: ef53538ae41a651c7f72ab6cb1135d8c
+    settings.api_keys.title: b4717f6ab3c2357c13c0c2cd32dfc4ca
+    settings.api_keys.description: a73bc7101920a4a2a821a6640ae95fc5
+    settings.api_keys.list_title: b4717f6ab3c2357c13c0c2cd32dfc4ca
+    settings.api_keys.list_description: 43aeedd6a4d60ad7a7c81cd81386e63e
+    settings.api_keys.create: 35cd846f199e312c7fc78d231c4152c5
+    settings.api_keys.create_title: 35cd846f199e312c7fc78d231c4152c5
+    settings.api_keys.create_description: b4e48d0aee029d3a32fb5ca5e2e82a3a
+    settings.api_keys.created_title: 46906edf876a3f62534fe9dd55b42e80
+    settings.api_keys.created_description: 445e205d7cc8d54e322b0b1270060b31
+    settings.api_keys.name: 49ee3087348e8d44e1feda1917443987
+    settings.api_keys.name_label: 49ee3087348e8d44e1feda1917443987
+    settings.api_keys.name_placeholder: 08280d19b14f9f2f93f631f14339faec
+    settings.api_keys.expiration: d30fd576bd308f6facc9343ebd031b8e
+    settings.api_keys.expiration_placeholder: a3cd16ee0d64b456fe67ea56201ac0a1
+    settings.api_keys.expires_label: cfc36842a01da69c484ffdcc6782f437
+    settings.api_keys.expires_placeholder: a3cd16ee0d64b456fe67ea56201ac0a1
+    settings.api_keys.expires_30days: 947d8520f04473da621f2718138f3bc6
+    settings.api_keys.expires_90days: ed0c9b5fb2f44a77915d0ce45d0c501c
+    settings.api_keys.expires_1year: ca4c73c1f333c437a47c58afd0623530
+    settings.api_keys.expires_never: 6e7b34fa59e1bd229b207892956dc41c
+    settings.api_keys.thirty_days: 947d8520f04473da621f2718138f3bc6
+    settings.api_keys.ninety_days: ed0c9b5fb2f44a77915d0ce45d0c501c
+    settings.api_keys.one_year: ca4c73c1f333c437a47c58afd0623530
+    settings.api_keys.your_key: df450f0d7d14608dfd9c93b45e05a5db
+    settings.api_keys.api_key: d876ff8da67c3731ae25d8335a4168b4
+    settings.api_keys.save_warning: 5e7347709aff7059dcbeaf7cd614d24a
+    settings.api_keys.copied: 62a2f11192b5dfcff44b7d0b4953dcdf
+    settings.api_keys.close_confirm: c845770ff7a61dcedeedbd05934319d5
+    settings.api_keys.revoke_confirm: c4cc0ad8b9b76fb0e1a81b3c7f9f438e
+    settings.api_keys.revoke_title: d5f76995f7a0856da6776f4947c44ad8
+    settings.api_keys.revoke: 21313f76b111bc0df501bf89fc96ba46
+    settings.api_keys.created: 0eceeb45861f9585dd7a97a3e36f85c6
+    settings.api_keys.expires: cfc36842a01da69c484ffdcc6782f437
+    settings.api_keys.last_used: 3b76a1f6eacb8549628a549d808ef9d9
+    settings.api_keys.actions: 06df33001c1d7187fdd81ea1f5b277aa
+    settings.api_keys.never: 6e7b34fa59e1bd229b207892956dc41c
+    settings.api_keys.never_used: 59c73af4d807a1dab868f1c65b83db57
+    settings.api_keys.no_keys: 939f147b56110a35a041bc72bff5379f
+    settings.api_keys.security_note: aabfa355e4937f843febe97ca0365b19
+    settings.api_keys.fetch_error: 0c51948a1c6264a813f6a45c01d1791d
+    settings.api_keys.create_error: 694f468276bfc08b290150a6c945f936
+    settings.api_keys.revoked_success: 883ce66d572b9f1317370578a0852bc1
+    settings.api_keys.revoked_error: cea5338af704d2fb6ec7cf7fbfbd3b1a
+    settings.api_keys.done: f92965e2c8a7afb3c1b9a5c09a263636
     settings.billing.title: 780c462e85ba4399a5d42e88f69a15ca
     tests.name: 107f3983ed2f362df6195c163001fe7b
     tests.title: 107f3983ed2f362df6195c163001fe7b
@@ -504,6 +590,30 @@ files:
     editor.ai_selector.replace: 05fdc089c4c320832588a69475ff5e79
     editor.ai_selector.insert: 3005820694a4944d91c4c4e8b8a016d3
     editor.ai_selector.discard: d94b42030b9785fd754d5c1754961269
+    evidence.title: c7b2a4d55fbea4d044644cf5b2b45d29
+    evidence.list: ed2c6e00de11f3eb621cd348bb8f5806
+    evidence.overview: 376eeb70e956ecef2611d88a28269c5b
+    evidence.edit: 25f314af9636c15fee70586fda83e696
+    evidence.dashboard.layout: 2938c7f7e560ed972f8a4f68e80ff834
+    evidence.dashboard.layout_back_button: 0557fa923dcee4d0f86b1409f5c2167f
+    evidence.dashboard.title: 7d19de8ddf0362f6be1af76f0c02b0ad
+    evidence.dashboard.by_department: 553fa2baad73c2ec6b8d971c56a9a7d7
+    evidence.dashboard.by_assignee: e2653e1b505990acb762b672b67225ec
+    evidence.dashboard.by_framework: fc4ded0c76857f808b406cf1f3a3f004
+    evidence.items: 691d502cfd0e0626cd3b058e5682ad1c
+    evidence.status.up_to_date: e519a1ecd0afa6828cea3c07f7d09b4a
+    evidence.status.needs_review: 994f197b212a0f4dc844cc3534e889c2
+    evidence.status.draft: f03ab16cd58372c77ba45a3d9a5a1cb9
+    evidence.status.empty: ce2c8aed9c2fa0cfbed56cbda4d8bf07
+    evidence.departments.none: 0d015d96f63a8c12d96b8399482b593f
+    evidence.departments.admin: 7258e7251413465e0a3eb58094430bde
+    evidence.departments.gov: 5a935787d6f091fc760443ab4c491465
+    evidence.departments.hr: d19092ef5301d9548911f87a817f8c44
+    evidence.departments.it: 73595e157019f972a82f2fea61332a73
+    evidence.departments.itsm: 1856585762a862d699c7538b61d6fa8b
+    evidence.departments.qms: 3b88c0772d938028236e5098c096b2d5
+    evidence.details.review_section: 659514b42799e5982d28793d9e003ae3
+    evidence.details.content: 393ae95538cd395eb8d1f7521f652b10
   src/locales/es.ts:
     language.title: c88b33a3250b4e28f34e1ececba69206
     language.description: b74d060770289b75ba34d38ea1e05251

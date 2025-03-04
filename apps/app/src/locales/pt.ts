@@ -150,7 +150,7 @@ export default {
       unexpected_error: "Ocorreu um erro inesperado"
     },
     description: "Descrição",
-    last_updated: "Última atualização",
+    last_updated: "Última Atualização",
     frequency: {
       daily: "Diário",
       weekly: "Semanal",
@@ -288,7 +288,7 @@ export default {
     },
     policies: "políticas",
     title: "Políticas",
-    create_new: "Criar nova política",
+    create_new: "Criar Nova Política",
     search_placeholder: "Pesquisar políticas...",
     status_filter: "Filtrar por status",
     all_statuses: "Todos os status",
@@ -534,9 +534,9 @@ export default {
     },
     api_keys: {
       title: "Chaves da API",
-      description: "Gerencie chaves da API para acesso programático aos dados da sua organização.",
+      description: "Gerencie as chaves da API para acesso programático aos dados da sua organização.",
       list_title: "Chaves da API",
-      list_description: "As chaves da API permitem acesso seguro aos dados da sua organização através da nossa API.",
+      list_description: "As chaves da API permitem acesso seguro aos dados da sua organização via nossa API.",
       create: "Criar Chave da API",
       create_title: "Criar Chave da API",
       create_description: "Crie uma nova chave da API para acesso programático aos dados da sua organização.",
@@ -544,7 +544,7 @@ export default {
       created_description: "Sua chave da API foi criada. Certifique-se de copiá-la agora, pois você não poderá vê-la novamente.",
       name: "Nome",
       name_label: "Nome",
-      name_placeholder: "Insira um nome para esta chave da API",
+      name_placeholder: "Digite um nome para esta chave da API",
       expiration: "Expiração",
       expiration_placeholder: "Selecione a expiração",
       expires_label: "Expira",
@@ -564,12 +564,12 @@ export default {
       revoke_confirm: "Você tem certeza de que deseja revogar esta chave da API? Esta ação não pode ser desfeita.",
       revoke_title: "Revogar Chave da API",
       revoke: "Revogar",
-      created: "Criada",
+      created: "Criado",
       expires: "Expira",
       last_used: "Último Uso",
       actions: "Ações",
       never: "Nunca",
-      never_used: "Nunca usada",
+      never_used: "Nunca usado",
       no_keys: "Nenhuma chave da API encontrada. Crie uma para começar.",
       security_note: "As chaves da API fornecem acesso total aos dados da sua organização. Mantenha-as seguras e rotacione-as regularmente.",
       fetch_error: "Falha ao buscar chaves da API",
@@ -776,7 +776,7 @@ export default {
     policies: {
       all: "Todas as Políticas",
       editor: "Editor de Políticas",
-      policy_details: "Detalhes da política"
+      policy_details: "Detalhes da Política"
     },
     people: {
       all: "Pessoas",
@@ -791,7 +791,7 @@ export default {
     evidence: {
       title: "Evidência",
       list: "Lista de Evidências",
-      overview: "Visão Geral das Evidências"
+      overview: "Visão Geral da Evidência"
     }
   },
   editor: {
@@ -814,8 +814,38 @@ export default {
     }
   },
   evidence: {
-    title: "Tarefas de Evidência",
-    list: "Todas as Evidências"
+    title: "Evidência",
+    list: "Todas as Evidências",
+    overview: "Visão Geral da Evidência",
+    edit: "Editar Evidência",
+    dashboard: {
+      layout: "Painel",
+      layout_back_button: "Voltar",
+      title: "Painel de Evidências",
+      by_department: "Por Departamento",
+      by_assignee: "Por Responsável",
+      by_framework: "Por Estrutura"
+    },
+    items: "itens",
+    status: {
+      up_to_date: "Atualizado",
+      needs_review: "Necessita de Revisão",
+      draft: "Rascunho",
+      empty: "Vazio"
+    },
+    departments: {
+      none: "Sem Categoria",
+      admin: "Administração",
+      gov: "Governança",
+      hr: "Recursos Humanos",
+      it: "Tecnologia da Informação",
+      itsm: "Gestão de Serviços de TI",
+      qms: "Gestão da Qualidade"
+    },
+    details: {
+      review_section: "Informações de Revisão",
+      content: "Conteúdo de Evidência"
+    }
   },
   upload: {
     fileSection: {
