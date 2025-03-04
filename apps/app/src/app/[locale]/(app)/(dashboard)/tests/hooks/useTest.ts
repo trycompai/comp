@@ -1,12 +1,11 @@
 "use client";
-
 import useSWR from "swr";
-import { getCloudTestDetails } from "../[testId]/actions/get-cloud-test-details";
-import type { AppError, CloudTestDetails } from "../[testId]/types";
+import { getTest } from "@/app/[locale]/(app)/(dashboard)/tests/[testId]/actions/get-test";
+import type { AppError, Test } from "@/app/[locale]/(app)/(dashboard)/tests/types";
 
-async function fetchCloudTestDetails(testId: string): Promise<CloudTestDetails> {
+async function fetchTest(testId: string): Promise<Test> {
   try {
-    const response = await getCloudTestDetails({ testId });
+    const response = await getTest({ testId });
     
     if (response.success) {
       return response.data;
@@ -21,10 +20,10 @@ async function fetchCloudTestDetails(testId: string): Promise<CloudTestDetails> 
   }
 }
 
-export function useCloudTestDetails(testId: string) {
-  const { data, error, isLoading, mutate } = useSWR<CloudTestDetails, AppError>(
+export function useTest(testId: string) {
+  const { data, error, isLoading, mutate } = useSWR<Test, AppError>(
     testId ? ["cloud-test-details", testId] : null,
-    () => fetchCloudTestDetails(testId),
+    () => fetchTest(testId),
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,

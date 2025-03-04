@@ -4,20 +4,7 @@ import useSWR from "swr";
 import { useSearchParams } from "next/navigation";
 
 import { getTests } from "../actions/get-tests";
-import type { CloudTest, AppError } from "../types";
-
-interface TestsResponse {
-  tests: CloudTest[];
-  total: number;
-}
-
-interface TestsInput {
-  search?: string;
-  provider?: "AWS" | "AZURE" | "GCP";
-  status?: string;
-  page?: number;
-  per_page?: number;
-}
+import type { TestsResponse, TestsInput, AppError } from "../types";
 
 /** Fetcher function for tests */
 async function fetchTests(input: TestsInput): Promise<TestsResponse> {
@@ -65,8 +52,7 @@ export function useTests() {
   const {
     data,
     error,
-    isLoading,
-    mutate: revalidateTests,
+    isLoading
   } = useSWR<TestsResponse, AppError>(
     ["tests", { search, provider, status, page, per_page }],
     () => fetchTests({ search, provider, status, page, per_page }),
@@ -78,7 +64,6 @@ export function useTests() {
   /** Track local mutation loading state */
   const [isMutating, setIsMutating] = useState(false);
 
-  
   return {
     tests: data?.tests ?? [],
     total: data?.total ?? 0,

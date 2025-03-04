@@ -4,11 +4,12 @@ import { db } from "@bubba/db";
 import { auth } from "@/auth";
 import { 
   appErrors, 
-  type CloudTestResult,
   type ActionResponse 
 } from "./types";
 
-export async function getCloudTestDetails(input: { testId: string }): Promise<ActionResponse<CloudTestResult>> {
+import { Test } from "../../types";
+
+export async function getTest(input: { testId: string }): Promise<ActionResponse<Test>> {
   const { testId } = input;
 
   const session = await auth();
@@ -46,7 +47,7 @@ export async function getCloudTestDetails(input: { testId: string }): Promise<Ac
     };
 
     // Format the result to match the expected CloudTestResult structure
-    const result: CloudTestResult = {
+    const result: Test = {
       id: integrationResult.id,
       title: integrationResult.title || integrationResult.integrationName,
       description: typeof integrationResult.resultDetails === 'object' && integrationResult.resultDetails 
@@ -57,7 +58,7 @@ export async function getCloudTestDetails(input: { testId: string }): Promise<Ac
       resultDetails: integrationResult.resultDetails,
       label: integrationResult.label,
       assignedUserId: placeholderUser,
-      // Since we're looking at a single result entry
+      completedAt: integrationResult.completedAt,
     };
 
     return {

@@ -13,21 +13,6 @@ export const cloudTestDetailsInputSchema = z.object({
   testId: z.string()
 });
 
-export type CloudTestResult = {
-  id: string;
-  title: string;
-  description: string | null;
-  provider: string;
-  status: string;
-  resultDetails: any;
-  label: string | null;
-  assignedUserId: {
-    id: string;
-    name: string | null;
-    email: string | null;
-  };
-};
-
 // Type-safe action response
 export type ActionResponse<T> = Promise<
   { success: true; data: T } | { success: false; error: AppError }

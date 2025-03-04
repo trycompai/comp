@@ -5,7 +5,7 @@ export const testSchema = z.object({
   title: z.string(),
   description: z.string().nullable(),
   provider: z.string(),
-  results: z.string(),
+  status: z.string(),
   resultDetails: z.any(),
   label: z.string().nullable(),
   completedAt: z.date(),
@@ -16,26 +16,20 @@ export const testSchema = z.object({
   })
 });
 
+export const testsInputSchema = z.object({
+  search: z.string().optional(),
+  provider: z.enum(["AWS", "AZURE", "GCP"]).optional(),
+  status: z.string().optional(),
+  page: z.number().optional(),
+  per_page: z.number().optional(),
+});
+
 export type Test = z.infer<typeof testSchema>;
+export type TestsInput = z.infer<typeof testsInputSchema>;
 
 export interface TestsResponse {
   tests: Test[];
   total: number;
-}
-
-export interface CloudTest {
-  id: string;
-  title: string;
-  description: string | null;
-  provider: string;
-  status: string;
-  resultDetails: any;
-  label: string | null;
-  assignedUserId: {
-    id: string;
-    name: string | null;
-    email: string | null;
-  };
 }
 
 export interface AppError {

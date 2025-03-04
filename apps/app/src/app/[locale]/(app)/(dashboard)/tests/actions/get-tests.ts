@@ -2,15 +2,7 @@
 
 import { db } from "@bubba/db";
 import { authActionClient } from "@/actions/safe-action";
-import { z } from "zod";
-
-const testsInputSchema = z.object({
-  search: z.string().optional(),
-  provider: z.enum(["AWS", "AZURE", "GCP"]).optional(),
-  status: z.string().optional(),
-  page: z.number().optional(),
-  per_page: z.number().optional(),
-});
+import { testsInputSchema } from "../types";
 
 export const getTests = authActionClient
   .schema(testsInputSchema)

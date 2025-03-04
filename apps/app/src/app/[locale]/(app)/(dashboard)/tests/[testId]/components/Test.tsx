@@ -2,9 +2,9 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@bubba/ui/card";
 import { useI18n } from "@/locales/client";
-import { useCloudTestDetails } from "../../hooks/useCloudTest";
+import { useTest } from "../../hooks/useTest";
 import { Skeleton } from "@bubba/ui/skeleton";
-import { AlertCircle, CheckCircle2, Clock, Info, Play, XCircle } from "lucide-react";
+import { AlertCircle, CheckCircle2, Clock, Info, XCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@bubba/ui/alert";
 import { Label } from "@bubba/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@bubba/ui/tabs";
@@ -15,9 +15,9 @@ interface CloudTestDetailsProps {
   testId: string;
 }
 
-export function CloudTestDetails({ testId }: CloudTestDetailsProps) {
+export function Test({ testId }: CloudTestDetailsProps) {
   const t = useI18n();
-  const { cloudTest, isLoading, error } = useCloudTestDetails(testId);
+  const { cloudTest, isLoading, error } = useTest(testId);
 
   if (error) {
     return (
