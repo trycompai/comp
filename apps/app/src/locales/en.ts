@@ -196,6 +196,7 @@ export default {
     settings: "Settings",
     evidence: "Evidence Tasks",
     people: "People",
+    tests: "Cloud Tests",
   },
   sub_pages: {
     evidence: {
@@ -693,6 +694,75 @@ export default {
     },
     billing: {
       title: "Billing",
+    },
+  },
+  tests: {
+    name: "Cloud Tests",
+    title: "Cloud Tests",
+    actions: {
+      create: "Add Cloud Test",
+      clear: "Clear filters",
+      refresh: "Refresh",
+    },
+    empty: {
+      no_tests: {
+        title: "No cloud tests yet",
+        description: "Get started by creating your first cloud test.",
+      },
+      no_results: {
+        title: "No results found",
+        description: "No tests match your search",
+        description_with_filters: "Try adjusting your filters",
+      },
+    },
+    filters: {
+      search: "Search tests...",
+      role: "Filter by vendor",
+    },
+    register: {
+      title: "Add Cloud Test",
+      description: "Configure a new cloud compliance test.",
+      submit: "Create Test",
+      success: "Test created successfully",
+      invalid_json: "Invalid JSON configuration provided",
+      
+      title_field: {
+        label: "Test Title",
+        placeholder: "Enter test title"
+      },
+      description_field: {
+        label: "Description",
+        placeholder: "Enter test description"
+      },
+      provider: {
+        label: "Cloud Provider",
+        placeholder: "Select cloud provider"
+      },
+      config: {
+        label: "Test Configuration",
+        placeholder: "Enter JSON configuration for the test"
+      },
+      auth_config: {
+        label: "Authentication Configuration", 
+        placeholder: "Enter JSON authentication configuration"
+      }
+    },
+    assignedUser: {
+      title: "Assigned User",
+      placeholder: "Select a user to assign",
+      update_success: "User assignment updated successfully",
+      update_error: "Failed to update user assignment"
+    },
+    table: {
+      title: "Title",
+      provider: "Provider",
+      status: "Status",
+      severity: "Severity",
+      result: "Result",
+      createdAt: "Created At",
+      assignedUser: "Assigned User",
+      assignedUserEmpty: "Not Assigned",
+      no_results: "No results found",
     },
   },
   user_menu: {
