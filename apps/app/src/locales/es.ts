@@ -193,7 +193,8 @@ export default {
     integrations: "Integraciones",
     settings: "Configuraciones",
     evidence: "Tareas de Evidencia",
-    people: "Personas"
+    people: "Personas",
+    tests: "Pruebas en la Nube"
   },
   auth: {
     title: "Automatiza el cumplimiento de SOC 2, ISO 27001 y GDPR con IA.",
@@ -888,6 +889,74 @@ export default {
       copyLink: "Copiar enlace",
       openLink: "Abrir enlace",
       deleteLink: "Eliminar enlace"
+    }
+  },
+  tests: {
+    name: "Pruebas en la Nube",
+    title: "Pruebas en la Nube",
+    actions: {
+      create: "Agregar Prueba en la Nube",
+      clear: "Limpiar filtros",
+      refresh: "Actualizar"
+    },
+    empty: {
+      no_tests: {
+        title: "No hay pruebas en la nube aún",
+        description: "Comienza creando tu primera prueba en la nube."
+      },
+      no_results: {
+        title: "No se encontraron resultados",
+        description: "No hay pruebas que coincidan con tu búsqueda",
+        description_with_filters: "Intenta ajustar tus filtros"
+      }
+    },
+    filters: {
+      search: "Buscar pruebas...",
+      role: "Filtrar por proveedor"
+    },
+    register: {
+      title: "Agregar Prueba en la Nube",
+      description: "Configura una nueva prueba de cumplimiento en la nube.",
+      submit: "Crear Prueba",
+      success: "Prueba creada con éxito",
+      invalid_json: "Configuración JSON inválida proporcionada",
+      title_field: {
+        label: "Título de la Prueba",
+        placeholder: "Ingresa el título de la prueba"
+      },
+      description_field: {
+        label: "Descripción",
+        placeholder: "Ingresa la descripción de la prueba"
+      },
+      provider: {
+        label: "Proveedor de Nube",
+        placeholder: "Selecciona el proveedor de nube"
+      },
+      config: {
+        label: "Configuración de la Prueba",
+        placeholder: "Ingresa la configuración JSON para la prueba"
+      },
+      auth_config: {
+        label: "Configuración de Autenticación",
+        placeholder: "Ingresa la configuración JSON de autenticación"
+      }
+    },
+    assignedUser: {
+      title: "Usuario Asignado",
+      placeholder: "Selecciona un usuario para asignar",
+      update_success: "Asignación de usuario actualizada con éxito",
+      update_error: "Error al actualizar la asignación de usuario"
+    },
+    table: {
+      title: "Título",
+      provider: "Proveedor",
+      status: "Estado",
+      severity: "Severidad",
+      result: "Resultado",
+      createdAt: "Creado En",
+      assignedUser: "Usuario Asignado",
+      assignedUserEmpty: "No Asignado",
+      no_results: "No se encontraron resultados"
     }
   }
 } as const;

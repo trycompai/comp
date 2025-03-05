@@ -139,6 +139,7 @@ files:
     sidebar.settings: f4f70727dc34561dfde1a3c529b6205c
     sidebar.evidence: 63b1eb1a39194d82271ec937fba19714
     sidebar.people: 78386ec8f2845742c324a3d7d3e800ff
+    sidebar.tests: 107f3983ed2f362df6195c163001fe7b
     sub_pages.evidence.title: c7b2a4d55fbea4d044644cf5b2b45d29
     sub_pages.evidence.list: d2b5512c16318cc8738eff7dbe7de9ca
     sub_pages.evidence.overview: 376eeb70e956ecef2611d88a28269c5b
@@ -463,6 +464,46 @@ files:
     settings.api_keys.revoked_error: cea5338af704d2fb6ec7cf7fbfbd3b1a
     settings.api_keys.done: f92965e2c8a7afb3c1b9a5c09a263636
     settings.billing.title: 780c462e85ba4399a5d42e88f69a15ca
+    tests.name: 107f3983ed2f362df6195c163001fe7b
+    tests.title: 107f3983ed2f362df6195c163001fe7b
+    tests.actions.create: 348a2d59fd6abf9c9ba4e1ce664f6fc5
+    tests.actions.clear: 0b275442d6556cff30b75f37f1918899
+    tests.actions.refresh: 63a6a88c066880c5ac42394a22803ca6
+    tests.empty.no_tests.title: 32aca943b703843c5449d5ebb8f82845
+    tests.empty.no_tests.description: b96a1b141b00cb3def88e4b16db515aa
+    tests.empty.no_results.title: e576c23d915755d83e2d1f47bd9f6c22
+    tests.empty.no_results.description: 5da0e642cba804156894b71bf658d9a2
+    tests.empty.no_results.description_with_filters: 2b70f835ed5a08e817ec9388ce25b41a
+    tests.filters.search: ca55cc711b6e95604114b7ffdceb1e0e
+    tests.filters.role: fe488cfbecfce1ba6ef7dda55e893b97
+    tests.register.title: 348a2d59fd6abf9c9ba4e1ce664f6fc5
+    tests.register.description: 243d854430dae18b18e891b722bd0baf
+    tests.register.submit: c2c007afa9a53bf9d8074954247a01e3
+    tests.register.success: 10f2c6e0b8f85fe932302e8df155abba
+    tests.register.invalid_json: 7d7d080d041e180f8742b65d0df57224
+    tests.register.title_field.label: cc12f4fcabfb7564ef721f04a37bae6f
+    tests.register.title_field.placeholder: 8978c8715f7381e3007038001f13f3cd
+    tests.register.description_field.label: b5a7adde1af5c87d7fd797b6245c2a39
+    tests.register.description_field.placeholder: 8c04a8ab1664bdfb55cfc54d6f6c8a96
+    tests.register.provider.label: d8613296184195d6eec8552a09204d36
+    tests.register.provider.placeholder: 1ae27ac8ad91f0165c176c34dd34e81c
+    tests.register.config.label: 540caa299a719ee320cf416ffae7adca
+    tests.register.config.placeholder: cf8ec1376b10fe5a13fa36ebdcd497a7
+    tests.register.auth_config.label: 91f9d6a6e1f585d434d13e9f581d347b
+    tests.register.auth_config.placeholder: 6909c5abd5f0a9e9a96b4a0233722cd4
+    tests.assignedUser.title: 28a7de43bb5297bf6122425d52210f93
+    tests.assignedUser.placeholder: 94e0a77bea61cc2b59b959edec559484
+    tests.assignedUser.update_success: be0abe778342ba6ff2b248c3b1a8c84a
+    tests.assignedUser.update_error: b350c4fdb815a366d4adb3d918b8aab1
+    tests.table.title: b78a3223503896721cca1303f776159b
+    tests.table.provider: 27703c8f150ac4bb0a3a83a7857353af
+    tests.table.status: ec53a8c4f07baed5d8825072c89799be
+    tests.table.severity: 007cc9547ae8884ad597cd92ba505422
+    tests.table.result: 8eea62084ca7e541d918e823422bd82e
+    tests.table.createdAt: 6e9a375edaa0f55f2b86e1f415a33172
+    tests.table.assignedUser: 28a7de43bb5297bf6122425d52210f93
+    tests.table.assignedUserEmpty: f5dcfb95878279f84cc6bf4de3090dbb
+    tests.table.no_results: e576c23d915755d83e2d1f47bd9f6c22
     user_menu.theme: d721757161f7f70c5b0949fdb6ec2c30
     user_menu.language: 4994a8ffeba4ac3140beb89e8d41f174
     user_menu.sign_out: c87aacf5673fada1108c9f809d354311

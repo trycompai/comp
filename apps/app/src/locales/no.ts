@@ -193,7 +193,8 @@ export default {
     integrations: "Integrasjoner",
     settings: "Innstillinger",
     evidence: "Bevisoppgaver",
-    people: "Personer"
+    people: "Personer",
+    tests: "Skytester"
   },
   auth: {
     title: "Automatiser SOC 2, ISO 27001 og GDPR-overholdelse med AI.",
@@ -888,6 +889,74 @@ export default {
       copyLink: "Kopier lenke",
       openLink: "Åpne lenke",
       deleteLink: "Slett lenke"
+    }
+  },
+  tests: {
+    name: "Skytester",
+    title: "Skytester",
+    actions: {
+      create: "Legg til skytest",
+      clear: "Fjern filtre",
+      refresh: "Oppdater"
+    },
+    empty: {
+      no_tests: {
+        title: "Ingen skytester ennå",
+        description: "Kom i gang med å opprette din første skytest."
+      },
+      no_results: {
+        title: "Ingen resultater funnet",
+        description: "Ingen tester samsvarer med søket ditt",
+        description_with_filters: "Prøv å justere filtrene dine"
+      }
+    },
+    filters: {
+      search: "Søk etter tester...",
+      role: "Filtrer etter leverandør"
+    },
+    register: {
+      title: "Legg til skytest",
+      description: "Konfigurer en ny skyoverholdelsestest.",
+      submit: "Opprett test",
+      success: "Test opprettet vellykket",
+      invalid_json: "Ugyldig JSON-konfigurasjon oppgitt",
+      title_field: {
+        label: "Testtittel",
+        placeholder: "Skriv inn testtittel"
+      },
+      description_field: {
+        label: "Beskrivelse",
+        placeholder: "Skriv inn testbeskrivelse"
+      },
+      provider: {
+        label: "Skyleverandør",
+        placeholder: "Velg skyleverandør"
+      },
+      config: {
+        label: "Testkonfigurasjon",
+        placeholder: "Skriv inn JSON-konfigurasjon for testen"
+      },
+      auth_config: {
+        label: "Autentiseringskonfigurasjon",
+        placeholder: "Skriv inn JSON-autentiseringskonfigurasjon"
+      }
+    },
+    assignedUser: {
+      title: "Tildelt bruker",
+      placeholder: "Velg en bruker å tildele",
+      update_success: "Brukertildeling oppdatert vellykket",
+      update_error: "Kunne ikke oppdatere brukertildeling"
+    },
+    table: {
+      title: "Tittel",
+      provider: "Leverandør",
+      status: "Status",
+      severity: "Alvorlighetsgrad",
+      result: "Resultat",
+      createdAt: "Opprettet den",
+      assignedUser: "Tildelt bruker",
+      assignedUserEmpty: "Ikke tildelt",
+      no_results: "Ingen resultater funnet"
     }
   }
 } as const;

@@ -193,7 +193,8 @@ export default {
     integrations: "Intégrations",
     settings: "Paramètres",
     evidence: "Tâches de preuve",
-    people: "Personnes"
+    people: "Personnes",
+    tests: "Tests Cloud"
   },
   auth: {
     title: "Automatisez la conformité SOC 2, ISO 27001 et RGPD avec l'IA.",
@@ -888,6 +889,74 @@ export default {
       copyLink: "Copier le lien",
       openLink: "Ouvrir le lien",
       deleteLink: "Supprimer le lien"
+    }
+  },
+  tests: {
+    name: "Tests Cloud",
+    title: "Tests Cloud",
+    actions: {
+      create: "Ajouter un test Cloud",
+      clear: "Effacer les filtres",
+      refresh: "Rafraîchir"
+    },
+    empty: {
+      no_tests: {
+        title: "Aucun test cloud pour le moment",
+        description: "Commencez par créer votre premier test cloud."
+      },
+      no_results: {
+        title: "Aucun résultat trouvé",
+        description: "Aucun test ne correspond à votre recherche",
+        description_with_filters: "Essayez d'ajuster vos filtres"
+      }
+    },
+    filters: {
+      search: "Rechercher des tests...",
+      role: "Filtrer par fournisseur"
+    },
+    register: {
+      title: "Ajouter un test Cloud",
+      description: "Configurer un nouveau test de conformité cloud.",
+      submit: "Créer un test",
+      success: "Test créé avec succès",
+      invalid_json: "Configuration JSON invalide fournie",
+      title_field: {
+        label: "Titre du test",
+        placeholder: "Entrez le titre du test"
+      },
+      description_field: {
+        label: "Description",
+        placeholder: "Entrez la description du test"
+      },
+      provider: {
+        label: "Fournisseur Cloud",
+        placeholder: "Sélectionnez le fournisseur cloud"
+      },
+      config: {
+        label: "Configuration du test",
+        placeholder: "Entrez la configuration JSON pour le test"
+      },
+      auth_config: {
+        label: "Configuration d'authentification",
+        placeholder: "Entrez la configuration d'authentification JSON"
+      }
+    },
+    assignedUser: {
+      title: "Utilisateur assigné",
+      placeholder: "Sélectionnez un utilisateur à assigner",
+      update_success: "Affectation de l'utilisateur mise à jour avec succès",
+      update_error: "Échec de la mise à jour de l'affectation de l'utilisateur"
+    },
+    table: {
+      title: "Titre",
+      provider: "Fournisseur",
+      status: "Statut",
+      severity: "Gravité",
+      result: "Résultat",
+      createdAt: "Créé le",
+      assignedUser: "Utilisateur assigné",
+      assignedUserEmpty: "Non assigné",
+      no_results: "Aucun résultat trouvé"
     }
   }
 } as const;

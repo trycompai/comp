@@ -193,7 +193,8 @@ export default {
     integrations: "Integrações",
     settings: "Configurações",
     evidence: "Tarefas de Evidência",
-    people: "Pessoas"
+    people: "Pessoas",
+    tests: "Testes em Nuvem"
   },
   auth: {
     title: "Automatize a conformidade com SOC 2, ISO 27001 e GDPR com IA.",
@@ -858,6 +859,74 @@ export default {
       copyLink: "Copiar link",
       openLink: "Abrir link",
       deleteLink: "Excluir link"
+    }
+  },
+  tests: {
+    name: "Testes em Nuvem",
+    title: "Testes em Nuvem",
+    actions: {
+      create: "Adicionar Teste em Nuvem",
+      clear: "Limpar filtros",
+      refresh: "Atualizar"
+    },
+    empty: {
+      no_tests: {
+        title: "Nenhum teste em nuvem ainda",
+        description: "Comece criando seu primeiro teste em nuvem."
+      },
+      no_results: {
+        title: "Nenhum resultado encontrado",
+        description: "Nenhum teste corresponde à sua pesquisa",
+        description_with_filters: "Tente ajustar seus filtros"
+      }
+    },
+    filters: {
+      search: "Pesquisar testes...",
+      role: "Filtrar por fornecedor"
+    },
+    register: {
+      title: "Adicionar Teste em Nuvem",
+      description: "Configurar um novo teste de conformidade em nuvem.",
+      submit: "Criar Teste",
+      success: "Teste criado com sucesso",
+      invalid_json: "Configuração JSON inválida fornecida",
+      title_field: {
+        label: "Título do Teste",
+        placeholder: "Digite o título do teste"
+      },
+      description_field: {
+        label: "Descrição",
+        placeholder: "Digite a descrição do teste"
+      },
+      provider: {
+        label: "Fornecedor de Nuvem",
+        placeholder: "Selecione o fornecedor de nuvem"
+      },
+      config: {
+        label: "Configuração do Teste",
+        placeholder: "Digite a configuração JSON para o teste"
+      },
+      auth_config: {
+        label: "Configuração de Autenticação",
+        placeholder: "Digite a configuração JSON de autenticação"
+      }
+    },
+    assignedUser: {
+      title: "Usuário Atribuído",
+      placeholder: "Selecione um usuário para atribuir",
+      update_success: "Atribuição de usuário atualizada com sucesso",
+      update_error: "Falha ao atualizar a atribuição de usuário"
+    },
+    table: {
+      title: "Título",
+      provider: "Fornecedor",
+      status: "Status",
+      severity: "Severidade",
+      result: "Resultado",
+      createdAt: "Criado Em",
+      assignedUser: "Usuário Atribuído",
+      assignedUserEmpty: "Não Atribuído",
+      no_results: "Nenhum resultado encontrado"
     }
   }
 } as const;
