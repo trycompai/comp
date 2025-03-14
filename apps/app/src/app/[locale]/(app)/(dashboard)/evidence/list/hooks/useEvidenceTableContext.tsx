@@ -1,6 +1,14 @@
 "use client";
 
-import { createContext, useContext, useMemo, type ReactNode } from "react";
+import {
+	createContext,
+	useContext,
+	useMemo,
+	useState,
+	useRef,
+	useEffect,
+	type ReactNode,
+} from "react";
 import { useQueryState } from "nuqs";
 import type { Frequency, Departments } from "@bubba/db";
 import { useOrganizationEvidenceTasks } from "../../hooks/useEvidenceTasks";
@@ -47,6 +55,7 @@ interface EvidenceTableContextType {
 		  }
 		| undefined;
 	isLoading: boolean;
+	isSearching: boolean;
 	error: Error | undefined;
 
 	// Derived data
@@ -76,6 +85,10 @@ export function EvidenceTableProvider({ children }: { children: ReactNode }) {
 		defaultValue: "10",
 	});
 
+	// Track if this is initial load or a search/filter update
+	const initialLoadCompleted = useRef(false);
+	const [isSearching, setIsSearching] = useState(false);
+
 	const currentPage = Number.parseInt(page, 10);
 	const currentPageSize = Number.parseInt(pageSize, 10);
 
@@ -96,6 +109,44 @@ export function EvidenceTableProvider({ children }: { children: ReactNode }) {
 		page: currentPage,
 		pageSize: currentPageSize,
 	});
+
+	// Track when search params change
+	useEffect(() => {
+		if (initialLoadCompleted.current) {
+			setIsSearching(true);
+		}
+	}, [
+		search,
+		status,
+		frequency,
+		department,
+		assigneeId,
+		relevance,
+		page,
+		pageSize,
+	]);
+
+	// Track when loading changes
+	useEffect(() => {
+		if (isLoading === false) {
+			// Small delay to ensure UI transitions properly
+			setTimeout(() => {
+				initialLoadCompleted.current = true;
+				setIsSearching(false);
+			}, 50);
+		}
+	}, [isLoading]);
+
+	// Additional safety reset for isSearching when data changes
+	useEffect(() => {
+		if (rawEvidenceTasks && isSearching) {
+			// If we have data, ensure isSearching is eventually set to false
+			const timer = setTimeout(() => {
+				setIsSearching(false);
+			}, 100);
+			return () => clearTimeout(timer);
+		}
+	}, [rawEvidenceTasks, isSearching]);
 
 	// Format data for the table
 	const evidenceTasks = useMemo(() => {
@@ -156,7 +207,7 @@ export function EvidenceTableProvider({ children }: { children: ReactNode }) {
 		setPage("1"); // Reset to first page when clearing filters
 	};
 
-	// Create context value
+	// Create context value including the new isSearching property
 	const contextValue = {
 		// State
 		search,
@@ -183,6 +234,7 @@ export function EvidenceTableProvider({ children }: { children: ReactNode }) {
 		evidenceTasks,
 		pagination,
 		isLoading,
+		isSearching,
 		error,
 
 		// Derived data

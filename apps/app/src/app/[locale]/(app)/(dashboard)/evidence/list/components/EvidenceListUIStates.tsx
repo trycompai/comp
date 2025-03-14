@@ -13,16 +13,9 @@ export function EvidenceListSkeleton() {
 	return (
 		<div className="w-full">
 			<div className="space-y-4 mb-6">
-				{/* Summary cards skeleton - matching the style in EvidenceSummaryCards */}
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-					{["empty", "draft", "review", "uptodate"].map((type) => (
-						<Skeleton key={`skeleton-${type}`} className="h-[120px] w-full" />
-					))}
-				</div>
-
 				{/* Filter controls skeleton */}
-				<div className="flex flex-wrap items-center gap-2">
-					<div className="w-full max-w-sm h-10 bg-muted animate-pulse rounded" />
+				<div className="flex items-center gap-3">
+					<div className="w-full max-w-md h-10 bg-muted animate-pulse rounded" />
 					<div className="h-10 w-40 bg-muted animate-pulse rounded" />
 				</div>
 			</div>

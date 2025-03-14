@@ -12,6 +12,7 @@ import {
 	EvidenceErrorState,
 	EvidenceEmptyState,
 } from "./EvidenceUIStates";
+import { EvidenceSummaryCards } from "../../list/components/EvidenceSummaryCards";
 
 export const EvidenceOverview = () => {
 	const { data, isLoading, error } = useEvidenceDashboard();
@@ -31,6 +32,9 @@ export const EvidenceOverview = () => {
 
 	return (
 		<div className="space-y-8">
+			{/* Evidence summary statistics cards */}
+			<EvidenceSummaryCards />
+
 			{/* Charts */}
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 				<Card>

@@ -18,6 +18,13 @@ export const ChartSkeleton = ({ height = "h-64" }: { height?: string }) => (
 export const EvidenceOverviewSkeleton = () => {
 	return (
 		<div className="space-y-8">
+			{/* Summary cards skeleton */}
+			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+				{["empty", "draft", "review", "uptodate"].map((type) => (
+					<Skeleton key={`skeleton-${type}`} className="h-[120px] w-full" />
+				))}
+			</div>
+
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 				{/* Department Chart Skeleton */}
 				<Card>
