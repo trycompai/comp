@@ -1,7 +1,12 @@
-import { authConfig } from "@/auth/config";
-import NextAuth from "next-auth";
+import { auth as authMiddleware } from "@/auth";
 import { createI18nMiddleware } from "next-international/middleware";
 import { type NextRequest, NextResponse } from "next/server";
+
+const I18nMiddleware = createI18nMiddleware({
+	locales: ["en", "es", "fr", "no", "pt"],
+	defaultLocale: "en",
+	urlMappingStrategy: "rewrite",
+});
 
 export const config = {
 	matcher: [
@@ -10,45 +15,31 @@ export const config = {
 	runtime: "nodejs",
 };
 
-const I18nMiddleware = createI18nMiddleware({
-	locales: ["en", "es", "fr", "no", "pt"],
-	defaultLocale: "en",
-	urlMappingStrategy: "rewrite",
-});
+export async function middleware(request: NextRequest) {
+	const session = await authMiddleware();
+	const nextUrl = request.nextUrl;
 
-const { auth } = NextAuth(authConfig);
+	if (!session?.user && nextUrl.pathname !== "/auth") {
+		return NextResponse.redirect(new URL("/auth", nextUrl.origin));
+	}
 
-export default auth(async function middleware(req: NextRequest) {
-	try {
-		const session = await auth();
-		const nextUrl = req.nextUrl;
+	if (session?.user.id && nextUrl.pathname === "/auth") {
+		return NextResponse.redirect(new URL("/", nextUrl.origin));
+	}
 
-		if (!session?.user && nextUrl.pathname !== "/auth") {
+	if (nextUrl.pathname === "/") {
+		if (!session?.user) {
 			return NextResponse.redirect(new URL("/auth", nextUrl.origin));
 		}
 
-		if (session?.user.id && nextUrl.pathname === "/auth") {
-			return NextResponse.redirect(new URL("/", nextUrl.origin));
-		}
-
-		// Only handle root path redirects
-		if (nextUrl.pathname === "/") {
-			if (!session?.user) {
-				return NextResponse.redirect(new URL("/auth", nextUrl.origin));
-			}
-
-			// If authenticated, let the page handle the redirection
-			// This way we avoid Prisma in middleware
-			return NextResponse.next();
-		}
-
-		const response = I18nMiddleware(req);
-
-		response.headers.set("x-pathname", nextUrl.pathname);
-
-		return response;
-	} catch (error) {
-		console.error("Middleware error:", error);
-		return new NextResponse("Internal Server Error", { status: 500 });
+		// If authenticated, let the page handle the redirection
+		// This way we avoid Prisma in middleware
+		return NextResponse.next();
 	}
-});
+
+	const response = I18nMiddleware(request);
+
+	response.headers.set("x-pathname", nextUrl.pathname);
+
+	return response;
+}
