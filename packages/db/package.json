@@ -27,7 +27,7 @@
     "@neondatabase/serverless": "^0.10.4",
     "@prisma/adapter-neon": "^6.5.0",
     "@prisma/client": "^6.5.0",
-    "@prisma/extension-accelerate": "^1.2.2",
+    "@prisma/extension-accelerate": "^1.3.0",
     "prisma": "^6.5.0"
   },
   "devDependencies": {

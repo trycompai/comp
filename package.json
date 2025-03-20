@@ -28,7 +28,7 @@
   ],
   "dependencies": {
     "@aws-sdk/client-s3": "^3.758.0",
-    "@aws-sdk/client-securityhub": "^3.758.0",
+    "@aws-sdk/client-securityhub": "^3.765.0",
     "@azure/core-http": "^3.0.5",
     "@azure/identity": "^4.8.0",
     "@manypkg/cli": "^0.23.0",
@@ -40,6 +40,7 @@
     "d3": "^7.9.0",
     "gitmoji": "^1.1.1",
     "gray-matter": "^4.0.3",
+    "next": "^15.3.0-canary.14",
     "pg": "^8.14.1",
     "sharp": "^0.33.5",
     "use-debounce": "^10.0.4"
