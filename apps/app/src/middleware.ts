@@ -1,6 +1,7 @@
+import { authConfig } from "@/auth/config";
+import NextAuth from "next-auth";
 import { createI18nMiddleware } from "next-international/middleware";
-import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { type NextRequest, NextResponse } from "next/server";
 
 export const config = {
 	matcher: [
@@ -15,9 +16,12 @@ const I18nMiddleware = createI18nMiddleware({
 	urlMappingStrategy: "rewrite",
 });
 
-export default auth((req) => {
+const { auth } = NextAuth(authConfig);
+
+export default auth(async function middleware(req: NextRequest) {
 	try {
-		const { auth: session, nextUrl } = req;
+		const session = await auth();
+		const nextUrl = req.nextUrl;
 
 		if (!session?.user && nextUrl.pathname !== "/auth") {
 			return NextResponse.redirect(new URL("/auth", nextUrl.origin));
