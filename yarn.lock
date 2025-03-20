@@ -1226,9 +1226,13 @@
 "@bubba/analytics@packages/analytics":
   version "workspace:packages/analytics"
   resolved "workspace:packages/analytics"
+  devDependencies:
+    "@types/node" "^22.13.10"
+    "@types/react" "19.0.10"
+    "@types/react-dom" "19.0.4"
   dependencies:
-    posthog-js "^1.215.3"
-    posthog-node "^4.4.1"
+    posthog-js "^1.232.0"
+    posthog-node "^4.10.1"
 
 "@bubba/app@apps/app", "@bubba/app@workspace:*":
   version "workspace:apps/app"
@@ -1329,7 +1333,7 @@
     "@neondatabase/serverless" "^0.10.4"
     "@prisma/adapter-neon" "^6.5.0"
     "@prisma/client" "^6.5.0"
-    "@prisma/extension-accelerate" "^1.2.2"
+    "@prisma/extension-accelerate" "^1.3.0"
     prisma "^6.5.0"
 
 "@bubba/email@packages/email":
@@ -2272,11 +2276,6 @@
   resolved "https://registry.npmjs.org/@next/env/-/env-15.0.4.tgz"
   integrity sha512-WNRvtgnRVDD4oM8gbUcRc27IAhaL4eXQ/2ovGbgLnPGUvdyDr8UdXP4Q/IBDdAdojnD2eScryIDirv0YUCjUVw==
 
-"@next/env@15.2.3":
-  version "15.2.3"
-  resolved "https://registry.npmjs.org/@next/env/-/env-15.2.3.tgz"
-  integrity sha512-a26KnbW9DFEUsSxAxKBORR/uD9THoYoKbkpFywMN/AFvboTt94b8+g/07T8J6ACsdLag8/PDU60ov4rPxRAixw==
-
 "@next/env@15.3.0-canary.14":
   version "15.3.0-canary.14"
   resolved "https://registry.npmjs.org/@next/env/-/env-15.3.0-canary.14.tgz"
@@ -2286,11 +2285,6 @@
   version "15.0.4"
   resolved "https://registry.npmjs.org/@next/swc-darwin-arm64/-/swc-darwin-arm64-15.0.4.tgz"
   integrity sha512-QecQXPD0yRHxSXWL5Ff80nD+A56sUXZG9koUsjWJwA2Z0ZgVQfuy7gd0/otjxoOovPVHR2eVEvPMHbtZP+pf9w==
-
-"@next/swc-darwin-arm64@15.2.3":
-  version "15.2.3"
-  resolved "https://registry.npmjs.org/@next/swc-darwin-arm64/-/swc-darwin-arm64-15.2.3.tgz"
-  integrity sha512-uaBhA8aLbXLqwjnsHSkxs353WrRgQgiFjduDpc7YXEU0B54IKx3vU+cxQlYwPCyC8uYEEX7THhtQQsfHnvv8dw==
 
 "@next/swc-darwin-arm64@15.3.0-canary.14":
   version "15.3.0-canary.14"
@@ -2302,11 +2296,6 @@
   resolved "https://registry.npmjs.org/@next/swc-darwin-x64/-/swc-darwin-x64-15.0.4.tgz"
   integrity sha512-pb7Bye3y1Og3PlCtnz2oO4z+/b3pH2/HSYkLbL0hbVuTGil7fPen8/3pyyLjdiTLcFJ+ymeU3bck5hd4IPFFCA==
 
-"@next/swc-darwin-x64@15.2.3":
-  version "15.2.3"
-  resolved "https://registry.npmjs.org/@next/swc-darwin-x64/-/swc-darwin-x64-15.2.3.tgz"
-  integrity sha512-pVwKvJ4Zk7h+4hwhqOUuMx7Ib02u3gDX3HXPKIShBi9JlYllI0nU6TWLbPT94dt7FSi6mSBhfc2JrHViwqbOdw==
-
 "@next/swc-darwin-x64@15.3.0-canary.14":
   version "15.3.0-canary.14"
   resolved "https://registry.npmjs.org/@next/swc-darwin-x64/-/swc-darwin-x64-15.3.0-canary.14.tgz"
@@ -2316,11 +2305,6 @@
   version "15.0.4"
   resolved "https://registry.npmjs.org/@next/swc-linux-arm64-gnu/-/swc-linux-arm64-gnu-15.0.4.tgz"
   integrity sha512-12oSaBFjGpB227VHzoXF3gJoK2SlVGmFJMaBJSu5rbpaoT5OjP5OuCLuR9/jnyBF1BAWMs/boa6mLMoJPRriMA==
-
-"@next/swc-linux-arm64-gnu@15.2.3":
-  version "15.2.3"
-  resolved "https://registry.npmjs.org/@next/swc-linux-arm64-gnu/-/swc-linux-arm64-gnu-15.2.3.tgz"
-  integrity sha512-50ibWdn2RuFFkOEUmo9NCcQbbV9ViQOrUfG48zHBCONciHjaUKtHcYFiCwBVuzD08fzvzkWuuZkd4AqbvKO7UQ==
 
 "@next/swc-linux-arm64-gnu@15.3.0-canary.14":
   version "15.3.0-canary.14"
@@ -2332,11 +2316,6 @@
   resolved "https://registry.npmjs.org/@next/swc-linux-arm64-musl/-/swc-linux-arm64-musl-15.0.4.tgz"
   integrity sha512-QARO88fR/a+wg+OFC3dGytJVVviiYFEyjc/Zzkjn/HevUuJ7qGUUAUYy5PGVWY1YgTzeRYz78akQrVQ8r+sMjw==
 
-"@next/swc-linux-arm64-musl@15.2.3":
-  version "15.2.3"
-  resolved "https://registry.npmjs.org/@next/swc-linux-arm64-musl/-/swc-linux-arm64-musl-15.2.3.tgz"
-  integrity sha512-2gAPA7P652D3HzR4cLyAuVYwYqjG0mt/3pHSWTCyKZq/N/dJcUAEoNQMyUmwTZWCJRKofB+JPuDVP2aD8w2J6Q==
-
 "@next/swc-linux-arm64-musl@15.3.0-canary.14":
   version "15.3.0-canary.14"
   resolved "https://registry.npmjs.org/@next/swc-linux-arm64-musl/-/swc-linux-arm64-musl-15.3.0-canary.14.tgz"
@@ -2346,11 +2325,6 @@
   version "15.0.4"
   resolved "https://registry.npmjs.org/@next/swc-linux-x64-gnu/-/swc-linux-x64-gnu-15.0.4.tgz"
   integrity sha512-Z50b0gvYiUU1vLzfAMiChV8Y+6u/T2mdfpXPHraqpypP7yIT2UV9YBBhcwYkxujmCvGEcRTVWOj3EP7XW/wUnw==
-
-"@next/swc-linux-x64-gnu@15.2.3":
-  version "15.2.3"
-  resolved "https://registry.npmjs.org/@next/swc-linux-x64-gnu/-/swc-linux-x64-gnu-15.2.3.tgz"
-  integrity sha512-ODSKvrdMgAJOVU4qElflYy1KSZRM3M45JVbeZu42TINCMG3anp7YCBn80RkISV6bhzKwcUqLBAmOiWkaGtBA9w==
 
 "@next/swc-linux-x64-gnu@15.3.0-canary.14":
   version "15.3.0-canary.14"
@@ -2362,11 +2336,6 @@
   resolved "https://registry.npmjs.org/@next/swc-linux-x64-musl/-/swc-linux-x64-musl-15.0.4.tgz"
   integrity sha512-7H9C4FAsrTAbA/ENzvFWsVytqRYhaJYKa2B3fyQcv96TkOGVMcvyS6s+sj4jZlacxxTcn7ygaMXUPkEk7b78zw==
 
-"@next/swc-linux-x64-musl@15.2.3":
-  version "15.2.3"
-  resolved "https://registry.npmjs.org/@next/swc-linux-x64-musl/-/swc-linux-x64-musl-15.2.3.tgz"
-  integrity sha512-ZR9kLwCWrlYxwEoytqPi1jhPd1TlsSJWAc+H/CJHmHkf2nD92MQpSRIURR1iNgA/kuFSdxB8xIPt4p/T78kwsg==
-
 "@next/swc-linux-x64-musl@15.3.0-canary.14":
   version "15.3.0-canary.14"
   resolved "https://registry.npmjs.org/@next/swc-linux-x64-musl/-/swc-linux-x64-musl-15.3.0-canary.14.tgz"
@@ -2377,11 +2346,6 @@
   resolved "https://registry.npmjs.org/@next/swc-win32-arm64-msvc/-/swc-win32-arm64-msvc-15.0.4.tgz"
   integrity sha512-Z/v3WV5xRaeWlgJzN9r4PydWD8sXV35ywc28W63i37G2jnUgScA4OOgS8hQdiXLxE3gqfSuHTicUhr7931OXPQ==
 
-"@next/swc-win32-arm64-msvc@15.2.3":
-  version "15.2.3"
-  resolved "https://registry.npmjs.org/@next/swc-win32-arm64-msvc/-/swc-win32-arm64-msvc-15.2.3.tgz"
-  integrity sha512-+G2FrDcfm2YDbhDiObDU/qPriWeiz/9cRR0yMWJeTLGGX6/x8oryO3tt7HhodA1vZ8r2ddJPCjtLcpaVl7TE2Q==
-
 "@next/swc-win32-arm64-msvc@15.3.0-canary.14":
   version "15.3.0-canary.14"
   resolved "https://registry.npmjs.org/@next/swc-win32-arm64-msvc/-/swc-win32-arm64-msvc-15.3.0-canary.14.tgz"
@@ -2391,11 +2355,6 @@
   version "15.0.4"
   resolved "https://registry.npmjs.org/@next/swc-win32-x64-msvc/-/swc-win32-x64-msvc-15.0.4.tgz"
   integrity sha512-NGLchGruagh8lQpDr98bHLyWJXOBSmkEAfK980OiNBa7vNm6PsNoPvzTfstT78WyOeMRQphEQ455rggd7Eo+Dw==
-
-"@next/swc-win32-x64-msvc@15.2.3":
-  version "15.2.3"
-  resolved "https://registry.npmjs.org/@next/swc-win32-x64-msvc/-/swc-win32-x64-msvc-15.2.3.tgz"
-  integrity sha512-gHYS9tc+G2W0ZC8rBL+H6RdtXIyk40uLiaos0yj5US85FNhbFEndMA2nW3z47nzOWiSvXTZ5kBClc3rD0zJg0w==
 
 "@next/swc-win32-x64-msvc@15.3.0-canary.14":
   version "15.3.0-canary.14"
@@ -2914,7 +2873,7 @@
   resolved "https://registry.npmjs.org/@prisma/engines-version/-/engines-version-6.5.0-73.173f8d54f8d52e692c7e27e72a88314ec7aeff60.tgz"
   integrity sha512-iK3EmiVGFDCmXjSpdsKGNqy9hOdLnvYBrJB61far/oP03hlIxrb04OWmDjNTwtmZ3UZdA5MCvI+f+3k2jPTflQ==
 
-"@prisma/extension-accelerate@^1.2.2":
+"@prisma/extension-accelerate@^1.3.0":
   version "1.3.0"
   resolved "https://registry.npmjs.org/@prisma/extension-accelerate/-/extension-accelerate-1.3.0.tgz"
   integrity sha512-W41D+kWejVJvMFEh45oYIU0VY+lIE3hh5vyHLHxgpyOfF+EHzSr8EIPT9kPRJg1FTYR7WGutXi64nyaNFUJ06A==
@@ -5480,14 +5439,14 @@
   dependencies:
     csstype "^3.0.2"
 
-"@types/react@^19.0.0", "@types/react@^19.0.12":
+"@types/react@^19.0.0":
   version "19.0.12"
   resolved "https://registry.npmjs.org/@types/react/-/react-19.0.12.tgz"
   integrity sha512-V6Ar115dBDrjbtXSrS+/Oruobc+qVbbUxDFC1RSbRqLt5SYvxxyIDrSC85RWml54g+jfNeEMZhEj7wW07ONQhA==
   dependencies:
     csstype "^3.0.2"
 
-"@types/react-dom@*", "@types/react-dom@19.0.4", "@types/react-dom@^19.0.0", "@types/react-dom@^19.0.4":
+"@types/react-dom@*", "@types/react-dom@19.0.4", "@types/react-dom@^19.0.0":
   version "19.0.4"
   resolved "https://registry.npmjs.org/@types/react-dom/-/react-dom-19.0.4.tgz"
   integrity sha512-4fSQ8vWFkg+TGhePfUzVmat3eC14TXYSsiiDSLI0dVLsrm9gZFABjPy/Qu6TKgl1tq1Bu1yDsuQgY3A3DOjCcg==
@@ -10570,29 +10529,6 @@ next@15.0.4:
     postcss "8.4.31"
     styled-jsx "5.1.6"
 
-next@^15.2.3:
-  version "15.2.3"
-  resolved "https://registry.npmjs.org/next/-/next-15.2.3.tgz"
-  integrity sha512-x6eDkZxk2rPpu46E1ZVUWIBhYCLszmUY6fvHBFcbzJ9dD+qRX6vcHusaqqDlnY+VngKzKbAiG2iRCkPbmi8f7w==
-  optionalDependencies:
-    "@next/swc-darwin-arm64" "15.2.3"
-    "@next/swc-darwin-x64" "15.2.3"
-    "@next/swc-linux-arm64-gnu" "15.2.3"
-    "@next/swc-linux-arm64-musl" "15.2.3"
-    "@next/swc-linux-x64-gnu" "15.2.3"
-    "@next/swc-linux-x64-musl" "15.2.3"
-    "@next/swc-win32-arm64-msvc" "15.2.3"
-    "@next/swc-win32-x64-msvc" "15.2.3"
-    sharp "^0.33.5"
-  dependencies:
-    "@next/env" "15.2.3"
-    "@swc/counter" "0.1.3"
-    "@swc/helpers" "0.5.15"
-    busboy "1.6.0"
-    caniuse-lite "^1.0.30001579"
-    postcss "8.4.31"
-    styled-jsx "5.1.6"
-
 next@*, "next@>= 14.0.0", next@>=13.2.0, next@>=14.2.0, "next@^10.0.0 || ^11.0.0 || ^12.0.0 || ^13.0.0 || ^14.0.0 || ^15.0.0", "next@^14.0.0-0 || ^15.0.0-0", "next@^15.3.0-canary.14":
   version "15.3.0-canary.14"
   resolved "https://registry.npmjs.org/next/-/next-15.3.0-canary.14.tgz"
@@ -11328,15 +11264,15 @@ plist@^3.1.0:
     "@bubba/db" "workspace:*"
     "@bubba/ui" "workspace:*"
     "@types/node" "^22.13.10"
-    "@types/react" "^19.0.12"
-    "@types/react-dom" "^19.0.4"
+    "@types/react" "19.0.10"
+    "@types/react-dom" "19.0.4"
     postcss "^8.5.3"
     tailwindcss "^3.4.17"
     typescript "^5.8.2"
   dependencies:
     "@t3-oss/env-nextjs" "^0.12.0"
     better-auth "^1.2.4"
-    next "^15.2.3"
+    next "^15.3.0-canary.14"
     react "^19.0.0"
     react-dom "^19.0.0"
     react-otp-input "^3.1.1"
@@ -11465,7 +11401,7 @@ postgres-range@^1.1.1:
   resolved "https://registry.npmjs.org/postgres-range/-/postgres-range-1.1.4.tgz"
   integrity sha512-i/hbxIE9803Alj/6ytL7UHQxRvZkI9O4Sy+J3HGc4F4oo/2eQAjTSNJ0bfxyse3bH0nuVesCk+3IRLaMtG3H6w==
 
-posthog-js@^1.215.3, posthog-js@^1.232.0:
+posthog-js@^1.232.0:
   version "1.232.0"
   resolved "https://registry.npmjs.org/posthog-js/-/posthog-js-1.232.0.tgz"
   integrity sha512-+flinmOGBz/YGpFbCcd/L1GCKleEkrkNRA8xTFJtaX8A/ZNEoUTdR8MYfFYj6qb9f5aSbexTLNzeglbYcgHXwA==
@@ -11475,7 +11411,7 @@ posthog-js@^1.215.3, posthog-js@^1.232.0:
     preact "^10.19.3"
     web-vitals "^4.2.4"
 
-posthog-node@^4.10.1, posthog-node@^4.4.1:
+posthog-node@^4.10.1:
   version "4.10.1"
   resolved "https://registry.npmjs.org/posthog-node/-/posthog-node-4.10.1.tgz"
   integrity sha512-rEzVszfaOkUFTjEabDcRLJNRqMwTOeU1WpqKgQEDV3x82O4ODifkvkoCERaPxl/ossi1NtqKXBOZ+XnhQ19pNQ==

@@ -10,7 +10,12 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "posthog-js": "^1.215.3",
-    "posthog-node": "^4.4.1"
+    "posthog-js": "^1.232.0",
+    "posthog-node": "^4.10.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "@types/react": "19.0.10",
+    "@types/react-dom": "19.0.4"
   }
 }

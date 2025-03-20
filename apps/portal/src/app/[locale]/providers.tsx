@@ -31,7 +31,7 @@ export function Providers({ children, locale }: ProviderProps) {
             {children}
           </AnalyticsProvider>
         ) : (
-          children
+          <>{children}</>
         )}
       </ThemeProvider>
     </I18nProviderClient>

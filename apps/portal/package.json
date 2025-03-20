@@ -11,7 +11,7 @@
   "dependencies": {
     "@t3-oss/env-nextjs": "^0.12.0",
     "better-auth": "^1.2.4",
-    "next": "^15.2.3",
+    "next": "^15.3.0-canary.14",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-otp-input": "^3.1.1"
@@ -20,10 +20,14 @@
     "@bubba/ui": "workspace:*",
     "@bubba/db": "workspace:*",
     "@types/node": "^22.13.10",
-    "@types/react": "^19.0.12",
-    "@types/react-dom": "^19.0.4",
+    "@types/react": "19.0.10",
+    "@types/react-dom": "19.0.4",
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.2"
+  },
+  "resolutions": {
+    "@types/react": "19.0.10",
+    "@types/react-dom": "19.0.4"
   }
 }
