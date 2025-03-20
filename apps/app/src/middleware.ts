@@ -1,6 +1,5 @@
-import { auth as authMiddleware } from "@/auth";
 import { createI18nMiddleware } from "next-international/middleware";
-import { type NextRequest, NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 
 const I18nMiddleware = createI18nMiddleware({
 	locales: ["en", "es", "fr", "no", "pt"],
@@ -8,38 +7,22 @@ const I18nMiddleware = createI18nMiddleware({
 	urlMappingStrategy: "rewrite",
 });
 
+export async function middleware(request: NextRequest) {
+	const response = I18nMiddleware(request);
+	const nextUrl = request.nextUrl;
+	const pathnameLocale = nextUrl.pathname.split("/", 2)?.[1];
+
+	const pathnameWithoutLocale = pathnameLocale
+		? nextUrl.pathname.slice(pathnameLocale.length + 1)
+		: nextUrl.pathname;
+
+	response.headers.set("x-pathname", request.nextUrl.pathname);
+
+	return response;
+}
+
 export const config = {
 	matcher: [
 		"/((?!api|_next/static|_next/image|favicon.ico|monitoring|ingest).*)",
 	],
-	runtime: "nodejs",
 };
-
-export async function middleware(request: NextRequest) {
-	const session = await authMiddleware();
-	const nextUrl = request.nextUrl;
-
-	if (!session?.user && nextUrl.pathname !== "/auth") {
-		return NextResponse.redirect(new URL("/auth", nextUrl.origin));
-	}
-
-	if (session?.user.id && nextUrl.pathname === "/auth") {
-		return NextResponse.redirect(new URL("/", nextUrl.origin));
-	}
-
-	if (nextUrl.pathname === "/") {
-		if (!session?.user) {
-			return NextResponse.redirect(new URL("/auth", nextUrl.origin));
-		}
-
-		// If authenticated, let the page handle the redirection
-		// This way we avoid Prisma in middleware
-		return NextResponse.next();
-	}
-
-	const response = I18nMiddleware(request);
-
-	response.headers.set("x-pathname", nextUrl.pathname);
-
-	return response;
-}

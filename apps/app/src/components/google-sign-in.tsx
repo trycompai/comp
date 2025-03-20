@@ -23,7 +23,7 @@ export function GoogleSignIn({
     await signIn("google", {
       redirectTo: inviteCode
         ? `/api/auth/invitation?code=${inviteCode}`
-        : "/",
+        : "/setup",
     });
   };
 

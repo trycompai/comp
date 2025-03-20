@@ -43,7 +43,9 @@ export function MagicLinkSignIn({ className, inviteCode }: Props) {
 
     await signIn("resend", {
       email: email,
-      redirectTo: inviteCode ? `/api/auth/invitation?code=${inviteCode}` : "/",
+      redirectTo: inviteCode
+        ? `/api/auth/invitation?code=${inviteCode}`
+        : "/setup",
     })
       .then((res) => {
         setSent(true);
