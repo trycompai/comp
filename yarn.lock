@@ -1223,14 +1223,14 @@
     formdata-node "^4.3.2"
     node-fetch "^2.6.7"
 
-"@bubba/analytics@packages/analytics":
+"@bubba/analytics@^workspace:packages/analytics":
   version "workspace:packages/analytics"
   resolved "workspace:packages/analytics"
   dependencies:
     posthog-js "^1.215.3"
     posthog-node "^4.4.1"
 
-"@bubba/app@apps/app", "@bubba/app@workspace:*":
+"@bubba/app@^workspace:apps/app", "@bubba/app@workspace:*":
   version "workspace:apps/app"
   resolved "workspace:apps/app"
   devDependencies:
@@ -1321,11 +1321,11 @@
     yarn "^1.22.22"
     zustand "^5.0.3"
 
-"@bubba/data@packages/data":
+"@bubba/data@^workspace:packages/data":
   version "workspace:packages/data"
   resolved "workspace:packages/data"
 
-"@bubba/db@packages/db", "@bubba/db@workspace:*":
+"@bubba/db@^workspace:packages/db", "@bubba/db@workspace:*":
   version "workspace:packages/db"
   resolved "workspace:packages/db"
   devDependencies:
@@ -1340,7 +1340,7 @@
     "@prisma/extension-accelerate" "^1.2.2"
     prisma "^6.5.0"
 
-"@bubba/email@packages/email":
+"@bubba/email@^workspace:packages/email":
   version "workspace:packages/email"
   resolved "workspace:packages/email"
   devDependencies:
@@ -1360,7 +1360,7 @@
     react-email "3.0.4"
     responsive-react-email "^0.0.5"
 
-"@bubba/integrations@packages/integrations":
+"@bubba/integrations@^workspace:packages/integrations":
   version "workspace:packages/integrations"
   resolved "workspace:packages/integrations"
   devDependencies:
@@ -1382,14 +1382,14 @@
     sharp "^0.33.5"
     zod "^3.24.2"
 
-"@bubba/kv@packages/kv":
+"@bubba/kv@^workspace:packages/kv":
   version "workspace:packages/kv"
   resolved "workspace:packages/kv"
   dependencies:
     "@upstash/redis" "^1.34.2"
     server-only "0.0.1"
 
-"@bubba/notifications@packages/notifications", "@bubba/notifications@workspace:*":
+"@bubba/notifications@^workspace:packages/notifications", "@bubba/notifications@workspace:*":
   version "workspace:packages/notifications"
   resolved "workspace:packages/notifications"
   devDependencies:
@@ -1398,11 +1398,11 @@
     "@novu/node" "^2.0.1"
     nanoid "5.1.0"
 
-"@bubba/tsconfig@packages/tsconfig", "@bubba/tsconfig@workspace:*":
+"@bubba/tsconfig@^workspace:packages/tsconfig", "@bubba/tsconfig@workspace:*":
   version "workspace:packages/tsconfig"
   resolved "workspace:packages/tsconfig"
 
-"@bubba/ui@packages/ui", "@bubba/ui@workspace:*":
+"@bubba/ui@^workspace:packages/ui", "@bubba/ui@workspace:*":
   version "workspace:packages/ui"
   resolved "workspace:packages/ui"
   devDependencies:
@@ -1466,7 +1466,7 @@
     use-callback-ref "^1.3.3"
     vaul "^1.0.0"
 
-"@bubba/utils@packages/utils", "@bubba/utils@workspace:*":
+"@bubba/utils@^workspace:packages/utils", "@bubba/utils@workspace:*":
   version "workspace:packages/utils"
   resolved "workspace:packages/utils"
   devDependencies:
@@ -11325,7 +11325,7 @@ plist@^3.1.0:
     base64-js "^1.5.1"
     xmlbuilder "^15.1.1"
 
-"portal@apps/portal":
+portal@^workspace:apps/portal:
   version "workspace:apps/portal"
   resolved "workspace:apps/portal"
   devDependencies:
