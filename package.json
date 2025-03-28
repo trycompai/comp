@@ -1,47 +1,44 @@
 {
-  "name": "comp",
-  "private": true,
-  "scripts": {
-    "build": "turbo build",
-    "clean": "git clean -xdf node_modules",
-    "clean:workspaces": "turbo clean",
-    "test": "turbo test --parallel",
-    "dev": "turbo dev --parallel",
-    "lint": "turbo lint && manypkg check",
-    "format": "biome format --write .",
-    "typecheck": "turbo typecheck",
-    "deploy:trigger-prod": "npx trigger.dev@latest deploy"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "1.9.4",
-    "@types/lodash": "^4.17.16",
-    "turbo": "^2.4.4",
-    "typescript": "5.7.3"
-  },
-  "engines": {
-    "node": ">=18"
-  },
-  "packageManager": "bun@1.1.36",
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
-  "dependencies": {
-    "@aws-sdk/client-s3": "^3.758.0",
-    "@aws-sdk/client-securityhub": "^3.758.0",
-    "@azure/core-http": "^3.0.5",
-    "@azure/identity": "^4.8.0",
-    "@manypkg/cli": "^0.23.0",
-    "@nangohq/node": "^0.53.2",
-    "@prisma/adapter-pg": "^6.5.0",
-    "@types/d3": "^7.4.3",
-    "@types/react": "19.0.10",
-    "ai": "3.4.33",
-    "d3": "^7.9.0",
-    "gitmoji": "^1.1.1",
-    "gray-matter": "^4.0.3",
-    "pg": "^8.14.1",
-    "sharp": "^0.33.5",
-    "use-debounce": "^10.0.4"
-  }
+	"name": "comp",
+	"private": true,
+	"scripts": {
+		"build": "turbo build",
+		"clean": "git clean -xdf node_modules",
+		"clean:workspaces": "turbo clean",
+		"test": "turbo test --parallel",
+		"dev": "turbo dev --parallel",
+		"lint": "turbo lint && manypkg check",
+		"format": "biome format --write .",
+		"typecheck": "turbo typecheck",
+		"deploy:trigger-prod": "npx trigger.dev@latest deploy"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "1.9.4",
+		"@types/lodash": "^4.17.16",
+		"turbo": "^2.4.4",
+		"typescript": "5.7.3"
+	},
+	"engines": {
+		"node": ">=18"
+	},
+	"packageManager": "bun@1.1.36",
+	"workspaces": ["apps/*", "packages/*"],
+	"dependencies": {
+		"@aws-sdk/client-s3": "^3.758.0",
+		"@aws-sdk/client-securityhub": "^3.758.0",
+		"@azure/core-http": "^3.0.5",
+		"@azure/identity": "^4.8.0",
+		"@manypkg/cli": "^0.23.0",
+		"@nangohq/node": "^0.53.2",
+		"@prisma/adapter-pg": "^6.5.0",
+		"@types/d3": "^7.4.3",
+		"@types/react": "19.0.10",
+		"ai": "3.4.33",
+		"d3": "^7.9.0",
+		"gitmoji": "^1.1.1",
+		"gray-matter": "^4.0.3",
+		"pg": "^8.14.1",
+		"sharp": "^0.33.5",
+		"use-debounce": "^10.0.4"
+	}
 }

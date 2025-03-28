@@ -1,18 +1,3 @@
-model PortalUser {
-  id             String          @id
-  name           String
-  email          String          @unique
-  emailVerified  Boolean
-  image          String?
-  createdAt      DateTime
-  updatedAt      DateTime
-  organizationId String?
-  employees      Employee[]
-  accounts       PortalAccount[]
-  sessions       PortalSession[]
-  organization   Organization?   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-}
-
 model PortalSession {
   id        String     @id
   expiresAt DateTime
@@ -22,24 +7,6 @@ model PortalSession {
   ipAddress String?
   userAgent String?
   userId    String
-  user      PortalUser @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model PortalAccount {
-  id                    String     @id
-  accountId             String
-  providerId            String
-  userId                String
-  accessToken           String?
-  refreshToken          String?
-  idToken               String?
-  accessTokenExpiresAt  DateTime?
-  refreshTokenExpiresAt DateTime?
-  scope                 String?
-  password              String?
-  createdAt             DateTime
-  updatedAt             DateTime
-  user                  PortalUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model PortalVerification {
@@ -51,23 +18,11 @@ model PortalVerification {
   updatedAt  DateTime?
 }
 
-model PortalTrainingVideos {
-  id          String   @id
-  title       String
-  description String
-  videoUrl    String
-  youtubeId   String
-  createdAt   DateTime @default(now())
-
-  OrganizationTrainingVideos OrganizationTrainingVideos[]
-}
-
 model OrganizationTrainingVideos {
   id              String   @id @default(uuid())
   organizationId  String
   trainingVideoId String
   completedBy     String[] @default([])
 
-  trainingVideo PortalTrainingVideos @relation(fields: [trainingVideoId], references: [id], onDelete: Cascade)
   organization  Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }

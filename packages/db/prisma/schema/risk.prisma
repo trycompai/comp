@@ -19,7 +19,6 @@ model Risk {
   comments             RiskComment[]
   mitigationTasks      RiskMitigationTask[]
   treatmentStrategy    RiskTreatmentStrategy?
-  TaskComments         TaskComments[]
 
   @@index([organizationId])
   @@index([ownerId])
@@ -62,31 +61,12 @@ model RiskMitigationTask {
   risk           Risk                 @relation(fields: [riskId], references: [id], onDelete: Cascade)
   assignments    RiskTaskAssignment[]
   TaskAttachment TaskAttachment[]
-  TaskComments   TaskComments[]
 
   @@index([riskId])
   @@index([ownerId])
   @@index([organizationId])
 }
 
-model TaskComments {
-  id                   String             @id @default(cuid())
-  riskId               String
-  riskMitigationTaskId String
-  ownerId              String
-  organizationId       String
-  content              String
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime           @updatedAt
-  organization         Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  owner                User               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  risk                 Risk               @relation(fields: [riskId], references: [id], onDelete: Cascade)
-  riskMitigationTask   RiskMitigationTask @relation(fields: [riskMitigationTaskId], references: [id], onDelete: Cascade)
-
-  @@index([riskId])
-  @@index([riskMitigationTaskId])
-  @@index([organizationId])
-}
 
 model TaskAttachment {
   id                   String             @id @default(cuid())

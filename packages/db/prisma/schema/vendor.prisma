@@ -13,11 +13,9 @@ model Vendor {
   organization    Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   owner           User?                  @relation(fields: [ownerId], references: [id])
   contacts        VendorContact[]
-  comments        VendorComment[]
   attachments     VendorAttachment[]
   tasks           VendorTask[]
   taskAttachments VendorTaskAttachment[]
-  taskComments    VendorTaskComment[]
   taskAssignments VendorTaskAssignment[]
 
   @@index([organizationId])
@@ -44,22 +42,6 @@ model VendorContact {
   @@index([vendorId])
 }
 
-model VendorComment {
-  id             String       @id @default(cuid())
-  vendorId       String
-  organizationId String
-  ownerId        String
-  content        String
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  owner          User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  vendor         Vendor       @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-
-  @@index([organizationId])
-  @@index([ownerId])
-  @@index([vendorId])
-}
 
 model VendorAttachment {
   id             String             @id @default(cuid())
@@ -98,7 +80,6 @@ model VendorTask {
   vendor         Vendor       @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   assignments    VendorTaskAssignment[]
   attachments    VendorTaskAttachment[]
-  comments       VendorTaskComment[]
 
   @@index([vendorId])
   @@index([ownerId])
@@ -125,26 +106,6 @@ model VendorTaskAttachment {
   @@index([vendorId])
   @@index([organizationId])
   @@index([ownerId])
-}
-
-model VendorTaskComment {
-  id             String       @id @default(cuid())
-  taskId         String
-  vendorId       String
-  ownerId        String
-  organizationId String
-  content        String
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  owner          User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  task           VendorTask   @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  vendor         Vendor       @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-
-  @@index([taskId])
-  @@index([vendorId])
-  @@index([ownerId])
-  @@index([organizationId])
 }
 
 model VendorTaskAssignment {

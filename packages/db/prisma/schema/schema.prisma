@@ -49,7 +49,6 @@ model User {
   lastLogin                      DateTime?
   organizationId                 String?
   accounts                       Account[]
-  Artifact                       Artifact[]
   AuditLog                       AuditLog[]
   Employee                       Employee[]
   AssignedEvidence               OrganizationEvidence[]
@@ -60,18 +59,13 @@ model User {
   RiskMitigationTask             RiskMitigationTask[]
   sessions                       Session[]
   TaskAttachment                 TaskAttachment[]
-  TaskComments                   TaskComments[]
-  PolicyComments                 PolicyComments[]
   organization                   Organization?                            @relation("CurrentOrganization", fields: [organizationId], references: [id])
   OrganizationPolicy             OrganizationPolicy[]
   OrganizationIntegrationResults OrganizationIntegrationResults[]
-  IntegrationResultsComments     OrganizationIntegrationResultsComments[]
   Vendor                         Vendor[]
-  VendorComment                  VendorComment[]
   VendorAttachment               VendorAttachment[]
   VendorTask                     VendorTask[]
   VendorTaskAttachment           VendorTaskAttachment[]
-  VendorTaskComment              VendorTaskComment[]
 
   @@index([email])
   @@index([organizationId])
@@ -86,10 +80,8 @@ model Organization {
   tier                           Tier                                     @default(free)
   policiesCreated                Boolean                                  @default(false)
   frameworkId                    String?
-  Artifact                       Artifact[]
   AuditLog                       AuditLog[]
   employees                      Employee[]
-  Framework                      Framework?                               @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
   OrganizationCategory           OrganizationCategory[]
   OrganizationControl            OrganizationControl[]
   OrganizationEvidence           OrganizationEvidence[]
@@ -102,21 +94,15 @@ model Organization {
   RiskComment                    RiskComment[]
   RiskMitigationTask             RiskMitigationTask[]
   TaskAttachment                 TaskAttachment[]
-  TaskComments                   TaskComments[]
-  PolicyComments                 PolicyComments[]
   users                          User[]                                   @relation("CurrentOrganization")
-  PortalUser                     PortalUser[]
   apiKeys                        OrganizationApiKey[]
   OrganizationIntegrationResults OrganizationIntegrationResults[]
-  IntegrationResultsComments     OrganizationIntegrationResultsComments[]
   IntegrationLastRun             IntegrationLastRun[]
   vendors                        Vendor[]
   VendorContact                  VendorContact[]
-  VendorComment                  VendorComment[]
   VendorAttachment               VendorAttachment[]
   VendorTask                     VendorTask[]
   VendorTaskAttachment           VendorTaskAttachment[]
-  VendorTaskComment              VendorTaskComment[]
   VendorTaskAssignment           VendorTaskAssignment[]
   OrganizationTrainingVideos     OrganizationTrainingVideos[]
 

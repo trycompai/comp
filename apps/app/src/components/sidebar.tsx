@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { getOrganizations } from "@/data/getOrganizations";
-import { db } from "@bubba/db";
+import { frameworks } from "@bubba/data";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { MainMenu } from "./main-menu";
@@ -19,7 +19,6 @@ export async function Sidebar() {
 		redirect("/");
 	}
 
-	const frameworks = await getFrameworks();
 	const { organizations } = await getOrganizations();
 
 	return (
@@ -56,11 +55,3 @@ export async function Sidebar() {
 		</div>
 	);
 }
-
-const getFrameworks = async () => {
-	return await db.framework.findMany({
-		orderBy: {
-			name: "asc",
-		},
-	});
-};

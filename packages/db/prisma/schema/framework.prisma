@@ -1,17 +1,4 @@
-model Framework {
-  id                    String                  @id @default(cuid())
-  name                  String                  @unique
-  description           String?
-  version               String
-  categories            FrameworkCategory[]
-  organizations         Organization[]
-  OrganizationCategory  OrganizationCategory[]
-  OrganizationFramework OrganizationFramework[]
-  PolicyFramework       PolicyFramework[]
-  OrganizationEvidence  OrganizationEvidence[]
 
-  @@index([id])
-}
 
 model OrganizationFramework {
   id                  String                @id @default(cuid())
@@ -22,7 +9,6 @@ model OrganizationFramework {
   lastAssessed        DateTime?
   nextAssessment      DateTime?
   organizationControl OrganizationControl[]
-  framework           Framework             @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
   organization        Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@unique([organizationId, frameworkId])
@@ -34,26 +20,10 @@ model FrameworkCategory {
   code        String    @unique
   description String?
   frameworkId String
-  controls    Control[]
-  framework   Framework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
 
   @@index([frameworkId])
 }
 
-model Control {
-  id                   String                @id @default(cuid())
-  code                 String                @unique
-  name                 String
-  description          String?
-  domain               String?
-  frameworkCategoryId  String?
-  frameworkCategory    FrameworkCategory?    @relation(fields: [frameworkCategoryId], references: [id])
-  requirements         ControlRequirement[]
-  organizationControls OrganizationControl[]
-  PolicyControl        PolicyControl[]
-
-  @@index([frameworkCategoryId])
-}
 
 model OrganizationControl {
   id                             String                           @id @default(cuid())
@@ -64,8 +34,6 @@ model OrganizationControl {
   nextReviewDate                 DateTime?
   organizationFrameworkId        String?
   organizationCategoryId         String?
-  artifacts                      ControlArtifact[]
-  control                        Control                          @relation(fields: [controlId], references: [id], onDelete: Cascade)
   OrganizationCategory           OrganizationCategory?            @relation(fields: [organizationCategoryId], references: [id])
   OrganizationFramework          OrganizationFramework?           @relation(fields: [organizationFrameworkId], references: [id])
   organization                   Organization                     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -76,57 +44,7 @@ model OrganizationControl {
   @@index([controlId])
 }
 
-model Artifact {
-  id             String            @id @default(cuid())
-  name           String
-  published      Boolean           @default(false)
-  needsReview    Boolean           @default(true)
-  department     Departments       @default(none)
-  type           ArtifactType
-  content        Json?
-  fileUrl        String?
-  version        Int               @default(1)
-  lastUpdated    DateTime?
-  organizationId String
-  ownerId        String?
-  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  owner          User?             @relation(fields: [ownerId], references: [id])
-  controls       ControlArtifact[]
 
-  @@index([organizationId])
-  @@index([type])
-}
-
-model ControlArtifact {
-  id                    String              @id @default(cuid())
-  organizationControlId String
-  artifactId            String
-  artifact              Artifact            @relation(fields: [artifactId], references: [id], onDelete: Cascade)
-  organizationControl   OrganizationControl @relation(fields: [organizationControlId], references: [id], onDelete: Cascade)
-
-  @@index([organizationControlId])
-  @@index([artifactId])
-}
-
-model ControlRequirement {
-  id                             String                           @id @default(cuid())
-  controlId                      String
-  type                           RequirementType
-  description                    String?
-  policyId                       String?
-  createdAt                      DateTime                         @default(now())
-  updatedAt                      DateTime                         @updatedAt
-  name                           String                           @default("")
-  evidenceId                     String?
-  department                     Departments                      @default(none)
-  frequency                      Frequency?
-  control                        Control                          @relation(fields: [controlId], references: [id], onDelete: Cascade)
-  evidence                       Evidence?                        @relation(fields: [evidenceId], references: [id])
-  policy                         Policy?                          @relation(fields: [policyId], references: [id])
-  OrganizationControlRequirement OrganizationControlRequirement[]
-
-  @@index([controlId])
-}
 
 model OrganizationControlRequirement {
   id                    String          @id @default(cuid())
@@ -142,7 +60,6 @@ model OrganizationControlRequirement {
 
   organizationPolicyId   String?
   organizationEvidenceId String?
-  controlRequirement     ControlRequirement    @relation(fields: [controlRequirementId], references: [id], onDelete: Cascade)
   organizationControl    OrganizationControl   @relation(fields: [organizationControlId], references: [id], onDelete: Cascade)
   organizationEvidence   OrganizationEvidence? @relation(fields: [organizationEvidenceId], references: [id], onDelete: Cascade)
   organizationPolicy     OrganizationPolicy?   @relation(fields: [organizationPolicyId], references: [id], onDelete: Cascade)
@@ -158,23 +75,10 @@ model OrganizationCategory {
   updatedAt           DateTime              @updatedAt
   organizationId      String
   frameworkId         String
-  framework           Framework             @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
   organization        Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   organizationControl OrganizationControl[]
 
   @@index([organizationId])
-}
-
-model Evidence {
-  id                   String                 @id @unique @default(cuid())
-  name                 String
-  description          String?
-  createdAt            DateTime               @default(now())
-  updatedAt            DateTime               @updatedAt
-  department           Departments            @default(none)
-  frequency            Frequency?
-  ControlRequirement   ControlRequirement[]
-  OrganizationEvidence OrganizationEvidence[]
 }
 
 model OrganizationEvidence {
@@ -195,11 +99,9 @@ model OrganizationEvidence {
   isNotRelevant   Boolean      @default(false)
 
   frameworkId String
-  framework   Framework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
 
   OrganizationControlRequirement OrganizationControlRequirement[]
   assignee                       User?                            @relation(fields: [assigneeId], references: [id])
-  evidence                       Evidence                         @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
   organization                   Organization                     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])

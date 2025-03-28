@@ -11,9 +11,7 @@ model OrganizationPolicy {
   isRequiredToSign               Boolean                          @default(false)
   signedBy                       String[]                         @default([])
   OrganizationControlRequirement OrganizationControlRequirement[]
-  PolicyComments                 PolicyComments[]
   organization                   Organization                     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  policy                         Policy                           @relation(fields: [policyId], references: [id], onDelete: Cascade)
   ownerId                        String?
   owner                          User?                            @relation(fields: [ownerId], references: [id])
   department                     Departments?
@@ -24,26 +22,7 @@ model OrganizationPolicy {
   @@index([policyId])
 }
 
-model Policy {
-  id                  String                     @id @default(cuid())
-  slug                String                     @unique
-  name                String
-  description         String?
-  content             Json[]
-  version             String?
-  usedBy              Json
-  createdAt           DateTime                   @default(now())
-  updatedAt           DateTime                   @updatedAt
-  frequency           Frequency?
-  department          Departments?               @default(none)
-  isRequiredToSign    Boolean                    @default(false)
-  ControlRequirement  ControlRequirement[]
-  employeeAcceptances EmployeePolicyAcceptance[]
-  OrganizationPolicy  OrganizationPolicy[]
-  PolicyControl       PolicyControl[]
-  policyFiles         PolicyFile[]
-  policyFrameworks    PolicyFramework[]
-}
+
 
 model PolicyFile {
   id        String   @id @default(cuid())
@@ -53,41 +32,6 @@ model PolicyFile {
   fileType  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  policy    Policy   @relation(fields: [policyId], references: [id], onDelete: Cascade)
 }
 
-model PolicyFramework {
-  id          String    @id @default(cuid())
-  policyId    String
-  frameworkId String
-  framework   Framework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
-  policy      Policy    @relation(fields: [policyId], references: [id], onDelete: Cascade)
 
-  @@unique([policyId, frameworkId])
-}
-
-model PolicyComments {
-  id                   String             @id @default(cuid())
-  organizationPolicyId String
-  ownerId              String
-  organizationId       String
-  content              String
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime           @updatedAt
-  organization         Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  owner                User               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  organizationPolicy   OrganizationPolicy @relation(fields: [organizationPolicyId], references: [id], onDelete: Cascade)
-
-  @@index([organizationPolicyId])
-  @@index([organizationId])
-}
-
-model PolicyControl {
-  id        String  @id @default(cuid())
-  policyId  String
-  controlId String
-  control   Control @relation(fields: [controlId], references: [id], onDelete: Cascade)
-  policy    Policy  @relation(fields: [policyId], references: [id], onDelete: Cascade)
-
-  @@unique([policyId, controlId])
-}

@@ -11,29 +11,11 @@ model OrganizationIntegrationResults {
   organizationId            String
   assignedUserId            String?
 
-  IntegrationResultsComments   OrganizationIntegrationResultsComments[]
-
   assignedUser            User?                    @relation(fields: [assignedUserId], references: [id], onDelete: Cascade)
   organizationIntegration OrganizationIntegrations @relation(fields: [organizationIntegrationId], references: [id], onDelete: Cascade)
   organization            Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([assignedUserId])
   @@index([organizationIntegrationId])
-  @@index([organizationId])
-}
-
-model OrganizationIntegrationResultsComments {
-  id                   String             @id @default(cuid())
-  OrganizationIntegrationResultsId String
-  ownerId              String
-  organizationId       String
-  content              String
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime           @updatedAt
-  organization         Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  owner                User               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  
-  IntegrationResults   OrganizationIntegrationResults @relation(fields: [OrganizationIntegrationResultsId], references: [id], onDelete: Cascade)
-  @@index([OrganizationIntegrationResultsId])
   @@index([organizationId])
 }
