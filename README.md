@@ -108,7 +108,42 @@ Here is what you need to be able to run Comp AI.
 
    You can install nvm from [here](https://github.com/nvm-sh/nvm).
 
-6. Run the turbo dev command to start the development server
+6. Setup Database
+   Start the Postgres database using Docker:
+
+   ```sh
+   bun docker:up
+   ```
+
+   Then set up the database schema and seed data:
+
+   ```sh
+   # Generate Prisma client
+   bun db:generate
+
+   # Push the schema to the database
+   bun db:push
+
+   # Optional: Seed the database with initial data
+   bun db:seed
+   ```
+
+   Other useful database commands:
+   ```sh
+   # Open Prisma Studio to view/edit data
+   bun db:studio
+
+   # Run database migrations
+   bun db:migrate
+
+   # Stop the database container
+   bun docker:down
+
+   # Remove the database container and volume
+   bun docker:clean
+   ```
+
+7. Run the turbo dev command to start the development server
 
    ```sh
    turbo dev
@@ -142,4 +177,3 @@ Comp AI, Inc. is a commercial open source company, which means some parts of thi
 
 > [!TIP]
 > We work closely with the community and always invite feedback about what should be open and what is fine to be commercial. This list is not set and stone and we have moved things from commercial to open in the past. Please open a [discussion](https://github.com/trycompai/comp/discussions) if you feel like something is wrong.
-

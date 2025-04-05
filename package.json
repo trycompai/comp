@@ -10,7 +10,15 @@
 		"lint": "turbo lint && manypkg check",
 		"format": "biome format --write .",
 		"typecheck": "turbo typecheck",
-		"deploy:trigger-prod": "npx trigger.dev@latest deploy"
+		"deploy:trigger-prod": "npx trigger.dev@latest deploy",
+		"docker:up": "bun run -F @comp/db docker:up",
+		"docker:down": "bun run -F @comp/db docker:down",
+		"docker:clean": "bun run -F @comp/db docker:clean",
+		"db:generate": "bun run -F @comp/db db:generate",
+		"db:push": "bun run -F @comp/db db:push",
+		"db:migrate": "bun run -F @comp/db db:migrate",
+		"db:studio": "bun run -F @comp/db db:studio",
+		"db:seed": "bun run -F @comp/db db:seed"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",

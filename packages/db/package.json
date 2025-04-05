@@ -9,6 +9,9 @@
 		"db:migrate": "bunx prisma migrate dev",
 		"db:studio": "bunx prisma studio",
 		"db:seed": "bunx prisma db seed",
+		"docker:up": "docker-compose up -d",
+		"docker:down": "docker-compose down",
+		"docker:clean": "docker-compose down -v",
 		"dev": "tsc --watch",
 		"lint": "eslint src/",
 		"clean": "rm -rf .turbo node_modules dist"
