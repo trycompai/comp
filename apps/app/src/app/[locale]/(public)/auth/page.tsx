@@ -10,19 +10,13 @@ export const metadata: Metadata = {
   title: "Login | Comp AI",
 };
 
-export default async function Page({
-  searchParams,
-}: {
-  searchParams: Promise<{ inviteCode?: string }>;
-}) {
+export default async function Page() {
   const t = await getI18n();
-
-  const { inviteCode } = await searchParams;
 
   const defaultSignInOptions = (
     <div className="flex flex-col space-y-2">
-      <GoogleSignIn inviteCode={inviteCode} />
-      <GithubSignIn inviteCode={inviteCode} />
+      <GoogleSignIn />
+      <GithubSignIn />
     </div>
   );
 

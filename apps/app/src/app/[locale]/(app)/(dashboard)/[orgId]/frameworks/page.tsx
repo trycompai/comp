@@ -1,7 +1,4 @@
 import { getI18n } from "@/locales/server";
-import { auth } from "@/utils/auth";
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
 import PageWithBreadcrumb from "@/components/pages/PageWithBreadcrumb";
 import { FrameworksOverview } from "./components/FrameworksOverview";
 import { getAllFrameworkInstancesWithControls } from "./data/getAllFrameworkInstancesWithControls";
@@ -15,20 +12,7 @@ export async function generateMetadata() {
 }
 
 export default async function DashboardPage() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  const organizationId = session?.session.activeOrganizationId;
-
-  if (!organizationId) {
-    console.log("Redirect on page.tsx");
-    redirect("/");
-  }
-
-  const frameworksWithControls = await getAllFrameworkInstancesWithControls({
-    organizationId,
-  });
+  const frameworksWithControls = await getAllFrameworkInstancesWithControls();
 
   return (
     <PageWithBreadcrumb breadcrumbs={[{ label: "Frameworks", current: true }]}>

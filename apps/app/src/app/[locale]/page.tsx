@@ -2,18 +2,30 @@ import { auth } from "@/utils/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-export default async function RootPage() {
-	const session = await auth.api.getSession({
-		headers: await headers(),
-	});
+const ROUTES = {
+  AUTH: "/auth",
+  SETUP: "/setup",
+  FRAMEWORKS: (orgId: string) => `/${orgId}/frameworks`,
+} as const;
 
-	if (!session || !session.session) {
-		return redirect("/auth");
-	}
+export default async function Page() {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
 
-	if (session.session.activeOrganizationId) {
-		return redirect(`/${session.session.activeOrganizationId}/frameworks`);
-	}
+    if (!session?.session) {
+      return redirect(ROUTES.AUTH);
+    }
 
-	return redirect("/setup");
+    const { activeOrganizationId } = session.session;
+
+    if (activeOrganizationId) {
+      return redirect(ROUTES.FRAMEWORKS(activeOrganizationId));
+    }
+
+    return redirect(ROUTES.SETUP);
+  } catch (error) {
+    return redirect(ROUTES.AUTH);
+  }
 }

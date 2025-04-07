@@ -8,20 +8,12 @@ import { Icons } from "@comp/ui/icons";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 
-export function GithubSignIn({
-  inviteCode,
-}: {
-  inviteCode?: string;
-}) {
+export function GithubSignIn() {
   const t = useI18n();
   const [isLoading, setLoading] = useState(false);
 
   const handleSignIn = async () => {
     setLoading(true);
-
-    const redirectTo = inviteCode
-      ? `/api/auth/invitation?code=${inviteCode}`
-      : "/";
 
     await authClient.signIn.social({
       provider: "github",
