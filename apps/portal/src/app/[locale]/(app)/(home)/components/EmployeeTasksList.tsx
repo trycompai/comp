@@ -12,7 +12,7 @@ import { VideoCarousel } from "./video";
 interface EmployeeTasksListProps {
 	policies: Policy[];
 	trainingVideos: EmployeeTrainingVideoCompletion[];
-	member: Member;
+	member: Member | null;
 }
 
 export const EmployeeTasksList = ({
@@ -30,7 +30,7 @@ export const EmployeeTasksList = ({
 				<PolicyList policies={policies} member={member} />
 			</TabsContent>
 			<TabsContent value="training" className="py-2">
-				<VideoCarousel videos={trainingVideos} member={member} />
+				<VideoCarousel videos={trainingVideos} />
 			</TabsContent>
 		</Tabs>
 	);

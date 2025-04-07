@@ -20,7 +20,7 @@ interface PolicyCardProps {
 	onNext?: () => void;
 	onComplete?: () => void;
 	onClick?: () => void;
-	member: Member;
+	member: Member | null;
 	isLastPolicy?: boolean;
 }
 
@@ -33,7 +33,7 @@ export function PolicyCard({
 	isLastPolicy,
 }: PolicyCardProps) {
 	const [isAccepted, setIsAccepted] = useState(
-		policy.signedBy.includes(member.id),
+		member?.id ? policy.signedBy.includes(member.id) : false,
 	);
 
 	const handleAccept = () => {

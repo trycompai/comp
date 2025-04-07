@@ -1,6 +1,7 @@
 import { Header } from "@/app/components/header";
 import { Sidebar } from "@/app/components/sidebar";
 import { auth } from "@/app/lib/auth";
+import { db } from "@comp/db";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -16,6 +17,16 @@ export default async function Layout({
 	if (!session?.user) {
 		redirect("/auth");
 	}
+
+	console.log({ session });
+
+	const member = await db.member.findFirst({
+		where: {
+			userId: session.user.id,
+		},
+	});
+
+	console.log({ member });
 
 	return (
 		<div className="relative">

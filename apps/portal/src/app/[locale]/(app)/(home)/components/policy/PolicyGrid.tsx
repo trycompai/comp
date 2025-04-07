@@ -7,7 +7,7 @@ import { Check } from "lucide-react";
 interface PolicyGridProps {
 	policies: Policy[];
 	onPolicyClick: (index: number) => void;
-	member: Member;
+	member: Member | null;
 }
 
 export function PolicyGrid({
@@ -17,7 +17,7 @@ export function PolicyGrid({
 }: PolicyGridProps) {
 	console.log({ policiesInGrid: policies });
 	const allPoliciesCompleted = policies.every((policy) =>
-		policy.signedBy.includes(member.id),
+		member?.id ? policy.signedBy.includes(member.id) : false,
 	);
 
 	const noPoliciesFound = policies.length === 0;
@@ -42,7 +42,9 @@ export function PolicyGrid({
 			{!noPoliciesFound && (
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 					{policies.map((policy, index) => {
-						const isCompleted = policy.signedBy.includes(member.id);
+						const isCompleted = member?.id
+							? policy.signedBy.includes(member.id)
+							: false;
 						return (
 							<Card
 								key={policy.id}

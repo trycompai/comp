@@ -9,10 +9,14 @@ export async function Overview() {
 	const trainingVideos = await getTrainingVideos();
 	const member = await getMember();
 
+	console.log({ policies, trainingVideos, member });
+
 	return (
 		<div className="space-y-6">
 			<div className="flex flex-col gap-1">
-				<h1 className="text-2xl font-bold">Welcome back, {member.user.name}</h1>
+				<h1 className="text-2xl font-bold">
+					Welcome back, {member?.user.name}
+				</h1>
 				<p className="text-sm">Please complete the following tasks</p>
 			</div>
 			<EmployeeTasksList
@@ -29,8 +33,6 @@ const getMember = cache(async () => {
 		headers: await headers(),
 	});
 
-	console.log({ session });
-
 	if (!session?.user) {
 		throw new Error("Unauthorized");
 	}
@@ -45,20 +47,12 @@ const getMember = cache(async () => {
 		},
 	});
 
-	if (!member) {
-		throw new Error("Unauthorized");
-	}
-
 	return member;
 });
 
 const getPolicies = async () => {
 	const member = await getMember();
-	const organizationId = member.organizationId;
-
-	if (!organizationId) {
-		throw new Error("Unauthorized");
-	}
+	const organizationId = member?.organizationId;
 
 	const policies = await db.policy.findMany({
 		where: {
@@ -73,19 +67,9 @@ const getPolicies = async () => {
 const getTrainingVideos = async () => {
 	const member = await getMember();
 
-	if (!member) {
-		throw new Error("Unauthorized");
-	}
-
-	const organizationId = member.organizationId;
-
-	if (!organizationId) {
-		throw new Error("Unauthorized");
-	}
-
 	const trainingVideos = await db.employeeTrainingVideoCompletion.findMany({
 		where: {
-			memberId: member.id,
+			memberId: member?.id,
 		},
 	});
 

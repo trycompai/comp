@@ -5,7 +5,7 @@ import { PolicyContainer } from "./PolicyContainer";
 
 interface PolicyListProps {
 	policies: Policy[];
-	member: Member;
+	member: Member | null;
 }
 
 export function PolicyList({ policies, member }: PolicyListProps) {

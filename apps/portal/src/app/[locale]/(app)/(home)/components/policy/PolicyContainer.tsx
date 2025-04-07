@@ -9,7 +9,7 @@ import { ArrowLeft } from "lucide-react";
 
 interface PolicyContainerProps {
 	policies: Policy[];
-	member: Member;
+	member: Member | null;
 }
 
 export function PolicyContainer({ policies, member }: PolicyContainerProps) {

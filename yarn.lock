@@ -1448,14 +1448,14 @@
     picocolors "^1.0.0"
     sisteransi "^1.0.5"
 
-"@comp/analytics@packages/analytics":
+"@comp/analytics@^workspace:packages/analytics":
   version "workspace:packages/analytics"
   resolved "workspace:packages/analytics"
   dependencies:
     posthog-js "^1.215.3"
     posthog-node "^4.4.1"
 
-"@comp/app@apps/app", "@comp/app@workspace:*":
+"@comp/app@^workspace:apps/app", "@comp/app@workspace:*":
   version "workspace:apps/app"
   resolved "workspace:apps/app"
   devDependencies:
@@ -1476,6 +1476,7 @@
     "@aws-sdk/client-s3" "^3.779.0"
     "@aws-sdk/s3-request-presigner" "^3.779.0"
     "@browserbasehq/sdk" "^2.5.0"
+  dependencies:
     "@comp/data" "workspace:*"
     "@comp/db" "workspace:*"
     "@comp/notifications" "workspace:*"
@@ -1552,7 +1553,7 @@
     yarn "^1.22.22"
     zustand "^5.0.3"
 
-"@comp/data@packages/data", "@comp/data@workspace:*":
+"@comp/data@^workspace:packages/data", "@comp/data@workspace:*":
   version "workspace:packages/data"
   resolved "workspace:packages/data"
   devDependencies:
@@ -1561,7 +1562,7 @@
     tsup "^8.4.0"
     typescript "^5.8.2"
 
-"@comp/db@packages/db", "@comp/db@workspace:*":
+"@comp/db@^workspace:packages/db", "@comp/db@workspace:*":
   version "workspace:packages/db"
   resolved "workspace:packages/db"
   devDependencies:
@@ -1576,7 +1577,7 @@
     "@prisma/extension-accelerate" "^1.2.2"
     prisma "^6.5.0"
 
-"@comp/email@packages/email":
+"@comp/email@^workspace:packages/email":
   version "workspace:packages/email"
   resolved "workspace:packages/email"
   devDependencies:
@@ -1597,7 +1598,7 @@
     react-email "3.0.4"
     responsive-react-email "^0.0.5"
 
-"@comp/integrations@packages/integrations":
+"@comp/integrations@^workspace:packages/integrations":
   version "workspace:packages/integrations"
   resolved "workspace:packages/integrations"
   devDependencies:
@@ -1620,14 +1621,14 @@
     sharp "^0.33.5"
     zod "^3.24.2"
 
-"@comp/kv@packages/kv":
+"@comp/kv@^workspace:packages/kv":
   version "workspace:packages/kv"
   resolved "workspace:packages/kv"
   dependencies:
     "@upstash/redis" "^1.34.2"
     server-only "0.0.1"
 
-"@comp/notifications@packages/notifications", "@comp/notifications@workspace:*":
+"@comp/notifications@^workspace:packages/notifications", "@comp/notifications@workspace:*":
   version "workspace:packages/notifications"
   resolved "workspace:packages/notifications"
   devDependencies:
@@ -1636,7 +1637,7 @@
     "@novu/node" "^2.0.1"
     nanoid "5.1.0"
 
-"@comp/portal@apps/portal":
+"@comp/portal@^workspace:apps/portal":
   version "workspace:apps/portal"
   resolved "workspace:apps/portal"
   devDependencies:
@@ -1657,11 +1658,11 @@
     react-dom "^19.0.0"
     react-otp-input "^3.1.1"
 
-"@comp/tsconfig@packages/tsconfig", "@comp/tsconfig@workspace:*":
+"@comp/tsconfig@^workspace:packages/tsconfig", "@comp/tsconfig@workspace:*":
   version "workspace:packages/tsconfig"
   resolved "workspace:packages/tsconfig"
 
-"@comp/ui@packages/ui", "@comp/ui@workspace:*":
+"@comp/ui@^workspace:packages/ui", "@comp/ui@workspace:*":
   version "workspace:packages/ui"
   resolved "workspace:packages/ui"
   devDependencies:
@@ -1725,7 +1726,7 @@
     use-callback-ref "^1.3.3"
     vaul "^1.0.0"
 
-"@comp/utils@packages/utils", "@comp/utils@workspace:*":
+"@comp/utils@^workspace:packages/utils", "@comp/utils@workspace:*":
   version "workspace:packages/utils"
   resolved "workspace:packages/utils"
   devDependencies:

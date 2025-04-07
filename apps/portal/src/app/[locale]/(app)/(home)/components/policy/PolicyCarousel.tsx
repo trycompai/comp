@@ -11,7 +11,7 @@ import { toast } from "sonner";
 
 interface PolicyCarouselProps {
 	policies: Policy[];
-	member: Member;
+	member: Member | null;
 	initialIndex?: number;
 	onIndexChange?: (index: number) => void;
 }

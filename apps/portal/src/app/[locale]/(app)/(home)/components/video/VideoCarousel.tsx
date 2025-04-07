@@ -1,10 +1,6 @@
 "use client";
 
-import type {
-	EmployeeTrainingVideoCompletion,
-	Member,
-	User,
-} from "@comp/db/types";
+import type { EmployeeTrainingVideoCompletion } from "@comp/db/types";
 import { useAction } from "next-safe-action/hooks";
 import { useEffect, useState } from "react";
 import { markVideoAsCompleted } from "../../actions/markVideoAsCompleted";
@@ -14,10 +10,9 @@ import { trainingVideos } from "@comp/data";
 
 interface VideoCarouselProps {
 	videos: EmployeeTrainingVideoCompletion[];
-	member: Member & { user?: User };
 }
 
-export function VideoCarousel({ videos, member }: VideoCarouselProps) {
+export function VideoCarousel({ videos }: VideoCarouselProps) {
 	// Create a map of completion records by their videoId for efficient lookup
 	// videoId in the DB record corresponds to the id in the metadata
 	const completionRecordsMap = new Map(
