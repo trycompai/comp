@@ -9,46 +9,46 @@ import { getPolicies } from "./data/queries";
 import { searchParamsCache } from "./data/validations";
 
 interface PolicyTableProps {
-  params: Promise<{ locale: string }>;
-  searchParams: Promise<SearchParams>;
+	params: Promise<{ locale: string }>;
+	searchParams: Promise<SearchParams>;
 }
 
 export default async function PoliciesPage({
-  params,
-  ...props
+	params,
+	...props
 }: PolicyTableProps) {
-  const { locale } = await params;
-  const searchParams = await props.searchParams;
-  const search = searchParamsCache.parse(searchParams);
-  const validFilters = getValidFilters(search.filters);
+	const { locale } = await params;
+	const searchParams = await props.searchParams;
+	const search = searchParamsCache.parse(searchParams);
+	const validFilters = getValidFilters(search.filters);
 
-  setStaticParamsLocale(locale);
+	setStaticParamsLocale(locale);
 
-  const promises = Promise.all([
-    getPolicies({
-      ...search,
-      filters: validFilters,
-    }),
-  ]);
+	const promises = Promise.all([
+		getPolicies({
+			...search,
+			filters: validFilters,
+		}),
+	]);
 
-  return (
-    <PageWithBreadcrumb breadcrumbs={[{ label: "Policies", current: true }]}>
-      <PoliciesTable promises={promises} />
-    </PageWithBreadcrumb>
-  );
+	return (
+		<PageWithBreadcrumb breadcrumbs={[{ label: "Policies", current: true }]}>
+			<PoliciesTable promises={promises} />
+		</PageWithBreadcrumb>
+	);
 }
 
 export async function generateMetadata({
-  params,
+	params,
 }: {
-  params: Promise<{ locale: string }>;
+	params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
-  const { locale } = await params;
+	const { locale } = await params;
 
-  setStaticParamsLocale(locale);
-  const t = await getI18n();
+	setStaticParamsLocale(locale);
+	const t = await getI18n();
 
-  return {
-    title: t("sidebar.policies"),
-  };
+	return {
+		title: t("sidebar.policies"),
+	};
 }

@@ -55,7 +55,6 @@ export function MagicLinkSignIn({ className, inviteCode }: Props) {
 				}
 			})
 			.catch((error) => {
-				console.log(error);
 				toast.error(t("auth.email.error"));
 			})
 			.finally(() => {

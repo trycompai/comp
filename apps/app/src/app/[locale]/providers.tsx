@@ -27,17 +27,13 @@ export function Providers({ children, locale }: ProviderProps) {
 				disableTransitionOnChange
 				scriptProps={{ "data-cfasync": "false" }}
 			>
-				{hasAnalyticsKeys ? (
-					<AnalyticsProvider
-						apiKey={env.NEXT_PUBLIC_POSTHOG_KEY!}
-						apiHost={env.NEXT_PUBLIC_POSTHOG_HOST!}
-						userId={session?.user?.id}
-					>
-						{children}
-					</AnalyticsProvider>
-				) : (
-					children
-				)}
+				<AnalyticsProvider
+					apiKey={env.NEXT_PUBLIC_POSTHOG_KEY ?? ""}
+					apiHost={env.NEXT_PUBLIC_POSTHOG_HOST ?? ""}
+					userId={session?.user?.id}
+				>
+					{children}
+				</AnalyticsProvider>
 			</ThemeProvider>
 		</I18nProviderClient>
 	);

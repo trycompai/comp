@@ -18,7 +18,7 @@ export const employeesColumns: ColumnDef<EmployeeWithUser>[] = [
 		header: "Name",
 		cell: ({ row }) => {
 			const employee = row.original;
-			console.log({ employee });
+
 			return (
 				<div className="flex items-center gap-2">
 					<Avatar>

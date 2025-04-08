@@ -1,11 +1,11 @@
 export default async function Layout({
-  children,
+	children,
 }: {
-  children: React.ReactNode;
+	children: React.ReactNode;
 }) {
-  return (
-    <div className="max-w-[1200px] mx-auto">
-      <main className="mt-8">{children}</main>
-    </div>
-  );
+	return (
+		<div className="max-w-[1200px] mx-auto">
+			<main className="mt-8">{children}</main>
+		</div>
+	);
 }

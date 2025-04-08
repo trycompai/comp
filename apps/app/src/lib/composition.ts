@@ -5,20 +5,20 @@ import * as React from "react";
  * Call originalEventHandler first, then ourEventHandler unless prevented.
  */
 function composeEventHandlers<E>(
-  originalEventHandler?: (event: E) => void,
-  ourEventHandler?: (event: E) => void,
-  { checkForDefaultPrevented = true } = {},
+	originalEventHandler?: (event: E) => void,
+	ourEventHandler?: (event: E) => void,
+	{ checkForDefaultPrevented = true } = {},
 ) {
-  return function handleEvent(event: E) {
-    originalEventHandler?.(event);
+	return function handleEvent(event: E) {
+		originalEventHandler?.(event);
 
-    if (
-      checkForDefaultPrevented === false ||
-      !(event as unknown as Event).defaultPrevented
-    ) {
-      return ourEventHandler?.(event);
-    }
-  };
+		if (
+			checkForDefaultPrevented === false ||
+			!(event as unknown as Event).defaultPrevented
+		) {
+			return ourEventHandler?.(event);
+		}
+	};
 }
 
 /**
@@ -32,13 +32,13 @@ type PossibleRef<T> = React.Ref<T> | undefined;
  * This utility takes care of different types of refs: callback refs and RefObject(s).
  */
 function setRef<T>(ref: PossibleRef<T>, value: T) {
-  if (typeof ref === "function") {
-    return ref(value);
-  }
+	if (typeof ref === "function") {
+		return ref(value);
+	}
 
-  if (ref !== null && ref !== undefined) {
-    ref.current = value;
-  }
+	if (ref !== null && ref !== undefined) {
+		ref.current = value;
+	}
 }
 
 /**
@@ -46,33 +46,33 @@ function setRef<T>(ref: PossibleRef<T>, value: T) {
  * Accepts callback refs and RefObject(s).
  */
 function composeRefs<T>(...refs: PossibleRef<T>[]): React.RefCallback<T> {
-  return (node) => {
-    let hasCleanup = false;
-    const cleanups = refs.map((ref) => {
-      const cleanup = setRef(ref, node);
-      if (!hasCleanup && typeof cleanup === "function") {
-        hasCleanup = true;
-      }
-      return cleanup;
-    });
+	return (node) => {
+		let hasCleanup = false;
+		const cleanups = refs.map((ref) => {
+			const cleanup = setRef(ref, node);
+			if (!hasCleanup && typeof cleanup === "function") {
+				hasCleanup = true;
+			}
+			return cleanup;
+		});
 
-    // React <19 will log an error to the console if a callback ref returns a
-    // value. We don't use ref cleanups internally so this will only happen if a
-    // user's ref callback returns a value, which we only expect if they are
-    // using the cleanup functionality added in React 19.
-    if (hasCleanup) {
-      return () => {
-        for (let i = 0; i < cleanups.length; i++) {
-          const cleanup = cleanups[i];
-          if (typeof cleanup === "function") {
-            cleanup();
-          } else {
-            setRef(refs[i], null);
-          }
-        }
-      };
-    }
-  };
+		// React <19 will log an error to the console if a callback ref returns a
+		// value. We don't use ref cleanups internally so this will only happen if a
+		// user's ref callback returns a value, which we only expect if they are
+		// using the cleanup functionality added in React 19.
+		if (hasCleanup) {
+			return () => {
+				for (let i = 0; i < cleanups.length; i++) {
+					const cleanup = cleanups[i];
+					if (typeof cleanup === "function") {
+						cleanup();
+					} else {
+						setRef(refs[i], null);
+					}
+				}
+			};
+		}
+	};
 }
 
 /**
@@ -80,8 +80,8 @@ function composeRefs<T>(...refs: PossibleRef<T>[]): React.RefCallback<T> {
  * Accepts callback refs and RefObject(s).
  */
 function useComposedRefs<T>(...refs: PossibleRef<T>[]): React.RefCallback<T> {
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  return React.useCallback(composeRefs(...refs), refs);
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	return React.useCallback(composeRefs(...refs), refs);
 }
 
 export { composeEventHandlers, composeRefs, useComposedRefs };

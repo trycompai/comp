@@ -13,54 +13,51 @@ import {
 	SheetTitle,
 } from "@comp/ui/sheet";
 import { X } from "lucide-react";
+import { ResidualRiskForm } from "@/app/[locale]/(app)/(dashboard)/[orgId]/vendors/[vendorId]/forms/risks/ResidualRiskForm";
+import type { Vendor } from "@comp/db/types";
 import { useQueryState } from "nuqs";
-import { ResidualRiskForm } from "../forms/risks/residual-risk-form";
 
-export function ResidualRiskSheet({
-	riskId,
-	initialProbability,
-	initialImpact,
+export function VendorResidualRiskSheet({
+	vendorId,
+	initialRisk,
 }: {
-	riskId: string;
-	initialProbability?: number;
-	initialImpact?: number;
+	vendorId: string;
+	initialRisk?: Vendor;
 }) {
 	const t = useI18n();
-
 	const isDesktop = useMediaQuery("(min-width: 768px)");
-	const [open, setOpen] = useQueryState("residual-risk-sheet");
-	const isOpen = Boolean(open);
-
-	const handleOpenChange = (open: boolean) => {
-		setOpen(open ? "true" : null);
-	};
+	const [isOpen, setOpen] = useQueryState("residual-risk-sheet");
+	const open = isOpen === "true";
 
 	if (isDesktop) {
 		return (
-			<Sheet open={isOpen} onOpenChange={handleOpenChange}>
+			<Sheet
+				open={open}
+				onOpenChange={(value) => setOpen(value ? "true" : "false")}
+			>
 				<SheetContent stack>
 					<SheetHeader className="mb-8">
 						<div className="flex justify-between items-center flex-row">
-							<SheetTitle>{t("risk.form.update_residual_risk")}</SheetTitle>
+							<SheetTitle>{t("vendors.risks.update_residual_risk")}</SheetTitle>
 							<Button
 								size="icon"
 								variant="ghost"
 								className="p-0 m-0 size-auto hover:bg-transparent"
-								onClick={() => setOpen(null)}
+								onClick={() => setOpen("false")}
 							>
 								<X className="h-5 w-5" />
 							</Button>
-						</div>{" "}
+						</div>
 						<SheetDescription>
-							{t("risk.form.update_residual_risk_description")}
+							{t("vendors.risks.update_residual_risk_description")}
 						</SheetDescription>
 					</SheetHeader>
 
 					<ScrollArea className="h-full p-0 pb-[100px]" hideScrollbar>
 						<ResidualRiskForm
-							riskId={riskId}
-							initialProbability={initialProbability ?? 0}
-							initialImpact={initialImpact ?? 0}
+							vendorId={vendorId}
+							initialProbability={initialRisk?.residualProbability}
+							initialImpact={initialRisk?.residualImpact}
 						/>
 					</ScrollArea>
 				</SheetContent>
@@ -69,13 +66,15 @@ export function ResidualRiskSheet({
 	}
 
 	return (
-		<Drawer open={isOpen} onOpenChange={handleOpenChange}>
-			<DrawerTitle hidden>{t("risk.form.update_residual_risk")}</DrawerTitle>
+		<Drawer open={open}>
+			<DrawerTitle hidden>
+				{t("vendors.risks.update_residual_risk")}
+			</DrawerTitle>
 			<DrawerContent className="p-6">
 				<ResidualRiskForm
-					riskId={riskId}
-					initialProbability={initialProbability ?? 0}
-					initialImpact={initialImpact ?? 0}
+					vendorId={vendorId}
+					initialProbability={initialRisk?.residualProbability}
+					initialImpact={initialRisk?.residualImpact}
 				/>
 			</DrawerContent>
 		</Drawer>

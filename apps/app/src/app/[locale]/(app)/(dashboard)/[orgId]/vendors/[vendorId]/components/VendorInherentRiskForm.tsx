@@ -7,6 +7,7 @@ import { Button } from "@comp/ui/button";
 import {
 	Form,
 	FormControl,
+	FormDescription,
 	FormField,
 	FormItem,
 	FormLabel,
@@ -29,23 +30,23 @@ interface InherentRiskFormProps {
 
 // Map for displaying readable labels
 const LIKELIHOOD_LABELS: Record<Likelihood, string> = {
-	[Likelihood.very_unlikely]: "Very Unlikely (1-2)",
-	[Likelihood.unlikely]: "Unlikely (3-4)",
-	[Likelihood.possible]: "Possible (5-6)",
-	[Likelihood.likely]: "Likely (7-8)",
-	[Likelihood.very_likely]: "Very Likely (9-10)",
+	[Likelihood.very_unlikely]: "Very Unlikely",
+	[Likelihood.unlikely]: "Unlikely",
+	[Likelihood.possible]: "Possible",
+	[Likelihood.likely]: "Likely",
+	[Likelihood.very_likely]: "Very Likely",
 };
 
 // Map for displaying readable labels
 const IMPACT_LABELS: Record<Impact, string> = {
-	[Impact.insignificant]: "Insignificant (1-2)",
-	[Impact.minor]: "Minor (3-4)",
-	[Impact.moderate]: "Moderate (5-6)",
-	[Impact.major]: "Major (7-8)",
-	[Impact.severe]: "Severe (9-10)",
+	[Impact.insignificant]: "Insignificant",
+	[Impact.minor]: "Minor",
+	[Impact.moderate]: "Moderate",
+	[Impact.major]: "Major",
+	[Impact.severe]: "Severe",
 };
 
-export function InherentRiskForm({
+export function VendorInherentRiskForm({
 	riskId,
 	initialProbability = Likelihood.possible,
 	initialImpact = Impact.moderate,
@@ -72,8 +73,8 @@ export function InherentRiskForm({
 		},
 	});
 
-	const onSubmit = (values: z.infer<typeof updateInherentRiskSchema>) => {
-		updateInherentRisk.execute(values);
+	const onSubmit = (data: z.infer<typeof updateInherentRiskSchema>) => {
+		updateInherentRisk.execute(data);
 	};
 
 	return (

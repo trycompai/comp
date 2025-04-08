@@ -1,0 +1,11 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+When writing React code follow these standards:
+
+- Always export a named component
+- Always name components in PascalCase i.e (MyComponent)
+- Always name files that export components in PascalCase
+- Always try to keep components small and modular

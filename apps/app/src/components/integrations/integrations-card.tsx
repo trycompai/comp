@@ -120,15 +120,6 @@ export function IntegrationsCard({
 	const [apiKeyInput, setApiKeyInput] = useState("");
 	const [isSaving, setIsSaving] = useState(false);
 
-	// Debug output to see what settings contains
-	console.log(`Integration ${name} settings:`, {
-		id,
-		settings,
-		settingsIsArray: Array.isArray(settings),
-		settingsLength: Array.isArray(settings) ? settings.length : "N/A",
-		installedSettings,
-	});
-
 	const handleConnect = async () => {
 		try {
 			setLoading(true);

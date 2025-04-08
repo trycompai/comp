@@ -63,7 +63,6 @@ export function CreateApiKeyDialog({
 				}
 			},
 			onError: (error) => {
-				console.log("error", error);
 				toast.error(t("settings.api_keys.create_error"));
 			},
 		},

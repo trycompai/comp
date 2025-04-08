@@ -6,13 +6,13 @@ import { VaultContext, type VaultProps, createVaultStore } from "./store";
 type VaultProviderProps = React.PropsWithChildren<VaultProps>;
 
 export function VaultProvider({ children, data }: VaultProviderProps) {
-  const store = createVaultStore({ data });
+	const store = createVaultStore({ data });
 
-  useEffect(() => {
-    store.setState({ data });
-  }, [data, store]);
+	useEffect(() => {
+		store.setState({ data });
+	}, [data, store]);
 
-  return (
-    <VaultContext.Provider value={store}>{children}</VaultContext.Provider>
-  );
+	return (
+		<VaultContext.Provider value={store}>{children}</VaultContext.Provider>
+	);
 }

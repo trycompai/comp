@@ -8,46 +8,46 @@ import { getEvidence } from "./data/queries";
 import { EvidenceTable } from "./components/evidence-table";
 
 interface PolicyTableProps {
-  params: Promise<{ locale: string }>;
-  searchParams: Promise<SearchParams>;
+	params: Promise<{ locale: string }>;
+	searchParams: Promise<SearchParams>;
 }
 
 export default async function PoliciesPage({
-  params,
-  ...props
+	params,
+	...props
 }: PolicyTableProps) {
-  const { locale } = await params;
-  const searchParams = await props.searchParams;
-  const search = searchParamsCache.parse(searchParams);
-  const validFilters = getValidFilters(search.filters);
+	const { locale } = await params;
+	const searchParams = await props.searchParams;
+	const search = searchParamsCache.parse(searchParams);
+	const validFilters = getValidFilters(search.filters);
 
-  setStaticParamsLocale(locale);
+	setStaticParamsLocale(locale);
 
-  const promises = Promise.all([
-    getEvidence({
-      ...search,
-      filters: validFilters,
-    }),
-  ]);
+	const promises = Promise.all([
+		getEvidence({
+			...search,
+			filters: validFilters,
+		}),
+	]);
 
-  return (
-    <>
-      <EvidenceTable promises={promises} />
-    </>
-  )
+	return (
+		<>
+			<EvidenceTable promises={promises} />
+		</>
+	);
 }
 
 export async function generateMetadata({
-  params,
+	params,
 }: {
-  params: Promise<{ locale: string }>;
+	params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
-  const { locale } = await params;
+	const { locale } = await params;
 
-  setStaticParamsLocale(locale);
-  const t = await getI18n();
+	setStaticParamsLocale(locale);
+	const t = await getI18n();
 
-  return {
-    title: t("sidebar.evidence"),
-  };
+	return {
+		title: t("sidebar.evidence"),
+	};
 }

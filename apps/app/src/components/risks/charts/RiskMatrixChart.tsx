@@ -1,8 +1,7 @@
 "use client";
 
 import { useI18n } from "@/locales/client";
-import type { Vendor } from "@comp/db/types";
-import { Impact, Likelihood } from "@prisma/client";
+import { Impact, Likelihood } from "@comp/db/types";
 import { Button } from "@comp/ui/button";
 import {
 	Card,
@@ -13,13 +12,10 @@ import {
 } from "@comp/ui/card";
 import { PencilIcon } from "lucide-react";
 import { useQueryState } from "nuqs";
-import { InherentRiskSheet } from "./inherent-risk";
+import type React from "react";
 
-interface InherentRiskChartProps {
-	vendor: Vendor;
-}
+// --- Constants (Copied from vendor chart) ---
 
-// Map enum values to numeric scores (1-5)
 const LIKELIHOOD_SCORES: Record<Likelihood, number> = {
 	very_unlikely: 1,
 	unlikely: 2,
@@ -36,7 +32,6 @@ const IMPACT_SCORES: Record<Impact, number> = {
 	severe: 5,
 };
 
-// Risk level colors
 const RISK_COLORS = {
 	low: "#22c55e", // green
 	medium: "#f59e0b", // amber
@@ -44,49 +39,65 @@ const RISK_COLORS = {
 	critical: "#ef4444", // red
 };
 
-export function InherentRiskVendorChart({ vendor }: InherentRiskChartProps) {
-	const t = useI18n();
-	const [open, setOpen] = useQueryState("inherent-risk-sheet");
+const VISUAL_LIKELIHOOD_ORDER: Likelihood[] = [
+	Likelihood.very_likely,
+	Likelihood.likely,
+	Likelihood.possible,
+	Likelihood.unlikely,
+	Likelihood.very_unlikely,
+];
+const VISUAL_IMPACT_ORDER: Impact[] = [
+	Impact.insignificant,
+	Impact.minor,
+	Impact.moderate,
+	Impact.major,
+	Impact.severe,
+];
 
-	// Calculate risk score from probability and impact
+const Y_AXIS_LABELS = [
+	"Very Likely",
+	"Likely",
+	"Possible",
+	"Unlikely",
+	"Very Unlikely",
+];
+const X_AXIS_LABELS = ["Insignificant", "Minor", "Moderate", "Major", "Severe"];
+
+// --- Component Props ---
+
+interface RiskMatrixChartProps {
+	title: string;
+	description: string;
+	activeLikelihood: Likelihood;
+	activeImpact: Impact;
+	sheetQueryParam: string;
+	EditSheetComponent: React.ComponentType<any>; // Accept any sheet component
+	editSheetProps: Record<string, any>; // Pass props dynamically
+}
+
+// --- Reusable Chart Component ---
+
+export function RiskMatrixChart({
+	title,
+	description,
+	activeLikelihood,
+	activeImpact,
+	sheetQueryParam,
+	EditSheetComponent,
+	editSheetProps,
+}: RiskMatrixChartProps) {
+	const t = useI18n();
+	const [open, setOpen] = useQueryState(sheetQueryParam);
+
+	// Calculate risk score (using active values from props)
 	const riskScore =
-		LIKELIHOOD_SCORES[vendor.inherentProbability] *
-		IMPACT_SCORES[vendor.inherentImpact];
+		LIKELIHOOD_SCORES[activeLikelihood] * IMPACT_SCORES[activeImpact];
 
 	// Determine risk level
 	let riskLevel = "low";
 	if (riskScore > 16) riskLevel = "critical";
 	else if (riskScore > 9) riskLevel = "high";
 	else if (riskScore > 4) riskLevel = "medium";
-
-	// Define the visual order for rows and columns
-	const VISUAL_LIKELIHOOD_ORDER: Likelihood[] = [
-		Likelihood.very_likely,
-		Likelihood.likely,
-		Likelihood.possible,
-		Likelihood.unlikely,
-		Likelihood.very_unlikely,
-	];
-	const VISUAL_IMPACT_ORDER: Impact[] = [
-		Impact.insignificant,
-		Impact.minor,
-		Impact.moderate,
-		Impact.major,
-		Impact.severe,
-	];
-
-	const yAxisLabels = [
-		"Very Likely", // Corresponds to VISUAL_LIKELIHOOD_ORDER[0]
-		"Likely",
-		"Possible",
-		"Unlikely",
-		"Very Unlikely", // Corresponds to VISUAL_LIKELIHOOD_ORDER[4]
-	];
-	const xAxisLabels = ["Insignificant", "Minor", "Moderate", "Major", "Severe"];
-
-	// Store the active cell position values
-	const activeProbability = vendor.inherentProbability;
-	const activeImpact = vendor.inherentImpact;
 
 	return (
 		<>
@@ -96,7 +107,7 @@ export function InherentRiskVendorChart({ vendor }: InherentRiskChartProps) {
 						<div className="w-full">
 							<CardTitle>
 								<div className="flex items-center justify-between gap-2">
-									{t("vendors.risks.inherent_risk")}
+									{title}
 									<Button
 										onClick={() => setOpen("true")}
 										size="icon"
@@ -108,27 +119,27 @@ export function InherentRiskVendorChart({ vendor }: InherentRiskChartProps) {
 								</div>
 							</CardTitle>
 							<CardDescription className="text-xs">
-								{t("vendors.risks.update_inherent_risk_description")}
+								{description}
 							</CardDescription>
 						</div>
 					</div>
 				</CardHeader>
 				<CardContent>
 					<div
-						className="grid w-full max-h-[350px] aspect-[1.5/1] gap-1 
-								   grid-cols-1 grid-rows-1 
-								   lg:grid-cols-[auto_auto_1fr] lg:grid-rows-[1fr_auto_auto]"
+						className="grid w-full max-h-[350px] aspect-[1.5/1] gap-1
+                       grid-cols-1 grid-rows-1
+                       lg:grid-cols-[auto_auto_1fr] lg:grid-rows-[1fr_auto_auto]"
 					>
-						{/* Y-axis Title - Hidden on small/medium screens */}
+						{/* Y-axis Title */}
 						<div className="hidden lg:grid place-items-center lg:row-start-1 lg:col-start-1">
 							<span className="-rotate-90 font-semibold text-sm text-muted-foreground whitespace-nowrap">
-								Probability
+								{t("risk.metrics.probability")}
 							</span>
 						</div>
 
-						{/* Y-axis Labels Area - Hidden on small/medium screens */}
+						{/* Y-axis Labels */}
 						<div className="hidden lg:grid grid-rows-5 lg:row-start-1 lg:col-start-2 pr-2">
-							{yAxisLabels.map((label, i) => (
+							{Y_AXIS_LABELS.map((label, i) => (
 								<div
 									key={`y-label-${i}`}
 									className="grid place-items-center justify-end text-sm"
@@ -138,7 +149,7 @@ export function InherentRiskVendorChart({ vendor }: InherentRiskChartProps) {
 							))}
 						</div>
 
-						{/* 5x5 Matrix Grid - Spans full area on small/medium screens */}
+						{/* 5x5 Matrix Grid */}
 						<div className="grid grid-cols-5 grid-rows-5 border-l border-b row-start-1 col-start-1 lg:col-start-3 lg:row-start-1">
 							{VISUAL_LIKELIHOOD_ORDER.map((rowLikelihood, rowIndex) =>
 								VISUAL_IMPACT_ORDER.map((colImpact, colIndex) => {
@@ -152,18 +163,18 @@ export function InherentRiskVendorChart({ vendor }: InherentRiskChartProps) {
 									else if (cellScore > 4) cellColor = RISK_COLORS.medium;
 
 									const isActive =
-										rowLikelihood === activeProbability &&
+										rowLikelihood === activeLikelihood &&
 										colImpact === activeImpact;
 
 									return (
 										<div
 											key={`cell-${rowIndex}-${colIndex}`}
 											className="border-t border-r relative"
-											style={{ backgroundColor: `${cellColor}25` }}
+											style={{ backgroundColor: `${cellColor}25` }} // Cell background based on risk level
 										>
 											{isActive && (
 												<div
-													className="absolute inset-0 z-10 border"
+													className="absolute inset-0 z-10 border" // Highlight active cell
 													style={{
 														backgroundColor: cellColor,
 														borderColor: cellColor,
@@ -177,9 +188,9 @@ export function InherentRiskVendorChart({ vendor }: InherentRiskChartProps) {
 							)}
 						</div>
 
-						{/* X-axis Labels Area - Hidden on small/medium screens */}
+						{/* X-axis Labels */}
 						<div className="hidden lg:grid grid-cols-5 lg:col-start-3 lg:row-start-2 pt-1">
-							{xAxisLabels.map((label, i) => (
+							{X_AXIS_LABELS.map((label, i) => (
 								<div
 									key={`x-label-${i}`}
 									className="grid place-items-center text-sm"
@@ -189,20 +200,17 @@ export function InherentRiskVendorChart({ vendor }: InherentRiskChartProps) {
 							))}
 						</div>
 
-						{/* X-axis Title - Hidden on small/medium screens */}
+						{/* X-axis Title */}
 						<div className="hidden lg:grid place-items-center lg:col-start-3 lg:row-start-3 pt-1">
 							<span className="font-semibold text-sm text-muted-foreground">
-								Impact
+								{t("risk.metrics.impact")}
 							</span>
 						</div>
 					</div>
 				</CardContent>
 			</Card>
-			<InherentRiskSheet
-				vendorId={vendor.id}
-				initialProbability={vendor.inherentProbability}
-				initialImpact={vendor.inherentImpact}
-			/>
+			{/* Render the passed Edit Sheet component with its specific props */}
+			<EditSheetComponent {...editSheetProps} />
 		</>
 	);
 }

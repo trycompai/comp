@@ -9,45 +9,45 @@ import { getControls } from "./data/queries";
 import { ControlsTable } from "./components/controls-table";
 
 interface ControlTableProps {
-  params: Promise<{ locale: string }>;
-  searchParams: Promise<SearchParams>;
+	params: Promise<{ locale: string }>;
+	searchParams: Promise<SearchParams>;
 }
 
 export default async function ControlsPage({
-  params,
-  ...props
+	params,
+	...props
 }: ControlTableProps) {
-  const { locale } = await params;
-  const searchParams = await props.searchParams;
-  const search = searchParamsCache.parse(searchParams);
-  const validFilters = getValidFilters(search.filters);
-  setStaticParamsLocale(locale);
+	const { locale } = await params;
+	const searchParams = await props.searchParams;
+	const search = searchParamsCache.parse(searchParams);
+	const validFilters = getValidFilters(search.filters);
+	setStaticParamsLocale(locale);
 
-  const promises = Promise.all([
-    getControls({
-      ...search,
-      filters: validFilters,
-    }),
-  ]);
+	const promises = Promise.all([
+		getControls({
+			...search,
+			filters: validFilters,
+		}),
+	]);
 
-  return (
-    <PageWithBreadcrumb breadcrumbs={[{ label: "Controls", current: true }]}>
-      <ControlsTable promises={promises} />
-    </PageWithBreadcrumb>
-  );
+	return (
+		<PageWithBreadcrumb breadcrumbs={[{ label: "Controls", current: true }]}>
+			<ControlsTable promises={promises} />
+		</PageWithBreadcrumb>
+	);
 }
 
 export async function generateMetadata({
-  params,
+	params,
 }: {
-  params: Promise<{ locale: string }>;
+	params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
-  const { locale } = await params;
+	const { locale } = await params;
 
-  setStaticParamsLocale(locale);
-  const t = await getI18n();
+	setStaticParamsLocale(locale);
+	const t = await getI18n();
 
-  return {
-    title: t("sidebar.controls"),
-  };
+	return {
+		title: t("sidebar.controls"),
+	};
 }

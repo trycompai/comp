@@ -13,48 +13,52 @@ import {
 	SheetTitle,
 } from "@comp/ui/sheet";
 import { X } from "lucide-react";
-import { ResidualRiskForm } from "@/app/[locale]/(app)/(dashboard)/[orgId]/vendors/[vendorId]/forms/risks/residual-risk-form";
-import type { Vendor } from "@comp/db/types";
+import { InherentRiskForm } from "@/app/[locale]/(app)/(dashboard)/[orgId]/vendors/[vendorId]/forms/risks/InherentRiskForm";
+import { Impact, Likelihood } from "@prisma/client";
 import { useQueryState } from "nuqs";
 
-export function ResidualRiskSheet({
+export function VendorInherentRiskSheet({
 	vendorId,
-	initialRisk,
+	initialProbability,
+	initialImpact,
 }: {
 	vendorId: string;
-	initialRisk?: Vendor;
+	initialProbability?: Likelihood;
+	initialImpact?: Impact;
 }) {
 	const t = useI18n();
 	const isDesktop = useMediaQuery("(min-width: 768px)");
-	const [isOpen, setOpen] = useQueryState("residual-risk-sheet");
-	const open = isOpen === "true";
+	const [isOpen, setOpen] = useQueryState("inherent-risk-sheet");
 
 	if (isDesktop) {
 		return (
-			<Sheet open={open}>
+			<Sheet
+				open={isOpen === "true"}
+				onOpenChange={(value) => setOpen(value ? "true" : null)}
+			>
 				<SheetContent stack>
 					<SheetHeader className="mb-8">
 						<div className="flex justify-between items-center flex-row">
-							<SheetTitle>{t("vendors.risks.update_residual_risk")}</SheetTitle>
+							<SheetTitle>{t("vendors.risks.update_inherent_risk")}</SheetTitle>
 							<Button
 								size="icon"
 								variant="ghost"
 								className="p-0 m-0 size-auto hover:bg-transparent"
-								onClick={() => setOpen("false")}
+								onClick={() => setOpen(null)}
 							>
 								<X className="h-5 w-5" />
 							</Button>
 						</div>
 						<SheetDescription>
-							{t("vendors.risks.update_residual_risk_description")}
+							{t("vendors.risks.update_inherent_risk_description")}
 						</SheetDescription>
 					</SheetHeader>
 
 					<ScrollArea className="h-full p-0 pb-[100px]" hideScrollbar>
-						<ResidualRiskForm
+						<InherentRiskForm
 							vendorId={vendorId}
-							initialProbability={initialRisk?.residualProbability}
-							initialImpact={initialRisk?.residualImpact}
+							initialProbability={initialProbability}
+							initialImpact={initialImpact}
 						/>
 					</ScrollArea>
 				</SheetContent>
@@ -63,15 +67,18 @@ export function ResidualRiskSheet({
 	}
 
 	return (
-		<Drawer open={open}>
+		<Drawer
+			open={isOpen === "true"}
+			onOpenChange={(value) => setOpen(value ? "true" : null)}
+		>
 			<DrawerTitle hidden>
-				{t("vendors.risks.update_residual_risk")}
+				{t("vendors.risks.update_inherent_risk")}
 			</DrawerTitle>
 			<DrawerContent className="p-6">
-				<ResidualRiskForm
+				<InherentRiskForm
 					vendorId={vendorId}
-					initialProbability={initialRisk?.residualProbability}
-					initialImpact={initialRisk?.residualImpact}
+					initialProbability={initialProbability}
+					initialImpact={initialImpact}
 				/>
 			</DrawerContent>
 		</Drawer>

@@ -1,7 +1,7 @@
 import { cache } from "react";
 import PageWithBreadcrumb from "@/components/pages/PageWithBreadcrumb";
-import { InherentRiskChart } from "@/components/risks/charts/inherent-risk-chart";
-import { ResidualRiskChart } from "@/components/risks/charts/residual-risk-chart";
+import { InherentRiskChart } from "@/components/risks/charts/InherentRiskChart";
+import { ResidualRiskChart } from "@/components/risks/charts/ResidualRiskChart";
 import { RiskOverview } from "@/components/risks/risk-overview";
 import type { RiskTaskType } from "@/components/tables/risk-tasks/columns";
 import { getServerColumnHeaders } from "@/components/tables/risk-tasks/server-columns";
@@ -16,144 +16,146 @@ import { redirect } from "next/navigation";
 import { Comments } from "@/components/comments";
 
 interface PageProps {
-  searchParams: Promise<{
-    search?: string;
-    status?: string;
-    sort?: string;
-    page?: string;
-    per_page?: string;
-  }>;
-  params: Promise<{ riskId: string; locale: string; orgId: string }>;
+	searchParams: Promise<{
+		search?: string;
+		status?: string;
+		sort?: string;
+		page?: string;
+		per_page?: string;
+	}>;
+	params: Promise<{ riskId: string; locale: string; orgId: string }>;
 }
 
 export default async function RiskPage({ searchParams, params }: PageProps) {
-  const { riskId, orgId } = await params;
-  const risk = await getRisk(riskId);
-  const comments = await getComments({ riskId });
-  const assignees = await getAssignees();
-  const t = await getI18n();
+	const { riskId, orgId } = await params;
+	const risk = await getRisk(riskId);
+	const comments = await getComments({ riskId });
+	const assignees = await getAssignees();
+	const t = await getI18n();
 
-  if (!risk) {
-    redirect("/");
-  }
+	if (!risk) {
+		redirect("/");
+	}
 
-  return (
-    <PageWithBreadcrumb
-      breadcrumbs={[
-        { label: "Risks", href: `/${orgId}/risk` },
-        { label: risk.title, current: true },
-      ]}
-    >
-      <div className="flex flex-col gap-4">
-        <RiskOverview risk={risk} assignees={assignees} />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <InherentRiskChart risk={risk} />
-          <ResidualRiskChart risk={risk} />
-        </div>
-        <Comments entityId={riskId} comments={comments} />
-      </div>
-    </PageWithBreadcrumb>
-  );
+	return (
+		<PageWithBreadcrumb
+			breadcrumbs={[
+				{ label: "Risks", href: `/${orgId}/risk` },
+				{ label: risk.title, current: true },
+			]}
+		>
+			<div className="flex flex-col gap-4">
+				<RiskOverview risk={risk} assignees={assignees} />
+				<div className="grid grid-cols-1 gap-4">
+					<InherentRiskChart risk={risk} />
+					<ResidualRiskChart risk={risk} />
+				</div>
+				<Comments entityId={riskId} comments={comments} />
+			</div>
+		</PageWithBreadcrumb>
+	);
 }
 
 const getRisk = cache(async (riskId: string) => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+	const session = await auth.api.getSession({
+		headers: await headers(),
+	});
 
-  if (!session || !session.session.activeOrganizationId) {
-    return null;
-  }
+	if (!session || !session.session.activeOrganizationId) {
+		return null;
+	}
 
-  const risk = await db.risk.findUnique({
-    where: {
-      id: riskId,
-      organizationId: session.session.activeOrganizationId,
-    },
-    include: {
-      assignee: {
-        include: {
-          user: true,
-        },
-      },
-    },
-  });
+	const risk = await db.risk.findUnique({
+		where: {
+			id: riskId,
+			organizationId: session.session.activeOrganizationId,
+		},
+		include: {
+			assignee: {
+				include: {
+					user: true,
+				},
+			},
+		},
+	});
 
-  return risk;
+	return risk;
 });
 
-const getComments = cache(async ({
-  riskId,
-}: {
-  riskId: string;
-}) => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+const getComments = cache(
+	async ({
+		riskId,
+	}: {
+		riskId: string;
+	}) => {
+		const session = await auth.api.getSession({
+			headers: await headers(),
+		});
 
-  if (!session || !session.session.activeOrganizationId) {
-    return [];
-  }
+		if (!session || !session.session.activeOrganizationId) {
+			return [];
+		}
 
-  try {
-    const comments = await db.comment.findMany({
-      where: {
-        entityId: riskId,
-        organizationId: session.session.activeOrganizationId,
-      },
-      include: {
-        author: {
-          include: {
-            user: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+		try {
+			const comments = await db.comment.findMany({
+				where: {
+					entityId: riskId,
+					organizationId: session.session.activeOrganizationId,
+				},
+				include: {
+					author: {
+						include: {
+							user: true,
+						},
+					},
+				},
+				orderBy: {
+					createdAt: "desc",
+				},
+			});
 
-    return comments;
-  } catch (error) {
-    console.error(error);
-    return [];
-  }
-});
+			return comments;
+		} catch (error) {
+			console.error(error);
+			return [];
+		}
+	},
+);
 
 const getAssignees = cache(async () => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+	const session = await auth.api.getSession({
+		headers: await headers(),
+	});
 
-  if (!session || !session.session.activeOrganizationId) {
-    return [];
-  }
+	if (!session || !session.session.activeOrganizationId) {
+		return [];
+	}
 
-  const assignees = await db.member.findMany({
-    where: {
-      organizationId: session.session.activeOrganizationId,
-      role: {
-        notIn: ["employee"],
-      },
-    },
-    include: {
-      user: true,
-    },
-  });
+	const assignees = await db.member.findMany({
+		where: {
+			organizationId: session.session.activeOrganizationId,
+			role: {
+				notIn: ["employee"],
+			},
+		},
+		include: {
+			user: true,
+		},
+	});
 
-  return assignees;
+	return assignees;
 });
 
 export async function generateMetadata({
-  params,
+	params,
 }: {
-  params: Promise<{ locale: string }>;
+	params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
-  const { locale } = await params;
-  setStaticParamsLocale(locale);
-  const t = await getI18n();
+	const { locale } = await params;
+	setStaticParamsLocale(locale);
+	const t = await getI18n();
 
-  return {
-    title: t("risk.risk_overview"),
-  };
+	return {
+		title: t("risk.risk_overview"),
+	};
 }

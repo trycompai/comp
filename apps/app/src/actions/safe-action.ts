@@ -1,5 +1,6 @@
 import { auth } from "@/utils/auth";
 import { logger } from "@/utils/logger";
+import { track } from "@comp/analytics";
 import { client } from "@comp/kv";
 import { Ratelimit } from "@upstash/ratelimit";
 import {
@@ -95,36 +96,14 @@ export const authActionClient = actionClientWithMeta
 			throw new Error("Unauthorized");
 		}
 
-		// try {
-		// 	const auditData = {
-		// 		userId: session.user.id,
-		// 		email: session.user.email,
-		// 		name: session.user.name,
-		// 		organizationId: session.session.activeOrganizationId,
-		// 		action: metadata.name,
-		// 		ip: ctx.ip,
-		// 		userAgent: ctx.userAgent,
-		// 	};
-
-		// 	await db.auditLog.create({
-		// 		data: {
-		// 			data: auditData,
-		// 			userId: session.user.id,
-		// 			organizationId: session.session.activeOrganizationId,
-		// 		},
-		// 	});
-
-		// 	if (metadata.track) {
-		// 		track(session.user.id, metadata.track.event, {
-		// 			channel: metadata.track.channel,
-		// 			email: session.user.email,
-		// 			name: session.user.name,
-		// 			organizationId: session.session.activeOrganizationId,
-		// 		});
-		// 	}
-		// } catch (error) {
-		// 	logger("Audit log error:", error);
-		// }
+		if (metadata.track) {
+			track(session.user.id, metadata.track.event, {
+				channel: metadata.track.channel,
+				email: session.user.email,
+				name: session.user.name,
+				organizationId: session.session.activeOrganizationId,
+			});
+		}
 
 		return next({
 			ctx: {

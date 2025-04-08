@@ -55,7 +55,6 @@ export function UpdateTitleAndDescriptionForm({
 	});
 
 	const onSubmit = (data: z.infer<typeof updateVendorSchema>) => {
-		console.log("Form submitted with data:", data);
 		updateVendor.execute({
 			id: data.id,
 			name: data.name,

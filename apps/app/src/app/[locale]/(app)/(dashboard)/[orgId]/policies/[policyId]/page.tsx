@@ -12,130 +12,132 @@ import { PolicyPageEditor } from "./editor/components/PolicyDetails";
 import { Comments } from "@/components/comments";
 
 export default async function PolicyDetails({
-  params,
+	params,
 }: {
-  params: Promise<{ locale: string; policyId: string; orgId: string }>;
+	params: Promise<{ locale: string; policyId: string; orgId: string }>;
 }) {
-  const { locale, policyId, orgId } = await params;
+	const { locale, policyId, orgId } = await params;
 
-  setStaticParamsLocale(locale);
-  const policy = await getPolicy(policyId);
-  const assignees = await getAssignees();
-  const comments = await getComments({ policyId });
+	setStaticParamsLocale(locale);
+	const policy = await getPolicy(policyId);
+	const assignees = await getAssignees();
+	const comments = await getComments({ policyId });
 
-  return (
-    <PageWithBreadcrumb
-      breadcrumbs={[
-        { label: "Policies", href: `/${orgId}/policies/all` },
-        { label: policy?.name ?? "Policy", current: true },
-      ]}
-    >
-      <PolicyOverview policy={policy ?? null} assignees={assignees} />
-      <PolicyPageEditor
-        policyId={policyId}
-        policyContent={policy?.content ? (policy.content as JSONContent[]) : []}
-      />
-      <Comments entityId={policyId} comments={comments} />
-    </PageWithBreadcrumb>
-  );
+	return (
+		<PageWithBreadcrumb
+			breadcrumbs={[
+				{ label: "Policies", href: `/${orgId}/policies/all` },
+				{ label: policy?.name ?? "Policy", current: true },
+			]}
+		>
+			<PolicyOverview policy={policy ?? null} assignees={assignees} />
+			<PolicyPageEditor
+				policyId={policyId}
+				policyContent={policy?.content ? (policy.content as JSONContent[]) : []}
+			/>
+			<Comments entityId={policyId} comments={comments} />
+		</PageWithBreadcrumb>
+	);
 }
 
 export async function generateMetadata({
-  params,
+	params,
 }: {
-  params: Promise<{ locale: string; policyId: string }>;
+	params: Promise<{ locale: string; policyId: string }>;
 }): Promise<Metadata> {
-  const { locale } = await params;
+	const { locale } = await params;
 
-  setStaticParamsLocale(locale);
-  const t = await getI18n();
+	setStaticParamsLocale(locale);
+	const t = await getI18n();
 
-  return {
-    title: t("policies.overview.title"),
-  };
+	return {
+		title: t("policies.overview.title"),
+	};
 }
 
 const getPolicy = cache(async (policyId: string) => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+	const session = await auth.api.getSession({
+		headers: await headers(),
+	});
 
-  const organizationId = session?.session.activeOrganizationId;
+	const organizationId = session?.session.activeOrganizationId;
 
-  if (!organizationId) {
-    return null;
-  }
+	if (!organizationId) {
+		return null;
+	}
 
-  const policy = await db.policy.findUnique({
-    where: { id: policyId, organizationId },
-  });
+	const policy = await db.policy.findUnique({
+		where: { id: policyId, organizationId },
+	});
 
-  if (!policy) {
-    return null;
-  }
+	if (!policy) {
+		return null;
+	}
 
-  return policy;
+	return policy;
 });
 
 const getAssignees = cache(async () => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+	const session = await auth.api.getSession({
+		headers: await headers(),
+	});
 
-  const organizationId = session?.session.activeOrganizationId;
+	const organizationId = session?.session.activeOrganizationId;
 
-  if (!organizationId) {
-    return [];
-  }
+	if (!organizationId) {
+		return [];
+	}
 
-  const assignees = await db.member.findMany({
-    where: {
-      organizationId,
-      role: {
-        notIn: ["employee"],
-      },
-    },
-    include: {
-      user: true,
-    },
-  });
+	const assignees = await db.member.findMany({
+		where: {
+			organizationId,
+			role: {
+				notIn: ["employee"],
+			},
+		},
+		include: {
+			user: true,
+		},
+	});
 
-  return assignees;
+	return assignees;
 });
 
-const getComments = cache(async ({
-  policyId,
-}: {
-  policyId: string;
-}) => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+const getComments = cache(
+	async ({
+		policyId,
+	}: {
+		policyId: string;
+	}) => {
+		const session = await auth.api.getSession({
+			headers: await headers(),
+		});
 
-  const organizationId = session?.session.activeOrganizationId;
+		const organizationId = session?.session.activeOrganizationId;
 
-  if (!organizationId) {
-    return [];
-  }
+		if (!organizationId) {
+			return [];
+		}
 
-  try {
-    const comments = await db.comment.findMany({
-      where: { entityId: policyId, organizationId },
-      include: {
-        author: {
-          include: {
-            user: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+		try {
+			const comments = await db.comment.findMany({
+				where: { entityId: policyId, organizationId },
+				include: {
+					author: {
+						include: {
+							user: true,
+						},
+					},
+				},
+				orderBy: {
+					createdAt: "desc",
+				},
+			});
 
-    return comments;
-  } catch (error) {
-    console.error(error);
-    return [];
-  }
-});
+			return comments;
+		} catch (error) {
+			console.error(error);
+			return [];
+		}
+	},
+);

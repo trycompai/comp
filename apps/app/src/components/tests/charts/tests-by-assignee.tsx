@@ -40,7 +40,7 @@ const testStatus = {
 export async function TestsByAssignee({ organizationId }: Props) {
 	const t = await getI18n();
 	const userStats = await userData(organizationId);
-	console.log(userStats);
+
 	const stats: UserTestStats[] = userStats.map((user) => ({
 		user: {
 			id: user.id,

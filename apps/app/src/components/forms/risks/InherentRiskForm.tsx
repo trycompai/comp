@@ -7,12 +7,17 @@ import { Button } from "@comp/ui/button";
 import {
 	Form,
 	FormControl,
-	FormDescription,
 	FormField,
 	FormItem,
 	FormLabel,
 } from "@comp/ui/form";
-import { RadioGroup, RadioGroupItem } from "@comp/ui/radio-group";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@comp/ui/select";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Impact, Likelihood } from "@prisma/client";
 import { Loader2 } from "lucide-react";
@@ -30,26 +35,26 @@ interface InherentRiskFormProps {
 
 // Map for displaying readable labels
 const LIKELIHOOD_LABELS: Record<Likelihood, string> = {
-	[Likelihood.very_unlikely]: "Very Unlikely (1-2)",
-	[Likelihood.unlikely]: "Unlikely (3-4)",
-	[Likelihood.possible]: "Possible (5-6)",
-	[Likelihood.likely]: "Likely (7-8)",
-	[Likelihood.very_likely]: "Very Likely (9-10)",
+	[Likelihood.very_unlikely]: "Very Unlikely",
+	[Likelihood.unlikely]: "Unlikely",
+	[Likelihood.possible]: "Possible",
+	[Likelihood.likely]: "Likely",
+	[Likelihood.very_likely]: "Very Likely",
 };
 
 // Map for displaying readable labels
 const IMPACT_LABELS: Record<Impact, string> = {
-	[Impact.insignificant]: "Insignificant (1-2)",
-	[Impact.minor]: "Minor (3-4)",
-	[Impact.moderate]: "Moderate (5-6)",
-	[Impact.major]: "Major (7-8)",
-	[Impact.severe]: "Severe (9-10)",
+	[Impact.insignificant]: "Insignificant",
+	[Impact.minor]: "Minor",
+	[Impact.moderate]: "Moderate",
+	[Impact.major]: "Major",
+	[Impact.severe]: "Severe",
 };
 
 export function InherentRiskForm({
 	riskId,
-	initialProbability = Likelihood.possible,
-	initialImpact = Impact.moderate,
+	initialProbability,
+	initialImpact,
 }: InherentRiskFormProps) {
 	const [_, setOpen] = useQueryState("inherent-risk-sheet");
 	const t = useI18n();
@@ -73,8 +78,8 @@ export function InherentRiskForm({
 		},
 	});
 
-	const onSubmit = (data: z.infer<typeof updateInherentRiskSchema>) => {
-		updateInherentRisk.execute(data);
+	const onSubmit = (values: z.infer<typeof updateInherentRiskSchema>) => {
+		updateInherentRisk.execute(values);
 	};
 
 	return (
@@ -86,25 +91,22 @@ export function InherentRiskForm({
 					render={({ field }) => (
 						<FormItem>
 							<FormLabel>{t("risk.metrics.probability")}</FormLabel>
-							<FormControl>
-								<RadioGroup
-									onValueChange={field.onChange}
-									defaultValue={field.value}
-									className="grid gap-3"
-								>
+							<Select onValueChange={field.onChange} value={field.value}>
+								<FormControl>
+									<SelectTrigger>
+										<SelectValue
+											placeholder={t("vendors.risks.select_probability")}
+										/>
+									</SelectTrigger>
+								</FormControl>
+								<SelectContent>
 									{Object.entries(LIKELIHOOD_LABELS).map(([value, label]) => (
-										<FormItem
-											key={value}
-											className="flex items-center space-x-3 space-y-0"
-										>
-											<FormControl>
-												<RadioGroupItem value={value} />
-											</FormControl>
-											<FormLabel className="font-normal">{label}</FormLabel>
-										</FormItem>
+										<SelectItem key={value} value={value}>
+											{label}
+										</SelectItem>
 									))}
-								</RadioGroup>
-							</FormControl>
+								</SelectContent>
+							</Select>
 						</FormItem>
 					)}
 				/>
@@ -115,25 +117,22 @@ export function InherentRiskForm({
 					render={({ field }) => (
 						<FormItem>
 							<FormLabel>{t("risk.metrics.impact")}</FormLabel>
-							<FormControl>
-								<RadioGroup
-									onValueChange={field.onChange}
-									defaultValue={field.value}
-									className="grid gap-3"
-								>
+							<Select onValueChange={field.onChange} value={field.value}>
+								<FormControl>
+									<SelectTrigger>
+										<SelectValue
+											placeholder={t("vendors.risks.select_impact")}
+										/>
+									</SelectTrigger>
+								</FormControl>
+								<SelectContent>
 									{Object.entries(IMPACT_LABELS).map(([value, label]) => (
-										<FormItem
-											key={value}
-											className="flex items-center space-x-3 space-y-0"
-										>
-											<FormControl>
-												<RadioGroupItem value={value} />
-											</FormControl>
-											<FormLabel className="font-normal">{label}</FormLabel>
-										</FormItem>
+										<SelectItem key={value} value={value}>
+											{label}
+										</SelectItem>
 									))}
-								</RadioGroup>
-							</FormControl>
+								</SelectContent>
+							</Select>
 						</FormItem>
 					)}
 				/>

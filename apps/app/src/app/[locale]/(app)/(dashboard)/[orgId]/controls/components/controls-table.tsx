@@ -12,41 +12,39 @@ import { CreatePolicySheet } from "@/components/sheets/create-policy-sheet";
 import { useParams } from "next/navigation";
 
 interface ControlsTableProps {
-  promises: Promise<[Awaited<ReturnType<typeof getControls>>]>;
+	promises: Promise<[Awaited<ReturnType<typeof getControls>>]>;
 }
 
 export function ControlsTable({ promises }: ControlsTableProps) {
-  const [{ data, pageCount }] = React.use(promises);
-  const { orgId } = useParams();
-  const columns = React.useMemo(() => getControlColumns(), []);
+	const [{ data, pageCount }] = React.use(promises);
+	const { orgId } = useParams();
+	const columns = React.useMemo(() => getControlColumns(), []);
 
-  const { table } = useDataTable({
-    data,
-    columns,
-    pageCount,
-    initialState: {
-      sorting: [{ id: "name", desc: true }],
-      columnPinning: { right: ["actions"] },
-    },
-    getRowId: (originalRow) => originalRow.id,
-    shallow: false,
-    clearOnDefault: true,
-  });
+	const { table } = useDataTable({
+		data,
+		columns,
+		pageCount,
+		initialState: {
+			sorting: [{ id: "name", desc: true }],
+			columnPinning: { right: ["actions"] },
+		},
+		getRowId: (originalRow) => originalRow.id,
+		shallow: false,
+		clearOnDefault: true,
+	});
 
-  return (
-    <>
-      <DataTable
-        table={table}
-        getRowId={(row) => row.id}
-        rowClickBasePath={`/${orgId}/controls`}
-      >
-        <DataTableToolbar
-          table={table}
-        >
-          <DataTableSortList table={table} align="end" />
-        </DataTableToolbar>
-      </DataTable>
-      <CreatePolicySheet />
-    </>
-  );
+	return (
+		<>
+			<DataTable
+				table={table}
+				getRowId={(row) => row.id}
+				rowClickBasePath={`/${orgId}/controls`}
+			>
+				<DataTableToolbar table={table}>
+					<DataTableSortList table={table} align="end" />
+				</DataTableToolbar>
+			</DataTable>
+			<CreatePolicySheet />
+		</>
+	);
 }

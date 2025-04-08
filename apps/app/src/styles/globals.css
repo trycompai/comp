@@ -1,265 +1,264 @@
 html,
 body {
-  height: 100%;
+	height: 100%;
 }
 
 *:focus {
-  outline: none;
+	outline: none;
 }
 
 .skeleton-box {
-  background-color: hsl(var(--border));
-  color: hsl(var(--border)) !important;
-  user-select: none !important;
-  cursor: default !important;
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  border-color: transparent !important;
+	background-color: hsl(var(--border));
+	color: hsl(var(--border)) !important;
+	user-select: none !important;
+	cursor: default !important;
+	animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+	border-color: transparent !important;
 }
 
 .skeleton-circle {
-  background-color: hsl(var(--border));
-  border-radius: 1000px !important;
-  color: hsl(var(--border)) !important;
-  user-select: none !important;
-  cursor: default !important;
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  border-color: transparent !important;
+	background-color: hsl(var(--border));
+	border-radius: 1000px !important;
+	color: hsl(var(--border)) !important;
+	user-select: none !important;
+	cursor: default !important;
+	animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+	border-color: transparent !important;
 }
 
 .skeleton-circle > *,
 .skeleton-box > *,
 .skeleton-line > * {
-  opacity: 0 !important;
+	opacity: 0 !important;
 }
 
 .pin-field-container {
-  display: grid;
-  grid-auto-columns: max-content;
-  grid-auto-flow: column;
-  justify-content: center;
-  margin: 4rem 0;
+	display: grid;
+	grid-auto-columns: max-content;
+	grid-auto-flow: column;
+	justify-content: center;
+	margin: 4rem 0;
 }
 
 .pin-field {
-  border: 1px solid hsl(var(--border));
-  background-color: hsl(var(--accent));
-  border-right: none;
-  font-size: 2rem;
-  height: 4rem;
-  outline: none;
-  text-align: center;
-  transition-duration: 250ms;
-  transition-property: color, border, box-shadow, transform;
-  width: 4rem;
+	border: 1px solid hsl(var(--border));
+	background-color: hsl(var(--accent));
+	border-right: none;
+	font-size: 2rem;
+	height: 4rem;
+	outline: none;
+	text-align: center;
+	transition-duration: 250ms;
+	transition-property: color, border, box-shadow, transform;
+	width: 4rem;
 }
 
 .pin-field:last-of-type {
-  border-radius: 0 0.5rem 0.5rem 0;
-  border-right: 1px solid hsl(var(--border));
+	border-radius: 0 0.5rem 0.5rem 0;
+	border-right: 1px solid hsl(var(--border));
 }
 
 .pin-field:focus {
-  box-shadow: "0 0 0.25rem rgba(white, 0.5)";
-  opacity: 0.9;
-  outline: none;
+	box-shadow: "0 0 0.25rem rgba(white, 0.5)";
+	opacity: 0.9;
+	outline: none;
 }
 
 .invalid {
-  animation: shake 0.2s ease-in-out 0s 2;
+	animation: shake 0.2s ease-in-out 0s 2;
 }
 
 .pin-field:first-of-type {
-  border-radius: 0.5rem 0 0 0.5rem;
+	border-radius: 0.5rem 0 0 0.5rem;
 }
 
 .pin-field[disabled] {
-  cursor: not-allowed;
-  opacity: 0.5;
+	cursor: not-allowed;
+	opacity: 0.5;
 }
 
 @keyframes shake {
-  0% {
-    transform: translateX(0rem);
-  }
-  25% {
-    transform: translateX(0.5rem);
-  }
-  75% {
-    transform: translateX(-0.5rem);
-  }
-  100% {
-    transform: translateX(0rem);
-  }
+	0% {
+		transform: translateX(0rem);
+	}
+	25% {
+		transform: translateX(0.5rem);
+	}
+	75% {
+		transform: translateX(-0.5rem);
+	}
+	100% {
+		transform: translateX(0rem);
+	}
 }
 
 .update-available {
-  background: #68a7ff;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  position: relative;
+	background: #68a7ff;
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	position: relative;
 }
 
 .update-available svg {
-  position: absolute;
-  width: 12px;
-  height: 12px;
-  top: 0;
-  left: 0;
+	position: absolute;
+	width: 12px;
+	height: 12px;
+	top: 0;
+	left: 0;
 }
 
 .update-available svg path.svg-update {
-  opacity: 1;
-  transform: scale(1);
+	opacity: 1;
+	transform: scale(1);
 }
 
 .update-available svg circle.svg-progress {
-  stroke-dashoffset: 16px;
-  stroke-dasharray: 16px;
-  transform: rotate(270deg);
-  transform-origin: center;
+	stroke-dashoffset: 16px;
+	stroke-dasharray: 16px;
+	transform: rotate(270deg);
+	transform-origin: center;
 }
 
 .update-available.progress svg path.svg-update,
 .update-available.update-downloaded svg path.svg-update {
-  opacity: 0;
-  transform: scale(0.5);
+	opacity: 0;
+	transform: scale(0.5);
 }
 
 .update-available.progress svg circle.svg-progress {
-  stroke-dashoffset: 0px;
-  transform: rotate(270deg);
-  transition: all 4s linear;
+	stroke-dashoffset: 0px;
+	transform: rotate(270deg);
+	transition: all 4s linear;
 }
 
 .update-available svg path.svg-refresh {
-  opacity: 0;
-  transform: scale(0.2) rotate(-135deg);
-  transition: all .3s ease;
-  transform-origin: center;
+	opacity: 0;
+	transform: scale(0.2) rotate(-135deg);
+	transition: all .3s ease;
+	transform-origin: center;
 }
 
 .update-available.update-downloaded svg path.svg-refresh {
-  opacity: 1;
-  transform: scale(1) rotate(0);
+	opacity: 1;
+	transform: scale(1) rotate(0);
 }
 
 @keyframes anim-update {
-  0% {
-    transform: scale(0);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(4);
-    opacity: 0;
-  }
+	0% {
+		transform: scale(0);
+		opacity: 1;
+	}
+	100% {
+		transform: scale(4);
+		opacity: 0;
+	}
 }
 
 /* Desktop Command menu */
 html.light.todesktop-panel {
-  background-color: rgba(255, 255, 255, 0.5);
+	background-color: rgba(255, 255, 255, 0.5);
 }
 
 html.dark.todesktop-panel {
-  background-color: rgba(000, 000, 000, 0.3);
+	background-color: rgba(000, 000, 000, 0.3);
 }
 
 html.todesktop-panel body {
-  background-color: transparent !important;
+	background-color: transparent !important;
 }
 
 .color-picker .react-colorful {
-  height: 240px;
+	height: 240px;
 }
 .color-picker .react-colorful__saturation {
-  border-radius: 4px 4px 0 0;
+	border-radius: 4px 4px 0 0;
 }
 .color-picker .react-colorful__hue {
-  height: 40px;
-  border-radius: 0 0 4px 4px;
+	height: 40px;
+	border-radius: 0 0 4px 4px;
 }
 
 .color-picker .react-colorful__hue-pointer {
-  width: 8px;
-  height: inherit;
+	width: 8px;
+	height: inherit;
 }
 
 .color-picker .react-colorful__pointer {
-  width: 15px;
-  height: 15px;
+	width: 15px;
+	height: 15px;
 }
 
 .color-picker .react-colorful__hue {
-  height: 20px;
+	height: 20px;
 }
 
 .remove-arrow::-webkit-inner-spin-button,
 .remove-arrow::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
+	-webkit-appearance: none;
+	margin: 0;
 }
 
 .remove-arrow {
-  appearance: textfield;
+	appearance: textfield;
 }
 
 input[type="time"]::-webkit-clear-button {
-  display: none;
+	display: none;
 }
 
 input[type="time"]::-webkit-calendar-picker-indicator {
-  display: none;
+	display: none;
 }
 
 .invoice-editor,
 .invoice-editor div[aria-expanded="false"],
 .invoice-editor .ProseMirror,
 .invoice-editor .is-empty {
-  height: 100%;
+	height: 100%;
 }
 
 .ProseMirror-focused p.is-editor-empty:first-child::before {
-  content: attr(data-placeholder);
-  float: left;
-  color: #434343;
-  pointer-events: none;
-  height: 0;
+	content: attr(data-placeholder);
+	float: left;
+	color: #434343;
+	pointer-events: none;
+	height: 0;
 }
 
 .tiptap {
-  font-size: 11px !important;
-  line-height: 18px !important;
+	font-size: 11px !important;
+	line-height: 18px !important;
 }
 
 .dark .dotted-bg {
-  background-image: radial-gradient(
-    circle at 1px 1px,
-    #232323 0.5px,
-    transparent 0
-  );
-  background-size: 6px 6px;
+	background-image: radial-gradient(
+		circle at 1px 1px,
+		#232323 0.5px,
+		transparent 0
+	);
+	background-size: 6px 6px;
 }
 
 .light .dotted-bg {
-  background-size: 6px 6px;
-  background-image: radial-gradient(
-    circle at 1px 1px,
-    #e0e0e0 0.5px,
-    transparent 0
-  );
+	background-size: 6px 6px;
+	background-image: radial-gradient(
+		circle at 1px 1px,
+		#e0e0e0 0.5px,
+		transparent 0
+	);
 }
 
-
 :root {
-  --chart-positive: 142 76% 45%;    /* Green: use for published, or reviewed = the items are in a good state */
-  --chart-neutral: 45 89% 53%;     /* Yellow: use for draft(s) and actions that need reviewing soon */
-  --chart-warning: 220 14% 53%;    /* Gray: deleted, archived - states that have been closed */
-  --chart-destructive: 0 85% 60%;      /* Red: use for needs review, something that needs action immediately */
-  --chart-other: 196 80% 45%;    /* Blue: use for other states */
+	--chart-positive: 142 76% 45%; /* Green: use for published, or reviewed = the items are in a good state */
+	--chart-neutral: 45 89% 53%; /* Yellow: use for draft(s) and actions that need reviewing soon */
+	--chart-warning: 220 14% 53%; /* Gray: deleted, archived - states that have been closed */
+	--chart-destructive: 0 85% 60%; /* Red: use for needs review, something that needs action immediately */
+	--chart-other: 196 80% 45%; /* Blue: use for other states */
 
-  --chart-closed: #00DC73;
-  --chart-pending: #0BA5E9;
-  --chart-open: #FFC007;
-  --chart-archived: #64748B;
-  --chart-needs_review: #FF0000;
+	--chart-closed: #00dc73;
+	--chart-pending: #0ba5e9;
+	--chart-open: #ffc007;
+	--chart-archived: #64748b;
+	--chart-needs_review: #ff0000;
 }

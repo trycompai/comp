@@ -87,9 +87,7 @@ export function InherentRiskForm({
 					name="inherentProbability"
 					render={({ field }) => (
 						<FormItem>
-							<FormLabel>
-								{t("vendors.risks.inherent_probability")} (Vertical Axis)
-							</FormLabel>
+							<FormLabel>{t("vendors.risks.inherent_probability")}</FormLabel>
 							<Select
 								onValueChange={field.onChange}
 								defaultValue={field.value}
@@ -104,7 +102,7 @@ export function InherentRiskForm({
 								</FormControl>
 								<SelectContent>
 									<SelectItem value={Likelihood.very_likely}>
-										{t("vendors.risks.very_likely")} (Top row)
+										{t("vendors.risks.very_likely")}
 									</SelectItem>
 									<SelectItem value={Likelihood.likely}>
 										{t("vendors.risks.likely")}
@@ -116,7 +114,7 @@ export function InherentRiskForm({
 										{t("vendors.risks.unlikely")}
 									</SelectItem>
 									<SelectItem value={Likelihood.very_unlikely}>
-										{t("vendors.risks.very_unlikely")} (Bottom row)
+										{t("vendors.risks.very_unlikely")}
 									</SelectItem>
 								</SelectContent>
 							</Select>
@@ -130,9 +128,7 @@ export function InherentRiskForm({
 					name="inherentImpact"
 					render={({ field }) => (
 						<FormItem>
-							<FormLabel>
-								{t("vendors.risks.inherent_impact")} (Horizontal Axis)
-							</FormLabel>
+							<FormLabel>{t("vendors.risks.inherent_impact")}</FormLabel>
 							<Select
 								onValueChange={field.onChange}
 								defaultValue={field.value}
@@ -147,7 +143,7 @@ export function InherentRiskForm({
 								</FormControl>
 								<SelectContent>
 									<SelectItem value={Impact.insignificant}>
-										{t("vendors.risks.insignificant")} (Left column)
+										{t("vendors.risks.insignificant")}
 									</SelectItem>
 									<SelectItem value={Impact.minor}>
 										{t("vendors.risks.minor")}
@@ -159,7 +155,7 @@ export function InherentRiskForm({
 										{t("vendors.risks.major")}
 									</SelectItem>
 									<SelectItem value={Impact.severe}>
-										{t("vendors.risks.severe")} (Right column)
+										{t("vendors.risks.severe")}
 									</SelectItem>
 								</SelectContent>
 							</Select>
@@ -168,9 +164,9 @@ export function InherentRiskForm({
 					)}
 				/>
 
-				<Button type="submit" className="w-full">
-					{t("common.save")}
-				</Button>
+				<div className="flex justify-end">
+					<Button type="submit">{t("common.save")}</Button>
+				</div>
 			</form>
 		</Form>
 	);

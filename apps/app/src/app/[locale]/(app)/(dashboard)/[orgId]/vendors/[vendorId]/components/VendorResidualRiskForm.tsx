@@ -33,7 +33,7 @@ interface FormData {
 	impact: number;
 }
 
-export function ResidualRiskForm({
+export function VendorResidualRiskForm({
 	riskId,
 	initialProbability,
 	initialImpact,

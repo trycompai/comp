@@ -18,10 +18,15 @@ export function AnalyticsProvider({
 	apiHost,
 	userId,
 }: ProviderProps) {
-	const [isInitialized, setIsInitialized] = useState(false);
+	// Only initialize state if keys are provided
+	const shouldInitialize = apiKey && apiHost;
+	const [isInitialized, setIsInitialized] = useState(!shouldInitialize); // Start as initialized if keys are missing
 
 	useEffect(() => {
-		if (typeof window === "undefined") return;
+		// Only run effect if keys are provided and not already initialized
+		if (typeof window === "undefined" || !shouldInitialize || isInitialized) {
+			return;
+		}
 
 		try {
 			posthog.init(apiKey, {
@@ -40,9 +45,10 @@ export function AnalyticsProvider({
 		} catch (error) {
 			setIsInitialized(true); // Still set to true to avoid blocking rendering
 		}
-	}, [apiKey, apiHost, userId]);
+	}, [apiKey, apiHost, userId, shouldInitialize, isInitialized]); // Add deps
 
-	if (!isInitialized) {
+	// If keys are missing or not initialized yet, just return children
+	if (!shouldInitialize || !isInitialized) {
 		return <>{children}</>;
 	}
 

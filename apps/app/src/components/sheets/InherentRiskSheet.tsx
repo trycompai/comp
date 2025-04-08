@@ -15,27 +15,7 @@ import {
 import { Impact, Likelihood } from "@prisma/client";
 import { X } from "lucide-react";
 import { useQueryState } from "nuqs";
-import { InherentRiskForm } from "../forms/risks/inherent-risk-form";
-
-// Helper function to convert numeric values to enum values
-const numberToProbability = (value?: number): Likelihood | undefined => {
-	if (value === undefined) return undefined;
-	if (value <= 2) return Likelihood.very_unlikely;
-	if (value <= 4) return Likelihood.unlikely;
-	if (value <= 6) return Likelihood.possible;
-	if (value <= 8) return Likelihood.likely;
-	return Likelihood.very_likely;
-};
-
-// Helper function to convert numeric values to enum values
-const numberToImpact = (value?: number): Impact | undefined => {
-	if (value === undefined) return undefined;
-	if (value <= 2) return Impact.insignificant;
-	if (value <= 4) return Impact.minor;
-	if (value <= 6) return Impact.moderate;
-	if (value <= 8) return Impact.major;
-	return Impact.severe;
-};
+import { InherentRiskForm } from "../forms/risks/InherentRiskForm";
 
 export function InherentRiskSheet({
 	riskId,
@@ -44,15 +24,11 @@ export function InherentRiskSheet({
 	onSuccess,
 }: {
 	riskId: string;
-	initialProbability?: number;
-	initialImpact?: number;
+	initialProbability?: Likelihood;
+	initialImpact?: Impact;
 	onSuccess?: () => void;
 }) {
 	const t = useI18n();
-
-	// Convert numeric values to enum values
-	const probabilityEnum = numberToProbability(initialProbability);
-	const impactEnum = numberToImpact(initialImpact);
 
 	const isDesktop = useMediaQuery("(min-width: 768px)");
 	const [open, setOpen] = useQueryState("inherent-risk-sheet");
@@ -86,8 +62,8 @@ export function InherentRiskSheet({
 					<ScrollArea className="h-full p-0 pb-[100px]" hideScrollbar>
 						<InherentRiskForm
 							riskId={riskId}
-							initialProbability={probabilityEnum}
-							initialImpact={impactEnum}
+							initialProbability={initialProbability}
+							initialImpact={initialImpact}
 						/>
 					</ScrollArea>
 				</SheetContent>
@@ -101,8 +77,8 @@ export function InherentRiskSheet({
 			<DrawerContent className="p-6">
 				<InherentRiskForm
 					riskId={riskId}
-					initialProbability={probabilityEnum}
-					initialImpact={impactEnum}
+					initialProbability={initialProbability}
+					initialImpact={initialImpact}
 				/>
 			</DrawerContent>
 		</Drawer>

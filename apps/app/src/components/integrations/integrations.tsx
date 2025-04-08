@@ -27,10 +27,6 @@ export function OrganizationIntegration({
 		i.integrationId.toLowerCase(),
 	);
 
-	// Debug: Log all available integrations and installed integrations
-	console.log("All integrations:", integrations);
-	console.log("Installed integrations:", installedIntegrations);
-
 	const installedSettings: Record<string, unknown> = installed.reduce(
 		(acc, integration) => {
 			acc[integration.integrationId.toLowerCase()] = integration.userSettings;
@@ -43,20 +39,14 @@ export function OrganizationIntegration({
 		.filter((integration) => {
 			const shouldInclude =
 				!isInstalledPage || installedIntegrations.includes(integration.id);
-			// Debug: Log which integrations get filtered out by installed tab
-			if (!shouldInclude) {
-				console.log("Filtered out (installed tab):", integration.name);
-			}
+
 			return shouldInclude;
 		})
 		.filter((integration) => {
 			const matchesSearch =
 				!search ||
 				integration.name.toLowerCase().includes(search.toLowerCase());
-			// Debug: Log which integrations get filtered out by search
-			if (!matchesSearch) {
-				console.log("Filtered out (search):", integration.name);
-			}
+
 			return matchesSearch;
 		})
 		.reduce(

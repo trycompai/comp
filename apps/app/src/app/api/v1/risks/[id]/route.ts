@@ -2,12 +2,12 @@ import { db } from "@comp/db";
 import { NextResponse, type NextRequest } from "next/server";
 import { getOrganizationFromApiKey } from "@/lib/api-key";
 import type {
-  RiskTreatmentType,
-  RiskStatus,
-  RiskCategory,
-  Departments,
-  Likelihood,
-  Impact,
+	RiskTreatmentType,
+	RiskStatus,
+	RiskCategory,
+	Departments,
+	Likelihood,
+	Impact,
 } from "@comp/db/types";
 
 // Configure this route to use Node.js runtime instead of Edge
@@ -31,127 +31,127 @@ export const runtime = "nodejs";
  * - 500: { success: false, error: "Failed to fetch risk" }
  */
 export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+	request: NextRequest,
+	{ params }: { params: Promise<{ id: string }> },
 ) {
-  // Get the organization ID from the API key
-  const { organizationId, errorResponse } =
-    await getOrganizationFromApiKey(request);
+	// Get the organization ID from the API key
+	const { organizationId, errorResponse } =
+		await getOrganizationFromApiKey(request);
 
-  // If there's an error response, return it
-  if (errorResponse) {
-    return errorResponse;
-  }
+	// If there's an error response, return it
+	if (errorResponse) {
+		return errorResponse;
+	}
 
-  try {
-    const riskId = (await params).id;
+	try {
+		const riskId = (await params).id;
 
-    // Fetch the risk
-    const risk = await db.risk.findFirst({
-      where: {
-        id: riskId,
-        organizationId: organizationId!,
-      },
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        category: true,
-        department: true,
-        status: true,
-        likelihood: true,
-        impact: true,
-        residualLikelihood: true,
-        residualImpact: true,
-        createdAt: true,
-        updatedAt: true,
-        assigneeId: true,
-        treatmentStrategy: true,
-        treatmentStrategyDescription: true,
-        assignee: {
-          select: {
-            id: true,
-            user: {
-              select: {
-                name: true,
-                email: true,
-              },
-            },
-          },
-        },
-      },
-    });
+		// Fetch the risk
+		const risk = await db.risk.findFirst({
+			where: {
+				id: riskId,
+				organizationId: organizationId!,
+			},
+			select: {
+				id: true,
+				title: true,
+				description: true,
+				category: true,
+				department: true,
+				status: true,
+				likelihood: true,
+				impact: true,
+				residualLikelihood: true,
+				residualImpact: true,
+				createdAt: true,
+				updatedAt: true,
+				assigneeId: true,
+				treatmentStrategy: true,
+				treatmentStrategyDescription: true,
+				assignee: {
+					select: {
+						id: true,
+						user: {
+							select: {
+								name: true,
+								email: true,
+							},
+						},
+					},
+				},
+			},
+		});
 
-    // If risk not found, return 404
-    if (!risk) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Risk not found",
-        },
-        { status: 404 }
-      );
-    }
+		// If risk not found, return 404
+		if (!risk) {
+			return NextResponse.json(
+				{
+					success: false,
+					error: "Risk not found",
+				},
+				{ status: 404 },
+			);
+		}
 
-    // Fetch tasks for this risk
-    const tasks = await db.task.findMany({
-      where: {
-        relatedId: riskId,
-        relatedType: "risk",
-        organizationId: organizationId!,
-      },
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        status: true,
-        dueDate: true,
-        createdAt: true,
-        updatedAt: true,
-        assigneeId: true,
-        assignee: {
-          select: {
-            user: {
-              select: {
-                name: true,
-                email: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+		// Fetch tasks for this risk
+		const tasks = await db.task.findMany({
+			where: {
+				relatedId: riskId,
+				relatedType: "risk",
+				organizationId: organizationId!,
+			},
+			select: {
+				id: true,
+				title: true,
+				description: true,
+				status: true,
+				dueDate: true,
+				createdAt: true,
+				updatedAt: true,
+				assigneeId: true,
+				assignee: {
+					select: {
+						user: {
+							select: {
+								name: true,
+								email: true,
+							},
+						},
+					},
+				},
+			},
+			orderBy: {
+				createdAt: "desc",
+			},
+		});
 
-    // Format dates for JSON response
-    const formattedRisk = {
-      ...risk,
-      createdAt: risk.createdAt.toISOString(),
-      updatedAt: risk.updatedAt.toISOString(),
-      tasks: tasks.map((task) => ({
-        ...task,
-        createdAt: task.createdAt.toISOString(),
-        updatedAt: task.updatedAt.toISOString(),
-        dueDate: task.dueDate.toISOString(),
-      })),
-    };
+		// Format dates for JSON response
+		const formattedRisk = {
+			...risk,
+			createdAt: risk.createdAt.toISOString(),
+			updatedAt: risk.updatedAt.toISOString(),
+			tasks: tasks.map((task) => ({
+				...task,
+				createdAt: task.createdAt.toISOString(),
+				updatedAt: task.updatedAt.toISOString(),
+				dueDate: task.dueDate.toISOString(),
+			})),
+		};
 
-    return NextResponse.json({
-      success: true,
-      data: formattedRisk,
-    });
-  } catch (error) {
-    console.error("Error fetching risk:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Failed to fetch risk",
-      },
-      { status: 500 }
-    );
-  }
+		return NextResponse.json({
+			success: true,
+			data: formattedRisk,
+		});
+	} catch (error) {
+		console.error("Error fetching risk:", error);
+		return NextResponse.json(
+			{
+				success: false,
+				error: "Failed to fetch risk",
+			},
+			{ status: 500 },
+		);
+	}
 }
 
 /**
@@ -172,60 +172,60 @@ export async function GET(
  * - 500: { success: false, error: string }
  */
 export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+	request: NextRequest,
+	{ params }: { params: Promise<{ id: string }> },
 ) {
-  // Get the organization ID from the API key
-  const { organizationId, errorResponse } =
-    await getOrganizationFromApiKey(request);
+	// Get the organization ID from the API key
+	const { organizationId, errorResponse } =
+		await getOrganizationFromApiKey(request);
 
-  // If there's an error response, return it
-  if (errorResponse) {
-    return errorResponse;
-  }
+	// If there's an error response, return it
+	if (errorResponse) {
+		return errorResponse;
+	}
 
-  try {
-    const riskId = (await params).id;
+	try {
+		const riskId = (await params).id;
 
-    // Check if the risk exists and belongs to the organization
-    const existingRisk = await db.risk.findFirst({
-      where: {
-        id: riskId,
-        organizationId: organizationId!,
-      },
-    });
+		// Check if the risk exists and belongs to the organization
+		const existingRisk = await db.risk.findFirst({
+			where: {
+				id: riskId,
+				organizationId: organizationId!,
+			},
+		});
 
-    if (!existingRisk) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Risk not found",
-        },
-        { status: 404 }
-      );
-    }
+		if (!existingRisk) {
+			return NextResponse.json(
+				{
+					success: false,
+					error: "Risk not found",
+				},
+				{ status: 404 },
+			);
+		}
 
-    // Delete the risk
-    await db.risk.delete({
-      where: {
-        id: riskId,
-      },
-    });
+		// Delete the risk
+		await db.risk.delete({
+			where: {
+				id: riskId,
+			},
+		});
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        message: "Risk deleted successfully",
-      },
-    });
-  } catch (error) {
-    console.error("Error deleting risk:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Failed to delete risk",
-      },
-      { status: 500 }
-    );
-  }
+		return NextResponse.json({
+			success: true,
+			data: {
+				message: "Risk deleted successfully",
+			},
+		});
+	} catch (error) {
+		console.error("Error deleting risk:", error);
+		return NextResponse.json(
+			{
+				success: false,
+				error: "Failed to delete risk",
+			},
+			{ status: 500 },
+		);
+	}
 }

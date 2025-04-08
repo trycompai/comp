@@ -139,7 +139,6 @@ export function useNotifications() {
 			headlessService.initializeSession({
 				listener: () => {},
 				onSuccess: () => {
-					console.log("Novu session initialized successfully");
 					headlessServiceRef.current = headlessService;
 					fetchNotifications();
 				},

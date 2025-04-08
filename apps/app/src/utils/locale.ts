@@ -5,12 +5,12 @@ import { setStaticParamsLocale } from "next-international/server";
  * Use this in pages to avoid repetitive locale setup code
  */
 export async function setupLocale(
-  params: Promise<{ locale: string } & Record<string, string>>
+	params: Promise<{ locale: string } & Record<string, string>>,
 ): Promise<string> {
-  const resolvedParams = await params;
-  const { locale } = resolvedParams;
-  setStaticParamsLocale(locale);
-  return locale;
+	const resolvedParams = await params;
+	const { locale } = resolvedParams;
+	setStaticParamsLocale(locale);
+	return locale;
 }
 
 /**
@@ -18,10 +18,10 @@ export async function setupLocale(
  * This is useful when you need both the locale and other route parameters
  */
 export async function getParamsWithLocale<T extends Record<string, string>>(
-  params: Promise<{ locale: string } & T>
+	params: Promise<{ locale: string } & T>,
 ): Promise<{ locale: string } & T> {
-  const resolvedParams = await params;
-  const { locale } = resolvedParams;
-  setStaticParamsLocale(locale);
-  return resolvedParams;
+	const resolvedParams = await params;
+	const { locale } = resolvedParams;
+	setStaticParamsLocale(locale);
+	return resolvedParams;
 }

@@ -217,6 +217,16 @@ export const updateResidualRiskSchema = z.object({
 	impact: z.number().min(1).max(10),
 });
 
+// ADD START: Schema for enum-based residual risk update
+export const updateResidualRiskEnumSchema = z.object({
+	id: z.string().min(1, {
+		message: "Risk ID is required",
+	}),
+	probability: z.nativeEnum(Likelihood),
+	impact: z.nativeEnum(Impact),
+});
+// ADD END
+
 // Policies
 export const createPolicySchema = z.object({
 	title: z.string(),
