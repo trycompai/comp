@@ -82,9 +82,13 @@ export default async function Layout(props: {
 	children: React.ReactNode;
 	params: Promise<{ locale: string }>;
 }) {
+	console.log("before params");
+
 	const params = await props.params;
 	const { locale } = params;
 	const { children } = props;
+
+	console.log("before html");
 
 	return (
 		<html lang={locale} suppressHydrationWarning>
