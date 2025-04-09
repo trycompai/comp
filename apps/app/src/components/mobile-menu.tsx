@@ -4,7 +4,7 @@ import { Button } from "@comp/ui/button";
 import { Icons } from "@comp/ui/icons";
 import { Sheet, SheetContent } from "@comp/ui/sheet";
 import { useState } from "react";
-import { MainMenu } from "./main-menu";
+import { MainMenu } from "./MainMenu";
 
 export function MobileMenu({
 	organizationId,

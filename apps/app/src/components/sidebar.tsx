@@ -2,7 +2,7 @@ import { auth } from "@/utils/auth";
 import { getOrganizations } from "@/data/getOrganizations";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { MainMenu } from "./main-menu";
+import { MainMenu } from "./MainMenu";
 import { OrganizationSwitcher } from "./organization-switcher";
 import { SidebarCollapseButton } from "./sidebar-collapse-button";
 import { SidebarLogo } from "./sidebar-logo";

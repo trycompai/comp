@@ -12,7 +12,7 @@ export default async function RootPage() {
 	}
 
 	if (session.session.activeOrganizationId) {
-		return redirect(`/${session.session.activeOrganizationId}/frameworks`);
+		return redirect(`/${session.session.activeOrganizationId}/home`);
 	}
 
 	return redirect("/setup");
