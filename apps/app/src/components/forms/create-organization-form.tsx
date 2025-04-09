@@ -3,7 +3,6 @@
 import { createOrganizationAction } from "@/actions/organization/create-organization-action";
 import { organizationSchema } from "@/actions/schema";
 import { useI18n } from "@/locales/client";
-import { authClient } from "@/utils/auth-client";
 import { frameworks, type FrameworkId } from "@comp/data";
 import { Button } from "@comp/ui/button";
 import { Checkbox } from "@comp/ui/checkbox";
@@ -19,6 +18,7 @@ import {
 import { Icons } from "@comp/ui/icons";
 import { Input } from "@comp/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { sendGTMEvent } from "@next/third-parties/google";
 import { Loader2 } from "lucide-react";
 import { useAction } from "next-safe-action/hooks";
 import Link from "next/link";
@@ -28,7 +28,6 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type { z } from "zod";
 import { LogoSpinner } from "../logo-spinner";
-import { sendGTMEvent } from "@next/third-parties/google";
 
 export function OnboardingClient() {
 	const [isCreatingOrganization, setIsCreatingOrganization] = useState(false);
@@ -37,7 +36,6 @@ export function OnboardingClient() {
 
 	const createOrganization = useAction(createOrganizationAction, {
 		onSuccess: async () => {
-			toast.success(t("onboarding.success"));
 			router.push("/");
 		},
 		onError: () => {
@@ -49,18 +47,6 @@ export function OnboardingClient() {
 	});
 
 	const onSubmit = async (data: z.infer<typeof organizationSchema>) => {
-		const randomSuffix = Math.floor(100000 + Math.random() * 900000).toString();
-		const slug = `${data.name
-			.toLowerCase()
-			.trim()
-			.replace(/[^\w\s-]/g, "")
-			.replace(/[\s_-]+/g, "-")}-${randomSuffix}`;
-
-		await authClient.organization.create({
-			name: data.name,
-			slug,
-		});
-
 		createOrganization.execute({
 			...data,
 		});

@@ -3,7 +3,8 @@ model Organization {
   name             String
   slug             String   @unique
   logo             String?
-  createdAt        DateTime
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
   metadata         String?
   stripeCustomerId String?
 
