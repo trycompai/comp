@@ -1,6 +1,6 @@
 "use client";
 
-import { updateResidualRiskEnumAction } from "@/actions/risk/update-residual-risk-enum-action";
+import { updateResidualRiskEnumAction } from "@/actions/risks/update-residual-risk-enum-action";
 import { updateResidualRiskEnumSchema } from "@/actions/schema";
 import { useI18n } from "@/locales/client";
 import { Button } from "@comp/ui/button";

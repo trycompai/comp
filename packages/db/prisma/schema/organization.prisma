@@ -1,10 +1,10 @@
 model Organization {
-  id        String   @id @default(dbgenerated("generate_prefixed_cuid('org'::text)"))
-  name      String
-  slug      String   @unique
-  logo      String?
-  createdAt DateTime
-  metadata  String?
+  id               String   @id @default(dbgenerated("generate_prefixed_cuid('org'::text)"))
+  name             String
+  slug             String   @unique
+  logo             String?
+  createdAt        DateTime
+  metadata         String?
   stripeCustomerId String?
 
   apiKeys            ApiKey[]
@@ -21,6 +21,7 @@ model Organization {
   vendors            Vendor[]
   tasks              Task[]
   comments           Comment[]
+  onboarding         Onboarding?
 
   @@index([slug])
 }

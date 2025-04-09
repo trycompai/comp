@@ -16,7 +16,7 @@ export const columns = (orgId: string): ColumnDef<RiskRow>[] => [
 		),
 		cell: ({ row }) => {
 			return (
-				<Link href={`/${orgId}/risk/${row.original.id}`}>
+				<Link href={`/${orgId}/risks/${row.original.id}`}>
 					{row.original.title}
 				</Link>
 			);

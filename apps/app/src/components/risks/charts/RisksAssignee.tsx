@@ -66,7 +66,7 @@ export async function RisksAssignee() {
 					<div className="space-y-4">
 						{stats.map((stat) => (
 							<Link
-								href={`/${orgId}/risk/register?assigneeId=${stat.user.id}`}
+								href={`/${orgId}/risks/register?assigneeId=${stat.user.id}`}
 								key={stat.user.id}
 							>
 								<div className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted/50">

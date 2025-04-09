@@ -38,7 +38,7 @@ export function columns(): ColumnDef<RiskRegisterType>[] {
 				return (
 					<div className="flex flex-col gap-1">
 						<Button variant="link" className="p-0 justify-start" asChild>
-							<Link href={`/${orgId}/risk/${row.original.id}`}>
+							<Link href={`/${orgId}/risks/${row.original.id}`}>
 								<span className="truncate">{row.original.title}</span>
 							</Link>
 						</Button>

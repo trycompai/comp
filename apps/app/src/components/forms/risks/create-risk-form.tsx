@@ -1,6 +1,6 @@
 "use client";
 
-import { createRiskAction } from "@/actions/risk/create-risk-action";
+import { createRiskAction } from "@/actions/risks/create-risk-action";
 import { createRiskSchema } from "@/actions/schema";
 import { SelectAssignee } from "@/components/SelectAssignee";
 import { useI18n } from "@/locales/client";

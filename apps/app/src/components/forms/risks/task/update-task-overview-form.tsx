@@ -1,6 +1,6 @@
 "use client";
 
-import { updateTaskAction } from "@/actions/risk/task/update-task-action";
+import { updateTaskAction } from "@/actions/risks/task/update-task-action";
 import { updateTaskSchema } from "@/actions/schema";
 import { useI18n } from "@/locales/client";
 import type { Task } from "@comp/db/types";

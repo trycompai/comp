@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { useState } from "react";
+import { Button } from "@comp/ui/button";
 import {
 	Card,
 	CardContent,
@@ -9,10 +8,10 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@comp/ui/card";
-import { Button } from "@comp/ui/button";
-import type { ActionBlockProps } from "../types/ActionBlock.types";
-import { authClient } from "@/utils/auth-client";
+import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useState } from "react";
+import type { ActionBlockProps } from "../types/ActionBlock.types";
 
 export function ActionBlock({
 	id,

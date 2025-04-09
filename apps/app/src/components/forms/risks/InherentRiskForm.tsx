@@ -1,6 +1,6 @@
 "use client";
 
-import { updateInherentRiskAction } from "@/actions/risk/update-inherent-risk-action";
+import { updateInherentRiskAction } from "@/actions/risks/update-inherent-risk-action";
 import { updateInherentRiskSchema } from "@/actions/schema";
 import { useI18n } from "@/locales/client";
 import { Button } from "@comp/ui/button";

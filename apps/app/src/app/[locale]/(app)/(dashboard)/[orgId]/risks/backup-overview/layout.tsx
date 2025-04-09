@@ -70,7 +70,7 @@ export default async function Layout({
 					items={[
 						{ path: `/${orgId}/risk`, label: t("risk.dashboard.title") },
 						{
-							path: `/${orgId}/risk/register`,
+							path: `/${orgId}/risks/register`,
 							label: t("risk.register.title"),
 						},
 					]}

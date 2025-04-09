@@ -1,6 +1,6 @@
 "use client";
 
-import { updateRiskAction } from "@/actions/risk/update-risk-action";
+import { updateRiskAction } from "@/actions/risks/update-risk-action";
 import { updateRiskSchema } from "@/actions/schema";
 import { useI18n } from "@/locales/client";
 import { Departments, type Risk } from "@comp/db/types";

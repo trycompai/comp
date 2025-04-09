@@ -108,7 +108,7 @@ export function MainMenu({
 		},
 		{
 			id: "risk",
-			path: "/:organizationId/risk",
+			path: "/:organizationId/risks",
 			name: t("sidebar.risk"),
 			disabled: false,
 			icon: Icons.Risk,

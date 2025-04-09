@@ -1,6 +1,6 @@
 "use client";
 
-import { updateTaskAction } from "@/actions/risk/task/update-task-action";
+import { updateTaskAction } from "@/actions/risks/task/update-task-action";
 import { updateTaskSchema } from "@/actions/schema";
 import { SelectUser } from "@/components/select-user";
 import { STATUS_TYPES, Status, type StatusType } from "@/components/status";

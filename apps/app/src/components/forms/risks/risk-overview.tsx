@@ -1,6 +1,6 @@
 "use client";
 
-import { updateRiskAction } from "@/actions/risk/update-risk-action";
+import { updateRiskAction } from "@/actions/risks/update-risk-action";
 import { updateRiskSchema } from "@/actions/schema";
 import { SelectAssignee } from "@/components/SelectAssignee";
 import { STATUS_TYPES, Status, type StatusType } from "@/components/status";

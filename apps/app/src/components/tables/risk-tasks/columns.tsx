@@ -36,7 +36,7 @@ export function columns(): ColumnDef<RiskTaskType>[] {
 					<span className="truncate">
 						<Button variant="link" className="p-0" asChild>
 							<Link
-								href={`/${orgId}/risk/${row.original.riskId}/tasks/${row.original.id}`}
+								href={`/${orgId}/risks/${row.original.riskId}/tasks/${row.original.id}`}
 							>
 								{row.original.title}
 							</Link>
