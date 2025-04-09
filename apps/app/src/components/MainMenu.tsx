@@ -39,6 +39,7 @@ type MenuItem = {
 		text: string;
 		variant: "default" | "secondary" | "outline" | "new" | "beta";
 	};
+	hidden?: boolean;
 };
 
 interface ItemProps {
@@ -53,6 +54,7 @@ export function MainMenu({
 	organizationId,
 	//userIsAdmin,
 	isCollapsed = false,
+	completedOnboarding,
 }: Props) {
 	const t = useI18n();
 	const pathname = usePathname();
@@ -65,6 +67,7 @@ export function MainMenu({
 			disabled: false,
 			icon: Home,
 			protected: false,
+			hidden: completedOnboarding,
 		},
 		{
 			id: "frameworks",
@@ -214,6 +217,7 @@ export function MainMenu({
 				>
 					{items
 						.filter((item) => !item.disabled)
+						.filter((item) => !item.hidden)
 						.map((item) => {
 							const isActive = isPathActive(item.path);
 
@@ -355,4 +359,5 @@ type Props = {
 	organizationId: string;
 	//userIsAdmin: boolean;
 	isCollapsed?: boolean;
+	completedOnboarding: boolean;
 };

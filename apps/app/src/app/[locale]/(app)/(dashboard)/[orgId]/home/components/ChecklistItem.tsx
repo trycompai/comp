@@ -71,7 +71,7 @@ export function ChecklistItem({
 
 	return (
 		<Card
-			className={`relative overflow-hidden transition-all duration-300 ${
+			className={`select-none relative overflow-hidden transition-all duration-300 ${
 				completed
 					? "border-green-200 bg-green-50/30 dark:bg-green-950/10 dark:border-green-900"
 					: "hover:border-primary/50"

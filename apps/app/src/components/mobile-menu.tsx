@@ -5,13 +5,16 @@ import { Icons } from "@comp/ui/icons";
 import { Sheet, SheetContent } from "@comp/ui/sheet";
 import { useState } from "react";
 import { MainMenu } from "./MainMenu";
+import { getOnboardingForCurrentOrganization } from "@/data/getOnboardingForCurrentOrganization";
 
 export function MobileMenu({
 	organizationId,
 	isAdmin,
+	completedOnboarding,
 }: {
 	organizationId: string;
 	isAdmin?: boolean;
+	completedOnboarding: boolean;
 }) {
 	const [isOpen, setOpen] = useState(false);
 
@@ -32,7 +35,10 @@ export function MobileMenu({
 					<Icons.Logo />
 				</div>
 
-				<MainMenu organizationId={organizationId} />
+				<MainMenu
+					organizationId={organizationId}
+					completedOnboarding={completedOnboarding}
+				/>
 			</SheetContent>
 		</Sheet>
 	);

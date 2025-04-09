@@ -1,5 +1,6 @@
-import { auth } from "@/utils/auth";
+import { getOnboardingForCurrentOrganization } from "@/data/getOnboardingForCurrentOrganization";
 import { getOrganizations } from "@/data/getOrganizations";
+import { auth } from "@/utils/auth";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { MainMenu } from "./MainMenu";
@@ -20,6 +21,7 @@ export async function Sidebar() {
 	}
 
 	const { organizations } = await getOrganizations();
+	const { completedAll } = await getOnboardingForCurrentOrganization();
 
 	return (
 		<div className="h-full flex flex-col gap-0">
@@ -35,6 +37,7 @@ export async function Sidebar() {
 					//userIsAdmin={user?.isAdmin ?? false}
 					organizationId={organizationId}
 					isCollapsed={isCollapsed}
+					completedOnboarding={completedAll}
 				/>
 			</div>
 			<div className="flex-1" />

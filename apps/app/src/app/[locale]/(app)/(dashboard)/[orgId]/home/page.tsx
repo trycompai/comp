@@ -2,6 +2,7 @@ import { db } from "@comp/db";
 import { Checklist } from "./components/Checklist";
 import { OnboardingProgress } from "./components/OnboardingProgress";
 import { ChecklistItemProps } from "./types/ChecklistProps.types";
+import { redirect } from "next/navigation";
 
 export default async function Page({
 	params,
@@ -58,6 +59,10 @@ export default async function Page({
 
 	const completedItems = checklistItems.filter((item) => item.completed).length;
 	const totalItems = checklistItems.length;
+
+	if (completedItems === totalItems) {
+		return redirect(`/${orgId}/frameworks`);
+	}
 
 	return (
 		<>
