@@ -30,15 +30,6 @@ export default async function Page({
 			completed: onboarding.team,
 		},
 		{
-			title: "Connect Integrations",
-			description:
-				"Connect integrations to automate certain tasks, import existing relevant data and invite your employees to complete training.",
-			href: "/:organizationId/integrations",
-			dbColumn: "integrations",
-			buttonLabel: "Connect Integrations",
-			completed: onboarding.integrations,
-		},
-		{
 			title: "Define your Vendors",
 			description:
 				"Document your third-party relationships to calculate and mitigate potential risks.",
@@ -54,6 +45,15 @@ export default async function Page({
 			dbColumn: "risk",
 			buttonLabel: "Define Risks",
 			completed: onboarding.risk,
+		},
+		{
+			title: "Connect Integrations",
+			description:
+				"Connect integrations to automate certain tasks, import existing relevant data and invite your employees to complete training.",
+			href: "/:organizationId/integrations",
+			dbColumn: "integrations",
+			buttonLabel: "Connect Integrations",
+			completed: onboarding.integrations,
 		},
 	];
 

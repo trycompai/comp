@@ -25,6 +25,8 @@ import {
 	Users,
 	ChevronRight,
 	Home,
+	Star,
+	FlagIcon,
 } from "lucide-react";
 
 // Define menu item types with icon component
@@ -65,7 +67,7 @@ export function MainMenu({
 			path: "/:organizationId/home",
 			name: t("sidebar.home"),
 			disabled: false,
-			icon: Home,
+			icon: FlagIcon,
 			protected: false,
 			hidden: completedOnboarding,
 		},

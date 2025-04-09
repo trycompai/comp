@@ -59,7 +59,8 @@ export default async function Page() {
 			Boolean(onboarding?.vendors) &&
 			Boolean(onboarding?.risk);
 
-		if (completedAll) {
+		if (!completedAll) {
+			// This is the onboarding page
 			return redirect(`/${organization.id}/home`);
 		}
 
