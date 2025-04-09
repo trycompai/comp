@@ -64,7 +64,7 @@ export const createOrganizationAction = authActionClient
 				async (tx) => {
 					// REVISIT: Consider if more granular error handling/logging is needed within the transaction
 
-					const organization = await db.organization.create({
+					const organization = await tx.organization.create({
 						data: {
 							name,
 							slug,
@@ -72,6 +72,14 @@ export const createOrganizationAction = authActionClient
 								create: {
 									userId,
 									role: "owner",
+								},
+							},
+							onboarding: {
+								create: {
+									integrations: false,
+									team: false,
+									risk: false,
+									vendors: false,
 								},
 							},
 						},

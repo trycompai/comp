@@ -1,82 +1,55 @@
-import { QuestionRenderer } from "./components/QuestionRenderer";
-import { CategoryData } from "./types/home.types";
+import { db } from "@comp/db";
+import { Checklist } from "./components/Checklist";
+import { ChecklistItemProps } from "./types/ChecklistProps.types";
 
-const questionnaire: CategoryData[] = [
-	{
-		title: "Team Collaboration",
-		questions: [
-			{
-				id: "invite-team",
-				type: "action-block",
-				title: "Invite Your Team",
-				description: "Invite your colleagues to help manage compliance tasks.",
-				buttonLabel: "Invite Team Members",
-				buttonLink: "/:organizationId/settings/members",
-			},
-		],
-	},
-	{
-		title: "Connect Integrations",
-		questions: [
-			{
-				id: "slack-integration",
-				type: "action-block",
-				title: "Automate tasks with integrations",
-				description:
-					"Connect integrations to automate certain tasks, import existing relevant data and invite your employees to complete training.",
-				buttonLabel: "Connect Integrations",
-				buttonLink: "/:organizationId/integrations",
-			},
-		],
-	},
-	{
-		title: "Define your Vendors",
-		questions: [
-			{
-				id: "vendor-list",
-				type: "action-block",
-				title: "Manage your vendors",
-				description:
-					"Document your third-party relationships to calculate and mitigate potential risks.",
-				buttonLabel: "Add Vendors",
-				buttonLink: "/:organizationId/vendors",
-			},
-		],
-	},
-	{
-		title: "Define your Risks",
-		questions: [
-			{
-				id: "risk-list",
-				type: "action-block",
-				title: "Manage your risks",
-				description:
-					"Identify and assess potential risks to your organization.",
-				buttonLabel: "Add Risks",
-				buttonLink: "/:organizationId/risks",
-			},
-		],
-	},
-];
+export default async function Page({
+	params,
+}: {
+	params: Promise<{ orgId: string }>;
+}) {
+	const { orgId } = await params;
+	const onboarding = await db.onboarding.findUnique({
+		where: {
+			organizationId: orgId,
+		},
+	});
 
-export default function Page() {
-	return <QuestionRenderer categories={questionnaire} />;
+	if (!onboarding) {
+		return <div>Organization onboarding not found</div>;
+	}
+
+	const checklistItems: ChecklistItemProps[] = [
+		{
+			title: "Team Collaboration",
+			description: "Invite your colleagues to help manage compliance tasks.",
+			href: "/:organizationId/settings/members",
+			dbColumn: "team",
+			completed: onboarding.team,
+		},
+		{
+			title: "Connect Integrations",
+			description:
+				"Connect integrations to automate certain tasks, import existing relevant data and invite your employees to complete training.",
+			href: "/:organizationId/integrations",
+			dbColumn: "integrations",
+			completed: onboarding.integrations,
+		},
+		{
+			title: "Define your Vendors",
+			description:
+				"Document your third-party relationships to calculate and mitigate potential risks.",
+			href: "/:organizationId/vendors",
+			dbColumn: "vendors",
+			completed: onboarding.vendors,
+		},
+		{
+			title: "Define your Risks",
+			description: "Identify and assess potential risks to your organization.",
+			href: "/:organizationId/risks",
+			dbColumn: "risk",
+			completed: onboarding.risk,
+		},
+	];
+
+	return <Checklist items={checklistItems} />;
 }
-
-/**
- * PRE HOME
- * -----------------------
- *
- * 	    Company Name (string):
- * 	    	Example: "Acme Corporation"
- * 	    Industry Sector (enum/dropdown):
- * 		    Options: Technology, Financial, Healthcare, etc.
- * 	    Company Size (enum/dropdown):
- * 		    Options: "1-10", "11-50", "51-200", "201-500", "501+"
- * 	    Geographical Locations (multi-select):
- * 		    Example: "USA", "UK", "Germany"
- *      Compliance Standards (array):
- *          Example: ["SOC2", "GDPR", "HIPAA", "PCI DSS"]
- *
- *
- */
