@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { AcceptInvite } from "./components/accept-invite";
+import { getOnboardingForCurrentOrganization } from "@/data/getOnboardingForCurrentOrganization";
 
 export const metadata: Metadata = {
 	title: "Organization Setup | Comp AI",
@@ -45,6 +46,23 @@ export default async function Page() {
 				organizationId: organization.id,
 			},
 		});
+
+		const onboarding = await db.onboarding.findUnique({
+			where: {
+				organizationId: organization.id,
+			},
+		});
+
+		const completedAll =
+			Boolean(onboarding?.team) &&
+			Boolean(onboarding?.integrations) &&
+			Boolean(onboarding?.vendors) &&
+			Boolean(onboarding?.risk);
+
+		if (completedAll) {
+			return redirect(`/${organization.id}/home`);
+		}
+
 		return redirect(`/${organization.id}/frameworks`);
 	}
 
