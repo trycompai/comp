@@ -1,5 +1,6 @@
 import { db } from "@comp/db";
 import { Checklist } from "./components/Checklist";
+import { OnboardingProgress } from "./components/OnboardingProgress";
 import { ChecklistItemProps } from "./types/ChecklistProps.types";
 
 export default async function Page({
@@ -24,6 +25,7 @@ export default async function Page({
 			description: "Invite your colleagues to help manage compliance tasks.",
 			href: "/:organizationId/settings/members",
 			dbColumn: "team",
+			buttonLabel: "Invite Team",
 			completed: onboarding.team,
 		},
 		{
@@ -32,6 +34,7 @@ export default async function Page({
 				"Connect integrations to automate certain tasks, import existing relevant data and invite your employees to complete training.",
 			href: "/:organizationId/integrations",
 			dbColumn: "integrations",
+			buttonLabel: "Connect Integrations",
 			completed: onboarding.integrations,
 		},
 		{
@@ -40,6 +43,7 @@ export default async function Page({
 				"Document your third-party relationships to calculate and mitigate potential risks.",
 			href: "/:organizationId/vendors",
 			dbColumn: "vendors",
+			buttonLabel: "Define Vendors",
 			completed: onboarding.vendors,
 		},
 		{
@@ -47,9 +51,21 @@ export default async function Page({
 			description: "Identify and assess potential risks to your organization.",
 			href: "/:organizationId/risks",
 			dbColumn: "risk",
+			buttonLabel: "Define Risks",
 			completed: onboarding.risk,
 		},
 	];
 
-	return <Checklist items={checklistItems} />;
+	const completedItems = checklistItems.filter((item) => item.completed).length;
+	const totalItems = checklistItems.length;
+
+	return (
+		<>
+			<OnboardingProgress
+				completedSteps={completedItems}
+				totalSteps={totalItems}
+			/>
+			<Checklist items={checklistItems} />
+		</>
+	);
 }

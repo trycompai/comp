@@ -10,4 +10,5 @@ export interface ChecklistItemProps {
 	href: string;
 	dbColumn: Exclude<keyof Onboarding, "organizationId">;
 	completed: boolean;
+	buttonLabel: string;
 }
