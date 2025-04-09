@@ -1,7 +1,6 @@
 "use client";
 
 import { useI18n } from "@/locales/client";
-import type { FrameworkInstance } from "@comp/db/types";
 import { Badge } from "@comp/ui/badge";
 import {
 	Card,
@@ -12,10 +11,9 @@ import {
 	CardTitle,
 } from "@comp/ui/card";
 import { cn } from "@comp/ui/cn";
-import { Progress } from "@comp/ui/progress";
-import { ClipboardCheck, ClipboardList, Clock, TrendingUp } from "lucide-react";
+import { ClipboardCheck, ClipboardList, Clock } from "lucide-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { getFrameworkDetails } from "../lib/getFrameworkDetails";
 import { FrameworkInstanceWithControls } from "../types";
 
@@ -30,6 +28,7 @@ export function FrameworkCard({
 }: FrameworkCardProps) {
 	const { orgId } = useParams<{ orgId: string }>();
 	const t = useI18n();
+	const router = useRouter();
 
 	const getComplianceColor = (score: number) => {
 		if (score >= 80) return "text-green-500";
@@ -87,7 +86,12 @@ export function FrameworkCard({
 	const lastActivityDate = new Date().toLocaleDateString();
 
 	return (
-		<Card className="select-none hover:bg-muted/40 transition-colors duration-200 overflow-hidden">
+		<Card
+			className="select-none hover:bg-muted/40 transition-colors duration-200 overflow-hidden cursor-pointer"
+			onClick={() => {
+				router.push(`/${orgId}/frameworks/${frameworkInstance.id}`);
+			}}
+		>
 			<CardHeader>
 				<CardTitle className="flex items-center">
 					{frameworkDetails.name}
@@ -107,10 +111,7 @@ export function FrameworkCard({
 				</CardDescription>
 			</CardHeader>
 			<CardContent>
-				<Link
-					href={`/${orgId}/frameworks/${frameworkInstance.id}`}
-					className="flex flex-col gap-4"
-				>
+				<div className="flex flex-col gap-4">
 					<div className="flex flex-col gap-3">
 						<div className="space-y-1.5">
 							<div className="flex items-center justify-between text-sm">
@@ -173,7 +174,7 @@ export function FrameworkCard({
 							</p>
 						</div>
 					</div>
-				</Link>
+				</div>
 			</CardContent>
 			<CardFooter className="text-xs text-muted-foreground flex justify-between">
 				<div className="flex items-center">
