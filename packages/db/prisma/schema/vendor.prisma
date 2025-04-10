@@ -11,7 +11,7 @@ model Vendor {
   contacts            VendorContact[]
 
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now()) @updatedAt
 
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -30,7 +30,7 @@ model VendorContact {
   email     String
   phone     String
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now()) @updatedAt
   Vendor    Vendor   @relation(fields: [vendorId], references: [id])
 
   @@index([vendorId])

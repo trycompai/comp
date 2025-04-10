@@ -5,7 +5,7 @@ model User {
     emailVerified Boolean
     image         String?
     createdAt     DateTime  @default(now())
-    updatedAt     DateTime  @updatedAt
+    updatedAt     DateTime  @default(now()) @updatedAt
     lastLogin     DateTime?
 
     accounts           Account[]
@@ -35,7 +35,7 @@ model Session {
     expiresAt            DateTime
     token                String
     createdAt            DateTime @default(now())
-    updatedAt            DateTime @updatedAt
+    updatedAt            DateTime @default(now()) @updatedAt
     ipAddress            String?
     userAgent            String?
     userId               String
@@ -68,7 +68,7 @@ model Verification {
     value      String
     expiresAt  DateTime
     createdAt  DateTime @default(now())
-    updatedAt  DateTime @updatedAt
+    updatedAt  DateTime @default(now()) @updatedAt
 }
 
 model Member {

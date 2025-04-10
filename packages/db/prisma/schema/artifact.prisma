@@ -4,9 +4,8 @@ model Artifact {
   type ArtifactType
 
   // Timestamps
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @default(now()) @updatedAt
   // Relations
   controls       Control[]
   organizationId String

@@ -15,7 +15,7 @@ model Risk {
 
   // Dates
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now()) @updatedAt
 
   // Relationships
   organizationId String
