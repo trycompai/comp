@@ -5,6 +5,7 @@ import { db } from "@comp/db";
 import FirecrawlApp from "@mendable/firecrawl-js";
 import { z } from "zod";
 import { authActionClient } from "./safe-action";
+import { ActionResponse } from "./types";
 
 const schema = z.object({
 	company_name: z.string(),
@@ -29,10 +30,14 @@ export const researchVendorAction = authActionClient
 	)
 	.metadata({
 		name: "research-vendor",
+		track: {
+			event: "research-vendor",
+			channel: "server",
+		},
 	})
-	.action(async ({ parsedInput: { website }, ctx: { session } }) => {
+	.action(async ({ parsedInput, ctx }): Promise<ActionResponse> => {
 		try {
-			const { activeOrganizationId } = session;
+			const { activeOrganizationId } = ctx.session;
 
 			if (!activeOrganizationId) {
 				return {
@@ -48,13 +53,16 @@ export const researchVendorAction = authActionClient
 			if (!firecrawl) {
 				return {
 					success: false,
-					error: { message: "Firecrawl client not initialized" },
+					error: {
+						code: "FIRECRAWL_CLIENT_NOT_INITIALIZED",
+						message: "Firecrawl client not initialized",
+					},
 				};
 			}
 
 			const existingVendor = await db.globalVendors.findUnique({
 				where: {
-					website: website,
+					website: parsedInput.website,
 				},
 				select: { website: true },
 			});
@@ -69,17 +77,20 @@ export const researchVendorAction = authActionClient
 				};
 			}
 
-			console.log(`Attempting to scrape website: ${website}`);
+			console.log(`Attempting to scrape website: ${parsedInput.website}`);
 
-			const scrapeResult = await firecrawl.extract([website], {
-				prompt: "You're a cyber security researcher, researching a vendor.",
-				schema: schema,
-				enableWebSearch: true,
-				scrapeOptions: {
-					onlyMainContent: true,
-					removeBase64Images: true,
+			const scrapeResult = await firecrawl.extract(
+				[parsedInput.website],
+				{
+					prompt: "You're a cyber security researcher, researching a vendor.",
+					schema: schema,
+					enableWebSearch: true,
+					scrapeOptions: {
+						onlyMainContent: true,
+						removeBase64Images: true,
+					},
 				},
-			});
+			);
 
 			if (!scrapeResult.success || !scrapeResult.data) {
 				console.error(
@@ -89,6 +100,7 @@ export const researchVendorAction = authActionClient
 				return {
 					success: false,
 					error: {
+						code: "FIRECRAWL_SCRAPE_FAILED",
 						message: `Failed to scrape vendor data: ${
 							scrapeResult.error || "Unknown error"
 						}`,
@@ -100,7 +112,7 @@ export const researchVendorAction = authActionClient
 
 			await db.globalVendors.create({
 				data: {
-					website: website,
+					website: parsedInput.website,
 					company_name: vendorData.company_name,
 					legal_name: vendorData.legal_name,
 					company_description: vendorData.company_description,
@@ -131,6 +143,7 @@ export const researchVendorAction = authActionClient
 			return {
 				success: false,
 				error: {
+					code: "UNEXPECTED_ERROR",
 					message:
 						error instanceof Error
 							? error.message
