@@ -63,7 +63,9 @@ const Item = ({ item, isActive, onSelect, disabled }: ItemProps) => {
 								>
 									<div>
 										<Icon />
-										<span className="flex md:hidden">{item.name}</span>
+										<span className="flex md:hidden">
+											{item.name}
+										</span>
 									</div>
 								</motion.div>
 							</Reorder.Item>
@@ -145,7 +147,8 @@ export function MainMenu({ initialItems, onSelect }: Props) {
 						.map((item) => {
 							const isActive =
 								(pathname === "/" && item.path === "/") ||
-								(pathname !== "/" && item.path.startsWith(`/${part}`));
+								(pathname !== "/" &&
+									item.path.startsWith(`/${part}`));
 
 							return (
 								<Item

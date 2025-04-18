@@ -4,6 +4,7 @@ import { AssistantSheet } from "@/components/sheets/assistant-sheet";
 import { Sidebar } from "@/components/sidebar";
 import { SidebarProvider } from "@/context/sidebar-context";
 import { auth } from "@/utils/auth";
+import { db } from "@comp/db";
 import dynamic from "next/dynamic";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -35,9 +36,18 @@ export default async function Layout({
 		return redirect("/");
 	}
 
+	const currentOrganization = await db.organization.findUnique({
+		where: {
+			id: session.session.activeOrganizationId,
+		},
+	});
+
 	return (
 		<SidebarProvider initialIsCollapsed={isCollapsed}>
-			<AnimatedLayout sidebar={<Sidebar />} isCollapsed={isCollapsed}>
+			<AnimatedLayout
+				sidebar={<Sidebar organization={currentOrganization} />}
+				isCollapsed={isCollapsed}
+			>
 				<div className="mx-4 md:ml-[95px] md:mr-10 pb-8">
 					<Header />
 					<main>{children}</main>

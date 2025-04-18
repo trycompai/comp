@@ -20,13 +20,13 @@ import { useState } from "react";
 import { CreateOrgModal } from "./modals/create-org-modal";
 interface OrganizationSwitcherProps {
 	organizations: Organization[];
-	organizationId: string | undefined;
+	organization: Organization | null;
 	isCollapsed?: boolean;
 }
 
 export function OrganizationSwitcher({
 	organizations,
-	organizationId,
+	organization,
 	isCollapsed = false,
 }: OrganizationSwitcherProps) {
 	const t = useI18n();
@@ -36,24 +36,22 @@ export function OrganizationSwitcher({
 
 	const { execute, status } = useAction(changeOrganizationAction, {
 		onSuccess: (result) => {
-			if (result.data?.success) {
-				router.refresh();
+			const orgId = result.data?.data?.id;
+			if (orgId) {
+				router.push(`/${orgId}`);
+				setIsOpen(false);
 			}
 		},
 	});
 
-	const currentOrganization = organizations.find(
-		(org) => org.id === organizationId,
-	);
+	const currentOrganization = organization;
 
 	const otherOrganizations = organizations.filter(
-		(org) => org.id !== organizationId,
+		(org) => org.id !== currentOrganization?.id,
 	);
 
 	const handleOrgChange = async (org: Organization) => {
 		execute({ organizationId: org.id });
-		router.push(`/${org.id}`);
-		setIsOpen(false);
 	};
 
 	return (

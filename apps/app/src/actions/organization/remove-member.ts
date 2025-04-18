@@ -1,12 +1,11 @@
 "use server";
 
-import { authClient } from "@/utils/auth-client";
 import { db } from "@comp/db";
-import { Role } from "@prisma/client";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 import { authActionClient } from "../safe-action";
 import type { ActionResponse } from "../types";
+
 const removeMemberSchema = z.object({
 	memberId: z.string(),
 });
@@ -45,7 +44,8 @@ export const removeMember = authActionClient
 
 				if (
 					!currentUserMember ||
-					currentUserMember.role !== Role.admin
+					(currentUserMember.role !== "admin" &&
+						currentUserMember.role !== "owner")
 				) {
 					return {
 						success: false,
@@ -69,7 +69,7 @@ export const removeMember = authActionClient
 				}
 
 				// Prevent removing the owner
-				if (targetMember.role === Role.admin) {
+				if (targetMember.role === "owner") {
 					return {
 						success: false,
 						error: "Cannot remove the organization owner",
@@ -85,9 +85,10 @@ export const removeMember = authActionClient
 				}
 
 				// Remove the member
-				await authClient.organization.removeMember({
-					memberIdOrEmail: targetMember.userId, // this can also be the email of the member
-					organizationId: ctx.session.activeOrganizationId ?? "", // optional, by default it will use the active organization
+				await db.member.delete({
+					where: {
+						id: memberId,
+					},
 				});
 
 				await db.session.deleteMany({
@@ -96,7 +97,9 @@ export const removeMember = authActionClient
 					},
 				});
 
-				revalidatePath(`/${ctx.session.activeOrganizationId}`);
+				revalidatePath(
+					`/${ctx.session.activeOrganizationId}/settings/members`,
+				);
 				revalidateTag(`user_${ctx.user.id}`);
 
 				return {
@@ -104,7 +107,6 @@ export const removeMember = authActionClient
 					data: { removed: true },
 				};
 			} catch (error) {
-				console.error("Error removing member:", error);
 				return {
 					success: false,
 					error: "Failed to remove member",

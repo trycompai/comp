@@ -33,6 +33,7 @@ import { Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
+import { invalidateMembers } from "./invalidateMembers";
 
 const inviteMemberSchema = z.object({
 	email: z.string().email("Please enter a valid email address"),
@@ -43,6 +44,7 @@ type FormValues = z.infer<typeof inviteMemberSchema>;
 
 export function InviteMemberForm() {
 	const t = useI18n();
+	const session = authClient.useSession();
 
 	const form = useForm<FormValues>({
 		resolver: zodResolver(inviteMemberSchema),
@@ -63,6 +65,10 @@ export function InviteMemberForm() {
 			toast.error("Something went wrong");
 		} else {
 			toast.success(t("settings.team.invitations.invitation_sent"));
+			invalidateMembers({
+				organizationId:
+					session.data?.session.activeOrganizationId ?? "",
+			});
 			form.reset();
 		}
 	};

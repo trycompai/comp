@@ -55,11 +55,11 @@ export const changeOrganizationAction = authActionClient
 			auth.api.setActiveOrganization({
 				headers: await headers(),
 				body: {
-					organizationId: organizationId,
+					organizationId: organization.id,
 				},
 			});
 
-			revalidatePath(`/${organization.id}`, "layout");
+			revalidatePath(`/${organization.id}`);
 
 			return {
 				success: true,

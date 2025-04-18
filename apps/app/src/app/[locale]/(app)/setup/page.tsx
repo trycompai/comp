@@ -38,13 +38,18 @@ export default async function Page() {
 		},
 	});
 
-	if (!session.session.activeOrganizationId && organization?.id) {
+	if (
+		!session.session.activeOrganizationId &&
+		organization?.id &&
+		!hasInvite
+	) {
 		await auth.api.setActiveOrganization({
 			headers: headersList,
 			body: {
 				organizationId: organization.id,
 			},
 		});
+
 		return redirect(`/${organization.id}/frameworks`);
 	}
 
@@ -58,7 +63,12 @@ export default async function Page() {
 			},
 		});
 
-		return <AcceptInvite inviteCode={hasInvite.id} organizationName={organization?.name || ""} />;
+		return (
+			<AcceptInvite
+				inviteCode={hasInvite.id}
+				organizationName={organization?.name || ""}
+			/>
+		);
 	}
 
 	return <OnboardingClient />;

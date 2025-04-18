@@ -6,15 +6,24 @@ import { Icons } from "@comp/ui/icons";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-export function AcceptInvite({ inviteCode, organizationName }: { inviteCode: string, organizationName: string }) {
+export function AcceptInvite({
+	inviteCode,
+	organizationName,
+}: { inviteCode: string; organizationName: string }) {
 	const router = useRouter();
 
-	const onSubmit = async () => {
+	const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+		e.preventDefault();
+
 		await authClient.organization.acceptInvitation({
 			invitationId: inviteCode,
 		});
 
-		router.push("/");
+		const session = await authClient.getSession();
+
+		router.push(
+			`/${session.data?.session.activeOrganizationId}/implementation`,
+		);
 	};
 
 	return (
@@ -28,7 +37,8 @@ export function AcceptInvite({ inviteCode, organizationName }: { inviteCode: str
 
 				<div className="mb-8 space-y-2">
 					<h1 className="text-2xl font-semibold tracking-tight">
-						You have been invited to join {organizationName || "an organization"}.
+						You have been invited to join{" "}
+						{organizationName || "an organization"}.
 					</h1>
 					<p className="text-sm text-muted-foreground">
 						Please accept the invitation to join the organization.

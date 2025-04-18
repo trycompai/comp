@@ -3,11 +3,19 @@ import { GoogleSignIn } from "@/components/google-sign-in";
 import { MagicLinkSignIn } from "@/components/magic-link";
 import { env } from "@/env.mjs";
 import { getI18n } from "@/locales/server";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@comp/ui/accordion";
+import { auth } from "@/utils/auth";
+import {
+	Accordion,
+	AccordionContent,
+	AccordionItem,
+	AccordionTrigger,
+} from "@comp/ui/accordion";
 import { Icons } from "@comp/ui/icons";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Link from "next/link";
-import Balancer from 'react-wrap-balancer'
+import { redirect } from "next/navigation";
+import Balancer from "react-wrap-balancer";
 
 export const metadata: Metadata = {
 	title: "Login | Comp AI",
@@ -19,7 +27,9 @@ export default async function Page({
 	searchParams: Promise<{ inviteCode?: string }>;
 }) {
 	const t = await getI18n();
-
+	const session = await auth.api.getSession({
+		headers: await headers(),
+	});
 	const { inviteCode } = await searchParams;
 
 	let preferredSignInOption: React.ReactNode;
@@ -38,10 +48,14 @@ export default async function Page({
 		);
 	}
 
-
 	let moreSignInOptions: React.ReactNode;
 
-	if (env.AUTH_GOOGLE_ID && env.AUTH_GOOGLE_SECRET && env.AUTH_GITHUB_ID && env.AUTH_GITHUB_SECRET) {
+	if (
+		env.AUTH_GOOGLE_ID &&
+		env.AUTH_GOOGLE_SECRET &&
+		env.AUTH_GITHUB_ID &&
+		env.AUTH_GITHUB_SECRET
+	) {
 		moreSignInOptions = (
 			<div className="flex flex-col space-y-2">
 				<MagicLinkSignIn inviteCode={inviteCode} />
@@ -50,6 +64,12 @@ export default async function Page({
 		);
 	} else {
 		moreSignInOptions = null;
+	}
+
+	const orgId = session?.session?.activeOrganizationId;
+
+	if (orgId && inviteCode) {
+		redirect("/setup");
 	}
 
 	return (
@@ -83,7 +103,10 @@ export default async function Page({
 								className="border-t-[1px] pt-2 mt-6"
 							>
 								{moreSignInOptions && (
-									<AccordionItem value="item-1" className="border-0">
+									<AccordionItem
+										value="item-1"
+										className="border-0"
+									>
 										<AccordionTrigger className="justify-center space-x-2 flex text-sm">
 											<span>More options</span>
 										</AccordionTrigger>
@@ -98,13 +121,19 @@ export default async function Page({
 						</div>
 
 						<p className="text-xs text-muted-foreground">
-							By clicking continue, you acknowledge that you have read and agree
-							to the{" "}
-							<a href="https://trycomp.ai/terms-and-conditions" className="underline">
+							By clicking continue, you acknowledge that you have
+							read and agree to the{" "}
+							<a
+								href="https://trycomp.ai/terms-and-conditions"
+								className="underline"
+							>
 								Terms and Conditions
 							</a>{" "}
 							and{" "}
-							<a href="https://trycomp.ai/privacy-policy" className="underline">
+							<a
+								href="https://trycomp.ai/privacy-policy"
+								className="underline"
+							>
 								Privacy Policy
 							</a>
 							.
@@ -112,6 +141,6 @@ export default async function Page({
 					</div>
 				</div>
 			</div>
-		</div >
+		</div>
 	);
 }
