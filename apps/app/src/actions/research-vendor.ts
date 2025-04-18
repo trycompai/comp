@@ -22,6 +22,10 @@ const schema = z.object({
 	type_of_company: z.string(),
 });
 
+const firecrawl = new FirecrawlApp({
+	apiKey: env.FIRECRAWL_API_KEY,
+});
+
 export const researchVendorAction = authActionClient
 	.schema(
 		z.object({
@@ -45,10 +49,6 @@ export const researchVendorAction = authActionClient
 					error: "Not authorized",
 				};
 			}
-
-			const firecrawl = new FirecrawlApp({
-				apiKey: env.FIRECRAWL_API_KEY,
-			});
 
 			if (!firecrawl) {
 				return {
