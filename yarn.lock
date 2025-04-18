@@ -919,24 +919,21 @@
     tslib "^2.2.0"
 
 "@azure/identity@^4.8.0":
-  version "4.8.0"
-  resolved "https://registry.npmjs.org/@azure/identity/-/identity-4.8.0.tgz"
-  integrity sha512-l9ALUGHtFB/JfsqmA+9iYAp2a+cCwdNO/cyIr2y7nJLJsz1aae6qVP8XxT7Kbudg0IQRSIMXj0+iivFdbD1xPA==
+  version "4.9.0"
+  resolved "https://registry.npmjs.org/@azure/identity/-/identity-4.9.0.tgz"
+  integrity sha512-dz2ZvKxDFoTUmJgmkCBVcyuKckgqE1qVxrRPzUhyKN7FyvUbtNPUrGzqSllOAf1OL9TMGgYqZWbIyD0b/AE15g==
   dependencies:
-    "@azure/abort-controller" "^2.0.0"
-    "@azure/core-auth" "^1.9.0"
-    "@azure/core-client" "^1.9.2"
-    "@azure/core-rest-pipeline" "^1.17.0"
-    "@azure/core-tracing" "^1.0.0"
-    "@azure/core-util" "^1.11.0"
-    "@azure/logger" "^1.0.0"
-    "@azure/msal-browser" "^4.2.0"
-    "@azure/msal-node" "^3.2.3"
-    events "^3.0.0"
-    jws "^4.0.0"
     open "^10.1.0"
-    stoppable "^1.1.0"
     tslib "^2.2.0"
+    "@azure/logger" "^1.0.0"
+    "@azure/core-auth" "^1.9.0"
+    "@azure/core-util" "^1.11.0"
+    "@azure/msal-node" "^3.5.0"
+    "@azure/core-client" "^1.9.2"
+    "@azure/core-tracing" "^1.0.0"
+    "@azure/msal-browser" "^4.2.0"
+    "@azure/abort-controller" "^2.0.0"
+    "@azure/core-rest-pipeline" "^1.17.0"
 
 "@azure/logger@^1.0.0":
   version "1.1.4"
@@ -969,10 +966,10 @@
   resolved "https://registry.npmjs.org/@azure/msal-common/-/msal-common-15.3.0.tgz"
   integrity sha512-lh+eZfibGwtQxFnx+mj6cYWn0pwA8tDnn8CBs9P21nC7Uw5YWRwfXaXdVQSMENZ5ojRqR+NzRaucEo4qUvs3pA==
 
-"@azure/msal-common@15.4.0":
-  version "15.4.0"
-  resolved "https://registry.npmjs.org/@azure/msal-common/-/msal-common-15.4.0.tgz"
-  integrity sha512-reeIUDXt6Xc+FpCBDEbUFQWvJ6SjE0JwsGYIfa3ZCR6Tpzjc9J1v+/InQgfCeJzfTRd7PDJVxI6TSzOmOd7+Ag==
+"@azure/msal-common@15.5.1":
+  version "15.5.1"
+  resolved "https://registry.npmjs.org/@azure/msal-common/-/msal-common-15.5.1.tgz"
+  integrity sha512-oxK0khbc4Bg1bKQnqDr7ikULhVL2OHgSrIq0Vlh4b6+hm4r0lr6zPMQE8ZvmacJuh+ZZGKBM5iIObhF1q1QimQ==
 
 "@azure/msal-node@^2.5.1":
   version "2.16.2"
@@ -983,12 +980,12 @@
     jsonwebtoken "^9.0.0"
     uuid "^8.3.0"
 
-"@azure/msal-node@^3.2.3":
-  version "3.4.1"
-  resolved "https://registry.npmjs.org/@azure/msal-node/-/msal-node-3.4.1.tgz"
-  integrity sha512-VlW6ygnKBIqUKIHnA/ubQ+F3rZ8aW3K6VA1bpZ90Ln0vlE4XaA6yGB/FibPJxet7gWinAG1oSpQqPN/PL9AqIw==
+"@azure/msal-node@^3.5.0":
+  version "3.5.1"
+  resolved "https://registry.npmjs.org/@azure/msal-node/-/msal-node-3.5.1.tgz"
+  integrity sha512-dkgMYM5B6tI88r/oqf5bYd93WkenQpaWwiszJDk7avVjso8cmuKRTW97dA1RMi6RhihZFLtY1VtWxU9+sW2T5g==
   dependencies:
-    "@azure/msal-common" "15.4.0"
+    "@azure/msal-common" "15.5.1"
     jsonwebtoken "^9.0.0"
     uuid "^8.3.0"
 
@@ -1430,19 +1427,18 @@
     picocolors "^1.0.0"
     sisteransi "^1.0.5"
 
-"@comp/analytics@^workspace:packages/analytics":
+"@comp/analytics@packages/analytics":
   version "workspace:packages/analytics"
   resolved "workspace:packages/analytics"
   dependencies:
     posthog-js "^1.215.3"
     posthog-node "^4.4.1"
 
-"@comp/app@^workspace:apps/app", "@comp/app@workspace:*":
+"@comp/app@apps/app", "@comp/app@workspace:*":
   version "workspace:apps/app"
   resolved "workspace:apps/app"
   devDependencies:
     "@comp/db" "workspace:*"
-  devDependencies:
     "@trigger.dev/build" "3.3.17"
     "@types/node" "^22.14.1"
     "@types/react" "19.1.0"
@@ -1458,11 +1454,9 @@
     "@aws-sdk/client-s3" "^3.787.0"
     "@aws-sdk/s3-request-presigner" "^3.787.0"
     "@browserbasehq/sdk" "^2.5.0"
-  dependencies:
     "@comp/data" "workspace:*"
     "@comp/db" "workspace:*"
     "@comp/notifications" "workspace:*"
-  dependencies:
     "@date-fns/tz" "^1.2.0"
     "@dnd-kit/core" "^6.3.1"
     "@dnd-kit/modifiers" "^9.0.0"
@@ -1540,27 +1534,25 @@
     yarn "^1.22.22"
     zustand "^5.0.3"
 
-"@comp/data@^workspace:packages/data", "@comp/data@workspace:*":
+"@comp/data@packages/data", "@comp/data@workspace:*":
   version "workspace:packages/data"
   resolved "workspace:packages/data"
   devDependencies:
     "@comp/db" "workspace:*"
-  devDependencies:
     tsup "^8.4.0"
     typescript "^5.8.2"
 
-"@comp/db@^workspace:packages/db", "@comp/db@workspace:*":
+"@comp/db@packages/db", "@comp/db@workspace:*":
   version "workspace:packages/db"
   resolved "workspace:packages/db"
   devDependencies:
     "@comp/tsconfig" "workspace:*"
-  devDependencies:
     typescript "^5.8.2"
   dependencies:
     "@prisma/client" "6.6.0"
     prisma "^6.6.0"
 
-"@comp/email@^workspace:packages/email":
+"@comp/email@packages/email":
   version "workspace:packages/email"
   resolved "workspace:packages/email"
   devDependencies:
@@ -1571,7 +1563,6 @@
   dependencies:
     "@comp/ui" "workspace:*"
     "@comp/utils" "workspace:*"
-  dependencies:
     "@react-email/components" "0.0.31"
     "@react-email/render" "0.0.10"
     "@react-email/tailwind" "1.0.4"
@@ -1581,7 +1572,7 @@
     react-email "3.0.4"
     responsive-react-email "^0.0.5"
 
-"@comp/integrations@^workspace:packages/integrations":
+"@comp/integrations@packages/integrations":
   version "workspace:packages/integrations"
   resolved "workspace:packages/integrations"
   devDependencies:
@@ -1592,9 +1583,7 @@
     "@ai-sdk/openai" "^0.0.66"
     "@aws-sdk/client-securityhub" "^3.0.0"
     "@azure/identity" "^3.0.0"
-  dependencies:
     "@comp/app" "workspace:*"
-  dependencies:
     "@google-cloud/security-center" "^7.0.0"
     "@slack/bolt" "^3.22.0"
     "@slack/web-api" "^7.8.0"
@@ -1604,14 +1593,14 @@
     sharp "^0.33.5"
     zod "^3.24.2"
 
-"@comp/kv@^workspace:packages/kv":
+"@comp/kv@packages/kv":
   version "workspace:packages/kv"
   resolved "workspace:packages/kv"
   dependencies:
     "@upstash/redis" "^1.34.2"
     server-only "0.0.1"
 
-"@comp/notifications@^workspace:packages/notifications", "@comp/notifications@workspace:*":
+"@comp/notifications@packages/notifications", "@comp/notifications@workspace:*":
   version "workspace:packages/notifications"
   resolved "workspace:packages/notifications"
   devDependencies:
@@ -1620,13 +1609,12 @@
     "@novu/node" "^2.0.1"
     nanoid "5.1.0"
 
-"@comp/portal@^workspace:apps/portal":
+"@comp/portal@apps/portal":
   version "workspace:apps/portal"
   resolved "workspace:apps/portal"
   devDependencies:
     "@comp/db" "workspace:*"
     "@comp/ui" "workspace:*"
-  devDependencies:
     "@types/node" "^22.13.2"
     "@types/react" "^19.1.0"
     "@types/react-dom" "^19.1.1"
@@ -1641,11 +1629,11 @@
     react-dom "^19.1.0"
     react-otp-input "^3.1.1"
 
-"@comp/tsconfig@^workspace:packages/tsconfig", "@comp/tsconfig@workspace:*":
+"@comp/tsconfig@packages/tsconfig", "@comp/tsconfig@workspace:*":
   version "workspace:packages/tsconfig"
   resolved "workspace:packages/tsconfig"
 
-"@comp/ui@^workspace:packages/ui", "@comp/ui@workspace:*":
+"@comp/ui@packages/ui", "@comp/ui@workspace:*":
   version "workspace:packages/ui"
   resolved "workspace:packages/ui"
   devDependencies:
@@ -1709,7 +1697,7 @@
     use-callback-ref "^1.3.3"
     vaul "^1.0.0"
 
-"@comp/utils@^workspace:packages/utils", "@comp/utils@workspace:*":
+"@comp/utils@packages/utils", "@comp/utils@workspace:*":
   version "workspace:packages/utils"
   resolved "workspace:packages/utils"
   devDependencies:
@@ -16509,10 +16497,15 @@ zod@3.23.8:
   resolved "https://registry.npmjs.org/zod/-/zod-3.23.8.tgz"
   integrity sha512-XBx9AXhXktjUqnepgTiE5flcKIYWi/rme0Eaj+5Y0lftuGBq+jyRu/md4WnuxqgP1ubdpNCsYEYPxrzVHD8d6g==
 
-"zod@>= 3", zod@^3.0.0, zod@^3.18.0, zod@^3.20.2, zod@^3.23.8, zod@^3.24.0, zod@^3.24.1, zod@^3.24.2:
+"zod@>= 3", zod@^3.0.0, zod@^3.18.0, zod@^3.20.2, zod@^3.23.8, zod@^3.24.0, zod@^3.24.1:
   version "3.24.2"
   resolved "https://registry.npmjs.org/zod/-/zod-3.24.2.tgz"
   integrity sha512-lY7CDW43ECgW9u1TcT3IoXHflywfVqDYze4waEz812jR/bZ8FHDsl7pFQoSZTz5N+2NqRXs8GBwnAwo3ZNxqhQ==
+
+zod@^3.24.2:
+  version "3.24.3"
+  resolved "https://registry.npmjs.org/zod/-/zod-3.24.3.tgz"
+  integrity sha512-HhY1oqzWCQWuUqvBFnsyrtZRhyPeR7SUGv+C4+MsisMuVfSPx8HpwWqH8tRahSlt6M3PiFAcoeFhZAqIXTxoSg==
 
 zod-error@1.5.0:
   version "1.5.0"
