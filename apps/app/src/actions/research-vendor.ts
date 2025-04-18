@@ -21,8 +21,6 @@ const schema = z.object({
 	type_of_company: z.string(),
 });
 
-export const maxDuration = 60;
-
 export const researchVendorAction = authActionClient
 	.schema(
 		z.object({
