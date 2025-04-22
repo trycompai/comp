@@ -14,6 +14,10 @@ interface PageProps {
 	}>;
 }
 
+interface RequirementWithName {
+	name: string;
+}
+
 export default async function RequirementPage({ params }: PageProps) {
 	const { frameworkInstanceId, requirementKey } = await params;
 
@@ -59,10 +63,14 @@ export default async function RequirementPage({ params }: PageProps) {
 		(req) => req !== requirementKey,
 	);
 
-	const siblingRequirementsDropdown = siblingRequirements.map((req) => ({
-		label: requirements[req as keyof typeof requirements].name,
-		href: `/${organizationId}/frameworks/${frameworkInstanceId}/requirements/${req}`,
-	}));
+	const siblingRequirementsDropdown = siblingRequirements.map((req) => {
+		const reqKey = req as keyof typeof requirements;
+		const currentReq = requirements[reqKey] as RequirementWithName;
+		return {
+			label: currentReq.name,
+			href: `/${organizationId}/frameworks/${frameworkInstanceId}/requirements/${req}`,
+		};
+	});
 
 	return (
 		<PageWithBreadcrumb
@@ -73,7 +81,7 @@ export default async function RequirementPage({ params }: PageProps) {
 					href: `/${organizationId}/frameworks/${frameworkInstanceId}`,
 				},
 				{
-					label: requirement.name,
+					label: (requirement as RequirementWithName).name,
 					dropdown: siblingRequirementsDropdown,
 					current: true,
 				},
