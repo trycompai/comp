@@ -1,11 +1,15 @@
 import { requirements } from "@comp/data";
+import type { FrameworkId, Requirement } from "@comp/data";
 
 export function getRequirementDetails(
-	frameworkId: keyof typeof requirements,
+	frameworkId: FrameworkId,
 	requirementId: string,
-) {
-	const frameworkRequirements =
-		requirements[frameworkId as keyof typeof requirements] || [];
+): Requirement | undefined {
+	const frameworkRequirements = requirements[frameworkId];
+
+	if (!frameworkRequirements) {
+		return undefined;
+	}
 
 	const requirement =
 		frameworkRequirements[

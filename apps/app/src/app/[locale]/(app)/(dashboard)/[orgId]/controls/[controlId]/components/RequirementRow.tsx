@@ -27,8 +27,8 @@ export function RequirementRow({ requirement }: RequirementRowProps) {
 			className="group hover:bg-muted/50 transition-colors cursor-pointer"
 		>
 			<TableCell className="font-medium">{requirementId}</TableCell>
-			<TableCell>{requirementDetails?.name}</TableCell>
-			<TableCell>{requirementDetails?.description}</TableCell>
+			<TableCell>{requirementDetails?.name ?? ""}</TableCell>
+			<TableCell>{requirementDetails?.description ?? ""}</TableCell>
 		</TableRow>
 	);
 }

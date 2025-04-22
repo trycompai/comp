@@ -5,8 +5,9 @@ import { DataTableColumnHeader } from "@/components/data-table/data-table-column
 import { DataTableSortList } from "@/components/data-table/data-table-sort-list";
 import { useDataTable } from "@/hooks/use-data-table";
 import { useI18n } from "@/locales/client";
+import { FrameworkId } from "@comp/data";
 import type {
-	FrameworkId,
+	FrameworkId as DbFrameworkId,
 	FrameworkInstance,
 	RequirementMap,
 } from "@comp/db/types";
@@ -43,40 +44,40 @@ export function RequirementsTable({
 					/>
 				),
 				cell: ({ row }) => {
-					const [frameworkId, requirementId] =
+					const [frameworkIdStr, requirementId] =
 						row.original.requirementId.split("_");
 					const details = getRequirementDetails(
-						frameworkId as FrameworkId,
+						frameworkIdStr as FrameworkId,
 						requirementId,
 					);
 
 					const frameworkDetails = getFrameworkDetails(
-						row.original.frameworkInstance.frameworkId,
+						row.original.frameworkInstance.frameworkId as DbFrameworkId,
 					);
 					return (
 						<span>
-							{frameworkDetails?.name} - {details?.name}
+							{frameworkDetails?.name ?? ""} - {details?.name ?? ""}
 						</span>
 					);
 				},
 				enableSorting: true,
 				sortingFn: (rowA, rowB, columnId) => {
-					const [frameworkIdA, requirementIdA] =
+					const [frameworkIdStrA, requirementIdA] =
 						rowA.original.requirementId.split("_");
-					const [frameworkIdB, requirementIdB] =
+					const [frameworkIdStrB, requirementIdB] =
 						rowB.original.requirementId.split("_");
 
 					const detailsA = getRequirementDetails(
-						frameworkIdA as FrameworkId,
+						frameworkIdStrA as FrameworkId,
 						requirementIdA,
 					);
 					const detailsB = getRequirementDetails(
-						frameworkIdB as FrameworkId,
+						frameworkIdStrB as FrameworkId,
 						requirementIdB,
 					);
 
-					const nameA = detailsA?.name || "";
-					const nameB = detailsB?.name || "";
+					const nameA = detailsA?.name ?? "";
+					const nameB = detailsB?.name ?? "";
 
 					return nameA.localeCompare(nameB);
 				},
@@ -90,36 +91,36 @@ export function RequirementsTable({
 					/>
 				),
 				cell: ({ row }) => {
-					const [frameworkId, requirementId] =
+					const [frameworkIdStr, requirementId] =
 						row.original.requirementId.split("_");
 					const details = getRequirementDetails(
-						frameworkId as FrameworkId,
+						frameworkIdStr as FrameworkId,
 						requirementId,
 					);
 					return (
 						<span className="text-muted-foreground">
-							{details?.description}
+							{details?.description ?? ""}
 						</span>
 					);
 				},
 				enableSorting: true,
 				sortingFn: (rowA, rowB, columnId) => {
-					const [frameworkIdA, requirementIdA] =
+					const [frameworkIdStrA, requirementIdA] =
 						rowA.original.requirementId.split("_");
-					const [frameworkIdB, requirementIdB] =
+					const [frameworkIdStrB, requirementIdB] =
 						rowB.original.requirementId.split("_");
 
 					const detailsA = getRequirementDetails(
-						frameworkIdA as FrameworkId,
+						frameworkIdStrA as FrameworkId,
 						requirementIdA,
 					);
 					const detailsB = getRequirementDetails(
-						frameworkIdB as FrameworkId,
+						frameworkIdStrB as FrameworkId,
 						requirementIdB,
 					);
 
-					const descA = detailsA?.description || "";
-					const descB = detailsB?.description || "";
+					const descA = detailsA?.description ?? "";
+					const descB = detailsB?.description ?? "";
 
 					return descA.localeCompare(descB);
 				},
@@ -134,20 +135,18 @@ export function RequirementsTable({
 
 		const searchLower = searchTerm.toLowerCase();
 		return requirements.filter((req) => {
-			const [frameworkId, requirementId] = req.requirementId.split("_");
+			const [frameworkIdStr, requirementId] = req.requirementId.split("_");
 			const details = getRequirementDetails(
-				frameworkId as FrameworkId,
+				frameworkIdStr as FrameworkId,
 				requirementId,
 			);
 
 			// Search in ID, name, and description
 			return (
-				frameworkId.toLowerCase().includes(searchLower) ||
+				frameworkIdStr.toLowerCase().includes(searchLower) ||
 				requirementId.toLowerCase().includes(searchLower) ||
-				details?.name?.toLowerCase().includes(searchLower) ||
-				false ||
-				details?.description?.toLowerCase().includes(searchLower) ||
-				false
+				(details?.name?.toLowerCase().includes(searchLower) ?? false) ||
+				(details?.description?.toLowerCase().includes(searchLower) ?? false)
 			);
 		});
 	}, [requirements, searchTerm]);
