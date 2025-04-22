@@ -37,6 +37,7 @@ interface Framework {
 interface Frameworks {
     /** SOC 2 (Service Organization Control 2) framework */
     soc2: Framework;
+    gdpr: Framework;
 }
 /**
  * Valid framework ID strings that can be used to reference specific frameworks.
@@ -44,6 +45,8 @@ interface Frameworks {
 type FrameworkId = keyof Frameworks;
 
 declare const frameworks: Frameworks;
+
+type gdprRequirementIds = "A4" | "A5" | "A6" | "A7" | "A12" | "A13" | "A14" | "A15" | "A16" | "A17" | "A18" | "A19" | "A20" | "A21" | "A25" | "A30" | "A32" | "A33" | "A34" | "A35";
 
 type soc2RequirementIds = "CC1" | "CC2" | "CC3" | "CC4" | "CC5" | "CC6" | "CC7" | "CC8" | "CC9" | "A1" | "C1" | "PI1" | "P1";
 
@@ -67,7 +70,10 @@ type AllRequirements = {
 };
 type AllRequirementIdsByFramework = {
     soc2: soc2RequirementIds;
+    gdpr: gdprRequirementIds;
 };
+
+declare const gdprRequirements: SingleFrameworkRequirements<gdprRequirementIds>;
 
 declare const soc2Requirements: SingleFrameworkRequirements<soc2RequirementIds>;
 
@@ -130,21 +136,37 @@ declare const policies: {
     readonly confidentiality_policy: TemplatePolicy;
     readonly corporate_governance_policy: TemplatePolicy;
     readonly cyber_risk_policy: TemplatePolicy;
+    readonly data_breach_register: TemplatePolicy;
+    readonly data_breach_response: TemplatePolicy;
     readonly data_center_policy: TemplatePolicy;
     readonly data_classification_policy: TemplatePolicy;
+    readonly data_protection: TemplatePolicy;
+    readonly data_retention_notice: TemplatePolicy;
+    readonly data_retention_schedule: TemplatePolicy;
+    readonly data_subject_consent_form: TemplatePolicy;
     readonly disaster_recovery_policy: TemplatePolicy;
+    readonly dpia_register: TemplatePolicy;
+    readonly employee_privacy_notice: TemplatePolicy;
     readonly human_resources_policy: TemplatePolicy;
     readonly incident_response_policy: TemplatePolicy;
     readonly information_security_policy: TemplatePolicy;
     readonly password_policy: TemplatePolicy;
+    readonly privacy_notice: TemplatePolicy;
     readonly privacy_policy: TemplatePolicy;
     readonly risk_assessment_policy: TemplatePolicy;
     readonly risk_management_policy: TemplatePolicy;
     readonly software_development_policy: TemplatePolicy;
+    readonly supplier_data_processing_agreement: TemplatePolicy;
     readonly system_change_policy: TemplatePolicy;
     readonly third_party_policy: TemplatePolicy;
-    readonly vendor_risk_management_policy: TemplatePolicy;
     readonly workstation_policy: TemplatePolicy;
+    readonly right_of_access_policy: TemplatePolicy;
+    readonly right_to_data_portability_policy: TemplatePolicy;
+    readonly right_to_object_policy: TemplatePolicy;
+    readonly right_to_rectification_policy: TemplatePolicy;
+    readonly right_to_erasure_policy: TemplatePolicy;
+    readonly right_to_restriction_policy: TemplatePolicy;
+    readonly records_of_processing_activities_policy: TemplatePolicy;
 };
 type TemplatePolicyId = keyof typeof policies;
 
@@ -190,12 +212,20 @@ declare const evidence: {
     readonly consent_records: TemplateEvidence;
     readonly control_implementation_records: TemplateEvidence;
     readonly control_testing_documentation: TemplateEvidence;
+    readonly data_breach_register_evidence: TemplateEvidence;
+    readonly data_breach_response_evidence: TemplateEvidence;
     readonly data_classification_records: TemplateEvidence;
     readonly data_processing_logs: TemplateEvidence;
+    readonly data_protection_evidence: TemplateEvidence;
     readonly data_quality_documentation: TemplateEvidence;
+    readonly data_retention_notice_evidence: TemplateEvidence;
+    readonly data_retention_schedule_evidence: TemplateEvidence;
+    readonly data_subject_consent_form_evidence: TemplateEvidence;
     readonly data_validation_records: TemplateEvidence;
     readonly deficiency_management_records: TemplateEvidence;
     readonly disposal_records: TemplateEvidence;
+    readonly dpia_register_evidence: TemplateEvidence;
+    readonly employee_privacy_notice_evidence: TemplateEvidence;
     readonly ethics_compliance_documentation: TemplateEvidence;
     readonly exception_logs: TemplateEvidence;
     readonly external_communication_records: TemplateEvidence;
@@ -211,14 +241,22 @@ declare const evidence: {
     readonly personnel_compliance_documentation: TemplateEvidence;
     readonly physical_access_records: TemplateEvidence;
     readonly policy_implementation_records: TemplateEvidence;
-    readonly privacy_notice: TemplateEvidence;
+    readonly privacy_notice_evidence: TemplateEvidence;
     readonly recovery_records: TemplateEvidence;
     readonly retention_schedules: TemplateEvidence;
     readonly risk_assessment_documentation: TemplateEvidence;
     readonly risk_identification_records: TemplateEvidence;
+    readonly supplier_dpa_evidence: TemplateEvidence;
     readonly technology_control_records: TemplateEvidence;
     readonly uptime_reports: TemplateEvidence;
     readonly vendor_risk_assessment_records: TemplateEvidence;
+    readonly right_of_access_evidence: TemplateEvidence;
+    readonly right_to_data_portability_evidence: TemplateEvidence;
+    readonly right_to_rectification_evidence: TemplateEvidence;
+    readonly right_to_object_evidence: TemplateEvidence;
+    readonly right_to_erasure_evidence: TemplateEvidence;
+    readonly right_to_restriction_evidence: TemplateEvidence;
+    readonly records_of_processing_activities_evidence: TemplateEvidence;
 };
 type TemplateEvidenceKey = keyof typeof evidence;
 type TemplateEvidenceId = TemplateEvidenceKey;
@@ -258,6 +296,6 @@ interface TemplateControl {
     mappedRequirements: TemplateRequirement[];
 }
 
-declare const controls: [TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl];
+declare const controls: [TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl, TemplateControl];
 
-export { type AllRequirementIdsByFramework, type AllRequirements, type Framework, type FrameworkId, type Frameworks, type Requirement, type SingleFrameworkRequirements, type TemplateArtifact, type TemplateControl, type TemplateEvidence, type TemplateEvidenceId, type TemplateEvidenceKey, type TemplateEvidenceMap, type TemplatePolicies, type TemplatePolicy, type TemplatePolicyId, type TemplatePolicyMetadata, type TemplateRequirement, type TrainingVideo, controls, evidence, frameworks, policies, requirements, soc2Requirements, trainingVideos };
+export { type AllRequirementIdsByFramework, type AllRequirements, type Framework, type FrameworkId, type Frameworks, type Requirement, type SingleFrameworkRequirements, type TemplateArtifact, type TemplateControl, type TemplateEvidence, type TemplateEvidenceId, type TemplateEvidenceKey, type TemplateEvidenceMap, type TemplatePolicies, type TemplatePolicy, type TemplatePolicyId, type TemplatePolicyMetadata, type TemplateRequirement, type TrainingVideo, controls, evidence, frameworks, type gdprRequirementIds, gdprRequirements, policies, requirements, type soc2RequirementIds, soc2Requirements, trainingVideos };

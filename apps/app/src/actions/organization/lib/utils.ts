@@ -47,7 +47,7 @@ export function getRelevantControls(
 ): TemplateControl[] {
 	return controls.filter((control) =>
 		control.mappedRequirements.some((req) =>
-			frameworkIds.includes(req.frameworkId),
+			frameworkIds.includes(req.frameworkId as FrameworkId),
 		),
 	);
 }
@@ -263,11 +263,27 @@ export async function createRequirementMaps(
 		// Create requirement maps
 		for (const requirement of frameworkRequirements) {
 			// Prepare data instead of creating immediately
+			const requirementEnumKey =
+				`${frameworkInstance.frameworkId}_${requirement.requirementId}` as keyof typeof RequirementId;
+
+			// Validate that the constructed key actually exists in the enum
+			if (!(requirementEnumKey in RequirementId)) {
+				console.error(
+					`Invalid RequirementId constructed: ${requirementEnumKey}. It does not exist in the RequirementId enum. Skipping map creation for this requirement.`,
+					{
+						frameworkId: frameworkInstance.frameworkId,
+						requirementIdPart: requirement.requirementId,
+						controlName: templateControl.name,
+					},
+				);
+				continue; // Skip this requirement if the enum key is invalid
+			}
+
 			requirementMapsToCreate.push({
 				controlId: control.id,
 				frameworkInstanceId: frameworkInstance.id,
-				requirementId:
-					`${frameworkInstance.frameworkId}_${requirement.requirementId}` as RequirementId,
+				// Use the valid enum member looked up by the constructed key
+				requirementId: RequirementId[requirementEnumKey],
 			});
 		}
 	}
@@ -406,6 +422,21 @@ export async function createOrganizationPolicies(
 	});
 
 	// Prepare data for missing policies
+	// Fetch organization details for placeholder replacement
+	const organizationRecord = await prisma.organization.findUnique({
+		where: { id: organizationId },
+		select: { name: true },
+	});
+
+	if (!organizationRecord) {
+		// This should ideally not happen if the orgId is validated earlier
+		console.error(
+			`Organization record not found for ID: ${organizationId} during policy creation.`,
+		);
+		throw new Error(`Organization ${organizationId} not found.`);
+	}
+
+	// Fetch member record for assignee
 	const memberRecord = await prisma.member.findFirst({
 		where: { organizationId, userId },
 		select: { id: true },
@@ -416,15 +447,29 @@ export async function createOrganizationPolicies(
 		);
 	}
 
+	// Prepare placeholder replacements
+	const currentDate = new Date().toISOString().split("T")[0]; // Format as YYYY-MM-DD
+	const replacements = {
+		"{{organization}}": organizationRecord.name,
+		"{{date}}": currentDate,
+		// Add other potential placeholders and their values here
+	};
+
 	const policiesToCreateData: Prisma.PolicyCreateManyInput[] = [];
 	for (const templateId of missingTemplateIds) {
 		const policyTemplate = requiredTemplatesMap.get(templateId)!;
+		// Process content to replace placeholders
+		const processedContent = replacePlaceholdersInContent(
+			policyTemplate.content as InputJsonValue[], // Cast needed as InputJsonValue is broad
+			replacements,
+		);
+
 		policiesToCreateData.push({
 			organizationId,
 			name: policyTemplate.metadata.name,
 			description: policyTemplate.metadata.description,
 			status: "draft" as PolicyStatus,
-			content: policyTemplate.content as InputJsonValue[],
+			content: processedContent, // Use the processed content
 			assigneeId: memberRecord?.id || null,
 			frequency: policyTemplate.metadata.frequency,
 			department: policyTemplate.metadata.department,
@@ -849,4 +894,99 @@ export async function createControlArtifacts(
 	);
 
 	return { success: true, artifactsCreated: artifactsCreatedCount };
+}
+
+// --- Helper Functions for Placeholder Replacement ---
+
+/**
+ * Recursively traverses a JSON-like structure (policy content) and replaces placeholder strings.
+ * Handles nested arrays and objects, specifically targeting 'text' nodes.
+ *
+ * @param node - The current node (object, array, or primitive) being processed.
+ * @param replacements - A map of placeholder strings (e.g., '{{organization}}') to their replacement values.
+ * @returns The node with placeholders replaced.
+ */
+function replacePlaceholdersRecursive(
+	node: any,
+	replacements: Record<string, string>,
+): any {
+	if (Array.isArray(node)) {
+		// If it's an array, map over its elements and apply recursion
+		return node.map((item) =>
+			replacePlaceholdersRecursive(item, replacements),
+		);
+	}
+
+	if (typeof node === "object" && node !== null) {
+		// If it's an object, create a shallow copy to avoid modifying the original template
+		const newNode: Record<string, any> = { ...node };
+
+		// Specifically target nodes of type 'text' with a 'text' property
+		if (newNode.type === "text" && typeof newNode.text === "string") {
+			let newText = newNode.text;
+			// Iterate through all placeholders and replace them
+			for (const [placeholder, value] of Object.entries(replacements)) {
+				// Escape regex special characters in the placeholder key
+				const escapedPlaceholder = placeholder.replace(
+					/[.*+?^${}()|[\]\\]/g,
+					"\\$&",
+				);
+				// Use a global regex to replace all occurrences
+				const regex = new RegExp(escapedPlaceholder, "g");
+				newText = newText.replace(regex, value);
+			}
+			newNode.text = newText;
+		}
+
+		// Recursively process 'content' property if it exists and is an array or object
+		if (newNode.content) {
+			newNode.content = replacePlaceholdersRecursive(
+				newNode.content,
+				replacements,
+			);
+		}
+
+		// Recursively process 'attrs' property if it exists and is an object
+		// (Handles cases where placeholders might be in attributes)
+		if (typeof newNode.attrs === "object" && newNode.attrs !== null) {
+			newNode.attrs = replacePlaceholdersRecursive(
+				newNode.attrs,
+				replacements,
+			);
+		}
+
+		return newNode;
+	}
+
+	// Return primitives or unexpected types as is
+	return node;
+}
+
+/**
+ * Wrapper function to start the placeholder replacement process on policy content.
+ * Ensures the initial content is treated as an array.
+ *
+ * @param content - The policy content array (expected format from templates).
+ * @param replacements - A map of placeholder strings to their replacement values.
+ * @returns The policy content array with placeholders replaced.
+ */
+function replacePlaceholdersInContent(
+	content: InputJsonValue[],
+	replacements: Record<string, string>,
+): InputJsonValue[] {
+	// Ensure content is actually an array before processing
+	if (!Array.isArray(content)) {
+		console.warn(
+			"Policy content is not in the expected array format. Skipping placeholder replacement.",
+			{ content },
+		);
+		// Return the original content or handle error as appropriate
+		// Casting back to InputJsonValue[] assuming it should have been an array
+		return content as InputJsonValue[];
+	}
+	// Start the recursive replacement process
+	return replacePlaceholdersRecursive(
+		content,
+		replacements,
+	) as InputJsonValue[];
 }

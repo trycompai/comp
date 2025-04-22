@@ -1,7 +1,7 @@
 {
   "$schema": "https://turborepo.org/schema.json",
   "globalDependencies": ["**/.env"],
-  "ui": "stream",
+  "ui": "tui",
   "tasks": {
     "clean-react": {
       "cache": false

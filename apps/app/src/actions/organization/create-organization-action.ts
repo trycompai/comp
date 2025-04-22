@@ -2,6 +2,7 @@
 
 import { performance } from "node:perf_hooks";
 import { auth } from "@/utils/auth";
+import { FrameworkId } from "@comp/data";
 import { db } from "@comp/db";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
@@ -109,7 +110,9 @@ export const createOrganizationAction = authActionClient
 					// REVISIT: Consider if more granular error handling/logging is needed within the transaction
 
 					start = performance.now();
-					const relevantControls = getRelevantControls(frameworks);
+					const relevantControls = getRelevantControls(
+						frameworks as FrameworkId[],
+					);
 					const getRelevantControlsTime =
 						(performance.now() - start) / 1000;
 
@@ -120,7 +123,7 @@ export const createOrganizationAction = authActionClient
 							(frameworkId) =>
 								createFrameworkInstance(
 									organizationId,
-									frameworkId,
+									frameworkId as FrameworkId,
 									tx,
 								), // Pass tx
 						),

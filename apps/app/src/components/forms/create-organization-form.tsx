@@ -174,7 +174,7 @@ export function OnboardingClient() {
 															htmlFor={`framework-${frameworkId}`}
 															className={cn(
 																"relative flex flex-col p-4 border cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 w-full text-left",
-																field.value.includes(
+																(field.value as FrameworkId[]).includes(
 																	frameworkId,
 																) &&
 																"border-primary bg-primary/5",
@@ -199,7 +199,7 @@ export function OnboardingClient() {
 																<div>
 																	<Checkbox
 																		id={`framework-${frameworkId}`}
-																		checked={field.value.includes(
+																		checked={(field.value as FrameworkId[]).includes(
 																			frameworkId,
 																		)}
 																		className="mt-1"

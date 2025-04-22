@@ -17,6 +17,7 @@ export interface Framework {
 export interface Frameworks {
 	/** SOC 2 (Service Organization Control 2) framework */
 	soc2: Framework;
+	gdpr: Framework;
 	/** ISO 27001 Information Security Management framework */
 	// iso27001: Framework;
 	/** General Data Protection Regulation framework */

@@ -7,16 +7,10 @@ export const frameworks: Frameworks = {
 		description:
 			"SOC 2 is a framework for assessing the security and reliability of information systems.",
 	},
-	// iso27001: {
-	// 	name: "ISO 27001",
-	// 	version: "2025",
-	// 	description:
-	// 		"ISO 27001 is a framework for assessing the security and reliability of information systems.",
-	// },
-	// gdpr: {
-	// 	name: "GDPR",
-	// 	version: "2025",
-	// 	description:
-	// 		"GDPR is a framework for assessing the security and reliability of information systems.",
-	// },
+	gdpr: {
+		name: "GDPR",
+		version: "2016",
+		description:
+			"GDPR regulates how organizations, both within and outside the EU, handle the personal data of individuals residing in the EU.",
+	},
 };

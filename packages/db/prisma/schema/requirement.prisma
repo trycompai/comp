@@ -26,4 +26,24 @@ enum RequirementId {
     soc2_C1
     soc2_PI1
     soc2_P1
+    gdpr_A4
+    gdpr_A5
+    gdpr_A6
+    gdpr_A7
+    gdpr_A12
+    gdpr_A13
+    gdpr_A14
+    gdpr_A15
+    gdpr_A16
+    gdpr_A17
+    gdpr_A18
+    gdpr_A19
+    gdpr_A20
+    gdpr_A21
+    gdpr_A25
+    gdpr_A30
+    gdpr_A32
+    gdpr_A33
+    gdpr_A34
+    gdpr_A35
 }

@@ -14,4 +14,5 @@ model FrameworkInstance {
 
 enum FrameworkId {
   soc2
+  gdpr
 }

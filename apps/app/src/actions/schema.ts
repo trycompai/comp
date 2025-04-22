@@ -1,6 +1,6 @@
+import { frameworks } from "@comp/data";
 import {
 	Departments,
-	FrameworkId,
 	Frequency,
 	Impact,
 	Likelihood,
@@ -14,7 +14,7 @@ import { z } from "zod";
 export const organizationSchema = z.object({
 	name: z.string().min(1, "Organization name is required"),
 	frameworks: z
-		.array(z.nativeEnum(FrameworkId))
+		.array(z.enum(Object.keys(frameworks) as [string, ...string[]]))
 		.min(1, "Please select at least one framework to get started with"),
 });
 

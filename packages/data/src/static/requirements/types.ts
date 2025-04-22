@@ -1,4 +1,5 @@
 import { FrameworkId } from "../frameworks/types";
+import { gdprRequirementIds } from "./data/gdpr.types";
 import { soc2RequirementIds } from "./data/soc2.types";
 
 /**
@@ -29,4 +30,5 @@ export type AllRequirements = {
 
 export type AllRequirementIdsByFramework = {
 	soc2: soc2RequirementIds;
+	gdpr: gdprRequirementIds;
 };

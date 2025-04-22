@@ -12,13 +12,17 @@ export const privacyNotice: Control = {
 		},
 		{
 			type: "evidence",
-			evidenceId: "privacy_notice",
+			evidenceId: "privacy_notice_evidence",
 		},
 	],
 	mappedRequirements: [
 		{
 			frameworkId: "soc2",
 			requirementId: "P1",
+		},
+		{
+			frameworkId: "gdpr",
+			requirementId: "A12",
 		},
 	],
 };
