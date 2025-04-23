@@ -37,6 +37,10 @@ export function OnboardingClient() {
 
 	const createOrganization = useAction(createOrganizationAction, {
 		onSuccess: async () => {
+			sendGTMEvent({
+				event: "conversion",
+			});
+
 			router.push("/");
 		},
 		onError: () => {
@@ -64,12 +68,6 @@ export function OnboardingClient() {
 
 		createOrganization.execute({
 			...data,
-		});
-
-		sendGTMEvent({
-			event: "conversion",
-			category: "create_organization",
-			label: data.name,
 		});
 	};
 
