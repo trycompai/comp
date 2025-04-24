@@ -1,0 +1,34 @@
+name: Database Migrations
+
+on:
+  push:
+    branches:
+      - dev
+  workflow_dispatch: # Allows manual triggering
+
+env:
+  BUN_VERSION: "1.0.26"
+
+jobs:
+  migrate:
+    name: Run Database Migrations
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Apply database migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_DEV }}
+        run: |
+          cd packages/db
+          bunx prisma migrate deploy

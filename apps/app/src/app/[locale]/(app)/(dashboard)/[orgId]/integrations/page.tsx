@@ -42,9 +42,7 @@ export default async function IntegrationsPage({
 		<div className="mt-4 max-w-[1200px] m-auto flex flex-col gap-4">
 			<IntegrationsHeader />
 
-			<Suspense fallback={<SkeletonLoader amount={2} />}>
-				<IntegrationsServer />
-			</Suspense>
+			<IntegrationsServer />
 		</div>
 	);
 }

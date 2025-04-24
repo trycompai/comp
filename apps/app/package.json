@@ -5,7 +5,7 @@
 	"scripts": {
 		"dev": "bun run apply-migrations && bunx concurrently --kill-others --names \"next,trigger\" --prefix-colors \"yellow,blue\" \"next dev --turbo -p 3000\" \"bun run trigger:dev\"",
 		"trigger:dev": "npx trigger.dev@latest dev",
-		"build": "next build",
+		"build": "next build --turbopack",
 		"start": "next start",
 		"lint": "biome lint ./src",
 		"apply-migrations": "cd ../../packages/db && bunx prisma migrate dev && cd ../../apps/app",
@@ -38,7 +38,6 @@
 		"@novu/react": "^2.6.6",
 		"@number-flow/react": "^0.5.9",
 		"@prisma/instrumentation": "6.6.0",
-		"@sentry/nextjs": "^9.12.0",
 		"@tanstack/react-query": "^5.74.3",
 		"@tanstack/react-table": "^8.21.3",
 		"@tiptap/extension-table": "^2.11.7",

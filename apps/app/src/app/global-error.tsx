@@ -1,17 +1,10 @@
 "use client";
 
-import * as Sentry from "@sentry/nextjs";
-import { useEffect } from "react";
-
 import { Button } from "@comp/ui/button";
 import NextError from "next/error";
 import Link from "next/link";
 
 export default function GlobalError({ error, reset }: { error: Error, reset: () => void }) {
-	useEffect(() => {
-		Sentry.captureException(error);
-	}, [error]);
-
 	return (
 		<html lang="en">
 			<body>
