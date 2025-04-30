@@ -93,7 +93,7 @@
 		"remark-parse": "^11.0.0",
 		"resend": "^4.4.1",
 		"sonner": "^1.7.4",
-		"stripe": "^17.7.0",
+		"stripe": "^18.0.0",
 		"tiptap-markdown": "^0.8.10",
 		"ts-pattern": "^5.7.0",
 		"use-debounce": "^10.0.4",
