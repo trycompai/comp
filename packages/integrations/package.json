@@ -17,7 +17,7 @@
 		"@google-cloud/security-center": "^7.0.0",
 		"@slack/bolt": "^3.22.0",
 		"@slack/web-api": "^7.8.0",
-		"ai": "^3.4.33",
+		"ai": "^4.3.11",
 		"jsonwebtoken": "^9.0.2",
 		"node-fetch": "^2.6.7",
 		"sharp": "^0.33.5",
