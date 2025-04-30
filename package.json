@@ -39,7 +39,7 @@
 		"@azure/identity": "^4.9.1",
 		"@hookform/resolvers": "^5.0.1",
 		"@manypkg/cli": "^0.23.0",
-		"@nangohq/node": "^0.53.2",
+		"@nangohq/node": "^0.58.6",
 		"@number-flow/react": "^0.5.9",
 		"@prisma/adapter-pg": "6.5.0",
 		"@types/d3": "^7.4.3",
