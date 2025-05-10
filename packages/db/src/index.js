@@ -9,6 +9,7 @@ const createPrismaClient = () => {
                 url: process.env.DATABASE_URL,
             },
         },
+        datasourceUrl: process.env.DATABASE_URL,
         log: ["error", "warn"],
     });
 };
