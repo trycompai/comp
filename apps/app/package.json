@@ -32,7 +32,7 @@
 		"@dnd-kit/utilities": "^3.2.2",
 		"@hookform/resolvers": "^3.10.0",
 		"@mendable/firecrawl-js": "^1.24.0",
-		"@nangohq/frontend": "^0.53.2",
+		"@nangohq/frontend": "^0.58.6",
 		"@next/third-parties": "^15.3.1",
 		"@novu/headless": "^2.6.6",
 		"@novu/react": "^2.6.6",
