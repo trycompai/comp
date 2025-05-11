@@ -37,7 +37,7 @@
 		"@novu/headless": "^2.6.6",
 		"@novu/react": "^2.6.6",
 		"@number-flow/react": "^0.5.9",
-		"@prisma/instrumentation": "6.6.0",
+		"@prisma/instrumentation": "6.7.0",
 		"@tanstack/react-query": "^5.74.4",
 		"@tanstack/react-table": "^8.21.3",
 		"@tiptap/extension-table": "^2.11.7",
