@@ -1,15 +1,13 @@
 'use client'
 
-import {
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogDescription,
-  DialogFooter // If we need a close button, though onOpenChange handles it
-} from "@comp/ui/dialog";
-import { Button } from "@comp/ui/button";
 import { SearchAndLinkList, type SearchableItemForLinking } from '@/app/components/SearchAndLinkList';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle
+} from "@comp/ui/dialog";
 
 interface ManageLinksDialogProps {
   isOpen: boolean;

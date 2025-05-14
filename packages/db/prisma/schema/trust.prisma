@@ -1,10 +1,12 @@
 model Trust {
-    organizationId String
-    organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-    domain         String?
-    domainVerified Boolean      @default(false)
-    status         TrustStatus  @default(draft)
-    contactEmail   String?
+    organizationId     String
+    organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+    domain             String?
+    domainVerified     Boolean      @default(false)
+    isVercelDomain     Boolean      @default(false)
+    vercelVerification String?
+    status             TrustStatus  @default(draft)
+    contactEmail       String?
 
     email         String?
     privacyPolicy String?

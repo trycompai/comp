@@ -6,9 +6,15 @@ import { db } from "@comp/db";
 import { authActionClient } from "@/actions/safe-action";
 import { z } from "zod";
 import { revalidatePath, revalidateTag } from "next/cache";
+import { env } from "node:process";
+import { Vercel } from "@vercel/sdk";
 
 const customDomainSchema = z.object({
 	domain: z.string().min(1),
+});
+
+const vercel = new Vercel({
+	bearerToken: env.VERCEL_ACCESS_TOKEN,
 });
 
 export const customDomainAction = authActionClient
@@ -33,19 +39,74 @@ export const customDomainAction = authActionClient
 				where: { organizationId: activeOrganizationId },
 			});
 
-			// Always set domainVerified to false when domain changes
 			const domainVerified =
 				currentDomain?.domain === domain
 					? currentDomain.domainVerified
 					: false;
 
+			const isExistingRecord = await vercel.projects.getProjectDomains({
+				idOrName: env.TRUST_PORTAL_PROJECT_ID!,
+				teamId: env.VERCEL_TEAM_ID!,
+			});
+
+			if (
+				isExistingRecord.domains.some(
+					(record) => record.name === domain,
+				)
+			) {
+				const domainOwner = await db.trust.findUnique({
+					where: {
+						organizationId: activeOrganizationId,
+						domain: domain,
+					},
+				});
+
+				if (
+					!domainOwner ||
+					domainOwner.organizationId === activeOrganizationId
+				) {
+					await vercel.projects.removeProjectDomain({
+						idOrName: env.TRUST_PORTAL_PROJECT_ID!,
+						teamId: env.VERCEL_TEAM_ID!,
+						domain,
+					});
+				} else {
+					return {
+						success: false,
+						error: "Domain is already in use by another organization",
+					};
+				}
+			}
+
+			const addDomainToProject = await vercel.projects.addProjectDomain({
+				idOrName: env.TRUST_PORTAL_PROJECT_ID!,
+				teamId: env.VERCEL_TEAM_ID!,
+				slug: env.TRUST_PORTAL_PROJECT_ID!,
+				requestBody: {
+					name: domain,
+				},
+			});
+
+			const isVercelDomain = addDomainToProject.verified === false;
+
+			// Store the verification details from Vercel if available
+			const vercelVerification =
+				addDomainToProject.verification?.[0]?.value || null;
+
 			await db.trust.upsert({
 				where: { organizationId: activeOrganizationId },
-				update: { domain, domainVerified },
+				update: {
+					domain,
+					domainVerified,
+					isVercelDomain,
+					vercelVerification,
+				},
 				create: {
 					organizationId: activeOrganizationId,
 					domain,
 					domainVerified: false,
+					isVercelDomain,
+					vercelVerification,
 				},
 			});
 

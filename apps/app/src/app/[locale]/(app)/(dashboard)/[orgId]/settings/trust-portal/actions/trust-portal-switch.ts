@@ -9,7 +9,7 @@ import { z } from "zod";
 
 const trustPortalSwitchSchema = z.object({
 	enabled: z.boolean(),
-	contactEmail: z.string().email().optional(),
+	contactEmail: z.string().email().optional().or(z.literal("")),
 });
 
 export const trustPortalSwitchAction = authActionClient
@@ -34,12 +34,12 @@ export const trustPortalSwitchAction = authActionClient
 				where: { organizationId: activeOrganizationId },
 				update: {
 					status: enabled ? "published" : "draft",
-					contactEmail: contactEmail ?? null,
+					contactEmail: contactEmail === "" ? null : contactEmail,
 				},
 				create: {
 					organizationId: activeOrganizationId,
 					status: enabled ? "published" : "draft",
-					contactEmail: contactEmail ?? null,
+					contactEmail: contactEmail === "" ? null : contactEmail,
 				},
 			});
 

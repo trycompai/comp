@@ -5,6 +5,10 @@ model FrameworkEditorVideo {
     description String
     youtubeId   String
     url         String
+
+    // Dates
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now()) @updatedAt
 }
 
 model FrameworkEditorFramework {
@@ -14,6 +18,10 @@ model FrameworkEditorFramework {
     description String
 
     requirements FrameworkEditorRequirement[]
+
+    // Dates
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now()) @updatedAt
 }
 
 model FrameworkEditorRequirement {
@@ -26,6 +34,10 @@ model FrameworkEditorRequirement {
     description String
 
     controlTemplates FrameworkEditorControlTemplate[]
+
+    // Dates
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now()) @updatedAt
 }
 
 model FrameworkEditorPolicyTemplate {
@@ -37,6 +49,10 @@ model FrameworkEditorPolicyTemplate {
     content     Json
 
     controlTemplates FrameworkEditorControlTemplate[]
+
+    // Dates
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now()) @updatedAt
 }
 
 model FrameworkEditorTaskTemplate {
@@ -47,6 +63,10 @@ model FrameworkEditorTaskTemplate {
     department  Departments // Using the enum from shared.prisma
 
     controlTemplates FrameworkEditorControlTemplate[]
+
+    // Dates
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now()) @updatedAt
 }
 
 model FrameworkEditorControlTemplate {
@@ -57,4 +77,8 @@ model FrameworkEditorControlTemplate {
     policyTemplates FrameworkEditorPolicyTemplate[]
     requirements    FrameworkEditorRequirement[]
     taskTemplates   FrameworkEditorTaskTemplate[]
+
+    // Dates
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now()) @updatedAt
 }

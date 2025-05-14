@@ -3,29 +3,47 @@
 import { db } from '@comp/db';
 import { revalidatePath } from 'next/cache';
 import type { SearchableItemForLinking } from '@/app/components/SearchAndLinkList'; // Assuming this path is correct
+import { z } from "zod";
+import { createControlTemplateSchema } from './schemas';
+import type { FrameworkEditorControlTemplate } from "@prisma/client";
 
 /**
- * Fetches all requirements, including their framework name.
+ * Fetches all requirements, including their framework name and identifier.
  */
 export async function getAllRequirements(): Promise<SearchableItemForLinking[]> {
   try {
     const requirements = await db.frameworkEditorRequirement.findMany({
       select: {
         id: true,
-        name: true,
-        framework: { // Include framework details
+        identifier: true, 
+        name: true,       // Descriptive name
+        framework: { 
           select: {
-            id: true, // Useful if you ever want to link to the framework itself
             name: true,
           }
         }
       },
       orderBy: {
+        // Consider if ordering by identifier or name is preferred. Currently descriptive name.
         name: 'asc',
       },
     });
-    // The return type is SearchableItemForLinking, which allows for extra properties like 'framework'.
-    return requirements.map(r => ({ ...r, frameworkName: r.framework?.name })); // Optionally flatten for easier access if preferred
+    return requirements.map(r => {
+      let primaryDisplayLabel = r.identifier; // Start with identifier
+      if (r.identifier && r.name) { // If both identifier and descriptive name exist
+        primaryDisplayLabel = `${r.identifier} - ${r.name}`;
+      } else if (r.name) { // Else if only descriptive name exists
+        primaryDisplayLabel = r.name;
+      } 
+      // If only identifier exists, it's already set. If neither, fallback.
+      primaryDisplayLabel = primaryDisplayLabel || 'Unnamed Requirement';
+
+      return {
+        id: r.id, 
+        name: primaryDisplayLabel,
+        sublabel: r.framework?.name ? r.framework.name : undefined,
+      };
+    });
   } catch (error) {
     console.error("Error fetching all requirements:", error);
     throw new Error("Failed to fetch all requirements.");
@@ -91,13 +109,17 @@ export async function getAllPolicyTemplates(): Promise<SearchableItemForLinking[
       select: {
         id: true,
         name: true,
-        // Add other relevant fields, e.g., category or type if needed for display
       },
       orderBy: {
         name: 'asc',
       },
     });
-    return policyTemplates.map((pt: {id: string, name: string}) => ({ id: pt.id, name: pt.name })); 
+    // Policy templates only have a name, sublabel will be undefined
+    return policyTemplates.map((pt: {id: string, name: string}) => ({ 
+      id: pt.id, 
+      name: pt.name 
+      // sublabel will be implicitly undefined
+    })); 
   } catch (error) {
     console.error("Error fetching all policy templates:", error);
     throw new Error("Failed to fetch all policy templates.");
@@ -163,13 +185,17 @@ export async function getAllTaskTemplates(): Promise<SearchableItemForLinking[]>
       select: {
         id: true,
         name: true,
-        // Add other relevant fields
       },
       orderBy: {
         name: 'asc',
       },
     });
-    return taskTemplates.map((tt: {id: string, name: string}) => ({ id: tt.id, name: tt.name }));
+    // Task templates only have a name, sublabel will be undefined
+    return taskTemplates.map((tt: {id: string, name: string}) => ({ 
+      id: tt.id, 
+      name: tt.name 
+      // sublabel will be implicitly undefined
+    }));
   } catch (error) {
     console.error("Error fetching all task templates:", error);
     throw new Error("Failed to fetch all task templates.");
@@ -277,5 +303,35 @@ export async function deleteControl(controlId: string): Promise<void> {
     console.error("Error deleting control:", error);
     // Consider more specific error handling, e.g., if control not found or if relations prevent deletion
     throw new Error("Failed to delete control.");
+  }
+}
+
+/**
+ * Creates a new control template.
+ */
+export async function createControl(rawData: { name: string | null; description?: string | null }): Promise<FrameworkEditorControlTemplate> {
+  const validationResult = createControlTemplateSchema.safeParse(rawData);
+
+  if (!validationResult.success) {
+    const errorMessages = validationResult.error.issues.map((issue: z.ZodIssue) => `${issue.path.join('.')}: ${issue.message}`).join(', ');
+    throw new Error(`Invalid input for creating control: ${errorMessages}`);
+  }
+
+  const { name, description } = validationResult.data; // name is string, description is string | undefined
+
+  try {
+    const controlTemplate = await db.frameworkEditorControlTemplate.create({
+      data: {
+        name,
+        description: description || "", // Ensure description is not undefined for Prisma
+      },
+    });
+
+    revalidatePath("/controls");
+    return controlTemplate;
+  } catch (error) {
+    console.error("Failed to create control template:", error);
+    const errorMessage = error instanceof Error ? error.message : "Failed to create control template in the database.";
+    throw new Error(`Database error: ${errorMessage}`);
   }
 } 

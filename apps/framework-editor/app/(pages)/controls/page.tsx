@@ -6,7 +6,12 @@ import { ControlsClientPage } from "./ControlsClientPage"; // Import the new Cli
 
 export default async function Page() {
     const controls = await db.frameworkEditorControlTemplate.findMany({
-      include: {
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        createdAt: true,
+        updatedAt: true,
         policyTemplates: {
           select: {
             id: true,
@@ -32,16 +37,11 @@ export default async function Page() {
         }
       },
       orderBy: {
-        name: "asc",
+        createdAt: "asc",
       },
     });
 
-    // Sort controls in a case-insensitive way
-    const sortedControls = [...controls].sort((a, b) => 
-      a.name.toLowerCase().localeCompare(b.name.toLowerCase())
-    );
-
     return (
-        <ControlsClientPage initialControls={sortedControls} />
+        <ControlsClientPage initialControls={controls} />
     );
 }

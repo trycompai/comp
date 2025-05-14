@@ -2,7 +2,7 @@
 
 import { useI18n } from "@/locales/client"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@comp/ui/card"
-import { Form, FormControl, FormField, FormItem } from "@comp/ui/form"
+import { Form, FormControl, FormField, FormItem, FormLabel } from "@comp/ui/form"
 import { Switch } from "@comp/ui/switch"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useAction } from "next-safe-action/hooks"
@@ -132,16 +132,15 @@ export function TrustPortalSwitch({
                                         control={form.control}
                                         name="contactEmail"
                                         render={({ field }) => (
-                                            <FormItem className="space-y-2 flex items-center justify-between">
-                                                <div className="space-y-0.5">
-                                                    <h4 className="text-sm font-medium">Contact Email</h4>
-                                                    <p className="text-xs text-muted-foreground">Let users contact you through the trust portal.</p>
-                                                </div>
+                                            <FormItem className="flex items-center justify-between">
+                                                <FormLabel>
+                                                    Contact Email
+                                                </FormLabel>
                                                 <FormControl>
                                                     <Input
                                                         {...field}
                                                         placeholder="contact@example.com"
-                                                        className="max-w-sm"
+                                                        className="w-auto"
                                                         autoComplete="off"
                                                         autoCapitalize="none"
                                                         autoCorrect="off"
@@ -155,101 +154,101 @@ export function TrustPortalSwitch({
                             </div>
                         )}
                         {form.watch("enabled") && (
-                            <>
+                            <div className="">
                                 {/* Compliance Frameworks Section */}
-                                <div className="space-y-4">
-                                    <h3 className="text-sm font-medium">Compliance Frameworks</h3>
-                                    {/* SOC 2 */}
-                                    <ComplianceFramework
-                                        title="SOC 2"
-                                        description="Show your SOC 2 compliance status"
-                                        isEnabled={soc2}
-                                        status={soc2Status}
-                                        onStatusChange={async (value) => {
-                                            try {
-                                                await updateTrustPortalFrameworks({
-                                                    orgId,
-                                                    soc2Status: value as "started" | "in_progress" | "compliant",
-                                                })
-                                                toast.success("SOC 2 status updated")
-                                            } catch (error) {
-                                                toast.error("Failed to update SOC 2 status")
-                                            }
-                                        }}
-                                        onToggle={async (checked) => {
-                                            try {
-                                                await updateTrustPortalFrameworks({
-                                                    orgId,
-                                                    soc2: checked,
-                                                })
-                                                toast.success("SOC 2 status updated")
-                                            } catch (error) {
-                                                toast.error("Failed to update SOC 2 status")
-                                            }
-                                        }}
-                                    />
-
-                                    {/* ISO 27001 */}
-                                    <ComplianceFramework
-                                        title="ISO 27001"
-                                        description="Show your ISO 27001 compliance status"
-                                        isEnabled={iso27001}
-                                        status={iso27001Status}
-                                        onStatusChange={async (value) => {
-                                            try {
-                                                await updateTrustPortalFrameworks({
-                                                    orgId,
-                                                    iso27001Status: value as "started" | "in_progress" | "compliant",
-                                                })
-                                                toast.success("ISO 27001 status updated")
-                                            } catch (error) {
-                                                toast.error("Failed to update ISO 27001 status")
-                                            }
-                                        }}
-                                        onToggle={async (checked) => {
-                                            try {
-                                                await updateTrustPortalFrameworks({
-                                                    orgId,
-                                                    iso27001: checked,
-                                                })
-                                                toast.success("ISO 27001 status updated")
-                                            } catch (error) {
-                                                toast.error("Failed to update ISO 27001 status")
-                                            }
-                                        }}
-                                    />
-
-                                    {/* GDPR */}
-                                    <ComplianceFramework
-                                        title="GDPR"
-                                        description="Show your GDPR compliance status"
-                                        isEnabled={gdpr}
-                                        status={gdprStatus}
-                                        onStatusChange={async (value) => {
-                                            try {
-                                                await updateTrustPortalFrameworks({
-                                                    orgId,
-                                                    gdprStatus: value as "started" | "in_progress" | "compliant",
-                                                })
-                                                toast.success("GDPR status updated")
-                                            } catch (error) {
-                                                toast.error("Failed to update GDPR status")
-                                            }
-                                        }}
-                                        onToggle={async (checked) => {
-                                            try {
-                                                await updateTrustPortalFrameworks({
-                                                    orgId,
-                                                    gdpr: checked,
-                                                })
-                                                toast.success("GDPR status updated")
-                                            } catch (error) {
-                                                toast.error("Failed to update GDPR status")
-                                            }
-                                        }}
-                                    />
+                                <div>
+                                    <h3 className="text-sm font-medium mb-4">Compliance Frameworks</h3>
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                        {/* SOC 2 */}
+                                        <ComplianceFramework
+                                            title="SOC 2"
+                                            description="Show your SOC 2 compliance status"
+                                            isEnabled={soc2}
+                                            status={soc2Status}
+                                            onStatusChange={async (value) => {
+                                                try {
+                                                    await updateTrustPortalFrameworks({
+                                                        orgId,
+                                                        soc2Status: value as "started" | "in_progress" | "compliant",
+                                                    })
+                                                    toast.success("SOC 2 status updated")
+                                                } catch (error) {
+                                                    toast.error("Failed to update SOC 2 status")
+                                                }
+                                            }}
+                                            onToggle={async (checked) => {
+                                                try {
+                                                    await updateTrustPortalFrameworks({
+                                                        orgId,
+                                                        soc2: checked,
+                                                    })
+                                                    toast.success("SOC 2 status updated")
+                                                } catch (error) {
+                                                    toast.error("Failed to update SOC 2 status")
+                                                }
+                                            }}
+                                        />
+                                        {/* ISO 27001 */}
+                                        <ComplianceFramework
+                                            title="ISO 27001"
+                                            description="Show your ISO 27001 compliance status"
+                                            isEnabled={iso27001}
+                                            status={iso27001Status}
+                                            onStatusChange={async (value) => {
+                                                try {
+                                                    await updateTrustPortalFrameworks({
+                                                        orgId,
+                                                        iso27001Status: value as "started" | "in_progress" | "compliant",
+                                                    })
+                                                    toast.success("ISO 27001 status updated")
+                                                } catch (error) {
+                                                    toast.error("Failed to update ISO 27001 status")
+                                                }
+                                            }}
+                                            onToggle={async (checked) => {
+                                                try {
+                                                    await updateTrustPortalFrameworks({
+                                                        orgId,
+                                                        iso27001: checked,
+                                                    })
+                                                    toast.success("ISO 27001 status updated")
+                                                } catch (error) {
+                                                    toast.error("Failed to update ISO 27001 status")
+                                                }
+                                            }}
+                                        />
+                                        {/* GDPR */}
+                                        <ComplianceFramework
+                                            title="GDPR"
+                                            description="Show your GDPR compliance status"
+                                            isEnabled={gdpr}
+                                            status={gdprStatus}
+                                            onStatusChange={async (value) => {
+                                                try {
+                                                    await updateTrustPortalFrameworks({
+                                                        orgId,
+                                                        gdprStatus: value as "started" | "in_progress" | "compliant",
+                                                    })
+                                                    toast.success("GDPR status updated")
+                                                } catch (error) {
+                                                    toast.error("Failed to update GDPR status")
+                                                }
+                                            }}
+                                            onToggle={async (checked) => {
+                                                try {
+                                                    await updateTrustPortalFrameworks({
+                                                        orgId,
+                                                        gdpr: checked,
+                                                    })
+                                                    toast.success("GDPR status updated")
+                                                } catch (error) {
+                                                    toast.error("Failed to update GDPR status")
+                                                }
+                                            }}
+                                        />
+                                    </div>
                                 </div>
-                            </>
+                            </div>
                         )}
                     </CardContent>
                     <CardFooter className="flex justify-between px-6 py-4">
@@ -287,16 +286,15 @@ function ComplianceFramework({
     onStatusChange: (value: string) => Promise<void>
     onToggle: (checked: boolean) => Promise<void>
 }) {
-    const logo = title === "SOC 2" ? <SOC2 className="w-12 h-12" /> : title === "ISO 27001" ? <ISO27001 className="w-12 h-12" /> : <GDPR className="w-12 h-12" />
+    const logo = title === "SOC 2" ? <SOC2 className="w-10 h-10" /> : title === "ISO 27001" ? <ISO27001 className="w-10 h-10" /> : <GDPR className="w-10 h-10" />
 
     return (
-        <div className="flex flex-col space-y-2 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between rounded-md border p-4">
+        <div className="flex space-y-2 sm:space-y-0 flex-row items-center justify-between rounded-md border p-4">
             <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
                     {logo}
                     <h4 className="text-sm font-medium">{title}</h4>
                 </div>
-                <p className="text-xs text-muted-foreground">{description}</p>
             </div>
             <div className="flex items-center gap-3">
                 {isEnabled && (

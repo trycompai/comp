@@ -10,3 +10,26 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Styles for DataSheetGrid row changes */
+.row-deleted .dsg-cell {
+  background: #fff1f0 !important; /* Light red */
+  /* text-decoration: line-through; */ /* Optional: if you want strikethrough */
+}
+.row-deleted .dsg-cell:focus-within {
+  box-shadow: inset 0 0 0 2px #ff7875 !important; /* Red shadow */
+}
+
+.row-created .dsg-cell {
+  background: #f6ffed !important; /* Light green */
+}
+.row-created .dsg-cell:focus-within {
+  box-shadow: inset 0 0 0 2px #b7eb8f !important; /* Green shadow */
+}
+
+.row-updated .dsg-cell {
+  background: #fff7e6 !important; /* Light orange */
+}
+.row-updated .dsg-cell:focus-within {
+  box-shadow: inset 0 0 0 2px #ffd591 !important; /* Orange shadow */
+}

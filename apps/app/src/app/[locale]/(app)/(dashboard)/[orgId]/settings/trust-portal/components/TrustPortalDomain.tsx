@@ -50,21 +50,28 @@ const trustPortalDomainSchema = z.object({
 export function TrustPortalDomain({
     domain: initialDomain,
     domainVerified,
+    isVercelDomain,
+    vercelVerification,
     orgId,
 }: {
     domain: string;
     domainVerified: boolean;
+    isVercelDomain: boolean;
+    vercelVerification: string | null;
     orgId: string;
 }) {
     const t = useI18n();
     const [isCnameVerified, setIsCnameVerified] = useState(false);
     const [isTxtVerified, setIsTxtVerified] = useState(false);
+    const [isVercelTxtVerified, setIsVercelTxtVerified] = useState(false);
 
     useEffect(() => {
         const isCnameVerified = localStorage.getItem(`${initialDomain}-isCnameVerified`);
         const isTxtVerified = localStorage.getItem(`${initialDomain}-isTxtVerified`);
+        const isVercelTxtVerified = localStorage.getItem(`${initialDomain}-isVercelTxtVerified`);
         setIsCnameVerified(isCnameVerified === "true");
         setIsTxtVerified(isTxtVerified === "true");
+        setIsVercelTxtVerified(isVercelTxtVerified === "true");
     }, []);
 
     const updateCustomDomain = useAction(customDomainAction, {
@@ -89,16 +96,23 @@ export function TrustPortalDomain({
                     setIsTxtVerified(true);
                     localStorage.setItem(`${initialDomain}-isTxtVerified`, "true");
                 }
+                if (data.data?.isVercelTxtVerified) {
+                    setIsVercelTxtVerified(true);
+                    localStorage.setItem(`${initialDomain}-isVercelTxtVerified`, "true");
+                }
             } else {
                 if (data.data?.isCnameVerified) {
                     setIsCnameVerified(true);
-                    localStorage.removeItem(`${initialDomain}-isTxtVerified`);
+                    localStorage.removeItem(`${initialDomain}-isCnameVerified`);
                 }
                 if (data.data?.isTxtVerified) {
                     setIsTxtVerified(true);
-                    localStorage.removeItem(`${initialDomain}-isCnameVerified`);
+                    localStorage.removeItem(`${initialDomain}-isTxtVerified`);
                 }
-                toast.success("DNS record verified.");
+                if (data.data?.isVercelTxtVerified) {
+                    setIsVercelTxtVerified(true);
+                    localStorage.removeItem(`${initialDomain}-isVercelTxtVerified`);
+                }
             }
         },
         onError: () => {
@@ -114,6 +128,14 @@ export function TrustPortalDomain({
     });
 
     const onSubmit = async (data: z.infer<typeof trustPortalDomainSchema>) => {
+        setIsCnameVerified(false);
+        setIsTxtVerified(false);
+        setIsVercelTxtVerified(false);
+
+        localStorage.removeItem(`${initialDomain}-isCnameVerified`);
+        localStorage.removeItem(`${initialDomain}-isTxtVerified`);
+        localStorage.removeItem(`${initialDomain}-isVercelTxtVerified`);
+
         updateCustomDomain.execute({ domain: data.domain });
     };
 
@@ -309,6 +331,55 @@ export function TrustPortalDomain({
                                                             </div>
                                                         </td>
                                                     </tr>
+                                                    {isVercelDomain && (
+                                                        <tr className="border-t [&_td]:px-3 [&_td]:py-2">
+                                                            <td>
+                                                                {isVercelTxtVerified ? (
+                                                                    <CheckCircle className="h-4 w-4 text-green-500" />
+                                                                ) : (
+                                                                    <AlertCircle className="h-4 w-4 text-red-500" />
+                                                                )}
+                                                            </td>
+                                                            <td>TXT</td>
+                                                            <td>
+                                                                <div className="flex items-center justify-between gap-2">
+                                                                    <span className="min-w-0 break-words">
+                                                                        _vercel
+                                                                    </span>
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        type="button"
+                                                                        onClick={() => handleCopy(vercelVerification || "", "Name")}
+                                                                        className="h-6 w-6 flex-shrink-0"
+                                                                    >
+                                                                        <ClipboardCopy className="h-4 w-4" />
+                                                                    </Button>
+                                                                </div>
+                                                            </td>
+                                                            <td>
+                                                                <div className="flex items-center justify-between gap-2">
+                                                                    <span className="min-w-0 break-words">
+                                                                        {vercelVerification}
+                                                                    </span>
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        type="button"
+                                                                        onClick={() =>
+                                                                            handleCopy(
+                                                                                vercelVerification || "",
+                                                                                "Value",
+                                                                            )
+                                                                        }
+                                                                        className="h-6 w-6 flex-shrink-0"
+                                                                    >
+                                                                        <ClipboardCopy className="h-4 w-4" />
+                                                                    </Button>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    )}
                                                 </tbody>
                                             </table>
 
@@ -398,7 +469,56 @@ export function TrustPortalDomain({
                                                         </Button>
                                                     </div>
                                                 </div>
+                                                {isVercelDomain && (
+                                                    <>
+                                                        <div className="border-b" />
+                                                        <div>
+                                                            <div className="font-medium mb-1">Type:</div>
+                                                            <div>TXT</div>
+                                                        </div>
+                                                        <div>
+                                                            <div className="font-medium mb-1">Name:</div>
+                                                            <div className="flex items-center justify-between gap-2">
+                                                                <span className="min-w-0 break-words">
+                                                                    _vercel
+                                                                </span>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    type="button"
+                                                                    onClick={() => handleCopy(vercelVerification || "", "Name")}
+                                                                    className="h-6 w-6 flex-shrink-0"
+                                                                >
+                                                                    <ClipboardCopy className="h-4 w-4" />
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <div className="font-medium mb-1">Value:</div>
+                                                            <div className="flex items-center justify-between gap-2">
+                                                                <span className="min-w-0 break-words">
+                                                                    {vercelVerification}
+                                                                </span>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                        handleCopy(
+                                                                            vercelVerification || "",
+                                                                            "Value",
+                                                                        )
+                                                                    }
+                                                                    className="h-6 w-6 flex-shrink-0"
+                                                                >
+                                                                    <ClipboardCopy className="h-4 w-4" />
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                    </>
+                                                )}
                                             </div>
+
                                         </div>
                                     </div>
                                 </div>

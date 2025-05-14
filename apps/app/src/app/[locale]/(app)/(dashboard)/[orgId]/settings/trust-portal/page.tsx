@@ -39,6 +39,8 @@ export default async function TrustPortalSettings({
 				domain={trustPortal?.domain ?? ""}
 				domainVerified={trustPortal?.domainVerified ?? false}
 				orgId={orgId}
+				isVercelDomain={trustPortal?.isVercelDomain ?? false}
+				vercelVerification={trustPortal?.vercelVerification ?? null}
 			/>
 		</div>
 	);
@@ -70,6 +72,8 @@ const getTrustPortal = cache(async (orgId: string) => {
 		soc2Status: trustPortal?.soc2_status,
 		iso27001Status: trustPortal?.iso27001_status,
 		gdprStatus: trustPortal?.gdpr_status,
+		isVercelDomain: trustPortal?.isVercelDomain,
+		vercelVerification: trustPortal?.vercelVerification,
 	};
 });
 

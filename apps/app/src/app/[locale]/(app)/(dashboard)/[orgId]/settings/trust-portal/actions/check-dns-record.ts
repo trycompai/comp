@@ -48,8 +48,13 @@ export const checkDnsRecordAction = authActionClient
 		const txtResponse = await fetch(
 			`https://networkcalc.com/api/dns/lookup/${rootDomain}?type=TXT`,
 		);
+		const vercelTxtResponse = await fetch(
+			`https://networkcalc.com/api/dns/lookup/_vercel.${rootDomain}?type=TXT`,
+		);
+
 		const data = await response.json();
 		const txtData = await txtResponse.json();
+		const vercelTxtData = await vercelTxtResponse.json();
 
 		if (
 			response.status !== 200 ||
@@ -66,9 +71,20 @@ export const checkDnsRecordAction = authActionClient
 
 		const cnameRecords = data.records?.CNAME;
 		const txtRecords = txtData.records?.TXT;
-
+		const vercelTxtRecords = vercelTxtData.records?.TXT;
+		const isVercelDomain = await db.trust.findUnique({
+			where: {
+				organizationId: activeOrgId,
+				domain,
+			},
+			select: {
+				isVercelDomain: true,
+				vercelVerification: true,
+			},
+		});
 		const expectedCnameValue = "cname.vercel-dns.com";
 		const expectedTxtValue = `compai-domain-verification=${activeOrgId}`;
+		const expectedVercelTxtValue = isVercelDomain?.vercelVerification;
 
 		let isCnameVerified = false;
 
@@ -80,8 +96,10 @@ export const checkDnsRecordAction = authActionClient
 		}
 
 		let isTxtVerified = false;
+		let isVercelTxtVerified = false;
 
 		if (txtRecords) {
+			// Check for our custom TXT record
 			isTxtVerified = txtRecords.some((record: any) => {
 				if (typeof record === "string") {
 					return record === expectedTxtValue;
@@ -102,13 +120,36 @@ export const checkDnsRecordAction = authActionClient
 			});
 		}
 
-		const isVerified = isCnameVerified && isTxtVerified;
+		if (vercelTxtRecords) {
+			isVercelTxtVerified = vercelTxtRecords.some((record: any) => {
+				if (typeof record === "string") {
+					return record === expectedVercelTxtValue;
+				}
+				if (record && typeof record.value === "string") {
+					return record.value === expectedVercelTxtValue;
+				}
+				if (
+					record &&
+					Array.isArray(record.txt) &&
+					record.txt.length > 0
+				) {
+					return record.txt.some(
+						(txt: string) => txt === expectedVercelTxtValue,
+					);
+				}
+				return false;
+			});
+		}
+
+		const isVerified =
+			isCnameVerified && isTxtVerified && isVercelTxtVerified;
 
 		if (!isVerified) {
 			return {
 				success: false,
 				isCnameVerified,
 				isTxtVerified,
+				isVercelTxtVerified,
 				error: "Error verifying DNS records. Please ensure both CNAME and TXT records are correctly configured, or wait a few minutes and try again.",
 			};
 		}
@@ -120,45 +161,21 @@ export const checkDnsRecordAction = authActionClient
 			};
 		}
 
-		const isExistingRecord = await vercel.projects.getProjectDomains({
-			idOrName: env.TRUST_PORTAL_PROJECT_ID,
-			teamId: env.VERCEL_TEAM_ID,
-		});
-
-		if (isExistingRecord.domains.some((record) => record.name === domain)) {
-			await vercel.projects.removeProjectDomain({
-				idOrName: env.TRUST_PORTAL_PROJECT_ID,
-				teamId: env.VERCEL_TEAM_ID,
+		await db.trust.upsert({
+			where: {
+				organizationId: activeOrgId,
 				domain,
-			});
-		}
-
-		const addDomainToProject = await vercel.projects
-			.addProjectDomain({
-				idOrName: env.TRUST_PORTAL_PROJECT_ID,
-				teamId: env.VERCEL_TEAM_ID,
-				slug: env.TRUST_PORTAL_PROJECT_ID,
-				requestBody: {
-					name: domain,
-				},
-			})
-			.then(async (res) => {
-				await db.trust.upsert({
-					where: {
-						organizationId: activeOrgId,
-						domain,
-					},
-					update: {
-						domainVerified: true,
-						status: "published",
-					},
-					create: {
-						organizationId: activeOrgId,
-						domain,
-						status: "published",
-					},
-				});
-			});
+			},
+			update: {
+				domainVerified: true,
+				status: "published",
+			},
+			create: {
+				organizationId: activeOrgId,
+				domain,
+				status: "published",
+			},
+		});
 
 		revalidatePath(`/${activeOrgId}/settings/trust-portal`);
 		revalidateTag(`organization_${activeOrgId}`);
@@ -167,5 +184,6 @@ export const checkDnsRecordAction = authActionClient
 			success: true,
 			isCnameVerified,
 			isTxtVerified,
+			isVercelTxtVerified,
 		};
 	});
