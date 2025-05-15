@@ -269,7 +269,11 @@ Start and initialize the PostgreSQL database using Docker:
    b. Or manually run the fix:
 
    ```sh
-   docker exec -i comp-db-postgres-1 psql -U postgres -d comp -f - < ./packages/db/prisma/functionDefinition.sql
+   # Find the PostgreSQL container
+   CONTAINER_NAME=$(docker ps --filter "name=comp-db-postgres" --format "{{.Names}}" | head -n 1)
+   
+   # Create the function
+   docker exec -i $CONTAINER_NAME psql -U postgres -d comp -f - < ./packages/db/prisma/functionDefinition.sql
    ```
 
    Expected output: `CREATE FUNCTION`

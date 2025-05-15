@@ -31,6 +31,16 @@ bun docker:up
 The application uses a custom SQL function to generate IDs with prefixes. This function needs to be installed manually:
 
 ```bash
+# Find the PostgreSQL container
+CONTAINER_NAME=$(docker ps --filter "name=comp-db-postgres" --format "{{.Names}}" | head -n 1)
+
+# Create the function
+docker exec -i $CONTAINER_NAME psql -U postgres -d comp -f - < ./packages/db/prisma/functionDefinition.sql
+```
+
+Alternatively, if you have psql installed locally:
+
+```bash
 psql "postgresql://postgres:postgres@localhost:5432/comp" -f ./packages/db/prisma/functionDefinition.sql
 ```
 

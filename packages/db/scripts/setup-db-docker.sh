@@ -16,7 +16,13 @@ docker-compose up -d
 
 # Wait for PostgreSQL to be ready (using docker-based healthcheck)
 echo "Waiting for PostgreSQL to be ready..."
-CONTAINER_NAME="comp-db-postgres-1"
+CONTAINER_NAME=$(docker ps --filter "name=comp-db-postgres" --format "{{.Names}}" | head -n 1)
+if [ -z "$CONTAINER_NAME" ]; then
+    echo "Error: Could not find a running container for 'comp-db-postgres'."
+    exit 1
+fi
+echo "Found PostgreSQL container: $CONTAINER_NAME"
+
 RETRIES=30
 COUNT=0
 

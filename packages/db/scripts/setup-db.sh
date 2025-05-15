@@ -14,7 +14,14 @@ echo "Setting up database for Comp AI..."
 # Install psql if not already installed
 if ! command -v psql &> /dev/null; then
     echo "PostgreSQL client not found, installing..."
-    apt-get update && apt-get install -y postgresql-client
+    if ! sudo apt-get update; then  
+        echo "Error: Failed to update package list. Please check your network connection or package manager configuration."  
+        exit 1  
+    fi  
+    if ! sudo apt-get install -y postgresql-client; then  
+        echo "Error: Failed to install PostgreSQL client. Please check your permissions or package manager configuration."  
+        exit 1  
+    fi
 fi
 
 # Start the database container
