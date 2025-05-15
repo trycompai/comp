@@ -18,17 +18,6 @@ export const getArtifactsCreatedFromPolicy = cache(async (policyId: string) => {
 		return { artifacts: [], mappedControls: [], allControls: [] };
 	}
 
-	const artifacts = await db.artifact.findMany({
-		where: {
-			organizationId,
-			policyId,
-		},
-	});
-
-	if (!artifacts.length) {
-		return { artifacts: [], mappedControls: [], allControls: [] };
-	}
-
 	const mappedControls = await db.control.findMany({
 		where: {
 			organizationId,
