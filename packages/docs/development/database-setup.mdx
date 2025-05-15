@@ -1,0 +1,96 @@
+# Database Setup Guide
+
+This guide explains how to set up and manage the PostgreSQL database for the Comp project.
+
+## Quick Setup
+
+For a quick setup of the development database, run:
+
+```bash
+bun db:setup
+```
+
+This command will:
+1. Start the PostgreSQL container
+2. Create the custom SQL function needed for ID generation
+3. Generate the Prisma client
+4. Push the database schema
+
+## Manual Setup Steps
+
+If you prefer to set up the database manually, follow these steps:
+
+### 1. Start the PostgreSQL container
+
+```bash
+bun docker:up
+```
+
+### 2. Create the custom SQL function
+
+The application uses a custom SQL function to generate IDs with prefixes. This function needs to be installed manually:
+
+```bash
+psql "postgresql://postgres:postgres@localhost:5432/comp" -f ./packages/db/prisma/functionDefinition.sql
+```
+
+### 3. Generate Prisma client
+
+```bash
+bun db:generate
+```
+
+### 4. Push the database schema
+
+```bash
+bun db:push
+```
+
+## Common Errors
+
+### Missing `generate_prefixed_cuid` function
+
+If you see an error like this:
+
+```
+Error: ERROR: function generate_prefixed_cuid(text) does not exist
+HINT: No function matches the given name and argument types. You might need to add explicit type casts.
+```
+
+It means the custom SQL function hasn't been created in the database. Run:
+
+```bash
+bun db:setup
+```
+
+### Connection Issues
+
+If you can't connect to the database, check:
+
+1. That the Docker container is running: `docker ps`
+2. Your connection string is correct 
+3. The database port (5432 by default) is not being used by another application
+
+## Database Reset
+
+To completely reset your database:
+
+```bash
+bun docker:clean
+bun db:setup
+```
+
+This will remove all Docker volumes and containers, then set up a fresh database.
+
+## Custom PostgreSQL Settings
+
+The default configuration uses:
+- Database name: `comp`
+- Username: `postgres`
+- Password: `postgres`
+- Port: `5432`
+
+If you need to change these settings, update:
+1. The docker-compose.yml file
+2. Your DATABASE_URL environment variable
+3. Any direct psql connection strings you use

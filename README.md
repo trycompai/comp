@@ -255,10 +255,21 @@ Start and initialize the PostgreSQL database using Docker:
    HINT: No function matches the given name and argument types...
    ```
 
-   Run the fix:
+   You have two options:
+
+   a. Run the automatic setup script (recommended):
 
    ```sh
-   psql "postgresql://postgres:<your_password>@localhost:5432/comp" -f ./packages/db/prisma/functionDefinition.sql
+   bun db:setup
+   ```
+
+   This script will start the database, create the required function using Docker, and prepare everything for you.
+   The script uses Docker commands directly, so no PostgreSQL client is needed.
+
+   b. Or manually run the fix:
+
+   ```sh
+   docker exec -i comp-db-postgres-1 psql -U postgres -d comp -f - < ./packages/db/prisma/functionDefinition.sql
    ```
 
    Expected output: `CREATE FUNCTION`

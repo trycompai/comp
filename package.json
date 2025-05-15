@@ -20,6 +20,7 @@
 		"db:migrate": "bun run -F @comp/db db:migrate",
 		"db:studio": "bun run -F @comp/db db:studio",
 		"db:seed": "bun run -F @comp/db db:seed",
+		"db:setup": "bun run -F @comp/db db:setup",
 		"prepare": "husky"
 	},
 	"devDependencies": {
