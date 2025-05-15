@@ -29,16 +29,27 @@ echo "Starting PostgreSQL container..."
 cd /workspaces/comp/packages/db
 docker-compose up -d
 
-# Wait for PostgreSQL to be ready
-echo "Waiting for PostgreSQL to be ready..."
-sleep 5
-
 # Check if the container is running
 CONTAINER_NAME=$(docker ps | grep postgres | awk '{print $NF}')
 if [ -z "$CONTAINER_NAME" ]; then
     echo "Error: PostgreSQL container is not running."
     exit 1
 fi
+
+# Wait for PostgreSQL to be ready with timeout
+echo "Waiting for PostgreSQL to be ready..."
+max_attempts=30
+counter=0
+while ! psql "postgresql://postgres:postgres@localhost:5432/postgres" -c "SELECT 1" >/dev/null 2>&1; do
+    counter=$((counter+1))
+    if [ $counter -ge $max_attempts ]; then
+        echo "Error: Timed out waiting for PostgreSQL to be ready after $max_attempts attempts."
+        echo "Please check the database container logs: docker logs $CONTAINER_NAME"
+        exit 1
+    fi
+    echo "Waiting for PostgreSQL to accept connections... (attempt $counter/$max_attempts)"
+    sleep 1
+done
 
 echo "PostgreSQL container is running as: $CONTAINER_NAME"
 
