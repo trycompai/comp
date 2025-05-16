@@ -24,20 +24,6 @@ export default function ComplianceSection({ title, description, children, isLive
                         <div className="flex items-center">
                             <h2 className="text-lg font-bold">{title}</h2>
                         </div>
-                        <div className="flex md:justify-end">
-                            <Dialog>
-                                <DialogTrigger className="text-xs text-muted-foreground hover:text-foreground font-normal hover:underline underline-offset-2">Request Details</DialogTrigger>
-                                <DialogContent>
-                                    <DialogHeader>
-                                        <DialogTitle>Are you absolutely sure?</DialogTitle>
-                                        <DialogDescription>
-                                            This action cannot be undone. This will permanently delete your account
-                                            and remove your data from our servers.
-                                        </DialogDescription>
-                                    </DialogHeader>
-                                </DialogContent>
-                            </Dialog>
-                        </div>
                     </div>
                 </CardTitle>
                 <CardDescription className="text-sm">{description}</CardDescription>
