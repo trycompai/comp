@@ -9,6 +9,7 @@
 		"db:migrate": "bunx prisma migrate dev",
 		"db:studio": "bunx prisma studio",
 		"db:seed": "bunx prisma db seed",
+		"db:setup": "./scripts/setup-db-docker.sh",
 		"docker:up": "docker-compose up -d",
 		"docker:down": "docker-compose down",
 		"docker:clean": "docker-compose down -v",
@@ -36,6 +37,10 @@
 		"typescript": "^5.8.3"
 	},
 	"prisma": {
-		"schema": "prisma"
+		"schema": "prisma",
+		"seed": "node scripts/post-db-push.js",
+		"hooks": {
+			"pre_db_push": "node scripts/pre-db-push.js"
+		}
 	}
 }
