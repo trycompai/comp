@@ -13,6 +13,8 @@ import { AssistantButton } from "./ai/chat-button";
 import { MobileMenu } from "./mobile-menu";
 import { NotificationCenter } from "./notification-center";
 import { getOrganizations } from "@/data/getOrganizations";
+import { db } from "@comp/db";
+import type { FrameworkEditorFramework } from "@comp/db/types";
 
 export async function Header() {
 	const t = await getI18n();
@@ -30,12 +32,22 @@ export async function Header() {
 	const { completedAll } = await getOnboardingForCurrentOrganization();
 	const { organizations } = await getOrganizations();
 
+	const frameworks = await db.frameworkEditorFramework.findMany({
+		select: {
+			id: true,
+			name: true,
+			description: true,
+			version: true,
+		},
+	});
+
 	return (
 		<header className="flex justify-between items-center bg-backgroundSoft py-4 top-0 z-10 px-4 border-b border-border/40 static">
 			<MobileMenu
 				organizationId={currentOrganizationId}
 				completedOnboarding={completedAll}
 				organizations={organizations}
+				frameworks={frameworks}
 			/>
 
 			<AssistantButton />

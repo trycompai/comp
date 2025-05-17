@@ -7,19 +7,21 @@ import { useState } from "react";
 import { MainMenu } from "./main-menu";
 import { OrganizationSwitcher } from "./organization-switcher";
 import { Organization as AuthOrganization } from "better-auth/plugins";
-import type { Organization as DbOrganization } from "@comp/db/types";
+import type { Organization as DbOrganization, FrameworkEditorFramework } from "@comp/db/types";
 
 interface MobileMenuProps {
 	organizations: AuthOrganization[];
 	isCollapsed?: boolean;
 	completedOnboarding: boolean;
 	organizationId: string;
+	frameworks: Pick<FrameworkEditorFramework, "id" | "name" | "description" | "version">[];
 }
 
 export function MobileMenu({
 	organizationId,
 	completedOnboarding,
 	organizations,
+	frameworks
 }: MobileMenuProps) {
 	const [isOpen, setOpen] = useState(false);
 
@@ -58,6 +60,7 @@ export function MobileMenu({
 						organizations={adaptedOrganizations}
 						organization={currentOrganization}
 						isCollapsed={false}
+						frameworks={frameworks}
 					/>
 					<MainMenu
 						organizationId={organizationId}

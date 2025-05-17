@@ -1,7 +1,7 @@
 "use server";
 
 import { env } from "@/env.mjs";
-import ky from "ky";
+import axios from "axios";
 import { authActionClient } from "./safe-action";
 import { sendFeedbackSchema } from "./schema";
 
@@ -12,10 +12,8 @@ export const sendFeebackAction = authActionClient
 	})
 	.action(async ({ parsedInput: { feedback }, ctx: { user } }) => {
 		if (env.DISCORD_WEBHOOK_URL) {
-			await ky.post(process.env.DISCORD_WEBHOOK_URL as string, {
-				json: {
-					content: `New feedback from ${user?.email}: \n\n ${feedback}`,
-				},
+			await axios.post(process.env.DISCORD_WEBHOOK_URL as string, {
+				content: `New feedback from ${user?.email}: \n\n ${feedback}`,
 			});
 		}
 

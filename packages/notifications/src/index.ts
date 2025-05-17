@@ -1,5 +1,5 @@
 import { Novu } from "@novu/node";
-import ky from "ky";
+import axios from "axios";
 
 const novu = new Novu(process.env.NOVU_API_KEY!);
 const novu_api = "https://api.novu.co/v1";
@@ -64,14 +64,13 @@ export async function trigger(data: TriggerPayload) {
 
 export async function getSubscriberPreferences({ organizationId, subscriberId }: GetSubscriberPreferencesParams) {
   try {
-    const response = await ky.get(`${novu_api}/subscribers/${organizationId}_${subscriberId}/preferences?includeInactiveChannels=false`, {
-      method: "GET",
+    const response = await axios.get(`${novu_api}/subscribers/${organizationId}_${subscriberId}/preferences?includeInactiveChannels=false`, {
       headers: {
         Authorization: `ApiKey ${process.env.NOVU_API_KEY!}`,
       },
-    })
+    });
 
-    return response.json();
+    return response.data;
   } catch (error) {
     console.log(error);
     return null;
@@ -80,21 +79,19 @@ export async function getSubscriberPreferences({ organizationId, subscriberId }:
 
 export async function updateSubscriberPreferences({ subscriberId, organizationId, templateId, type, enabled }: UpdateSubscriberPreferencesParams) {
   try {
-    const response = await ky.patch(`${novu_api}/subscribers/${organizationId}_${subscriberId}/preferences/${templateId}`, {
-      method: "PATCH",
+    const response = await axios.patch(`${novu_api}/subscribers/${organizationId}_${subscriberId}/preferences/${templateId}`, {
+      channel: {
+        type,
+        enabled,
+      },
+    }, {
       headers: {
         Authorization: `ApiKey ${process.env.NOVU_API_KEY!}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        channel: {
-          type,
-          enabled,
-        },
-      }),
-    })
+    });
 
-    return response.json();
+    return response.data;
   } catch (error) {
     console.log(error);
     return null;

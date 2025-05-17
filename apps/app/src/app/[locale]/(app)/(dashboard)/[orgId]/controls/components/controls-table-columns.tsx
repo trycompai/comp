@@ -4,7 +4,6 @@ import { DataTableColumnHeader } from "@/components/data-table/data-table-column
 import { StatusIndicator } from "@/components/status-indicator";
 import { Badge } from "@comp/ui/badge";
 import { ColumnDef } from "@tanstack/react-table";
-import { getFrameworkDetails } from "../../frameworks/lib/getFrameworkDetails";
 import { ControlWithRelations } from "../data/queries";
 import { getControlStatus } from "../lib/utils";
 
@@ -66,9 +65,7 @@ export function getControlColumns(): ColumnDef<ControlWithRelations>[] {
 					<div className="flex flex-wrap gap-1">
 						{control.requirementsMapped.length > 0 ? (
 							control.requirementsMapped.map((req) => {
-								const frameworkName = getFrameworkDetails(
-									req.frameworkInstance.frameworkId,
-								).name;
+								const frameworkName = req.frameworkInstance.framework.name;
 								return (
 									<Badge
 										key={req.id}

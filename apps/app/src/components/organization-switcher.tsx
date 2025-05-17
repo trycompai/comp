@@ -2,7 +2,7 @@
 
 import { changeOrganizationAction } from "@/actions/change-organization"
 import { useI18n } from "@/locales/client"
-import type { Organization } from "@comp/db/types"
+import type { Organization, FrameworkEditorFramework } from "@comp/db/types"
 import { Button } from "@comp/ui/button"
 import { cn } from "@comp/ui/cn"
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@comp/ui/dialog"
@@ -26,6 +26,7 @@ interface OrganizationSwitcherProps {
 	organizations: Organization[]
 	organization: Organization | null
 	isCollapsed?: boolean
+	frameworks: Pick<FrameworkEditorFramework, "id" | "name" | "description" | "version">[];
 }
 
 interface OrganizationInitialsAvatarProps {
@@ -80,7 +81,12 @@ function OrganizationInitialsAvatar({ name, isCollapsed, className }: Organizati
 	)
 }
 
-export function OrganizationSwitcher({ organizations, organization, isCollapsed = false }: OrganizationSwitcherProps) {
+export function OrganizationSwitcher({
+	organizations,
+	organization,
+	isCollapsed = false,
+	frameworks
+}: OrganizationSwitcherProps) {
 	const t = useI18n()
 	const router = useRouter()
 	const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -195,7 +201,7 @@ export function OrganizationSwitcher({ organizations, organization, isCollapsed 
 				</DialogContent>
 			</Dialog>
 			<Dialog open={showCreateOrg} onOpenChange={(open) => setShowCreateOrg(open)}>
-				<CreateOrgModal onOpenChange={(open) => setShowCreateOrg(open)} />
+				<CreateOrgModal frameworks={frameworks} onOpenChange={(open) => setShowCreateOrg(open)} />
 			</Dialog>
 		</div>
 	)

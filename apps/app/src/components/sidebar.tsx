@@ -1,11 +1,12 @@
 import { getOnboardingForCurrentOrganization } from "@/data/getOnboarding";
 import { getOrganizations } from "@/data/getOrganizations";
-import type { Organization } from "@comp/db/types";
+import type { Organization, FrameworkEditorFramework } from "@comp/db/types";
 import { cookies } from "next/headers";
 import { MainMenu } from "./main-menu";
 import { OrganizationSwitcher } from "./organization-switcher";
 import { SidebarCollapseButton } from "./sidebar-collapse-button";
 import { SidebarLogo } from "./sidebar-logo";
+import { db } from "@comp/db";
 
 export async function Sidebar({
 	organization,
@@ -14,6 +15,14 @@ export async function Sidebar({
 	const isCollapsed = cookieStore.get("sidebar-collapsed")?.value === "true";
 	const { completedAll } = await getOnboardingForCurrentOrganization();
 	const { organizations } = await getOrganizations();
+	const frameworks = await db.frameworkEditorFramework.findMany({
+		select: {
+			id: true,
+			name: true,
+			description: true,
+			version: true,
+		},
+	});
 
 	return (
 		<div className="h-full flex flex-col gap-0">
@@ -29,6 +38,7 @@ export async function Sidebar({
 						organizations={organizations}
 						organization={organization}
 						isCollapsed={isCollapsed}
+						frameworks={frameworks}
 					/>
 					<MainMenu
 						organizationId={organization?.id ?? ""}

@@ -18,6 +18,7 @@ export const getSingleFrameworkInstanceWithControls = cache(
 				id: frameworkInstanceId,
 			},
 			include: {
+				framework: true,
 				controls: {
 					include: {
 						artifacts: {

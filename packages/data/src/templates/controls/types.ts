@@ -15,9 +15,9 @@ export type TemplateArtifact = {
 /**
  * Represents a requirement that a control addresses.
  */
-export type TemplateRequirement<T extends FrameworkId = FrameworkId> = {
-	frameworkId: T;
-	requirementId: AllRequirementIdsByFramework[T];
+export type TemplateRequirement = {
+	frameworkId: string;
+	requirementId: string;
 };
 
 /**

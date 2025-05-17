@@ -44,7 +44,7 @@ interface Frameworks {
 /**
  * Valid framework ID strings that can be used to reference specific frameworks.
  */
-type FrameworkId = keyof Frameworks;
+type FrameworkId = string;
 
 declare const frameworks: Frameworks;
 
@@ -68,7 +68,7 @@ interface Requirement {
  */
 type SingleFrameworkRequirements<A extends string = string> = Record<A, Requirement>;
 type AllRequirements = {
-    [K in FrameworkId]: SingleFrameworkRequirements<AllRequirementIdsByFramework[K]>;
+    [K in FrameworkId]: SingleFrameworkRequirements;
 };
 type AllRequirementIdsByFramework = {
     "frk_682734f304cbbfdb3a9d4f44": soc2RequirementIds;
@@ -238,9 +238,9 @@ type TemplateArtifact = {
 /**
  * Represents a requirement that a control addresses.
  */
-type TemplateRequirement<T extends FrameworkId = FrameworkId> = {
-    frameworkId: T;
-    requirementId: AllRequirementIdsByFramework[T];
+type TemplateRequirement = {
+    frameworkId: string;
+    requirementId: string;
 };
 /**
  * Represents a security or compliance control that organizations

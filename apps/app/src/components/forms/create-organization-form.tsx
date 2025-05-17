@@ -4,7 +4,7 @@ import { createOrganizationAction } from "@/actions/organization/create-organiza
 import { organizationSchema } from "@/actions/schema";
 import { useI18n } from "@/locales/client";
 import { authClient } from "@/utils/auth-client";
-import { type FrameworkId, frameworks } from "@comp/data";
+import type { FrameworkEditorFramework } from "@comp/db/types";
 import { Button } from "@comp/ui/button";
 import { Checkbox } from "@comp/ui/checkbox";
 import { cn } from "@comp/ui/cn";
@@ -30,7 +30,11 @@ import { toast } from "sonner";
 import type { z } from "zod";
 import { LogoSpinner } from "../logo-spinner";
 
-export function OnboardingClient() {
+interface OnboardingClientProps {
+	frameworks: Pick<FrameworkEditorFramework, "id" | "name" | "description" | "version">[];
+}
+
+export function OnboardingClient({ frameworks }: OnboardingClientProps) {
 	const [isCreatingOrganization, setIsCreatingOrganization] = useState(false);
 	const router = useRouter();
 	const t = useI18n();
@@ -75,7 +79,7 @@ export function OnboardingClient() {
 		resolver: zodResolver(organizationSchema),
 		defaultValues: {
 			name: "",
-			frameworks: [],
+			frameworkIds: [],
 			website: "",
 		},
 		mode: "onChange",
@@ -171,7 +175,7 @@ export function OnboardingClient() {
 						/>
 						<FormField
 							control={form.control}
-							name="frameworks"
+							name="frameworkIds"
 							render={({ field }) => (
 								<FormItem className="space-y-2">
 									<FormLabel className="text-sm font-medium">
@@ -184,18 +188,16 @@ export function OnboardingClient() {
 													"frameworks.overview.grid.title",
 												)}
 											</legend>
-											{Object.entries(frameworks).map(
-												([id, framework]) => {
-													const frameworkId =
-														id as FrameworkId;
+											{frameworks.map(
+												(framework) => {
 													return (
 														<label
-															key={frameworkId}
-															htmlFor={`framework-${frameworkId}`}
+															key={framework.id}
+															htmlFor={`framework-${framework.id}`}
 															className={cn(
 																"relative flex flex-col p-4 border rounded-sm cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 w-full text-left",
 																field.value.includes(
-																	frameworkId,
+																	framework.id,
 																) &&
 																"border-primary bg-primary/5",
 															)}
@@ -218,9 +220,9 @@ export function OnboardingClient() {
 																</div>
 																<div>
 																	<Checkbox
-																		id={`framework-${frameworkId}`}
+																		id={`framework-${framework.id}`}
 																		checked={field.value.includes(
-																			frameworkId,
+																			framework.id,
 																		)}
 																		className="mt-1"
 																		onCheckedChange={(
@@ -230,14 +232,14 @@ export function OnboardingClient() {
 																				checked
 																					? [
 																						...field.value,
-																						frameworkId,
+																						framework.id,
 																					]
 																					: field.value.filter(
 																						(
-																							name,
+																							currentFrameworkId,
 																						) =>
-																							name !==
-																							frameworkId,
+																							currentFrameworkId !==
+																							framework.id,
 																					);
 																			field.onChange(
 																				newValue,

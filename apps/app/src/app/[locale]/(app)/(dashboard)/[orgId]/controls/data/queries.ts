@@ -19,7 +19,11 @@ const controlInclude = {
 	},
 	requirementsMapped: {
 		include: {
-			frameworkInstance: true,
+			frameworkInstance: {
+				include: {
+					framework: true,
+				},
+			},
 		},
 	},
 } satisfies Prisma.ControlInclude;

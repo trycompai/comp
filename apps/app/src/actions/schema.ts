@@ -13,9 +13,7 @@ import { z } from "zod";
 
 export const organizationSchema = z.object({
 	name: z.string().min(1, "Organization name is required"),
-	frameworks: z
-		.array(z.string())
-		.min(1, "Please select at least one framework to get started with"),
+	frameworkIds: z.array(z.string()).min(1, "Please select at least one framework to get started with"),
 	website: z
 		.string()
 		.url({

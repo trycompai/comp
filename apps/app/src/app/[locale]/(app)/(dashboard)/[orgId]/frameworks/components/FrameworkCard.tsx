@@ -15,7 +15,6 @@ import { cn } from "@comp/ui/cn";
 import { ClipboardCheck, ClipboardList, Clock } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { getFrameworkDetails } from "../lib/getFrameworkDetails";
 import { FrameworkInstanceWithControls } from "../types";
 
 interface FrameworkCardProps {
@@ -111,7 +110,8 @@ export function FrameworkCard({
 		controlsCount - compliantControlsCount - notStartedControlsCount,
 	);
 
-	const frameworkDetails = getFrameworkDetails(frameworkInstance.frameworkId);
+	// Use direct framework data:
+	const frameworkDetails = frameworkInstance.framework;
 	const statusBadge = getStatusBadge(complianceScore);
 
 	// Calculate last activity date - use current date as fallback

@@ -1,6 +1,7 @@
 import { OnboardingClient } from "@/components/forms/create-organization-form";
 import { auth } from "@/utils/auth";
 import { db } from "@comp/db";
+import type { FrameworkEditorFramework } from "@comp/db/types";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -70,5 +71,14 @@ export default async function Page() {
 		);
 	}
 
-	return <OnboardingClient />;
+	const frameworks = await db.frameworkEditorFramework.findMany({
+		select: {
+			id: true,
+			name: true,
+			description: true,
+			version: true,
+		},
+	});
+
+	return <OnboardingClient frameworks={frameworks} />;
 }

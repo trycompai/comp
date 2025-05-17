@@ -24,9 +24,7 @@ export type SingleFrameworkRequirements<A extends string = string> = Record<
 >;
 
 export type AllRequirements = {
-	[K in FrameworkId]: SingleFrameworkRequirements<
-		AllRequirementIdsByFramework[K]
-	>;
+	[K in FrameworkId]: SingleFrameworkRequirements;
 };
 
 export type AllRequirementIdsByFramework = {

@@ -28,4 +28,4 @@ export interface Frameworks {
 /**
  * Valid framework ID strings that can be used to reference specific frameworks.
  */
-export type FrameworkId = keyof Frameworks;
+export type FrameworkId = string;

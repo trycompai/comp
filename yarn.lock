@@ -1618,7 +1618,6 @@
   resolved "workspace:apps/app"
   devDependencies:
     "@comp/db" "workspace:*"
-  devDependencies:
     "@trigger.dev/build" "3.3.17"
     "@types/node" "^22.15.2"
     "@types/react" "19.1.2"
@@ -1635,11 +1634,9 @@
     "@aws-sdk/client-sts" "^3.808.0"
     "@aws-sdk/s3-request-presigner" "^3.806.0"
     "@browserbasehq/sdk" "^2.5.0"
-  dependencies:
     "@comp/data" "workspace:*"
     "@comp/db" "workspace:*"
     "@comp/notifications" "workspace:*"
-  dependencies:
     "@date-fns/tz" "^1.2.0"
     "@dnd-kit/core" "^6.3.1"
     "@dnd-kit/modifiers" "^9.0.0"
@@ -1670,6 +1667,7 @@
     "@vercel/sdk" "^1.7.1"
     ai "^4.3.10"
     argon2 "^0.43.0"
+    axios "^1.9.0"
     better-auth "^1.2.7"
     bun "^1.2.10"
     crypto "^1.0.1"
@@ -1679,7 +1677,6 @@
     geist "^1.3.1"
     highlight.js "^11.11.1"
     immer "^10.1.1"
-    ky "^1.8.1"
     languine "^3.1.4"
     marked "^15.0.11"
     motion "^12.9.2"
@@ -1721,7 +1718,6 @@
   resolved "workspace:packages/data"
   devDependencies:
     "@comp/db" "workspace:*"
-  devDependencies:
     tsup "^8.4.0"
     typescript "^5.8.3"
 
@@ -1769,6 +1765,7 @@
   dependencies:
     "@comp/db" "workspace:*"
     "@comp/ui" "workspace:*"
+  dependencies:
     "@hookform/resolvers" "^3.9.1"
     "@radix-ui/react-accordion" "1.2.2"
     "@radix-ui/react-alert-dialog" "1.1.4"
@@ -7690,7 +7687,7 @@ aws4@^1.8.0:
   resolved "https://registry.npmjs.org/aws4/-/aws4-1.13.2.tgz"
   integrity sha512-lHe62zvbTB5eEABUVi/AwVh0ZKY9rMMDhmm+eeyuuUQbQ3+J+fONVQOZyj+DdrvD4BY33uYniyRJ4UJIaSKAfw==
 
-axios@^1.6.8, axios@^1.7.4, axios@^1.7.9, axios@^1.8.2, axios@^1.8.3:
+axios@^1.6.8, axios@^1.7.4, axios@^1.7.9, axios@^1.8.2, axios@^1.8.3, axios@^1.9.0:
   version "1.9.0"
   resolved "https://registry.npmjs.org/axios/-/axios-1.9.0.tgz"
   integrity sha512-re4CqKTJaURpzbLHtIi6XpDv20/CnpXOtjRY5/CU32L8gU8ek9UIivcfvSWvmKEngmVbrUtPpdDwWDWL7DNHvg==
@@ -7787,7 +7784,7 @@ before-after-hook@^3.0.2:
   resolved "https://registry.npmjs.org/before-after-hook/-/before-after-hook-3.0.2.tgz"
   integrity sha512-Nik3Sc0ncrMK4UUdXQmAnRtzmNQTAAXmXIopizwZ1W1t8QmfJj+zL4OA2I7XPTPW5z5TDqv4hRo/JzouDJnX3A==
 
-better-auth@^1.2.4, better-auth@^1.2.7:
+better-auth@^1.2.4:
   version "1.2.7"
   resolved "https://registry.npmjs.org/better-auth/-/better-auth-1.2.7.tgz"
   integrity sha512-2hCB263GSrgetsMUZw8vv9O1e4S4AlYJW3P4e8bX9u3Q3idv4u9BzDFCblpTLuL4YjYovghMCN0vurAsctXOAQ==
@@ -7805,7 +7802,7 @@ better-auth@^1.2.4, better-auth@^1.2.7:
     nanostores "^0.11.3"
     zod "^3.24.1"
 
-better-auth@^1.2.8:
+better-auth@^1.2.7, better-auth@^1.2.8:
   version "1.2.8"
   resolved "https://registry.npmjs.org/better-auth/-/better-auth-1.2.8.tgz"
   integrity sha512-y8ry7ZW3/3ZIr82Eo1zUDtMzdoQlFnwNuZ0+b0RxoNZgqmvgTIc/0tCDC7NDJerqSu4UCzer0dvYxBsv3WMIGg==
@@ -12159,7 +12156,7 @@ kleur@^3.0.3:
   resolved "https://registry.npmjs.org/kleur/-/kleur-3.0.3.tgz"
   integrity sha512-eTIzlVOSUR+JxdDFepEYcBMtZ9Qqdef+rnzWdRZuMbOywu5tO2w2N7rqjoANZ5k9vywhL6Br1VRjUIgTQx4E8w==
 
-ky@^1.2.0, ky@^1.8.1:
+ky@^1.2.0:
   version "1.8.1"
   resolved "https://registry.npmjs.org/ky/-/ky-1.8.1.tgz"
   integrity sha512-7Bp3TpsE+L+TARSnnDpk3xg8Idi8RwSLdj6CMbNWoOARIrGrbuLGusV0dYwbZOm4bB3jHNxSw8Wk/ByDqJEnDw==

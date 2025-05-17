@@ -13,6 +13,7 @@ export async function getAllFrameworkInstancesWithControls({
 			organizationId,
 		},
 		include: {
+			framework: true,
 			controls: {
 				include: {
 					artifacts: {

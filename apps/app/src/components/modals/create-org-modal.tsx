@@ -4,7 +4,6 @@ import { createOrganizationAction } from "@/actions/organization/create-organiza
 import { organizationSchema } from "@/actions/schema";
 import { useI18n } from "@/locales/client";
 import { authClient } from "@/utils/auth-client";
-import { FrameworkId, frameworks } from "@comp/data";
 import type { Organization } from "@comp/db/types";
 import { Button } from "@comp/ui/button";
 import { Checkbox } from "@comp/ui/checkbox";
@@ -34,12 +33,14 @@ import { toast } from "sonner";
 import type { z } from "zod";
 import { LogoSpinner } from "../logo-spinner";
 import { useRouter } from "next/navigation";
+import type { FrameworkEditorFramework } from "@comp/db/types";
 
 type Props = {
 	onOpenChange: (isOpen: boolean) => void;
+	frameworks: Pick<FrameworkEditorFramework, "id" | "name" | "description" | "version">[];
 };
 
-export function CreateOrgModal({ onOpenChange }: Props) {
+export function CreateOrgModal({ onOpenChange, frameworks }: Props) {
 	const t = useI18n();
 	const [isSetup, setIsSetup] = useState(false);
 	const router = useRouter();
@@ -75,7 +76,7 @@ export function CreateOrgModal({ onOpenChange }: Props) {
 		resolver: zodResolver(organizationSchema),
 		defaultValues: {
 			name: "",
-			frameworks: [],
+			frameworkIds: [],
 		},
 		mode: "onChange",
 	});
@@ -205,7 +206,7 @@ export function CreateOrgModal({ onOpenChange }: Props) {
 
 						<FormField
 							control={form.control}
-							name="frameworks"
+							name="frameworkIds"
 							render={({ field }) => (
 								<FormItem className="space-y-2">
 									<FormLabel className="text-sm font-medium">
@@ -218,10 +219,10 @@ export function CreateOrgModal({ onOpenChange }: Props) {
 													"frameworks.overview.grid.title",
 												)}
 											</legend>
-											{Object.entries(frameworks).map(
-												([id, framework]) => {
+											{frameworks.map(
+												(framework) => {
 													const frameworkId =
-														id as FrameworkId;
+														framework.id;
 													return (
 														<label
 															key={frameworkId}

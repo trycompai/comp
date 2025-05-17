@@ -4,6 +4,7 @@ import { db } from "@comp/db";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import type { FrameworkEditorFramework } from "@comp/db/types";
 
 export default async function NoAccess() {
 	const session = await auth.api.getSession({
@@ -27,6 +28,15 @@ export default async function NoAccess() {
 	const currentOrg = await db.organization.findUnique({
 		where: {
 			id: session.session.activeOrganizationId,
+		},
+	});
+
+	const frameworks = await db.frameworkEditorFramework.findMany({
+		select: {
+			id: true,
+			name: true,
+			description: true,
+			version: true,
 		},
 	});
 
@@ -54,6 +64,7 @@ export default async function NoAccess() {
 				<OrganizationSwitcher
 					organizations={organizations}
 					organization={currentOrg}
+					frameworks={frameworks}
 				/>
 			</div>
 		</div>
