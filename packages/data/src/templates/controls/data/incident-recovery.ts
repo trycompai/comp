@@ -18,8 +18,8 @@ export const incidentRecovery: Control = {
 	],
 	mappedRequirements: [
 		{
-			frameworkId: "soc2",
-			requirementId: "A1",
+			frameworkId: "frk_682734f304cbbfdb3a9d4f44",
+			requirementId: "frk_rq_681e8514b7a9c5278ada8527",
 		},
 	],
 };

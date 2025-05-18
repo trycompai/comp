@@ -36,10 +36,13 @@ export const updateVendorTaskAction = authActionClient
 					id: id,
 				},
 				select: {
-					entityId: true,
+					vendors: {
+						select: {
+							id: true,
+						},
+					},
 				},
 			});
-
 			if (!task) {
 				throw new Error("Task not found");
 			}
@@ -58,10 +61,10 @@ export const updateVendorTaskAction = authActionClient
 			});
 
 			revalidatePath(
-				`/${session.activeOrganizationId}/vendors/${task.entityId}`,
+				`/${session.activeOrganizationId}/vendors/${task.vendors[0].id}`,
 			);
 			revalidatePath(
-				`/${session.activeOrganizationId}/vendors/${task.entityId}/tasks/${id}`,
+				`/${session.activeOrganizationId}/vendors/${task.vendors[0].id}/tasks/${id}`,
 			);
 			revalidateTag(`vendor_${session.activeOrganizationId}`);
 

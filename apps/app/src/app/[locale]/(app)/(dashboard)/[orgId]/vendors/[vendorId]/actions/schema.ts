@@ -70,6 +70,9 @@ export const updateVendorTaskSchema = z.object({
 	id: z.string().min(1, {
 		message: "Task ID is required",
 	}),
+	vendorId: z.string().min(1, {
+		message: "Vendor ID is required",
+	}),
 	title: z.string().min(1, {
 		message: "Title is required",
 	}),

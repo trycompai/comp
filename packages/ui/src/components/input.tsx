@@ -16,22 +16,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
 
 		return (
 			<div className={cn("relative w-full", className)}>
-				{isUrl && (
+				{isPrefix && props.prefix && (
 					<span
-						className="absolute left-0 top-0 h-full flex items-center px-3 text-muted-foreground select-none text-base md:text-sm border-r-1 border-input bg-foreground/5 cursor-default font-semibold"
-						style={{
-							width: adornmentWidth,
-							zIndex: 2,
-							borderTopLeftRadius: "0.125rem",
-							borderBottomLeftRadius: "0.125rem",
-						}}
-					>
-						https://
-					</span>
-				)}
-				{isPrefix && (
-					<span
-						className="absolute left-0 top-0 h-full flex items-center px-4 text-muted-foreground select-none text-base md:text-sm border-r-1 border-input bg-foreground/5 cursor-default font-semibold"
+						className="absolute left-0 top-0 h-full flex items-center px-4 text-muted-foreground select-none text-sm md:text-sm border-r-1 border-input bg-foreground/5 cursor-default font-medium"
 						style={{
 							width: adornmentWidth,
 							zIndex: 2,
@@ -57,8 +44,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
 						"placeholder:text-muted-foreground file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground",
 						"focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-0",
 						"disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
-						isUrl ? "pl-[80px]" : leftIcon ? "pl-[36px]" : "px-3",
-						!isUrl && isPrefix ? "pl-[90px]" : leftIcon ? "pl-[36px]" : "px-3",
+						isPrefix ? "pl-[90px]" : leftIcon ? "pl-[36px]" : "px-3",
 					)}
 					ref={ref}
 					{...props}

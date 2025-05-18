@@ -2,7 +2,6 @@
 
 import { auth } from "@/utils/auth";
 import { db } from "@comp/db";
-import { TaskEntityType } from "@comp/db/types";
 import { ArtifactType } from "@prisma/client";
 import { headers } from "next/headers";
 
@@ -48,6 +47,7 @@ export const getOrganizationControlProgress = async (controlId: string) => {
 					policy: true,
 				},
 			},
+			tasks: true,
 		},
 	});
 
@@ -58,14 +58,7 @@ export const getOrganizationControlProgress = async (controlId: string) => {
 	}
 
 	const artifacts = control.artifacts;
-	const tasks = await db.task.findMany({
-		where: {
-			organizationId: orgId,
-			entityId: controlId,
-			entityType: "control",
-		},
-	});
-
+	const tasks = control.tasks;
 	const progress: ControlProgressResponse = {
 		total: artifacts.length + tasks.length,
 		completed: 0,
@@ -107,28 +100,21 @@ export const getOrganizationControlProgress = async (controlId: string) => {
 
 	for (const task of tasks) {
 		// Initialize type counters if not exists
-		if (!progress.byType[task.entityType]) {
-			progress.byType[task.entityType] = {
+		if (!progress.byType["control"]) {
+			progress.byType["control"] = {
 				total: 0,
 				completed: 0,
 			};
 		}
 
-		progress.byType[task.entityType].total++;
+		progress.byType["control"].total++;
 
-		// Check completion based on task type
-		let isCompleted = false;
-		switch (task.entityType) {
-			case TaskEntityType.control:
-				isCompleted = task.status === "done";
-				break;
-			default:
-				isCompleted = false;
-		}
+		// Check completion based on task status (all tasks here are implicitly control-related)
+		const isCompleted = task.status === "done";
 
 		if (isCompleted) {
 			progress.completed++;
-			progress.byType[task.entityType].completed++;
+			progress.byType["control"].completed++;
 		}
 	}
 

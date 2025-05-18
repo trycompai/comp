@@ -2,39 +2,24 @@
 
 import { useI18n } from "@/locales/client";
 import type { Requirement } from "@comp/data";
-import { FrameworkId } from "@comp/db/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@comp/ui/card";
 import { FrameworkInstanceWithControls } from "../../../../types";
 import { RequirementControlsTable } from "./table/RequirementControlsTable";
-import type { Task } from "@comp/db/types";
+import type { Control, RequirementMap, Task } from "@comp/db/types";
 
 interface RequirementControlsProps {
 	requirement: Requirement;
-	requirementKey: string;
-	frameworkInstanceWithControls: FrameworkInstanceWithControls;
-	tasks: Task[];
+	tasks: (Task & { controls: Control[] })[];
+	relatedControls: (RequirementMap & { control: Control })[];
 }
 
 export function RequirementControls({
 	requirement,
-	requirementKey,
-	frameworkInstanceWithControls,
 	tasks,
+	relatedControls,
 }: RequirementControlsProps) {
 	const t = useI18n();
 
-	// Get the framework ID from the instance
-	const frameworkId =
-		frameworkInstanceWithControls.frameworkId as FrameworkId;
-	const compositeId = `${frameworkId}_${requirementKey}`;
-
-	// Filter controls that are mapped to this requirement using the composite ID
-	const requirementControls = frameworkInstanceWithControls.controls.filter(
-		(control) =>
-			control.requirementsMapped?.some(
-				(req) => req.requirementId === compositeId,
-			) ?? false,
-	);
 
 	return (
 		<div className="space-y-6">
@@ -62,12 +47,12 @@ export function RequirementControls({
 				<CardHeader>
 					<CardTitle>
 						{t("frameworks.controls.title")} (
-						{requirementControls.length})
+						{relatedControls.length})
 					</CardTitle>
 				</CardHeader>
 				<CardContent>
 					<RequirementControlsTable
-						controls={requirementControls}
+						controls={relatedControls.map((control) => control.control)}
 						tasks={tasks}
 					/>
 				</CardContent>

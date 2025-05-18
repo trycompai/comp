@@ -53,31 +53,26 @@ export const updateWizard = async ({
 		where: { organizationId: orgId },
 	});
 
-	if (!onboarding) {
-		await db.onboarding.create({
-			data: {
-				organizationId: orgId,
-				[dbColumn]: {
-					version: parsed.version || companyDetailsLatestVersion,
-					isCompleted: parsed.isCompleted,
-					data: parsed.data,
-				},
+	await db.onboarding.upsert({
+		where: {
+			organizationId: orgId,
+		},
+		create: {
+			organizationId: orgId,
+			[dbColumn]: {
+				version: parsed.version || companyDetailsLatestVersion,
+				isCompleted: parsed.isCompleted,
+				data: parsed.data,
 			},
-		});
-	} else {
-		await db.onboarding.update({
-			where: {
-				organizationId: orgId,
+		},
+		update: {
+			[dbColumn]: {
+				version: parsed.version || companyDetailsLatestVersion,
+				isCompleted: parsed.isCompleted,
+				data: parsed.data,
 			},
-			data: {
-				[dbColumn]: {
-					version: parsed.version || companyDetailsLatestVersion,
-					isCompleted: parsed.isCompleted,
-					data: parsed.data,
-				},
-			},
-		});
-	}
+		},
+	});
 
 	revalidatePath(`/${orgId}/implementation/wizard/${wizardId}`);
 

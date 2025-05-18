@@ -18,8 +18,8 @@ export const securityEventCommunication: Control = {
 	],
 	mappedRequirements: [
 		{
-			frameworkId: "soc2",
-			requirementId: "CC7",
+			frameworkId: "frk_682734f304cbbfdb3a9d4f44",
+			requirementId: "frk_rq_681e851403a5c3114dc746ba",
 		},
 	],
 };

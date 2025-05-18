@@ -18,8 +18,8 @@ export const controlSelection: Control = {
 	],
 	mappedRequirements: [
 		{
-			frameworkId: "soc2",
-			requirementId: "CC5",
+			frameworkId: "frk_682734f304cbbfdb3a9d4f44",
+			requirementId: "frk_rq_681e85140e8b698d7154d43e",
 		},
 	],
 };

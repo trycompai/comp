@@ -25,6 +25,8 @@ declare const trainingVideos: readonly TrainingVideo[];
  * that defines standards for security, privacy, or data handling.
  */
 interface Framework {
+    /** Identifier of the framework */
+    identifier: string;
     /** Name of the framework */
     name: string;
     /** Version number or year of the framework */
@@ -37,7 +39,7 @@ interface Framework {
  */
 interface Frameworks {
     /** SOC 2 (Service Organization Control 2) framework */
-    soc2: Framework;
+    "frk_682734f304cbbfdb3a9d4f44": Framework;
 }
 /**
  * Valid framework ID strings that can be used to reference specific frameworks.
@@ -46,7 +48,7 @@ type FrameworkId = keyof Frameworks;
 
 declare const frameworks: Frameworks;
 
-type soc2RequirementIds = "CC1" | "CC2" | "CC3" | "CC4" | "CC5" | "CC6" | "CC7" | "CC8" | "CC9" | "A1" | "C1" | "PI1" | "P1";
+type soc2RequirementIds = "frk_rq_681e8514778fd2238a33c121" | "frk_rq_681e85140854c64019d53422" | "frk_rq_681e8514f62bb35319068677" | "frk_rq_681e8514cba3ce1991f9d6c8" | "frk_rq_681e85140e8b698d7154d43e" | "frk_rq_681e8514753b4054f1a632e7" | "frk_rq_681e851403a5c3114dc746ba" | "frk_rq_681e85146ed80156122dd094" | "frk_rq_681e8514fedb1b2123661713" | "frk_rq_681e8514b7a9c5278ada8527" | "frk_rq_681e8514ae9bac0ace4829ae" | "frk_rq_681e85145df1606ef144c69c" | "frk_rq_681e8514e2ebc08069c2c862";
 
 /**
  * Represents a specific requirement from a compliance framework
@@ -57,6 +59,8 @@ interface Requirement {
     name: string;
     /** Detailed explanation of what this requirement entails */
     description: string;
+    /** Identifier of the requirement */
+    identifier: string;
 }
 /**
  * A mapping of requirement codes to their corresponding Requirement objects.
@@ -67,7 +71,7 @@ type AllRequirements = {
     [K in FrameworkId]: SingleFrameworkRequirements<AllRequirementIdsByFramework[K]>;
 };
 type AllRequirementIdsByFramework = {
-    soc2: soc2RequirementIds;
+    "frk_682734f304cbbfdb3a9d4f44": soc2RequirementIds;
 };
 
 declare const soc2Requirements: SingleFrameworkRequirements<soc2RequirementIds>;

@@ -14,6 +14,7 @@ model Control {
   organizationId     String
   artifacts          Artifact[]
   requirementsMapped RequirementMap[]
+  tasks              Task[]
 
   @@index([organizationId])
 }

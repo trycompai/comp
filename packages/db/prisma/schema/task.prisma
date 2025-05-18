@@ -1,14 +1,17 @@
 model Task {
     // Metadata
-    id          String         @id @default(dbgenerated("generate_prefixed_cuid('tsk'::text)"))
+    id          String     @id @default(dbgenerated("generate_prefixed_cuid('tsk'::text)"))
     title       String
     description String
-    status      TaskStatus     @default(todo)
-    entityId    String
-    entityType  TaskEntityType
-    frequency   TaskFrequency?
-    department  Departments?   @default(none)
-    order       Int            @default(0)
+    status      TaskStatus @default(todo)
+
+    controls Control[]
+    vendors  Vendor[]
+    risks    Risk[]
+
+    frequency  TaskFrequency?
+    department Departments?   @default(none)
+    order      Int            @default(0)
 
     // Dates
     createdAt       DateTime  @default(now())
@@ -20,9 +23,6 @@ model Task {
     assignee       Member?      @relation(fields: [assigneeId], references: [id])
     organizationId String
     organization   Organization @relation(fields: [organizationId], references: [id])
-
-    @@index([entityId])
-    @@index([entityId, organizationId])
 }
 
 enum TaskStatus {
@@ -37,10 +37,4 @@ enum TaskFrequency {
     monthly
     quarterly
     yearly
-}
-
-enum TaskEntityType {
-    control
-    vendor
-    risk
 }

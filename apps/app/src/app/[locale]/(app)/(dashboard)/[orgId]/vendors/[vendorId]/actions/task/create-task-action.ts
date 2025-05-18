@@ -35,8 +35,11 @@ export const createVendorTaskAction = authActionClient
 					description,
 					assigneeId,
 					organizationId: activeOrganizationId,
-					entityId: vendorId,
-					entityType: "vendor",
+					vendors: {
+						connect: {
+							id: vendorId,
+						},
+					},
 				},
 			});
 

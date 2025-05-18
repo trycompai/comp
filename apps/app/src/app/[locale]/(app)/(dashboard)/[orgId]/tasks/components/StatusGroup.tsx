@@ -1,6 +1,6 @@
 "use client";
 
-import { Member, Task, User, TaskEntityType } from "@comp/db/types";
+import { Member, Task, User } from "@comp/db/types";
 import { useDrop } from "react-dnd";
 import { useRef } from "react";
 import { TaskCard, DragItem, ItemTypes, StatusId } from "./TaskCard";
@@ -79,7 +79,6 @@ export function StatusGroup({
 			id: task.id,
 			order: idx, // The new order is simply the index in the reordered array.
 			status: task.status as StatusId,
-			entityType: task.entityType,
 		}));
 
 		// Call the server action to persist the new order.

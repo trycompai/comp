@@ -22,12 +22,8 @@ import { useMemo, useState } from "react";
 import { getControlStatus } from "../../../../../lib/utils";
 
 interface RequirementControlsTableProps {
-	controls: (Control & {
-		artifacts: (Artifact & {
-			policy: Policy | null;
-		})[];
-	})[];
-	tasks: Task[];
+	controls: (Control)[];
+	tasks: (Task & { controls: Control[] })[];
 }
 
 export function RequirementControlsTable({
@@ -39,15 +35,7 @@ export function RequirementControlsTable({
 	const [searchTerm, setSearchTerm] = useState("");
 
 	// Define columns for the controls table
-	const columns = useMemo<
-		ColumnDef<
-			Control & {
-				artifacts: (Artifact & {
-					policy: Policy | null;
-				})[];
-			}
-		>[]
-	>(
+	const columns = useMemo<ColumnDef<Control>[]>(
 		() => [
 			{
 				id: "name",
@@ -74,62 +62,6 @@ export function RequirementControlsTable({
 				size: 300,
 				minSize: 200,
 				maxSize: 400,
-				enableResizing: true,
-			},
-			{
-				id: "status",
-				accessorKey: "artifacts",
-				header: ({ column }) => (
-					<DataTableColumnHeader
-						column={column}
-						title={t("frameworks.controls.table.status")}
-					/>
-				),
-				cell: ({ row }) => {
-					const artifacts = row.original.artifacts;
-					const status = getControlStatus(
-						artifacts,
-						tasks,
-						row.original.id,
-					);
-
-					const totalArtifacts = artifacts.length;
-					const completedArtifacts =
-						artifacts.filter(isArtifactCompleted).length;
-
-					return (
-						<TooltipProvider>
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<div className="w-[200px]">
-										<StatusIndicator status={status} />
-									</div>
-								</TooltipTrigger>
-								<TooltipContent>
-									<div className="text-sm">
-										<p>
-											Progress:{" "}
-											{Math.round(
-												(completedArtifacts /
-													totalArtifacts) *
-													100,
-											) || 0}
-											%
-										</p>
-										<p>
-											Completed: {completedArtifacts}/
-											{totalArtifacts} artifacts
-										</p>
-									</div>
-								</TooltipContent>
-							</Tooltip>
-						</TooltipProvider>
-					);
-				},
-				enableSorting: true,
-				size: 200,
-				minSize: 150,
-				maxSize: 250,
 				enableResizing: true,
 			},
 		],

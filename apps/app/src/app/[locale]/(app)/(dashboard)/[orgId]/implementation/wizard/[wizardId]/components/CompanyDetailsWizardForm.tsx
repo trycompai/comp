@@ -29,14 +29,7 @@ import {
 	SelectValue,
 } from "@comp/ui/select";
 import { useParams, useRouter } from "next/navigation";
-import {
-	Breadcrumb,
-	BreadcrumbItem,
-	BreadcrumbLink,
-	BreadcrumbPage,
-	BreadcrumbSeparator,
-} from "@comp/ui/breadcrumb";
-import PageWithBreadcrumb from "@/components/pages/PageWithBreadcrumb";
+import { Card, CardContent, CardHeader, CardTitle } from "@comp/ui/card";
 
 const steps = [
 	"Company identity",
@@ -220,14 +213,14 @@ export const CompanyDetailsWizardForm = ({
 					return (
 						<div className="flex flex-col gap-2">
 							<Label htmlFor="companyWebsite">
-								Public website URL
+								Website
 							</Label>
 							<Input
 								id="companyWebsite"
-								type="url"
 								value={displayValue}
 								onChange={handleChange}
 								placeholder="acme.com"
+								prefix="https://"
 							/>
 							{errors.companyWebsite && (
 								<span className="text-destructive text-sm">
@@ -274,9 +267,9 @@ export const CompanyDetailsWizardForm = ({
 								);
 								return found
 									? {
-											value: found.value,
-											label: found.label,
-										}
+										value: found.value,
+										label: found.label,
+									}
 									: { value: v, label: v };
 							})}
 							placeholder="Select or add one..."
@@ -592,16 +585,24 @@ export const CompanyDetailsWizardForm = ({
 					}
 				}}
 			>
-				<WizardStepper steps={steps} currentStep={step} />
-				<WizardQuestion
-					step={step}
-					totalSteps={steps.length}
-					question={questionNodes[step]}
-					onNext={handleNext}
-					onBack={handleBack}
-					nextDisabled={false}
-					showBack={step > 0}
-				/>
+				<Card>
+					<CardHeader>
+						<CardTitle>
+							<WizardStepper steps={steps} currentStep={step} />
+						</CardTitle>
+					</CardHeader>
+					<CardContent>
+						<WizardQuestion
+							step={step}
+							totalSteps={steps.length}
+							question={questionNodes[step]}
+							onNext={handleNext}
+							onBack={handleBack}
+							nextDisabled={false}
+							showBack={step > 0}
+						/>
+					</CardContent>
+				</Card>
 			</form>
 		</FormProvider>
 	);

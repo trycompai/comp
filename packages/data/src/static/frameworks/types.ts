@@ -3,6 +3,8 @@
  * that defines standards for security, privacy, or data handling.
  */
 export interface Framework {
+	/** Identifier of the framework */
+	identifier: string;
 	/** Name of the framework */
 	name: string;
 	/** Version number or year of the framework */
@@ -16,7 +18,7 @@ export interface Framework {
  */
 export interface Frameworks {
 	/** SOC 2 (Service Organization Control 2) framework */
-	soc2: Framework;
+	"frk_682734f304cbbfdb3a9d4f44": Framework;
 	/** ISO 27001 Information Security Management framework */
 	// iso27001: Framework;
 	/** General Data Protection Regulation framework */

@@ -18,8 +18,8 @@ export const codeOfConduct: Control = {
 	],
 	mappedRequirements: [
 		{
-			frameworkId: "soc2",
-			requirementId: "CC1",
+			frameworkId: "frk_682734f304cbbfdb3a9d4f44",
+			requirementId: "frk_rq_681e8514778fd2238a33c121",
 		},
 	],
 };

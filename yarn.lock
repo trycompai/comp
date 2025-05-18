@@ -1342,6 +1342,14 @@
     typescript "^5.8.2"
     uncrypto "^0.1.3"
 
+"@better-auth/utils@0.2.5":
+  version "0.2.5"
+  resolved "https://registry.npmjs.org/@better-auth/utils/-/utils-0.2.5.tgz"
+  integrity sha512-uI2+/8h/zVsH8RrYdG8eUErbuGBk16rZKQfz8CjxQOyCE6v7BqFYEbFwvOkvl1KbUdxhqOnXp78+uE5h8qVEgQ==
+  dependencies:
+    typescript "^5.8.2"
+    uncrypto "^0.1.3"
+
 "@better-fetch/fetch@^1.1.18", "@better-fetch/fetch@^1.1.4":
   version "1.1.18"
   resolved "https://registry.npmjs.org/@better-fetch/fetch/-/fetch-1.1.18.tgz"
@@ -1598,14 +1606,14 @@
     "@types/conventional-commits-parser" "^5.0.0"
     chalk "^5.3.0"
 
-"@comp/analytics@^workspace:packages/analytics":
+"@comp/analytics@packages/analytics":
   version "workspace:packages/analytics"
   resolved "workspace:packages/analytics"
   dependencies:
     posthog-js "^1.215.3"
     posthog-node "^4.4.1"
 
-"@comp/app@^workspace:apps/app", "@comp/app@workspace:*":
+"@comp/app@apps/app", "@comp/app@workspace:*":
   version "workspace:apps/app"
   resolved "workspace:apps/app"
   devDependencies:
@@ -1708,7 +1716,7 @@
     xml2js "^0.6.2"
     zustand "^5.0.3"
 
-"@comp/data@^workspace:packages/data", "@comp/data@workspace:*":
+"@comp/data@packages/data", "@comp/data@workspace:*":
   version "workspace:packages/data"
   resolved "workspace:packages/data"
   devDependencies:
@@ -1717,18 +1725,17 @@
     tsup "^8.4.0"
     typescript "^5.8.3"
 
-"@comp/db@^workspace:packages/db", "@comp/db@workspace:*":
+"@comp/db@packages/db", "@comp/db@workspace:*":
   version "workspace:packages/db"
   resolved "workspace:packages/db"
   devDependencies:
     "@comp/tsconfig" "workspace:*"
-  devDependencies:
     typescript "^5.8.3"
   dependencies:
     "@prisma/client" "6.6.0"
     prisma "^6.6.0"
 
-"@comp/email@^workspace:packages/email":
+"@comp/email@packages/email":
   version "workspace:packages/email"
   resolved "workspace:packages/email"
   devDependencies:
@@ -1749,7 +1756,7 @@
     react-email "4.0.11"
     responsive-react-email "^0.0.5"
 
-"@comp/framework-editor@^workspace:apps/framework-editor":
+"@comp/framework-editor@apps/framework-editor":
   version "workspace:apps/framework-editor"
   resolved "workspace:apps/framework-editor"
   devDependencies:
@@ -1762,7 +1769,6 @@
   dependencies:
     "@comp/db" "workspace:*"
     "@comp/ui" "workspace:*"
-  dependencies:
     "@hookform/resolvers" "^3.9.1"
     "@radix-ui/react-accordion" "1.2.2"
     "@radix-ui/react-alert-dialog" "1.1.4"
@@ -1785,7 +1791,7 @@
     "@radix-ui/react-separator" "1.1.1"
     "@radix-ui/react-slider" "1.2.2"
     "@radix-ui/react-slot" "1.1.1"
-    "@radix-ui/react-switch" "1.1.2"
+    "@radix-ui/react-switch" "1.2.4"
     "@radix-ui/react-tabs" "1.1.2"
     "@radix-ui/react-toast" "1.2.4"
     "@radix-ui/react-toggle" "1.1.1"
@@ -1793,6 +1799,7 @@
     "@radix-ui/react-tooltip" "1.1.6"
     "@tanstack/react-virtual" "^3.13.8"
     autoprefixer "^10.4.21"
+    better-auth "^1.2.8"
     class-variance-authority "^0.7.1"
     clsx "^2.1.1"
     cmdk "1.0.4"
@@ -1816,7 +1823,7 @@
     vaul "^0.9.6"
     zod "latest"
 
-"@comp/integrations@^workspace:packages/integrations":
+"@comp/integrations@packages/integrations":
   version "workspace:packages/integrations"
   resolved "workspace:packages/integrations"
   devDependencies:
@@ -1839,14 +1846,14 @@
     sharp "^0.33.5"
     zod "^3.24.2"
 
-"@comp/kv@^workspace:packages/kv":
+"@comp/kv@packages/kv":
   version "workspace:packages/kv"
   resolved "workspace:packages/kv"
   dependencies:
     "@upstash/redis" "^1.34.2"
     server-only "0.0.1"
 
-"@comp/notifications@^workspace:packages/notifications", "@comp/notifications@workspace:*":
+"@comp/notifications@packages/notifications", "@comp/notifications@workspace:*":
   version "workspace:packages/notifications"
   resolved "workspace:packages/notifications"
   devDependencies:
@@ -1855,7 +1862,7 @@
     "@novu/node" "^2.0.1"
     nanoid "5.1.5"
 
-"@comp/portal@^workspace:apps/portal":
+"@comp/portal@apps/portal":
   version "workspace:apps/portal"
   resolved "workspace:apps/portal"
   devDependencies:
@@ -1876,7 +1883,7 @@
     react-dom "^19.1.0"
     react-otp-input "^3.1.1"
 
-"@comp/trust@^workspace:apps/trust":
+"@comp/trust@apps/trust":
   version "workspace:apps/trust"
   resolved "workspace:apps/trust"
   devDependencies:
@@ -1912,7 +1919,7 @@
     "@radix-ui/react-separator" "1.1.1"
     "@radix-ui/react-slider" "1.2.2"
     "@radix-ui/react-slot" "1.1.1"
-    "@radix-ui/react-switch" "1.1.2"
+    "@radix-ui/react-switch" "1.2.4"
     "@radix-ui/react-tabs" "1.1.2"
     "@radix-ui/react-toast" "1.2.4"
     "@radix-ui/react-toggle" "1.1.1"
@@ -1942,11 +1949,11 @@
     vaul "^0.9.6"
     zod "latest"
 
-"@comp/tsconfig@^workspace:packages/tsconfig", "@comp/tsconfig@workspace:*":
+"@comp/tsconfig@packages/tsconfig", "@comp/tsconfig@workspace:*":
   version "workspace:packages/tsconfig"
   resolved "workspace:packages/tsconfig"
 
-"@comp/ui@^workspace:packages/ui", "@comp/ui@workspace:*":
+"@comp/ui@packages/ui", "@comp/ui@workspace:*":
   version "workspace:packages/ui"
   resolved "workspace:packages/ui"
   devDependencies:
@@ -1976,7 +1983,7 @@
     "@radix-ui/react-separator" "^1.1.0"
     "@radix-ui/react-slider" "^1.2.1"
     "@radix-ui/react-slot" "^1.1.0"
-    "@radix-ui/react-switch" "^1.1.1"
+    "@radix-ui/react-switch" "^1.2.4"
     "@radix-ui/react-tabs" "^1.1.1"
     "@radix-ui/react-toast" "^1.2.2"
     "@radix-ui/react-tooltip" "^1.1.3"
@@ -2011,7 +2018,7 @@
     use-callback-ref "^1.3.3"
     vaul "^1.0.0"
 
-"@comp/utils@^workspace:packages/utils", "@comp/utils@workspace:*":
+"@comp/utils@packages/utils", "@comp/utils@workspace:*":
   version "workspace:packages/utils"
   resolved "workspace:packages/utils"
   devDependencies:
@@ -3291,34 +3298,22 @@
   dependencies:
     "@isaacs/string-locale-compare" "^1.1.0"
     "@npmcli/fs" "^4.0.0"
-  dependencies:
     "@npmcli/installed-package-contents" "^3.0.0"
-  dependencies:
     "@npmcli/map-workspaces" "^4.0.1"
-  dependencies:
     "@npmcli/metavuln-calculator" "^8.0.0"
     "@npmcli/name-from-folder" "^3.0.0"
     "@npmcli/node-gyp" "^4.0.0"
-  dependencies:
     "@npmcli/package-json" "^6.0.1"
-  dependencies:
     "@npmcli/query" "^4.0.0"
-  dependencies:
     "@npmcli/redact" "^3.0.0"
     "@npmcli/run-script" "^9.0.1"
-  dependencies:
     bin-links "^5.0.0"
-  dependencies:
     cacache "^19.0.1"
-  dependencies:
     common-ancestor-path "^1.0.1"
-  dependencies:
     hosted-git-info "^8.0.0"
     json-parse-even-better-errors "^4.0.0"
-  dependencies:
     json-stringify-nice "^1.1.4"
     lru-cache "^10.2.2"
-  dependencies:
     minimatch "^9.0.4"
     nopt "^8.0.0"
     npm-install-checks "^7.1.0"
@@ -3328,16 +3323,13 @@
     pacote "^19.0.0"
     parse-conflict-json "^4.0.0"
     proc-log "^5.0.0"
-  dependencies:
     proggy "^3.0.0"
     promise-all-reject-late "^1.0.0"
     promise-call-limit "^3.0.1"
     read-package-json-fast "^4.0.0"
-  dependencies:
     semver "^7.3.7"
     ssri "^12.0.0"
     treeverse "^3.0.0"
-  dependencies:
     walk-up-path "^3.0.1"
 
 "@npmcli/config@^9.0.0":
@@ -3352,7 +3344,6 @@
     nopt "^8.0.0"
     proc-log "^5.0.0"
     semver "^7.3.5"
-  dependencies:
     walk-up-path "^3.0.1"
 
 "@npmcli/fs@^4.0.0":
@@ -3369,14 +3360,10 @@
   dependencies:
     "@npmcli/promise-spawn" "^8.0.0"
     ini "^5.0.0"
-  dependencies:
     lru-cache "^10.0.1"
-  dependencies:
     npm-pick-manifest "^10.0.0"
     proc-log "^5.0.0"
-  dependencies:
     promise-retry "^2.0.1"
-  dependencies:
     semver "^7.3.5"
     which "^5.0.0"
 
@@ -3394,7 +3381,6 @@
   integrity sha512-mnuMuibEbkaBTYj9HQ3dMe6L0ylYW+s/gfz7tBDMFY/la0w9Kf44P9aLn4/+/t3aTR3YUHKoT6XQL9rlicIe3Q==
   dependencies:
     "@npmcli/name-from-folder" "^3.0.0"
-  dependencies:
     "@npmcli/package-json" "^6.0.0"
     glob "^10.2.2"
     minimatch "^9.0.0"
@@ -3406,9 +3392,7 @@
   dependencies:
     cacache "^19.0.0"
     json-parse-even-better-errors "^4.0.0"
-  dependencies:
     pacote "^20.0.0"
-  dependencies:
     proc-log "^5.0.0"
     semver "^7.3.5"
 
@@ -3428,13 +3412,11 @@
   integrity sha512-d5qimadRAUCO4A/Txw71VM7UrRZzV+NPclxz/dc+M6B2oYwjWTjqh8HA/sGQgs9VZuJ6I/P7XIAlJvgrl27ZOw==
   dependencies:
     "@npmcli/git" "^6.0.0"
-  dependencies:
     glob "^10.2.2"
     hosted-git-info "^8.0.0"
     json-parse-even-better-errors "^4.0.0"
     proc-log "^5.0.0"
     semver "^7.5.3"
-  dependencies:
     validate-npm-package-license "^3.0.4"
 
 "@npmcli/promise-spawn@^8.0.0", "@npmcli/promise-spawn@^8.0.2":
@@ -3462,7 +3444,6 @@
   integrity sha512-aoNSbxtkePXUlbZB+anS1LqsJdctG5n3UVhfU47+CDdwMi6uNTBMF9gPcQRnqghQd2FGzcwwIFBruFMxjhBewg==
   dependencies:
     "@npmcli/node-gyp" "^4.0.0"
-  dependencies:
     "@npmcli/package-json" "^6.0.0"
     "@npmcli/promise-spawn" "^8.0.0"
     node-gyp "^11.0.0"
@@ -4689,32 +4670,32 @@
     "@babel/runtime" "^7.13.10"
     "@radix-ui/react-compose-refs" "1.0.0"
 
-"@radix-ui/react-slot@1.1.1", "@radix-ui/react-slot@^1.1.0":
+"@radix-ui/react-slot@1.1.1":
   version "1.1.1"
   resolved "https://registry.npmjs.org/@radix-ui/react-slot/-/react-slot-1.1.1.tgz"
   integrity sha512-RApLLOcINYJA+dMVbOju7MYv1Mb2EBp2nH4HdDzXTSyaR5optlm6Otrz1euW3HbdOR8UmmFK06TD+A9frYWv+g==
   dependencies:
     "@radix-ui/react-compose-refs" "1.1.1"
 
-"@radix-ui/react-slot@1.2.2", "@radix-ui/react-slot@^1.1.1":
+"@radix-ui/react-slot@1.2.2", "@radix-ui/react-slot@^1.1.0", "@radix-ui/react-slot@^1.1.1":
   version "1.2.2"
   resolved "https://registry.npmjs.org/@radix-ui/react-slot/-/react-slot-1.2.2.tgz"
   integrity sha512-y7TBO4xN4Y94FvcWIOIh18fM4R1A8S4q1jhoz4PNzOoHsFcN8pogcFmZrTYAm4F9VRUrWP/Mw7xSKybIeRI+CQ==
   dependencies:
     "@radix-ui/react-compose-refs" "1.1.2"
 
-"@radix-ui/react-switch@1.1.2", "@radix-ui/react-switch@^1.1.1":
-  version "1.1.2"
-  resolved "https://registry.npmjs.org/@radix-ui/react-switch/-/react-switch-1.1.2.tgz"
-  integrity sha512-zGukiWHjEdBCRyXvKR6iXAQG6qXm2esuAD6kDOi9Cn+1X6ev3ASo4+CsYaD6Fov9r/AQFekqnD/7+V0Cs6/98g==
+"@radix-ui/react-switch@1.2.4", "@radix-ui/react-switch@^1.2.4":
+  version "1.2.4"
+  resolved "https://registry.npmjs.org/@radix-ui/react-switch/-/react-switch-1.2.4.tgz"
+  integrity sha512-yZCky6XZFnR7pcGonJkr9VyNRu46KcYAbyg1v/gVVCZUr8UJ4x+RpncC27hHtiZ15jC+3WS8Yg/JSgyIHnYYsQ==
   dependencies:
-    "@radix-ui/primitive" "1.1.1"
-    "@radix-ui/react-compose-refs" "1.1.1"
-    "@radix-ui/react-context" "1.1.1"
-    "@radix-ui/react-primitive" "2.0.1"
-    "@radix-ui/react-use-controllable-state" "1.1.0"
-    "@radix-ui/react-use-previous" "1.1.0"
-    "@radix-ui/react-use-size" "1.1.0"
+    "@radix-ui/primitive" "1.1.2"
+    "@radix-ui/react-compose-refs" "1.1.2"
+    "@radix-ui/react-context" "1.1.2"
+    "@radix-ui/react-primitive" "2.1.2"
+    "@radix-ui/react-use-controllable-state" "1.2.2"
+    "@radix-ui/react-use-previous" "1.1.1"
+    "@radix-ui/react-use-size" "1.1.1"
 
 "@radix-ui/react-tabs@1.1.2", "@radix-ui/react-tabs@^1.1.1":
   version "1.1.2"
@@ -5393,10 +5374,8 @@
     "@sigstore/bundle" "^3.1.0"
     "@sigstore/core" "^2.0.0"
     "@sigstore/protobuf-specs" "^0.4.0"
-  dependencies:
     make-fetch-happen "^14.0.2"
     proc-log "^5.0.0"
-  dependencies:
     promise-retry "^2.0.1"
 
 "@sigstore/tuf@^3.0.0", "@sigstore/tuf@^3.1.0":
@@ -6573,7 +6552,6 @@
   integrity sha512-UUYHISyhCU3ZgN8yaear3cGATHb3SMuKHsQ/nVbHXcmnBf+LzQ/cQfhNG+rfaSHgqGKNEm2cOCLVLELStUQ1JA==
   dependencies:
     "@tufjs/canonical-json" "2.0.0"
-  dependencies:
     minimatch "^9.0.5"
 
 "@types/body-parser@*":
@@ -7827,6 +7805,24 @@ better-auth@^1.2.4, better-auth@^1.2.7:
     nanostores "^0.11.3"
     zod "^3.24.1"
 
+better-auth@^1.2.8:
+  version "1.2.8"
+  resolved "https://registry.npmjs.org/better-auth/-/better-auth-1.2.8.tgz"
+  integrity sha512-y8ry7ZW3/3ZIr82Eo1zUDtMzdoQlFnwNuZ0+b0RxoNZgqmvgTIc/0tCDC7NDJerqSu4UCzer0dvYxBsv3WMIGg==
+  dependencies:
+    "@better-auth/utils" "0.2.5"
+    "@better-fetch/fetch" "^1.1.18"
+    "@noble/ciphers" "^0.6.0"
+    "@noble/hashes" "^1.6.1"
+    "@simplewebauthn/browser" "^13.0.0"
+    "@simplewebauthn/server" "^13.0.0"
+    better-call "^1.0.8"
+    defu "^6.1.4"
+    jose "^5.9.6"
+    kysely "^0.28.1"
+    nanostores "^0.11.3"
+    zod "^3.24.1"
+
 better-call@^1.0.8:
   version "1.0.9"
   resolved "https://registry.npmjs.org/better-call/-/better-call-1.0.9.tgz"
@@ -7849,11 +7845,8 @@ bin-links@^5.0.0:
   dependencies:
     cmd-shim "^7.0.0"
     npm-normalize-package-bin "^4.0.0"
-  dependencies:
     proc-log "^5.0.0"
-  dependencies:
     read-cmd-shim "^5.0.0"
-  dependencies:
     write-file-atomic "^6.0.0"
 
 binary-extensions@^2.0.0, binary-extensions@^2.3.0:
@@ -8034,20 +8027,13 @@ cacache@^19.0.0, cacache@^19.0.1:
     "@npmcli/fs" "^4.0.0"
     fs-minipass "^3.0.0"
     glob "^10.2.2"
-  dependencies:
     lru-cache "^10.0.1"
-  dependencies:
     minipass "^7.0.3"
-  dependencies:
     minipass-collect "^2.0.1"
     minipass-flush "^1.0.5"
-  dependencies:
     minipass-pipeline "^1.2.4"
-  dependencies:
     p-map "^7.0.2"
-  dependencies:
     ssri "^12.0.0"
-  dependencies:
     tar "^7.4.3"
     unique-filename "^4.0.0"
 
@@ -11223,14 +11209,10 @@ init-package-json@^7.0.2:
   dependencies:
     "@npmcli/package-json" "^6.0.0"
     npm-package-arg "^12.0.0"
-  dependencies:
     promzard "^2.0.0"
-  dependencies:
     read "^4.0.0"
     semver "^7.3.5"
-  dependencies:
     validate-npm-package-license "^3.0.4"
-  dependencies:
     validate-npm-package-name "^6.0.0"
 
 inline-style-parser@0.2.4:
@@ -12187,6 +12169,11 @@ kysely@^0.27.6:
   resolved "https://registry.npmjs.org/kysely/-/kysely-0.27.6.tgz"
   integrity sha512-FIyV/64EkKhJmjgC0g2hygpBv5RNWVPyNCqSAD7eTCv6eFWNIi4PN1UvdSJGicN/o35bnevgis4Y0UDC0qi8jQ==
 
+kysely@^0.28.1:
+  version "0.28.2"
+  resolved "https://registry.npmjs.org/kysely/-/kysely-0.28.2.tgz"
+  integrity sha512-4YAVLoF0Sf0UTqlhgQMFU9iQECdah7n+13ANkiuVfRvlK+uI0Etbgd7bVP36dKlG+NXWbhGua8vnGt+sdhvT7A==
+
 languine@^3.1.4:
   version "3.1.4"
   resolved "https://registry.npmjs.org/languine/-/languine-3.1.4.tgz"
@@ -12251,11 +12238,9 @@ libnpmdiff@^7.0.0:
   integrity sha512-MjvsBJL1AT4ofsSsBRse5clxv7gfPbdgzT0VE+xmVTxE8M92T22laeX9vqFhaQKInSeKiZ2L9w/FVhoCCGPdUg==
   dependencies:
     "@npmcli/arborist" "^8.0.0"
-  dependencies:
     "@npmcli/installed-package-contents" "^3.0.0"
     binary-extensions "^2.3.0"
     diff "^5.1.0"
-  dependencies:
     minimatch "^9.0.4"
     npm-package-arg "^12.0.0"
     pacote "^19.0.0"
@@ -12273,11 +12258,8 @@ libnpmexec@^9.0.0:
     pacote "^19.0.0"
     proc-log "^5.0.0"
     read "^4.0.0"
-  dependencies:
     read-package-json-fast "^4.0.0"
-  dependencies:
     semver "^7.3.7"
-  dependencies:
     walk-up-path "^3.0.1"
 
 libnpmfund@^6.0.0:
@@ -12293,7 +12275,6 @@ libnpmhook@^11.0.0:
   integrity sha512-Xc18rD9NFbRwZbYCQ+UCF5imPsiHSyuQA8RaCA2KmOUo8q4kmBX4JjGWzmZnxZCT8s6vwzmY1BvHNqBGdg9oBQ==
   dependencies:
     aproba "^2.0.0"
-  dependencies:
     npm-registry-fetch "^18.0.1"
 
 libnpmorg@^7.0.0:
@@ -12302,7 +12283,6 @@ libnpmorg@^7.0.0:
   integrity sha512-DcTodX31gDEiFrlIHurBQiBlBO6Var2KCqMVCk+HqZhfQXqUfhKGmFOp0UHr6HR1lkTVM0MzXOOYtUObk0r6Dg==
   dependencies:
     aproba "^2.0.0"
-  dependencies:
     npm-registry-fetch "^18.0.1"
 
 libnpmpack@^8.0.0:
@@ -12326,9 +12306,7 @@ libnpmpublish@^10.0.1:
     npm-registry-fetch "^18.0.1"
     proc-log "^5.0.0"
     semver "^7.3.7"
-  dependencies:
     sigstore "^3.0.0"
-  dependencies:
     ssri "^12.0.0"
 
 libnpmsearch@^8.0.0:
@@ -12344,7 +12322,6 @@ libnpmteam@^7.0.0:
   integrity sha512-PKLOoVukN34qyJjgEm5DEOnDwZkeVMUHRx8NhcKDiCNJGPl7G/pF1cfBw8yicMwRlHaHkld1FdujOzKzy4AlwA==
   dependencies:
     aproba "^2.0.0"
-  dependencies:
     npm-registry-fetch "^18.0.1"
 
 libnpmversion@^7.0.0:
@@ -12353,7 +12330,6 @@ libnpmversion@^7.0.0:
   integrity sha512-0xle91R6F8r/Q/4tHOnyKko+ZSquEXNdxwRdKCPv4kC1cOVBMFXRsKKrVtRKtXcFn362U8ZlJefk4Apu00424g==
   dependencies:
     "@npmcli/git" "^6.0.1"
-  dependencies:
     "@npmcli/run-script" "^9.0.1"
     json-parse-even-better-errors "^4.0.0"
     proc-log "^5.0.0"
@@ -12685,24 +12661,15 @@ make-fetch-happen@^14.0.0, make-fetch-happen@^14.0.1, make-fetch-happen@^14.0.2,
   integrity sha512-QMjGbFTP0blj97EeidG5hk/QhKQ3T4ICckQGLgz38QF7Vgbk6e6FTARN8KhKxyBbWn8R0HU+bnw8aSoFPD4qtQ==
   dependencies:
     "@npmcli/agent" "^3.0.0"
-  dependencies:
     cacache "^19.0.1"
-  dependencies:
     http-cache-semantics "^4.1.1"
-  dependencies:
     minipass "^7.0.2"
-  dependencies:
     minipass-fetch "^4.0.0"
     minipass-flush "^1.0.5"
-  dependencies:
     minipass-pipeline "^1.2.4"
-  dependencies:
     negotiator "^1.0.0"
-  dependencies:
     proc-log "^5.0.0"
-  dependencies:
     promise-retry "^2.0.1"
-  dependencies:
     ssri "^12.0.0"
 
 markdown-it@*, markdown-it@^14.0.0, markdown-it@^14.1.0:
@@ -13404,7 +13371,6 @@ minipass-fetch@^4.0.0:
     encoding "^0.1.13"
   dependencies:
     minipass "^7.0.3"
-  dependencies:
     minipass-sized "^1.0.3"
     minizlib "^3.0.1"
 
@@ -13746,16 +13712,13 @@ node-gyp@^11.0.0:
   dependencies:
     env-paths "^2.2.0"
     exponential-backoff "^3.1.1"
-  dependencies:
     graceful-fs "^4.2.6"
     make-fetch-happen "^14.0.3"
     nopt "^8.0.0"
     proc-log "^5.0.0"
     semver "^7.3.5"
-  dependencies:
     tar "^7.4.3"
     tinyglobby "^0.2.12"
-  dependencies:
     which "^5.0.0"
 
 node-gyp-build@^4.8.4:
@@ -13812,7 +13775,6 @@ normalize-package-data@^7.0.0:
   dependencies:
     hosted-git-info "^8.0.0"
     semver "^7.3.5"
-  dependencies:
     validate-npm-package-license "^3.0.4"
 
 normalize-path@^3.0.0, normalize-path@~3.0.0:
@@ -14015,9 +13977,7 @@ npm-pick-manifest@^10.0.0:
   integrity sha512-r4fFa4FqYY8xaM7fHecQ9Z2nE9hgNfJR+EmoKv0+chvzWkBcORX3r0FpTByP+CbOVJDladMXnPQGVN8PBLGuTQ==
   dependencies:
     npm-install-checks "^7.1.0"
-  dependencies:
     npm-normalize-package-bin "^4.0.0"
-  dependencies:
     npm-package-arg "^12.0.0"
     semver "^7.3.5"
 
@@ -14035,15 +13995,11 @@ npm-registry-fetch@^18.0.0, npm-registry-fetch@^18.0.1, npm-registry-fetch@^18.0
   integrity sha512-LeVMZBBVy+oQb5R6FDV9OlJCcWDU+al10oKpe+nsvcHnG24Z3uM3SvJYKfGJlfGjVU8v9liejCrUR/M5HO5NEQ==
   dependencies:
     "@npmcli/redact" "^3.0.0"
-  dependencies:
     jsonparse "^1.3.1"
-  dependencies:
     make-fetch-happen "^14.0.0"
     minipass "^7.0.2"
-  dependencies:
     minipass-fetch "^4.0.0"
     minizlib "^3.0.1"
-  dependencies:
     npm-package-arg "^12.0.0"
     proc-log "^5.0.0"
 
@@ -14455,7 +14411,6 @@ pacote@^19.0.0, pacote@^19.0.1:
   dependencies:
     "@npmcli/git" "^6.0.0"
     "@npmcli/installed-package-contents" "^3.0.0"
-  dependencies:
     "@npmcli/package-json" "^6.0.0"
     "@npmcli/promise-spawn" "^8.0.0"
     "@npmcli/run-script" "^9.0.0"
@@ -14463,16 +14418,12 @@ pacote@^19.0.0, pacote@^19.0.1:
     fs-minipass "^3.0.0"
     minipass "^7.0.2"
     npm-package-arg "^12.0.0"
-  dependencies:
     npm-packlist "^9.0.0"
-  dependencies:
     npm-pick-manifest "^10.0.0"
     npm-registry-fetch "^18.0.0"
     proc-log "^5.0.0"
-  dependencies:
     promise-retry "^2.0.1"
     sigstore "^3.0.0"
-  dependencies:
     ssri "^12.0.0"
     tar "^6.1.11"
 
@@ -14483,7 +14434,6 @@ pacote@^20.0.0:
   dependencies:
     "@npmcli/git" "^6.0.0"
     "@npmcli/installed-package-contents" "^3.0.0"
-  dependencies:
     "@npmcli/package-json" "^6.0.0"
     "@npmcli/promise-spawn" "^8.0.0"
     "@npmcli/run-script" "^9.0.0"
@@ -14491,16 +14441,12 @@ pacote@^20.0.0:
     fs-minipass "^3.0.0"
     minipass "^7.0.2"
     npm-package-arg "^12.0.0"
-  dependencies:
     npm-packlist "^9.0.0"
-  dependencies:
     npm-pick-manifest "^10.0.0"
     npm-registry-fetch "^18.0.0"
     proc-log "^5.0.0"
-  dependencies:
     promise-retry "^2.0.1"
     sigstore "^3.0.0"
-  dependencies:
     ssri "^12.0.0"
     tar "^6.1.11"
 
@@ -14522,7 +14468,6 @@ parse-conflict-json@^4.0.0:
   integrity sha512-37CN2VtcuvKgHUs8+0b1uJeEsbGn61GRHz469C94P5xiOoqpDYJYwjg4RY9Vmz39WyZAVkR5++nbJwLMIgOCnQ==
   dependencies:
     json-parse-even-better-errors "^4.0.0"
-  dependencies:
     just-diff "^6.0.0"
     just-diff-apply "^5.2.0"
 
@@ -15811,7 +15756,6 @@ read-package-json-fast@^4.0.0:
   integrity sha512-qpt8EwugBWDw2cgE2W+/3oxC+KTez2uSVR8JU9Q36TXPAGCaozfQUs59v4j4GFpWTaw0i6hAZSvOmu1J0uOEUg==
   dependencies:
     json-parse-even-better-errors "^4.0.0"
-  dependencies:
     npm-normalize-package-bin "^4.0.0"
 
 read-package-up@^11.0.0:
@@ -16657,9 +16601,7 @@ sigstore@^3.0.0:
     "@sigstore/core" "^2.0.0"
     "@sigstore/protobuf-specs" "^0.4.0"
     "@sigstore/sign" "^3.1.0"
-  dependencies:
     "@sigstore/tuf" "^3.1.0"
-  dependencies:
     "@sigstore/verify" "^2.1.0"
 
 simple-git@^3.27.0:
@@ -17359,9 +17301,7 @@ tar@^7.4.3:
   dependencies:
     "@isaacs/fs-minipass" "^4.0.0"
     chownr "^3.0.0"
-  dependencies:
     minipass "^7.1.2"
-  dependencies:
     minizlib "^3.0.1"
     mkdirp "^3.0.1"
     yallist "^5.0.0"
@@ -17697,7 +17637,6 @@ tuf-js@^3.0.1:
   dependencies:
     "@tufjs/models" "3.0.1"
     debug "^4.3.6"
-  dependencies:
     make-fetch-happen "^14.0.1"
 
 tunnel@^0.0.6:

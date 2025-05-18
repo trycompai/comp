@@ -18,8 +18,8 @@ export const controlMonitoring: Control = {
 	],
 	mappedRequirements: [
 		{
-			frameworkId: "soc2",
-			requirementId: "CC4",
+			frameworkId: "frk_682734f304cbbfdb3a9d4f44",
+			requirementId: "frk_rq_681e8514cba3ce1991f9d6c8",
 		},
 	],
 };

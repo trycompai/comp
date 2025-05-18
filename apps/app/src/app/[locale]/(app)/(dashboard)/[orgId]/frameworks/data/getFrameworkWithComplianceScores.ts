@@ -1,16 +1,13 @@
 "use server";
 
 import {
+	Control,
 	type Artifact,
-	type Task,
 	type Policy,
-	TaskEntityType,
+	type Task,
 } from "@comp/db/types";
 import { FrameworkInstanceWithComplianceScore } from "../components/types";
 import { FrameworkInstanceWithControls } from "../types";
-import { db } from "@comp/db";
-import { headers } from "next/headers";
-import { auth } from "@/utils/auth";
 
 /**
  * Checks if a control is compliant based on its artifacts and tasks
@@ -62,7 +59,7 @@ export async function getFrameworkWithComplianceScores({
 	tasks,
 }: {
 	frameworksWithControls: FrameworkInstanceWithControls[];
-	tasks: Task[];
+	tasks: (Task & { controls: Control[] })[];
 }): Promise<FrameworkInstanceWithComplianceScore[]> {
 	// Calculate compliance for each framework
 	const frameworksWithComplianceScores = frameworksWithControls.map(
@@ -73,8 +70,8 @@ export async function getFrameworkWithComplianceScores({
 			// Calculate compliance percentage
 			const totalControls = controls.length;
 			const compliantControls = controls.filter((control) => {
-				const controlTasks = tasks.filter(
-					(task) => task.entityId === control.id,
+				const controlTasks = tasks.filter((task) =>
+					task.controls.some((c) => c.id === control.id),
 				);
 				return isControlCompliant(control.artifacts, controlTasks);
 			}).length;

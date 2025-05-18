@@ -1,7 +1,7 @@
 "use client";
 
 import { useI18n } from "@/locales/client";
-import { Task } from "@comp/db/types";
+import { Task, Control } from "@comp/db/types";
 import { Badge } from "@comp/ui/badge";
 import {
 	Card,
@@ -21,7 +21,7 @@ import { FrameworkInstanceWithControls } from "../types";
 interface FrameworkCardProps {
 	frameworkInstance: FrameworkInstanceWithControls;
 	complianceScore: number;
-	tasks: Task[];
+	tasks: (Task & { controls: Control[] })[];
 }
 
 export function FrameworkCard({
@@ -75,8 +75,8 @@ export function FrameworkCard({
 	const notStartedControlsCount =
 		frameworkInstance.controls?.filter((control) => {
 			// If a control has no artifacts and no tasks, it's not started.
-			const controlTasks = tasks.filter(
-				(task) => task.entityId === control.id,
+			const controlTasks = tasks.filter((task) =>
+				task.controls.some((c) => c.id === control.id),
 			);
 
 			if (

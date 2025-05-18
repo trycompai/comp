@@ -35,8 +35,8 @@ export function WizardQuestion({
 						</Button>
 					)}
 				</div>
-				<div className="flex-1 flex justify-center">
-					<span className="text-muted-foreground text-sm select-none">
+				<div className="flex items-center justify-center">
+					<span className="text-muted-foreground text-xs select-none">
 						Step {step + 1} / {totalSteps}
 					</span>
 				</div>

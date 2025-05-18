@@ -1,4 +1,4 @@
-import type { FrameworkId, RequirementMap } from "@comp/db/types";
+import type { RequirementMap } from "@comp/db/types";
 import { TableCell, TableRow } from "@comp/ui/table";
 import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
@@ -11,11 +11,10 @@ interface RequirementRowProps {
 export function RequirementRow({ requirement }: RequirementRowProps) {
 	const router = useRouter();
 	const params = useParams();
-	const [frameworkId, requirementId] = requirement.requirementId.split("_");
+	const requirementId = requirement.requirementId;
 	const orgId = params.orgId as string;
 
 	const requirementDetails = getRequirementDetails(
-		frameworkId as FrameworkId,
 		requirementId,
 	);
 

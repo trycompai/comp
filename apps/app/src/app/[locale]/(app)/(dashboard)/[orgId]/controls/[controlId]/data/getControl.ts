@@ -30,6 +30,7 @@ export const getControl = async (id: string) => {
 					frameworkInstance: true,
 				},
 			},
+			tasks: true,
 		},
 	});
 

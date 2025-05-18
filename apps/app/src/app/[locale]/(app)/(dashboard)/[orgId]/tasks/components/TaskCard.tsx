@@ -1,12 +1,11 @@
 "use client";
 
-import { Member, Task, User, TaskEntityType, TaskStatus } from "@comp/db/types";
+import { Member, Task, TaskStatus, User } from "@comp/db/types";
 import { Badge } from "@comp/ui/badge";
-import { Check } from "lucide-react";
 import Image from "next/image";
-import { useRouter, usePathname } from "next/navigation";
-import { useDrag, useDrop, XYCoord } from "react-dnd";
-import { useRef, useMemo, useState, useEffect, useCallback } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useDrag, useDrop } from "react-dnd";
 import { TaskStatusIndicator } from "./TaskStatusIndicator";
 
 // DnD Item Type identifier for tasks.
@@ -163,13 +162,13 @@ export function TaskCard({
 	}, [task.assigneeId, members]);
 
 	// Helper to get Tailwind class for the entity type indicator dot.
-	const getEntityTypeDotClass = (entityType: TaskEntityType): string => {
+	const getEntityTypeDotClass = (entityType: "control" | "risk" | "vendor"): string => {
 		switch (entityType) {
-			case TaskEntityType.control:
+			case "control":
 				return "bg-blue-500";
-			case TaskEntityType.risk:
+			case "risk":
 				return "bg-red-500";
-			case TaskEntityType.vendor:
+			case "vendor":
 				return "bg-green-500";
 			default:
 				return "bg-gray-500";
@@ -224,17 +223,6 @@ export function TaskCard({
 				{task.title}
 			</span>
 			<div className="flex items-center ml-auto space-x-3 pl-2 flex-shrink-0">
-				{task.entityType && (
-					<Badge
-						variant="outline"
-						className="capitalize font-normal flex items-center px-2 py-0.5"
-					>
-						<span
-							className={`w-2 h-2 rounded-full mr-1.5 ${getEntityTypeDotClass(task.entityType)}`}
-						/>
-						{task.entityType}
-					</Badge>
-				)}
 				<span className="text-xs text-muted-foreground whitespace-nowrap">
 					Apr 15
 				</span>

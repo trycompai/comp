@@ -1,7 +1,7 @@
 "use client"
 
 import { useI18n } from "@/locales/client"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@comp/ui/card"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@comp/ui/card"
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@comp/ui/form"
 import { Switch } from "@comp/ui/switch"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -11,9 +11,8 @@ import { toast } from "sonner"
 import { z } from "zod"
 import { trustPortalSwitchAction } from "../actions/trust-portal-switch"
 import Link from "next/link"
-import { ExternalLink, Loader2 } from "lucide-react"
+import { ExternalLink } from "lucide-react"
 import { Input } from "@comp/ui/input"
-import { Button } from "@comp/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@comp/ui/select"
 import { updateTrustPortalFrameworks } from "../actions/update-trust-portal-frameworks"
 import { SOC2, ISO27001, GDPR } from "./logos"
@@ -96,14 +95,12 @@ export function TrustPortalSwitch({
 
     const portalUrl = domainVerified ? `https://${domain}` : `https://trust.inc/${slug}`
 
-    // --- Auto-save helpers ---
     const lastSaved = useRef<{ [key: string]: string | boolean }>({
         contactEmail: contactEmail ?? "",
         friendlyUrl: friendlyUrl ?? "",
         enabled: enabled,
     })
 
-    // Save handler
     const autoSave = useCallback(
         async (field: string, value: any) => {
             const current = form.getValues()
@@ -116,11 +113,9 @@ export function TrustPortalSwitch({
         [form, onSubmit]
     )
 
-    // --- Field Handlers ---
-    // Contact Email
     const [contactEmailValue, setContactEmailValue] = useState(form.getValues("contactEmail") || "")
     const debouncedContactEmail = useDebounce(contactEmailValue, 500)
-    // Debounced auto-save
+
     useEffect(() => {
         if (
             debouncedContactEmail !== undefined &&
@@ -129,9 +124,8 @@ export function TrustPortalSwitch({
             form.setValue("contactEmail", debouncedContactEmail)
             autoSave("contactEmail", debouncedContactEmail)
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [debouncedContactEmail])
-    // On blur immediate save
+
     const handleContactEmailBlur = useCallback(
         (e: React.FocusEvent<HTMLInputElement>) => {
             const value = e.target.value
@@ -141,11 +135,10 @@ export function TrustPortalSwitch({
         [form, autoSave]
     )
 
-    // Friendly URL
     const [friendlyUrlValue, setFriendlyUrlValue] = useState(form.getValues("friendlyUrl") || "")
     const debouncedFriendlyUrl = useDebounce(friendlyUrlValue, 500)
     const [friendlyUrlStatus, setFriendlyUrlStatus] = useState<"idle" | "checking" | "available" | "unavailable">("idle")
-    // Check availability on debounce
+
     useEffect(() => {
         if (!debouncedFriendlyUrl || debouncedFriendlyUrl === (friendlyUrl ?? "")) {
             setFriendlyUrlStatus("idle")
@@ -153,13 +146,12 @@ export function TrustPortalSwitch({
         }
         setFriendlyUrlStatus("checking")
         checkFriendlyUrl.execute({ friendlyUrl: debouncedFriendlyUrl, orgId })
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [debouncedFriendlyUrl, orgId, friendlyUrl])
     useEffect(() => {
         if (checkFriendlyUrl.status === "executing") return
         if (checkFriendlyUrl.result?.data?.isAvailable === true) {
             setFriendlyUrlStatus("available")
-            // Auto-save if available and changed
+
             if (debouncedFriendlyUrl !== lastSaved.current.friendlyUrl) {
                 form.setValue("friendlyUrl", debouncedFriendlyUrl)
                 autoSave("friendlyUrl", debouncedFriendlyUrl)
@@ -167,9 +159,8 @@ export function TrustPortalSwitch({
         } else if (checkFriendlyUrl.result?.data?.isAvailable === false) {
             setFriendlyUrlStatus("unavailable")
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [checkFriendlyUrl.status, checkFriendlyUrl.result])
-    // On blur immediate save if available
+
     const handleFriendlyUrlBlur = useCallback(
         (e: React.FocusEvent<HTMLInputElement>) => {
             const value = e.target.value
@@ -181,7 +172,6 @@ export function TrustPortalSwitch({
         [form, autoSave, friendlyUrlStatus]
     )
 
-    // Enabled switch immediate save
     const handleEnabledChange = useCallback(
         (val: boolean) => {
             form.setValue("enabled", val)
@@ -230,7 +220,7 @@ export function TrustPortalSwitch({
                         {form.watch("enabled") && (
                             <div className="pt-2">
                                 <h3 className="text-sm font-medium mb-4">Trust Portal Settings</h3>
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 border rounded-md p-4">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-4">
                                     <FormField
                                         control={form.control}
                                         name="friendlyUrl"
@@ -305,12 +295,13 @@ export function TrustPortalSwitch({
                             <div className="">
                                 {/* Compliance Frameworks Section */}
                                 <div>
-                                    <h3 className="text-sm font-medium mb-4">Compliance Frameworks</h3>
-                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                    <h3 className="text-sm font-medium mb-2">Compliance Frameworks</h3>
+                                    <p className="text-sm text-muted-foreground mb-4">Share the frameworks your organization is compliant with or working towards.</p>
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                                         {/* SOC 2 */}
                                         <ComplianceFramework
                                             title="SOC 2"
-                                            description="Show your SOC 2 compliance status"
+                                            description="A compliance framework focused on data security, availability, and confidentiality."
                                             isEnabled={soc2}
                                             status={soc2Status}
                                             onStatusChange={async (value) => {
@@ -339,7 +330,7 @@ export function TrustPortalSwitch({
                                         {/* ISO 27001 */}
                                         <ComplianceFramework
                                             title="ISO 27001"
-                                            description="Show your ISO 27001 compliance status"
+                                            description="An international standard for managing information security systems."
                                             isEnabled={iso27001}
                                             status={iso27001Status}
                                             onStatusChange={async (value) => {
@@ -368,7 +359,7 @@ export function TrustPortalSwitch({
                                         {/* GDPR */}
                                         <ComplianceFramework
                                             title="GDPR"
-                                            description="Show your GDPR compliance status"
+                                            description="A European regulation that governs personal data protection and user privacy."
                                             isEnabled={gdpr}
                                             status={gdprStatus}
                                             onStatusChange={async (value) => {
@@ -399,15 +390,6 @@ export function TrustPortalSwitch({
                             </div>
                         )}
                     </CardContent>
-                    <CardFooter className="flex justify-between px-6 py-4">
-                        {enabled ? (
-                            <Link href={portalUrl} target="_blank" className="text-xs text-muted-foreground hover:text-foreground">
-                                Click here to visit your trust portal.
-                            </Link>
-                        ) : (
-                            <p className="text-xs text-muted-foreground">Trust portal is currently disabled.</p>
-                        )}
-                    </CardFooter>
                 </Card>
             </form>
         </Form>
@@ -430,31 +412,65 @@ function ComplianceFramework({
     onStatusChange: (value: string) => Promise<void>
     onToggle: (checked: boolean) => Promise<void>
 }) {
-    const logo = title === "SOC 2" ? <SOC2 className="w-10 h-10" /> : title === "ISO 27001" ? <ISO27001 className="w-10 h-10" /> : <GDPR className="w-10 h-10" />
+    const logo = title === "SOC 2" ? <SOC2 className="w-16 h-16" /> : title === "ISO 27001" ? <ISO27001 className="w-16 h-16" /> : <GDPR className="w-16 h-16" />
 
     return (
-        <div className="flex space-y-2 sm:space-y-0 flex-row items-center justify-between rounded-md border p-4">
-            <div className="space-y-0.5">
-                <div className="flex items-center gap-2">
-                    {logo}
-                    <h4 className="text-sm font-medium">{title}</h4>
-                </div>
-            </div>
-            <div className="flex items-center gap-3">
-                {isEnabled && (
-                    <Select defaultValue={status} onValueChange={onStatusChange}>
-                        <SelectTrigger className="w-32">
-                            <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="started">Started</SelectItem>
-                            <SelectItem value="in_progress">In Progress</SelectItem>
-                            <SelectItem value="compliant">Compliant</SelectItem>
-                        </SelectContent>
-                    </Select>
-                )}
-                <Switch checked={isEnabled} onCheckedChange={onToggle} />
-            </div>
-        </div>
+        <>
+            <Card className="border rounded-lg">
+                <CardHeader className="pb-2">
+                    <div className="flex items-center gap-4">
+                        <div className="flex-shrink-0">{logo}</div>
+                        <div>
+                            <CardTitle className="text-lg font-semibold leading-tight">{title}</CardTitle>
+                            <CardDescription className="mt-1 text-sm text-muted-foreground line-clamp-3">{description}</CardDescription>
+                        </div>
+                    </div>
+                </CardHeader>
+                <div className="border-t mt-4" />
+                <CardContent className="pt-4">
+                    <div className="flex flex-row items-center justify-between gap-6">
+                        <div className="flex-1 min-w-0">
+                            {isEnabled ? (
+                                <Select defaultValue={status} onValueChange={onStatusChange}>
+                                    <SelectTrigger className="text-base font-medium min-w-[180px]">
+                                        <SelectValue
+                                            placeholder="Select status"
+                                            className="w-auto"
+                                        />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="started">
+                                            <span className="flex items-center gap-2">
+                                                <span className="inline-block w-4 h-4 rounded-sm bg-gray-300" />
+                                                Started
+                                            </span>
+                                        </SelectItem>
+                                        <SelectItem value="in_progress">
+                                            <span className="flex items-center gap-2">
+                                                <span className="inline-block w-4 h-4 rounded-sm bg-yellow-400" />
+                                                In Progress
+                                            </span>
+                                        </SelectItem>
+                                        <SelectItem value="compliant">
+                                            <span className="flex items-center gap-2">
+                                                <span className="inline-block w-4 h-4 rounded-sm bg-green-500" />
+                                                Compliant
+                                            </span>
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            ) : (
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm font-medium">Disabled</span>
+                                </div>
+                            )}
+                        </div>
+                        <div className="flex-shrink-0 pl-2">
+                            <Switch checked={isEnabled} onCheckedChange={onToggle} />
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+        </>
     )
 }

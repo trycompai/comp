@@ -18,8 +18,8 @@ export const riskAssessmentProcess: Control = {
 	],
 	mappedRequirements: [
 		{
-			frameworkId: "soc2",
-			requirementId: "CC3",
+			frameworkId: "frk_682734f304cbbfdb3a9d4f44",
+			requirementId: "frk_rq_681e8514f62bb35319068677",
 		},
 	],
 };

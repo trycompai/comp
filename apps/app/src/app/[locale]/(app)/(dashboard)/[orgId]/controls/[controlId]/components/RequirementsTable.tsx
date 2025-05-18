@@ -6,7 +6,6 @@ import { DataTableSortList } from "@/components/data-table/data-table-sort-list"
 import { useDataTable } from "@/hooks/use-data-table";
 import { useI18n } from "@/locales/client";
 import type {
-	FrameworkId,
 	FrameworkInstance,
 	RequirementMap,
 } from "@comp/db/types";
@@ -43,37 +42,23 @@ export function RequirementsTable({
 					/>
 				),
 				cell: ({ row }) => {
-					const [frameworkId, requirementId] =
-						row.original.requirementId.split("_");
-					const details = getRequirementDetails(
-						frameworkId as FrameworkId,
-						requirementId,
-					);
-
 					const frameworkDetails = getFrameworkDetails(
 						row.original.frameworkInstance.frameworkId,
 					);
+
 					return (
 						<span>
-							{frameworkDetails?.name} - {details?.name}
+							{frameworkDetails.name}
 						</span>
 					);
 				},
 				enableSorting: true,
 				sortingFn: (rowA, rowB, columnId) => {
-					const [frameworkIdA, requirementIdA] =
-						rowA.original.requirementId.split("_");
-					const [frameworkIdB, requirementIdB] =
-						rowB.original.requirementId.split("_");
+					const requirementIdA = rowA.original.requirementId;
+					const requirementIdB = rowB.original.requirementId;
 
-					const detailsA = getRequirementDetails(
-						frameworkIdA as FrameworkId,
-						requirementIdA,
-					);
-					const detailsB = getRequirementDetails(
-						frameworkIdB as FrameworkId,
-						requirementIdB,
-					);
+					const detailsA = getRequirementDetails(requirementIdA);
+					const detailsB = getRequirementDetails(requirementIdB);
 
 					const nameA = detailsA?.name || "";
 					const nameB = detailsB?.name || "";
@@ -90,12 +75,10 @@ export function RequirementsTable({
 					/>
 				),
 				cell: ({ row }) => {
-					const [frameworkId, requirementId] =
-						row.original.requirementId.split("_");
-					const details = getRequirementDetails(
-						frameworkId as FrameworkId,
-						requirementId,
-					);
+					const requirementId = row.original.requirementId;
+					const details = getRequirementDetails(requirementId);
+
+					console.log("details", requirementId);	
 					return (
 						<span className="text-muted-foreground">
 							{details?.description}
@@ -104,19 +87,11 @@ export function RequirementsTable({
 				},
 				enableSorting: true,
 				sortingFn: (rowA, rowB, columnId) => {
-					const [frameworkIdA, requirementIdA] =
-						rowA.original.requirementId.split("_");
-					const [frameworkIdB, requirementIdB] =
-						rowB.original.requirementId.split("_");
+					const requirementIdA = rowA.original.requirementId;
+					const requirementIdB = rowB.original.requirementId;
 
-					const detailsA = getRequirementDetails(
-						frameworkIdA as FrameworkId,
-						requirementIdA,
-					);
-					const detailsB = getRequirementDetails(
-						frameworkIdB as FrameworkId,
-						requirementIdB,
-					);
+					const detailsA = getRequirementDetails(requirementIdA);
+					const detailsB = getRequirementDetails(requirementIdB);
 
 					const descA = detailsA?.description || "";
 					const descB = detailsB?.description || "";
@@ -134,20 +109,14 @@ export function RequirementsTable({
 
 		const searchLower = searchTerm.toLowerCase();
 		return requirements.filter((req) => {
-			const [frameworkId, requirementId] = req.requirementId.split("_");
-			const details = getRequirementDetails(
-				frameworkId as FrameworkId,
-				requirementId,
-			);
+			const requirementId = req.requirementId;
+			const details = getRequirementDetails(requirementId);
 
 			// Search in ID, name, and description
 			return (
-				frameworkId.toLowerCase().includes(searchLower) ||
 				requirementId.toLowerCase().includes(searchLower) ||
 				details?.name?.toLowerCase().includes(searchLower) ||
-				false ||
-				details?.description?.toLowerCase().includes(searchLower) ||
-				false
+				details?.description?.toLowerCase().includes(searchLower)
 			);
 		});
 	}, [requirements, searchTerm]);
@@ -195,7 +164,7 @@ export function RequirementsTable({
 					table={table.table}
 					rowClickBasePath={`/${orgId}/frameworks`}
 					getRowId={(row) => {
-						const [_, requirementId] = row.requirementId.split("_");
+						const requirementId = row.requirementId;
 						return `${row.frameworkInstanceId}/requirements/${requirementId}`;
 					}}
 					tableId={"r"}

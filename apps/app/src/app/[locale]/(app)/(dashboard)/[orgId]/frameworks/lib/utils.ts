@@ -1,6 +1,6 @@
 import { StatusType } from "@/components/status-indicator";
 // Import base types explicitly
-import type { Artifact, Policy, PolicyStatus } from "@comp/db/types";
+import type { Artifact, Control, Policy, PolicyStatus } from "@comp/db/types";
 import { Task } from "@comp/db/types";
 
 // Define the expected artifact structure explicitly, allowing null status
@@ -11,10 +11,12 @@ type ArtifactWithRelations = Artifact & {
 // Function to determine control status based on artifacts
 export function getControlStatus(
 	artifacts: ArtifactWithRelations[], // Use the explicit type
-	tasks: Task[],
+	tasks: (Task & { controls: Control[] })[],
 	controlId: string,
 ): StatusType {
-	const controlTasks = tasks.filter((task) => task.entityId === controlId);
+	const controlTasks = tasks.filter((task) =>
+		task.controls.some((c) => c.id === controlId),
+	);
 
 	// All artifacts are draft or none
 	const allArtifactsDraft =

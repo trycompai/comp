@@ -18,8 +18,8 @@ export const dataRetentionAndDisposal: Control = {
 	],
 	mappedRequirements: [
 		{
-			frameworkId: "soc2",
-			requirementId: "P1",
+			frameworkId: "frk_682734f304cbbfdb3a9d4f44",
+			requirementId: "frk_rq_681e8514e2ebc08069c2c862",
 		},
 	],
 };

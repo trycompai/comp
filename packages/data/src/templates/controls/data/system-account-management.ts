@@ -18,8 +18,8 @@ export const systemAccountManagement: Control = {
 	],
 	mappedRequirements: [
 		{
-			frameworkId: "soc2",
-			requirementId: "CC6",
+			frameworkId: "frk_682734f304cbbfdb3a9d4f44",
+			requirementId: "frk_rq_681e8514753b4054f1a632e7",
 		},
 	],
 };

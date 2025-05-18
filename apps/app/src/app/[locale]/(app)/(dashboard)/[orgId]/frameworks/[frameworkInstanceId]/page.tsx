@@ -7,7 +7,7 @@ import { getFrameworkDetails } from "../lib/getFrameworkDetails";
 import { FrameworkOverview } from "./components/FrameworkOverview";
 import { FrameworkRequirements } from "./components/FrameworkRequirements";
 import { db } from "@comp/db";
-import { TaskEntityType } from "@comp/db/types";
+
 interface PageProps {
 	params: Promise<{
 		frameworkInstanceId: string;
@@ -48,7 +48,14 @@ export default async function FrameworkPage({ params }: PageProps) {
 	const tasks = await db.task.findMany({
 		where: {
 			organizationId,
-			entityType: TaskEntityType.control,
+			controls: {
+				some: {
+					id: frameworkInstanceWithControls.id,
+				},
+			},
+		},
+		include: {
+			controls: true,
 		},
 	});
 

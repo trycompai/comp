@@ -7,7 +7,6 @@ import { getFrameworkDetails } from "../../../lib/getFrameworkDetails";
 import { getFrameworkRequirements } from "../../../lib/getFrameworkRequirements";
 import { RequirementControls } from "./components/RequirementControls";
 import { db } from "@comp/db";
-import { TaskEntityType } from "@comp/db/types";
 
 interface PageProps {
 	params: Promise<{
@@ -70,9 +69,23 @@ export default async function RequirementPage({ params }: PageProps) {
 		(await db.task.findMany({
 			where: {
 				organizationId,
-				entityType: TaskEntityType.control,
+			},
+			include: {
+				controls: true,
 			},
 		})) || [];
+
+	const relatedControls = await db.requirementMap.findMany({
+		where: {
+			frameworkInstanceId,
+			requirementId: requirementKey,
+		},
+		include: {
+			control: true,
+		},
+	});
+
+	console.log("relatedControls", relatedControls);
 
 	return (
 		<PageWithBreadcrumb
@@ -92,11 +105,8 @@ export default async function RequirementPage({ params }: PageProps) {
 			<div className="flex flex-col gap-6">
 				<RequirementControls
 					requirement={requirement}
-					requirementKey={requirementKey}
-					frameworkInstanceWithControls={
-						frameworkInstanceWithControls
-					}
 					tasks={tasks}
+					relatedControls={relatedControls}
 				/>
 			</div>
 		</PageWithBreadcrumb>

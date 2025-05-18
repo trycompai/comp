@@ -26,7 +26,7 @@ type OrganizationControlType = Control & {
 export function RequirementControlsTableColumns({
 	tasks,
 }: {
-	tasks: Task[];
+	tasks: (Task & { controls: Control[] })[];
 }): ColumnDef<OrganizationControlType>[] {
 	const t = useI18n();
 	const { orgId } = useParams<{ orgId: string }>();

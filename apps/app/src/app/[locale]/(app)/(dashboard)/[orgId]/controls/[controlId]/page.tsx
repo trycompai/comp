@@ -6,7 +6,6 @@ import { SingleControl } from "./components/SingleControl";
 import { getControl } from "./data/getControl";
 import { getOrganizationControlProgress } from "./data/getOrganizationControlProgress";
 import type { ControlProgressResponse } from "./data/getOrganizationControlProgress";
-import { getRelatedTasks } from "./data/getRelatedTasks";
 import { getRelatedArtifacts } from "./data/getRelatedArtifacts";
 
 interface ControlPageProps {
@@ -54,10 +53,6 @@ export default async function ControlPage({ params }: ControlPageProps) {
 		controlId: controlId,
 	});
 
-	const relatedTasks = await getRelatedTasks({
-		controlId: controlId,
-	});
-
 	return (
 		<PageWithBreadcrumb
 			breadcrumbs={[
@@ -69,7 +64,7 @@ export default async function ControlPage({ params }: ControlPageProps) {
 				control={control}
 				controlProgress={controlProgress}
 				relatedArtifacts={relatedArtifacts}
-				relatedTasks={relatedTasks}
+				relatedTasks={control.tasks}
 			/>
 		</PageWithBreadcrumb>
 	);

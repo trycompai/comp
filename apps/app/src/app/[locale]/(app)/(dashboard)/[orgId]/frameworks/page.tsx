@@ -6,7 +6,6 @@ import { redirect } from "next/navigation";
 import { FrameworksOverview } from "./components/FrameworksOverview";
 import { getAllFrameworkInstancesWithControls } from "./data/getAllFrameworkInstancesWithControls";
 import { db } from "@comp/db";
-import { TaskEntityType } from "@comp/db/types";
 
 export async function generateMetadata() {
 	const t = await getI18n();
@@ -58,7 +57,14 @@ const getControlTasks = async () => {
 	const tasks = await db.task.findMany({
 		where: {
 			organizationId,
-			entityType: TaskEntityType.control,
+			controls: {
+				some: {
+					organizationId
+				},
+			},
+		},
+		include: {
+			controls: true,
 		},
 	});
 

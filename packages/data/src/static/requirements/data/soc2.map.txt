@@ -1,0 +1,19 @@
+SOC2 Requirement -> Database Id
+
+Requirement IDs:
+CC1,frk_rq_681e8514778fd2238a33c121
+CC2,frk_rq_681e85140854c64019d53422
+CC3,frk_rq_681e8514f62bb35319068677
+CC4,frk_rq_681e8514cba3ce1991f9d6c8
+CC5,frk_rq_681e85140e8b698d7154d43e
+CC6,frk_rq_681e8514753b4054f1a632e7
+CC7,frk_rq_681e851403a5c3114dc746ba
+CC8,frk_rq_681e85146ed80156122dd094
+CC9,frk_rq_681e8514fedb1b2123661713
+A1,frk_rq_681e8514b7a9c5278ada8527
+PI1,frk_rq_681e85145df1606ef144c69c
+P1,frk_rq_681e8514e2ebc08069c2c862
+C1,frk_rq_681e8514ae9bac0ace4829ae
+
+Framework ID
+soc2,frk_682734f304cbbfdb3a9d4f44

@@ -22,6 +22,7 @@ model Risk {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   assigneeId     String?
   assignee       Member?      @relation(fields: [assigneeId], references: [id])
+  tasks          Task[]
 
   @@index([organizationId])
   @@index([category])

@@ -1,48 +1,57 @@
 import { db } from "@comp/db";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { FrameworkRequirementsClientPage } from "./FrameworkRequirementsClientPage";
-import type { FrameworkEditorFramework, FrameworkEditorRequirement } from '@prisma/client';
+import type {
+	FrameworkEditorFramework,
+	FrameworkEditorRequirement,
+} from "@prisma/client";
+import { isAuthorized } from "@/app/lib/utils";
 
 interface PageProps {
-  params: Promise<{
-    frameworkId: string;
-  }>;
+	params: Promise<{
+		frameworkId: string;
+	}>;
 }
 
 export default async function Page({ params }: PageProps) {
-  const { frameworkId } = await params;
+	const isAllowed = await isAuthorized();
 
-  const framework = await db.frameworkEditorFramework.findUnique({
-    where: {
-      id: frameworkId,
-    },
-    select: {
-      id: true,
-      name: true,
-      version: true,
-      description: true,
-      requirements: {
-        orderBy: {
-          name: 'asc'
-        },
-        include: {
-          controlTemplates: true
-        }
-      }
-    }
-  });
+	if (!isAllowed) {
+		redirect("/auth");
+	}
 
-  if (!framework) {
-    notFound();
-  }
+	const { frameworkId } = await params;
 
-  
-  const { id, name, version, description, requirements } = framework;
+	const framework = await db.frameworkEditorFramework.findUnique({
+		where: {
+			id: frameworkId,
+		},
+		select: {
+			id: true,
+			name: true,
+			version: true,
+			description: true,
+			requirements: {
+				orderBy: {
+					name: "asc",
+				},
+				include: {
+					controlTemplates: true,
+				},
+			},
+		},
+	});
 
-  return (
-    <FrameworkRequirementsClientPage
-      frameworkDetails={{ id, name, version, description }}
-      initialRequirements={requirements}
-    />
-  );
-} 
+	if (!framework) {
+		notFound();
+	}
+
+	const { id, name, version, description, requirements } = framework;
+
+	return (
+		<FrameworkRequirementsClientPage
+			frameworkDetails={{ id, name, version, description }}
+			initialRequirements={requirements}
+		/>
+	);
+}

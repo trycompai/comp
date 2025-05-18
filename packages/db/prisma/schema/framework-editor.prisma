@@ -17,7 +17,8 @@ model FrameworkEditorFramework {
     version     String
     description String
 
-    requirements FrameworkEditorRequirement[]
+    requirements       FrameworkEditorRequirement[]
+    frameworkInstances FrameworkInstance[]
 
     // Dates
     createdAt DateTime @default(now())
@@ -34,6 +35,7 @@ model FrameworkEditorRequirement {
     description String
 
     controlTemplates FrameworkEditorControlTemplate[]
+    requirementMaps  RequirementMap[]
 
     // Dates
     createdAt DateTime @default(now())

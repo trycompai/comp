@@ -1,11 +1,11 @@
-import { Task } from "@comp/db/types";
+import { Control, Task } from "@comp/db/types";
 import { getFrameworkWithComplianceScores } from "../data/getFrameworkWithComplianceScores";
 import type { FrameworkInstanceWithControls } from "../types";
 import { FrameworkList } from "./FrameworkList";
 
 export interface FrameworksOverviewProps {
 	frameworksWithControls: FrameworkInstanceWithControls[];
-	tasks: Task[];
+	tasks: (Task & { controls: Control[] })[];
 }
 
 export async function FrameworksOverview({

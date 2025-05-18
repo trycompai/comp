@@ -96,8 +96,11 @@ export async function GET(
 		// Fetch tasks for this risk
 		const tasks = await db.task.findMany({
 			where: {
-				entityId: riskId,
-				entityType: "risk",
+				risks: {
+					some: {
+						id: riskId,
+					},
+				},
 				organizationId: organizationId!,
 			},
 			select: {

@@ -5,7 +5,6 @@ import { DataTableColumnHeader } from "@/components/data-table/data-table-column
 import { DataTableSortList } from "@/components/data-table/data-table-sort-list";
 import { useDataTable } from "@/hooks/use-data-table";
 import { useI18n } from "@/locales/client";
-import { FrameworkId } from "@comp/db/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@comp/ui/card";
 import { Input } from "@comp/ui/input";
 import { ColumnDef } from "@tanstack/react-table";
@@ -26,7 +25,7 @@ export function FrameworkRequirements({
 	frameworkId,
 	frameworkInstanceWithControls,
 }: {
-	frameworkId: FrameworkId;
+	frameworkId: string;
 	frameworkInstanceWithControls: FrameworkInstanceWithControls;
 }) {
 	const t = useI18n();

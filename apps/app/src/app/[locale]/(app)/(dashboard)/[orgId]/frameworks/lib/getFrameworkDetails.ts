@@ -1,6 +1,10 @@
 import { frameworks } from "@comp/data";
-import { FrameworkId } from "@comp/db/types";
 
-export function getFrameworkDetails(frameworkId: FrameworkId) {
-	return frameworks[frameworkId as keyof typeof frameworks];
+export function getFrameworkDetails(frameworkId: string) {
+	console.log("frameworkId", frameworkId);
+
+	const framework = frameworks[frameworkId as keyof typeof frameworks];
+	console.log("framework", framework);
+
+	return framework;
 }

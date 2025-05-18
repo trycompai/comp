@@ -1,29 +1,15 @@
 model RequirementMap {
-    id            String        @id @default(dbgenerated("generate_prefixed_cuid('req'::text)"))
-    requirementId RequirementId
+    id String @id @default(dbgenerated("generate_prefixed_cuid('req'::text)"))
 
-    controlId           String
-    control             Control           @relation(fields: [controlId], references: [id], onDelete: Cascade)
+    requirementId String
+    requirement   FrameworkEditorRequirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+
+    controlId String
+    control   Control @relation(fields: [controlId], references: [id], onDelete: Cascade)
+
     frameworkInstanceId String
     frameworkInstance   FrameworkInstance @relation(fields: [frameworkInstanceId], references: [id], onDelete: Cascade)
 
     @@unique([controlId, frameworkInstanceId, requirementId])
     @@index([requirementId, frameworkInstanceId])
-}
-
-// Ensure these map to @comp/data requirements object
-enum RequirementId {
-    soc2_CC1
-    soc2_CC2
-    soc2_CC3
-    soc2_CC4
-    soc2_CC5
-    soc2_CC6
-    soc2_CC7
-    soc2_CC8
-    soc2_CC9
-    soc2_A1
-    soc2_C1
-    soc2_PI1
-    soc2_P1
 }

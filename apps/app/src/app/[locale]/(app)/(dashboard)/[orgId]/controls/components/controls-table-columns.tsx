@@ -76,7 +76,7 @@ export function getControlColumns(): ColumnDef<ControlWithRelations>[] {
 										className="text-xs"
 									>
 										{frameworkName}:{" "}
-										{req.requirementId.split("_").pop()}
+										{req.requirementId}
 									</Badge>
 								);
 							})

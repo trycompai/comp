@@ -18,8 +18,8 @@ export const internalCommunication: Control = {
 	],
 	mappedRequirements: [
 		{
-			frameworkId: "soc2",
-			requirementId: "CC2",
+			frameworkId: "frk_682734f304cbbfdb3a9d4f44",
+			requirementId: "frk_rq_681e85140854c64019d53422",
 		},
 	],
 };

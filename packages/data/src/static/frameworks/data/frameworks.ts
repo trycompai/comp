@@ -1,7 +1,8 @@
 import type { Frameworks } from "../types";
 
 export const frameworks: Frameworks = {
-	soc2: {
+	"frk_682734f304cbbfdb3a9d4f44": {
+		identifier: "soc2",
 		name: "SOC 2",
 		version: "2025",
 		description:

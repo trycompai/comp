@@ -2,7 +2,7 @@
 
 import { db } from "@comp/db";
 import { z } from "zod";
-import { TaskStatus, TaskEntityType } from "@comp/db/types";
+import { TaskStatus } from "@comp/db/types";
 import { revalidatePath } from "next/cache";
 import type { ActionResponse } from "@/types/actions";
 import { auth } from "@/utils/auth";
@@ -13,7 +13,6 @@ const updateTaskOrderSchema = z.array(
 		id: z.string(),
 		order: z.number(),
 		status: z.nativeEnum(TaskStatus),
-		entityType: z.nativeEnum(TaskEntityType),
 	}),
 );
 
@@ -30,13 +29,13 @@ export const updateTaskOrder = async (
 		};
 	}
 	try {
-		for (const { id, order, status, entityType } of input) {
+		for (const { id, order, status } of input) {
 			await db.task.update({
 				where: {
 					id,
 					organizationId: session.session.activeOrganizationId,
 				},
-				data: { order, status, entityType },
+				data: { order, status },
 			});
 		}
 		const orgId = session.session.activeOrganizationId;

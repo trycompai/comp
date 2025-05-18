@@ -10,6 +10,8 @@ export interface Requirement {
 	name: string;
 	/** Detailed explanation of what this requirement entails */
 	description: string;
+	/** Identifier of the requirement */
+	identifier: string;
 }
 
 /**
@@ -28,5 +30,5 @@ export type AllRequirements = {
 };
 
 export type AllRequirementIdsByFramework = {
-	soc2: soc2RequirementIds;
+	"frk_682734f304cbbfdb3a9d4f44": soc2RequirementIds;
 };

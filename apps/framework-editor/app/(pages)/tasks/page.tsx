@@ -1,14 +1,19 @@
+import { isAuthorized } from "@/app/lib/utils";
 import { db } from "@comp/db";
-import PageLayout from "@/app/components/PageLayout";
-import { DataTable } from "@/app/components/DataTable";
-import { getColumns } from "./components/columns";
+import { redirect } from "next/navigation";
 import { TasksClientPage } from "./TasksClientPage";
 
 export default async function Page() {
-    const tasks = await db.frameworkEditorTaskTemplate.findMany({
-      // Optionally include related data if needed
-      // include: { controlTemplates: true }
-    });
+	const isAllowed = await isAuthorized();
 
-    return <TasksClientPage initialTasks={tasks} />;
+	if (!isAllowed) {
+		redirect("/auth");
+	}
+
+	const tasks = await db.frameworkEditorTaskTemplate.findMany({
+		// Optionally include related data if needed
+		// include: { controlTemplates: true }
+	});
+
+	return <TasksClientPage initialTasks={tasks} />;
 }
