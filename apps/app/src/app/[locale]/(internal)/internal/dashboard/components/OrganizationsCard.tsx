@@ -2,11 +2,12 @@
 
 import { Badge } from "@comp/ui/badge";
 import {
-	type ChartConfig,
-	ChartContainer,
-	ChartTooltip,
-	ChartTooltipContent,
+        type ChartConfig,
+        ChartContainer,
+        ChartTooltip,
+        ChartTooltipContent,
 } from "@comp/ui/chart";
+import { parseUTCDate } from "@/utils/format";
 import { Skeleton } from "@comp/ui/skeleton";
 import { BarChart2, TrendingUp } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
@@ -115,13 +116,13 @@ export function OrganizationsCard() {
 								axisLine={false}
 								tickMargin={8}
 								stroke="hsl(var(--muted-foreground))"
-								tickFormatter={(value) => {
-									const date = new Date(value);
-									return date.toLocaleDateString("en-US", {
-										month: "2-digit",
-										day: "2-digit",
-									});
-								}}
+                                                                tickFormatter={(value) => {
+                                                                        const date = parseUTCDate(value as string);
+                                                                        return date.toLocaleDateString(undefined, {
+                                                                                month: "2-digit",
+                                                                                day: "2-digit",
+                                                                        });
+                                                                }}
 								tickCount={10}
 							/>
 							<ChartTooltip

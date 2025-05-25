@@ -1,11 +1,13 @@
 import type { TZDate } from "@date-fns/tz";
 import {
-	differenceInDays,
-	differenceInMonths,
-	format,
-	isSameYear,
-	startOfDay,
+        differenceInDays,
+        differenceInMonths,
+        format,
+        isSameYear,
+        parseISO,
+        startOfDay,
 } from "date-fns";
+import { utcToZonedTime } from "@date-fns/tz";
 
 export function formatSize(bytes: number): string {
 	const units = ["byte", "kilobyte", "megabyte", "gigabyte", "terabyte"];
@@ -83,12 +85,25 @@ export function calculateAvgBurnRate(data: BurnRateData[] | null) {
 	return data?.reduce((acc, curr) => acc + curr.value, 0) / data?.length;
 }
 
-export function formatDate(date: string, dateFormat?: string) {
-	if (isSameYear(new Date(), new Date(date))) {
-		return format(new Date(date), "MMM dd, yyyy");
-	}
+export function parseUTCDate(
+        date: string,
+        timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone,
+) {
+        return utcToZonedTime(parseISO(date), timeZone);
+}
 
-	return format(new Date(date), dateFormat ?? "P");
+export function formatDate(
+        date: string,
+        dateFormat?: string,
+        timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone,
+) {
+        const zonedDate = parseUTCDate(date, timeZone);
+
+        if (isSameYear(new Date(), zonedDate)) {
+                return format(zonedDate, "MMM dd, yyyy");
+        }
+
+        return format(zonedDate, dateFormat ?? "P");
 }
 
 export function getInitials(value: string) {

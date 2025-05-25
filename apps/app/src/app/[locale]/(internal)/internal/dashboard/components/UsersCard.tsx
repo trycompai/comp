@@ -7,6 +7,7 @@ import { Calendar, Clock, TrendingDown, TrendingUp, Users } from "lucide-react";
 import { useMemo } from "react";
 import { Area, AreaChart, ResponsiveContainer } from "recharts";
 import { useUsersAnalytics } from "../hooks/useUsersAnalytics";
+import { parseUTCDate } from "@/utils/format";
 
 // Helper function for formatting numbers
 function formatNumber(value: number | null | undefined): string {
@@ -34,15 +35,15 @@ export function UsersCard() {
 			return [];
 		}
 		// Ensure data is sorted chronologically
-		return [...usersData.last30DaysByDay]
-			.sort(
-				(a, b) =>
-					new Date(a.date).getTime() - new Date(b.date).getTime(),
-			)
-			.map((item) => ({
-				date: item.date,
-				value: item.count,
-			}));
+                return [...usersData.last30DaysByDay]
+                        .sort(
+                                (a, b) =>
+                                        parseUTCDate(a.date).getTime() - parseUTCDate(b.date).getTime(),
+                        )
+                        .map((item) => ({
+                                date: item.date,
+                                value: item.count,
+                        }));
 	}, [usersData?.last30DaysByDay]);
 
 	// Calculate active percentage using all-time data

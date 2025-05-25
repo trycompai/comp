@@ -7,6 +7,7 @@ import { Calendar, Clock, ShieldCheck, TrendingDown, TrendingUp } from "lucide-r
 import { useMemo } from "react";
 import { Line, LineChart, ResponsiveContainer } from "recharts";
 import { usePoliciesAnalytics } from "../hooks/usePoliciesAnalytics";
+import { parseUTCDate } from "@/utils/format";
 
 // Helper function for formatting numbers
 function formatNumber(value: number | null | undefined): string {
@@ -34,15 +35,15 @@ export function PoliciesCard() {
 			return [];
 		}
 		// Ensure data is sorted chronologically if not already guaranteed by API
-		return [...policiesData.last30DaysTotalByDay]
-			.sort(
-				(a, b) =>
-					new Date(a.date).getTime() - new Date(b.date).getTime(),
-			)
-			.map((item) => ({
-				date: item.date,
-				value: item.count,
-			}));
+                return [...policiesData.last30DaysTotalByDay]
+                        .sort(
+                                (a, b) =>
+                                        parseUTCDate(a.date).getTime() - parseUTCDate(b.date).getTime(),
+                        )
+                        .map((item) => ({
+                                date: item.date,
+                                value: item.count,
+                        }));
 	}, [policiesData?.last30DaysTotalByDay]);
 
 	// Calculate published percentage using all-time data

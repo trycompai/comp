@@ -7,6 +7,7 @@ import { Calendar, Clock, FileText, TrendingUp } from "lucide-react";
 import { useMemo } from "react";
 import { Area, AreaChart, ResponsiveContainer } from "recharts";
 import { useTaskAnalytics } from "../hooks/useTaskAnalytics";
+import { parseUTCDate } from "@/utils/format";
 
 // Helper function for formatting numbers (assuming it exists or can be added)
 function formatNumber(value: number | null | undefined): string {
@@ -37,15 +38,15 @@ export function TaskCard() {
 			return [];
 		}
 		// Ensure data is sorted chronologically if not already guaranteed by API
-		return [...taskData.last30DaysTotalByDay]
-			.sort(
-				(a, b) =>
-					new Date(a.date).getTime() - new Date(b.date).getTime(),
-			)
-			.map((item) => ({
-				date: item.date,
-				value: item.count,
-			}));
+                return [...taskData.last30DaysTotalByDay]
+                        .sort(
+                                (a, b) =>
+                                        parseUTCDate(a.date).getTime() - parseUTCDate(b.date).getTime(),
+                        )
+                        .map((item) => ({
+                                date: item.date,
+                                value: item.count,
+                        }));
 	}, [taskData?.last30DaysTotalByDay]);
 
 	// Calculate published percentage using all-time data
