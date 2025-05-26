@@ -1,15 +1,11 @@
 version: 2.1
 
-orbs:
-  bun: ksylvest/bun@1.0.1
-
 jobs:
   test-bun:
     docker:
-      - image: cimg/base:stable
+      - image: oven/bun:1.1.13
     steps:
       - checkout
-      - bun/install
       - run:
           name: Install deps
           command: bun install --frozen-lockfile
@@ -19,10 +15,9 @@ jobs:
 
   build-bun:
     docker:
-      - image: cimg/base:stable
+      - image: oven/bun:1.1.13
     steps:
       - checkout
-      - bun/install
       - run:
           name: Install deps
           command: bun install --frozen-lockfile
