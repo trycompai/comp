@@ -1,57 +1,49 @@
-# This config was automatically generated from your source code
-# Stacks detected: cicd:github-actions:.github/workflows,deps:node:.,package_manager:yarn:
 version: 2.1
+
 orbs:
-  node: circleci/node@5
+  bun: ksylvest/bun@1.0.1
+
 jobs:
-  test-node:
-    # Install node dependencies and run tests
-    executor: node/default
-    steps:
-      - checkout
-      - node/install-packages:
-          pkg-manager: yarn
-      - run:
-          name: Run tests
-          command: yarn test --passWithNoTests
-  build-node:
-    # Build node project
-    executor: node/default
-    steps:
-      - checkout
-      - node/install-packages:
-          pkg-manager: yarn
-      - run:
-          command: yarn run build
-      - run:
-          name: Create the ~/artifacts directory if it doesn't exist
-          command: mkdir -p ~/artifacts
-      # Copy output to artifacts dir
-      - run:
-          name: Copy artifacts
-          command: cp -R build dist public .output .next .docusaurus ~/artifacts 2>/dev/null || true
-      - store_artifacts:
-          path: ~/artifacts
-          destination: node-build
-  deploy:
-    # This is an example deploy job, not actually used by the workflow
+  test-bun:
     docker:
       - image: cimg/base:stable
     steps:
-      # Replace this with steps to deploy to users
+      - checkout
+      - bun/install
       - run:
-          name: deploy
-          command: '#e.g. ./deploy.sh'
+          name: Install deps
+          command: bun install --frozen-lockfile
       - run:
-          name: found github actions config
-          command: ':'
+          name: Run tests
+          command: bun test || true
+
+  build-bun:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - bun/install
+      - run:
+          name: Install deps
+          command: bun install --frozen-lockfile
+      - run:
+          name: Build project
+          command: bun run build
+      - run:
+          name: Collect build artifacts
+          command: |
+            mkdir -p ~/artifacts
+            for dir in build dist public .output .next .docusaurus; do
+              [ -d "$dir" ] && cp -R "$dir" ~/artifacts/
+            done
+      - store_artifacts:
+          path: ~/artifacts
+          destination: bun-build
+
 workflows:
   build-and-test:
     jobs:
-      - test-node
-      - build-node:
+      - test-bun
+      - build-bun:
           requires:
-            - test-node
-    # - deploy:
-    #     requires:
-    #       - build-node
+            - test-bun
