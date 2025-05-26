@@ -9,18 +9,9 @@ jobs:
     steps:
       - checkout
       - bun-orb/setup
-      - restore_cache:
-          keys:
-            - v1-bun-deps-{{ checksum "bun.lockb" }}
-            - v1-bun-deps-
       - run:
           name: Install deps
           command: bun install
-      - save_cache:
-          key: v1-bun-deps-{{ checksum "bun.lockb" }}
-          paths:
-            - ~/.bun/install/cache
-            - node_modules
 
   build-bun:
     docker:
