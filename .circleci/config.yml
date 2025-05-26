@@ -5,7 +5,7 @@ orbs:
 jobs:
   test-bun:
     docker:
-      - image: cimg/node:18.17
+      - image: cimg/node:20.10
     steps:
       - checkout
       - bun-orb/setup
