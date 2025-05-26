@@ -11,7 +11,7 @@ jobs:
           command: bun --version
       - run:
           name: Print Node version (via Bun)
-          command: bun x node --version
+          command: bun --node --version
       - run:
           name: Install deps
           command: bun install
