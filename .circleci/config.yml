@@ -24,10 +24,9 @@ jobs:
 
   build-bun:
     docker:
-      - image: cimg/node:18.17
+      - image: oven/bun:1.1.13
     steps:
       - checkout
-      - bun-orb/setup
       - run:
           name: Install deps
           command: bun install
