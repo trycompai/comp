@@ -7,11 +7,15 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Print Bun version
-          command: bun --version
+          name: Install Node.js 20.x
+          command: |
+            curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+            apt-get install -y nodejs
       - run:
-          name: Print Node version (via Bun)
-          command: bun --node --version
+          name: Print Node & Bun version
+          command: |
+            node --version
+            bun --version
       - run:
           name: Install deps
           command: bun install
@@ -21,6 +25,11 @@ jobs:
       - image: oven/bun:1.1.14
     steps:
       - checkout
+      - run:
+          name: Install Node.js 20.x
+          command: |
+            curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+            apt-get install -y nodejs
       - run:
           name: Install deps
           command: bun install
