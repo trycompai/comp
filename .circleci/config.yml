@@ -1,29 +1,41 @@
 version: 2.1
 
 jobs:
-  test-node:
+  test-bun:
     docker:
       - image: cimg/node:20.11
     steps:
       - checkout
       - run:
-          name: Install dependencies
-          command: npm ci
+          name: Install Bun
+          command: |
+            curl -fsSL https://bun.sh/install | bash
+            export BUN_INSTALL="$HOME/.bun"
+            export PATH="$BUN_INSTALL/bin:$PATH"
       - run:
-          name: Test project
-          command: npm test
+          name: Test project with Bun
+          command: |
+            export BUN_INSTALL="$HOME/.bun"
+            export PATH="$BUN_INSTALL/bin:$PATH"
+            bun test
 
-  build-node:
+  build-bun:
     docker:
       - image: cimg/node:20.11
     steps:
       - checkout
       - run:
-          name: Install dependencies
-          command: npm ci
+          name: Install Bun
+          command: |
+            curl -fsSL https://bun.sh/install | bash
+            export BUN_INSTALL="$HOME/.bun"
+            export PATH="$BUN_INSTALL/bin:$PATH"
       - run:
-          name: Build project
-          command: npm run build
+          name: Build project with Bun
+          command: |
+            export BUN_INSTALL="$HOME/.bun"
+            export PATH="$BUN_INSTALL/bin:$PATH"
+            bun run build
       - run:
           name: Collect build artifacts
           command: |
@@ -33,12 +45,12 @@ jobs:
             done
       - store_artifacts:
           path: ~/artifacts
-          destination: node-build
+          destination: bun-build
 
 workflows:
   build-and-test:
     jobs:
-      - test-node
-      - build-node:
+      - test-bun
+      - build-bun:
           requires:
-            - test-node
+            - test-bun
