@@ -5,17 +5,21 @@ orbs:
 jobs:
   test-bun:
     docker:
-      - image: cimg/node:20.10
+      - image: oven/bun:1.1.14
     steps:
       - checkout
-      - bun-orb/setup
+      - run:
+          name: Print Node & Bun version
+          command: |
+            node --version
+            bun --version
       - run:
           name: Install deps
           command: bun install
 
   build-bun:
     docker:
-      - image: oven/bun:1.1.13
+      - image: oven/bun:1.1.14
     steps:
       - checkout
       - run:
