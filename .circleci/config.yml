@@ -1,6 +1,4 @@
 version: 2.1
-orbs:
-  bun-orb: cmgriffing/bun-orb@0.0.28
 
 jobs:
   test-bun:
@@ -9,10 +7,11 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Print Node & Bun version
-          command: |
-            node --version
-            bun --version
+          name: Print Bun version
+          command: bun --version
+      - run:
+          name: Print Node version (via Bun)
+          command: bun x node --version
       - run:
           name: Install deps
           command: bun install
