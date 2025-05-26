@@ -7,15 +7,18 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Install Node.js 20.x
+          name: Install Node.js 20.x and Python 3
           command: |
             curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-            apt-get install -y nodejs
+            apt-get install -y nodejs python3 python3-pip make g++
       - run:
           name: Print Node & Bun version
           command: |
             node --version
             bun --version
+      - run:
+          name: Print Python version
+          command: python3 --version
       - run:
           name: Install deps
           command: bun install
@@ -26,10 +29,10 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Install Node.js 20.x
+          name: Install Node.js 20.x and Python 3
           command: |
             curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-            apt-get install -y nodejs
+            apt-get install -y nodejs python3 python3-pip make g++
       - run:
           name: Install deps
           command: bun install
