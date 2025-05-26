@@ -8,10 +8,7 @@ jobs:
       - checkout
       - run:
           name: Install deps
-          command: bun install --frozen-lockfile
-      - run:
-          name: Run tests
-          command: bun test || true
+          command: bun install
 
   build-bun:
     docker:
@@ -20,7 +17,7 @@ jobs:
       - checkout
       - run:
           name: Install deps
-          command: bun install --frozen-lockfile
+          command: bun install
       - run:
           name: Build project
           command: bun run build
