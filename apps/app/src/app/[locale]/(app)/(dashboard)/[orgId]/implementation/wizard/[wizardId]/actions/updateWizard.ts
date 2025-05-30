@@ -49,10 +49,6 @@ export const updateWizard = async ({
 		return { error: "Validation failed", success: false };
 	}
 
-	const onboarding = await db.onboarding.findUnique({
-		where: { organizationId: orgId },
-	});
-
 	await db.onboarding.upsert({
 		where: {
 			organizationId: orgId,
