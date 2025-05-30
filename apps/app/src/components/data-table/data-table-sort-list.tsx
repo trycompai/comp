@@ -298,7 +298,7 @@ export function DataTableSortList<TData>({
 					className="flex w-full max-w-[var(--radix-popover-content-available-width)] origin-[var(--radix-popover-content-transform-origin)] flex-col gap-3.5 p-4 sm:min-w-[380px]"
 					{...props}
 				>
-					<div className="flex flex-col gap-1">
+					<div className="flex flex-col gap-1 relative">
 						<h4 id={labelId} className="font-medium leading-none">
 							{sorting.length > 0
 								? "Sort by"

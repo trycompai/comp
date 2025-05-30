@@ -109,7 +109,6 @@ export function PendingInvitationRow({
 								className="h-8 w-8 p-0"
 							>
 								<MoreHorizontal className="h-4 w-4" />
-								<span className="sr-only">Open menu</span>
 							</Button>
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end">

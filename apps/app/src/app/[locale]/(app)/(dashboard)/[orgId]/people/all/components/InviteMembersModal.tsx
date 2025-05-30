@@ -605,7 +605,7 @@ export function InviteMembersModal({
 														"No file chosen"}
 												</span>
 											</div>
-											<FormControl>
+											<FormControl className="relative">
 												<Input
 													id="csvFileInput"
 													type="file"

@@ -328,9 +328,6 @@ function FileCard({ file, progress, onRemove }: FileCardProps) {
 					onClick={onRemove}
 				>
 					<X className="size-4" aria-hidden="true" />
-					<span className="sr-only">
-						{t("common.attachments.toasts.remove_file")}
-					</span>
 				</Button>
 			</div>
 		</div>

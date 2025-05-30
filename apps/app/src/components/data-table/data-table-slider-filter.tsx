@@ -170,9 +170,6 @@ export function DataTableSliderFilter<TData>({
 						{title}
 					</p>
 					<div className="flex items-center gap-4">
-						<Label htmlFor={`${id}-from`} className="sr-only">
-							From
-						</Label>
 						<div className="relative">
 							<Input
 								id={`${id}-from`}
@@ -194,9 +191,6 @@ export function DataTableSliderFilter<TData>({
 								</span>
 							)}
 						</div>
-						<Label htmlFor={`${id}-to`} className="sr-only">
-							to
-						</Label>
 						<div className="relative">
 							<Input
 								id={`${id}-to`}
@@ -219,9 +213,6 @@ export function DataTableSliderFilter<TData>({
 							)}
 						</div>
 					</div>
-					<Label htmlFor={`${id}-slider`} className="sr-only">
-						{title} slider
-					</Label>
 					<Slider
 						id={`${id}-slider`}
 						min={min}

@@ -82,7 +82,7 @@ export default async function Layout({
 				isCollapsed={isCollapsed}
 			>
 				<Header />
-				<main className="px-4 mx-auto pb-8 min-h-[calc(100vh-70px)]">
+				<main className="px-4 mx-auto pb-8 min-h-[calc(100vh-15vh)]">
 					{children}
 				</main>
 				<AssistantSheet />
@@ -90,7 +90,7 @@ export default async function Layout({
 			<div className="hidden md:flex">
 				{!("error" in onboardingStatus) &&
 					onboardingStatus.completedItems <
-					onboardingStatus.totalItems && (
+						onboardingStatus.totalItems && (
 						<FloatingOnboardingChecklist
 							orgId={currentOrganization.id}
 							completedItems={onboardingStatus.completedItems}

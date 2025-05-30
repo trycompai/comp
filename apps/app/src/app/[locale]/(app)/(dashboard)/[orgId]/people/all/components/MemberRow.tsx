@@ -180,7 +180,6 @@ export function MemberRow({ member, onRemove, onUpdateRole }: MemberRowProps) {
 								disabled={!canEditRoles}
 							>
 								<MoreHorizontal className="h-4 w-4" />
-								<span className="sr-only">Open menu</span>
 							</Button>
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end">

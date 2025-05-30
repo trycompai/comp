@@ -33,11 +33,18 @@ import { addFrameworksSchema } from "@/actions/schema"; // Will create/update th
 
 type Props = {
 	onOpenChange: (isOpen: boolean) => void;
-	availableFrameworks: Pick<FrameworkEditorFramework, "id" | "name" | "description" | "version" | "visible">[];
+	availableFrameworks: Pick<
+		FrameworkEditorFramework,
+		"id" | "name" | "description" | "version" | "visible"
+	>[];
 	organizationId: string;
 };
 
-export function AddFrameworkModal({ onOpenChange, availableFrameworks, organizationId }: Props) {
+export function AddFrameworkModal({
+	onOpenChange,
+	availableFrameworks,
+	organizationId,
+}: Props) {
 	const t = useI18n();
 	const router = useRouter();
 	const [isExecuting, setIsExecuting] = useState(false);
@@ -79,7 +86,9 @@ export function AddFrameworkModal({ onOpenChange, availableFrameworks, organizat
 			<DialogHeader className="my-4">
 				<DialogTitle>{t("frameworks.add_modal.title")}</DialogTitle>
 				<DialogDescription>
-					{availableFrameworks.length > 0 ? t("frameworks.add_modal.description") : t("frameworks.add_modal.all_enabled_description")}
+					{availableFrameworks.length > 0
+						? t("frameworks.add_modal.description")
+						: t("frameworks.add_modal.all_enabled_description")}
 				</DialogDescription>
 			</DialogHeader>
 
@@ -100,30 +109,40 @@ export function AddFrameworkModal({ onOpenChange, availableFrameworks, organizat
 									</FormLabel>
 									<FormControl>
 										<fieldset className="flex flex-col gap-2 select-none">
-											<legend className="sr-only">
-												{t("frameworks.overview.grid.title")}
-											</legend>
 											<div className="flex flex-col gap-2 overflow-y-auto max-h-[300px]">
-												{availableFrameworks.filter(framework => framework.visible).map(
-													(framework) => {
-														const frameworkId = framework.id;
+												{availableFrameworks
+													.filter(
+														(framework) =>
+															framework.visible,
+													)
+													.map((framework) => {
+														const frameworkId =
+															framework.id;
 														return (
 															<label
-																key={frameworkId}
+																key={
+																	frameworkId
+																}
 																htmlFor={`add-framework-${frameworkId}`}
 																className={cn(
 																	"relative flex flex-col p-4 border rounded-sm cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 w-full text-left",
-																	field.value.includes(frameworkId) &&
-																	"border-primary bg-primary/5",
+																	field.value.includes(
+																		frameworkId,
+																	) &&
+																		"border-primary bg-primary/5",
 																)}
 															>
 																<div className="flex items-start justify-between">
 																	<div>
 																		<h3 className="font-semibold">
-																			{framework.name}
+																			{
+																				framework.name
+																			}
 																		</h3>
 																		<p className="text-sm text-muted-foreground mt-1">
-																			{framework.description}
+																			{
+																				framework.description
+																			}
 																		</p>
 																		<p className="text-xs text-muted-foreground/75 mt-2">
 																			{`${t("frameworks.overview.grid.version")}: ${framework.version}`}
@@ -132,21 +151,36 @@ export function AddFrameworkModal({ onOpenChange, availableFrameworks, organizat
 																	<div>
 																		<Checkbox
 																			id={`add-framework-${frameworkId}`}
-																			checked={field.value.includes(frameworkId)}
+																			checked={field.value.includes(
+																				frameworkId,
+																			)}
 																			className="mt-1"
-																			onCheckedChange={(checked) => {
-																				const newValue = checked
-																					? [...field.value, frameworkId]
-																					: field.value.filter((id) => id !== frameworkId);
-																				field.onChange(newValue);
+																			onCheckedChange={(
+																				checked,
+																			) => {
+																				const newValue =
+																					checked
+																						? [
+																								...field.value,
+																								frameworkId,
+																							]
+																						: field.value.filter(
+																								(
+																									id,
+																								) =>
+																									id !==
+																									frameworkId,
+																							);
+																				field.onChange(
+																					newValue,
+																				);
 																			}}
 																		/>
 																	</div>
 																</div>
 															</label>
 														);
-													},
-												)}
+													})}
 											</div>
 										</fieldset>
 									</FormControl>
@@ -166,7 +200,12 @@ export function AddFrameworkModal({ onOpenChange, availableFrameworks, organizat
 								</Button>
 								<Button
 									type="submit"
-									disabled={isExecuting || form.getValues("frameworkIds").length === 0 || availableFrameworks.length === 0}
+									disabled={
+										isExecuting ||
+										form.getValues("frameworkIds")
+											.length === 0 ||
+										availableFrameworks.length === 0
+									}
 									suppressHydrationWarning
 								>
 									{isExecuting && (
@@ -182,7 +221,9 @@ export function AddFrameworkModal({ onOpenChange, availableFrameworks, organizat
 
 			{!isExecuting && availableFrameworks.length === 0 && (
 				<div className="py-8 text-center">
-					<p className="text-md text-foreground">{t("frameworks.add_modal.all_enabled_message")}</p>
+					<p className="text-md text-foreground">
+						{t("frameworks.add_modal.all_enabled_message")}
+					</p>
 					<DialogFooter className="mt-8">
 						<Button
 							type="button"
@@ -198,9 +239,11 @@ export function AddFrameworkModal({ onOpenChange, availableFrameworks, organizat
 			{isExecuting && (
 				<div className="flex items-center justify-center p-8">
 					<Loader2 className="h-12 w-12 animate-spin text-primary" />
-					<p className="ml-4 text-muted-foreground">{t("frameworks.add_modal.loading")}</p>
+					<p className="ml-4 text-muted-foreground">
+						{t("frameworks.add_modal.loading")}
+					</p>
 				</div>
 			)}
 		</DialogContent>
 	);
-} 
+}

@@ -31,7 +31,10 @@ import type { z } from "zod";
 import { LogoSpinner } from "../logo-spinner";
 
 interface OnboardingClientProps {
-	frameworks: Pick<FrameworkEditorFramework, "id" | "name" | "description" | "version" | "visible">[];
+	frameworks: Pick<
+		FrameworkEditorFramework,
+		"id" | "name" | "description" | "version" | "visible"
+	>[];
 }
 
 export function OnboardingClient({ frameworks }: OnboardingClientProps) {
@@ -183,13 +186,12 @@ export function OnboardingClient({ frameworks }: OnboardingClientProps) {
 									</FormLabel>
 									<FormControl>
 										<fieldset className="flex flex-col gap-2 select-none">
-											<legend className="sr-only">
-												{t(
-													"frameworks.overview.grid.title",
-												)}
-											</legend>
-											{frameworks.filter(framework => framework.visible).map(
-												(framework) => {
+											{frameworks
+												.filter(
+													(framework) =>
+														framework.visible,
+												)
+												.map((framework) => {
 													return (
 														<label
 															key={framework.id}
@@ -199,7 +201,7 @@ export function OnboardingClient({ frameworks }: OnboardingClientProps) {
 																field.value.includes(
 																	framework.id,
 																) &&
-																"border-primary bg-primary/5",
+																	"border-primary bg-primary/5",
 															)}
 														>
 															<div className="flex items-start justify-between">
@@ -231,16 +233,16 @@ export function OnboardingClient({ frameworks }: OnboardingClientProps) {
 																			const newValue =
 																				checked
 																					? [
-																						...field.value,
-																						framework.id,
-																					]
-																					: field.value.filter(
-																						(
-																							currentFrameworkId,
-																						) =>
-																							currentFrameworkId !==
+																							...field.value,
 																							framework.id,
-																					);
+																						]
+																					: field.value.filter(
+																							(
+																								currentFrameworkId,
+																							) =>
+																								currentFrameworkId !==
+																								framework.id,
+																						);
 																			field.onChange(
 																				newValue,
 																			);
@@ -250,8 +252,7 @@ export function OnboardingClient({ frameworks }: OnboardingClientProps) {
 															</div>
 														</label>
 													);
-												},
-											)}
+												})}
 										</fieldset>
 									</FormControl>
 									<FormMessage className="text-xs" />

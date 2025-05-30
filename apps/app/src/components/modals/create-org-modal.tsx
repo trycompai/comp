@@ -37,7 +37,10 @@ import type { FrameworkEditorFramework } from "@comp/db/types";
 
 type Props = {
 	onOpenChange: (isOpen: boolean) => void;
-	frameworks: Pick<FrameworkEditorFramework, "id" | "name" | "description" | "version" | "visible">[];
+	frameworks: Pick<
+		FrameworkEditorFramework,
+		"id" | "name" | "description" | "version" | "visible"
+	>[];
 };
 
 export function CreateOrgModal({ onOpenChange, frameworks }: Props) {
@@ -45,9 +48,10 @@ export function CreateOrgModal({ onOpenChange, frameworks }: Props) {
 	const [isSetup, setIsSetup] = useState(false);
 	const router = useRouter();
 
-	const newOrganizationRef = useRef<
-		Pick<Organization, "id" | "name" | "website"> | null
-	>(null);
+	const newOrganizationRef = useRef<Pick<
+		Organization,
+		"id" | "name" | "website"
+	> | null>(null);
 
 	const [formData, setFormData] = useState<z.infer<
 		typeof organizationSchema
@@ -120,14 +124,7 @@ export function CreateOrgModal({ onOpenChange, frameworks }: Props) {
 						</DialogDescription>
 					</>
 				) : (
-					<>
-						<DialogTitle className="sr-only">
-							{t("onboarding.title")}
-						</DialogTitle>
-						<DialogDescription className="sr-only">
-							{t("onboarding.description")}
-						</DialogDescription>
-					</>
+					<></>
 				)}
 			</DialogHeader>
 
@@ -214,78 +211,78 @@ export function CreateOrgModal({ onOpenChange, frameworks }: Props) {
 									</FormLabel>
 									<FormControl>
 										<fieldset className="flex flex-col gap-2 select-none">
-											<legend className="sr-only">
-												{t(
-													"frameworks.overview.grid.title",
-												)}
-											</legend>
 											<div className="flex flex-col gap-2 overflow-y-auto max-h-[300px]">
-											{frameworks.filter(framework => framework.visible).map(
-												(framework) => {
-													const frameworkId =
-														framework.id;
-													return (
-														<label
-															key={frameworkId}
-															htmlFor={`framework-${frameworkId}`}
-															className={cn(
-																"relative flex flex-col p-4 border cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 w-full text-left",
-																field.value.includes(
-																	frameworkId,
-																) &&
-																"border-primary bg-primary/5",
-															)}
-														>
-															<div className="flex items-start justify-between">
-																<div>
-																	<h3 className="font-semibold">
-																		{
-																			framework.name
-																		}
-																	</h3>
-																	<p className="text-sm text-muted-foreground mt-1">
-																		{
-																			framework.description
-																		}
-																	</p>
-																	<p className="text-xs text-muted-foreground/75 mt-2">
-																		{`${t("frameworks.overview.grid.version")}: ${framework.version}`}
-																	</p>
+												{frameworks
+													.filter(
+														(framework) =>
+															framework.visible,
+													)
+													.map((framework) => {
+														const frameworkId =
+															framework.id;
+														return (
+															<label
+																key={
+																	frameworkId
+																}
+																htmlFor={`framework-${frameworkId}`}
+																className={cn(
+																	"relative flex flex-col p-4 border cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 w-full text-left",
+																	field.value.includes(
+																		frameworkId,
+																	) &&
+																		"border-primary bg-primary/5",
+																)}
+															>
+																<div className="flex items-start justify-between">
+																	<div>
+																		<h3 className="font-semibold">
+																			{
+																				framework.name
+																			}
+																		</h3>
+																		<p className="text-sm text-muted-foreground mt-1">
+																			{
+																				framework.description
+																			}
+																		</p>
+																		<p className="text-xs text-muted-foreground/75 mt-2">
+																			{`${t("frameworks.overview.grid.version")}: ${framework.version}`}
+																		</p>
+																	</div>
+																	<div>
+																		<Checkbox
+																			id={`framework-${frameworkId}`}
+																			checked={field.value.includes(
+																				frameworkId,
+																			)}
+																			className="mt-1"
+																			onCheckedChange={(
+																				checked,
+																			) => {
+																				const newValue =
+																					checked
+																						? [
+																								...field.value,
+																								frameworkId,
+																							]
+																						: field.value.filter(
+																								(
+																									name,
+																								) =>
+																									name !==
+																									frameworkId,
+																							);
+																				field.onChange(
+																					newValue,
+																				);
+																			}}
+																		/>
+																	</div>
 																</div>
-																<div>
-																	<Checkbox
-																		id={`framework-${frameworkId}`}
-																		checked={field.value.includes(
-																			frameworkId,
-																		)}
-																		className="mt-1"
-																		onCheckedChange={(
-																			checked,
-																		) => {
-																			const newValue =
-																				checked
-																					? [
-																						...field.value,
-																						frameworkId,
-																					]
-																					: field.value.filter(
-																						(
-																							name,
-																						) =>
-																							name !==
-																							frameworkId,
-																					);
-																			field.onChange(
-																				newValue,
-																			);
-																		}}
-																	/>
-																</div>
-															</div>
-														</label>
-													);
-												},
-											)}
+															</label>
+														);
+													})}
 											</div>
 										</fieldset>
 									</FormControl>
@@ -314,8 +311,8 @@ export function CreateOrgModal({ onOpenChange, frameworks }: Props) {
 									>
 										{createOrganization.status ===
 											"executing" && (
-												<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-											)}
+											<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+										)}
 										{t("onboarding.submit")}
 									</Button>
 								</div>

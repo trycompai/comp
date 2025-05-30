@@ -242,9 +242,6 @@ export function TeamMembersClient({
 							onClick={() => setSearchQuery(null)}
 						>
 							<X className="h-4 w-4" />
-							<span className="sr-only">
-								{t("common.actions.clear")}
-							</span>
 						</Button>
 					)}
 				</div>
