@@ -7,7 +7,7 @@ let stripe: Stripe | undefined;
 
 if (env.STRIPE_SECRET_KEY && env.STRIPE_WEBHOOK_SECRET) {
 	stripe = new Stripe(env.STRIPE_SECRET_KEY, {
-		apiVersion: "2025-04-30.basil",
+		apiVersion: "2025-05-28.basil",
 	});
 }
 

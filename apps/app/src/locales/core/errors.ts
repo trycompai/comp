@@ -1,9 +1,9 @@
 export const errors = {
-	unexpected: "Something went wrong, please try again",
+	unexpected: "Algo salió mal, por favor intenta de nuevo",
 	unauthorized: {
-		title: "Unauthorized Access",
+		title: "Acceso No Autorizado",
 		description:
-			"You don't have permission to access this resource. Please contact your administrator if you believe this is a mistake.",
-		back: "Return to Home",
+			"No tienes permiso para acceder a este recurso. Por favor contacta a tu administrador si crees que esto es un error.",
+		back: "Volver al Inicio",
 	},
 } as const;

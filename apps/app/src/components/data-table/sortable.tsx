@@ -333,7 +333,7 @@ const SortableContent = React.forwardRef<HTMLDivElement, SortableContentProps>(
 					{withoutSlot ? (
 						children
 					) : (
-						<ContentPrimitive {...contentProps} ref={forwardedRef}>
+						<ContentPrimitive {...(contentProps as any)} ref={forwardedRef}>
 							{children}
 						</ContentPrimitive>
 					)}

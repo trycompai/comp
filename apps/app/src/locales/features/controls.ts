@@ -1,19 +1,19 @@
 export const controls = {
-	title: "Controls",
+	title: "Controles",
 	overview: {
-		title: "Controls Overview",
-		all_controls: "All Controls",
+		title: "Resumen de Controles",
+		all_controls: "Todos los Controles",
 	},
 	table: {
-		name: "Name",
-		description: "Description",
-		status: "Status",
-		no_controls_found: "No controls found.",
+		name: "Nombre",
+		description: "Descripción",
+		status: "Estado",
+		no_controls_found: "No se encontraron controles.",
 	},
 	requirements: {
-		no_requirements_mapped: "No requirements mapped to this control.",
+		no_requirements_mapped: "No hay requisitos asignados a este control.",
 	},
 	artifacts: {
-		no_artifacts: "No Linked Artifacts found",
+		no_artifacts: "No se encontraron artefactos vinculados",
 	},
 } as const;

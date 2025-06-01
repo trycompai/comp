@@ -100,7 +100,7 @@ export function CreateVendorForm({
 	}, 300);
 
 	const form = useForm<z.infer<typeof createVendorSchema>>({
-		resolver: zodResolver(createVendorSchema),
+		resolver: zodResolver(createVendorSchema) as any,
 		defaultValues: {
 			name: "",
 			website: "",

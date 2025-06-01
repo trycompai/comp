@@ -1,9 +1,9 @@
 export const overview = {
-	title: "Overview",
+	title: "Resumen",
 	framework_chart: {
-		title: "Framework Progress",
+		title: "Progreso del Marco",
 	},
 	requirement_chart: {
-		title: "Compliance Status",
+		title: "Estado de Cumplimiento",
 	},
 } as const;

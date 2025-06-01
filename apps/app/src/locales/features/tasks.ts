@@ -1,7 +1,7 @@
 export const tasks = {
-	title: "Tasks",
-	items: "Tasks",
+	title: "Tareas",
+	items: "Tareas",
 	table: {
-		title: "Title",
+		title: "Título",
 	},
 } as const;

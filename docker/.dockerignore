@@ -1,0 +1,77 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Testing
+coverage
+.nyc_output
+
+# Next.js
+.next
+out
+build
+dist
+
+# Misc
+.DS_Store
+*.pem
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Local env files
+.env
+.env*.local
+
+# But allow .npmrc for package configuration
+!.npmrc
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Turbo
+.turbo
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+
+# Documentation
+README.md
+docs
+
+# Build artifacts
+apps/*/.next
+apps/*/out
+apps/*/dist
+packages/*/dist
+packages/*/build
+
+# Cache
+.cache
+tmp
+
+# Logs
+logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db

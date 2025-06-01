@@ -110,18 +110,18 @@ export const CompanyDetailsWizardForm = ({
 	parsedData?: CompanyDetails;
 }) => {
 	const methods = useForm<Answers>({
-		resolver: zodResolver(answersSchema),
+		resolver: zodResolver(answersSchema) as any,
 		defaultValues: {
-			companyName: parsedData?.data.companyName,
-			companyWebsite: parsedData?.data.companyWebsite,
-			vendors: parsedData?.data.vendors,
-			headcount: parsedData?.data.headcount,
-			workStyle: parsedData?.data.workStyle,
-			dataCategories: parsedData?.data.dataCategories,
-			storageRegions: parsedData?.data.storageRegions,
-			identityProviders: parsedData?.data.identityProviders,
-			laptopOS: parsedData?.data.laptopOS,
-			mobileDevice: parsedData?.data.mobileDevice,
+			companyName: parsedData?.data.companyName ?? "",
+			companyWebsite: parsedData?.data.companyWebsite ?? "",
+			vendors: parsedData?.data.vendors ?? [],
+			headcount: parsedData?.data.headcount ?? 1,
+			workStyle: parsedData?.data.workStyle ?? "",
+			dataCategories: parsedData?.data.dataCategories ?? [],
+			storageRegions: parsedData?.data.storageRegions ?? "",
+			identityProviders: parsedData?.data.identityProviders ?? "",
+			laptopOS: parsedData?.data.laptopOS ?? [],
+			mobileDevice: parsedData?.data.mobileDevice ?? false,
 		},
 		mode: "onChange",
 	});

@@ -64,16 +64,11 @@ export const translations = {
 	risk,
 	tests,
 	vendors,
-
-	// Settings
-	settings,
+	tasks,
 
 	// Onboarding
 	app_onboarding,
 
-	// Tasks
-	tasks,
+	// Settings
+	settings,
 } as const;
-
-export type Translations = typeof translations;
-export default translations;

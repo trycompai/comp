@@ -1,76 +1,76 @@
 export const app_onboarding = {
 	risk_management: {
-		title: "Risk Management",
+		title: "Gestión de Riesgos",
 		description:
-			"Manage your risks and ensure your organization is protected.",
+			"Gestiona tus riesgos y asegura que tu organización esté protegida.",
 		detailed_description:
-			"Create and manage your risks in one place. Add details, assign owners, and track progress.",
-		cta: "Create risk",
-		learn_more: "Learn more",
+			"Crea y gestiona tus riesgos en un solo lugar. Agrega detalles, asigna responsables y realiza seguimiento del progreso.",
+		cta: "Crear riesgo",
+		learn_more: "Saber más",
 		faqs: {
-			question_1: "What is risk management?",
+			question_1: "¿Qué es la gestión de riesgos?",
 			answer_1:
-				"Risk management is the process of identifying, assessing, and mitigating risks.",
-			question_2: "Why should I manage risks?",
+				"La gestión de riesgos es el proceso de identificar, evaluar y mitigar riesgos.",
+			question_2: "¿Por qué debo gestionar riesgos?",
 			answer_2:
-				"Risks can impact your organization's operations, reputation, and financial stability. By managing risks, you can reduce the likelihood of negative events and protect your organization.",
-			question_3: "Do I need to manage risks for SOC 2?",
+				"Los riesgos pueden impactar las operaciones, reputación y estabilidad financiera de tu organización. Al gestionar riesgos, puedes reducir la probabilidad de eventos negativos y proteger tu organización.",
+			question_3: "¿Necesito gestionar riesgos para SOC 2?",
 			answer_3:
-				"Yes, you need to manage risks for SOC 2 and other frameworks. Risk management is a key component of SOC 2 compliance.",
+				"Sí, necesitas gestionar riesgos para SOC 2 y otros marcos. La gestión de riesgos es un componente clave del cumplimiento de SOC 2.",
 		},
 	},
 	vendors: {
-		title: "Vendor Management",
+		title: "Gestión de Proveedores",
 		description:
-			"Manage your vendors and ensure your organization is protected.",
-		cta: "Add vendor",
-		learn_more: "Learn more",
+			"Gestiona tus proveedores y asegura que tu organización esté protegida.",
+		cta: "Agregar proveedor",
+		learn_more: "Saber más",
 		faqs: {
-			question_1: "What is a vendor?",
+			question_1: "¿Qué es un proveedor?",
 			answer_1:
-				"A vendor is a third-party organization that provides services to your organization.",
-			question_2: "Why should I manage vendors?",
+				"Un proveedor es una organización externa que proporciona servicios a tu organización.",
+			question_2: "¿Por qué debo gestionar proveedores?",
 			answer_2:
-				"Vendors can impact your organization's operations, reputation, and financial stability. By managing vendors, you can reduce the likelihood of negative events and protect your organization.",
-			question_3: "Do I need to manage vendors for SOC 2?",
+				"Los proveedores pueden impactar las operaciones, reputación y estabilidad financiera de tu organización. Al gestionar proveedores, puedes reducir la probabilidad de eventos negativos y proteger tu organización.",
+			question_3: "¿Necesito gestionar proveedores para SOC 2?",
 			answer_3:
-				"Yes, you need to manage vendors for SOC 2 and other frameworks. Vendor management is a key component of SOC 2 compliance.",
+				"Sí, necesitas gestionar proveedores para SOC 2 y otros marcos. La gestión de proveedores es un componente clave del cumplimiento de SOC 2.",
 		},
 	},
 	employees: {
-		title: "Employee Management",
+		title: "Gestión de Empleados",
 		description:
-			"Manage your employees and ensure your organization is protected.",
-		cta: "Get started",
-		learn_more: "Learn more",
+			"Gestiona tus empleados y asegura que tu organización esté protegida.",
+		cta: "Comenzar",
+		learn_more: "Saber más",
 		faqs: {
-			question_1: "What is employee management?",
+			question_1: "¿Qué es la gestión de empleados?",
 			answer_1:
-				"Employee management is the process of tracking, documenting, and managing your organization's workforce, including their roles, access levels, and compliance-related information.",
-			question_2: "Why is employee management important?",
+				"La gestión de empleados es el proceso de rastrear, documentar y gestionar la fuerza laboral de tu organización, incluyendo sus roles, niveles de acceso e información relacionada con el cumplimiento.",
+			question_2: "¿Por qué es importante la gestión de empleados?",
 			answer_2:
-				"Employee management is crucial for compliance because it helps you track who has access to sensitive systems, document employee training and awareness programs, and maintain tasks of your security controls. This is essential for frameworks like SOC 2, ISO 27001, and HIPAA.",
-			question_3: "Is employee management required for SOC 2?",
+				"La gestión de empleados es crucial para el cumplimiento porque te ayuda a rastrear quién tiene acceso a sistemas sensibles, documentar programas de capacitación y concientización de empleados, y mantener tareas de tus controles de seguridad. Esto es esencial para marcos como SOC 2, ISO 27001 y HIPAA.",
+			question_3: "¿Se requiere gestión de empleados para SOC 2?",
 			answer_3:
-				"For SOC 2, you need to document employee onboarding/offboarding processes, track access to systems and data, maintain records of security training, and demonstrate that employees understand their security responsibilities. This helps auditors verify your security controls and personnel management practices.",
+				"Para SOC 2, necesitas documentar los procesos de incorporación/desvinculación de empleados, rastrear el acceso a sistemas y datos, mantener registros de capacitación en seguridad y demostrar que los empleados comprenden sus responsabilidades de seguridad. Esto ayuda a los auditores a verificar tus controles de seguridad y prácticas de gestión de personal.",
 		},
 	},
 	cloud_tests: {
-		title: "Cloud Compliance",
+		title: "Cumplimiento en la Nube",
 		description:
-			"Test and validate your cloud infrastructure security with automated tests and reports.",
-		cta: "Configure",
-		learn_more: "Learn more",
+			"Prueba y valida la seguridad de tu infraestructura en la nube con pruebas automatizadas y reportes.",
+		cta: "Configurar",
+		learn_more: "Saber más",
 		faqs: {
-			question_1: "What are cloud security tests?",
+			question_1: "¿Qué son las pruebas de seguridad en la nube?",
 			answer_1:
-				"Cloud security tests are automated assessments that evaluate your cloud infrastructure for security vulnerabilities, misconfigurations, and compliance with security best practices.",
-			question_2: "Why are cloud security tests important?",
+				"Las pruebas de seguridad en la nube son evaluaciones automatizadas que evalúan tu infraestructura en la nube en busca de vulnerabilidades de seguridad, configuraciones incorrectas y cumplimiento con las mejores prácticas de seguridad.",
+			question_2: "¿Por qué son importantes las pruebas de seguridad en la nube?",
 			answer_2:
-				"Cloud security tests help identify potential security risks in your cloud environment, ensure compliance with security standards, and provide tasks of your security controls for auditors. They're essential for maintaining a strong security posture in cloud environments.",
-			question_3: "What types of cloud tests are available?",
+				"Las pruebas de seguridad en la nube ayudan a identificar posibles riesgos de seguridad en tu entorno de nube, aseguran el cumplimiento con estándares de seguridad y proporcionan tareas de tus controles de seguridad para los auditores. Son esenciales para mantener una postura de seguridad sólida en entornos de nube.",
+			question_3: "¿Qué tipos de pruebas en la nube están disponibles?",
 			answer_3:
-				"Cloud security tests can include infrastructure scanning, configuration analysis, vulnerability assessments, and compliance checks. These tests help ensure your cloud resources are properly secured and configured according to best practices.",
+				"Las pruebas de seguridad en la nube pueden incluir escaneo de infraestructura, análisis de configuración, evaluaciones de vulnerabilidad y verificaciones de cumplimiento. Estas pruebas ayudan a garantizar que tus recursos en la nube estén debidamente protegidos y configurados según las mejores prácticas.",
 		},
 	},
 } as const;

@@ -1,7 +1,7 @@
 export const theme = {
 	options: {
-		light: "Light",
-		dark: "Dark",
-		system: "System",
+		light: "Claro",
+		dark: "Oscuro",
+		system: "Sistema",
 	},
 } as const;

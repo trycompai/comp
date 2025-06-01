@@ -16,7 +16,9 @@ export default async function Page() {
 	});
 
 	const hasSession = session?.user;
-	const isAllowed = session?.user.email.split("@")[1] === "trycomp.ai";
+	const allowedDomains = ["trycomp.ai", "aubo.ai"];
+	const userDomain = session?.user.email.split("@")[1];
+	const isAllowed = allowedDomains.includes(userDomain);
 
 	if (hasSession && !isAllowed) {
 		return <Unauthorized />;

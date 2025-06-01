@@ -1,9 +1,9 @@
 export const user_menu = {
-	theme: "Theme",
-	language: "Language",
-	sign_out: "Sign out",
-	account: "Account",
-	support: "Support",
-	settings: "Settings",
-	teams: "Teams",
+	theme: "Tema",
+	language: "Idioma",
+	sign_out: "Cerrar sesión",
+	account: "Cuenta",
+	support: "Soporte",
+	settings: "Configuración",
+	teams: "Equipos",
 } as const;
