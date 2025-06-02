@@ -1,3 +1,17 @@
+# Code style
+
+- Understand current code logic and design, so any new feature should keep a similar syntax without
+- When implementing new features, analyze  existing code and plan before moving on.
+- **ALWAYS work with the existing codebase** - do not create new simplified alternatives.
+- **ALWAYS find and fix the root cause** of issues instead of creating workarounds.
+- When debugging issues, focus on fixing the existing implementation, not replacing it
+
+### Prisma Usage
+
+- NEVER use raw SQL queries ($queryRaw, $queryRawUnsafe) - always use Prisma Client methods
+- When relations don't exist in the schema, use separate queries with findMany() and create lookup maps
+- Always check the Prisma schema before assuming relations exist
+
 # Framworks
 
 The "frameworks" feature in this compliance application is a comprehensive system for managing
@@ -62,7 +76,10 @@ The "frameworks" feature in this compliance application is a comprehensive syste
   ## Build image
 
   ```
-  docker build --build-arg NODE_OPTIONS='--dns-result-order=ipv4first' -t marketshop/jus:latest -f docker/Dockerfile .
+  docker build --build-arg NODE_OPTIONS='--dns-result-order=ipv4first' -t marketshop/jus-app:latest -f docker/Dockerfile.app .
+  docker build --build-arg NODE_OPTIONS='--dns-result-order=ipv4first' -t marketshop/jus-portal:latest -f docker/Dockerfile.portal .
+  docker build --build-arg NODE_OPTIONS='--dns-result-order=ipv4first' -t marketshop/jus-framework-editor:latest -f docker/Dockerfile.framework-editor .
+  docker build --build-arg NODE_OPTIONS='--dns-result-order=ipv4first' -t marketshop/jus-trust:latest -f docker/Dockerfile.trust .
   ```
 
   # Kubernetes

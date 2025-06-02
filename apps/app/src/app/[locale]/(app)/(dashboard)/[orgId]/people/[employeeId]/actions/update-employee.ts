@@ -12,6 +12,7 @@ const schema = z.object({
 	employeeId: z.string(),
 	name: z.string().min(1, "Name cannot be empty").optional(),
 	email: z.string().email("Invalid email format").optional(),
+	rut: z.string().optional(),
 	department: z.string().optional(),
 	isActive: z.boolean().optional(),
 	createdAt: z.date().optional(),
@@ -27,7 +28,7 @@ export const updateEmployee = authActionClient
 		},
 	})
 	.action(async ({ parsedInput, ctx }) => {
-		const { employeeId, name, email, department, isActive, createdAt } =
+		const { employeeId, name, email, rut, department, isActive, createdAt } =
 			parsedInput;
 
 		const organizationId = ctx.session.activeOrganizationId;
@@ -50,7 +51,7 @@ export const updateEmployee = authActionClient
 			isActive?: boolean;
 			createdAt?: Date;
 		} = {};
-		const userUpdateData: { name?: string; email?: string } = {};
+		const userUpdateData: { name?: string; email?: string; rut?: string } = {};
 
 		if (department !== undefined && department !== member.department) {
 			memberUpdateData.department = department as Departments;
@@ -69,6 +70,9 @@ export const updateEmployee = authActionClient
 		}
 		if (email !== undefined && email !== member.user.email) {
 			userUpdateData.email = email;
+		}
+		if (rut !== undefined && rut !== member.user.rut) {
+			userUpdateData.rut = rut;
 		}
 
 		const hasMemberChanges = Object.keys(memberUpdateData).length > 0;

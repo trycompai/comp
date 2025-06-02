@@ -21,10 +21,11 @@ export async function completeEmployeeCreation(params: {
 	name: string;
 	email: string;
 	department: Departments;
+	rut?: string;
 	organizationId: string;
 	externalEmployeeId?: string;
 }): Promise<Member | undefined> {
-	const { name, email, department, organizationId } = params;
+	const { name, email, department, rut, organizationId } = params;
 	console.log(`Starting employee creation for ${email}`);
 
 	// Check if the user already exists
@@ -48,6 +49,7 @@ export async function completeEmployeeCreation(params: {
 		employee = await createNewUser({
 			name,
 			email,
+			rut,
 			organizationId,
 			department,
 		});
@@ -232,11 +234,13 @@ async function handleExistingUser({
 async function createNewUser({
 	name,
 	email,
+	rut,
 	organizationId,
 	department,
 }: {
 	name: string;
 	email: string;
+	rut?: string;
 	organizationId: string;
 	department: Departments;
 }): Promise<Member> {
@@ -245,6 +249,7 @@ async function createNewUser({
 		data: {
 			name,
 			email,
+			rut,
 			emailVerified: false,
 		},
 	});

@@ -10,6 +10,7 @@ import {
 	TaskStatus,
 } from "@comp/db/types";
 import { z } from "zod";
+import { validateRut } from "@/lib/rut-validation";
 
 export const organizationSchema = z.object({
 	name: z.string().min(1, "Organization name is required"),
@@ -276,6 +277,12 @@ export const createEmployeeSchema = z.object({
 	department: z.nativeEnum(Departments, {
 		required_error: "Department is required",
 	}),
+	rut: z
+		.string()
+		.optional()
+		.refine((val) => !val || validateRut(val), {
+			message: "Invalid RUT format",
+		}),
 	externalEmployeeId: z.string().optional(),
 	isActive: z.boolean().default(true),
 });

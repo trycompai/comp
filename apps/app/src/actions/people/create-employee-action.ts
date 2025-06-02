@@ -16,7 +16,7 @@ export const createEmployeeAction = authActionClient
 		},
 	})
 	.action(async ({ parsedInput, ctx }): Promise<ActionResponse> => {
-		const { name, email, department, externalEmployeeId } = parsedInput;
+		const { name, email, department, rut, externalEmployeeId } = parsedInput;
 		const { user, session } = ctx;
 
 		if (!session.activeOrganizationId) {
@@ -31,6 +31,7 @@ export const createEmployeeAction = authActionClient
 				name,
 				email,
 				department,
+				rut,
 				organizationId: session.activeOrganizationId,
 				externalEmployeeId,
 			});

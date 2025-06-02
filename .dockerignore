@@ -1,0 +1,67 @@
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# Development files
+*.log
+*.md
+.env.local
+.env.development
+.env.test
+.DS_Store
+
+# Node modules - we'll install fresh
+**/node_modules
+**/.next
+**/dist
+**/build
+**/.turbo
+
+# Test files
+**/__tests__
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+**/coverage
+**/cypress
+**/e2e
+
+# IDE files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# CI/CD
+.github
+.circleci
+.gitlab-ci.yml
+
+# Documentation
+docs
+*.md
+LICENSE
+CHANGELOG
+
+# Temporary files
+tmp
+temp
+*.tmp
+
+# Build artifacts
+**/.cache
+**/.parcel-cache
+**/.nuxt
+**/.output
+
+# Development tools
+.husky
+.eslintcache
+.stylelintcache
+
+# Optional - uncomment if you have these
+# storybook-static
+# .storybook

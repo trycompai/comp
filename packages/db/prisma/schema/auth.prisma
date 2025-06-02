@@ -4,6 +4,7 @@ model User {
     email         String
     emailVerified Boolean
     image         String?
+    rut           String?   @unique
     createdAt     DateTime  @default(now())
     updatedAt     DateTime  @updatedAt
     lastLogin     DateTime?
