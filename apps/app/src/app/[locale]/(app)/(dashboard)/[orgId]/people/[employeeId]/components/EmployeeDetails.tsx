@@ -49,6 +49,7 @@ import { redirect, useParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
+import { validateRut } from "@/lib/rut-validation";
 import { updateEmployee } from "../actions/update-employee";
 
 const DEPARTMENTS: { value: Departments; label: string }[] = [
@@ -89,6 +90,12 @@ export const EMPLOYEE_STATUS_HEX_COLORS: Record<EmployeeStatusType, string> = {
 const employeeFormSchema = z.object({
 	name: z.string().min(1, "Name is required"),
 	email: z.string().email("Invalid email address"),
+	rut: z
+		.string()
+		.optional()
+		.refine((val) => !val || validateRut(val), {
+			message: "Invalid RUT format",
+		}),
 	department: z.enum([
 		"admin",
 		"gov",
@@ -129,6 +136,7 @@ export function EmployeeDetails({
 		defaultValues: {
 			name: employee.user.name ?? "",
 			email: employee.user.email ?? "",
+			rut: employee.user.rut ?? "",
 			department: employee.department as Departments,
 			status: employee.isActive ? "active" : "inactive",
 			createdAt: new Date(employee.createdAt),
@@ -156,6 +164,7 @@ export function EmployeeDetails({
 			employeeId: string;
 			name?: string;
 			email?: string;
+			rut?: string;
 			department?: string;
 			isActive?: boolean;
 			createdAt?: Date;
@@ -167,6 +176,9 @@ export function EmployeeDetails({
 		}
 		if (values.email !== employee.user.email) {
 			updateData.email = values.email;
+		}
+		if (values.rut !== employee.user.rut) {
+			updateData.rut = values.rut;
 		}
 		if (values.department !== employee.department) {
 			updateData.department = values.department;
