@@ -10,8 +10,10 @@ export const {
 	useChangeLocale,
 } = createI18nClient({
 	en: () => import("./en"),
+	es: () => import("./es"),
 });
 
 export const languages = {
 	en: "English",
+	es: "Español",
 } as const;

@@ -93,51 +93,117 @@ The "frameworks" feature in this compliance application is a comprehensive syste
 
   # Translations
 
-  ## I've successfully set up the translation system for the implementation page. Here's what was done:
+  Current Translation System Analysis
 
-  1. Created Translation Files
+  Based on my analysis, here's the current state and options for enabling Spanish as the default language:
 
-  - English translations: /apps/app/src/locales/features/implementation.ts
-  - Spanish translations guide: /apps/app/src/locales/features/implementation-es.md
+  Current State:
 
-  2. Updated Main Translation Files
+  1. Translation Framework: Uses next-international (modern, type-safe i18n for Next.js)
+  2. Current Support: Only English (en) is currently active
+  3. Prepared Infrastructure: The system is already set up for multiple languages but not yet activated
+  4. Existing Components: Locale switcher component exists and is ready to use
 
-  - Updated both en.ts and es.ts to import the implementation translations
+  Translation Files Structure:
 
-  3. Translation Structure
+  The main app has a well-organized modular translation system:
+  /apps/app/src/locales/
+  ├── client.ts              # Currently: en only
+  ├── server.ts              # Currently: en only
+  ├── en.ts                  # Main English file (imports all modules)
+  ├── core/                  # Common translations (language, common, errors)
+  ├── auth/                  # Authentication translations
+  ├── features/              # Feature-specific translations
+  ├── layout/                # Layout component translations
+  ├── onboarding/            # Onboarding translations
+  └── settings/              # Settings translations
 
-  The translations are organized with these keys:
-  - implementation.title - "Implementation" / "Implementación"
-  - implementation.progress.* - Progress section translations
-  - implementation.checklist.* - All checklist items translations
-  - implementation.errors.* - Error messages
+  Options for Implementation:
 
-  4. Spanish Translations Provided
+  Option 1: Enable Spanish as Default with English as Secondary
 
-  All text has been translated to Spanish, including:
-  - Welcome message: "Bienvenido a Comp AI"
-  - Progress status: "{completedSteps} / {totalSteps} pasos completados"
-  - All checklist items with proper Spanish translations
+  Recommended approach - provides flexibility for users
 
-  5. Example Component Update
+  Steps:
+  1. Create complete Spanish translation files (mirroring the English structure)
+  2. Update middleware to support both languages with Spanish as default
+  3. Update client/server configurations
+  4. Enable the locale switcher in the UI
 
-  I created an example file (OnboardingProgress-with-translations.tsx) showing how to update
-  components to use translations:
-  import { useI18n } from "@/locales/client";
-  const t = useI18n();
-  // Then use: t("implementation.progress.welcome")
+  Pros:
+  - Users can switch between languages
+  - Maintains English for international users
+  - Future-proof for adding more languages
 
-  Next Steps
+  Cons:
+  - Requires creating complete Spanish translations (~15-20 files)
+  - Slightly more complex than Spanish-only
 
-  Since the current system shares translation files between languages, you'll need to decide on the
-  approach:
+  Option 2: Spanish-Only Implementation
 
-  1. Option 1: Create a language-specific structure for Spanish translations
-  2. Option 2: Modify the existing implementation.ts to support multiple languages using a
-  conditional approach
+  Simpler approach - removes multi-language complexity
 
-  The Spanish translations are ready in the markdown file and can be implemented using whichever
-  approach fits your project's pattern.
+  Steps:
+  1. Create Spanish translations
+  2. Replace English content entirely
+  3. Remove locale switching functionality
+  4. Simplify middleware to serve Spanish only
+
+  Pros:
+  - Simpler implementation
+  - No language switching complexity
+  - Smaller bundle size
+
+  Cons:
+  - No option for English speakers
+  - Less flexible for future expansion
+
+  Option 3: Copy from Portal App
+
+  Quickest start - leverage existing Spanish translations
+
+  Steps:
+  1. Use portal app Spanish translations as starting point
+  2. Extend them for main app features
+  3. Implement full bilingual support
+
+  Pros:
+  - Faster initial implementation
+  - Proven Spanish translations for common elements
+
+  Cons:
+  - Portal translations are limited in scope
+  - Still need significant additional translation work
+
+  Implementation Files to Modify:
+
+  For any option, these files need updates:
+
+  1. Core Configuration:
+    - /apps/app/src/middleware.ts - Update supported locales and default
+    - /apps/app/src/locales/client.ts - Add Spanish import and language mapping
+    - /apps/app/src/locales/server.ts - Add Spanish server-side support
+  2. Create Spanish Translation Files:
+    - /apps/app/src/locales/es.ts - Main Spanish translations file
+    - All subdirectory files in Spanish (auth, core, features, layout, etc.)
+  3. Component Updates:
+    - Locale switcher is already implemented and ready to use
+    - Some components may need updates to use translation keys
+
+  Recommended Implementation:
+
+  I recommend Option 1 because:
+  - The infrastructure is already built for multi-language support
+  - It provides the best user experience
+  - It's future-proof for international expansion
+  - The locale switcher component already exists
+
+  Would you like me to proceed with implementing Spanish as the default language with English as a secondary
+  option? This would involve:
+
+  1. Creating the Spanish translation files structure
+  2. Updating the configuration files
+  3. Testing the language switching functionality
 
   # RUT Field
 
