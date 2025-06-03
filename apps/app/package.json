@@ -39,7 +39,7 @@
 		"@novu/headless": "^2.6.6",
 		"@novu/react": "^2.6.6",
 		"@number-flow/react": "^0.5.9",
-		"@prisma/instrumentation": "6.6.0",
+		"@prisma/instrumentation": "6.9.0",
 		"@react-email/components": "^0.0.41",
 		"@react-email/render": "^1.1.2",
 		"@tanstack/react-query": "^5.74.4",
