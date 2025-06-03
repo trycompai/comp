@@ -262,6 +262,32 @@ export function EmployeeDetails({
 										)}
 									/>
 								</div>
+								{/* RUT Field */}
+								<div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 mt-6">
+									<FormField
+										control={form.control}
+										name="rut"
+										render={({ field }) => (
+											<FormItem>
+												<FormLabel>RUT</FormLabel>
+												<FormControl>
+													<Input
+														{...field}
+														placeholder="12.345.678-9"
+														className="h-10"
+														onBlur={(e) => {
+															const formatted = e.target.value
+																.replace(/[^\dkK]/g, '')
+																.replace(/^(\d{1,2})(\d{3})(\d{3})(\w{1})$/, '$1.$2.$3-$4');
+															field.onChange(formatted);
+														}}
+													/>
+												</FormControl>
+												<FormMessage />
+											</FormItem>
+										)}
+									/>
+								</div>
 							</div>
 
 							{/* Department & Status Row */}

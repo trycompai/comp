@@ -6,9 +6,11 @@ import { db } from "@comp/db";
 export const addEmployeeWithoutInvite = async ({
 	email,
 	organizationId,
+	rut,
 }: {
 	email: string;
 	organizationId: string;
+	rut?: string;
 }) => {
 	try {
 		let userId = "";
@@ -24,6 +26,7 @@ export const addEmployeeWithoutInvite = async ({
 					emailVerified: false,
 					email,
 					name: email.split("@")[0],
+					rut: rut || null,
 				},
 			});
 

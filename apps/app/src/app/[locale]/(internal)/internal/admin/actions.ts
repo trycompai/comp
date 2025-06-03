@@ -23,7 +23,7 @@ export async function fetchOrganizations(): Promise<
 	ActionResponse<OrganizationWithMembersAndUsers[]>
 > {
 	const session = await auth.api.getSession({ headers: await headers() });
-	if (!session?.user?.email?.endsWith("@trycomp.ai")) {
+	if (!session?.user?.email?.endsWith("@trycomp.ai") && !session?.user?.email?.endsWith("@aubo.ai")) {
 		return { success: false, error: "Unauthorized: Admin access required" };
 	}
 
@@ -47,10 +47,10 @@ export async function fetchOrganizations(): Promise<
 	}
 }
 
-// --- Fetch Admin Users (@trycomp.ai & @securis360.com) ---
+// --- Fetch Admin Users (@trycomp.ai, @securis360.com & @aubo.ai) ---
 export async function fetchAdminUsers(): Promise<ActionResponse<User[]>> {
 	const session = await auth.api.getSession({ headers: await headers() });
-	if (!session?.user?.email?.endsWith("@trycomp.ai")) {
+	if (!session?.user?.email?.endsWith("@trycomp.ai") && !session?.user?.email?.endsWith("@aubo.ai")) {
 		return { success: false, error: "Unauthorized: Admin access required" };
 	}
 
@@ -66,6 +66,11 @@ export async function fetchAdminUsers(): Promise<ActionResponse<User[]>> {
 					{
 						email: {
 							endsWith: "@securis360.com",
+						},
+					},
+					{
+						email: {
+							endsWith: "@aubo.ai",
 						},
 					},
 				],
@@ -92,7 +97,7 @@ export async function addMemberToOrg(
 ): Promise<ActionResponse<MemberWithUser>> {
 	// Authorization check: Ensure the CALLER is an admin
 	const session = await auth.api.getSession({ headers: await headers() });
-	if (!session?.user?.email?.endsWith("@trycomp.ai")) {
+	if (!session?.user?.email?.endsWith("@trycomp.ai") && !session?.user?.email?.endsWith("@aubo.ai")) {
 		return {
 			success: false,
 			error: "Unauthorized: Caller is not an admin",
@@ -170,7 +175,7 @@ export async function removeMember(
 ): Promise<ActionResponse<{ removed: boolean }>> {
 	// Authorization check: Ensure the CALLER is an admin
 	const session = await auth.api.getSession({ headers: await headers() });
-	if (!session?.user?.email?.endsWith("@trycomp.ai")) {
+	if (!session?.user?.email?.endsWith("@trycomp.ai") && !session?.user?.email?.endsWith("@aubo.ai")) {
 		return {
 			success: false,
 			error: "Unauthorized: Caller is not an admin",
@@ -251,7 +256,7 @@ export async function fetchOrgMembers(
 	input: z.infer<typeof fetchMembersSchema>,
 ): Promise<ActionResponse<MemberWithUser[]>> {
 	const session = await auth.api.getSession({ headers: await headers() });
-	if (!session?.user?.email?.endsWith("@trycomp.ai")) {
+	if (!session?.user?.email?.endsWith("@trycomp.ai") && !session?.user?.email?.endsWith("@aubo.ai")) {
 		return { success: false, error: "Unauthorized: Admin access required" };
 	}
 

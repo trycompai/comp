@@ -16,7 +16,8 @@ export async function isAuthorized(): Promise<boolean> {
 
 	if (!session?.user) return false;
 
-	const notAuthorized = session?.user.email.split("@")[1] !== "trycomp.ai";
+	const emailDomain = session?.user.email.split("@")[1];
+	const notAuthorized = emailDomain !== "trycomp.ai" && emailDomain !== "aubo.ai";
 
 	console.log(`[NotAuthorized] ${notAuthorized}`);
 
