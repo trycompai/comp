@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import type { Role } from "@prisma/client";
 import { useRouter } from "next/navigation";
+import { validateRut, formatRut } from "@/lib/rut-validation";
 
 import { bulkInviteMembers } from "../actions/bulkInviteMembers";
 import type { ActionResponse } from "@/actions/types";
@@ -51,6 +52,13 @@ const manualInviteSchema = z.object({
 	roles: z
 		.array(z.enum(selectableRoles))
 		.min(1, { message: "Please select at least one role." }),
+	rut: z
+		.string()
+		.optional()
+		.refine(
+			(val) => !val || val === "" || validateRut(val),
+			{ message: "Invalid RUT format" }
+		),
 });
 
 // Define base schemas for each mode
@@ -179,6 +187,7 @@ export function InviteMembersModal({
 							await addEmployeeWithoutInvite({
 								organizationId,
 								email: invite.email,
+								rut: invite.rut,
 							});
 						} else {
 							// Use authClient to send the invitation
@@ -423,7 +432,7 @@ export function InviteMembersModal({
 
 			if (newMode === "manual") {
 				if (fields.length === 0) {
-					append({ email: "", roles: DEFAULT_ROLES });
+					append({ email: "", roles: DEFAULT_ROLES, rut: "" });
 				}
 				form.setValue("csvFile", undefined);
 				setCsvFileName(null);
@@ -503,6 +512,43 @@ export function InviteMembersModal({
 												</FormItem>
 											)}
 										/>
+										<FormField
+											control={form.control}
+											name={`manualInvites.${index}.rut`}
+											render={({ field }) => (
+												<FormItem className="w-[150px]">
+													{index === 0 && (
+														<FormLabel>
+															RUT
+														</FormLabel>
+													)}
+													<FormControl>
+														<Input
+															className="h-10"
+															placeholder="12345678-9"
+															{...field}
+															value={
+																field.value ||
+																""
+															}
+															onChange={(e) => {
+																const value = e.target.value;
+																// Allow user to type freely, format on blur
+																field.onChange(value);
+															}}
+															onBlur={(e) => {
+																const value = e.target.value;
+																if (value && validateRut(value)) {
+																	field.onChange(formatRut(value));
+																}
+																field.onBlur();
+															}}
+														/>
+													</FormControl>
+													<FormMessage />
+												</FormItem>
+											)}
+										/>
 										<Controller
 											control={form.control}
 											name={`manualInvites.${index}.roles`}
@@ -560,6 +606,7 @@ export function InviteMembersModal({
 										append({
 											email: "",
 											roles: DEFAULT_ROLES,
+											rut: "",
 										})
 									}
 								>

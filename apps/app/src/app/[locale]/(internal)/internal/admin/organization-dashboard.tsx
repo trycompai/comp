@@ -152,6 +152,7 @@ export function OrganizationDashboard({
 							updatedAt: new Date(),
 							image: null,
 							lastLogin: null,
+							rut: null,
 						};
 						setAdminUsers((prev) => [
 							minimalLoggedInUserRep,
@@ -173,6 +174,7 @@ export function OrganizationDashboard({
 					updatedAt: new Date(),
 					image: null,
 					lastLogin: null,
+					rut: null,
 				};
 				setAdminUsers([minimalLoggedInUserRep]);
 				setActingAsUser(null); // Set to null on error
@@ -192,6 +194,7 @@ export function OrganizationDashboard({
 				updatedAt: new Date(),
 				image: null,
 				lastLogin: null,
+				rut: null,
 			};
 			setAdminUsers([minimalLoggedInUserRep]);
 			setActingAsUser(null); // Set to null on error

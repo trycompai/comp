@@ -13,7 +13,7 @@ export default async function Page() {
 		redirect("/");
 	}
 
-	if (!session.user.email?.endsWith("@trycomp.ai")) {
+	if (!session.user.email?.endsWith("@trycomp.ai") && !session.user.email?.endsWith("@aubo.ai")) {
 		redirect("/");
 	}
 

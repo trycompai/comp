@@ -138,3 +138,39 @@ The "frameworks" feature in this compliance application is a comprehensive syste
 
   The Spanish translations are ready in the markdown file and can be implemented using whichever
   approach fits your project's pattern.
+
+  # RUT Field
+
+  Now let me check if we need to handle the RUT field for the invitation flow (non-employee roles). Since the
+  better-auth library might not support custom fields, we should store the RUT in a temporary table or handle it
+  when the user accepts the invitation. For now, let's complete the implementation and make sure it works for
+  employee-only invitations:
+
+● Update Todos
+  ⎿  ☒ Analyze the InviteMembersModal component to understand the form structure
+     ☒ Check the form schema to understand how to add the rut field
+     ☒ Add the rut field to the form schema
+     ☒ Add the rut input field to the manual invite tab
+     ☒ Update the bulkInviteMembers action to handle the rut field
+     ☒ Check if authClient.organization.inviteMember supports rut field
+     ☒ Update any related types or interfaces if needed
+
+● I've successfully added the RUT field to the invite members form. Here's what was implemented:
+
+  1. Updated the form schema to include an optional rut field with validation
+  2. Added a RUT input field in the UI between the email and role fields
+  3. Added RUT validation using the existing validateRut function
+  4. Added RUT formatting on blur to properly format the input
+  5. Updated the addEmployeeWithoutInvite action to accept and save the RUT when creating new users
+  6. Updated the modal to pass the RUT field when inviting employee-only users
+
+  The implementation includes:
+  - RUT validation to ensure only valid Chilean RUTs are accepted
+  - Automatic formatting when the user leaves the field (onBlur)
+  - The field is optional, so users can still be invited without a RUT
+  - For employee-only invitations, the RUT is saved directly to the user record
+
+  Note: For invitations with admin or auditor roles that use the authClient.organization.inviteMember method, the
+  RUT field won't be processed since the better-auth library doesn't support custom fields. To fully support RUT
+  for all invitation types, you would need to implement a custom invitation system that stores the RUT temporarily
+   and associates it when the user accepts the invitation.

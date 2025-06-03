@@ -1658,7 +1658,6 @@
   resolved "workspace:apps/app"
   devDependencies:
     "@comp/db" "workspace:*"
-  devDependencies:
     "@trigger.dev/build" "3.3.17"
     "@types/node" "^22.15.2"
     "@types/react" "19.1.2"
@@ -1677,10 +1676,8 @@
     "@browserbasehq/sdk" "^2.5.0"
     "@calcom/atoms" "^1.0.102-framer"
     "@calcom/embed-react" "^1.5.3"
-  dependencies:
     "@comp/db" "workspace:*"
     "@comp/notifications" "workspace:*"
-  dependencies:
     "@date-fns/tz" "^1.2.0"
     "@dnd-kit/core" "^6.3.1"
     "@dnd-kit/modifiers" "^9.0.0"
@@ -1823,7 +1820,7 @@
     "@radix-ui/react-separator" "1.1.1"
     "@radix-ui/react-slider" "1.2.2"
     "@radix-ui/react-slot" "1.1.1"
-    "@radix-ui/react-switch" "1.2.4"
+    "@radix-ui/react-switch" "1.2.5"
     "@radix-ui/react-tabs" "1.1.2"
     "@radix-ui/react-toast" "1.2.4"
     "@radix-ui/react-toggle" "1.1.1"
@@ -1950,7 +1947,7 @@
     "@radix-ui/react-separator" "1.1.1"
     "@radix-ui/react-slider" "1.2.2"
     "@radix-ui/react-slot" "1.1.1"
-    "@radix-ui/react-switch" "1.2.4"
+    "@radix-ui/react-switch" "1.2.5"
     "@radix-ui/react-tabs" "1.1.2"
     "@radix-ui/react-toast" "1.2.4"
     "@radix-ui/react-toggle" "1.1.1"
@@ -2014,7 +2011,7 @@
     "@radix-ui/react-separator" "^1.1.0"
     "@radix-ui/react-slider" "^1.2.1"
     "@radix-ui/react-slot" "^1.1.0"
-    "@radix-ui/react-switch" "^1.2.4"
+    "@radix-ui/react-switch" "^1.2.5"
     "@radix-ui/react-tabs" "^1.1.1"
     "@radix-ui/react-toast" "^1.2.2"
     "@radix-ui/react-tooltip" "^1.1.3"
@@ -4344,8 +4341,6 @@
   resolved "https://registry.npmjs.org/@radix-ui/react-dialog/-/react-dialog-1.1.14.tgz"
   integrity sha512-+CpweKjqpzTmwRwcYECQcNYbI8V9VSQt0SNFKeEBLgfucbsLssU6Ppq7wUdNXEGb573bMjFhVjKVll8rmV6zMw==
   dependencies:
-    aria-hidden "^1.2.4"
-    react-remove-scroll "^2.6.3"
     "@radix-ui/primitive" "1.1.2"
     "@radix-ui/react-compose-refs" "1.1.2"
     "@radix-ui/react-context" "1.1.2"
@@ -4358,6 +4353,8 @@
     "@radix-ui/react-primitive" "2.1.3"
     "@radix-ui/react-slot" "1.2.3"
     "@radix-ui/react-use-controllable-state" "1.2.2"
+    aria-hidden "^1.2.4"
+    react-remove-scroll "^2.6.3"
 
 "@radix-ui/react-direction@1.1.0":
   version "1.1.0"
@@ -4819,7 +4816,7 @@
   dependencies:
     "@radix-ui/react-compose-refs" "1.1.2"
 
-"@radix-ui/react-switch@1.2.4", "@radix-ui/react-switch@^1.1.0", "@radix-ui/react-switch@^1.2.4":
+"@radix-ui/react-switch@^1.1.0":
   version "1.2.4"
   resolved "https://registry.npmjs.org/@radix-ui/react-switch/-/react-switch-1.2.4.tgz"
   integrity sha512-yZCky6XZFnR7pcGonJkr9VyNRu46KcYAbyg1v/gVVCZUr8UJ4x+RpncC27hHtiZ15jC+3WS8Yg/JSgyIHnYYsQ==
@@ -4828,6 +4825,19 @@
     "@radix-ui/react-compose-refs" "1.1.2"
     "@radix-ui/react-context" "1.1.2"
     "@radix-ui/react-primitive" "2.1.2"
+    "@radix-ui/react-use-controllable-state" "1.2.2"
+    "@radix-ui/react-use-previous" "1.1.1"
+    "@radix-ui/react-use-size" "1.1.1"
+
+"@radix-ui/react-switch@1.2.5", "@radix-ui/react-switch@^1.2.5":
+  version "1.2.5"
+  resolved "https://registry.npmjs.org/@radix-ui/react-switch/-/react-switch-1.2.5.tgz"
+  integrity sha512-5ijLkak6ZMylXsaImpZ8u4Rlf5grRmoc0p0QeX9VJtlrM4f5m3nCTX8tWga/zOA8PZYIR/t0p2Mnvd7InrJ6yQ==
+  dependencies:
+    "@radix-ui/primitive" "1.1.2"
+    "@radix-ui/react-compose-refs" "1.1.2"
+    "@radix-ui/react-context" "1.1.2"
+    "@radix-ui/react-primitive" "2.1.3"
     "@radix-ui/react-use-controllable-state" "1.2.2"
     "@radix-ui/react-use-previous" "1.1.1"
     "@radix-ui/react-use-size" "1.1.1"
@@ -16490,6 +16500,11 @@ run-parallel@^1.1.9:
   dependencies:
     queue-microtask "^1.2.2"
 
+rut.js@^2.1.0:
+  version "2.1.0"
+  resolved "https://registry.npmjs.org/rut.js/-/rut.js-2.1.0.tgz"
+  integrity sha512-v8tXUbqycX2frkeZBcCJgn2dbZE29S21bOF+tRmow58m2qEVz5lGLmNaJ9ahTRfj3WEfwl55mTZi8qqE91w81g==
+
 rw@1:
   version "1.3.3"
   resolved "https://registry.npmjs.org/rw/-/rw-1.3.3.tgz"
@@ -19042,9 +19057,9 @@ zod@3.23.8:
   integrity sha512-OdqJE9UDRPwWsrHjLN2F8bPxvwJBK22EHLWtanu0LSYr5YqzsaaW3RMgmjwr8Rypg5k+meEJdSPXJZXE/yqOMg==
 
 zod@latest:
-  version "3.25.28"
-  resolved "https://registry.npmjs.org/zod/-/zod-3.25.28.tgz"
-  integrity sha512-/nt/67WYKnr5by3YS7LroZJbtcCBurDKKPBPWWzaxvVCGuG/NOsiKkrjoOhI8mJ+SQUXEbUzeB3S+6XDUEEj7Q==
+  version "3.25.48"
+  resolved "https://registry.npmjs.org/zod/-/zod-3.25.48.tgz"
+  integrity sha512-0X1mz8FtgEIvaxGjdIImYpZEaZMrund9pGXm3M6vM7Reba0e2eI71KPjSCGXBfwKDPwPoywf6waUKc3/tFvX2Q==
 
 zod-error@1.5.0:
   version "1.5.0"

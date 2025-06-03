@@ -25,9 +25,10 @@ export default async function RootLayout({
 		headers: await headers(),
 	});
 
+	const emailDomain = session?.user.email.split("@")[1];
 	const hasSession =
 		session?.session.id &&
-		session.user.email.split("@")[1] === "trycomp.ai";
+		(emailDomain === "trycomp.ai" || emailDomain === "aubo.ai");
 
 	return (
 		<html lang="en" className="h-full">
