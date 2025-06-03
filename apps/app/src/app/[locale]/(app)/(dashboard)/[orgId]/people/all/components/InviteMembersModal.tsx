@@ -451,7 +451,7 @@ export function InviteMembersModal({
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent
-				className="sm:max-w-lg"
+				className="sm:max-w-2xl"
 				onInteractOutside={(e) => {
 					e.preventDefault();
 				}}
