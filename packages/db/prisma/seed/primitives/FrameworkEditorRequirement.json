@@ -7252,5 +7252,50 @@
     "identifier": "",
     "createdAt": "2025-05-14 19:20:44.920",
     "updatedAt": "2025-05-14 19:20:44.920"
+  },
+  {
+    "id": "frk_rq_ley21595_001",
+    "frameworkId": "frk_ley21595_001",
+    "name": "Modelo de Prevención",
+    "description": "Implementación y operación de un modelo de prevención de delitos",
+    "identifier": "MP-1",
+    "createdAt": "2025-05-14 19:20:44.920",
+    "updatedAt": "2025-05-14 19:20:44.920"
+  },
+  {
+    "id": "frk_rq_ley21595_002",
+    "frameworkId": "frk_ley21595_001",
+    "name": "Encargado de Prevención",
+    "description": "Designación de un encargado de prevención de delitos con autonomía",
+    "identifier": "EP-1",
+    "createdAt": "2025-05-14 19:20:44.920",
+    "updatedAt": "2025-05-14 19:20:44.920"
+  },
+  {
+    "id": "frk_rq_ley21595_003",
+    "frameworkId": "frk_ley21595_001",
+    "name": "Identificación de Riesgos",
+    "description": "Identificación de actividades y procesos con riesgo de comisión de delitos",
+    "identifier": "IR-1",
+    "createdAt": "2025-05-14 19:20:44.920",
+    "updatedAt": "2025-05-14 19:20:44.920"
+  },
+  {
+    "id": "frk_rq_ley21595_004",
+    "frameworkId": "frk_ley21595_001",
+    "name": "Protocolos y Procedimientos",
+    "description": "Establecimiento de protocolos y procedimientos para prevenir la comisión de delitos",
+    "identifier": "PP-1",
+    "createdAt": "2025-05-14 19:20:44.920",
+    "updatedAt": "2025-05-14 19:20:44.920"
+  },
+  {
+    "id": "frk_rq_ley21595_005",
+    "frameworkId": "frk_ley21595_001",
+    "name": "Supervisión y Certificación",
+    "description": "Supervisión y certificación del modelo de prevención de delitos",
+    "identifier": "SC-1",
+    "createdAt": "2025-05-14 19:20:44.920",
+    "updatedAt": "2025-05-14 19:20:44.920"
   }
 ]

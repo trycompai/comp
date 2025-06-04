@@ -530,5 +530,33 @@
   {
     "A": "frk_ct_68257d40fcac4d36fddb6e7a",
     "B": "frk_tt_6825a9cf8e50a9f35f6d3d7d"
+  },
+  {
+    "A": "frk_ct_ley21595_001",
+    "B": "frk_tt_ley21595_001"
+  },
+  {
+    "A": "frk_ct_ley21595_001",
+    "B": "frk_tt_ley21595_005"
+  },
+  {
+    "A": "frk_ct_ley21595_002",
+    "B": "frk_tt_ley21595_004"
+  },
+  {
+    "A": "frk_ct_ley21595_003",
+    "B": "frk_tt_ley21595_003"
+  },
+  {
+    "A": "frk_ct_ley21595_004",
+    "B": "frk_tt_ley21595_002"
+  },
+  {
+    "A": "frk_ct_ley21595_005",
+    "B": "frk_tt_ley21595_001"
+  },
+  {
+    "A": "frk_ct_ley21595_005",
+    "B": "frk_tt_ley21595_005"
   }
 ]

@@ -1474,5 +1474,50 @@
     "department": "none",
     "createdAt": "2025-05-15 08:46:19.600",
     "updatedAt": "2025-05-15 08:46:19.600"
+  },
+  {
+    "id": "frk_tt_ley21595_001",
+    "name": "Revisión del Modelo de Prevención",
+    "description": "Revisar y actualizar el modelo de prevención de delitos para asegurar su efectividad y cumplimiento con la Ley 21595",
+    "frequency": "quarterly",
+    "department": "legal",
+    "createdAt": "2025-05-14 19:20:44.920",
+    "updatedAt": "2025-05-14 19:20:44.920"
+  },
+  {
+    "id": "frk_tt_ley21595_002",
+    "name": "Capacitación en Prevención de Delitos",
+    "description": "Realizar capacitaciones al personal sobre prevención de delitos económicos, incluyendo la Ley 21595 y el modelo de prevención implementado",
+    "frequency": "yearly",
+    "department": "hr",
+    "createdAt": "2025-05-14 19:20:44.920",
+    "updatedAt": "2025-05-14 19:20:44.920"
+  },
+  {
+    "id": "frk_tt_ley21595_003",
+    "name": "Evaluación de Riesgos de Delitos",
+    "description": "Realizar evaluación periódica de riesgos de comisión de delitos económicos en los procesos de la organización",
+    "frequency": "yearly",
+    "department": "legal",
+    "createdAt": "2025-05-14 19:20:44.920",
+    "updatedAt": "2025-05-14 19:20:44.920"
+  },
+  {
+    "id": "frk_tt_ley21595_004",
+    "name": "Auditoría del Canal de Denuncias",
+    "description": "Auditar el funcionamiento del canal de denuncias para verificar su efectividad y confidencialidad",
+    "frequency": "quarterly",
+    "department": "legal",
+    "createdAt": "2025-05-14 19:20:44.920",
+    "updatedAt": "2025-05-14 19:20:44.920"
+  },
+  {
+    "id": "frk_tt_ley21595_005",
+    "name": "Reporte al Directorio",
+    "description": "Presentar informe al Directorio sobre el estado del modelo de prevención de delitos y las denuncias recibidas",
+    "frequency": "quarterly",
+    "department": "legal",
+    "createdAt": "2025-05-14 19:20:44.920",
+    "updatedAt": "2025-05-14 19:20:44.920"
   }
 ]

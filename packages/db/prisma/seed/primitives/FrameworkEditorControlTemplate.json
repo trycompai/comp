@@ -922,5 +922,40 @@
     "description": "Define Security Requirements for Applications",
     "createdAt": "2025-05-15 05:35:58.657",
     "updatedAt": "2025-05-16 06:37:15.068"
+  },
+  {
+    "id": "frk_ct_ley21595_001",
+    "name": "Gobierno Corporativo y Ética",
+    "description": "Establecimiento de políticas de gobierno corporativo y código de ética para prevenir delitos económicos",
+    "createdAt": "2025-05-14 19:20:44.920",
+    "updatedAt": "2025-05-14 19:20:44.920"
+  },
+  {
+    "id": "frk_ct_ley21595_002",
+    "name": "Canal de Denuncias",
+    "description": "Implementación de un canal de denuncias anónimo y confidencial para reportar irregularidades",
+    "createdAt": "2025-05-14 19:20:44.920",
+    "updatedAt": "2025-05-14 19:20:44.920"
+  },
+  {
+    "id": "frk_ct_ley21595_003",
+    "name": "Evaluación de Riesgos de Delitos",
+    "description": "Proceso sistemático para identificar y evaluar riesgos de comisión de delitos económicos",
+    "createdAt": "2025-05-14 19:20:44.920",
+    "updatedAt": "2025-05-14 19:20:44.920"
+  },
+  {
+    "id": "frk_ct_ley21595_004",
+    "name": "Capacitación y Comunicación",
+    "description": "Programa de capacitación y comunicación sobre prevención de delitos económicos",
+    "createdAt": "2025-05-14 19:20:44.920",
+    "updatedAt": "2025-05-14 19:20:44.920"
+  },
+  {
+    "id": "frk_ct_ley21595_005",
+    "name": "Monitoreo y Auditoría",
+    "description": "Sistema de monitoreo continuo y auditorías periódicas del modelo de prevención",
+    "createdAt": "2025-05-14 19:20:44.920",
+    "updatedAt": "2025-05-14 19:20:44.920"
   }
 ]
