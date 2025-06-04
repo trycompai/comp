@@ -21,6 +21,7 @@ const DEPARTMENTS = [
 	{ value: "it", label: "IT" },
 	{ value: "itsm", label: "IT Service Management" },
 	{ value: "qms", label: "Quality Management" },
+	{ value: "legal", label: "Legal" },
 	{ value: "none", label: "None" },
 ];
 

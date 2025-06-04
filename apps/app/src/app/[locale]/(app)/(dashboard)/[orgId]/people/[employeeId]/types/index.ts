@@ -29,7 +29,7 @@ export const employeeDetailsInputSchema = z.object({
 
 export const updateEmployeeDepartmentSchema = z.object({
 	employeeId: z.string(),
-	department: z.enum(["admin", "gov", "hr", "it", "itsm", "qms", "none"]),
+	department: z.enum(["admin", "gov", "hr", "it", "itsm", "qms", "legal", "none"]),
 });
 
 export type EmployeeTask = z.infer<typeof employeeTaskSchema>;

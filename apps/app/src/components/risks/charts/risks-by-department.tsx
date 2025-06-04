@@ -6,7 +6,7 @@ import { headers } from "next/headers";
 import { cache } from "react";
 import { DepartmentChart } from "./department-chart";
 
-const ALL_DEPARTMENTS = ["none", "admin", "gov", "hr", "it", "itsm", "qms"];
+const ALL_DEPARTMENTS = ["none", "admin", "gov", "hr", "it", "itsm", "qms", "legal"];
 
 export async function RisksByDepartment() {
 	const t = await getI18n();

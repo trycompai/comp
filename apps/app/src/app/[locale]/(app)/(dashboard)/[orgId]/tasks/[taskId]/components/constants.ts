@@ -21,6 +21,7 @@ export const taskDepartments: Departments[] = [
 	"it",
 	"itsm",
 	"qms",
+	"legal",
 ];
 
 // Define MAIN colors for Departments
@@ -32,4 +33,5 @@ export const DEPARTMENT_COLORS: Record<Departments, string> = {
 	it: "#22c55e", // Green
 	itsm: "#3b82f6", // Blue
 	qms: "#a855f7", // Purple
+	legal: "#ef4444", // Red
 };

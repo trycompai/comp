@@ -103,6 +103,7 @@ const employeeFormSchema = z.object({
 		"it",
 		"itsm",
 		"qms",
+		"legal",
 		"none",
 	] as const),
 	status: z.enum(["active", "inactive"] as const),

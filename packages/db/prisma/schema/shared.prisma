@@ -79,6 +79,7 @@ enum Departments {
     it
     itsm
     qms
+    legal
 }
 
 enum Frequency {
