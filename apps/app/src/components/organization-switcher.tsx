@@ -255,7 +255,7 @@ export function OrganizationSwitcher({
 								{organizations.map((org) => (
 									<CommandItem
 										key={org.id}
-										value={org.id}
+										value={`${org.id} ${getDisplayName(org) ?? ""}`}
 										onSelect={() => {
 											if (
 												org.id !==
@@ -268,19 +268,20 @@ export function OrganizationSwitcher({
 										}}
 										disabled={isLoading}
 									>
-										{isLoading && pendingOrgId === org.id ? (
+										{isLoading &&
+										pendingOrgId === org.id ? (
 											<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+										) : !isLoading &&
+											currentOrganization?.id ===
+												org.id ? (
+											<Check
+												className={cn(
+													"mr-2 h-4 w-4",
+													"opacity-100",
+												)}
+											/>
 										) : (
-											!isLoading && currentOrganization?.id === org.id ? (
-												<Check
-													className={cn(
-														"mr-2 h-4 w-4",
-														"opacity-100"
-													)}
-												/>
-											) : (
-												<span className="mr-2 h-4 w-4" />
-											)
+											<span className="mr-2 h-4 w-4" />
 										)}
 										<OrganizationInitialsAvatar
 											name={org.name}
