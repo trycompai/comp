@@ -1,3 +1,112 @@
+# [1.41.0](https://github.com/trycompai/comp/compare/v1.40.0...v1.41.0) (2025-06-11)
+
+
+### Features
+
+* **api:** add organization initialization after reset ([89b2d2e](https://github.com/trycompai/comp/commit/89b2d2e97bc9b3f8394e940f5d1ef09552048b90))
+
+# [1.40.0](https://github.com/trycompai/comp/compare/v1.39.0...v1.40.0) (2025-06-11)
+
+
+### Bug Fixes
+
+* **SidebarCollapseButton:** handle optimistic update rollback on error ([bf6298d](https://github.com/trycompai/comp/commit/bf6298d581c1926f12458ddc815307b874d1712a))
+
+
+### Features
+
+* add Fleet integration for endpoint monitoring and management ([748af0e](https://github.com/trycompai/comp/commit/748af0e191f4ad934fd86f3c373c7f48e5854a64))
+* add support for fleet in db ([44f6ee2](https://github.com/trycompai/comp/commit/44f6ee2ad8e82337ed5b9a8734a2d720d7cef2fe))
+* **components:** introduce CardLiquidGlass component and update PageCore layout ([4345ff1](https://github.com/trycompai/comp/commit/4345ff16c6151e575ea7ddfa03447d1a0ed4896d))
+* **design-system:** add new design system rules ([966d8d8](https://github.com/trycompai/comp/commit/966d8d8cd1515219d97ff62d673ba7954182c3d6))
+* employee devices showing in app and portal ([5a71b5b](https://github.com/trycompai/comp/commit/5a71b5bed2f2f19a2f8dbbc05fbecb52a1fa24bc))
+* **header:** add inbox icon to feedback link ([ed32c23](https://github.com/trycompai/comp/commit/ed32c23a80d5a388f58ce5003706ebab5c0bcd57))
+* list out employee devices and overview chart ([7c2f8bb](https://github.com/trycompai/comp/commit/7c2f8bb7f1a616d3aa0af32df9ac8ee1b647700e))
+* **policies:** introduce new layout component for policies overview ([87d25a0](https://github.com/trycompai/comp/commit/87d25a05376c628555d75bd52002d44ddc1d921d))
+* **ui:** add search icon to input components ([44ea88c](https://github.com/trycompai/comp/commit/44ea88c41c1c06216788680f68fd6a30dd4ab7cf))
+
+# [1.39.0](https://github.com/trycompai/comp/compare/v1.38.0...v1.39.0) (2025-06-09)
+
+
+### Features
+
+* **api:** reset onboarding status during org reset ([5b7e531](https://github.com/trycompai/comp/commit/5b7e531e6115eb4c9ef02e70e9e2044c28ad7a41))
+
+# [1.38.0](https://github.com/trycompai/comp/compare/v1.37.0...v1.38.0) (2025-06-09)
+
+
+### Features
+
+* **api:** add reset organization endpoint ([9a118d1](https://github.com/trycompai/comp/commit/9a118d1d1985c6e4b1055af97412f597eb365dfe))
+
+# [1.37.0](https://github.com/trycompai/comp/compare/v1.36.3...v1.37.0) (2025-06-09)
+
+
+### Features
+
+* **status:** add 'not_relevant' status and update related components ([e1b6597](https://github.com/trycompai/comp/commit/e1b6597d9f2e3566ccd61bbe0391397f7960b2e5))
+* **TaskStatusIndicator:** add 'not_relevant' status indicator ([ca2d9e0](https://github.com/trycompai/comp/commit/ca2d9e0cb2c2d80ab2b089ae5e7ce6fae3d9c187))
+
+## [1.36.3](https://github.com/trycompai/comp/compare/v1.36.2...v1.36.3) (2025-06-08)
+
+
+### Bug Fixes
+
+* fix length of onboarding popover options ([8441015](https://github.com/trycompai/comp/commit/8441015439f2a1c8a442661927ff41321b2b8e77))
+* fix updating title and description of a policy ([44c2fe8](https://github.com/trycompai/comp/commit/44c2fe8075f602617868ef749335efbdcf37e12f))
+* make whole row clickable for select-pills ([7bb85f4](https://github.com/trycompai/comp/commit/7bb85f4d213184697bfbf0f5f592fd450ff0ab04))
+* **tasks:** ensure grid row selection stable ([b10e8b8](https://github.com/trycompai/comp/commit/b10e8b8ad773bfd183f7b005fe3473618d16e147))
+
+## [1.36.2](https://github.com/trycompai/comp/compare/v1.36.1...v1.36.2) (2025-06-07)
+
+
+### Bug Fixes
+
+* fix layout issue with risk matrix chart layout ([55e2985](https://github.com/trycompai/comp/commit/55e298503fd1eb3e2d07c792b7292052985a4c8e))
+
+## [1.36.1](https://github.com/trycompai/comp/compare/v1.36.0...v1.36.1) (2025-06-07)
+
+
+### Bug Fixes
+
+* fix both edit role and cancel invitation issues with dialog ([37f783b](https://github.com/trycompai/comp/commit/37f783baa04ee4395d19ebaee026988e5833bc24))
+
+# [1.36.0](https://github.com/trycompai/comp/compare/v1.35.1...v1.36.0) (2025-06-06)
+
+
+### Features
+
+* add materialized view for organization statistics ([f44f375](https://github.com/trycompai/comp/commit/f44f375b38853137ed1bdbe0bd07a5e9f3873d10))
+* add scheduled task to refresh OrganizationStats materialized view ([b04baf4](https://github.com/trycompai/comp/commit/b04baf497bc79ea1520f6ada8a11a1f8132d81fe))
+
+## [1.35.1](https://github.com/trycompai/comp/compare/v1.35.0...v1.35.1) (2025-06-06)
+
+
+### Bug Fixes
+
+* fix issue with redirect to onboarding ([f9d3e4d](https://github.com/trycompai/comp/commit/f9d3e4de5576812b45c1da5df8f03b12f086ad6f))
+
+# [1.35.0](https://github.com/trycompai/comp/compare/v1.34.0...v1.35.0) (2025-06-06)
+
+
+### Features
+
+* add readonly role with SELECT permissions for all non-system schemas ([b7ba0f9](https://github.com/trycompai/comp/commit/b7ba0f940d7edaaf9e12d66f11f160b29fd067f6))
+
+# [1.34.0](https://github.com/trycompai/comp/compare/v1.33.1...v1.34.0) (2025-06-05)
+
+
+### Bug Fixes
+
+* update organization ID reference in OrganizationSwitcher component ([a930de6](https://github.com/trycompai/comp/commit/a930de64f48e12e03ed361f51597b16b3a979fe3))
+
+
+### Features
+
+* add cascading delete constraints for organization relationships ([1b7fbb6](https://github.com/trycompai/comp/commit/1b7fbb6694e0104eebaa35226be0cdcd5ed3213a))
+* add script to remove localization from the codebase ([54e36c4](https://github.com/trycompai/comp/commit/54e36c43d2ae3e6c1808a644ad62bf29c953aaab))
+* implement localization removal script and TypeScript configuration ([90d944b](https://github.com/trycompai/comp/commit/90d944bfb85d8a7d8b53ab8789c6eeff290e6431))
+
 ## [1.33.1](https://github.com/trycompai/comp/compare/v1.33.0...v1.33.1) (2025-06-05)
 
 
