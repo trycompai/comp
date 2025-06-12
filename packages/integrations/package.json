@@ -14,7 +14,7 @@
     "@aws-sdk/client-securityhub": "^3.0.0",
     "@azure/identity": "^3.0.0",
     "@comp/app": "workspace:*",
-    "@google-cloud/security-center": "^7.0.0",
+    "@google-cloud/security-center": "^9.0.1",
     "@slack/bolt": "^3.22.0",
     "@slack/web-api": "^7.8.0",
     "ai": "^3.4.33",
