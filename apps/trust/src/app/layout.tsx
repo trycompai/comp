@@ -30,7 +30,7 @@ export default function RootLayout({
                     "whitespace-pre-line overscroll-none antialiased",
                 )}
             >
-                <div className="flex flex-col container min-h-screen">
+                <div className="flex flex-col container min-h-screen mx-auto">
                     {children}
                 </div>
                 <Toaster />
