@@ -12,7 +12,7 @@
   "dependencies": {
     "@ai-sdk/openai": "^0.0.66",
     "@aws-sdk/client-securityhub": "^3.0.0",
-    "@azure/identity": "^3.0.0",
+    "@azure/identity": "^4.2.0",
     "@comp/app": "workspace:*",
     "@google-cloud/security-center": "^7.0.0",
     "@slack/bolt": "^3.22.0",

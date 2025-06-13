@@ -39,7 +39,9 @@
 		"semantic-release-discord": "^1.2.0",
 		"turbo": "^2.5.4",
 		"typescript": "^5.8.3",
-		"prettier": "^3.5.3"
+		"prettier": "^3.5.3",
+		"@types/react": "^19.1.6",
+		"@types/react-dom": "^19.1.1"
 	},
 	"lint-staged": {
 		"*.{js,jsx,ts,tsx,json,md}": "prettier --write"
@@ -59,7 +61,6 @@
 		"@react-email/components": "^0.0.41",
 		"@react-email/render": "^1.1.2",
 		"@types/d3": "^7.4.3",
-		"@types/react": "^19.1.6",
 		"ai": "^4.3.16",
 		"d3": "^7.9.0",
 		"dayjs": "^1.11.13",
@@ -75,8 +76,7 @@
 		"semantic-release-discord-notifier": "^1.0.11",
 		"sharp": "^0.33.5",
 		"use-debounce": "^10.0.4",
-		"zod": "^3.25.49",
-		"@types/react-dom": "^19.1.1"
+		"zod": "^3.25.49"
 	},
 	"version": "1.41.1"
 }

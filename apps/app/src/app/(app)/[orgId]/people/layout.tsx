@@ -50,6 +50,10 @@ export default async function Layout({
 								},
 							]
 						: []),
+					{
+						path: `/${orgId}/people/devices`,
+						label: "Employee Devices",
+					},
 				]}
 			/>
 

@@ -856,7 +856,7 @@
   dependencies:
     tslib "^2.6.2"
 
-"@azure/core-auth@^1.3.0", "@azure/core-auth@^1.4.0", "@azure/core-auth@^1.5.0", "@azure/core-auth@^1.8.0", "@azure/core-auth@^1.9.0":
+"@azure/core-auth@^1.3.0", "@azure/core-auth@^1.4.0", "@azure/core-auth@^1.8.0", "@azure/core-auth@^1.9.0":
   version "1.9.0"
   resolved "https://registry.npmjs.org/@azure/core-auth/-/core-auth-1.9.0.tgz"
   integrity sha512-FPwHpZywuyasDSLMqJ6fhbOK3TqUdviZNF8OqRGA4W5Ewib2lEEZ+pBsYcBa88B2NGO/SEnYPGhyBqNlE8ilSw==
@@ -865,7 +865,7 @@
     "@azure/core-util" "^1.11.0"
     tslib "^2.6.2"
 
-"@azure/core-client@^1.4.0", "@azure/core-client@^1.9.2":
+"@azure/core-client@^1.9.2":
   version "1.9.4"
   resolved "https://registry.npmjs.org/@azure/core-client/-/core-client-1.9.4.tgz"
   integrity sha512-f7IxTD15Qdux30s2qFARH+JxgwxWLG2Rlr4oSkPGuLWm+1p5y1+C04XGLA0vmX6EtqfutmjvpNmAfgwVIS5hpw==
@@ -898,7 +898,7 @@
     uuid "^8.3.0"
     xml2js "^0.5.0"
 
-"@azure/core-rest-pipeline@^1.1.0", "@azure/core-rest-pipeline@^1.17.0", "@azure/core-rest-pipeline@^1.20.0":
+"@azure/core-rest-pipeline@^1.17.0", "@azure/core-rest-pipeline@^1.20.0":
   version "1.21.0"
   resolved "https://registry.npmjs.org/@azure/core-rest-pipeline/-/core-rest-pipeline-1.21.0.tgz"
   integrity sha512-a4MBwe/5WKbq9MIxikzgxLBbruC5qlkFYlBdI7Ev50Y7ib5Vo/Jvt5jnJo7NaWeJ908LCHL0S1Us4UMf1VoTfg==
@@ -935,27 +935,7 @@
     "@typespec/ts-http-runtime" "^0.2.2"
     tslib "^2.6.2"
 
-"@azure/identity@^3.0.0":
-  version "3.4.2"
-  resolved "https://registry.npmjs.org/@azure/identity/-/identity-3.4.2.tgz"
-  integrity sha512-0q5DL4uyR0EZ4RXQKD8MadGH6zTIcloUoS/RVbCpNpej4pwte0xpqYxk8K97Py2RiuUvI7F4GXpoT4046VfufA==
-  dependencies:
-    "@azure/abort-controller" "^1.0.0"
-    "@azure/core-auth" "^1.5.0"
-    "@azure/core-client" "^1.4.0"
-    "@azure/core-rest-pipeline" "^1.1.0"
-    "@azure/core-tracing" "^1.0.0"
-    "@azure/core-util" "^1.6.1"
-    "@azure/logger" "^1.0.0"
-    "@azure/msal-browser" "^3.5.0"
-    "@azure/msal-node" "^2.5.1"
-    events "^3.0.0"
-    jws "^4.0.0"
-    open "^8.0.0"
-    stoppable "^1.1.0"
-    tslib "^2.2.0"
-
-"@azure/identity@^4.10.0":
+"@azure/identity@^4.10.0", "@azure/identity@^4.2.0":
   version "4.10.0"
   resolved "https://registry.npmjs.org/@azure/identity/-/identity-4.10.0.tgz"
   integrity sha512-iT53Sre2NJK6wzMWnvpjNiR3md597LZ3uK/5kQD2TkrY9vqhrY5bt2KwELNjkOWQ9n8S/92knj/QEykTtjMNqQ==
@@ -980,13 +960,6 @@
     "@typespec/ts-http-runtime" "^0.2.2"
     tslib "^2.6.2"
 
-"@azure/msal-browser@^3.5.0":
-  version "3.28.1"
-  resolved "https://registry.npmjs.org/@azure/msal-browser/-/msal-browser-3.28.1.tgz"
-  integrity sha512-OHHEWMB5+Zrix8yKvLVzU3rKDFvh7SOzAzXfICD7YgUXLxfHpTPX2pzOotrri1kskwhHqIj4a5LvhZlIqE7C7g==
-  dependencies:
-    "@azure/msal-common" "14.16.0"
-
 "@azure/msal-browser@^4.2.0":
   version "4.13.1"
   resolved "https://registry.npmjs.org/@azure/msal-browser/-/msal-browser-4.13.1.tgz"
@@ -994,24 +967,10 @@
   dependencies:
     "@azure/msal-common" "15.7.0"
 
-"@azure/msal-common@14.16.0":
-  version "14.16.0"
-  resolved "https://registry.npmjs.org/@azure/msal-common/-/msal-common-14.16.0.tgz"
-  integrity sha512-1KOZj9IpcDSwpNiQNjt0jDYZpQvNZay7QAEi/5DLubay40iGYtLzya/jbjRPLyOTZhEKyL1MzPuw2HqBCjceYA==
-
 "@azure/msal-common@15.7.0":
   version "15.7.0"
   resolved "https://registry.npmjs.org/@azure/msal-common/-/msal-common-15.7.0.tgz"
   integrity sha512-m9M5hoFoxhe/HlXNVa4qBHekrX60CVPkWzsjhKQGuzw/OPOmurosKRPDIMn8fug/E1hHI5v33DvT1LVJfItjcg==
-
-"@azure/msal-node@^2.5.1":
-  version "2.16.2"
-  resolved "https://registry.npmjs.org/@azure/msal-node/-/msal-node-2.16.2.tgz"
-  integrity sha512-An7l1hEr0w1HMMh1LU+rtDtqL7/jw74ORlc9Wnh06v7TU/xpG39/Zdr1ZJu3QpjUfKJ+E0/OXMW8DRSWTlh7qQ==
-  dependencies:
-    "@azure/msal-common" "14.16.0"
-    jsonwebtoken "^9.0.0"
-    uuid "^8.3.0"
 
 "@azure/msal-node@^3.5.0":
   version "3.6.0"
@@ -1590,11 +1549,8 @@
   resolved "workspace:apps/app"
   devDependencies:
     "@comp/db" "workspace:*"
-  devDependencies:
     "@trigger.dev/build" "3.3.17"
     "@types/node" "^22.15.2"
-    "@types/react" "^19.1.6"
-    "@types/react-dom" "^19.1.1"
     fleetctl "^4.68.1"
     next "15.4.0-canary.62"
     postcss "^8.5.4"
@@ -1611,10 +1567,8 @@
     "@browserbasehq/sdk" "^2.5.0"
     "@calcom/atoms" "^1.0.102-framer"
     "@calcom/embed-react" "^1.5.3"
-  dependencies:
     "@comp/db" "workspace:*"
     "@comp/notifications" "workspace:*"
-  dependencies:
     "@date-fns/tz" "^1.2.0"
     "@dnd-kit/core" "^6.3.1"
     "@dnd-kit/modifiers" "^9.0.0"
@@ -1674,8 +1628,8 @@
     posthog-js "^1.236.6"
     posthog-node "^4.14.0"
     puppeteer-core "^24.7.2"
-    react-dom "^19.1.0"
     react-email "^4.0.15"
+    react-hook-form "^7.56.3"
     react-hotkeys-hook "^4.6.2"
     react-intersection-observer "^9.16.0"
     react-markdown "^9.1.0"
@@ -1709,21 +1663,16 @@
   version "workspace:packages/email"
   resolved "workspace:packages/email"
   devDependencies:
-    "@types/react" "^19.1.6"
-    "@types/react-dom" "^19.1.1"
-    react "^19.1.0"
     tsup "^8.4.0"
     typescript "^5.8.3"
   dependencies:
     "@comp/ui" "workspace:*"
     "@comp/utils" "workspace:*"
-  dependencies:
     "@react-email/components" "0.0.36"
     "@react-email/render" "^1.1.2"
     "@react-email/tailwind" "1.0.4"
     date-fns "^4.1.0"
     next "^15.4.0-canary.62"
-    react-dom "^19.1.0"
     react-email "^4.0.15"
     responsive-react-email "^0.0.5"
 
@@ -1732,8 +1681,6 @@
   resolved "workspace:apps/framework-editor"
   devDependencies:
     "@types/node" "^22"
-    "@types/react" "^19.1.6"
-    "@types/react-dom" "^19.1.1"
     next "15.4.0-canary.62"
     postcss "^8.5.3"
     tailwindcss "3"
@@ -1741,7 +1688,6 @@
   dependencies:
     "@comp/db" "workspace:*"
     "@comp/ui" "workspace:*"
-  dependencies:
     "@hookform/resolvers" "^3.9.1"
     "@radix-ui/react-accordion" "1.2.2"
     "@radix-ui/react-alert-dialog" "1.1.4"
@@ -1789,7 +1735,6 @@
     next-themes "^0.4.4"
     react-datasheet-grid "^4.11.5"
     react-day-picker "8.10.1"
-    react-dom "^19.1.0"
     react-email "^4.0.15"
     react-resizable-panels "^2.1.7"
     react-select "^5.10.1"
@@ -1810,7 +1755,7 @@
   dependencies:
     "@ai-sdk/openai" "^0.0.66"
     "@aws-sdk/client-securityhub" "^3.0.0"
-    "@azure/identity" "^3.0.0"
+    "@azure/identity" "^4.2.0"
   dependencies:
     "@comp/app" "workspace:*"
   dependencies:
@@ -1845,6 +1790,7 @@
   devDependencies:
     "@comp/db" "workspace:*"
     "@comp/ui" "workspace:*"
+  devDependencies:
     "@types/node" "^22.13.2"
     "@types/react" "^19.1.6"
     "@types/react-dom" "^19.1.1"
@@ -1880,6 +1826,7 @@
   dependencies:
     "@comp/db" "workspace:*"
     "@comp/ui" "workspace:*"
+  dependencies:
     "@hookform/resolvers" "^3.9.1"
     "@radix-ui/react-accordion" "1.2.2"
     "@radix-ui/react-alert-dialog" "1.1.4"
@@ -1944,11 +1891,7 @@
   version "workspace:packages/ui"
   resolved "workspace:packages/ui"
   devDependencies:
-    "@types/react" "^19.1.6"
-    "@types/react-dom" "^19.1.1"
     autoprefixer "^10.4.20"
-    react "19.1.0"
-    react-dom "19.1.0"
     typescript "^5.8.3"
   dependencies:
     "@radix-ui/react-accordion" "^1.2.1"
@@ -10259,7 +10202,7 @@ eventemitter3@^5, eventemitter3@^5.0.1:
   resolved "https://registry.npmjs.org/eventemitter3/-/eventemitter3-5.0.1.tgz"
   integrity sha512-GWkBvjiSZK87ELrYOSESUYeVIc9mvLLf/nXalMOS5dYrgZq9o5OVkbZAVM06CVxYsCwH9BDZFPlQTlPA1j4ahA==
 
-events@^3.0.0, events@^3.3.0:
+events@^3.3.0:
   version "3.3.0"
   resolved "https://registry.npmjs.org/events/-/events-3.3.0.tgz"
   integrity sha512-mQw+2fkQbALzQ7V0MY0IqdnXNOeTtP4r0lN9z7AAawCXgqea7bDii20AYrIBrFd/Hx0M2Ocz6S111CaFkUcb0Q==
@@ -14645,7 +14588,7 @@ onetime@^7.0.0:
   dependencies:
     mimic-function "^5.0.0"
 
-open@^8.0.0, open@^8.4.0:
+open@^8.4.0:
   version "8.4.2"
   resolved "https://registry.npmjs.org/open/-/open-8.4.2.tgz"
   integrity sha512-7x81NCL719oNbsq/3mh+hVrAWmFuEYUqrq/Iw3kUzH8ReypT9QQ0BLoJS7/G9k6N81XjW4qHWtjWwe/9eLy1EQ==
@@ -15924,7 +15867,7 @@ rc@1.2.8, rc@^1.2.8:
     minimist "^1.2.0"
     strip-json-comments "~2.0.1"
 
-react@*, react@18.x, react@19.1.0, "react@>= 16.14", "react@>= 16.8 || 18.0.0", "react@>= 16.8.0 || 17.x.x || ^18.0.0-0 || ^19.0.0-0", "react@>= 18.2.0", react@>=16, react@>=16.6.0, react@>=16.8, "react@>=16.8.0 || ^17.0.0 || ^18", react@>=16.8.1, "react@>=16.8.6 || ^17.0.0 || ^18.0.0", react@>=17, react@>=18, "react@>=18.2.0 || ^19.0.0-0", "react@^0.14 || ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0", "react@^16.0.0 || ^17.0.0 || ^18.0.0", "react@^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^16.11.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^16.14.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react@^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0-rc", "react@^16.8 || ^17 || ^18 || ^19 || ^19.0.0-rc", "react@^16.8 || ^17.0 || ^18.0", "react@^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react@^16.8.0 || ^17 || ^18 || ^19", "react@^16.8.0 || ^17.0.0 || ^18.0.0", "react@^16.8.0 || ^17.0.0 || ^18.0.0 || >=19.0.0-rc <19.0.0 || ^19.0.0", "react@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react@^16.8.0 || ^17.0.1 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react@^16.x || ^17.x || ^18.x || ^19.0.0 || ^19.0.0-rc", "react@^17.0.0 || ^18.0.0 || ^19.0.0", "react@^17.0.2 || ^18.0.0 || ^19.0.0", "react@^18 || ^19", "react@^18 || ^19 || ^19.0.0-rc", "react@^18.0 || ^19.0", "react@^18.0 || ^19.0 || ^19.0.0-rc", react@^18.0.0, "react@^18.0.0 || ^19.0.0", "react@^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react@^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0", "react@^18.2.0 || ^19.0.0", react@^19.1.0:
+react@*, react@18.x, "react@>= 16.14", "react@>= 16.8 || 18.0.0", "react@>= 16.8.0 || 17.x.x || ^18.0.0-0 || ^19.0.0-0", "react@>= 18.2.0", react@>=16, react@>=16.6.0, react@>=16.8, "react@>=16.8.0 || ^17.0.0 || ^18", react@>=16.8.1, "react@>=16.8.6 || ^17.0.0 || ^18.0.0", react@>=17, react@>=18, "react@>=18.2.0 || ^19.0.0-0", "react@^0.14 || ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0", "react@^16.0.0 || ^17.0.0 || ^18.0.0", "react@^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^16.11.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^16.14.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react@^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0-rc", "react@^16.8 || ^17 || ^18 || ^19 || ^19.0.0-rc", "react@^16.8 || ^17.0 || ^18.0", "react@^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react@^16.8.0 || ^17 || ^18 || ^19", "react@^16.8.0 || ^17.0.0 || ^18.0.0", "react@^16.8.0 || ^17.0.0 || ^18.0.0 || >=19.0.0-rc <19.0.0 || ^19.0.0", "react@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react@^16.8.0 || ^17.0.1 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react@^16.x || ^17.x || ^18.x || ^19.0.0 || ^19.0.0-rc", "react@^17.0.0 || ^18.0.0 || ^19.0.0", "react@^17.0.2 || ^18.0.0 || ^19.0.0", "react@^18 || ^19", "react@^18 || ^19 || ^19.0.0-rc", "react@^18.0 || ^19.0", "react@^18.0 || ^19.0 || ^19.0.0-rc", react@^18.0.0, "react@^18.0.0 || ^19.0.0", "react@^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react@^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0", "react@^18.2.0 || ^19.0.0", react@^19.1.0:
   version "19.1.0"
   resolved "https://registry.npmjs.org/react/-/react-19.1.0.tgz"
   integrity sha512-FS+XFBNvn3GTAWq26joslQgWNoFu08F4kl0J4CgdNKADkdSGXQyTCnKteIAJy96Br6YbpEU1LSzV5dYtjMkMDg==
@@ -15971,7 +15914,7 @@ react-dnd-html5-backend@^16.0.1:
   dependencies:
     dnd-core "^16.0.1"
 
-react-dom@*, react-dom@19.1.0, "react-dom@>= 18.2.0", react-dom@>=16.6.0, react-dom@>=16.8, react-dom@>=16.8.1, "react-dom@>=16.8.6 || ^17.0.0 || ^18.0.0", react-dom@>=17, react-dom@>=18.0.0, "react-dom@^0.14 || ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom@^16.0.0 || ^17.0.0 || ^18.0.0", "react-dom@^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom@^16.14.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react-dom@^16.8 || ^17 || ^18 || ^19 || ^19.0.0-rc", "react-dom@^16.8 || ^17.0 || ^18.0", "react-dom@^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom@^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom@^18 || ^19", "react-dom@^18 || ^19 || ^19.0.0-rc", react-dom@^18.0.0, "react-dom@^18.0.0 || ^19.0.0", "react-dom@^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react-dom@^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0", "react-dom@^18.2.0 || ^19.0.0", react-dom@^19.1.0:
+react-dom@*, "react-dom@>= 18.2.0", react-dom@>=16.6.0, react-dom@>=16.8, react-dom@>=16.8.1, "react-dom@>=16.8.6 || ^17.0.0 || ^18.0.0", react-dom@>=17, react-dom@>=18.0.0, "react-dom@^0.14 || ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom@^16.0.0 || ^17.0.0 || ^18.0.0", "react-dom@^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom@^16.14.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react-dom@^16.8 || ^17 || ^18 || ^19 || ^19.0.0-rc", "react-dom@^16.8 || ^17.0 || ^18.0", "react-dom@^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom@^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom@^18 || ^19", "react-dom@^18 || ^19 || ^19.0.0-rc", react-dom@^18.0.0, "react-dom@^18.0.0 || ^19.0.0", "react-dom@^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react-dom@^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0", "react-dom@^18.2.0 || ^19.0.0", react-dom@^19.1.0:
   version "19.1.0"
   resolved "https://registry.npmjs.org/react-dom/-/react-dom-19.1.0.tgz"
   integrity sha512-Xs1hdnE+DyKgeHJeJznQmYMIBG3TKIHJJT95Q58nHLSrElKlGQqDTR2HQ9fx5CN/Gk6Vh/kupBTDLU11/nDk/g==
@@ -17459,11 +17402,6 @@ stop-iteration-iterator@^1.0.0, stop-iteration-iterator@^1.1.0:
   dependencies:
     es-errors "^1.3.0"
     internal-slot "^1.1.0"
-
-stoppable@^1.1.0:
-  version "1.1.0"
-  resolved "https://registry.npmjs.org/stoppable/-/stoppable-1.1.0.tgz"
-  integrity sha512-KXDYZ9dszj6bzvnEMRYvxgeTHU74QBFL54XKtP3nyMuJ81CFYtABZ3bAzL2EdFUaEwJOBOgENyFj3R7oTzDyyw==
 
 stream-combiner2@~1.1.1:
   version "1.1.1"
@@ -19269,6 +19207,11 @@ zod@3.23.8:
   version "3.25.63"
   resolved "https://registry.npmjs.org/zod/-/zod-3.25.63.tgz"
   integrity sha512-3ttCkqhtpncYXfP0f6dsyabbYV/nEUW+Xlu89jiXbTBifUfjaSqXOG6JnQPLtqt87n7KAmnMqcjay6c0Wq0Vbw==
+
+zod@latest:
+  version "3.25.64"
+  resolved "https://registry.npmjs.org/zod/-/zod-3.25.64.tgz"
+  integrity sha512-hbP9FpSZf7pkS7hRVUrOjhwKJNyampPgtXKc3AN6DsWtoHsg2Sb4SQaS4Tcay380zSwd2VPo9G9180emBACp5g==
 
 zod-error@1.5.0:
   version "1.5.0"

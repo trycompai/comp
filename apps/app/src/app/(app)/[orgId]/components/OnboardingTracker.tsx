@@ -66,23 +66,6 @@ export const OnboardingTracker = ({
 		return () => clearInterval(interval);
 	}, [run?.status]);
 
-	if (error) {
-		return (
-			<Alert
-				variant="destructive" // This will use destructive colors from your theme
-				className="max-w-2xl mx-auto my-2 shadow-xl" // Removed specific red colors, rely on variant
-			>
-				<ShieldAlert className="h-5 w-5 text-destructive" />{" "}
-				{/* Use theme destructive color */}
-				<AlertTitle className="text-base font-semibold">
-					System Alert
-				</AlertTitle>{" "}
-				{/* Rely on Alert's variant styling */}
-				<AlertDescription>{error.message}</AlertDescription>
-			</Alert>
-		);
-	}
-
 	if (!triggerJobId) {
 		return (
 			<Card className="w-full max-w-2xl mx-auto my-2 bg-card text-card-foreground shadow-xl">
