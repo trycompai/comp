@@ -3,7 +3,6 @@ import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 const AWS_REGION = process.env.AWS_REGION;
 const AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID;
 const AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY;
-
 export const BUCKET_NAME = process.env.AWS_BUCKET_NAME;
 
 if (
@@ -68,11 +67,18 @@ export async function getFleetAgent({
     throw new Error("FLEET_AGENT_BUCKET_NAME is not defined.");
   }
 
-  const getFleetAgentCommand = new GetObjectCommand({
+  console.log("Getting fleet agent for os: ", {
     Bucket: fleetBucketName,
     Key: `/${os}/fleet-osquery.pkg`,
   });
 
+  const getFleetAgentCommand = new GetObjectCommand({
+    Bucket: fleetBucketName,
+    Key: `${os}/fleet-osquery.pkg`,
+  });
+
   const response = await s3Client.send(getFleetAgentCommand);
+
+  console.log("Fleet agent downloaded for os: ", os);
   return response.Body;
 }

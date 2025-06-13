@@ -18,7 +18,7 @@ jobs:
         run: rm -rf node_modules .bun
       - name: Install dependencies
         run: |
-          bun install --frozen-lockfile
+          bun install
       - name: Generate Prisma client
         working-directory: ./packages/db
         run: bunx prisma generate

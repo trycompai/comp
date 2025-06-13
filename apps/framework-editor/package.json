@@ -70,15 +70,17 @@
     "zod": "latest"
   },
   "peerDependencies": {
-    "react": "^19",
-    "react-dom": "^19",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.1",
     "react-hook-form": "^7.56.3"
   },
   "devDependencies": {
     "next": "15.4.0-canary.62",
     "@types/node": "^22",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.1",
     "postcss": "^8.5.3",
     "tailwindcss": "3",
     "typescript": "^5"

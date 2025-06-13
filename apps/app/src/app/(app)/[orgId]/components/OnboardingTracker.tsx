@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LogoSpinner } from "@/components/logo-spinner";
-import { Onboarding } from "@comp/db/types";
+import type { Onboarding } from "@comp/db/types";
 import { Alert, AlertDescription, AlertTitle } from "@comp/ui/alert";
 import {
 	Card,
@@ -172,8 +172,8 @@ export const OnboardingTracker = ({
 								</motion.p>
 							</AnimatePresence>
 							<p className="text-xs text-muted-foreground mt-1">
-								We are setting up your organization. This may
-								take a few moments.
+								We are setting up your organization. This may take a few
+								moments.
 							</p>
 						</div>
 					</div>
@@ -210,10 +210,7 @@ export const OnboardingTracker = ({
 						<ShieldAlert className="h-6 w-6 text-destructive" />{" "}
 						<div>
 							<p className="text-base font-medium text-destructive">
-								Setup{" "}
-								<span className="capitalize">
-									{friendlyStatus}
-								</span>
+								Setup <span className="capitalize">{friendlyStatus}</span>
 							</p>
 							<p className="text-xs text-destructive/80 mt-1">
 								{truncatedMessage}

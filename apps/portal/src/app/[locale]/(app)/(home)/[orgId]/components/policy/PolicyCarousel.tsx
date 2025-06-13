@@ -6,7 +6,7 @@ import { useRef, useState, useEffect } from "react";
 import { PolicyCard } from "./PolicyCard";
 import type { Policy, Member } from "@comp/db/types";
 import { useAction } from "next-safe-action/hooks";
-import { markPolicyAsCompleted } from "../../actions/markPolicyAsCompleted";
+import { markPolicyAsCompleted } from "../../../actions/markPolicyAsCompleted";
 import { toast } from "sonner";
 
 interface PolicyCarouselProps {
