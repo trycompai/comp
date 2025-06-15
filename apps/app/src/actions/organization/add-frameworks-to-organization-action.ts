@@ -16,51 +16,58 @@ export type AddFrameworksInput = z.infer<typeof addFrameworksSchema>;
  * already exist (e.g., from a shared template or a previous addition).
  */
 export const addFrameworksToOrganizationAction = async (
-	input: AddFrameworksInput,
+  input: AddFrameworksInput,
 ): Promise<{ success: boolean; error?: string }> => {
-	try {
-		const validatedInput = addFrameworksSchema.parse(input);
-		const { frameworkIds, organizationId } = validatedInput;
+  try {
+    const validatedInput = addFrameworksSchema.parse(input);
+    const { frameworkIds, organizationId } = validatedInput;
 
-		await db.$transaction(async (tx) => {
-			// 1. Fetch FrameworkEditorFrameworks and their requirements for the given frameworkIds, filtering by visible: true
-			const frameworksAndRequirements = await tx.frameworkEditorFramework.findMany({
-				where: {
-					id: { in: frameworkIds },
-					visible: true,
-				},
-				include: {
-					requirements: true,
-				},
-			});
+    await db.$transaction(async (tx) => {
+      // 1. Fetch FrameworkEditorFrameworks and their requirements for the given frameworkIds, filtering by visible: true
+      const frameworksAndRequirements =
+        await tx.frameworkEditorFramework.findMany({
+          where: {
+            id: { in: frameworkIds },
+            visible: true,
+          },
+          include: {
+            requirements: true,
+          },
+        });
 
-			if (frameworksAndRequirements.length === 0) {
-				throw new Error("No valid or visible frameworks found for the provided IDs.");
-			}
+      if (frameworksAndRequirements.length === 0) {
+        throw new Error(
+          "No valid or visible frameworks found for the provided IDs.",
+        );
+      }
 
-			const finalFrameworkEditorIds = frameworksAndRequirements.map(f => f.id);
+      const finalFrameworkEditorIds = frameworksAndRequirements.map(
+        (f) => f.id,
+      );
 
-			// 2. Call the renamed core function
-			await _upsertOrgFrameworkStructureCore({
-				organizationId,
-				targetFrameworkEditorIds: finalFrameworkEditorIds,
-				frameworkEditorFrameworks: frameworksAndRequirements,
-				tx: tx as unknown as Prisma.TransactionClient // Use the transaction client from this action
-			});
+      // 2. Call the renamed core function
+      await _upsertOrgFrameworkStructureCore({
+        organizationId,
+        targetFrameworkEditorIds: finalFrameworkEditorIds,
+        frameworkEditorFrameworks: frameworksAndRequirements,
+        tx: tx as unknown as Prisma.TransactionClient, // Use the transaction client from this action
+      });
 
-			// The rest of the logic (creating instances, relations) is now inside _upsertOrgFrameworkStructureCore
-		});
+      // The rest of the logic (creating instances, relations) is now inside _upsertOrgFrameworkStructureCore
+    });
 
-		revalidatePath("/"); // Revalidate all paths, or be more specific e.g. /${organizationId}/frameworks
-		return { success: true };
-
-	} catch (error) {
-		console.error("Error in addFrameworksToOrganizationAction:", error);
-		if (error instanceof z.ZodError) {
-			return { success: false, error: error.errors.map(e => e.message).join(", ") };
-		} else if (error instanceof Error) {
-			return { success: false, error: error.message };
-		}
-		return { success: false, error: "An unexpected error occurred." };
-	}
+    revalidatePath("/"); // Revalidate all paths, or be more specific e.g. /${organizationId}/frameworks
+    return { success: true };
+  } catch (error) {
+    console.error("Error in addFrameworksToOrganizationAction:", error);
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.errors.map((e) => e.message).join(", "),
+      };
+    } else if (error instanceof Error) {
+      return { success: false, error: error.message };
+    }
+    return { success: false, error: "An unexpected error occurred." };
+  }
 };

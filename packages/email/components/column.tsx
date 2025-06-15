@@ -9,17 +9,17 @@ type Props = {
 
 export function Column({ title, description, footer, imgSrc }: Props) {
   return (
-    <Section className="text-left p-0 m-0 text-left">
-      <Section className="p-0 m-0 w-full w-full w-[265px] inline-block align-top box-border mb-4 md:mb-0 text-left">
-        <Section className="text-left p-0 m-0 pb-10">
+    <Section className="m-0 p-0 text-left">
+      <Section className="m-0 mb-4 box-border inline-block w-[265px] w-full p-0 text-left align-top md:mb-0">
+        <Section className="m-0 p-0 pb-10 text-left">
           <Img src={imgSrc} alt={title} className="w-[245px]" />
         </Section>
       </Section>
-      <Section className="inline-block align-top box-border w-full w-[280px] text-left">
-        <Section className="text-left p-0 m-0">
-          <Text className="pt-0 m-0 font-medium mb-2">{title}</Text>
-          <Text className="text-[#707070] p-0 m-0">{description}</Text>
-          <Text className="text-[#707070] p-0 mt-2">{footer}</Text>
+      <Section className="box-border inline-block w-[280px] w-full text-left align-top">
+        <Section className="m-0 p-0 text-left">
+          <Text className="m-0 mb-2 pt-0 font-medium">{title}</Text>
+          <Text className="m-0 p-0 text-[#707070]">{description}</Text>
+          <Text className="mt-2 p-0 text-[#707070]">{footer}</Text>
         </Section>
       </Section>
     </Section>

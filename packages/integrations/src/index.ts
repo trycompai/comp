@@ -8,8 +8,8 @@ export const integrations = [Aws, Azure, Deel, Gcp];
 // Export the integration factory
 export { getIntegrationHandler, type IntegrationHandler } from "./factory";
 export type {
-	AWSCredentials,
-	AzureCredentials,
-	DecryptFunction,
-	EncryptedData,
+  AWSCredentials,
+  AzureCredentials,
+  DecryptFunction,
+  EncryptedData,
 } from "./factory";

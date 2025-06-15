@@ -29,14 +29,14 @@ export async function POST(request: NextRequest) {
 
   if (!retoolApiSecret) {
     console.error(
-      "RETOOL_COMP_API_SECRET is not set in environment variables."
+      "RETOOL_COMP_API_SECRET is not set in environment variables.",
     );
     return NextResponse.json(
       {
         success: false,
         error: "Internal server configuration error.",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
         success: false,
         error: "Unauthorized",
       },
-      { status: 401 }
+      { status: 401 },
     );
   }
 
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
           success: false,
           error: "Missing organization_id in request body",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
           success: false,
           error: "Invalid JSON in request body",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
     return NextResponse.json(
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
         success: false,
         error: "Failed to reset organization",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

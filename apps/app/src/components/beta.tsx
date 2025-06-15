@@ -1,18 +1,18 @@
 import { cn } from "@comp/ui/cn";
 
 type Props = {
-	className?: string;
+  className?: string;
 };
 
 export function Beta({ className }: Props) {
-	return (
-		<span
-			className={cn(
-				"flex items-center py-[3px] px-3 rounded-full border border-primary text-[10px] h-full font-normal",
-				className,
-			)}
-		>
-			Beta
-		</span>
-	);
+  return (
+    <span
+      className={cn(
+        "border-primary flex h-full items-center rounded-full border px-3 py-[3px] text-[10px] font-normal",
+        className,
+      )}
+    >
+      Beta
+    </span>
+  );
 }

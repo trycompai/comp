@@ -6,38 +6,35 @@ import { ThemeProvider } from "next-themes";
 import type { ReactNode } from "react";
 
 type ProviderProps = {
-    children: ReactNode;
+  children: ReactNode;
 };
 
 export function Providers({ children }: ProviderProps) {
-    return (
-        <ThemeProvider
-            attribute="class"
-            disableTransitionOnChange
-            scriptProps={{ "data-cfasync": "false" }}
-            defaultTheme="dark"
-            enableSystem={false}
-        >
-            <GoogleTagManager
-                gtmId="GTM-56GW3TVW"
-                dataLayer={{
-                    user_id: "",
-                    user_email: "",
-                }}
-            />
-            <GoogleTagManager
-                gtmId="AW-16886441131"
-                dataLayer={{
-                    user_id: "",
-                    user_email: "",
-                }}
-            />
-            <AnalyticsProvider
-                userId={undefined}
-                userEmail={undefined}
-            >
-                {children}
-            </AnalyticsProvider>
-        </ThemeProvider>
-    );
+  return (
+    <ThemeProvider
+      attribute="class"
+      disableTransitionOnChange
+      scriptProps={{ "data-cfasync": "false" }}
+      defaultTheme="dark"
+      enableSystem={false}
+    >
+      <GoogleTagManager
+        gtmId="GTM-56GW3TVW"
+        dataLayer={{
+          user_id: "",
+          user_email: "",
+        }}
+      />
+      <GoogleTagManager
+        gtmId="AW-16886441131"
+        dataLayer={{
+          user_id: "",
+          user_email: "",
+        }}
+      />
+      <AnalyticsProvider userId={undefined} userEmail={undefined}>
+        {children}
+      </AnalyticsProvider>
+    </ThemeProvider>
+  );
 }

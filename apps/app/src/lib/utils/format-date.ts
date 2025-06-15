@@ -1,11 +1,11 @@
 import { format, isValid } from "date-fns";
 
 export function formatDate(date: Date | string | null) {
-	if (!date) return "";
+  if (!date) return "";
 
-	const dateObj = typeof date === "string" ? new Date(date) : date;
+  const dateObj = typeof date === "string" ? new Date(date) : date;
 
-	if (!isValid(dateObj)) return "";
+  if (!isValid(dateObj)) return "";
 
-	return format(dateObj, "MM/dd/yyyy");
+  return format(dateObj, "MM/dd/yyyy");
 }

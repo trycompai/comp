@@ -32,7 +32,13 @@ interface PolicyActionDialogProps {
   description: string;
   confirmText: string;
   confirmIcon: React.ReactNode;
-  confirmVariant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+  confirmVariant?:
+    | "default"
+    | "destructive"
+    | "outline"
+    | "secondary"
+    | "ghost"
+    | "link";
 }
 
 export function PolicyActionDialog({
@@ -73,7 +79,10 @@ export function PolicyActionDialog({
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="space-y-4"
+          >
             <FormField
               control={form.control}
               name="comment"

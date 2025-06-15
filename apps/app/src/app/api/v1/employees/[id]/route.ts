@@ -23,65 +23,65 @@ export const runtime = "nodejs";
  * - 500: { success: false, error: "Failed to fetch employee" }
  */
 export async function GET(
-	request: NextRequest,
-	{ params }: { params: Promise<{ id: string }> },
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
 ) {
-	// Get the organization ID from the API key
-	const { organizationId, errorResponse } =
-		await getOrganizationFromApiKey(request);
+  // Get the organization ID from the API key
+  const { organizationId, errorResponse } =
+    await getOrganizationFromApiKey(request);
 
-	// If there's an error response, return it
-	if (errorResponse) {
-		return errorResponse;
-	}
+  // If there's an error response, return it
+  if (errorResponse) {
+    return errorResponse;
+  }
 
-	try {
-		const employeeId = (await params).id;
+  try {
+    const employeeId = (await params).id;
 
-		// Fetch the employee
-		const employee = await db.member.findFirst({
-			where: {
-				id: employeeId,
-				organizationId: organizationId!,
-			},
-			select: {
-				id: true,
-				user: {
-					select: {
-						name: true,
-						email: true,
-					},
-				},
-				department: true,
-				isActive: true,
-			},
-		});
+    // Fetch the employee
+    const employee = await db.member.findFirst({
+      where: {
+        id: employeeId,
+        organizationId: organizationId!,
+      },
+      select: {
+        id: true,
+        user: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
+        department: true,
+        isActive: true,
+      },
+    });
 
-		// If employee not found, return 404
-		if (!employee) {
-			return NextResponse.json(
-				{
-					success: false,
-					error: "Employee not found",
-				},
-				{ status: 404 },
-			);
-		}
+    // If employee not found, return 404
+    if (!employee) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Employee not found",
+        },
+        { status: 404 },
+      );
+    }
 
-		return NextResponse.json({
-			success: true,
-			data: employee,
-		});
-	} catch (error) {
-		console.error("Error fetching employee:", error);
-		return NextResponse.json(
-			{
-				success: false,
-				error: "Failed to fetch employee",
-			},
-			{ status: 500 },
-		);
-	}
+    return NextResponse.json({
+      success: true,
+      data: employee,
+    });
+  } catch (error) {
+    console.error("Error fetching employee:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Failed to fetch employee",
+      },
+      { status: 500 },
+    );
+  }
 }
 
 /**
@@ -102,60 +102,60 @@ export async function GET(
  * - 500: { success: false, error: string }
  */
 export async function DELETE(
-	request: NextRequest,
-	{ params }: { params: Promise<{ id: string }> },
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
 ) {
-	// Get the organization ID from the API key
-	const { organizationId, errorResponse } =
-		await getOrganizationFromApiKey(request);
+  // Get the organization ID from the API key
+  const { organizationId, errorResponse } =
+    await getOrganizationFromApiKey(request);
 
-	// If there's an error response, return it
-	if (errorResponse) {
-		return errorResponse;
-	}
+  // If there's an error response, return it
+  if (errorResponse) {
+    return errorResponse;
+  }
 
-	try {
-		const employeeId = (await params).id;
+  try {
+    const employeeId = (await params).id;
 
-		// Check if the employee exists and belongs to the organization
-		const existingEmployee = await db.member.findFirst({
-			where: {
-				id: employeeId,
-				organizationId: organizationId!,
-			},
-		});
+    // Check if the employee exists and belongs to the organization
+    const existingEmployee = await db.member.findFirst({
+      where: {
+        id: employeeId,
+        organizationId: organizationId!,
+      },
+    });
 
-		if (!existingEmployee) {
-			return NextResponse.json(
-				{
-					success: false,
-					error: "Employee not found",
-				},
-				{ status: 404 },
-			);
-		}
+    if (!existingEmployee) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Employee not found",
+        },
+        { status: 404 },
+      );
+    }
 
-		// Delete the employee
-		await db.member.delete({
-			where: {
-				id: employeeId,
-			},
-		});
+    // Delete the employee
+    await db.member.delete({
+      where: {
+        id: employeeId,
+      },
+    });
 
-		return NextResponse.json({
-			success: true,
-			data: {
-				message: "Employee deleted successfully",
-			},
-		});
-	} catch (error) {
-		console.error("Error deleting employee:", error);
-		return NextResponse.json(
-			{
-				success: false,
-				error: "Failed to delete employee",
-			},
-			{ status: 500 },
-		);
-	}
+    return NextResponse.json({
+      success: true,
+      data: {
+        message: "Employee deleted successfully",
+      },
+    });
+  } catch (error) {
+    console.error("Error deleting employee:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Failed to delete employee",
+      },
+      { status: 500 },
+    );
+  }
 }

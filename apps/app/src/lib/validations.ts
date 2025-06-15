@@ -1,35 +1,35 @@
 import { getFiltersStateParser, getSortingStateParser } from "@/lib/parsers";
 import { Policy, PolicyStatus } from "@comp/db/types";
 import {
-	createSearchParamsCache,
-	parseAsArrayOf,
-	parseAsInteger,
-	parseAsString,
-	parseAsStringEnum,
+  createSearchParamsCache,
+  parseAsArrayOf,
+  parseAsInteger,
+  parseAsString,
+  parseAsStringEnum,
 } from "nuqs/server";
 import * as z from "zod";
 
 export const searchParamsCache = createSearchParamsCache({
-	page: parseAsInteger.withDefault(1),
-	perPage: parseAsInteger.withDefault(50),
-	sort: getSortingStateParser<Policy>().withDefault([
-		{ id: "createdAt", desc: true },
-	]),
-	name: parseAsString.withDefault(""),
-	status: parseAsArrayOf(z.nativeEnum(PolicyStatus)).withDefault([]),
-	createdAt: parseAsArrayOf(z.coerce.date()).withDefault([]),
-	updatedAt: parseAsArrayOf(z.coerce.date()).withDefault([]),
-	// advanced filter
-	filters: getFiltersStateParser().withDefault([]),
-	joinOperator: parseAsStringEnum(["and", "or"]).withDefault("and"),
+  page: parseAsInteger.withDefault(1),
+  perPage: parseAsInteger.withDefault(50),
+  sort: getSortingStateParser<Policy>().withDefault([
+    { id: "createdAt", desc: true },
+  ]),
+  name: parseAsString.withDefault(""),
+  status: parseAsArrayOf(z.nativeEnum(PolicyStatus)).withDefault([]),
+  createdAt: parseAsArrayOf(z.coerce.date()).withDefault([]),
+  updatedAt: parseAsArrayOf(z.coerce.date()).withDefault([]),
+  // advanced filter
+  filters: getFiltersStateParser().withDefault([]),
+  joinOperator: parseAsStringEnum(["and", "or"]).withDefault("and"),
 });
 
 export const createPolicySchema = z.object({
-	name: z.string(),
-	status: z.nativeEnum(PolicyStatus),
+  name: z.string(),
+  status: z.nativeEnum(PolicyStatus),
 });
 
 export type GetPolicySchema = Awaited<
-	ReturnType<typeof searchParamsCache.parse>
+  ReturnType<typeof searchParamsCache.parse>
 >;
 export type CreatePolicySchema = z.infer<typeof createPolicySchema>;

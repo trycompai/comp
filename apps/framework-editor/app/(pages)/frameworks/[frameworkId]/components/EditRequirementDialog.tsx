@@ -1,83 +1,109 @@
-'use client'
+"use client";
 
-import { Button } from '@comp/ui/button'
+import { Button } from "@comp/ui/button";
 import {
-    Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle
-} from '@comp/ui/dialog'
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@comp/ui/dialog";
 import {
-    Form, FormControl, FormField, FormItem, FormLabel, FormMessage
-} from '@comp/ui/form'
-import { Input } from '@comp/ui/input'
-import { Textarea } from '@comp/ui/textarea' 
-import { zodResolver } from '@hookform/resolvers/zod'
-import type { FrameworkEditorRequirement } from '@prisma/client'
-import { useEffect } from 'react'
-import { useForm } from 'react-hook-form'
-import { toast } from 'sonner'
-import { z } from 'zod'
-import { updateRequirementAction } from '../../actions/update-requirement-action' 
-import { RequirementBaseSchema } from '../../schemas'
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@comp/ui/form";
+import { Input } from "@comp/ui/input";
+import { Textarea } from "@comp/ui/textarea";
+import { zodResolver } from "@hookform/resolvers/zod";
+import type { FrameworkEditorRequirement } from "@prisma/client";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
+import { updateRequirementAction } from "../../actions/update-requirement-action";
+import { RequirementBaseSchema } from "../../schemas";
 
 interface EditRequirementDialogProps {
-  isOpen: boolean
-  onOpenChange: (isOpen: boolean) => void
-  requirement: Pick<FrameworkEditorRequirement, 'id' | 'name' | 'description' | 'identifier'> & { frameworkId: string } 
-  onRequirementUpdated?: (updatedData: Pick<FrameworkEditorRequirement, 'id' | 'name' | 'description' | 'identifier'>) => void
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
+  requirement: Pick<
+    FrameworkEditorRequirement,
+    "id" | "name" | "description" | "identifier"
+  > & { frameworkId: string };
+  onRequirementUpdated?: (
+    updatedData: Pick<
+      FrameworkEditorRequirement,
+      "id" | "name" | "description" | "identifier"
+    >,
+  ) => void;
 }
 
 const requirementFormSchema = RequirementBaseSchema;
 
-type RequirementFormValues = z.infer<typeof requirementFormSchema>
+type RequirementFormValues = z.infer<typeof requirementFormSchema>;
 
 export function EditRequirementDialog({
   isOpen,
   onOpenChange,
   requirement,
-  onRequirementUpdated
+  onRequirementUpdated,
 }: EditRequirementDialogProps) {
   const form = useForm<RequirementFormValues>({
     resolver: zodResolver(requirementFormSchema),
     defaultValues: {
       name: requirement.name,
-      description: requirement.description ?? '',
-      identifier: requirement.identifier ?? '',
+      description: requirement.description ?? "",
+      identifier: requirement.identifier ?? "",
     },
-    mode: 'onChange',
-  })
+    mode: "onChange",
+  });
 
   useEffect(() => {
     form.reset({
       name: requirement.name,
-      description: requirement.description ?? '',
-      identifier: requirement.identifier ?? '',
-    })
-  }, [requirement, form])
+      description: requirement.description ?? "",
+      identifier: requirement.identifier ?? "",
+    });
+  }, [requirement, form]);
 
   async function onSubmit(values: RequirementFormValues) {
     const formData = new FormData();
-    formData.append('id', requirement.id);
-    formData.append('frameworkId', requirement.frameworkId);
-    formData.append('name', values.name);
+    formData.append("id", requirement.id);
+    formData.append("frameworkId", requirement.frameworkId);
+    formData.append("name", values.name);
     if (values.description) {
-      formData.append('description', values.description);
+      formData.append("description", values.description);
     }
     if (values.identifier) {
-      formData.append('identifier', values.identifier);
+      formData.append("identifier", values.identifier);
     }
-    
+
     const result = await updateRequirementAction(null, formData);
 
     if (result.success && result.data) {
-      toast.success('Requirement updated successfully!')
-      onOpenChange(false) 
+      toast.success("Requirement updated successfully!");
+      onOpenChange(false);
       if (onRequirementUpdated) {
-        onRequirementUpdated(result.data)
+        onRequirementUpdated(result.data);
       }
     } else if (result.error) {
       if (result.issues) {
         result.issues.forEach((issue: z.ZodIssue) => {
-          if (issue.path && issue.path.length > 0 && (issue.path[0] === 'name' || issue.path[0] === 'description')) {
-            form.setError(issue.path[0] as keyof RequirementFormValues, { type: 'server', message: issue.message });
+          if (
+            issue.path &&
+            issue.path.length > 0 &&
+            (issue.path[0] === "name" || issue.path[0] === "description")
+          ) {
+            form.setError(issue.path[0] as keyof RequirementFormValues, {
+              type: "server",
+              message: issue.message,
+            });
           } else {
             toast.error(issue.message);
           }
@@ -86,21 +112,24 @@ export function EditRequirementDialog({
         toast.error(result.error);
       }
     } else {
-      toast.error('An unexpected error occurred.');
+      toast.error("An unexpected error occurred.");
     }
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => {
-      if (!open) {
-        form.reset({
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) {
+          form.reset({
             name: requirement.name,
-            description: requirement.description ?? '',
-            identifier: requirement.identifier ?? '',
-        });
-      }
-      onOpenChange(open);
-    }}>
+            description: requirement.description ?? "",
+            identifier: requirement.identifier ?? "",
+          });
+        }
+        onOpenChange(open);
+      }}
+    >
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Edit Requirement</DialogTitle>
@@ -119,7 +148,7 @@ export function EditRequirementDialog({
                   <FormControl className="col-span-3">
                     <Input placeholder="Enter requirement name" {...field} />
                   </FormControl>
-                  <div className="col-start-2 col-span-3">
+                  <div className="col-span-3 col-start-2">
                     <FormMessage />
                   </div>
                 </FormItem>
@@ -134,7 +163,7 @@ export function EditRequirementDialog({
                   <FormControl className="col-span-3">
                     <Input placeholder="e.g., cc1-1" {...field} />
                   </FormControl>
-                  <div className="col-start-2 col-span-3">
+                  <div className="col-span-3 col-start-2">
                     <FormMessage />
                   </div>
                 </FormItem>
@@ -147,9 +176,13 @@ export function EditRequirementDialog({
                 <FormItem className="grid grid-cols-4 items-center gap-2">
                   <FormLabel className="text-right">Description</FormLabel>
                   <FormControl className="col-span-3">
-                    <Textarea placeholder="Enter requirement description (optional)" {...field} rows={8} />
+                    <Textarea
+                      placeholder="Enter requirement description (optional)"
+                      {...field}
+                      rows={8}
+                    />
                   </FormControl>
-                  <div className="col-start-2 col-span-3">
+                  <div className="col-span-3 col-start-2">
                     <FormMessage />
                   </div>
                 </FormItem>
@@ -161,13 +194,18 @@ export function EditRequirementDialog({
                   Cancel
                 </Button>
               </DialogClose>
-              <Button type="submit" disabled={form.formState.isSubmitting || !form.formState.isDirty}>
-                {form.formState.isSubmitting ? 'Saving...' : 'Save Changes'}
+              <Button
+                type="submit"
+                disabled={
+                  form.formState.isSubmitting || !form.formState.isDirty
+                }
+              >
+                {form.formState.isSubmitting ? "Saving..." : "Save Changes"}
               </Button>
             </DialogFooter>
           </form>
         </Form>
       </DialogContent>
     </Dialog>
-  )
-} 
+  );
+}

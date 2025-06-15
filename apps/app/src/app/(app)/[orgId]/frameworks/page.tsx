@@ -8,70 +8,68 @@ import { getAllFrameworkInstancesWithControls } from "./data/getAllFrameworkInst
 import { db } from "@comp/db";
 
 export async function generateMetadata() {
-	return {
-		title: "Frameworks",
-	};
+  return {
+    title: "Frameworks",
+  };
 }
 
 export default async function DashboardPage() {
-	const session = await auth.api.getSession({
-		headers: await headers(),
-	});
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
-	const organizationId = session?.session.activeOrganizationId;
+  const organizationId = session?.session.activeOrganizationId;
 
-	if (!organizationId) {
-		redirect("/");
-	}
+  if (!organizationId) {
+    redirect("/");
+  }
 
-	const tasks = await getControlTasks();
-	const frameworksWithControls = await getAllFrameworkInstancesWithControls({
-		organizationId,
-	});
+  const tasks = await getControlTasks();
+  const frameworksWithControls = await getAllFrameworkInstancesWithControls({
+    organizationId,
+  });
 
-	const allFrameworks = await db.frameworkEditorFramework.findMany({
-		where: {
-			visible: true,
-		},
-	});
+  const allFrameworks = await db.frameworkEditorFramework.findMany({
+    where: {
+      visible: true,
+    },
+  });
 
-	return (
-		<PageWithBreadcrumb
-			breadcrumbs={[{ label: "Frameworks", current: true }]}
-		>
-			<FrameworksOverview
-				frameworksWithControls={frameworksWithControls}
-				tasks={tasks}
-				allFrameworks={allFrameworks}
-			/>
-		</PageWithBreadcrumb>
-	);
+  return (
+    <PageWithBreadcrumb breadcrumbs={[{ label: "Frameworks", current: true }]}>
+      <FrameworksOverview
+        frameworksWithControls={frameworksWithControls}
+        tasks={tasks}
+        allFrameworks={allFrameworks}
+      />
+    </PageWithBreadcrumb>
+  );
 }
 
 const getControlTasks = cache(async () => {
-	const session = await auth.api.getSession({
-		headers: await headers(),
-	});
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
-	const organizationId = session?.session.activeOrganizationId;
+  const organizationId = session?.session.activeOrganizationId;
 
-	if (!organizationId) {
-		return [];
-	}
+  if (!organizationId) {
+    return [];
+  }
 
-	const tasks = await db.task.findMany({
-		where: {
-			organizationId,
-			controls: {
-				some: {
-					organizationId,
-				},
-			},
-		},
-		include: {
-			controls: true,
-		},
-	});
+  const tasks = await db.task.findMany({
+    where: {
+      organizationId,
+      controls: {
+        some: {
+          organizationId,
+        },
+      },
+    },
+    include: {
+      controls: true,
+    },
+  });
 
-	return tasks;
+  return tasks;
 });

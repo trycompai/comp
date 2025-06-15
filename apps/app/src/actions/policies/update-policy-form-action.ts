@@ -10,108 +10,108 @@ import { updatePolicyFormSchema } from "../schema";
 
 // Helper function to calculate next review date based on frequency
 function calculateNextReviewDate(
-	frequency: string,
-	baseDate: Date = new Date(),
+  frequency: string,
+  baseDate: Date = new Date(),
 ): Date {
-	const nextDate = new Date(baseDate);
+  const nextDate = new Date(baseDate);
 
-	switch (frequency) {
-		case "monthly":
-			nextDate.setMonth(nextDate.getMonth() + 1);
-			break;
-		case "quarterly":
-			nextDate.setMonth(nextDate.getMonth() + 3);
-			break;
-		case "yearly":
-			nextDate.setFullYear(nextDate.getFullYear() + 1);
-			break;
-		default:
-			// If frequency is not recognized, default to yearly
-			nextDate.setFullYear(nextDate.getFullYear() + 1);
-	}
+  switch (frequency) {
+    case "monthly":
+      nextDate.setMonth(nextDate.getMonth() + 1);
+      break;
+    case "quarterly":
+      nextDate.setMonth(nextDate.getMonth() + 3);
+      break;
+    case "yearly":
+      nextDate.setFullYear(nextDate.getFullYear() + 1);
+      break;
+    default:
+      // If frequency is not recognized, default to yearly
+      nextDate.setFullYear(nextDate.getFullYear() + 1);
+  }
 
-	return nextDate;
+  return nextDate;
 }
 
 export const updatePolicyFormAction = authActionClient
-	.schema(updatePolicyFormSchema)
-	.metadata({
-		name: "update-policy-form",
-		track: {
-			event: "update-policy-form",
-			description: "Update Policy",
-			channel: "server",
-		},
-	})
-	.action(async ({ parsedInput, ctx }) => {
-		const {
-			id,
-			status,
-			assigneeId,
-			department,
-			review_frequency,
-			review_date,
-			isRequiredToSign,
-		} = parsedInput;
-		const { user, session } = ctx;
+  .schema(updatePolicyFormSchema)
+  .metadata({
+    name: "update-policy-form",
+    track: {
+      event: "update-policy-form",
+      description: "Update Policy",
+      channel: "server",
+    },
+  })
+  .action(async ({ parsedInput, ctx }) => {
+    const {
+      id,
+      status,
+      assigneeId,
+      department,
+      review_frequency,
+      review_date,
+      isRequiredToSign,
+    } = parsedInput;
+    const { user, session } = ctx;
 
-		if (!user.id || !session.activeOrganizationId) {
-			throw new Error("Unauthorized");
-		}
+    if (!user.id || !session.activeOrganizationId) {
+      throw new Error("Unauthorized");
+    }
 
-		try {
-			// Get the current policy to check if status is changing to published
-			const currentPolicy = await db.policy.findUnique({
-				where: {
-					id,
-					organizationId: session.activeOrganizationId,
-				},
-				select: {
-					status: true,
-				},
-			});
+    try {
+      // Get the current policy to check if status is changing to published
+      const currentPolicy = await db.policy.findUnique({
+        where: {
+          id,
+          organizationId: session.activeOrganizationId,
+        },
+        select: {
+          status: true,
+        },
+      });
 
-			// Determine if we need to update the review date
-			let reviewDate = review_date;
-			let lastPublishedAt = undefined;
+      // Determine if we need to update the review date
+      let reviewDate = review_date;
+      let lastPublishedAt = undefined;
 
-			// If status is changing to 'published', calculate next review date based on frequency
-			if (
-				status === PolicyStatus.published &&
-				currentPolicy?.status !== PolicyStatus.published
-			) {
-				reviewDate = calculateNextReviewDate(review_frequency);
-				lastPublishedAt = new Date(); // Set lastPublishedAt to now when publishing
-			}
+      // If status is changing to 'published', calculate next review date based on frequency
+      if (
+        status === PolicyStatus.published &&
+        currentPolicy?.status !== PolicyStatus.published
+      ) {
+        reviewDate = calculateNextReviewDate(review_frequency);
+        lastPublishedAt = new Date(); // Set lastPublishedAt to now when publishing
+      }
 
-			await db.policy.update({
-				where: {
-					id,
-					organizationId: session.activeOrganizationId,
-				},
-				data: {
-					status,
-					assigneeId,
-					department,
-					frequency: review_frequency,
-					reviewDate,
-					isRequiredToSign: isRequiredToSign === "required",
-					...(lastPublishedAt && { lastPublishedAt }),
-				},
-			});
+      await db.policy.update({
+        where: {
+          id,
+          organizationId: session.activeOrganizationId,
+        },
+        data: {
+          status,
+          assigneeId,
+          department,
+          frequency: review_frequency,
+          reviewDate,
+          isRequiredToSign: isRequiredToSign === "required",
+          ...(lastPublishedAt && { lastPublishedAt }),
+        },
+      });
 
-			revalidatePath(`/${session.activeOrganizationId}/policies`);
-			revalidatePath(`/${session.activeOrganizationId}/policies/${id}`);
-			revalidateTag("policies");
+      revalidatePath(`/${session.activeOrganizationId}/policies`);
+      revalidatePath(`/${session.activeOrganizationId}/policies/${id}`);
+      revalidateTag("policies");
 
-			return {
-				success: true,
-			};
-		} catch (error) {
-			console.error("Error updating policy:", error);
+      return {
+        success: true,
+      };
+    } catch (error) {
+      console.error("Error updating policy:", error);
 
-			return {
-				success: false,
-			};
-		}
-	});
+      return {
+        success: false,
+      };
+    }
+  });

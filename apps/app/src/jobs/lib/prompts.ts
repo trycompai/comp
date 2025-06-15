@@ -20,7 +20,7 @@ export const generatePrompt = ({
   logger.info(`Company Website: ${companyWebsite}`);
   logger.info(`Context: ${contextHub}`);
   logger.info(
-    `Existing Policy Content: ${JSON.stringify(existingPolicyContent)}`
+    `Existing Policy Content: ${JSON.stringify(existingPolicyContent)}`,
   );
 
   return `

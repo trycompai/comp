@@ -8,44 +8,42 @@ import { headers } from "next/headers";
 import { cache } from "react";
 
 export default async function OrganizationSettings() {
-	const organization = await organizationDetails();
+  const organization = await organizationDetails();
 
-	return (
-		<div className="space-y-4 py-4">
-			<UpdateOrganizationName
-				organizationName={organization?.name ?? ""}
-			/>
-			<UpdateOrganizationWebsite
-				organizationWebsite={organization?.website ?? ""}
-			/>
-			<DeleteOrganization organizationId={organization?.id ?? ""} />
-		</div>
-	);
+  return (
+    <div className="space-y-4 py-4">
+      <UpdateOrganizationName organizationName={organization?.name ?? ""} />
+      <UpdateOrganizationWebsite
+        organizationWebsite={organization?.website ?? ""}
+      />
+      <DeleteOrganization organizationId={organization?.id ?? ""} />
+    </div>
+  );
 }
 
 export async function generateMetadata(): Promise<Metadata> {
-	return {
-		title: "Settings",
-	};
+  return {
+    title: "Settings",
+  };
 }
 
 const organizationDetails = cache(async () => {
-	const session = await auth.api.getSession({
-		headers: await headers(),
-	});
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
-	if (!session?.session.activeOrganizationId) {
-		return null;
-	}
+  if (!session?.session.activeOrganizationId) {
+    return null;
+  }
 
-	const organization = await db.organization.findUnique({
-		where: { id: session?.session.activeOrganizationId },
-		select: {
-			name: true,
-			id: true,
-			website: true,
-		},
-	});
+  const organization = await db.organization.findUnique({
+    where: { id: session?.session.activeOrganizationId },
+    select: {
+      name: true,
+      id: true,
+      website: true,
+    },
+  });
 
-	return organization;
+  return organization;
 });

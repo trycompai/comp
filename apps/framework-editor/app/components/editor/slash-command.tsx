@@ -1,6 +1,14 @@
 import { Command, createSuggestionItems, renderItems } from "novel";
 import {
-  Heading1, Heading2, Heading3, List, ListOrdered, TextQuote, Code, CheckSquare, Text
+  Heading1,
+  Heading2,
+  Heading3,
+  List,
+  ListOrdered,
+  TextQuote,
+  Code,
+  CheckSquare,
+  Text,
 } from "lucide-react";
 
 // Use createSuggestionItems helper from Novel
@@ -12,7 +20,12 @@ export const suggestionItems = createSuggestionItems([
     searchTerms: ["p", "paragraph"],
     icon: <Text size={18} />,
     command: ({ editor, range }) => {
-      editor.chain().focus().deleteRange(range).toggleNode("paragraph", "paragraph").run();
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .toggleNode("paragraph", "paragraph")
+        .run();
     },
   },
   {
@@ -21,7 +34,12 @@ export const suggestionItems = createSuggestionItems([
     searchTerms: ["h1", "title", "large"],
     icon: <Heading1 size={18} />,
     command: ({ editor, range }) => {
-      editor.chain().focus().deleteRange(range).setNode("heading", { level: 1 }).run();
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .setNode("heading", { level: 1 })
+        .run();
     },
   },
   {
@@ -30,7 +48,12 @@ export const suggestionItems = createSuggestionItems([
     searchTerms: ["h2", "subtitle", "medium"],
     icon: <Heading2 size={18} />,
     command: ({ editor, range }) => {
-      editor.chain().focus().deleteRange(range).setNode("heading", { level: 2 }).run();
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .setNode("heading", { level: 2 })
+        .run();
     },
   },
   {
@@ -39,7 +62,12 @@ export const suggestionItems = createSuggestionItems([
     searchTerms: ["h3", "subtitle", "small"],
     icon: <Heading3 size={18} />,
     command: ({ editor, range }) => {
-      editor.chain().focus().deleteRange(range).setNode("heading", { level: 3 }).run();
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .setNode("heading", { level: 3 })
+        .run();
     },
   },
   {
@@ -67,7 +95,13 @@ export const suggestionItems = createSuggestionItems([
     icon: <TextQuote size={18} />,
     command: ({ editor, range }) => {
       // Ensure it toggles paragraph first if needed, like original
-      editor.chain().focus().deleteRange(range).toggleNode("paragraph", "paragraph").toggleBlockquote().run();
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .toggleNode("paragraph", "paragraph")
+        .toggleBlockquote()
+        .run();
     },
   },
   {
@@ -96,4 +130,4 @@ export const slashCommand = Command.configure({
     items: () => suggestionItems,
     render: renderItems, // Use the renderItems helper from Novel
   },
-}); 
+});

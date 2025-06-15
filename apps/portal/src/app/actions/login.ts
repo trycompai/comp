@@ -9,7 +9,7 @@ export const login = createSafeActionClient()
     z.object({
       otp: z.string(),
       email: z.string().email(),
-    })
+    }),
   )
   .action(async ({ parsedInput }) => {
     await auth.api.signInEmailOTP({

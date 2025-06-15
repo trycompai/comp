@@ -50,13 +50,13 @@ export const WaitlistEmail = ({ email }: Props) => {
 
         <Preview>Confirm your email to join the Comp AI waitlist</Preview>
 
-        <Body className="bg-[#fff] my-auto mx-auto font-sans">
+        <Body className="mx-auto my-auto bg-[#fff] font-sans">
           <Container
-            className="border-transparent md:border-[#E8E7E1] my-[40px] mx-auto p-[20px] max-w-[600px]"
+            className="mx-auto my-[40px] max-w-[600px] border-transparent p-[20px] md:border-[#E8E7E1]"
             style={{ borderStyle: "solid", borderWidth: 1 }}
           >
             <Logo />
-            <Heading className="mx-0 my-[30px] p-0 text-[24px] font-normal text-[#121212] text-center">
+            <Heading className="mx-0 my-[30px] p-0 text-center text-[24px] font-normal text-[#121212]">
               Just one more step
             </Heading>
 
@@ -64,16 +64,16 @@ export const WaitlistEmail = ({ email }: Props) => {
               To claim your spot on the Comp AI waitlist, please confirm your
               email.
             </Text>
-            <Section className="mb-[42px] mt-[32px] text-center">
+            <Section className="mt-[32px] mb-[42px] text-center">
               <Button
-                className="bg-transparent text-primary text-[14px] text-[#121212] font-medium no-underline text-center px-6 py-3 border border-solid border-[#121212]"
+                className="text-primary border border-solid border-[#121212] bg-transparent px-6 py-3 text-center text-[14px] font-medium text-[#121212] no-underline"
                 href={confirmationUrl}
               >
                 Confirm email
               </Button>
             </Section>
 
-            <Text className="text-[14px] leading-[24px] text-[#707070] break-all">
+            <Text className="text-[14px] leading-[24px] break-all text-[#707070]">
               or copy and paste this URL into your browser{" "}
               <Link href={confirmationUrl} className="text-[#707070] underline">
                 {confirmationUrl}
@@ -84,7 +84,7 @@ export const WaitlistEmail = ({ email }: Props) => {
             <Section>
               <Text className="text-[12px] leading-[24px] text-[#666666]">
                 This email was intended for{" "}
-                <span className="text-[#121212] font-medium">{email}</span>. If
+                <span className="font-medium text-[#121212]">{email}</span>. If
                 you did not request this, please ignore this email.
               </Text>
             </Section>

@@ -40,7 +40,11 @@ export const columns: ColumnDef<FrameworkWithCounts>[] = [
     size: 100,
     cell: ({ row }) => {
       const framework = row.original;
-      return <Badge variant={framework.visible ? "default" : "outline"}>{framework.visible ? "Visible" : "Hidden"}</Badge>;
+      return (
+        <Badge variant={framework.visible ? "default" : "outline"}>
+          {framework.visible ? "Visible" : "Hidden"}
+        </Badge>
+      );
     },
   },
   {
@@ -74,4 +78,4 @@ export const columns: ColumnDef<FrameworkWithCounts>[] = [
   //     return <span>{date.toLocaleDateString()}</span>;
   //   }
   // }
-]; 
+];

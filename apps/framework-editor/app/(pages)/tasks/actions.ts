@@ -1,10 +1,14 @@
-'use server';
+"use server";
 
-import { db } from '@comp/db';
-import { revalidatePath } from 'next/cache';
-import { z } from 'zod';
-import { Frequency, Departments, type FrameworkEditorTaskTemplate } from '@prisma/client';
-import type { ItemWithName } from '../../components/grid/RelationalCell'; // Updated import path
+import { db } from "@comp/db";
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import {
+  Frequency,
+  Departments,
+  type FrameworkEditorTaskTemplate,
+} from "@prisma/client";
+import type { ItemWithName } from "../../components/grid/RelationalCell"; // Updated import path
 
 // Zod schema for validating new task template data
 const createTaskTemplateSchema = z.object({
@@ -16,104 +20,136 @@ const createTaskTemplateSchema = z.object({
 
 // Placeholder data type for creation
 export interface CreateTaskData {
-    name: string;
-    description?: string | null; // Kept flexible for input, will be defaulted if null
-    frequency?: Frequency | null; // Use imported Enum
-    department?: Departments | null; // Use imported Enum
+  name: string;
+  description?: string | null; // Kept flexible for input, will be defaulted if null
+  frequency?: Frequency | null; // Use imported Enum
+  department?: Departments | null; // Use imported Enum
 }
 
 // Placeholder data type for update
 export interface UpdateTaskData {
-    name?: string;
-    description?: string | null;
-    frequency?: Frequency | null; // Use imported Enum
-    department?: Departments | null; // Use imported Enum
+  name?: string;
+  description?: string | null;
+  frequency?: Frequency | null; // Use imported Enum
+  department?: Departments | null; // Use imported Enum
 }
 
-export async function createTaskTemplate(data: CreateTaskData): Promise<FrameworkEditorTaskTemplate> {
-    console.log('[Server Action] createTaskTemplate called with:', data);
+export async function createTaskTemplate(
+  data: CreateTaskData,
+): Promise<FrameworkEditorTaskTemplate> {
+  console.log("[Server Action] createTaskTemplate called with:", data);
 
-    const validationResult = createTaskTemplateSchema.safeParse(data);
-    if (!validationResult.success) {
-        console.error('[Server Action] Validation failed:', validationResult.error.flatten().fieldErrors);
-        throw new Error(`Validation failed: ${validationResult.error.flatten().fieldErrors.name?.[0] || 'Invalid input'}`);
-    }
+  const validationResult = createTaskTemplateSchema.safeParse(data);
+  if (!validationResult.success) {
+    console.error(
+      "[Server Action] Validation failed:",
+      validationResult.error.flatten().fieldErrors,
+    );
+    throw new Error(
+      `Validation failed: ${validationResult.error.flatten().fieldErrors.name?.[0] || "Invalid input"}`,
+    );
+  }
 
-    const { name, description, frequency, department } = validationResult.data;
+  const { name, description, frequency, department } = validationResult.data;
 
-    try {
-        const newTask = await db.frameworkEditorTaskTemplate.create({
-            data: {
-                name: name,
-                description: description ?? '', // Ensure description is a string, even if null initially
-                frequency: frequency ?? Frequency.monthly, // Default if not provided
-                department: department ?? Departments.none, // Default if not provided
-            },
-        });
-        console.log('[Server Action] Task created:', newTask);
-        revalidatePath('/tasks'); // Revalidate the tasks list page
-        return newTask;
-    } catch (error) {
-        console.error('[Server Action] Error creating task:', error);
-        throw new Error('Failed to create task template. Please try again.');
-    }
+  try {
+    const newTask = await db.frameworkEditorTaskTemplate.create({
+      data: {
+        name: name,
+        description: description ?? "", // Ensure description is a string, even if null initially
+        frequency: frequency ?? Frequency.monthly, // Default if not provided
+        department: department ?? Departments.none, // Default if not provided
+      },
+    });
+    console.log("[Server Action] Task created:", newTask);
+    revalidatePath("/tasks"); // Revalidate the tasks list page
+    return newTask;
+  } catch (error) {
+    console.error("[Server Action] Error creating task:", error);
+    throw new Error("Failed to create task template. Please try again.");
+  }
 }
 
-export async function updateTaskTemplate(id: string, data: UpdateTaskData): Promise<FrameworkEditorTaskTemplate> {
-    console.log('[Server Action] updateTaskTemplate called with id:', id, 'data:', data);
-    if (!id) {
-        throw new Error("Task ID must be provided for an update.");
-    }
+export async function updateTaskTemplate(
+  id: string,
+  data: UpdateTaskData,
+): Promise<FrameworkEditorTaskTemplate> {
+  console.log(
+    "[Server Action] updateTaskTemplate called with id:",
+    id,
+    "data:",
+    data,
+  );
+  if (!id) {
+    throw new Error("Task ID must be provided for an update.");
+  }
 
-    // Prepare data for update, only including fields that are actually provided by the client
-    const updatePayload: Partial<Omit<FrameworkEditorTaskTemplate, 'id' | 'createdAt' | 'updatedAt'> & { updatedAt?: Date }> = {};
-    
-    if (data.name !== undefined && data.name !== null) updatePayload.name = data.name;
-    if (data.description !== undefined) updatePayload.description = data.description ?? ''; // Handle null by setting to empty string
-    if (data.frequency !== undefined && data.frequency !== null) updatePayload.frequency = data.frequency;
-    if (data.department !== undefined && data.department !== null) updatePayload.department = data.department;
-
-    if (Object.keys(updatePayload).length === 0) {
-        // If no actual data fields to update, fetch and return the existing record without an update call
-        // Or, if this scenario implies an error or no-op, handle accordingly.
-        console.warn(`[Server Action] updateTaskTemplate called for id: ${id} with no changed fields to update.`);
-        const existingTask = await db.frameworkEditorTaskTemplate.findUnique({ where: { id } });
-        if (!existingTask) throw new Error(`Task template with id ${id} not found.`);
-        return existingTask; 
+  // Prepare data for update, only including fields that are actually provided by the client
+  const updatePayload: Partial<
+    Omit<FrameworkEditorTaskTemplate, "id" | "createdAt" | "updatedAt"> & {
+      updatedAt?: Date;
     }
-    
-    updatePayload.updatedAt = new Date(); // Explicitly set updatedAt for the update operation
+  > = {};
 
-    try {
-        const updatedTask = await db.frameworkEditorTaskTemplate.update({
-            where: { id },
-            data: updatePayload,
-        });
-        console.log('[Server Action] Task updated:', updatedTask);
-        revalidatePath('/tasks'); // Revalidate the tasks list page
-        revalidatePath(`/tasks/${id}`); // Revalidate specific task page if it exists
-        return updatedTask;
-    } catch (error) {
-        console.error(`[Server Action] Error updating task ${id}:`, error);
-        throw new Error(`Failed to update task template with id ${id}. Please try again.`);
-    }
+  if (data.name !== undefined && data.name !== null)
+    updatePayload.name = data.name;
+  if (data.description !== undefined)
+    updatePayload.description = data.description ?? ""; // Handle null by setting to empty string
+  if (data.frequency !== undefined && data.frequency !== null)
+    updatePayload.frequency = data.frequency;
+  if (data.department !== undefined && data.department !== null)
+    updatePayload.department = data.department;
+
+  if (Object.keys(updatePayload).length === 0) {
+    // If no actual data fields to update, fetch and return the existing record without an update call
+    // Or, if this scenario implies an error or no-op, handle accordingly.
+    console.warn(
+      `[Server Action] updateTaskTemplate called for id: ${id} with no changed fields to update.`,
+    );
+    const existingTask = await db.frameworkEditorTaskTemplate.findUnique({
+      where: { id },
+    });
+    if (!existingTask)
+      throw new Error(`Task template with id ${id} not found.`);
+    return existingTask;
+  }
+
+  updatePayload.updatedAt = new Date(); // Explicitly set updatedAt for the update operation
+
+  try {
+    const updatedTask = await db.frameworkEditorTaskTemplate.update({
+      where: { id },
+      data: updatePayload,
+    });
+    console.log("[Server Action] Task updated:", updatedTask);
+    revalidatePath("/tasks"); // Revalidate the tasks list page
+    revalidatePath(`/tasks/${id}`); // Revalidate specific task page if it exists
+    return updatedTask;
+  } catch (error) {
+    console.error(`[Server Action] Error updating task ${id}:`, error);
+    throw new Error(
+      `Failed to update task template with id ${id}. Please try again.`,
+    );
+  }
 }
 
 export async function deleteTaskTemplate(id: string): Promise<void> {
-    console.log('[Server Action] deleteTaskTemplate called with id:', id);
-    if (!id) {
-        throw new Error("Task ID must be provided for deletion.");
-    }
-    try {
-        await db.frameworkEditorTaskTemplate.delete({
-            where: { id },
-        });
-        console.log('[Server Action] Task deleted:', id);
-        revalidatePath('/tasks'); // Revalidate the tasks list page
-    } catch (error) {
-        console.error(`[Server Action] Error deleting task ${id}:`, error);
-        throw new Error(`Failed to delete task template with id ${id}. Please try again.`);
-    }
+  console.log("[Server Action] deleteTaskTemplate called with id:", id);
+  if (!id) {
+    throw new Error("Task ID must be provided for deletion.");
+  }
+  try {
+    await db.frameworkEditorTaskTemplate.delete({
+      where: { id },
+    });
+    console.log("[Server Action] Task deleted:", id);
+    revalidatePath("/tasks"); // Revalidate the tasks list page
+  } catch (error) {
+    console.error(`[Server Action] Error deleting task ${id}:`, error);
+    throw new Error(
+      `Failed to delete task template with id ${id}. Please try again.`,
+    );
+  }
 }
 
 // Example if needed for relational columns, similar to getAllPolicyTemplates in ControlsClientPage
@@ -140,12 +176,12 @@ export async function getAllControlsForLinking(): Promise<ItemWithName[]> {
         // domain: { select: { name: true } }
       },
       orderBy: {
-        name: 'asc',
+        name: "asc",
       },
     });
-    return controls.map(c => ({
+    return controls.map((c) => ({
       id: c.id,
-      name: c.name || 'Unnamed Control', // Ensure name exists
+      name: c.name || "Unnamed Control", // Ensure name exists
       // sublabel: c.domain?.name // Example if sublabel is needed
     }));
   } catch (error) {
@@ -157,7 +193,10 @@ export async function getAllControlsForLinking(): Promise<ItemWithName[]> {
 /**
  * Links a control template to a task template.
  */
-export async function linkControlToTask(taskId: string, controlId: string): Promise<void> {
+export async function linkControlToTask(
+  taskId: string,
+  controlId: string,
+): Promise<void> {
   if (!taskId || !controlId) {
     throw new Error("Task ID and Control ID must be provided.");
   }
@@ -170,7 +209,7 @@ export async function linkControlToTask(taskId: string, controlId: string): Prom
         },
       },
     });
-    revalidatePath('/tasks'); // Revalidate tasks list
+    revalidatePath("/tasks"); // Revalidate tasks list
     // Potentially revalidate a specific task page if one exists: revalidatePath(`/tasks/${taskId}`);
   } catch (error) {
     console.error("Error linking control to task:", error);
@@ -181,7 +220,10 @@ export async function linkControlToTask(taskId: string, controlId: string): Prom
 /**
  * Unlinks a control template from a task template.
  */
-export async function unlinkControlFromTask(taskId: string, controlId: string): Promise<void> {
+export async function unlinkControlFromTask(
+  taskId: string,
+  controlId: string,
+): Promise<void> {
   if (!taskId || !controlId) {
     throw new Error("Task ID and Control ID must be provided.");
   }
@@ -194,10 +236,10 @@ export async function unlinkControlFromTask(taskId: string, controlId: string): 
         },
       },
     });
-    revalidatePath('/tasks');
+    revalidatePath("/tasks");
     // Potentially revalidate a specific task page: revalidatePath(`/tasks/${taskId}`);
   } catch (error) {
     console.error("Error unlinking control from task:", error);
     throw new Error("Failed to unlink control from task.");
   }
-} 
+}

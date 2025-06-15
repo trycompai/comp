@@ -1,16 +1,16 @@
 {
   "name": "@comp/kv",
   "version": "1.0.0",
-  "private": true,
-  "main": "src/index.ts",
-  "scripts": {
-    "clean": "rm -rf .turbo node_modules",
-    "lint": "prettier --check .",
-    "format": "prettier --write .",
-    "typecheck": "tsc --noEmit"
-  },
   "dependencies": {
     "@upstash/redis": "^1.34.2",
     "server-only": "0.0.1"
+  },
+  "main": "src/index.ts",
+  "private": true,
+  "scripts": {
+    "clean": "rm -rf .turbo node_modules",
+    "format": "prettier --write .",
+    "lint": "prettier --check .",
+    "typecheck": "tsc --noEmit"
   }
 }

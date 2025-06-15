@@ -1,12 +1,12 @@
 {
-	"extends": "@comp/tsconfig/base.json",
-	"include": ["emails", "components", "lib"],
-	"exclude": ["node_modules"],
-	"compilerOptions": {
-		"baseUrl": ".",
-		"module": "NodeNext",
-		"moduleResolution": "NodeNext",
-		"jsx": "react-jsx",
-		"jsxImportSource": "react"
-	}
+  "extends": "@comp/tsconfig/base.json",
+  "include": ["emails", "components", "lib"],
+  "exclude": ["node_modules"],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "jsx": "react-jsx",
+    "jsxImportSource": "react"
+  }
 }

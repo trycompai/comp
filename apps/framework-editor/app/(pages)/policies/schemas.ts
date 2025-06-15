@@ -8,4 +8,4 @@ export const CreatePolicySchema = z.object({
   department: z.nativeEnum(Departments),
 });
 
-export type CreatePolicySchemaType = z.infer<typeof CreatePolicySchema>; 
+export type CreatePolicySchemaType = z.infer<typeof CreatePolicySchema>;

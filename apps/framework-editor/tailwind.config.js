@@ -8,4 +8,4 @@ export default {
     "../../packages/invoice/src/**/*.{ts,tsx}",
   ],
   presets: [baseConfig],
-}
+};

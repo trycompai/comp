@@ -7,25 +7,25 @@ import { useState } from "react";
 import { authClient } from "@/app/lib/auth-client";
 
 export function Logout() {
-	const t = useI18n();
-	const [isLoading, setLoading] = useState(false);
-	const router = useRouter();
+  const t = useI18n();
+  const [isLoading, setLoading] = useState(false);
+  const router = useRouter();
 
-	const handleLogout = async () => {
-		setLoading(true);
-		await authClient.signOut({
-			fetchOptions: {
-				onSuccess: () => {
-					router.push("/auth"); // Redirect to /auth instead of /login
-				},
-			},
-		});
-		setLoading(false);
-	};
+  const handleLogout = async () => {
+    setLoading(true);
+    await authClient.signOut({
+      fetchOptions: {
+        onSuccess: () => {
+          router.push("/auth"); // Redirect to /auth instead of /login
+        },
+      },
+    });
+    setLoading(false);
+  };
 
-	return (
-		<DropdownMenuItem onClick={handleLogout}>
-			{isLoading ? "Loading..." : t("user_menu.sign_out")}
-		</DropdownMenuItem>
-	);
+  return (
+    <DropdownMenuItem onClick={handleLogout}>
+      {isLoading ? "Loading..." : t("user_menu.sign_out")}
+    </DropdownMenuItem>
+  );
 }

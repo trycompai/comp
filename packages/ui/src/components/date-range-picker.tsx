@@ -29,13 +29,13 @@ export function DateRangePicker({
         <PopoverTrigger asChild disabled={disabled}>
           <Button
             variant="outline"
-            className={cn("justify-start text-left font-medium space-x-2")}
+            className={cn("justify-start space-x-2 text-left font-medium")}
           >
             <span>{placeholder}</span>
             <Icons.ChevronDown />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0 mt-2" align="end">
+        <PopoverContent className="mt-2 w-auto p-0" align="end">
           <Calendar
             initialFocus
             mode="range"

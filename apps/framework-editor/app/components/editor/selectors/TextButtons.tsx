@@ -1,9 +1,7 @@
-'use client';
+"use client";
 
 import { type Editor } from "@tiptap/core";
-import {
-  Bold, Italic, Strikethrough, Code,
-} from "lucide-react";
+import { Bold, Italic, Strikethrough, Code } from "lucide-react";
 import { Toggle } from "@comp/ui/toggle";
 
 interface TextButtonsProps {
@@ -54,4 +52,4 @@ export function TextButtons({ editor }: TextButtonsProps) {
       ))}
     </div>
   );
-} 
+}

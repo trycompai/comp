@@ -1,32 +1,32 @@
 import type {
-	FrameworkInstance,
-	IntegrationResult,
-	Policy,
-	Task,
+  FrameworkInstance,
+  IntegrationResult,
+  Policy,
+  Task,
 } from "@comp/db/types";
 import { FrameworkInstanceWithControls } from "../types";
 
 export interface ComplianceScoresProps {
-	policiesCompliance: number;
-	tasksCompliance: number;
-	cloudTestsCompliance: number;
-	overallCompliance: number;
-	frameworkCompliance: {
-		id: string;
-		name: string;
-		compliance: number;
-	}[];
-	policies: Policy[];
-	tasks: Task[];
-	tests: IntegrationResult[];
+  policiesCompliance: number;
+  tasksCompliance: number;
+  cloudTestsCompliance: number;
+  overallCompliance: number;
+  frameworkCompliance: {
+    id: string;
+    name: string;
+    compliance: number;
+  }[];
+  policies: Policy[];
+  tasks: Task[];
+  tests: IntegrationResult[];
 }
 
 export interface FrameworkWithCompliance {
-	framework: FrameworkInstance;
-	compliance: number;
+  framework: FrameworkInstance;
+  compliance: number;
 }
 
 export interface FrameworkInstanceWithComplianceScore {
-	frameworkInstance: FrameworkInstanceWithControls;
-	complianceScore: number;
+  frameworkInstance: FrameworkInstanceWithControls;
+  complianceScore: number;
 }

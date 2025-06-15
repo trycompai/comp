@@ -1,15 +1,6 @@
 {
   "name": "@comp/utils",
   "version": "1.0.0",
-  "main": "src/index.ts",
-  "private": true,
-  "sideEffects": false,
-  "scripts": {
-    "clean": "rm -rf .turbo node_modules",
-    "lint": "prettier --check .",
-    "format": "prettier --write .",
-    "typecheck": "tsc --noEmit"
-  },
   "devDependencies": {
     "typescript": "^5.8.3"
   },
@@ -17,5 +8,14 @@
     ".": "./src/index.ts",
     "./envs": "./src/envs.ts",
     "./format": "./src/format.ts"
-  }
+  },
+  "main": "src/index.ts",
+  "private": true,
+  "scripts": {
+    "clean": "rm -rf .turbo node_modules",
+    "format": "prettier --write .",
+    "lint": "prettier --check .",
+    "typecheck": "tsc --noEmit"
+  },
+  "sideEffects": false
 }

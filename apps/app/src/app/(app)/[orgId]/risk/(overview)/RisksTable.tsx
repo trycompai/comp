@@ -15,54 +15,54 @@ import { columns as getColumns } from "./components/table/RiskColumns";
 export type RiskRow = Risk & { assignee: User | null };
 
 export const RisksTable = ({
-	risks,
-	assignees,
-	pageCount,
+  risks,
+  assignees,
+  pageCount,
 }: {
-	risks: RiskRow[];
-	assignees: (Member & { user: User })[];
-	pageCount: number;
+  risks: RiskRow[];
+  assignees: (Member & { user: User })[];
+  pageCount: number;
 }) => {
-	const session = useSession();
-	const orgId = session?.data?.session?.activeOrganizationId;
-	const [_, setOpenSheet] = useQueryState("create-risk-sheet");
+  const session = useSession();
+  const orgId = session?.data?.session?.activeOrganizationId;
+  const [_, setOpenSheet] = useQueryState("create-risk-sheet");
 
-	const columns = useMemo<ColumnDef<RiskRow>[]>(
-		() => getColumns(orgId ?? ""),
-		[orgId],
-	);
+  const columns = useMemo<ColumnDef<RiskRow>[]>(
+    () => getColumns(orgId ?? ""),
+    [orgId],
+  );
 
-	const { table } = useDataTable({
-		data: risks,
-		columns,
-		pageCount,
-		getRowId: (row) => row.id,
-		initialState: {
-			pagination: {
-				pageSize: 50,
-				pageIndex: 0,
-			},
-			sorting: [{ id: "title", desc: true }],
-			columnPinning: { right: ["actions"] },
-		},
-		shallow: false,
-		clearOnDefault: true,
-	});
+  const { table } = useDataTable({
+    data: risks,
+    columns,
+    pageCount,
+    getRowId: (row) => row.id,
+    initialState: {
+      pagination: {
+        pageSize: 50,
+        pageIndex: 0,
+      },
+      sorting: [{ id: "title", desc: true }],
+      columnPinning: { right: ["actions"] },
+    },
+    shallow: false,
+    clearOnDefault: true,
+  });
 
-	return (
-		<>
-			<DataTable
-				table={table}
-				getRowId={(row) => row.id}
-				rowClickBasePath={`/${orgId}/risk`}
-			>
-				<DataTableToolbar
-					table={table}
-					sheet="create-risk-sheet"
-					action="Create Risk"
-				/>
-			</DataTable>
-			<CreateRiskSheet assignees={assignees} />
-		</>
-	);
+  return (
+    <>
+      <DataTable
+        table={table}
+        getRowId={(row) => row.id}
+        rowClickBasePath={`/${orgId}/risk`}
+      >
+        <DataTableToolbar
+          table={table}
+          sheet="create-risk-sheet"
+          action="Create Risk"
+        />
+      </DataTable>
+      <CreateRiskSheet assignees={assignees} />
+    </>
+  );
 };

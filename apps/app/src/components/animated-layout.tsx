@@ -1,30 +1,30 @@
 import { cn } from "@comp/ui/cn";
 
 interface AnimatedLayoutProps {
-	children: React.ReactNode;
-	sidebar: React.ReactNode;
-	isCollapsed: boolean;
-	blurred?: boolean;
+  children: React.ReactNode;
+  sidebar: React.ReactNode;
+  isCollapsed: boolean;
+  blurred?: boolean;
 }
 
 export function AnimatedLayout({
-	children,
-	sidebar,
-	isCollapsed,
-	blurred,
+  children,
+  sidebar,
+  isCollapsed,
+  blurred,
 }: AnimatedLayoutProps) {
-	return (
-		<div className="flex w-full h-screen overflow-hidden">
-			<div
-				className={cn(
-					"shrink-0 h-full overflow-y-auto border-r bg-background duration-300 ease-in-out hidden md:block",
-					isCollapsed ? "w-[80px]" : "w-[240px]",
-					blurred ? "blur-xs select-none pointer-events-none" : "",
-				)}
-			>
-				{sidebar}
-			</div>
-			<div className="flex-1 overflow-y-auto bg-background">{children}</div>
-		</div>
-	);
+  return (
+    <div className="flex h-screen w-full overflow-hidden">
+      <div
+        className={cn(
+          "bg-background hidden h-full shrink-0 overflow-y-auto border-r duration-300 ease-in-out md:block",
+          isCollapsed ? "w-[80px]" : "w-[240px]",
+          blurred ? "pointer-events-none blur-xs select-none" : "",
+        )}
+      >
+        {sidebar}
+      </div>
+      <div className="bg-background flex-1 overflow-y-auto">{children}</div>
+    </div>
+  );
 }

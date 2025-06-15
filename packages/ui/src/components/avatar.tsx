@@ -33,7 +33,7 @@ export const AvatarImageNext = React.forwardRef<
   return (
     <Image
       ref={ref}
-      className={cn("aspect-square h-full w-full absolute z-10", className)}
+      className={cn("absolute z-10 aspect-square h-full w-full", className)}
       onError={(e) => {
         setHasError(true);
         onError?.(e);
@@ -64,7 +64,7 @@ const AvatarFallback = React.forwardRef<
   <AvatarPrimitive.Fallback
     ref={ref}
     className={cn(
-      "flex h-full w-full items-center justify-center rounded-full bg-accent",
+      "bg-accent flex h-full w-full items-center justify-center rounded-full",
       className,
     )}
     {...props}

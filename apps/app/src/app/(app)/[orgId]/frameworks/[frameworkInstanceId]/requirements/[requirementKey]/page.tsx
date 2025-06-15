@@ -8,115 +8,118 @@ import { db } from "@comp/db";
 import type { FrameworkEditorRequirement } from "@comp/db/types";
 
 interface PageProps {
-	params: Promise<{
-		frameworkInstanceId: string;
-		requirementKey: string;
-	}>;
+  params: Promise<{
+    frameworkInstanceId: string;
+    requirementKey: string;
+  }>;
 }
 
 export default async function RequirementPage({ params }: PageProps) {
-	const { frameworkInstanceId, requirementKey } = await params;
+  const { frameworkInstanceId, requirementKey } = await params;
 
-	const session = await auth.api.getSession({
-		headers: await headers(),
-	});
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
-	if (!session) {
-		redirect("/");
-	}
+  if (!session) {
+    redirect("/");
+  }
 
-	const organizationId = session.session.activeOrganizationId;
+  const organizationId = session.session.activeOrganizationId;
 
-	if (!organizationId) {
-		redirect("/");
-	}
+  if (!organizationId) {
+    redirect("/");
+  }
 
-	const frameworkInstanceWithControls =
-		await getSingleFrameworkInstanceWithControls({
-			organizationId,
-			frameworkInstanceId,
-		});
+  const frameworkInstanceWithControls =
+    await getSingleFrameworkInstanceWithControls({
+      organizationId,
+      frameworkInstanceId,
+    });
 
-	if (!frameworkInstanceWithControls) {
-		redirect("/");
-	}
+  if (!frameworkInstanceWithControls) {
+    redirect("/");
+  }
 
-	const allReqDefsForFramework = await db.frameworkEditorRequirement.findMany({
-		where: {
-			frameworkId: frameworkInstanceWithControls.frameworkId,
-		},
-	});
+  const allReqDefsForFramework = await db.frameworkEditorRequirement.findMany({
+    where: {
+      frameworkId: frameworkInstanceWithControls.frameworkId,
+    },
+  });
 
-	const requirementsFromDb = allReqDefsForFramework.reduce<
-		Record<string, FrameworkEditorRequirement>
-	>((acc, def) => {
-		acc[def.id] = def;
-		return acc;
-	}, {});
+  const requirementsFromDb = allReqDefsForFramework.reduce<
+    Record<string, FrameworkEditorRequirement>
+  >((acc, def) => {
+    acc[def.id] = def;
+    return acc;
+  }, {});
 
-	const currentRequirementDetails = requirementsFromDb[requirementKey];
+  const currentRequirementDetails = requirementsFromDb[requirementKey];
 
-	if (!currentRequirementDetails) {
-		redirect(`/${organizationId}/frameworks/${frameworkInstanceId}`);
-	}
+  if (!currentRequirementDetails) {
+    redirect(`/${organizationId}/frameworks/${frameworkInstanceId}`);
+  }
 
-	const frameworkName = frameworkInstanceWithControls.framework.name;
+  const frameworkName = frameworkInstanceWithControls.framework.name;
 
-	const siblingRequirements = allReqDefsForFramework.filter(
-		(def) => def.id !== requirementKey,
-	);
+  const siblingRequirements = allReqDefsForFramework.filter(
+    (def) => def.id !== requirementKey,
+  );
 
-	const siblingRequirementsDropdown = siblingRequirements.map((def) => ({
-		label: def.name,
-		href: `/${organizationId}/frameworks/${frameworkInstanceId}/requirements/${def.id}`,
-	}));
+  const siblingRequirementsDropdown = siblingRequirements.map((def) => ({
+    label: def.name,
+    href: `/${organizationId}/frameworks/${frameworkInstanceId}/requirements/${def.id}`,
+  }));
 
-	const tasks =
-		(await db.task.findMany({
-			where: {
-				organizationId,
-			},
-			include: {
-				controls: true,
-			},
-		})) || [];
+  const tasks =
+    (await db.task.findMany({
+      where: {
+        organizationId,
+      },
+      include: {
+        controls: true,
+      },
+    })) || [];
 
-	const relatedControls = await db.requirementMap.findMany({
-		where: {
-			frameworkInstanceId,
-			requirementId: requirementKey,
-		},
-		include: {
-			control: true,
-		},
-	});
+  const relatedControls = await db.requirementMap.findMany({
+    where: {
+      frameworkInstanceId,
+      requirementId: requirementKey,
+    },
+    include: {
+      control: true,
+    },
+  });
 
-	console.log("relatedControls", relatedControls);
+  console.log("relatedControls", relatedControls);
 
-	const maxLabelLength = 40;
+  const maxLabelLength = 40;
 
-	return (
-		<PageWithBreadcrumb
-			breadcrumbs={[
-				{ label: "Frameworks", href: `/${organizationId}/frameworks` },
-				{
-					label: frameworkName,
-					href: `/${organizationId}/frameworks/${frameworkInstanceId}`,
-				},
-				{
-					label: currentRequirementDetails.name.length > maxLabelLength ? `${currentRequirementDetails.name.slice(0, maxLabelLength)}...` : currentRequirementDetails.name,
-					dropdown: siblingRequirementsDropdown,
-					current: true,
-				},
-			]}
-		>
-			<div className="flex flex-col gap-6">
-				<RequirementControls
-					requirement={currentRequirementDetails}
-					tasks={tasks}
-					relatedControls={relatedControls}
-				/>
-			</div>
-		</PageWithBreadcrumb>
-	);
+  return (
+    <PageWithBreadcrumb
+      breadcrumbs={[
+        { label: "Frameworks", href: `/${organizationId}/frameworks` },
+        {
+          label: frameworkName,
+          href: `/${organizationId}/frameworks/${frameworkInstanceId}`,
+        },
+        {
+          label:
+            currentRequirementDetails.name.length > maxLabelLength
+              ? `${currentRequirementDetails.name.slice(0, maxLabelLength)}...`
+              : currentRequirementDetails.name,
+          dropdown: siblingRequirementsDropdown,
+          current: true,
+        },
+      ]}
+    >
+      <div className="flex flex-col gap-6">
+        <RequirementControls
+          requirement={currentRequirementDetails}
+          tasks={tasks}
+          relatedControls={relatedControls}
+        />
+      </div>
+    </PageWithBreadcrumb>
+  );
 }

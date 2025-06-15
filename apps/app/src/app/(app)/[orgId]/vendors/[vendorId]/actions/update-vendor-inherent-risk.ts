@@ -9,33 +9,31 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 const schema = z.object({
-	vendorId: z.string(),
-	inherentProbability: z.nativeEnum(Likelihood),
-	inherentImpact: z.nativeEnum(Impact),
+  vendorId: z.string(),
+  inherentProbability: z.nativeEnum(Likelihood),
+  inherentImpact: z.nativeEnum(Impact),
 });
 
 export const updateVendorInherentRisk = createSafeActionClient()
-	.schema(schema)
-	.action(async ({ parsedInput }): Promise<ActionResponse> => {
-		try {
-			await db.vendor.update({
-				where: { id: parsedInput.vendorId },
-				data: {
-					inherentProbability: parsedInput.inherentProbability,
-					inherentImpact: parsedInput.inherentImpact,
-				},
-			});
+  .schema(schema)
+  .action(async ({ parsedInput }): Promise<ActionResponse> => {
+    try {
+      await db.vendor.update({
+        where: { id: parsedInput.vendorId },
+        data: {
+          inherentProbability: parsedInput.inherentProbability,
+          inherentImpact: parsedInput.inherentImpact,
+        },
+      });
 
-			revalidatePath(`/vendors/${parsedInput.vendorId}`);
+      revalidatePath(`/vendors/${parsedInput.vendorId}`);
 
-			return { success: true };
-		} catch (error) {
-			return {
-				success: false,
-				error:
-					error instanceof Error
-						? error.message
-						: appErrors.UNEXPECTED_ERROR,
-			};
-		}
-	});
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : appErrors.UNEXPECTED_ERROR,
+      };
+    }
+  });

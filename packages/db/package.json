@@ -1,43 +1,43 @@
 {
-	"name": "@comp/db",
-	"version": "1.0.0",
-	"main": "./src/index.ts",
-	"types": "./src/index.ts",
-	"scripts": {
-		"db:generate": "bunx prisma generate",
-		"db:push": "bunx prisma db push",
-		"db:migrate": "bunx prisma migrate dev",
-		"db:studio": "bunx prisma studio",
-		"db:seed": "bunx prisma db seed",
-		"docker:up": "docker-compose up -d",
-		"docker:down": "docker-compose down",
-		"docker:clean": "docker-compose down -v",
-		"dev": "tsc --watch",
-		"lint": "eslint src/",
-		"typecheck": "tsc --noEmit",
-		"clean": "rm -rf .turbo node_modules dist"
-	},
-	"exports": {
-		".": {
-			"types": "./src/index.ts",
-			"default": "./src/index.ts"
-		},
-		"./types": {
-			"types": "./src/types.ts",
-			"default": "./src/types.ts"
-		}
-	},
-	"dependencies": {
-		"@prisma/client": "6.9.0",
-		"prisma": "^6.9.0",
-		"ts-node": "^10.9.2"
-	},
-	"devDependencies": {
-		"@comp/tsconfig": "workspace:*",
-		"typescript": "^5.8.3"
-	},
-	"prisma": {
-		"schema": "prisma",
-		"seed": "ts-node prisma/seed/seed.ts"
-	}
+  "name": "@comp/db",
+  "version": "1.0.0",
+  "dependencies": {
+    "@prisma/client": "6.9.0",
+    "prisma": "^6.9.0",
+    "ts-node": "^10.9.2"
+  },
+  "devDependencies": {
+    "@comp/tsconfig": "workspace:*",
+    "typescript": "^5.8.3"
+  },
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./types": {
+      "types": "./src/types.ts",
+      "default": "./src/types.ts"
+    }
+  },
+  "main": "./src/index.ts",
+  "prisma": {
+    "schema": "prisma",
+    "seed": "ts-node prisma/seed/seed.ts"
+  },
+  "scripts": {
+    "clean": "rm -rf .turbo node_modules dist",
+    "db:generate": "bunx prisma generate",
+    "db:migrate": "bunx prisma migrate dev",
+    "db:push": "bunx prisma db push",
+    "db:seed": "bunx prisma db seed",
+    "db:studio": "bunx prisma studio",
+    "dev": "tsc --watch",
+    "docker:clean": "docker-compose down -v",
+    "docker:down": "docker-compose down",
+    "docker:up": "docker-compose up -d",
+    "lint": "prettier --check . && tsc --noEmit",
+    "typecheck": "tsc --noEmit"
+  },
+  "types": "./src/index.ts"
 }

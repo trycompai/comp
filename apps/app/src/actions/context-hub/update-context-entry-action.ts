@@ -7,33 +7,33 @@ import { updateContextEntrySchema } from "../schema";
 import { db } from "@comp/db";
 
 export const updateContextEntryAction = authActionClient
-	.schema(updateContextEntrySchema)
-	.metadata({ name: "update-context-entry" })
-	.action(async ({ parsedInput, ctx }) => {
-		const { id, question, answer, tags } = parsedInput;
-		const organizationId = ctx.session.activeOrganizationId;
-		if (!organizationId) throw new Error("No active organization");
+  .schema(updateContextEntrySchema)
+  .metadata({ name: "update-context-entry" })
+  .action(async ({ parsedInput, ctx }) => {
+    const { id, question, answer, tags } = parsedInput;
+    const organizationId = ctx.session.activeOrganizationId;
+    if (!organizationId) throw new Error("No active organization");
 
-		await db.context.update({
-			where: { id, organizationId },
-			data: {
-				question,
-				answer,
-				tags: tags
-					? tags
-							.split(",")
-							.map((t) => t.trim())
-							.filter(Boolean)
-					: [],
-			},
-		});
+    await db.context.update({
+      where: { id, organizationId },
+      data: {
+        question,
+        answer,
+        tags: tags
+          ? tags
+              .split(",")
+              .map((t) => t.trim())
+              .filter(Boolean)
+          : [],
+      },
+    });
 
-		const headersList = await headers();
-		let path =
-			headersList.get("x-pathname") || headersList.get("referer") || "";
-		path = path.replace(/\/[a-z]{2}\//, "/");
+    const headersList = await headers();
+    let path =
+      headersList.get("x-pathname") || headersList.get("referer") || "";
+    path = path.replace(/\/[a-z]{2}\//, "/");
 
-		revalidatePath(path);
+    revalidatePath(path);
 
-		return { success: true };
-	});
+    return { success: true };
+  });

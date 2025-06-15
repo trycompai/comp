@@ -1,0 +1,75 @@
+{
+  "source": ["package.json", "apps/*/package.json", "packages/*/package.json"],
+  "dependencyTypes": ["prod", "dev", "peer"],
+  "semverGroups": [
+    {
+      "label": "Use exact versions for internal packages",
+      "packages": ["@comp/**"],
+      "dependencies": ["@comp/**"],
+      "range": "workspace:*"
+    }
+  ],
+  "versionGroups": [
+    {
+      "label": "Ensure React is consistent",
+      "packages": ["**"],
+      "dependencies": [
+        "react",
+        "react-dom",
+        "@types/react",
+        "@types/react-dom",
+        "react-is"
+      ],
+      "isIgnored": false
+    },
+    {
+      "label": "Ensure Next.js is consistent",
+      "packages": ["**"],
+      "dependencies": ["next"],
+      "isIgnored": false
+    },
+    {
+      "label": "Ensure TypeScript is consistent",
+      "packages": ["**"],
+      "dependencies": ["typescript"],
+      "isIgnored": false
+    },
+    {
+      "label": "Ensure common build tools are consistent",
+      "packages": ["**"],
+      "dependencies": [
+        "postcss",
+        "tailwindcss",
+        "@tailwindcss/**",
+        "autoprefixer"
+      ],
+      "isIgnored": false
+    },
+    {
+      "label": "Ensure testing tools are consistent",
+      "packages": ["**"],
+      "dependencies": ["@types/node", "prettier", "turbo"],
+      "isIgnored": false
+    },
+    {
+      "label": "Ensure ESLint is consistent",
+      "packages": ["**"],
+      "dependencies": ["eslint", "eslint-config-next"],
+      "isIgnored": false
+    }
+  ],
+  "lintRules": {
+    "forbiddenDependencies": {
+      "dependencies": [
+        "crypto",
+        "buffer",
+        "fs",
+        "path",
+        "os",
+        "install",
+        "npm"
+      ],
+      "message": "This is a Node.js built-in module or a mistakenly added dependency"
+    }
+  }
+}

@@ -12,38 +12,39 @@ import { ControlWithRelations, getControls } from "../data/queries";
 import { getControlColumns } from "./controls-table-columns";
 
 interface ControlsTableProps {
-	promises: Promise<[{ data: ControlWithRelations[]; pageCount: number }]>;
+  promises: Promise<[{ data: ControlWithRelations[]; pageCount: number }]>;
 }
 
 export function ControlsTable({ promises }: ControlsTableProps) {
-	const [{ data, pageCount }] = React.use(promises);
-	const { orgId } = useParams();
-	const columns = React.useMemo(() => getControlColumns(), []);
-	const [filteredData, setFilteredData] = React.useState<ControlWithRelations[]>(data);
+  const [{ data, pageCount }] = React.use(promises);
+  const { orgId } = useParams();
+  const columns = React.useMemo(() => getControlColumns(), []);
+  const [filteredData, setFilteredData] =
+    React.useState<ControlWithRelations[]>(data);
 
-	// For client-side filtering, we don't need to apply server-side filtering
-	const { table } = useDataTable({
-		data: filteredData,
-		columns,
-		pageCount,
-		initialState: {
-			sorting: [{ id: "name", desc: true }],
-		},
-		getRowId: (row) => row.id,
-		shallow: false,
-		clearOnDefault: true,
-	});
+  // For client-side filtering, we don't need to apply server-side filtering
+  const { table } = useDataTable({
+    data: filteredData,
+    columns,
+    pageCount,
+    initialState: {
+      sorting: [{ id: "name", desc: true }],
+    },
+    getRowId: (row) => row.id,
+    shallow: false,
+    clearOnDefault: true,
+  });
 
-	return (
-		<>
-			<DataTable
-				table={table}
-				getRowId={(row) => row.id}
-				rowClickBasePath={`/${orgId}/controls`}
-			>
-				<DataTableToolbar table={table} />
-			</DataTable>
-			<CreatePolicySheet />
-		</>
-	);
+  return (
+    <>
+      <DataTable
+        table={table}
+        getRowId={(row) => row.id}
+        rowClickBasePath={`/${orgId}/controls`}
+      >
+        <DataTableToolbar table={table} />
+      </DataTable>
+      <CreatePolicySheet />
+    </>
+  );
 }

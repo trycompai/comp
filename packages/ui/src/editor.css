@@ -66,49 +66,49 @@ pre {
 
 /* Base editor styles */
 .ProseMirror {
-  @apply w-full text-sm leading-normal;
+  @reference w-full text-sm leading-normal;
   height: 100%;
   min-height: 350px;
 }
 
 .ProseMirror:focus {
-  @apply outline-hidden;
+  @reference outline-hidden;
 }
 
 /* Typography */
 .ProseMirror h1 {
-  @apply text-xl font-semibold text-foreground;
+  @reference text-xl font-semibold text-foreground;
 }
 
 .ProseMirror h2 {
-  @apply text-lg font-semibold text-foreground;
+  @reference text-lg font-semibold text-foreground;
 }
 
 .ProseMirror h3 {
-  @apply text-base font-semibold text-foreground;
+  @reference text-base font-semibold text-foreground;
 }
 
 .ProseMirror h4 {
-  @apply text-sm font-semibold text-foreground;
+  @reference text-sm font-semibold text-foreground;
 }
 
 .ProseMirror p {
-  @apply text-sm;
+  @reference text-sm;
 }
 
 /* Lists */
 .ProseMirror ul,
 .ProseMirror ol {
-  @apply my-1 ml-2 space-y-2;
+  @reference my-1 ml-2 space-y-2;
 }
 
 .ProseMirror li {
-  @apply text-sm leading-6;
+  @reference text-sm leading-6;
   margin: 0 !important;
 }
 
 .ProseMirror li > p {
-  @apply m-0;
+  @reference m-0;
 }
 
 /* Numbered lists specific styling */
@@ -135,35 +135,35 @@ pre {
 .ProseMirror h2 + p,
 .ProseMirror h3 + p,
 .ProseMirror h4 + p {
-  @apply mt-1;
+  @reference mt-1;
 }
 
 /* Code blocks */
 .ProseMirror pre {
-  @apply bg-muted p-4 my-4 overflow-x-auto;
+  @reference bg-muted p-4 my-4 overflow-x-auto;
 }
 
 .ProseMirror code {
-  @apply font-mono text-sm;
+  @reference font-mono text-sm;
 }
 
 /* Blockquotes */
 .ProseMirror blockquote {
-  @apply border-l-4 border-primary pl-4 italic my-4;
+  @reference border-l-4 border-primary pl-4 italic my-4;
 }
 
 /* Task lists */
 .ProseMirror ul[data-type="taskList"] {
-  @apply list-none p-0;
+  @reference list-none p-0;
 }
 
 .ProseMirror ul[data-type="taskList"] li {
-  @apply flex items-start gap-2;
+  @reference flex items-start gap-2;
 }
 
 /* Placeholder */
 .ProseMirror p.is-empty::before {
-  @apply text-muted-foreground;
+  @reference text-muted-foreground;
   content: attr(data-placeholder);
   float: left;
   height: 0;
@@ -171,9 +171,9 @@ pre {
 }
 
 .ProseMirror table {
-  @apply w-full border-collapse my-4 border border-border;
+  @reference w-full border-collapse my-4 border border-border;
 }
 
 .ProseMirror th {
-  @apply text-sm font-medium;
+  @reference text-sm font-medium;
 }

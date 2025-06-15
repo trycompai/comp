@@ -8,78 +8,78 @@ import { redirect } from "next/navigation";
 import { AcceptInvite } from "./components/accept-invite";
 
 export const metadata: Metadata = {
-	title: "Organization Setup | Comp AI",
+  title: "Organization Setup | Comp AI",
 };
 
 export default async function Page() {
-	const headersList = await headers();
+  const headersList = await headers();
 
-	const session = await auth.api.getSession({
-		headers: headersList,
-	});
+  const session = await auth.api.getSession({
+    headers: headersList,
+  });
 
-	if (!session || !session.session) {
-		return redirect("/");
-	}
+  if (!session || !session.session) {
+    return redirect("/");
+  }
 
-	const organization = await db.organization.findFirst({
-		where: {
-			members: {
-				some: {
-					userId: session.user.id,
-				},
-			},
-		},
-	});
+  const organization = await db.organization.findFirst({
+    where: {
+      members: {
+        some: {
+          userId: session.user.id,
+        },
+      },
+    },
+  });
 
-	const hasInvite = await db.invitation.findFirst({
-		where: {
-			email: session.user.email,
-			status: "pending",
-			role: {
-				not: "employee",
-			},
-		},
-	});
+  const hasInvite = await db.invitation.findFirst({
+    where: {
+      email: session.user.email,
+      status: "pending",
+      role: {
+        not: "employee",
+      },
+    },
+  });
 
-	if (organization?.id && !hasInvite) {
-		await auth.api.setActiveOrganization({
-			headers: headersList,
-			body: {
-				organizationId: organization.id,
-			},
-		});
+  if (organization?.id && !hasInvite) {
+    await auth.api.setActiveOrganization({
+      headers: headersList,
+      body: {
+        organizationId: organization.id,
+      },
+    });
 
-		return redirect(`/${organization.id}/frameworks`);
-	}
+    return redirect(`/${organization.id}/frameworks`);
+  }
 
-	if (hasInvite) {
-		const organization = await db.organization.findUnique({
-			where: {
-				id: hasInvite.organizationId,
-			},
-			select: {
-				name: true,
-			},
-		});
+  if (hasInvite) {
+    const organization = await db.organization.findUnique({
+      where: {
+        id: hasInvite.organizationId,
+      },
+      select: {
+        name: true,
+      },
+    });
 
-		return (
-			<AcceptInvite
-				inviteCode={hasInvite.id}
-				organizationName={organization?.name || ""}
-			/>
-		);
-	}
+    return (
+      <AcceptInvite
+        inviteCode={hasInvite.id}
+        organizationName={organization?.name || ""}
+      />
+    );
+  }
 
-	const frameworks = await db.frameworkEditorFramework.findMany({
-		select: {
-			id: true,
-			name: true,
-			description: true,
-			version: true,
-			visible: true,
-		},
-	});
+  const frameworks = await db.frameworkEditorFramework.findMany({
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      version: true,
+      visible: true,
+    },
+  });
 
-	return <OnboardingClient frameworks={frameworks} />;
+  return <OnboardingClient frameworks={frameworks} />;
 }

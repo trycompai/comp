@@ -8,73 +8,69 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 
 export type PolicyType = {
-	id: string;
-	policy: {
-		id: string;
-		name: string;
-		description: string | null;
-		slug: string;
-	};
-	status: "draft" | "published" | "archived";
-	createdAt: string;
-	updatedAt: string;
+  id: string;
+  policy: {
+    id: string;
+    name: string;
+    description: string | null;
+    slug: string;
+  };
+  status: "draft" | "published" | "archived";
+  createdAt: string;
+  updatedAt: string;
 };
 
 export function columns(): ColumnDef<PolicyType>[] {
-	const { orgId } = useParams<{ orgId: string }>();
+  const { orgId } = useParams<{ orgId: string }>();
 
-	return [
-		{
-			id: "name",
-			accessorKey: "policy.name",
-			cell: ({ row }) => {
-				const name = row.original.policy.name;
-				const id = row.original.id;
-				const status = row.original.status;
+  return [
+    {
+      id: "name",
+      accessorKey: "policy.name",
+      cell: ({ row }) => {
+        const name = row.original.policy.name;
+        const id = row.original.id;
+        const status = row.original.status;
 
-				return (
-					<div className="flex flex-col gap-1">
-						<Button
-							variant="link"
-							className="p-0 justify-start"
-							asChild
-						>
-							<Link href={`/${orgId}/policies/${id}`}>
-								<span className="truncate">{name}</span>
-							</Link>
-						</Button>
-						<div className="md:hidden">
-							<StatusIndicator status={status} />
-						</div>
-					</div>
-				);
-			},
-		},
-		{
-			id: "status",
-			accessorKey: "status",
-			cell: ({ row }) => {
-				const status = row.original.status;
+        return (
+          <div className="flex flex-col gap-1">
+            <Button variant="link" className="justify-start p-0" asChild>
+              <Link href={`/${orgId}/policies/${id}`}>
+                <span className="truncate">{name}</span>
+              </Link>
+            </Button>
+            <div className="md:hidden">
+              <StatusIndicator status={status} />
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      id: "status",
+      accessorKey: "status",
+      cell: ({ row }) => {
+        const status = row.original.status;
 
-				return (
-					<div className="hidden md:flex items-center gap-2">
-						<StatusIndicator status={status} />
-					</div>
-				);
-			},
-		},
-		{
-			id: "updatedAt",
-			accessorKey: "updatedAt",
-			cell: ({ row }) => {
-				const date = row.original.updatedAt;
+        return (
+          <div className="hidden items-center gap-2 md:flex">
+            <StatusIndicator status={status} />
+          </div>
+        );
+      },
+    },
+    {
+      id: "updatedAt",
+      accessorKey: "updatedAt",
+      cell: ({ row }) => {
+        const date = row.original.updatedAt;
 
-				return (
-					<div className="text-muted-foreground">
-						{formatDate(date, "MMM d, yyyy")}
-					</div>
-				);
-			},
-		},
-	];
+        return (
+          <div className="text-muted-foreground">
+            {formatDate(date, "MMM d, yyyy")}
+          </div>
+        );
+      },
+    },
+  ];
 }

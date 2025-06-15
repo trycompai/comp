@@ -1,3 +1,6 @@
+#!/bin/sh
+
+# Check branch name convention
 branch_name=$(git symbolic-ref --short HEAD)
 pattern="^[a-zA-Z-]+/.+$"
 
@@ -6,3 +9,13 @@ if [[ ! $branch_name =~ $pattern ]]; then
   echo "Branch names should follow the pattern: category/branch-name (e.g. feature/add-button)"
   exit 1
 fi
+
+echo "Running lint and typecheck before push..."
+
+# Run lint
+bun run lint
+
+# Run typecheck  
+bun run typecheck:ci
+
+echo "✅ All checks passed!"

@@ -58,13 +58,13 @@ export const TaskReminderEmail = ({
 
         <Preview>Comp AI - Task Reminder</Preview>
 
-        <Body className="bg-[#fff] my-auto mx-auto font-sans">
+        <Body className="mx-auto my-auto bg-[#fff] font-sans">
           <Container
-            className="border-transparent md:border-[#E8E7E1] my-[40px] mx-auto p-[20px] max-w-[600px]"
+            className="mx-auto my-[40px] max-w-[600px] border-transparent p-[20px] md:border-[#E8E7E1]"
             style={{ borderStyle: "solid", borderWidth: 1 }}
           >
             <Logo />
-            <Heading className="mx-0 my-[30px] p-0 text-[24px] font-normal text-[#121212] text-center">
+            <Heading className="mx-0 my-[30px] p-0 text-center text-[24px] font-normal text-[#121212]">
               Task Reminder
             </Heading>
 
@@ -72,16 +72,16 @@ export const TaskReminderEmail = ({
               Hey {name}, you're assigned to a task that is due soon ({dueDate}
               ).
             </Text>
-            <Section className="mb-[42px] mt-[32px] text-center">
+            <Section className="mt-[32px] mb-[42px] text-center">
               <Button
-                className="bg-transparent text-primary text-[14px] text-[#121212] font-medium no-underline text-center px-6 py-3 border border-solid border-[#121212]"
+                className="text-primary border border-solid border-[#121212] bg-transparent px-6 py-3 text-center text-[14px] font-medium text-[#121212] no-underline"
                 href={link}
               >
                 Open Task
               </Button>
             </Section>
 
-            <Text className="text-[14px] leading-[24px] text-[#707070] break-all">
+            <Text className="text-[14px] leading-[24px] break-all text-[#707070]">
               or copy and paste this URL into your browser{" "}
               <Link href={link} className="text-[#707070] underline">
                 {link}
@@ -92,7 +92,7 @@ export const TaskReminderEmail = ({
             <Section>
               <Text className="text-[12px] leading-[24px] text-[#666666]">
                 this notification was intended for{" "}
-                <span className="text-[#121212] ">{email}</span>.{" "}
+                <span className="text-[#121212]">{email}</span>.{" "}
               </Text>
             </Section>
 

@@ -3,11 +3,11 @@ import { useStore } from "zustand";
 import { UserContext, type UserState } from "./store";
 
 export function useUserContext<T>(selector: (state: UserState) => T): T {
-	const store = useContext(UserContext);
+  const store = useContext(UserContext);
 
-	if (!store) {
-		throw new Error("Missing UserContext.Provider in the tree");
-	}
+  if (!store) {
+    throw new Error("Missing UserContext.Provider in the tree");
+  }
 
-	return useStore(store, selector);
+  return useStore(store, selector);
 }
