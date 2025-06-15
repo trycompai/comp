@@ -20,7 +20,7 @@
     "@dnd-kit/modifiers": "^9.0.0",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
-    "@hookform/resolvers": "^3.9.1",
+    "@hookform/resolvers": "^5.1.1",
     "@mendable/firecrawl-js": "^1.24.0",
     "@nangohq/frontend": "^0.53.2",
     "@next/third-parties": "^15.3.1",
