@@ -8,8 +8,8 @@
     "@react-email/render": "^1.1.2",
     "@react-email/tailwind": "1.0.4",
     "date-fns": "^4.1.0",
-    "eslint-config-next": "^15.4.0-canary.83",
-    "next": "^15.4.0-canary.83",
+    "eslint-config-next": "15.4.0-canary.83",
+    "next": "15.4.0-canary.83",
     "react-email": "^4.0.15",
     "responsive-react-email": "^0.0.5"
   },

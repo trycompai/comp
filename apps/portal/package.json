@@ -8,7 +8,7 @@
     "@tailwindcss/postcss": "^4.1.10",
     "archiver": "^7.0.1",
     "better-auth": "^1.2.8",
-    "next": "^15.4.0-canary.83",
+    "next": "15.4.0-canary.83",
     "react-email": "^4.0.15",
     "react-otp-input": "^3.1.1"
   },
@@ -18,7 +18,7 @@
     "@types/archiver": "^6.0.3",
     "@types/node": "^22.13.2",
     "eslint": "^9",
-    "eslint-config-next": "^15.4.0-canary.83",
+    "eslint-config-next": "15.4.0-canary.83",
     "postcss": "^8.5.4",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

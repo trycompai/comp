@@ -1,5 +1,3 @@
-#!/bin/sh
-
 # Check branch name convention
 branch_name=$(git symbolic-ref --short HEAD)
 pattern="^[a-zA-Z-]+/.+$"

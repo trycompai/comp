@@ -1,6 +1,3 @@
-#!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
-
 # Check for dependency mismatches
 echo "Checking for dependency mismatches..."
 bun run deps:check
