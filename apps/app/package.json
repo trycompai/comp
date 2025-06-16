@@ -119,7 +119,7 @@
   "scripts": {
     "analyze-locale-usage": "bunx tsx src/locales/analyze-locale-usage.ts",
     "apply-migrations": "cd ../../packages/db && bunx prisma migrate dev && cd ../../apps/app",
-    "build": "next build",
+    "build": "next build --turbopack",
     "deploy:trigger-prod": "npx trigger.dev@latest deploy",
     "dev": "bun i && bun run apply-migrations && bunx concurrently --kill-others --names \"next,trigger\" --prefix-colors \"yellow,blue\" \"next dev --turbo -p 3000\" \"bun run trigger:dev\"",
     "lint": "next lint && prettier --check .",
