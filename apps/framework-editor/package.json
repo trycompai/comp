@@ -51,7 +51,7 @@
     "react-datasheet-grid": "^4.11.5",
     "react-day-picker": "8.10.1",
     "react-email": "^4.0.15",
-    "react-resizable-panels": "^2.1.7",
+    "react-resizable-panels": "^3.0.3",
     "react-select": "^5.10.1",
     "recharts": "2.15.0",
     "sonner": "^1.7.1",
