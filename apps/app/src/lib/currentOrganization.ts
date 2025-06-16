@@ -6,29 +6,29 @@ import { auth } from "@/utils/auth";
 import { headers } from "next/headers";
 
 export async function getCurrentOrganization({
-	requestedOrgId,
+  requestedOrgId,
 }: {
-	requestedOrgId: string;
+  requestedOrgId: string;
 }): Promise<Organization | null> {
-	const session = await auth.api.getSession({
-		headers: await headers(),
-	});
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
-	const activeOrgId = session?.session?.activeOrganizationId;
-	const userId = session?.session?.userId;
+  const activeOrgId = session?.session?.activeOrganizationId;
+  const userId = session?.session?.userId;
 
-	if (requestedOrgId === activeOrgId) {
-		return db.organization.findFirst({
-			where: {
-				id: activeOrgId,
-			},
-		});
-	}
+  if (requestedOrgId === activeOrgId) {
+    return db.organization.findFirst({
+      where: {
+        id: activeOrgId,
+      },
+    });
+  }
 
-	return db.organization.findFirst({
-		where: {
-			id: requestedOrgId,
-			members: { some: { userId } },
-		},
-	});
+  return db.organization.findFirst({
+    where: {
+      id: requestedOrgId,
+      members: { some: { userId } },
+    },
+  });
 }

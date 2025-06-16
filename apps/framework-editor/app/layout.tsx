@@ -12,35 +12,34 @@ import { auth } from "./lib/auth";
 import { headers } from "next/headers";
 
 export const metadata: Metadata = {
-	title: "Comp AI - Framework Editor",
-	description: "Edit your framework",
+  title: "Comp AI - Framework Editor",
+  description: "Edit your framework",
 };
 
 export default async function RootLayout({
-	children,
+  children,
 }: {
-	children: ReactNode;
+  children: ReactNode;
 }) {
-	const session = await auth.api.getSession({
-		headers: await headers(),
-	});
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
-	const hasSession =
-		session?.session.id &&
-		session.user.email.split("@")[1] === "trycomp.ai";
+  const hasSession =
+    session?.session.id && session.user.email.split("@")[1] === "trycomp.ai";
 
-	return (
-		<html lang="en" className="h-full">
-			<body>
-				<NuqsAdapter>
-					{hasSession && <Header />}
-					<div className="flex flex-col w-screen p-4 gap-2 h-full">
-						{hasSession && <MenuTabs />}
-						{children}
-						<Toaster />
-					</div>
-				</NuqsAdapter>
-			</body>
-		</html>
-	);
+  return (
+    <html lang="en" className="h-full">
+      <body>
+        <NuqsAdapter>
+          {hasSession && <Header />}
+          <div className="flex h-full w-screen flex-col gap-2 p-4">
+            {hasSession && <MenuTabs />}
+            {children}
+            <Toaster />
+          </div>
+        </NuqsAdapter>
+      </body>
+    </html>
+  );
 }

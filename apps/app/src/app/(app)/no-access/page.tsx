@@ -6,67 +6,67 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 export default async function NoAccess() {
-	const session = await auth.api.getSession({
-		headers: await headers(),
-	});
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
-	if (!session || !session.session.activeOrganizationId) {
-		return redirect("/");
-	}
+  if (!session || !session.session.activeOrganizationId) {
+    return redirect("/");
+  }
 
-	const organizations = await db.organization.findMany({
-		where: {
-			members: {
-				some: {
-					userId: session.user.id,
-				},
-			},
-		},
-	});
+  const organizations = await db.organization.findMany({
+    where: {
+      members: {
+        some: {
+          userId: session.user.id,
+        },
+      },
+    },
+  });
 
-	const currentOrg = await db.organization.findUnique({
-		where: {
-			id: session.session.activeOrganizationId,
-		},
-	});
+  const currentOrg = await db.organization.findUnique({
+    where: {
+      id: session.session.activeOrganizationId,
+    },
+  });
 
-	const frameworks = await db.frameworkEditorFramework.findMany({
-		select: {
-			id: true,
-			name: true,
-			description: true,
-			version: true,
-			visible: true,
-		},
-	});
+  const frameworks = await db.frameworkEditorFramework.findMany({
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      version: true,
+      visible: true,
+    },
+  });
 
-	return (
-		<div className="flex flex-col items-center justify-center h-screen bg-foreground/05 gap-4">
-			<h1 className="text-2xl font-bold">Access Denied</h1>
-			<div className="flex flex-col text-center">
-				<p>
-					<b>Employees</b> don&apos;t have access to app.trycomp.ai, did
-					you mean to go to{" "}
-					<Link
-						href="https://portal.trycomp.ai"
-						className="underline text-primary"
-					>
-						portal.trycomp.ai
-					</Link>
-					?
-				</p>
-				<p>
-					Please select another organization or contact your
-					organization administrator.
-				</p>
-			</div>
-			<div>
-				<OrganizationSwitcher
-					organizations={organizations}
-					organization={currentOrg}
-					frameworks={frameworks}
-				/>
-			</div>
-		</div>
-	);
+  return (
+    <div className="bg-foreground/05 flex h-screen flex-col items-center justify-center gap-4">
+      <h1 className="text-2xl font-bold">Access Denied</h1>
+      <div className="flex flex-col text-center">
+        <p>
+          <b>Employees</b> don&apos;t have access to app.trycomp.ai, did you
+          mean to go to{" "}
+          <Link
+            href="https://portal.trycomp.ai"
+            className="text-primary underline"
+          >
+            portal.trycomp.ai
+          </Link>
+          ?
+        </p>
+        <p>
+          Please select another organization or contact your organization
+          administrator.
+        </p>
+      </div>
+      <div>
+        <OrganizationSwitcher
+          organizations={organizations}
+          organization={currentOrg}
+          frameworks={frameworks}
+        />
+      </div>
+    </div>
+  );
 }

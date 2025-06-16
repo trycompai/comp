@@ -1,13 +1,8 @@
 {
   "$schema": "https://turborepo.org/schema.json",
-  "globalDependencies": [
-    "**/.env"
-  ],
+  "globalDependencies": ["**/.env"],
   "ui": "stream",
   "tasks": {
-    "clean-react": {
-      "cache": false
-    },
     "build": {
       "env": [
         "AUTH_GOOGLE_ID",
@@ -48,22 +43,9 @@
         "ZAPIER_HUBSPOT_WEBHOOK_URL",
         "TRUST_PORTAL_PROJECT_ID"
       ],
-      "inputs": [
-        "$TURBO_DEFAULT$",
-        ".env"
-      ],
-      "dependsOn": [
-        "^build",
-        "^db:generate",
-        "^auth:build",
-        "clean-react"
-      ],
-      "outputs": [
-        ".next/**",
-        "!.next/cache/**",
-        "next-env.d.ts",
-        "data:build"
-      ]
+      "inputs": ["$TURBO_DEFAULT$", ".env"],
+      "dependsOn": ["^build", "^db:generate", "^auth:build"],
+      "outputs": [".next/**", "!.next/cache/**", "next-env.d.ts", "data:build"]
     },
     "db:generate": {
       "cache": false
@@ -79,19 +61,10 @@
     },
     "data:build": {
       "cache": false,
-      "env": [
-        "DATABASE_URL"
-      ],
-      "inputs": [
-        "$TURBO_DEFAULT$",
-        ".env"
-      ],
-      "dependsOn": [
-        "^db:generate"
-      ],
-      "outputs": [
-        "data:build"
-      ]
+      "env": ["DATABASE_URL"],
+      "inputs": ["$TURBO_DEFAULT$", ".env"],
+      "dependsOn": ["^db:generate"],
+      "outputs": ["data:build"]
     },
     "db:push": {
       "cache": false
@@ -103,25 +76,19 @@
       "cache": false
     },
     "dev": {
-      "inputs": [
-        "$TURBO_DEFAULT$",
-        ".env"
-      ],
-      "dependsOn": [
-        "^db:generate"
-      ],
+      "inputs": ["$TURBO_DEFAULT$", ".env"],
+      "dependsOn": ["^db:generate"],
       "persistent": true,
       "cache": false
     },
     "lint": {
-      "dependsOn": [
-        "^topo"
-      ]
+      "dependsOn": []
     },
     "typecheck": {
-      "outputs": [
-        "node_modules/.cache/tsbuildinfo.json"
-      ]
+      "outputs": ["node_modules/.cache/tsbuildinfo.json"]
+    },
+    "deps:check": {
+      "cache": false
     }
   }
 }

@@ -19,19 +19,19 @@ type TriggerUser = {
   fullName?: string | null;
   image?: string | null;
   organizationId: string;
-}
+};
 
 type TriggerPayload = {
   name: TriggerEvents;
   payload: any;
   user: TriggerUser;
   replyTo?: string;
-}
+};
 
 type GetSubscriberPreferencesParams = {
   organizationId: string;
   subscriberId: string;
-}
+};
 
 type UpdateSubscriberPreferencesParams = {
   subscriberId: string;
@@ -39,7 +39,7 @@ type UpdateSubscriberPreferencesParams = {
   templateId: string;
   type: string;
   enabled: boolean;
-}
+};
 
 export async function trigger(data: TriggerPayload) {
   try {
@@ -47,28 +47,34 @@ export async function trigger(data: TriggerPayload) {
 
     await novu.trigger(data.name, {
       to: {
-        subscriberId
+        subscriberId,
       },
       payload: data.payload,
     });
   } catch (error: any) {
-    console.error('Novu trigger error:', {
+    console.error("Novu trigger error:", {
       event: data.name,
       error: error.response?.data || error.message,
-      status: error.response?.status
+      status: error.response?.status,
     });
 
     throw error;
   }
 }
 
-export async function getSubscriberPreferences({ organizationId, subscriberId }: GetSubscriberPreferencesParams) {
+export async function getSubscriberPreferences({
+  organizationId,
+  subscriberId,
+}: GetSubscriberPreferencesParams) {
   try {
-    const response = await axios.get(`${novu_api}/subscribers/${organizationId}_${subscriberId}/preferences?includeInactiveChannels=false`, {
-      headers: {
-        Authorization: `ApiKey ${process.env.NOVU_API_KEY!}`,
+    const response = await axios.get(
+      `${novu_api}/subscribers/${organizationId}_${subscriberId}/preferences?includeInactiveChannels=false`,
+      {
+        headers: {
+          Authorization: `ApiKey ${process.env.NOVU_API_KEY!}`,
+        },
       },
-    });
+    );
 
     return response.data;
   } catch (error) {
@@ -77,19 +83,29 @@ export async function getSubscriberPreferences({ organizationId, subscriberId }:
   }
 }
 
-export async function updateSubscriberPreferences({ subscriberId, organizationId, templateId, type, enabled }: UpdateSubscriberPreferencesParams) {
+export async function updateSubscriberPreferences({
+  subscriberId,
+  organizationId,
+  templateId,
+  type,
+  enabled,
+}: UpdateSubscriberPreferencesParams) {
   try {
-    const response = await axios.patch(`${novu_api}/subscribers/${organizationId}_${subscriberId}/preferences/${templateId}`, {
-      channel: {
-        type,
-        enabled,
+    const response = await axios.patch(
+      `${novu_api}/subscribers/${organizationId}_${subscriberId}/preferences/${templateId}`,
+      {
+        channel: {
+          type,
+          enabled,
+        },
       },
-    }, {
-      headers: {
-        Authorization: `ApiKey ${process.env.NOVU_API_KEY!}`,
-        "Content-Type": "application/json",
+      {
+        headers: {
+          Authorization: `ApiKey ${process.env.NOVU_API_KEY!}`,
+          "Content-Type": "application/json",
+        },
       },
-    });
+    );
 
     return response.data;
   } catch (error) {

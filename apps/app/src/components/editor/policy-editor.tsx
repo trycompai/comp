@@ -6,57 +6,55 @@ import AdvancedEditor from "./advanced-editor";
 import { GetConfigurationResponseBodyDisabledReason } from "@vercel/sdk/models/getconfigurationop.js";
 
 interface PolicyEditorProps {
-	content: JSONContent[];
-	readOnly?: boolean;
-	onSave?: (content: JSONContent[]) => Promise<void>;
+  content: JSONContent[];
+  readOnly?: boolean;
+  onSave?: (content: JSONContent[]) => Promise<void>;
 }
 
 export function PolicyEditor({
-	content,
-	readOnly = false,
-	onSave,
+  content,
+  readOnly = false,
+  onSave,
 }: PolicyEditorProps) {
-	const [editorContent, setEditorContent] = useState<JSONContent | null>(
-		null,
-	);
+  const [editorContent, setEditorContent] = useState<JSONContent | null>(null);
 
-	const documentContent = {
-		type: "doc",
-		content:
-			Array.isArray(content) && content.length > 0
-				? content
-				: [
-						{
-							type: "paragraph",
-							content: [{ type: "text", text: "" }],
-						},
-					],
-	};
+  const documentContent = {
+    type: "doc",
+    content:
+      Array.isArray(content) && content.length > 0
+        ? content
+        : [
+            {
+              type: "paragraph",
+              content: [{ type: "text", text: "" }],
+            },
+          ],
+  };
 
-	const handleUpdate = (updatedContent: JSONContent) => {
-		setEditorContent(updatedContent);
-	};
+  const handleUpdate = (updatedContent: JSONContent) => {
+    setEditorContent(updatedContent);
+  };
 
-	const handleSave = async (contentToSave: JSONContent): Promise<void> => {
-		if (!contentToSave || !onSave) return;
+  const handleSave = async (contentToSave: JSONContent): Promise<void> => {
+    if (!contentToSave || !onSave) return;
 
-		try {
-			const contentArray = contentToSave.content as JSONContent[];
-			await onSave(contentArray);
-		} catch (error) {
-			console.error("Error saving policy:", error);
-			throw error;
-		}
-	};
+    try {
+      const contentArray = contentToSave.content as JSONContent[];
+      await onSave(contentArray);
+    } catch (error) {
+      console.error("Error saving policy:", error);
+      throw error;
+    }
+  };
 
-	return (
-		<>
-			<AdvancedEditor
-				initialContent={documentContent}
-				onUpdate={handleUpdate}
-				onSave={handleSave}
-				readOnly={readOnly}
-			/>
-		</>
-	);
+  return (
+    <>
+      <AdvancedEditor
+        initialContent={documentContent}
+        onUpdate={handleUpdate}
+        onSave={handleSave}
+        readOnly={readOnly}
+      />
+    </>
+  );
 }

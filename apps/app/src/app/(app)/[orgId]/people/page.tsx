@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
 
 export default async function Page({
-	params,
+  params,
 }: {
-	params: Promise<{ locale: string, orgId: string }>;
+  params: Promise<{ locale: string; orgId: string }>;
 }) {
-	const { orgId } = await params;
-	return redirect(`/${orgId}/people/all`);
+  const { orgId } = await params;
+  return redirect(`/${orgId}/people/all`);
 }

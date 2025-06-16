@@ -154,16 +154,18 @@ export function ComboboxDropdown<T extends ComboboxItem>({
         <Button
           variant="outline"
           aria-expanded={open}
-          className="w-full justify-between relative"
+          className="relative w-full justify-between"
         >
-          <span className="truncate text-ellipsis pr-3">
+          <span className="truncate pr-3 text-ellipsis">
             {selectedItem ? (
-              <span className="flex items-center overflow-hidden whitespace-nowrap text-ellipsis">
+              <span className="flex items-center overflow-hidden text-ellipsis whitespace-nowrap">
                 {renderSelectedItem?.(selectedItem)}
               </span>
-            ) : (placeholder ?? "Select item...")}
+            ) : (
+              (placeholder ?? "Select item...")
+            )}
           </span>
-          <ChevronsUpDown className="size-4 opacity-50 absolute right-2" />
+          <ChevronsUpDown className="absolute right-2 size-4 opacity-50" />
         </Button>
       </PopoverTrigger>
 

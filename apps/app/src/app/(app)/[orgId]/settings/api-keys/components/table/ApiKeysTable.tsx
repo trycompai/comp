@@ -11,40 +11,40 @@ import { CreateApiKeyDialog } from "../CreateApiKeyDialog";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 
 export function ApiKeysTable({ apiKeys }: { apiKeys: ApiKey[] }) {
-	const columns = useMemo(() => getColumns(), []);
-	const { table } = useDataTable({
-		data: apiKeys,
-		columns,
-		pageCount: 1,
-		getRowId: (row) => row.id,
-		initialState: {
-			pagination: {
-				pageSize: 50,
-				pageIndex: 0,
-			},
-			sorting: [{ id: "createdAt", desc: true }],
-		},
-		shallow: false,
-		clearOnDefault: true,
-	});
-	const [openSheet, setOpenSheet] = useQueryState("create-api-key-sheet");
-	return (
-		<>
-			<DataTable table={table}>
-				<DataTableToolbar table={table}>
-					<Button
-						className="flex items-center gap-1 rounded-sm"
-						onClick={() => setOpenSheet("true")}
-					>
-						<Plus className="h-4 w-4" />
-						Add API Key
-					</Button>
-				</DataTableToolbar>
-			</DataTable>
-			<CreateApiKeyDialog
-				open={Boolean(openSheet)}
-				onOpenChange={(open) => setOpenSheet(open ? "true" : null)}
-			/>
-		</>
-	);
+  const columns = useMemo(() => getColumns(), []);
+  const { table } = useDataTable({
+    data: apiKeys,
+    columns,
+    pageCount: 1,
+    getRowId: (row) => row.id,
+    initialState: {
+      pagination: {
+        pageSize: 50,
+        pageIndex: 0,
+      },
+      sorting: [{ id: "createdAt", desc: true }],
+    },
+    shallow: false,
+    clearOnDefault: true,
+  });
+  const [openSheet, setOpenSheet] = useQueryState("create-api-key-sheet");
+  return (
+    <>
+      <DataTable table={table}>
+        <DataTableToolbar table={table}>
+          <Button
+            className="flex items-center gap-1 rounded-sm"
+            onClick={() => setOpenSheet("true")}
+          >
+            <Plus className="h-4 w-4" />
+            Add API Key
+          </Button>
+        </DataTableToolbar>
+      </DataTable>
+      <CreateApiKeyDialog
+        open={Boolean(openSheet)}
+        onOpenChange={(open) => setOpenSheet(open ? "true" : null)}
+      />
+    </>
+  );
 }

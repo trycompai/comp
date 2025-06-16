@@ -5,253 +5,253 @@ import { Label, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 
 import { Badge } from "@comp/ui/badge";
 import {
-	Card,
-	CardContent,
-	CardFooter,
-	CardHeader,
-	CardTitle,
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
 } from "@comp/ui/card";
 import {
-	type ChartConfig,
-	ChartContainer,
-	ChartTooltip,
-	ChartTooltipContent,
+  type ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
 } from "@comp/ui/chart";
 import {
-	BarChart as ChartIcon,
-	Info,
-	PieChart as PieChartIcon,
+  BarChart as ChartIcon,
+  Info,
+  PieChart as PieChartIcon,
 } from "lucide-react";
 
 interface PolicyOverviewData {
-	totalPolicies: number;
-	publishedPolicies: number;
-	draftPolicies: number;
-	archivedPolicies: number;
-	needsReviewPolicies: number;
+  totalPolicies: number;
+  publishedPolicies: number;
+  draftPolicies: number;
+  archivedPolicies: number;
+  needsReviewPolicies: number;
 }
 
 interface PolicyStatusChartProps {
-	data?: PolicyOverviewData | null;
+  data?: PolicyOverviewData | null;
 }
 
 const CHART_COLORS = {
-	published: "hsl(var(--chart-positive))", // green
-	draft: "hsl(var(--chart-neutral))", // yellow
-	archived: "hsl(var(--chart-warning))", // gray
-	needs_review: "hsl(var(--chart-destructive))", // red
+  published: "hsl(var(--chart-positive))", // green
+  draft: "hsl(var(--chart-neutral))", // yellow
+  archived: "hsl(var(--chart-warning))", // gray
+  needs_review: "hsl(var(--chart-destructive))", // red
 };
 
 // Custom tooltip component for the pie chart
 const StatusTooltip = ({ active, payload }: any) => {
-	if (active && payload && payload.length) {
-		const data = payload[0].payload;
-		return (
-			<div className="rounded-sm border bg-background p-2 shadow-md">
-				<p className="text-xs font-medium">{data.name}</p>
-				<p className="text-xs">
-					Count: <span className="font-medium">{data.value}</span>
-				</p>
-			</div>
-		);
-	}
-	return null;
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    return (
+      <div className="bg-background rounded-sm border p-2 shadow-md">
+        <p className="text-xs font-medium">{data.name}</p>
+        <p className="text-xs">
+          Count: <span className="font-medium">{data.value}</span>
+        </p>
+      </div>
+    );
+  }
+  return null;
 };
 
 export function PolicyStatusChart({ data }: PolicyStatusChartProps) {
-	if (!data) {
-		return (
-			<Card className="flex flex-col border overflow-hidden">
-				<CardHeader className="pb-2">
-					<div className="flex items-center justify-between">
-						<CardTitle className="flex items-center gap-2">
-							{"Policy by Status"}
-						</CardTitle>
-						<Badge variant="outline" className="text-xs">
-							Overview
-						</Badge>
-					</div>
-				</CardHeader>
-				<CardContent className="flex-1 flex items-center justify-center py-10">
-					<div className="text-center space-y-2">
-						<div className="flex justify-center text-muted-foreground">
-							<Info className="h-10 w-10 opacity-30" />
-						</div>
-						<p className="text-center text-sm text-muted-foreground">
-							No policy data available
-						</p>
-					</div>
-				</CardContent>
-				<CardFooter className="bg-muted/30 border-t py-3">
-					<div className="flex flex-wrap gap-4 py-1 justify-center w-full" />
-				</CardFooter>
-			</Card>
-		);
-	}
+  if (!data) {
+    return (
+      <Card className="flex flex-col overflow-hidden border">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              {"Policy by Status"}
+            </CardTitle>
+            <Badge variant="outline" className="text-xs">
+              Overview
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="flex flex-1 items-center justify-center py-10">
+          <div className="space-y-2 text-center">
+            <div className="text-muted-foreground flex justify-center">
+              <Info className="h-10 w-10 opacity-30" />
+            </div>
+            <p className="text-muted-foreground text-center text-sm">
+              No policy data available
+            </p>
+          </div>
+        </CardContent>
+        <CardFooter className="bg-muted/30 border-t py-3">
+          <div className="flex w-full flex-wrap justify-center gap-4 py-1" />
+        </CardFooter>
+      </Card>
+    );
+  }
 
-	const chartData = React.useMemo(() => {
-		const items = [
-			{
-				name: "Published",
-				value: data.publishedPolicies,
-				fill: CHART_COLORS.published,
-			},
-			{
-				name: "Draft",
-				value: data.draftPolicies,
-				fill: CHART_COLORS.draft,
-			},
-			{
-				name: "Archived",
-				value: data.archivedPolicies,
-				fill: CHART_COLORS.archived,
-			},
-			{
-				name: "Needs Review",
-				value: data.needsReviewPolicies,
-				fill: CHART_COLORS.needs_review,
-			},
-		];
+  const chartData = React.useMemo(() => {
+    const items = [
+      {
+        name: "Published",
+        value: data.publishedPolicies,
+        fill: CHART_COLORS.published,
+      },
+      {
+        name: "Draft",
+        value: data.draftPolicies,
+        fill: CHART_COLORS.draft,
+      },
+      {
+        name: "Archived",
+        value: data.archivedPolicies,
+        fill: CHART_COLORS.archived,
+      },
+      {
+        name: "Needs Review",
+        value: data.needsReviewPolicies,
+        fill: CHART_COLORS.needs_review,
+      },
+    ];
 
-		return items.filter((item) => item.value);
-	}, [data]);
+    return items.filter((item) => item.value);
+  }, [data]);
 
-	const chartConfig = {
-		value: {
-			label: "Count",
-		},
-	} satisfies ChartConfig;
+  const chartConfig = {
+    value: {
+      label: "Count",
+    },
+  } satisfies ChartConfig;
 
-	// Calculate most common status
-	const mostCommonStatus = React.useMemo(() => {
-		if (!chartData.length) return null;
-		return chartData.reduce((prev, current) =>
-			prev.value > current.value ? prev : current,
-		);
-	}, [chartData]);
+  // Calculate most common status
+  const mostCommonStatus = React.useMemo(() => {
+    if (!chartData.length) return null;
+    return chartData.reduce((prev, current) =>
+      prev.value > current.value ? prev : current,
+    );
+  }, [chartData]);
 
-	return (
-		<Card className="flex flex-col border overflow-hidden">
-			<CardHeader className="pb-2">
-				<div className="flex items-center justify-between">
-					<CardTitle className="flex items-center gap-2">
-						{"Policy by Status"}
-					</CardTitle>
+  return (
+    <Card className="flex flex-col overflow-hidden border">
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            {"Policy by Status"}
+          </CardTitle>
 
-					{data.totalPolicies > 0 && mostCommonStatus && (
-						<Badge
-							className="text-xs"
-							style={{
-								backgroundColor: `${mostCommonStatus.fill}20`,
-								color: mostCommonStatus.fill,
-							}}
-						>
-							Most: {mostCommonStatus.name}
-						</Badge>
-					)}
-				</div>
+          {data.totalPolicies > 0 && mostCommonStatus && (
+            <Badge
+              className="text-xs"
+              style={{
+                backgroundColor: `${mostCommonStatus.fill}20`,
+                color: mostCommonStatus.fill,
+              }}
+            >
+              Most: {mostCommonStatus.name}
+            </Badge>
+          )}
+        </div>
 
-				<div className="relative h-1 w-full bg-secondary/50 rounded-full overflow-hidden mt-2">
-					<div
-						className="h-full bg-primary/80 transition-all"
-						style={{
-							width: `${(data.publishedPolicies / Math.max(data.totalPolicies, 1)) * 100}%`,
-						}}
-					/>
-				</div>
-			</CardHeader>
-			<CardContent className="flex-1 flex items-center justify-center">
-				<ChartContainer
-					config={chartConfig}
-					className="mx-auto h-[300px] max-w-[250px]"
-				>
-					<PieChart
-						width={250}
-						height={300}
-						margin={{
-							top: 16,
-							right: 16,
-							bottom: 16,
-							left: 16,
-						}}
-					>
-						<ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-						<Pie
-							data={chartData}
-							dataKey="value"
-							nameKey="name"
-							innerRadius={60}
-							outerRadius={80}
-							paddingAngle={2}
-							strokeWidth={3}
-							stroke="hsl(var(--background))"
-							cursor="pointer"
-							animationDuration={500}
-							animationBegin={100}
-						>
-							<Label
-								content={({ viewBox }) => {
-									if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-										return (
-											<g>
-												<text
-													x={viewBox.cx}
-													y={viewBox.cy}
-													textAnchor="middle"
-													dominantBaseline="middle"
-												>
-													<tspan
-														x={viewBox.cx}
-														y={viewBox.cy}
-														className="fill-foreground text-3xl font-bold"
-													>
-														{data.totalPolicies}
-													</tspan>
-													<tspan
-														x={viewBox.cx}
-														y={(viewBox.cy || 0) + 26}
-														className="fill-muted-foreground text-xs"
-													>
-														Policies
-													</tspan>
-												</text>
-												<circle
-													cx={viewBox.cx}
-													cy={viewBox.cy}
-													r={54}
-													fill="none"
-													stroke="hsl(var(--border))"
-													strokeWidth={1}
-													strokeDasharray="2,2"
-												/>
-											</g>
-										);
-									}
-									return null;
-								}}
-							/>
-						</Pie>
-					</PieChart>
-				</ChartContainer>
-			</CardContent>
-			<CardFooter className="bg-muted/30 border-t py-3">
-				<div className="flex flex-wrap gap-4 justify-center w-full py-1">
-					{chartData.map((entry) => (
-						<div key={entry.name} className="flex items-center gap-2">
-							<div
-								className="h-3 w-3"
-								style={{ backgroundColor: entry.fill }}
-							/>
-							<span className="text-xs font-medium whitespace-nowrap">
-								{entry.name}
-								<span className="ml-1 text-muted-foreground">
-									({entry.value})
-								</span>
-							</span>
-						</div>
-					))}
-				</div>
-			</CardFooter>
-		</Card>
-	);
+        <div className="bg-secondary/50 relative mt-2 h-1 w-full overflow-hidden rounded-full">
+          <div
+            className="bg-primary/80 h-full transition-all"
+            style={{
+              width: `${(data.publishedPolicies / Math.max(data.totalPolicies, 1)) * 100}%`,
+            }}
+          />
+        </div>
+      </CardHeader>
+      <CardContent className="flex flex-1 items-center justify-center">
+        <ChartContainer
+          config={chartConfig}
+          className="mx-auto h-[300px] max-w-[250px]"
+        >
+          <PieChart
+            width={250}
+            height={300}
+            margin={{
+              top: 16,
+              right: 16,
+              bottom: 16,
+              left: 16,
+            }}
+          >
+            <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+            <Pie
+              data={chartData}
+              dataKey="value"
+              nameKey="name"
+              innerRadius={60}
+              outerRadius={80}
+              paddingAngle={2}
+              strokeWidth={3}
+              stroke="hsl(var(--background))"
+              cursor="pointer"
+              animationDuration={500}
+              animationBegin={100}
+            >
+              <Label
+                content={({ viewBox }) => {
+                  if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                    return (
+                      <g>
+                        <text
+                          x={viewBox.cx}
+                          y={viewBox.cy}
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                        >
+                          <tspan
+                            x={viewBox.cx}
+                            y={viewBox.cy}
+                            className="fill-foreground text-3xl font-bold"
+                          >
+                            {data.totalPolicies}
+                          </tspan>
+                          <tspan
+                            x={viewBox.cx}
+                            y={(viewBox.cy || 0) + 26}
+                            className="fill-muted-foreground text-xs"
+                          >
+                            Policies
+                          </tspan>
+                        </text>
+                        <circle
+                          cx={viewBox.cx}
+                          cy={viewBox.cy}
+                          r={54}
+                          fill="none"
+                          stroke="hsl(var(--border))"
+                          strokeWidth={1}
+                          strokeDasharray="2,2"
+                        />
+                      </g>
+                    );
+                  }
+                  return null;
+                }}
+              />
+            </Pie>
+          </PieChart>
+        </ChartContainer>
+      </CardContent>
+      <CardFooter className="bg-muted/30 border-t py-3">
+        <div className="flex w-full flex-wrap justify-center gap-4 py-1">
+          {chartData.map((entry) => (
+            <div key={entry.name} className="flex items-center gap-2">
+              <div
+                className="h-3 w-3"
+                style={{ backgroundColor: entry.fill }}
+              />
+              <span className="text-xs font-medium whitespace-nowrap">
+                {entry.name}
+                <span className="text-muted-foreground ml-1">
+                  ({entry.value})
+                </span>
+              </span>
+            </div>
+          ))}
+        </div>
+      </CardFooter>
+    </Card>
+  );
 }

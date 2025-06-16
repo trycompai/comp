@@ -9,62 +9,62 @@ import { headers } from "next/headers";
 import { TeamMembersClient } from "./TeamMembersClient";
 
 export interface MemberWithUser extends Member {
-	user: User;
+  user: User;
 }
 
 export interface TeamMembersData {
-	members: MemberWithUser[];
-	pendingInvitations: Invitation[];
+  members: MemberWithUser[];
+  pendingInvitations: Invitation[];
 }
 
 export async function TeamMembers() {
-	const session = await auth.api.getSession({
-		headers: await headers(),
-	});
-	const organizationId = session?.session.activeOrganizationId;
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+  const organizationId = session?.session.activeOrganizationId;
 
-	let members: MemberWithUser[] = [];
-	let pendingInvitations: Invitation[] = [];
+  let members: MemberWithUser[] = [];
+  let pendingInvitations: Invitation[] = [];
 
-	if (organizationId) {
-		const fetchedMembers = await db.member.findMany({
-			where: {
-				organizationId: organizationId,
-			},
-			include: {
-				user: true,
-			},
-			orderBy: {
-				user: {
-					email: "asc",
-				},
-			},
-		});
+  if (organizationId) {
+    const fetchedMembers = await db.member.findMany({
+      where: {
+        organizationId: organizationId,
+      },
+      include: {
+        user: true,
+      },
+      orderBy: {
+        user: {
+          email: "asc",
+        },
+      },
+    });
 
-		members = fetchedMembers;
+    members = fetchedMembers;
 
-		pendingInvitations = await db.invitation.findMany({
-			where: {
-				organizationId,
-				status: "pending",
-			},
-			orderBy: {
-				email: "asc",
-			},
-		});
-	}
+    pendingInvitations = await db.invitation.findMany({
+      where: {
+        organizationId,
+        status: "pending",
+      },
+      orderBy: {
+        email: "asc",
+      },
+    });
+  }
 
-	const data: TeamMembersData = {
-		members: members,
-		pendingInvitations: pendingInvitations,
-	};
+  const data: TeamMembersData = {
+    members: members,
+    pendingInvitations: pendingInvitations,
+  };
 
-	return (
-		<TeamMembersClient
-			data={data}
-			organizationId={organizationId ?? ""}
-			removeMemberAction={removeMember}
-			revokeInvitationAction={revokeInvitation}
-		/>
-	);
+  return (
+    <TeamMembersClient
+      data={data}
+      organizationId={organizationId ?? ""}
+      removeMemberAction={removeMember}
+      revokeInvitationAction={revokeInvitation}
+    />
+  );
 }

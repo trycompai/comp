@@ -4,15 +4,15 @@ import { isAuthorized } from "@/app/lib/utils";
 import { redirect } from "next/navigation";
 
 export default async function Page() {
-	const isAllowed = await isAuthorized();
+  const isAllowed = await isAuthorized();
 
-	if (!isAllowed) {
-		redirect("/auth");
-	}
+  if (!isAllowed) {
+    redirect("/auth");
+  }
 
-	const policies = await db.frameworkEditorPolicyTemplate.findMany({
-		// Add any ordering if necessary, e.g., orderBy: { name: 'asc' }
-	});
+  const policies = await db.frameworkEditorPolicyTemplate.findMany({
+    // Add any ordering if necessary, e.g., orderBy: { name: 'asc' }
+  });
 
-	return <PoliciesClientPage initialPolicies={policies} />;
+  return <PoliciesClientPage initialPolicies={policies} />;
 }

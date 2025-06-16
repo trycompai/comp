@@ -7,20 +7,20 @@ import { headers } from "next/headers";
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
-	const {
-		messages,
-		selectedModel,
-	}: { messages: UIMessage[]; selectedModel: modelID } = await req.json();
+  const {
+    messages,
+    selectedModel,
+  }: { messages: UIMessage[]; selectedModel: modelID } = await req.json();
 
-	const session = await auth.api.getSession({
-		headers: await headers(),
-	});
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
-	if (!session?.session.activeOrganizationId) {
-		return new Response("Unauthorized", { status: 401 });
-	}
+  if (!session?.session.activeOrganizationId) {
+    return new Response("Unauthorized", { status: 401 });
+  }
 
-	const systemPrompt = `
+  const systemPrompt = `
     You're an expert in GRC, and a helpful assistant in Comp AI,
     a platform that helps companies get compliant with frameworks
     like SOC 2, ISO 27001 and GDPR.
@@ -32,12 +32,12 @@ export async function POST(req: Request) {
     If you are unsure about the answer, say "I don't know" or "I don't know the answer to that question".
 `;
 
-	const result = streamText({
-		model: model.languageModel(selectedModel),
-		system: systemPrompt,
-		messages,
-		tools,
-	});
+  const result = streamText({
+    model: model.languageModel(selectedModel),
+    system: systemPrompt,
+    messages,
+    tools,
+  });
 
-	return result.toDataStreamResponse({ sendReasoning: true });
+  return result.toDataStreamResponse({ sendReasoning: true });
 }

@@ -15,11 +15,7 @@
         "groups": [
           {
             "group": "Get Started",
-            "pages": [
-              "introduction",
-              "quickstart",
-              "development"
-            ]
+            "pages": ["introduction", "quickstart", "development"]
           },
           {
             "group": "Essentials",
@@ -54,10 +50,7 @@
         "groups": [
           {
             "group": "API Reference",
-            "pages": [
-              "api-reference/v1/index",
-              "api-reference/v1/people"
-            ]
+            "pages": ["api-reference/v1/index", "api-reference/v1/people"]
           }
         ]
       }

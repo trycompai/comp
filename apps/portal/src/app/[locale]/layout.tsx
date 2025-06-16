@@ -92,7 +92,7 @@ export default async function Layout(props: {
       <body
         className={cn(
           `${GeistMono.variable} ${font.variable}`,
-          "whitespace-pre-line overscroll-none antialiased",
+          "overscroll-none whitespace-pre-line antialiased",
         )}
       >
         <NuqsAdapter>

@@ -22,13 +22,13 @@ export function EmptyCard({
   return (
     <Card
       className={cn(
-        "flex w-full flex-col items-center justify-center space-y-4 bg-transparent p-6 border-none",
+        "flex w-full flex-col items-center justify-center space-y-4 border-none bg-transparent p-6",
         className,
       )}
       {...props}
     >
       <div className="shrink-0 rounded-full border border-dashed p-4">
-        <Icon className="size-8 text-muted-foreground" aria-hidden="true" />
+        <Icon className="text-muted-foreground size-8" aria-hidden="true" />
       </div>
       <div className="flex flex-col items-center gap-1.5 text-center">
         <CardTitle>{title}</CardTitle>

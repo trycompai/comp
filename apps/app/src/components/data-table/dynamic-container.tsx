@@ -10,89 +10,85 @@ import { cn } from "@comp/ui/cn";
 import { type TargetAndTransition, motion } from "motion/react";
 
 interface Dimensions extends TargetAndTransition {
-	width: string | number;
-	height: string | number;
+  width: string | number;
+  height: string | number;
 }
 
 interface DynamicContainerProps
-	extends React.ComponentProps<typeof motion.div> {
-	width?: boolean;
-	height?: boolean;
-	children?: React.ReactNode;
+  extends React.ComponentProps<typeof motion.div> {
+  width?: boolean;
+  height?: boolean;
+  children?: React.ReactNode;
 }
 
 function DynamicContainer({
-	width,
-	height,
-	transition = {
-		type: "spring",
-		duration: 0.3,
-		stiffness: 100,
-		damping: 15,
-	},
-	className,
-	children,
-	...props
+  width,
+  height,
+  transition = {
+    type: "spring",
+    duration: 0.3,
+    stiffness: 100,
+    damping: 15,
+  },
+  className,
+  children,
+  ...props
 }: DynamicContainerProps) {
-	const containerRef = React.useRef<HTMLDivElement>(null);
-	const [dimensions, setDimensions] = React.useState<Dimensions>({
-		width: "auto",
-		height: "auto",
-	});
-	const rafRef = React.useRef<number | null>(null);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const [dimensions, setDimensions] = React.useState<Dimensions>({
+    width: "auto",
+    height: "auto",
+  });
+  const rafRef = React.useRef<number | null>(null);
 
-	React.useEffect(() => {
-		const node = containerRef?.current;
-		if (!node) return;
+  React.useEffect(() => {
+    const node = containerRef?.current;
+    if (!node) return;
 
-		function updateDimensions([entry]: ResizeObserverEntry[]) {
-			if (rafRef.current) {
-				cancelAnimationFrame(rafRef.current);
-			}
+    function updateDimensions([entry]: ResizeObserverEntry[]) {
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
 
-			rafRef.current = requestAnimationFrame(() => {
-				setDimensions({
-					width: width
-						? (entry?.contentRect?.width ?? "auto")
-						: "auto",
-					height: height
-						? (entry?.contentRect?.height ?? "auto")
-						: "auto",
-				});
-			});
-		}
+      rafRef.current = requestAnimationFrame(() => {
+        setDimensions({
+          width: width ? (entry?.contentRect?.width ?? "auto") : "auto",
+          height: height ? (entry?.contentRect?.height ?? "auto") : "auto",
+        });
+      });
+    }
 
-		const observer = new ResizeObserver(updateDimensions);
-		observer.observe(node);
+    const observer = new ResizeObserver(updateDimensions);
+    observer.observe(node);
 
-		return () => {
-			observer.disconnect();
-			if (rafRef.current) {
-				cancelAnimationFrame(rafRef.current);
-			}
-		};
-	}, [width, height]);
+    return () => {
+      observer.disconnect();
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
+    };
+  }, [width, height]);
 
-	const containerStyle = React.useMemo(
-		() => ({
-			height: height ? "max-content" : "auto",
-			width: width ? "max-content" : "auto",
-		}),
-		[height, width],
-	);
+  const containerStyle = React.useMemo(
+    () => ({
+      height: height ? "max-content" : "auto",
+      width: width ? "max-content" : "auto",
+    }),
+    [height, width],
+  );
 
-	return (
-		<motion.div
-			animate={dimensions}
-			transition={transition}
-			className={cn("translate-z-0 transform overflow-hidden", className)}
-			{...props}
-		>
-			<div ref={containerRef} style={containerStyle}>
-				{children}
-			</div>
-		</motion.div>
-	);
+  return (
+    <motion.div
+      animate={dimensions}
+      transition={transition}
+      className={cn("translate-z-0 transform overflow-hidden", className)}
+      {...props}
+    >
+      <div ref={containerRef} style={containerStyle}>
+        {children}
+      </div>
+    </motion.div>
+  );
 }
 
 export { DynamicContainer };

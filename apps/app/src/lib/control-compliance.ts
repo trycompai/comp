@@ -2,8 +2,8 @@ import type { Policy, PolicyStatus } from "@comp/db/types";
 
 // Define the expected structure for policies (typically with selected fields)
 export type SelectedPolicy = {
-	// Add other fields like id, name if they are available and used by functions here
-	status: PolicyStatus | null; // Allowing null status as per original ArtifactWithRelations
+  // Add other fields like id, name if they are available and used by functions here
+  status: PolicyStatus | null; // Allowing null status as per original ArtifactWithRelations
 };
 
 /**
@@ -12,8 +12,8 @@ export type SelectedPolicy = {
  * @returns boolean indicating if the policy is completed
  */
 export function isPolicyCompleted(policy: SelectedPolicy): boolean {
-	if (!policy) return false;
-	return policy.status === "published";
+  if (!policy) return false;
+  return policy.status === "published";
 }
 
 /**
@@ -21,17 +21,15 @@ export function isPolicyCompleted(policy: SelectedPolicy): boolean {
  * @param policies - The control's policies
  * @returns boolean indicating if the control is compliant
  */
-export function isControlCompliant(
-	policies: SelectedPolicy[],
-): boolean {
-	if (!policies || policies.length === 0) {
-		return false;
-	}
+export function isControlCompliant(policies: SelectedPolicy[]): boolean {
+  if (!policies || policies.length === 0) {
+    return false;
+  }
 
-	const totalPolicies = policies.length;
-	const completedPolicies = policies.filter(isPolicyCompleted).length;
+  const totalPolicies = policies.length;
+  const completedPolicies = policies.filter(isPolicyCompleted).length;
 
-	return completedPolicies === totalPolicies;
+  return completedPolicies === totalPolicies;
 }
 
 /**
@@ -40,14 +38,14 @@ export function isControlCompliant(
  * @returns Control status as "not_started", "in_progress", or "completed"
  */
 export function calculateControlStatus(
-	policies: SelectedPolicy[],
+  policies: SelectedPolicy[],
 ): "not_started" | "in_progress" | "completed" {
-	if (!policies || policies.length === 0) return "not_started";
+  if (!policies || policies.length === 0) return "not_started";
 
-	const totalPolicies = policies.length;
-	const completedPolicies = policies.filter(isPolicyCompleted).length;
+  const totalPolicies = policies.length;
+  const completedPolicies = policies.filter(isPolicyCompleted).length;
 
-	if (completedPolicies === 0) return "not_started";
-	if (completedPolicies === totalPolicies) return "completed";
-	return "in_progress";
+  if (completedPolicies === 0) return "not_started";
+  if (completedPolicies === totalPolicies) return "completed";
+  return "in_progress";
 }

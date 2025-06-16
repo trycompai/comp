@@ -1,8 +1,8 @@
 {
-	"folders": [
-		{
-			"name": "project-root",
-			"path": "./"
-		}
-	]
+  "folders": [
+    {
+      "name": "project-root",
+      "path": "./",
+    },
+  ],
 }

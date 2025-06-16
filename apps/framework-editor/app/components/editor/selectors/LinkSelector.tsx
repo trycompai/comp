@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { type Editor } from "@tiptap/core";
 import { Check, Trash } from "lucide-react";
@@ -13,7 +13,11 @@ interface LinkSelectorProps {
   onOpenChange: (isOpen: boolean) => void;
 }
 
-export function LinkSelector({ editor, isOpen, onOpenChange }: LinkSelectorProps) {
+export function LinkSelector({
+  editor,
+  isOpen,
+  onOpenChange,
+}: LinkSelectorProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleSetLink = useCallback(() => {
@@ -33,7 +37,12 @@ export function LinkSelector({ editor, isOpen, onOpenChange }: LinkSelectorProps
       finalUrl = `https://${url}`;
     }
 
-    editor.chain().focus().extendMarkRange("link").setLink({ href: finalUrl }).run();
+    editor
+      .chain()
+      .focus()
+      .extendMarkRange("link")
+      .setLink({ href: finalUrl })
+      .run();
     onOpenChange(false);
   }, [editor, onOpenChange]);
 
@@ -42,11 +51,11 @@ export function LinkSelector({ editor, isOpen, onOpenChange }: LinkSelectorProps
     if (isOpen) {
       inputRef.current?.focus();
       // Pre-fill with existing link if any
-      if (editor?.isActive('link')) {
-          const existingUrl = editor.getAttributes('link').href;
-          if(inputRef.current) {
-              inputRef.current.value = existingUrl;
-          }
+      if (editor?.isActive("link")) {
+        const existingUrl = editor.getAttributes("link").href;
+        if (inputRef.current) {
+          inputRef.current.value = existingUrl;
+        }
       }
     }
   }, [isOpen, editor]);
@@ -66,7 +75,7 @@ export function LinkSelector({ editor, isOpen, onOpenChange }: LinkSelectorProps
             ref={inputRef}
             type="url"
             placeholder="Paste a link..."
-            className="flex-1 bg-background"
+            className="bg-background flex-1"
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 handleSetLink();
@@ -83,4 +92,3 @@ export function LinkSelector({ editor, isOpen, onOpenChange }: LinkSelectorProps
     </Popover>
   );
 }
- 

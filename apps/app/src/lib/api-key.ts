@@ -8,10 +8,10 @@ import { NextResponse } from "next/server";
  * @returns A new API key with prefix
  */
 export function generateApiKey(): string {
-	// Generate a random string for the API key
-	const apiKey = randomBytes(32).toString("hex");
-	// Add a prefix to make it easily identifiable
-	return `comp_${apiKey}`;
+  // Generate a random string for the API key
+  const apiKey = randomBytes(32).toString("hex");
+  // Add a prefix to make it easily identifiable
+  return `comp_${apiKey}`;
 }
 
 /**
@@ -19,7 +19,7 @@ export function generateApiKey(): string {
  * @returns A random salt string
  */
 export function generateSalt(): string {
-	return randomBytes(16).toString("hex");
+  return randomBytes(16).toString("hex");
 }
 
 /**
@@ -29,14 +29,14 @@ export function generateSalt(): string {
  * @returns The hashed API key
  */
 export function hashApiKey(apiKey: string, salt?: string): string {
-	if (salt) {
-		// If salt is provided, use it for hashing
-		return createHash("sha256")
-			.update(apiKey + salt)
-			.digest("hex");
-	}
-	// For backward compatibility, hash without salt
-	return createHash("sha256").update(apiKey).digest("hex");
+  if (salt) {
+    // If salt is provided, use it for hashing
+    return createHash("sha256")
+      .update(apiKey + salt)
+      .digest("hex");
+  }
+  // For backward compatibility, hash without salt
+  return createHash("sha256").update(apiKey).digest("hex");
 }
 
 /**
@@ -45,26 +45,26 @@ export function hashApiKey(apiKey: string, salt?: string): string {
  * @returns The organization ID if the API key is valid, null otherwise
  */
 export async function validateApiKey(req: NextRequest): Promise<string | null> {
-	// Get the API key from the Authorization header
-	const authHeader = req.headers.get("Authorization");
+  // Get the API key from the Authorization header
+  const authHeader = req.headers.get("Authorization");
 
-	if (!authHeader) {
-		return null;
-	}
+  if (!authHeader) {
+    return null;
+  }
 
-	// Check if it's a Bearer token
-	if (authHeader.startsWith("Bearer ")) {
-		const apiKey = authHeader.substring(7);
-		return await validateApiKeyValue(apiKey);
-	}
+  // Check if it's a Bearer token
+  if (authHeader.startsWith("Bearer ")) {
+    const apiKey = authHeader.substring(7);
+    return await validateApiKeyValue(apiKey);
+  }
 
-	// Check if it's an X-API-Key header
-	const apiKey = req.headers.get("X-API-Key");
-	if (apiKey) {
-		return await validateApiKeyValue(apiKey);
-	}
+  // Check if it's an X-API-Key header
+  const apiKey = req.headers.get("X-API-Key");
+  if (apiKey) {
+    return await validateApiKeyValue(apiKey);
+  }
 
-	return null;
+  return null;
 }
 
 /**
@@ -73,67 +73,65 @@ export async function validateApiKey(req: NextRequest): Promise<string | null> {
  * @returns The organization ID if the API key is valid, null otherwise
  */
 async function validateApiKeyValue(apiKey: string): Promise<string | null> {
-	if (!apiKey) {
-		return null;
-	}
+  if (!apiKey) {
+    return null;
+  }
 
-	try {
-		// Check if the model exists in the Prisma client
-		if (typeof db.apiKey === "undefined") {
-			console.error(
-				"ApiKey model not found. Make sure to run migrations.",
-			);
-			return null;
-		}
+  try {
+    // Check if the model exists in the Prisma client
+    if (typeof db.apiKey === "undefined") {
+      console.error("ApiKey model not found. Make sure to run migrations.");
+      return null;
+    }
 
-		// Look up the API key in the database
-		const apiKeyRecords = await db.apiKey.findMany({
-			where: {
-				isActive: true,
-			},
-			select: {
-				id: true,
-				key: true,
-				salt: true,
-				organizationId: true,
-				expiresAt: true,
-			},
-		});
+    // Look up the API key in the database
+    const apiKeyRecords = await db.apiKey.findMany({
+      where: {
+        isActive: true,
+      },
+      select: {
+        id: true,
+        key: true,
+        salt: true,
+        organizationId: true,
+        expiresAt: true,
+      },
+    });
 
-		// Find the matching API key by hashing with each record's salt
-		const matchingRecord = apiKeyRecords.find((record) => {
-			// Hash the provided API key with the record's salt
-			const hashedKey = record.salt
-				? hashApiKey(apiKey, record.salt)
-				: hashApiKey(apiKey); // For backward compatibility
+    // Find the matching API key by hashing with each record's salt
+    const matchingRecord = apiKeyRecords.find((record) => {
+      // Hash the provided API key with the record's salt
+      const hashedKey = record.salt
+        ? hashApiKey(apiKey, record.salt)
+        : hashApiKey(apiKey); // For backward compatibility
 
-			return hashedKey === record.key;
-		});
+      return hashedKey === record.key;
+    });
 
-		// If no matching key or the key is expired, return null
-		if (
-			!matchingRecord ||
-			(matchingRecord.expiresAt && matchingRecord.expiresAt < new Date())
-		) {
-			return null;
-		}
+    // If no matching key or the key is expired, return null
+    if (
+      !matchingRecord ||
+      (matchingRecord.expiresAt && matchingRecord.expiresAt < new Date())
+    ) {
+      return null;
+    }
 
-		// Update the lastUsedAt timestamp
-		await db.apiKey.update({
-			where: {
-				id: matchingRecord.id,
-			},
-			data: {
-				lastUsedAt: new Date(),
-			},
-		});
+    // Update the lastUsedAt timestamp
+    await db.apiKey.update({
+      where: {
+        id: matchingRecord.id,
+      },
+      data: {
+        lastUsedAt: new Date(),
+      },
+    });
 
-		// Return the organization ID
-		return matchingRecord.organizationId;
-	} catch (error) {
-		console.error("Error validating API key:", error);
-		return null;
-	}
+    // Return the organization ID
+    return matchingRecord.organizationId;
+  } catch (error) {
+    console.error("Error validating API key:", error);
+    return null;
+  }
 }
 
 /**
@@ -142,18 +140,18 @@ async function validateApiKeyValue(apiKey: string): Promise<string | null> {
  * @returns A response if the API key is invalid, or the organization ID if valid
  */
 export async function apiKeyMiddleware(
-	req: NextRequest,
+  req: NextRequest,
 ): Promise<NextResponse | string> {
-	const organizationId = await validateApiKey(req);
+  const organizationId = await validateApiKey(req);
 
-	if (!organizationId) {
-		return NextResponse.json(
-			{ error: "Invalid or missing API key" },
-			{ status: 401 },
-		);
-	}
+  if (!organizationId) {
+    return NextResponse.json(
+      { error: "Invalid or missing API key" },
+      { status: 401 },
+    );
+  }
 
-	return organizationId;
+  return organizationId;
 }
 
 /**
@@ -163,14 +161,14 @@ export async function apiKeyMiddleware(
  * @returns An object with the organization ID and/or error response
  */
 export async function getOrganizationFromApiKey(req: NextRequest): Promise<{
-	organizationId?: string;
-	errorResponse?: NextResponse;
+  organizationId?: string;
+  errorResponse?: NextResponse;
 }> {
-	const result = await apiKeyMiddleware(req);
+  const result = await apiKeyMiddleware(req);
 
-	if (result instanceof NextResponse) {
-		return { errorResponse: result };
-	}
+  if (result instanceof NextResponse) {
+    return { errorResponse: result };
+  }
 
-	return { organizationId: result };
+  return { organizationId: result };
 }

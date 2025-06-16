@@ -1,11 +1,11 @@
 export default function TestsDashboardLayout({
-	children,
+  children,
 }: {
-	children: React.ReactNode;
+  children: React.ReactNode;
 }) {
-	return (
-		<div className="max-w-[1200px] mx-auto">
-			<div>{children}</div>
-		</div>
-	);
+  return (
+    <div className="mx-auto max-w-[1200px]">
+      <div>{children}</div>
+    </div>
+  );
 }

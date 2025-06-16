@@ -3,19 +3,19 @@ import { ReadonlyHeaders } from "next/dist/server/web/spec-extension/adapters/he
 import { redirect } from "next/navigation";
 
 export async function getServersideFullOrg({
-	headers,
-	redirectTo = "/",
+  headers,
+  redirectTo = "/",
 }: {
-	headers: Promise<ReadonlyHeaders>;
-	redirectTo?: string;
+  headers: Promise<ReadonlyHeaders>;
+  redirectTo?: string;
 }) {
-	const response = await auth.api.getFullOrganization({
-		headers: await headers,
-	});
+  const response = await auth.api.getFullOrganization({
+    headers: await headers,
+  });
 
-	if (!response) {
-		redirect(redirectTo);
-	}
+  if (!response) {
+    redirect(redirectTo);
+  }
 
-	return response;
+  return response;
 }

@@ -5,52 +5,52 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
 export default async function Layout({
-	children,
+  children,
 }: {
-	children: React.ReactNode;
+  children: React.ReactNode;
 }) {
-	const session = await auth.api.getSession({
-		headers: await headers(),
-	});
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
-	const user = session?.user;
-	const orgId = session?.session.activeOrganizationId;
+  const user = session?.user;
+  const orgId = session?.session.activeOrganizationId;
 
-	if (!session) {
-		return redirect("/");
-	}
+  if (!session) {
+    return redirect("/");
+  }
 
-	return (
-		<div className="max-w-[1200px] m-auto">
-			<Suspense fallback={<div>Loading...</div>}>
-				<SecondaryMenu
-					items={[
-						{
-							path: `/${orgId}/settings`,
-							label: "General",
-						},
-						{
-							path: `/${orgId}/settings/trust-portal`,
-							label: "Trust Portal",
-						},
-						{
-							path: `/${orgId}/settings/context-hub`,
-							label: "Context",
-						},
-						{
-							path: `/${orgId}/settings/api-keys`,
-							label: "API",
-						},
-						// {
-						// 	path: `/${orgId}/settings/billing`,
-						// 	label: "Billing",
-						// 	enabled: false,
-						// },
-					]}
-				/>
-			</Suspense>
+  return (
+    <div className="m-auto max-w-[1200px]">
+      <Suspense fallback={<div>Loading...</div>}>
+        <SecondaryMenu
+          items={[
+            {
+              path: `/${orgId}/settings`,
+              label: "General",
+            },
+            {
+              path: `/${orgId}/settings/trust-portal`,
+              label: "Trust Portal",
+            },
+            {
+              path: `/${orgId}/settings/context-hub`,
+              label: "Context",
+            },
+            {
+              path: `/${orgId}/settings/api-keys`,
+              label: "API",
+            },
+            // {
+            // 	path: `/${orgId}/settings/billing`,
+            // 	label: "Billing",
+            // 	enabled: false,
+            // },
+          ]}
+        />
+      </Suspense>
 
-			<div>{children}</div>
-		</div>
-	);
+      <div>{children}</div>
+    </div>
+  );
 }

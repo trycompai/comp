@@ -12,48 +12,48 @@ import type { GetAssigneesResult, GetVendorsResult } from "../data/queries";
 import { columns } from "./VendorColumns";
 
 interface VendorsTableProps {
-	promises: Promise<[GetVendorsResult, GetAssigneesResult]>;
+  promises: Promise<[GetVendorsResult, GetAssigneesResult]>;
 }
 
 export function VendorsTable({ promises }: VendorsTableProps) {
-	const { orgId } = useParams();
+  const { orgId } = useParams();
 
-	// Resolve the promise data here
-	const [{ data: vendors, pageCount }, assignees] = React.use(promises);
+  // Resolve the promise data here
+  const [{ data: vendors, pageCount }, assignees] = React.use(promises);
 
-	// Define columns memoized
-	const memoizedColumns = React.useMemo(() => columns, [orgId]);
+  // Define columns memoized
+  const memoizedColumns = React.useMemo(() => columns, [orgId]);
 
-	const { table } = useDataTable({
-		data: vendors,
-		columns: memoizedColumns,
-		pageCount: pageCount,
-		getRowId: (row) => row.id,
-		initialState: {
-			pagination: {
-				pageIndex: 0,
-				pageSize: 50,
-			},
-			sorting: [{ id: "name", desc: true }],
-		},
-		shallow: false,
-		clearOnDefault: true,
-	});
+  const { table } = useDataTable({
+    data: vendors,
+    columns: memoizedColumns,
+    pageCount: pageCount,
+    getRowId: (row) => row.id,
+    initialState: {
+      pagination: {
+        pageIndex: 0,
+        pageSize: 50,
+      },
+      sorting: [{ id: "name", desc: true }],
+    },
+    shallow: false,
+    clearOnDefault: true,
+  });
 
-	return (
-		<>
-			<DataTable
-				table={table}
-				getRowId={(row) => row.id}
-				rowClickBasePath={`/${orgId}/vendors`}
-			>
-				<DataTableToolbar
-					table={table}
-					sheet="createVendorSheet"
-					action="Add Vendor"
-				/>
-			</DataTable>
-			<CreateVendorSheet assignees={assignees} />
-		</>
-	);
+  return (
+    <>
+      <DataTable
+        table={table}
+        getRowId={(row) => row.id}
+        rowClickBasePath={`/${orgId}/vendors`}
+      >
+        <DataTableToolbar
+          table={table}
+          sheet="createVendorSheet"
+          action="Add Vendor"
+        />
+      </DataTable>
+      <CreateVendorSheet assignees={assignees} />
+    </>
+  );
 }

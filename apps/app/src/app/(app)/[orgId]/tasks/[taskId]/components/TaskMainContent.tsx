@@ -11,69 +11,66 @@ import { CommentList } from "../../../../../../components/comments/CommentList";
 import { CommentWithAuthor } from "../../../../../../components/comments/Comments";
 
 interface TaskMainContentProps {
-	task: Task & { fileUrls?: string[] };
-	comments: CommentWithAuthor[];
-	attachments: Attachment[];
+  task: Task & { fileUrls?: string[] };
+  comments: CommentWithAuthor[];
+  attachments: Attachment[];
 }
 
 export function TaskMainContent({
-	task,
-	comments,
-	attachments,
+  task,
+  comments,
+  attachments,
 }: TaskMainContentProps) {
-	const [title, setTitle] = useState(task.title);
-	const [description, setDescription] = useState(task.description ?? "");
+  const [title, setTitle] = useState(task.title);
+  const [description, setDescription] = useState(task.description ?? "");
 
-	const debouncedUpdateTask = useDebouncedCallback(
-		(field: "title" | "description", value: string) => {
-			updateTask({ id: task.id, [field]: value });
-		},
-		1000,
-	);
+  const debouncedUpdateTask = useDebouncedCallback(
+    (field: "title" | "description", value: string) => {
+      updateTask({ id: task.id, [field]: value });
+    },
+    1000,
+  );
 
-	useEffect(() => {
-		setTitle(task.title);
-		setDescription(task.description ?? "");
-	}, [task.title, task.description]);
+  useEffect(() => {
+    setTitle(task.title);
+    setDescription(task.description ?? "");
+  }, [task.title, task.description]);
 
-	const handleTitleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-		const newTitle = event.target.value;
-		setTitle(newTitle);
-		debouncedUpdateTask("title", newTitle);
-	};
+  const handleTitleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newTitle = event.target.value;
+    setTitle(newTitle);
+    debouncedUpdateTask("title", newTitle);
+  };
 
-	const handleDescriptionChange = (
-		event: React.ChangeEvent<HTMLTextAreaElement>,
-	) => {
-		const newDescription = event.target.value;
-		setDescription(newDescription);
-		debouncedUpdateTask("description", newDescription);
-	};
+  const handleDescriptionChange = (
+    event: React.ChangeEvent<HTMLTextAreaElement>,
+  ) => {
+    const newDescription = event.target.value;
+    setDescription(newDescription);
+    debouncedUpdateTask("description", newDescription);
+  };
 
-	return (
-		<div className="flex-1 flex flex-col gap-4 lg:max-w-3xl lg:mx-auto lg:py-8">
-			<TaskBody
-				taskId={task.id}
-				title={title}
-				description={description}
-				attachments={attachments}
-				onTitleChange={handleTitleChange}
-				onDescriptionChange={handleDescriptionChange}
-			/>
+  return (
+    <div className="flex flex-1 flex-col gap-4 lg:mx-auto lg:max-w-3xl lg:py-8">
+      <TaskBody
+        taskId={task.id}
+        title={title}
+        description={description}
+        attachments={attachments}
+        onTitleChange={handleTitleChange}
+        onDescriptionChange={handleDescriptionChange}
+      />
 
-			<div className="py-4">
-				<Separator />
-			</div>
+      <div className="py-4">
+        <Separator />
+      </div>
 
-			{/* Comment Section */}
-			<div className="space-y-4">
-				<h3 className="text-lg font-medium">Comments</h3>
-				<CommentForm
-					entityId={task.id}
-					entityType={CommentEntityType.task}
-				/>
-				<CommentList comments={comments} />
-			</div>
-		</div>
-	);
+      {/* Comment Section */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium">Comments</h3>
+        <CommentForm entityId={task.id} entityType={CommentEntityType.task} />
+        <CommentList comments={comments} />
+      </div>
+    </div>
+  );
 }

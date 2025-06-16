@@ -1,16 +1,16 @@
 {
   "name": "@comp/analytics",
   "version": "1.0.0",
-  "private": true,
+  "dependencies": {
+    "posthog-js": "^1.236.6",
+    "posthog-node": "^4.14.0"
+  },
   "main": "src/index.ts",
+  "private": true,
   "scripts": {
     "clean": "rm -rf .turbo node_modules",
-    "lint": "prettier --check .",
     "format": "prettier --write .",
+    "lint": "prettier --check .",
     "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "posthog-js": "^1.215.3",
-    "posthog-node": "^4.4.1"
   }
 }

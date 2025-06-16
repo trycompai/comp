@@ -5,25 +5,25 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 export default async function VendorManagement() {
-	const {
-		session: { activeOrganizationId },
-	} = await getServersideSession({
-		headers: await headers(),
-	});
+  const {
+    session: { activeOrganizationId },
+  } = await getServersideSession({
+    headers: await headers(),
+  });
 
-	if (!activeOrganizationId) {
-		redirect("/");
-	}
+  if (!activeOrganizationId) {
+    redirect("/");
+  }
 
-	return (
-		<div className="space-y-4 sm:space-y-8">
-			<VendorOverview organizationId={activeOrganizationId} />
-		</div>
-	);
+  return (
+    <div className="space-y-4 sm:space-y-8">
+      <VendorOverview organizationId={activeOrganizationId} />
+    </div>
+  );
 }
 
 export async function generateMetadata(): Promise<Metadata> {
-	return {
-		title: "Vendors",
-	};
+  return {
+    title: "Vendors",
+  };
 }

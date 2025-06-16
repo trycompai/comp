@@ -1,14 +1,14 @@
-import Link from "next/link"
-import { Badge } from "@comp/ui/badge"
+import Link from "next/link";
+import { Badge } from "@comp/ui/badge";
 
 interface ComplianceSummaryProps {
-    text: string
+  text: string;
 }
 
 export default function ComplianceSummary({ text }: ComplianceSummaryProps) {
-    return (
-        <div>
-            <p className="text-sm">{text}</p>
-        </div>
-    )
+  return (
+    <div>
+      <p className="text-sm">{text}</p>
+    </div>
+  );
 }

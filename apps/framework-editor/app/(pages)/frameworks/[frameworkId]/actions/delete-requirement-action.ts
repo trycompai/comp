@@ -1,28 +1,30 @@
-'use server'
+"use server";
 
-import { z } from 'zod'
-import { db } from '@comp/db'
-import { revalidatePath } from 'next/cache'
-import { Prisma } from '@prisma/client'; // Import Prisma for error types
+import { z } from "zod";
+import { db } from "@comp/db";
+import { revalidatePath } from "next/cache";
+import { Prisma } from "@prisma/client"; // Import Prisma for error types
 
 const DeleteRequirementSchema = z.object({
-  requirementId: z.string().min(1, { message: 'Requirement ID is required' }),
-  frameworkId: z.string().min(1, { message: 'Framework ID is required for revalidation' }),
+  requirementId: z.string().min(1, { message: "Requirement ID is required" }),
+  frameworkId: z
+    .string()
+    .min(1, { message: "Framework ID is required for revalidation" }),
 });
 
 export interface DeleteRequirementActionState {
-  success: boolean
-  error?: string
-  issues?: z.ZodIssue[]
+  success: boolean;
+  error?: string;
+  issues?: z.ZodIssue[];
 }
 
 export async function deleteRequirementAction(
   prevState: DeleteRequirementActionState | null,
-  formData: FormData
+  formData: FormData,
 ): Promise<DeleteRequirementActionState> {
   const rawInput = {
-    requirementId: formData.get('requirementId'),
-    frameworkId: formData.get('frameworkId'),
+    requirementId: formData.get("requirementId"),
+    frameworkId: formData.get("frameworkId"),
   };
 
   const validationResult = DeleteRequirementSchema.safeParse(rawInput);
@@ -30,7 +32,7 @@ export async function deleteRequirementAction(
   if (!validationResult.success) {
     return {
       success: false,
-      error: 'Invalid input for deleting requirement.',
+      error: "Invalid input for deleting requirement.",
       issues: validationResult.error.issues,
     };
   }
@@ -51,11 +53,14 @@ export async function deleteRequirementAction(
       success: true,
     };
   } catch (error) {
-    console.error('Failed to delete requirement:', error);
+    console.error("Failed to delete requirement:", error);
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       // Specific Prisma errors
-      if (error.code === 'P2025') {
-        return { success: false, error: 'Requirement not found or already deleted.' };
+      if (error.code === "P2025") {
+        return {
+          success: false,
+          error: "Requirement not found or already deleted.",
+        };
       }
       // Add other Prisma error codes to handle if needed, e.g., P2003 for foreign key constraints
       // if (error.code === 'P2003') {
@@ -63,10 +68,13 @@ export async function deleteRequirementAction(
       // }
     }
     // General error message
-    const errorMessage = error instanceof Error ? error.message : 'An unexpected database error occurred.';
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "An unexpected database error occurred.";
     return {
       success: false,
       error: `Database error: ${errorMessage}`,
     };
   }
-} 
+}

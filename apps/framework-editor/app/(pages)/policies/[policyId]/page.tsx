@@ -8,48 +8,48 @@ import "@comp/ui/editor.css";
 import { isAuthorized } from "@/app/lib/utils";
 
 interface PolicyDetailPageProps {
-	params: Promise<{
-		policyId: string;
-	}>;
+  params: Promise<{
+    policyId: string;
+  }>;
 }
 
 export default async function PolicyDetailPage({
-	params,
+  params,
 }: PolicyDetailPageProps) {
-	const isAllowed = await isAuthorized();
+  const isAllowed = await isAuthorized();
 
-	if (!isAllowed) {
-		redirect("/auth");
-	}
+  if (!isAllowed) {
+    redirect("/auth");
+  }
 
-	const { policyId } = await params;
+  const { policyId } = await params;
 
-	const policy = await db.frameworkEditorPolicyTemplate.findUnique({
-		where: { id: policyId },
-	});
+  const policy = await db.frameworkEditorPolicyTemplate.findUnique({
+    where: { id: policyId },
+  });
 
-	if (!policy) {
-		notFound();
-	}
+  if (!policy) {
+    notFound();
+  }
 
-	// console.log("Policy Content from DB (Server):", JSON.stringify(policy.content, null, 2));
+  // console.log("Policy Content from DB (Server):", JSON.stringify(policy.content, null, 2));
 
-	return (
-		<PageLayout
-			breadcrumbs={[
-				{ label: "Policies", href: "/policies" },
-				{ label: policy.name, href: `/policies/${policy.id}` },
-			]}
-		>
-			{/* Use the new client component for displaying policy details and action buttons */}
-			<PolicyDetailsClientPage policy={policy} />
+  return (
+    <PageLayout
+      breadcrumbs={[
+        { label: "Policies", href: "/policies" },
+        { label: policy.name, href: `/policies/${policy.id}` },
+      ]}
+    >
+      {/* Use the new client component for displaying policy details and action buttons */}
+      <PolicyDetailsClientPage policy={policy} />
 
-			{/* The Editor Client Component remains */}
-			<PolicyEditorClient
-				policyId={policy.id}
-				policyName={policy.name}
-				initialContent={policy.content as any}
-			/>
-		</PageLayout>
-	);
+      {/* The Editor Client Component remains */}
+      <PolicyEditorClient
+        policyId={policy.id}
+        policyName={policy.name}
+        initialContent={policy.content as any}
+      />
+    </PageLayout>
+  );
 }

@@ -3,10 +3,10 @@
 import { revalidatePath } from "next/cache";
 
 export async function invalidateMembers({
-	organizationId,
+  organizationId,
 }: {
-	organizationId: string;
+  organizationId: string;
 }) {
-	// Ensure correct path is used for revalidation
-	return revalidatePath(`/${organizationId}/settings/users`);
+  // Ensure correct path is used for revalidation
+  return revalidatePath(`/${organizationId}/settings/users`);
 }

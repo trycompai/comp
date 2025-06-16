@@ -1,7 +1,7 @@
 export default async function Layout({
-	children,
+  children,
 }: {
-	children: React.ReactNode;
+  children: React.ReactNode;
 }) {
-	return <div className="max-w-[1200px] m-auto">{children}</div>;
+  return <div className="m-auto max-w-[1200px]">{children}</div>;
 }

@@ -83,6 +83,7 @@ model Member {
     department                      Departments                       @default(none)
     isActive                        Boolean                           @default(true)
     employeeTrainingVideoCompletion EmployeeTrainingVideoCompletion[]
+    fleetDmLabelId                  Int?
 
     assignedPolicies Policy[]   @relation("PolicyAssignee") // Policies where this member is an assignee
     approvedPolicies Policy[]   @relation("PolicyApprover") // Policies where this member is an approver

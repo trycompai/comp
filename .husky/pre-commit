@@ -1,0 +1,12 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Check for dependency mismatches
+echo "Checking for dependency mismatches..."
+bun run deps:check
+
+# If there are mismatches, offer to fix them
+if [ $? -ne 0 ]; then
+  echo "Dependency mismatches found! Run 'bun run deps:fix' to fix them."
+  exit 1
+fi 

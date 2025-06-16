@@ -8,65 +8,59 @@ import { useQueryState } from "nuqs";
 import { CreateVendorTaskSheet } from "../create-vendor-task-sheet";
 
 type Props = {
-	hasFilters?: boolean;
+  hasFilters?: boolean;
 };
 
 export function NoResults({ hasFilters }: Props) {
-	const router = useRouter();
-	const { orgId, vendorId } = useParams<{
-		orgId: string;
-		vendorId: string;
-	}>();
+  const router = useRouter();
+  const { orgId, vendorId } = useParams<{
+    orgId: string;
+    vendorId: string;
+  }>();
 
-	return (
-		<div className="flex items-center justify-center">
-			<div className="flex flex-col items-center">
-				<Icons.Transactions2 className="mb-4" />
-				<div className="text-center mb-6 space-y-2">
-					<h2 className="font-medium text-lg">
-						{"No results found"}
-					</h2>
-					<p className="text-muted-foreground text-sm">
-						{hasFilters
-							? "Try another search, or adjusting the filters"
-							: "Create a task to get started"}
-					</p>
-				</div>
+  return (
+    <div className="flex items-center justify-center">
+      <div className="flex flex-col items-center">
+        <Icons.Transactions2 className="mb-4" />
+        <div className="mb-6 space-y-2 text-center">
+          <h2 className="text-lg font-medium">{"No results found"}</h2>
+          <p className="text-muted-foreground text-sm">
+            {hasFilters
+              ? "Try another search, or adjusting the filters"
+              : "Create a task to get started"}
+          </p>
+        </div>
 
-				{hasFilters && (
-					<Button
-						variant="outline"
-						onClick={() =>
-							router.push(`/${orgId}/vendors/${vendorId}`)
-						}
-					>
-						{"Clear filters"}
-					</Button>
-				)}
-			</div>
-		</div>
-	);
+        {hasFilters && (
+          <Button
+            variant="outline"
+            onClick={() => router.push(`/${orgId}/vendors/${vendorId}`)}
+          >
+            {"Clear filters"}
+          </Button>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export function NoTasks({ isEmpty }: { isEmpty: boolean }) {
-	const [_, setOpen] = useQueryState("create-vendor-task-sheet");
+  const [_, setOpen] = useQueryState("create-vendor-task-sheet");
 
-	return (
-		<div className="absolute w-full top-0 left-0 flex items-center justify-center z-20">
-			<div className="text-center max-w-sm mx-auto flex flex-col items-center justify-center">
-				<h2 className="text-xl font-medium mb-2">
-					{"No tasks found"}
-				</h2>
-				<p className="text-sm text-muted-foreground mb-6">
-					{"Create a task to get started"}
-				</p>
-				<Button onClick={() => setOpen("true")}>
-					<Plus className="h-4 w-4 mr-2" />
-					{"Create"}
-				</Button>
-			</div>
+  return (
+    <div className="absolute top-0 left-0 z-20 flex w-full items-center justify-center">
+      <div className="mx-auto flex max-w-sm flex-col items-center justify-center text-center">
+        <h2 className="mb-2 text-xl font-medium">{"No tasks found"}</h2>
+        <p className="text-muted-foreground mb-6 text-sm">
+          {"Create a task to get started"}
+        </p>
+        <Button onClick={() => setOpen("true")}>
+          <Plus className="mr-2 h-4 w-4" />
+          {"Create"}
+        </Button>
+      </div>
 
-			{/* <CreateVendorTaskSheet assignees={[]} /> */}
-		</div>
-	);
+      {/* <CreateVendorTaskSheet assignees={[]} /> */}
+    </div>
+  );
 }

@@ -19,24 +19,24 @@ Before setting up the integration, ensure you have:
 
 ### Configuration Steps
 
-1. Navigate to **Settings > Integrations** in your Comp AI dashboard  
-2. Click on **Connect** next to the GCP integration card  
-3. Link Service Account  
-    - Go to the [GCP Console → IAM & Admin → Service Accounts](https://console.cloud.google.com/iam-admin/serviceaccounts)  
-    - Click **“Create Service Account”** and give it a name like `comp-ai-integration`
-    - Click **Continue**, then grant the following roles:
-        - `Security Center Findings Viewer` (`roles/securitycenter.findingsViewer`)
-        - *(Optional)* `Viewer` (`roles/viewer`)
-    - Complete the service account creation
-    - After creating the service account:
-        - Go to the **“Keys”** tab
-        - Click **“Add Key” → “Create new key”**, select **JSON**, then click **Create**
-        - Download the key — you’ll use this in the next step
-    - Go to the [API Library](https://console.cloud.google.com/apis/library) and enable:
-        - **Security Command Center API**
-        - **Cloud Resource Manager API**
-    - Open the downloaded JSON file, and copy its entire contents  
-    - Paste it into the **Service Account Key** field in the Comp AI connection form  
+1. Navigate to **Settings > Integrations** in your Comp AI dashboard
+2. Click on **Connect** next to the GCP integration card
+3. Link Service Account
+   - Go to the [GCP Console → IAM & Admin → Service Accounts](https://console.cloud.google.com/iam-admin/serviceaccounts)
+   - Click **“Create Service Account”** and give it a name like `comp-ai-integration`
+   - Click **Continue**, then grant the following roles:
+     - `Security Center Findings Viewer` (`roles/securitycenter.findingsViewer`)
+     - _(Optional)_ `Viewer` (`roles/viewer`)
+   - Complete the service account creation
+   - After creating the service account:
+     - Go to the **“Keys”** tab
+     - Click **“Add Key” → “Create new key”**, select **JSON**, then click **Create**
+     - Download the key — you’ll use this in the next step
+   - Go to the [API Library](https://console.cloud.google.com/apis/library) and enable:
+     - **Security Command Center API**
+     - **Cloud Resource Manager API**
+   - Open the downloaded JSON file, and copy its entire contents
+   - Paste it into the **Service Account Key** field in the Comp AI connection form
 4. Click **Save and Connect**
 
 ## Capabilities
@@ -45,15 +45,15 @@ Before setting up the integration, ensure you have:
 
 The GCP integration performs the following security assessments:
 
-| Test Category | Description |
-|---------------|-------------|
-| IAM Analysis | Review IAM roles and service account permissions |
-| GCS Security | Identify improperly configured bucket permissions and encryption |
-| Compute Security | Analyze firewall rules, instance configurations, and patch status |
-| Database Security | Check Cloud SQL, Firestore, and other database security settings |
-| Cloud Logging | Verify proper logging and monitoring configuration |
-| KMS | Validate encryption key usage and rotation policies |
-| Network | Assess VPC configurations, firewall rules, and load balancer settings |
+| Test Category     | Description                                                           |
+| ----------------- | --------------------------------------------------------------------- |
+| IAM Analysis      | Review IAM roles and service account permissions                      |
+| GCS Security      | Identify improperly configured bucket permissions and encryption      |
+| Compute Security  | Analyze firewall rules, instance configurations, and patch status     |
+| Database Security | Check Cloud SQL, Firestore, and other database security settings      |
+| Cloud Logging     | Verify proper logging and monitoring configuration                    |
+| KMS               | Validate encryption key usage and rotation policies                   |
+| Network           | Assess VPC configurations, firewall rules, and load balancer settings |
 
 ### Compliance Frameworks
 
@@ -81,6 +81,7 @@ The service account has the following roles:
 - Storage Object Viewer (roles/storage.objectViewer)
 
 The integration does NOT have permissions to:
+
 - Modify any resources
 - Create new resources
 - Delete existing resources
@@ -104,4 +105,4 @@ For additional assistance with your GCP integration:
 
 1. Check our [Knowledge Base](https://help.trycomp.ai/gcp-integration)
 2. Contact support at [support@trycomp.ai](mailto:support@trycomp.ai)
-3. Join our [Discord community](https://discord.gg/compai) for peer support 
+3. Join our [Discord community](https://discord.gg/compai) for peer support

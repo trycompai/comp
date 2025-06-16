@@ -10,115 +10,109 @@ import { env } from "node:process";
 import { Vercel } from "@vercel/sdk";
 
 const customDomainSchema = z.object({
-	domain: z.string().min(1),
+  domain: z.string().min(1),
 });
 
 const vercel = new Vercel({
-	bearerToken: env.VERCEL_ACCESS_TOKEN,
+  bearerToken: env.VERCEL_ACCESS_TOKEN,
 });
 
 export const customDomainAction = authActionClient
-	.schema(customDomainSchema)
-	.metadata({
-		name: "custom-domain",
-		track: {
-			event: "add-custom-domain",
-			channel: "server",
-		},
-	})
-	.action(async ({ parsedInput, ctx }) => {
-		const { domain } = parsedInput;
-		const { activeOrganizationId } = ctx.session;
+  .schema(customDomainSchema)
+  .metadata({
+    name: "custom-domain",
+    track: {
+      event: "add-custom-domain",
+      channel: "server",
+    },
+  })
+  .action(async ({ parsedInput, ctx }) => {
+    const { domain } = parsedInput;
+    const { activeOrganizationId } = ctx.session;
 
-		if (!activeOrganizationId) {
-			throw new Error("No active organization");
-		}
+    if (!activeOrganizationId) {
+      throw new Error("No active organization");
+    }
 
-		try {
-			const currentDomain = await db.trust.findUnique({
-				where: { organizationId: activeOrganizationId },
-			});
+    try {
+      const currentDomain = await db.trust.findUnique({
+        where: { organizationId: activeOrganizationId },
+      });
 
-			const domainVerified =
-				currentDomain?.domain === domain
-					? currentDomain.domainVerified
-					: false;
+      const domainVerified =
+        currentDomain?.domain === domain ? currentDomain.domainVerified : false;
 
-			const isExistingRecord = await vercel.projects.getProjectDomains({
-				idOrName: env.TRUST_PORTAL_PROJECT_ID!,
-				teamId: env.VERCEL_TEAM_ID!,
-			});
+      const isExistingRecord = await vercel.projects.getProjectDomains({
+        idOrName: env.TRUST_PORTAL_PROJECT_ID!,
+        teamId: env.VERCEL_TEAM_ID!,
+      });
 
-			if (
-				isExistingRecord.domains.some(
-					(record) => record.name === domain,
-				)
-			) {
-				const domainOwner = await db.trust.findUnique({
-					where: {
-						organizationId: activeOrganizationId,
-						domain: domain,
-					},
-				});
+      if (isExistingRecord.domains.some((record) => record.name === domain)) {
+        const domainOwner = await db.trust.findUnique({
+          where: {
+            organizationId: activeOrganizationId,
+            domain: domain,
+          },
+        });
 
-				if (
-					!domainOwner ||
-					domainOwner.organizationId === activeOrganizationId
-				) {
-					await vercel.projects.removeProjectDomain({
-						idOrName: env.TRUST_PORTAL_PROJECT_ID!,
-						teamId: env.VERCEL_TEAM_ID!,
-						domain,
-					});
-				} else {
-					return {
-						success: false,
-						error: "Domain is already in use by another organization",
-					};
-				}
-			}
+        if (
+          !domainOwner ||
+          domainOwner.organizationId === activeOrganizationId
+        ) {
+          await vercel.projects.removeProjectDomain({
+            idOrName: env.TRUST_PORTAL_PROJECT_ID!,
+            teamId: env.VERCEL_TEAM_ID!,
+            domain,
+          });
+        } else {
+          return {
+            success: false,
+            error: "Domain is already in use by another organization",
+          };
+        }
+      }
 
-			const addDomainToProject = await vercel.projects.addProjectDomain({
-				idOrName: env.TRUST_PORTAL_PROJECT_ID!,
-				teamId: env.VERCEL_TEAM_ID!,
-				slug: env.TRUST_PORTAL_PROJECT_ID!,
-				requestBody: {
-					name: domain,
-				},
-			});
+      const addDomainToProject = await vercel.projects.addProjectDomain({
+        idOrName: env.TRUST_PORTAL_PROJECT_ID!,
+        teamId: env.VERCEL_TEAM_ID!,
+        slug: env.TRUST_PORTAL_PROJECT_ID!,
+        requestBody: {
+          name: domain,
+        },
+      });
 
-			const isVercelDomain = addDomainToProject.verified === false;
+      const isVercelDomain = addDomainToProject.verified === false;
 
-			// Store the verification details from Vercel if available
-			const vercelVerification =
-				addDomainToProject.verification?.[0]?.value || null;
+      // Store the verification details from Vercel if available
+      const vercelVerification =
+        addDomainToProject.verification?.[0]?.value || null;
 
-			await db.trust.upsert({
-				where: { organizationId: activeOrganizationId },
-				update: {
-					domain,
-					domainVerified,
-					isVercelDomain,
-					vercelVerification,
-				},
-				create: {
-					organizationId: activeOrganizationId,
-					domain,
-					domainVerified: false,
-					isVercelDomain,
-					vercelVerification,
-				},
-			});
+      await db.trust.upsert({
+        where: { organizationId: activeOrganizationId },
+        update: {
+          domain,
+          domainVerified,
+          isVercelDomain,
+          vercelVerification,
+        },
+        create: {
+          organizationId: activeOrganizationId,
+          domain,
+          domainVerified: false,
+          isVercelDomain,
+          vercelVerification,
+        },
+      });
 
-			revalidatePath(`/${activeOrganizationId}/settings/trust-portal`);
-			revalidateTag(`organization_${activeOrganizationId}`);
+      revalidatePath(`/${activeOrganizationId}/settings/trust-portal`);
+      revalidateTag(`organization_${activeOrganizationId}`);
 
-			return {
-				success: true,
-				needsVerification: !domainVerified,
-			};
-		} catch (error) {
-			console.error(error);
-			throw new Error("Failed to update custom domain");
-		}
-	});
+      return {
+        success: true,
+        needsVerification: !domainVerified,
+      };
+    } catch (error) {
+      console.error(error);
+      throw new Error("Failed to update custom domain");
+    }
+  });

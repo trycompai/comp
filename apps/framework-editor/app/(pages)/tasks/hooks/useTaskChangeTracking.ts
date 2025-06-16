@@ -121,7 +121,7 @@ export const useTaskChangeTracking = (initialData: TasksPageGridData[]) => {
                   workingNewValue.splice(
                     op.fromRowIndex + keptRowsForDisplay++,
                     0,
-                    originalDataForDelete[op.fromRowIndex + i]
+                    originalDataForDelete[op.fromRowIndex + i],
                   );
                 }
               });
@@ -132,7 +132,7 @@ export const useTaskChangeTracking = (initialData: TasksPageGridData[]) => {
         return workingNewValue;
       });
     },
-    [createdRowIds, updatedRowIds, deletedRowIds]
+    [createdRowIds, updatedRowIds, deletedRowIds],
   );
 
   const getRowClassName = useCallback(
@@ -143,7 +143,7 @@ export const useTaskChangeTracking = (initialData: TasksPageGridData[]) => {
       if (updatedRowIds.has(rowData.id)) return "row-updated";
       return "";
     },
-    [createdRowIds, updatedRowIds, deletedRowIds]
+    [createdRowIds, updatedRowIds, deletedRowIds],
   );
 
   const handleCommit = useCallback(async () => {
@@ -169,7 +169,7 @@ export const useTaskChangeTracking = (initialData: TasksPageGridData[]) => {
                 tempId,
                 newId: newTask.id,
                 newTask,
-              }) as TaskCreationSuccessResult
+              }) as TaskCreationSuccessResult,
           )
           .catch((error) => {
             console.error(`Failed to create task (tempId: ${tempId}):`, error);
@@ -182,7 +182,7 @@ export const useTaskChangeTracking = (initialData: TasksPageGridData[]) => {
           });
       }
       console.warn(
-        `Skipping creation for task with tempId ${tempId} due to missing data or name.`
+        `Skipping creation for task with tempId ${tempId} due to missing data or name.`,
       );
       failedCommits++;
       return Promise.resolve({
@@ -195,7 +195,7 @@ export const useTaskChangeTracking = (initialData: TasksPageGridData[]) => {
 
     // --- Handle Updates (excluding newly created or already deleted items) ---
     const idsToUpdateActually = Array.from(updatedRowIds).filter(
-      (id) => !createdRowIds.has(id) && !deletedRowIds.has(id)
+      (id) => !createdRowIds.has(id) && !deletedRowIds.has(id),
     );
     const updateOps = idsToUpdateActually.map((id) => {
       const row = workingData.find((r) => r.id === id);
@@ -218,7 +218,7 @@ export const useTaskChangeTracking = (initialData: TasksPageGridData[]) => {
           });
       }
       console.warn(
-        `Skipping update for task with id ${id} due to missing data or name.`
+        `Skipping update for task with id ${id} due to missing data or name.`,
       );
       failedCommits++;
       return Promise.resolve({
@@ -237,12 +237,12 @@ export const useTaskChangeTracking = (initialData: TasksPageGridData[]) => {
           res.status === "fulfilled" &&
           (res.value as TaskCreationOperationResult).success &&
           (res.value as TaskCreationSuccessResult).tempId === id &&
-          (res.value as TaskCreationSuccessResult).newId
+          (res.value as TaskCreationSuccessResult).newId,
       );
 
       if (createdRowIds.has(id) && !wasSuccessfullyCreatedOnServer) {
         console.log(
-          `Client-side removal of temporary task item (never reached server): ${id}`
+          `Client-side removal of temporary task item (never reached server): ${id}`,
         );
         // No server call needed, it was never persisted. Just ensure it's cleaned from UI state.
         successfulCommits++; // Considered a success in terms of resolving the change
@@ -308,7 +308,7 @@ export const useTaskChangeTracking = (initialData: TasksPageGridData[]) => {
 
     setData((currentData) => {
       let finalData = currentData.filter(
-        (row) => !actuallyDeletedIdsServer.has(row.id)
+        (row) => !actuallyDeletedIdsServer.has(row.id),
       );
       finalData = finalData
         .map((row) => {
@@ -322,7 +322,7 @@ export const useTaskChangeTracking = (initialData: TasksPageGridData[]) => {
             (res) =>
               res.status === "fulfilled" &&
               (res.value as TaskCreationOperationResult).tempId === row.id &&
-              !(res.value as TaskCreationOperationResult).success
+              !(res.value as TaskCreationOperationResult).success,
           );
           if (createdRowIds.has(row.id) && creationFailedForThisTempId) {
             return null; // Mark for removal
@@ -346,11 +346,11 @@ export const useTaskChangeTracking = (initialData: TasksPageGridData[]) => {
           (res): res is PromiseFulfilledResult<TaskCreationSuccessResult> =>
             res.status === "fulfilled" &&
             (res.value as TaskCreationOperationResult).success &&
-            (res.value as TaskCreationSuccessResult).tempId === row.id
+            (res.value as TaskCreationSuccessResult).tempId === row.id,
         );
         if (tempIdSuccessEntry) {
           const serverData = serverCreatedRows.get(
-            tempIdSuccessEntry.value.newId
+            tempIdSuccessEntry.value.newId,
           );
           return serverData || row; // if somehow not in map, keep original (should not happen)
         }

@@ -28,7 +28,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20' # Or your preferred Node.js version
+          node-version: "20" # Or your preferred Node.js version
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -43,4 +43,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
           # NPM_TOKEN: ${{ secrets.NPM_TOKEN }} # Uncomment if publishing to npm
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-        run: npx semantic-release 
+        run: npx semantic-release

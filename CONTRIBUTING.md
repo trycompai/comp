@@ -96,7 +96,6 @@ To develop locally:
 
    - Duplicate `.env.example` to `.env`.
    - Use `openssl rand -base64 32` to generate a key and add it under `SECRET_KEY` in the `.env` file.
-   
    - Setup Trigger.dev
      - CD into apps/app and run `bunx trigger.dev@latest login`, then `bunx trigger.dev@latest dev`
      - Use `openssl rand -base64 32` to generate a key and add it under `TRIGGER_SECRET_KEY` in the `.env` file.

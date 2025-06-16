@@ -20,5 +20,8 @@
   },
   "editor.codeActionsOnSave": {
     "source.fixAll": "explicit"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
   }
 }

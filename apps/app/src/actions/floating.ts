@@ -6,19 +6,19 @@ import { cookies } from "next/headers";
 import { z } from "zod";
 
 const schema = z.object({
-	floatingOpen: z.boolean(),
+  floatingOpen: z.boolean(),
 });
 
 export const updateFloatingState = createSafeActionClient()
-	.schema(schema)
-	.action(async ({ parsedInput }) => {
-		const cookieStore = await cookies();
+  .schema(schema)
+  .action(async ({ parsedInput }) => {
+    const cookieStore = await cookies();
 
-		cookieStore.set({
-			name: "floating-onboarding-checklist",
-			value: JSON.stringify(parsedInput.floatingOpen),
-			expires: addYears(new Date(), 1),
-		});
+    cookieStore.set({
+      name: "floating-onboarding-checklist",
+      value: JSON.stringify(parsedInput.floatingOpen),
+      expires: addYears(new Date(), 1),
+    });
 
-		return { success: true };
-	});
+    return { success: true };
+  });

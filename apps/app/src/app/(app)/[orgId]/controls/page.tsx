@@ -7,28 +7,24 @@ import { getControls } from "./data/queries";
 import { searchParamsCache } from "./data/validations";
 
 interface ControlTableProps {
-	searchParams: Promise<SearchParams>;
+  searchParams: Promise<SearchParams>;
 }
 
-export default async function ControlsPage({
-	...props
-}: ControlTableProps) {
-	const searchParams = await props.searchParams;
-	const search = searchParamsCache.parse(searchParams);
-	const validFilters = getValidFilters(search.filters);
+export default async function ControlsPage({ ...props }: ControlTableProps) {
+  const searchParams = await props.searchParams;
+  const search = searchParamsCache.parse(searchParams);
+  const validFilters = getValidFilters(search.filters);
 
-	const promises = Promise.all([
-		getControls({
-			...search,
-			filters: validFilters,
-		}),
-	]);
+  const promises = Promise.all([
+    getControls({
+      ...search,
+      filters: validFilters,
+    }),
+  ]);
 
-	return (
-		<PageWithBreadcrumb
-			breadcrumbs={[{ label: "Controls", current: true }]}
-		>
-			<ControlsTable promises={promises} />
-		</PageWithBreadcrumb>
-	);
+  return (
+    <PageWithBreadcrumb breadcrumbs={[{ label: "Controls", current: true }]}>
+      <ControlsTable promises={promises} />
+    </PageWithBreadcrumb>
+  );
 }

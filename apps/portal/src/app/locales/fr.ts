@@ -1,11 +1,13 @@
 export default {
   auth: {
     title: "Portail des Employés",
-    description: "Saisissez votre adresse e-mail pour recevoir un mot de passe à usage unique.",
+    description:
+      "Saisissez votre adresse e-mail pour recevoir un mot de passe à usage unique.",
     options: "Plus d'options",
     email: {
       otp_sent: "Mot de passe à usage unique envoyé",
-      otp_description: "Vérifiez votre e-mail pour le mot de passe à usage unique",
+      otp_description:
+        "Vérifiez votre e-mail pour le mot de passe à usage unique",
       otp_try_again: "Réessayer",
       placeholder: "Votre e-mail professionnel",
       button: "Continuer",

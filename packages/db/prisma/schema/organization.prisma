@@ -9,6 +9,10 @@ model Organization {
   onboarding       Onboarding?
   website          String?
 
+  // FleetDM
+  fleetDmLabelId        Int?
+  isFleetSetupCompleted Boolean @default(false)
+
   apiKeys            ApiKey[]
   auditLog           AuditLog[]
   controls           Control[]

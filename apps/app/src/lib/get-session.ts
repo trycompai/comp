@@ -3,19 +3,19 @@ import { ReadonlyHeaders } from "next/dist/server/web/spec-extension/adapters/he
 import { redirect } from "next/navigation";
 
 export async function getServersideSession({
-	headers,
-	redirectTo = "/",
+  headers,
+  redirectTo = "/",
 }: {
-	headers: ReadonlyHeaders;
-	redirectTo?: string;
+  headers: ReadonlyHeaders;
+  redirectTo?: string;
 }) {
-	const response = await auth.api.getSession({
-		headers,
-	});
+  const response = await auth.api.getSession({
+    headers,
+  });
 
-	if (!response) {
-		redirect(redirectTo);
-	}
+  if (!response) {
+    redirect(redirectTo);
+  }
 
-	return response;
+  return response;
 }

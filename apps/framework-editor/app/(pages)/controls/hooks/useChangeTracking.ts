@@ -59,7 +59,7 @@ export const useChangeTracking = (initialData: ControlsPageGridData[]) => {
     (displayedData: ControlsPageGridData[]) => {
       displayedDataRef.current = displayedData;
     },
-    []
+    [],
   );
 
   const handleGridChange = useCallback(
@@ -106,7 +106,7 @@ export const useChangeTracking = (initialData: ControlsPageGridData[]) => {
                   workingNewValue.splice(
                     op.fromRowIndex + keptRowsForDisplay++,
                     0,
-                    originalDataForDelete[op.fromRowIndex + i]
+                    originalDataForDelete[op.fromRowIndex + i],
                   );
                 }
               });
@@ -115,7 +115,7 @@ export const useChangeTracking = (initialData: ControlsPageGridData[]) => {
         return workingNewValue;
       });
     },
-    [createdRowIds, updatedRowIds, deletedRowIds]
+    [createdRowIds, updatedRowIds, deletedRowIds],
   );
 
   const getRowClassName = useCallback(
@@ -126,7 +126,7 @@ export const useChangeTracking = (initialData: ControlsPageGridData[]) => {
       if (updatedRowIds.has(rowData.id)) return "row-updated";
       return "";
     },
-    [createdRowIds, updatedRowIds, deletedRowIds]
+    [createdRowIds, updatedRowIds, deletedRowIds],
   );
 
   const handleCommit = useCallback(async () => {
@@ -144,18 +144,18 @@ export const useChangeTracking = (initialData: ControlsPageGridData[]) => {
                 tempId,
                 newId: newControl.id,
                 newControl,
-              }) as CreationSuccessResult
+              }) as CreationSuccessResult,
           )
           .catch((error) => {
             console.error(
               `Failed to create control (tempId: ${tempId}):`,
-              error
+              error,
             );
             return { success: false, tempId, error } as CreationFailureResult;
           });
       }
       console.warn(
-        `Skipping creation for row with tempId ${tempId} due to missing data or name.`
+        `Skipping creation for row with tempId ${tempId} due to missing data or name.`,
       );
       return Promise.resolve({
         success: false,
@@ -167,7 +167,7 @@ export const useChangeTracking = (initialData: ControlsPageGridData[]) => {
 
     // --- Handle Updates (excluding newly created or already deleted items) ---
     const idsToUpdateActually = Array.from(updatedRowIds).filter(
-      (id) => !createdRowIds.has(id) && !deletedRowIds.has(id)
+      (id) => !createdRowIds.has(id) && !deletedRowIds.has(id),
     );
     const updateOps = idsToUpdateActually.map((id) => {
       const row = workingData.find((r) => r.id === id);
@@ -183,7 +183,7 @@ export const useChangeTracking = (initialData: ControlsPageGridData[]) => {
           });
       }
       console.warn(
-        `Skipping update for row with id ${id} due to missing data or name.`
+        `Skipping update for row with id ${id} due to missing data or name.`,
       );
       return Promise.resolve({
         success: false,
@@ -202,7 +202,7 @@ export const useChangeTracking = (initialData: ControlsPageGridData[]) => {
             res.status === "fulfilled" &&
             (res.value as CreationOperationResult).success &&
             (res.value as CreationSuccessResult).tempId === id &&
-            (res.value as CreationSuccessResult).newId
+            (res.value as CreationSuccessResult).newId,
         )
       ) {
         // If it was a created item that didn't successfully get a server ID (e.g. creation failed or was skipped, or it's still pending somehow)
@@ -279,7 +279,7 @@ export const useChangeTracking = (initialData: ControlsPageGridData[]) => {
             // This row was a temp row that got created. Its data is on serverCreatedRows map.
             if (serverCreatedRows.has(creationValue.newId)) {
               finalProcessedData.push(
-                serverCreatedRows.get(creationValue.newId)!
+                serverCreatedRows.get(creationValue.newId)!,
               );
             }
             wasSuccessfullyCreated = true;
@@ -307,7 +307,7 @@ export const useChangeTracking = (initialData: ControlsPageGridData[]) => {
       // Re-filter based on finalProcessedData if necessary for newData
       const currentDataAfterFirstUpdate = finalProcessedData; // Assuming finalProcessedData is what we want to filter
       const newData = currentDataAfterFirstUpdate.filter(
-        (row) => !row.id || !actuallyDeletedIds.has(row.id)
+        (row) => !row.id || !actuallyDeletedIds.has(row.id),
       ); // Ensure we use actuallyDeletedIds
 
       setData(newData);
@@ -326,14 +326,14 @@ export const useChangeTracking = (initialData: ControlsPageGridData[]) => {
           successes.push(`Created: ${createdRow?.name || result.newId}`);
         } else {
           errors.push(
-            `Failed to create (tempId: ${result.tempId}): ${result.error?.message || "Unknown error"}`
+            `Failed to create (tempId: ${result.tempId}): ${result.error?.message || "Unknown error"}`,
           );
         }
       } else {
         // res.reason should be an Error object or contain a message
         const reason = res.reason as any;
         errors.push(
-          `Creation operation failed: ${reason?.message || String(reason) || "Unknown reason"}`
+          `Creation operation failed: ${reason?.message || String(reason) || "Unknown reason"}`,
         );
       }
     });
@@ -351,19 +351,19 @@ export const useChangeTracking = (initialData: ControlsPageGridData[]) => {
           successes.push(`Updated: ${updatedRow?.name || result.id}`);
         } else if (result.id) {
           errors.push(
-            `Failed to update (${result.id}): ${result.error?.message || "Unknown error"}`
+            `Failed to update (${result.id}): ${result.error?.message || "Unknown error"}`,
           );
         }
         // If result.id is undefined but it was a fulfilled promise, it implies an issue with the op function not returning id
         else if (!result.id && !result.success) {
           errors.push(
-            `Failed to update item: ${result.error?.message || "Unknown error, ID missing"}`
+            `Failed to update item: ${result.error?.message || "Unknown error, ID missing"}`,
           );
         }
       } else {
         const reason = res.reason as any;
         errors.push(
-          `Update operation failed: ${reason?.message || String(reason) || "Unknown reason"}`
+          `Update operation failed: ${reason?.message || String(reason) || "Unknown reason"}`,
         );
       }
     });
@@ -386,19 +386,19 @@ export const useChangeTracking = (initialData: ControlsPageGridData[]) => {
           }
         } else if (result.id) {
           errors.push(
-            `Failed to delete (${result.id}): ${result.error?.message || "Unknown error"}`
+            `Failed to delete (${result.id}): ${result.error?.message || "Unknown error"}`,
           );
         }
         // If result.id is undefined but it was a fulfilled promise, it implies an issue with the op function not returning id
         else if (!result.id && !result.success) {
           errors.push(
-            `Failed to delete item: ${result.error?.message || "Unknown error, ID missing"}`
+            `Failed to delete item: ${result.error?.message || "Unknown error, ID missing"}`,
           );
         }
       } else {
         const reason = res.reason as any;
         errors.push(
-          `Deletion operation failed: ${reason?.message || String(reason) || "Unknown reason"}`
+          `Deletion operation failed: ${reason?.message || String(reason) || "Unknown reason"}`,
         );
       }
     });

@@ -2,21 +2,21 @@
 
 import { StatusIndicator } from "@/components/status-indicator";
 import type {
-	Control,
-	FrameworkEditorFramework,
-	FrameworkEditorRequirement,
-	FrameworkInstance,
-	Policy,
-	RequirementMap,
-	Task,
+  Control,
+  FrameworkEditorFramework,
+  FrameworkEditorRequirement,
+  FrameworkInstance,
+  Policy,
+  RequirementMap,
+  Task,
 } from "@comp/db/types";
 import { Button } from "@comp/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@comp/ui/tabs";
 import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from "@comp/ui/dropdown-menu";
 import { MoreVertical, Trash2 } from "lucide-react";
 import { useState } from "react";
@@ -30,148 +30,143 @@ import { SingleControlSkeleton } from "./SingleControlSkeleton";
 import { TasksTable } from "./TasksTable";
 
 interface SingleControlProps {
-	control: Control & {
-		requirementsMapped: (RequirementMap & {
-			frameworkInstance: FrameworkInstance & {
-				framework: FrameworkEditorFramework;
-			};
-			requirement: FrameworkEditorRequirement;
-		})[];
-	};
-	controlProgress: ControlProgressResponse;
-	relatedPolicies: Policy[];
-	relatedTasks: Task[];
+  control: Control & {
+    requirementsMapped: (RequirementMap & {
+      frameworkInstance: FrameworkInstance & {
+        framework: FrameworkEditorFramework;
+      };
+      requirement: FrameworkEditorRequirement;
+    })[];
+  };
+  controlProgress: ControlProgressResponse;
+  relatedPolicies: Policy[];
+  relatedTasks: Task[];
 }
 
 export function SingleControl({
-	control,
-	controlProgress,
-	relatedPolicies,
-	relatedTasks,
+  control,
+  controlProgress,
+  relatedPolicies,
+  relatedTasks,
 }: SingleControlProps) {
-	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-	const [dropdownOpen, setDropdownOpen] = useState(false);
-	const params = useParams<{ orgId: string; controlId: string }>();
-	const orgIdFromParams = params.orgId;
-	const controlIdFromParams = params.controlId;
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const params = useParams<{ orgId: string; controlId: string }>();
+  const orgIdFromParams = params.orgId;
+  const controlIdFromParams = params.controlId;
 
-	const progressStatus = useMemo(() => {
-		if (!controlProgress) return "not_started";
-		if (controlProgress.total === controlProgress.completed)
-			return "completed";
-		if (controlProgress.completed > 0) return "in_progress";
+  const progressStatus = useMemo(() => {
+    if (!controlProgress) return "not_started";
+    if (controlProgress.total === controlProgress.completed) return "completed";
+    if (controlProgress.completed > 0) return "in_progress";
 
-		// Check if any task is not "todo" or any policy is not "draft"
-		const anyTaskInProgress = relatedTasks.some(
-			(task) => task.status !== "todo",
-		);
-		const anyPolicyInProgress = relatedPolicies.some(
-			(policy) => policy.status !== "draft",
-		);
-		if (anyTaskInProgress || anyPolicyInProgress) return "in_progress";
+    // Check if any task is not "todo" or any policy is not "draft"
+    const anyTaskInProgress = relatedTasks.some(
+      (task) => task.status !== "todo",
+    );
+    const anyPolicyInProgress = relatedPolicies.some(
+      (policy) => policy.status !== "draft",
+    );
+    if (anyTaskInProgress || anyPolicyInProgress) return "in_progress";
 
-		return "not_started";
-	}, [controlProgress, relatedPolicies, relatedTasks]);
+    return "not_started";
+  }, [controlProgress, relatedPolicies, relatedTasks]);
 
-	if (!control || !controlProgress) {
-		return <SingleControlSkeleton />;
-	}
+  if (!control || !controlProgress) {
+    return <SingleControlSkeleton />;
+  }
 
-	return (
-		<div className="space-y-6">
-			{/* Control Header */}
-			<div className="space-y-3">
-				<div className="flex items-start justify-between gap-4">
-					<div className="min-w-0 flex-1">
-						<div className="flex items-center gap-2 mb-2">
-							<h1 className="text-xl font-semibold truncate">{control.name}</h1>
-							<StatusIndicator status={progressStatus} />
-						</div>
-						{control.description && (
-							<p className="text-sm text-muted-foreground leading-relaxed">
-								{control.description}
-							</p>
-						)}
-					</div>
-					<DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
-						<DropdownMenuTrigger asChild>
-							<Button
-								size="sm"
-								variant="ghost"
-								className="shrink-0"
-							>
-								<MoreVertical className="h-4 w-4" />
-							</Button>
-						</DropdownMenuTrigger>
-						<DropdownMenuContent align="end">
-							<DropdownMenuItem
-								onClick={() => {
-									setDropdownOpen(false);
-									setDeleteDialogOpen(true);
-								}}
-								className="text-destructive focus:text-destructive"
-							>
-								<Trash2 className="h-4 w-4 mr-2" />
-								Delete
-							</DropdownMenuItem>
-						</DropdownMenuContent>
-					</DropdownMenu>
-				</div>
-			</div>
+  return (
+    <div className="space-y-6">
+      {/* Control Header */}
+      <div className="space-y-3">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <div className="mb-2 flex items-center gap-2">
+              <h1 className="truncate text-xl font-semibold">{control.name}</h1>
+              <StatusIndicator status={progressStatus} />
+            </div>
+            {control.description && (
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                {control.description}
+              </p>
+            )}
+          </div>
+          <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="ghost" className="shrink-0">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() => {
+                  setDropdownOpen(false);
+                  setDeleteDialogOpen(true);
+                }}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
 
-			{/* Tabbed Content */}
-			<Tabs defaultValue="requirements" className="space-y-4">
-				<TabsList className="grid w-full grid-cols-3">
-					<TabsTrigger value="requirements" className="flex items-center gap-2">
-						<span>Requirements</span>
-						<span className="text-xs bg-muted/50 px-1.5 py-0.5 rounded-xs tabular-nums">
-							{control.requirementsMapped.length}
-						</span>
-					</TabsTrigger>
-					<TabsTrigger value="policies" className="flex items-center gap-2">
-						<span>Policies</span>
-						<span className="text-xs bg-muted/50 px-1.5 py-0.5 rounded-xs tabular-nums">
-							{relatedPolicies.length}
-						</span>
-					</TabsTrigger>
-					<TabsTrigger value="tasks" className="flex items-center gap-2">
-						<span>Tasks</span>
-						<span className="text-xs bg-muted/50 px-1.5 py-0.5 rounded-xs tabular-nums">
-							{relatedTasks.length}
-						</span>
-					</TabsTrigger>
-				</TabsList>
-				
-				<TabsContent value="requirements" className="space-y-0">
-					<RequirementsTable
-						requirements={control.requirementsMapped}
-						orgId={orgIdFromParams}
-					/>
-				</TabsContent>
-				
-				<TabsContent value="policies" className="space-y-0">
-					<PoliciesTable
-						policies={relatedPolicies}
-						orgId={orgIdFromParams}
-						controlId={controlIdFromParams}
-					/>
-				</TabsContent>
-				
-				<TabsContent value="tasks" className="space-y-0">
-					<TasksTable
-						tasks={relatedTasks}
-						orgId={orgIdFromParams}
-						controlId={controlIdFromParams}
-					/>
-				</TabsContent>
-			</Tabs>
+      {/* Tabbed Content */}
+      <Tabs defaultValue="requirements" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="requirements" className="flex items-center gap-2">
+            <span>Requirements</span>
+            <span className="bg-muted/50 rounded-xs px-1.5 py-0.5 text-xs tabular-nums">
+              {control.requirementsMapped.length}
+            </span>
+          </TabsTrigger>
+          <TabsTrigger value="policies" className="flex items-center gap-2">
+            <span>Policies</span>
+            <span className="bg-muted/50 rounded-xs px-1.5 py-0.5 text-xs tabular-nums">
+              {relatedPolicies.length}
+            </span>
+          </TabsTrigger>
+          <TabsTrigger value="tasks" className="flex items-center gap-2">
+            <span>Tasks</span>
+            <span className="bg-muted/50 rounded-xs px-1.5 py-0.5 text-xs tabular-nums">
+              {relatedTasks.length}
+            </span>
+          </TabsTrigger>
+        </TabsList>
 
-			{/* Delete Dialog */}
-			<ControlDeleteDialog
-				isOpen={deleteDialogOpen}
-				onClose={() => setDeleteDialogOpen(false)}
-				control={control}
-			/>
-		</div>
-	);
+        <TabsContent value="requirements" className="space-y-0">
+          <RequirementsTable
+            requirements={control.requirementsMapped}
+            orgId={orgIdFromParams}
+          />
+        </TabsContent>
+
+        <TabsContent value="policies" className="space-y-0">
+          <PoliciesTable
+            policies={relatedPolicies}
+            orgId={orgIdFromParams}
+            controlId={controlIdFromParams}
+          />
+        </TabsContent>
+
+        <TabsContent value="tasks" className="space-y-0">
+          <TasksTable
+            tasks={relatedTasks}
+            orgId={orgIdFromParams}
+            controlId={controlIdFromParams}
+          />
+        </TabsContent>
+      </Tabs>
+
+      {/* Delete Dialog */}
+      <ControlDeleteDialog
+        isOpen={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        control={control}
+      />
+    </div>
+  );
 }

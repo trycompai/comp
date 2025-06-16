@@ -83,7 +83,7 @@ export function useOnboardingForm() {
   });
 
   const handleOnboardOrganizationAction = (
-    currentAnswers: Partial<CompanyDetails>
+    currentAnswers: Partial<CompanyDetails>,
   ) => {
     onboardOrganizationAction.execute({
       legalName: currentAnswers.legalName || "",
@@ -123,7 +123,7 @@ export function useOnboardingForm() {
         newAnswers[key] = values
           .filter(
             (v: string, i: number, arr: string[]) =>
-              arr.indexOf(v) === i && v !== ""
+              arr.indexOf(v) === i && v !== "",
           )
           .join(",");
         delete newAnswers[`${key}Other`];
@@ -143,7 +143,7 @@ export function useOnboardingForm() {
   };
 
   const canShowSkipButton = Boolean(
-    savedAnswers.legalName && savedAnswers.website
+    savedAnswers.legalName && savedAnswers.website,
   );
   const isLastStep = stepIndex === steps.length - 1;
 

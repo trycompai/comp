@@ -4,17 +4,15 @@ import { Suspense } from "react";
 import { MobileMenu } from "./mobile-menu";
 
 export async function Header() {
-	return (
-		<header className="z-10 border-b border-border flex justify-between pt-4 pb-2 md:pb-4 items-center sticky top-0 backdrop-filter backdrop-blur-xl md:backdrop-filter-none bg-background/70 md:bg-transparent">
-			<MobileMenu />
+  return (
+    <header className="border-border bg-background/70 sticky top-0 z-10 flex items-center justify-between border-b pt-4 pb-2 backdrop-blur-xl backdrop-filter md:bg-transparent md:pb-4 md:backdrop-filter-none">
+      <MobileMenu />
 
-			<div className="flex space-x-2 ml-auto">
-				<Suspense
-					fallback={<Skeleton className="h-8 w-8 rounded-full" />}
-				>
-					<UserMenu />
-				</Suspense>
-			</div>
-		</header>
-	);
+      <div className="ml-auto flex space-x-2">
+        <Suspense fallback={<Skeleton className="h-8 w-8 rounded-full" />}>
+          <UserMenu />
+        </Suspense>
+      </div>
+    </header>
+  );
 }

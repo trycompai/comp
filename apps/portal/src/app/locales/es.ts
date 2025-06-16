@@ -1,11 +1,13 @@
 export default {
   auth: {
     title: "Portal del Empleado",
-    description: "Ingresa tu correo electrónico para recibir una contraseña de un solo uso.",
+    description:
+      "Ingresa tu correo electrónico para recibir una contraseña de un solo uso.",
     options: "Más opciones",
     email: {
       otp_sent: "Contraseña de un solo uso enviada",
-      otp_description: "Revisa tu correo electrónico para ver la contraseña de un solo uso",
+      otp_description:
+        "Revisa tu correo electrónico para ver la contraseña de un solo uso",
       otp_try_again: "Intentar de nuevo",
       placeholder: "Tu correo del trabajo",
       button: "Continuar",

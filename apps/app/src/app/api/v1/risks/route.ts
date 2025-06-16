@@ -1,11 +1,11 @@
 import { getOrganizationFromApiKey } from "@/lib/api-key";
 import { db } from "@comp/db";
 import {
-	Departments,
-	Impact,
-	Likelihood,
-	RiskCategory,
-	RiskStatus,
+  Departments,
+  Impact,
+  Likelihood,
+  RiskCategory,
+  RiskStatus,
 } from "@comp/db/types";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -15,33 +15,30 @@ export const runtime = "nodejs";
 
 // Define the schema for query parameters
 const queryParamsSchema = z.object({
-	status: z.nativeEnum(RiskStatus).optional(),
-	category: z.nativeEnum(RiskCategory).optional(),
-	department: z.nativeEnum(Departments).optional(),
-	search: z.string().optional(),
+  status: z.nativeEnum(RiskStatus).optional(),
+  category: z.nativeEnum(RiskCategory).optional(),
+  department: z.nativeEnum(Departments).optional(),
+  search: z.string().optional(),
 });
 
 // Define the schema for risk creation
 const riskCreateSchema = z.object({
-	title: z.string().min(1, { message: "Title is required" }),
-	description: z.string().min(1, { message: "Description is required" }),
-	category: z.nativeEnum(RiskCategory),
-	department: z.nativeEnum(Departments).optional(),
-	status: z.nativeEnum(RiskStatus).optional().default(RiskStatus.open),
-	likelihood: z
-		.nativeEnum(Likelihood)
-		.optional()
-		.default(Likelihood.very_unlikely),
-	impact: z.nativeEnum(Impact).optional().default(Impact.insignificant),
-	residualLikelihood: z
-		.nativeEnum(Likelihood)
-		.optional()
-		.default(Likelihood.very_unlikely),
-	residualImpact: z
-		.nativeEnum(Impact)
-		.optional()
-		.default(Impact.insignificant),
-	assigneeId: z.string().optional().nullable(),
+  title: z.string().min(1, { message: "Title is required" }),
+  description: z.string().min(1, { message: "Description is required" }),
+  category: z.nativeEnum(RiskCategory),
+  department: z.nativeEnum(Departments).optional(),
+  status: z.nativeEnum(RiskStatus).optional().default(RiskStatus.open),
+  likelihood: z
+    .nativeEnum(Likelihood)
+    .optional()
+    .default(Likelihood.very_unlikely),
+  impact: z.nativeEnum(Impact).optional().default(Impact.insignificant),
+  residualLikelihood: z
+    .nativeEnum(Likelihood)
+    .optional()
+    .default(Likelihood.very_unlikely),
+  residualImpact: z.nativeEnum(Impact).optional().default(Impact.insignificant),
+  assigneeId: z.string().optional().nullable(),
 });
 
 // Type for the validated risk creation data
@@ -68,131 +65,131 @@ type RiskCreateInput = z.infer<typeof riskCreateSchema>;
  * - 500: { error: "Failed to fetch risks" }
  */
 export async function GET(request: NextRequest) {
-	// Get the organization ID from the API key
-	const { organizationId, errorResponse } =
-		await getOrganizationFromApiKey(request);
+  // Get the organization ID from the API key
+  const { organizationId, errorResponse } =
+    await getOrganizationFromApiKey(request);
 
-	// If there's an error response, return it
-	if (errorResponse) {
-		return errorResponse;
-	}
+  // If there's an error response, return it
+  if (errorResponse) {
+    return errorResponse;
+  }
 
-	try {
-		// Get query parameters
-		const searchParams = request.nextUrl.searchParams;
+  try {
+    // Get query parameters
+    const searchParams = request.nextUrl.searchParams;
 
-		// Create an object from the search params
-		const queryParamsObj = {
-			status: searchParams.get("status") || undefined,
-			category: searchParams.get("category") || undefined,
-			department: searchParams.get("department") || undefined,
-			search: searchParams.get("search") || undefined,
-		};
+    // Create an object from the search params
+    const queryParamsObj = {
+      status: searchParams.get("status") || undefined,
+      category: searchParams.get("category") || undefined,
+      department: searchParams.get("department") || undefined,
+      search: searchParams.get("search") || undefined,
+    };
 
-		// Validate query parameters
-		const validationResult = queryParamsSchema.safeParse(queryParamsObj);
+    // Validate query parameters
+    const validationResult = queryParamsSchema.safeParse(queryParamsObj);
 
-		if (!validationResult.success) {
-			return NextResponse.json(
-				{
-					success: false,
-					error: "Validation failed",
-					details: validationResult.error.format(),
-				},
-				{ status: 400 },
-			);
-		}
+    if (!validationResult.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Validation failed",
+          details: validationResult.error.format(),
+        },
+        { status: 400 },
+      );
+    }
 
-		// Extract validated query parameters
-		const { status, category, department, search } = validationResult.data;
+    // Extract validated query parameters
+    const { status, category, department, search } = validationResult.data;
 
-		// Build the where clause
-		const where: any = {
-			organizationId: organizationId!,
-		};
+    // Build the where clause
+    const where: any = {
+      organizationId: organizationId!,
+    };
 
-		// Add status filter if provided
-		if (status) {
-			where.status = status;
-		}
+    // Add status filter if provided
+    if (status) {
+      where.status = status;
+    }
 
-		// Add category filter if provided
-		if (category) {
-			where.category = category;
-		}
+    // Add category filter if provided
+    if (category) {
+      where.category = category;
+    }
 
-		// Add department filter if provided
-		if (department) {
-			where.department = department;
-		}
+    // Add department filter if provided
+    if (department) {
+      where.department = department;
+    }
 
-		// Add search filter if provided
-		if (search) {
-			where.OR = [
-				{
-					title: {
-						contains: search,
-						mode: "insensitive",
-					},
-				},
-				{
-					description: {
-						contains: search,
-						mode: "insensitive",
-					},
-				},
-			];
-		}
+    // Add search filter if provided
+    if (search) {
+      where.OR = [
+        {
+          title: {
+            contains: search,
+            mode: "insensitive",
+          },
+        },
+        {
+          description: {
+            contains: search,
+            mode: "insensitive",
+          },
+        },
+      ];
+    }
 
-		// Fetch risks
-		const risks = await db.risk.findMany({
-			where,
-			select: {
-				id: true,
-				title: true,
-				description: true,
-				category: true,
-				department: true,
-				status: true,
-				likelihood: true,
-				impact: true,
-				residualLikelihood: true,
-				residualImpact: true,
-				createdAt: true,
-				updatedAt: true,
-				assigneeId: true,
-				assignee: {
-					select: {
-						id: true,
-						user: {
-							select: {
-								name: true,
-								email: true,
-							},
-						},
-					},
-				},
-			},
-			orderBy: {
-				updatedAt: "desc",
-			},
-		});
+    // Fetch risks
+    const risks = await db.risk.findMany({
+      where,
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        category: true,
+        department: true,
+        status: true,
+        likelihood: true,
+        impact: true,
+        residualLikelihood: true,
+        residualImpact: true,
+        createdAt: true,
+        updatedAt: true,
+        assigneeId: true,
+        assignee: {
+          select: {
+            id: true,
+            user: {
+              select: {
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        updatedAt: "desc",
+      },
+    });
 
-		// Format dates for JSON response
-		const formattedRisks = risks.map((risk) => ({
-			...risk,
-			createdAt: risk.createdAt.toISOString(),
-			updatedAt: risk.updatedAt.toISOString(),
-		}));
+    // Format dates for JSON response
+    const formattedRisks = risks.map((risk) => ({
+      ...risk,
+      createdAt: risk.createdAt.toISOString(),
+      updatedAt: risk.updatedAt.toISOString(),
+    }));
 
-		return NextResponse.json({ success: true, data: formattedRisks });
-	} catch (error) {
-		console.error("Error fetching risks:", error);
-		return NextResponse.json(
-			{ success: false, error: "Failed to fetch risks" },
-			{ status: 500 },
-		);
-	}
+    return NextResponse.json({ success: true, data: formattedRisks });
+  } catch (error) {
+    console.error("Error fetching risks:", error);
+    return NextResponse.json(
+      { success: false, error: "Failed to fetch risks" },
+      { status: 500 },
+    );
+  }
 }
 
 /**
@@ -222,63 +219,63 @@ export async function GET(request: NextRequest) {
  * - 500: { success: false, error: "Failed to create risk" }
  */
 export async function POST(request: NextRequest) {
-	// Get the organization ID from the API key
-	const { organizationId, errorResponse } =
-		await getOrganizationFromApiKey(request);
+  // Get the organization ID from the API key
+  const { organizationId, errorResponse } =
+    await getOrganizationFromApiKey(request);
 
-	// If there's an error response, return it
-	if (errorResponse) {
-		return errorResponse;
-	}
+  // If there's an error response, return it
+  if (errorResponse) {
+    return errorResponse;
+  }
 
-	try {
-		const body = await request.json();
+  try {
+    const body = await request.json();
 
-		// Validate the request body against the schema
-		const validationResult = riskCreateSchema.safeParse(body);
+    // Validate the request body against the schema
+    const validationResult = riskCreateSchema.safeParse(body);
 
-		if (!validationResult.success) {
-			// Return validation errors
-			return NextResponse.json(
-				{
-					success: false,
-					error: "Validation failed",
-					details: validationResult.error.format(),
-				},
-				{ status: 400 },
-			);
-		}
+    if (!validationResult.success) {
+      // Return validation errors
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Validation failed",
+          details: validationResult.error.format(),
+        },
+        { status: 400 },
+      );
+    }
 
-		// Extract validated data
-		const validatedData: RiskCreateInput = validationResult.data;
+    // Extract validated data
+    const validatedData: RiskCreateInput = validationResult.data;
 
-		// Create the risk using the organization ID from the API key
-		const risk = await db.risk.create({
-			data: {
-				...validatedData,
-				organizationId: organizationId!,
-			},
-		});
+    // Create the risk using the organization ID from the API key
+    const risk = await db.risk.create({
+      data: {
+        ...validatedData,
+        organizationId: organizationId!,
+      },
+    });
 
-		// Format dates for JSON response
-		const formattedRisk = {
-			...risk,
-			createdAt: risk.createdAt.toISOString(),
-			updatedAt: risk.updatedAt.toISOString(),
-		};
+    // Format dates for JSON response
+    const formattedRisk = {
+      ...risk,
+      createdAt: risk.createdAt.toISOString(),
+      updatedAt: risk.updatedAt.toISOString(),
+    };
 
-		return NextResponse.json({
-			success: true,
-			data: formattedRisk,
-		});
-	} catch (error) {
-		console.error("Error creating risk:", error);
-		return NextResponse.json(
-			{
-				success: false,
-				error: "Failed to create risk",
-			},
-			{ status: 500 },
-		);
-	}
+    return NextResponse.json({
+      success: true,
+      data: formattedRisk,
+    });
+  } catch (error) {
+    console.error("Error creating risk:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Failed to create risk",
+      },
+      { status: 500 },
+    );
+  }
 }

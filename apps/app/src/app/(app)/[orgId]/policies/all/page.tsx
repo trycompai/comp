@@ -7,32 +7,30 @@ import { getPolicies } from "./data/queries";
 import { searchParamsCache } from "./data/validations";
 
 interface PolicyTableProps {
-	searchParams: Promise<SearchParams>;
+  searchParams: Promise<SearchParams>;
 }
 
 export default async function PoliciesPage({ ...props }: PolicyTableProps) {
-	const searchParams = await props.searchParams;
-	const search = searchParamsCache.parse(searchParams);
-	const validFilters = getValidFilters(search.filters);
+  const searchParams = await props.searchParams;
+  const search = searchParamsCache.parse(searchParams);
+  const validFilters = getValidFilters(search.filters);
 
-	const promises = Promise.all([
-		getPolicies({
-			...search,
-			filters: validFilters,
-		}),
-	]);
+  const promises = Promise.all([
+    getPolicies({
+      ...search,
+      filters: validFilters,
+    }),
+  ]);
 
-	return (
-		<PageWithBreadcrumb
-			breadcrumbs={[{ label: "Policies", current: true }]}
-		>
-			<PoliciesTable promises={promises} />
-		</PageWithBreadcrumb>
-	);
+  return (
+    <PageWithBreadcrumb breadcrumbs={[{ label: "Policies", current: true }]}>
+      <PoliciesTable promises={promises} />
+    </PageWithBreadcrumb>
+  );
 }
 
 export async function generateMetadata(): Promise<Metadata> {
-	return {
-		title: "Policies",
-	};
+  return {
+    title: "Policies",
+  };
 }

@@ -8,7 +8,7 @@ export function Logo() {
         width="45"
         height="45"
         alt="Comp AI"
-        className="my-0 mx-auto block"
+        className="mx-auto my-0 block"
       />
     </Section>
   );
