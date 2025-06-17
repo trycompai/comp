@@ -1,4 +1,4 @@
-import { LogoSpinner } from "../logo-spinner";
+import { LogoSpinner } from '../logo-spinner';
 
 type Props = {
   firstName: string;

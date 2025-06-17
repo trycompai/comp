@@ -1,9 +1,9 @@
-import { auth } from "@/utils/auth";
-import { trainingVideos as trainingVideosData } from "@/lib/data/training-videos";
-import { db } from "@comp/db";
-import { headers } from "next/headers";
-import { EmployeeCompletionChart } from "./EmployeeCompletionChart";
-import type { Member, Policy, User } from "@prisma/client";
+import { auth } from '@/utils/auth';
+import { trainingVideos as trainingVideosData } from '@/lib/data/training-videos';
+import { db } from '@comp/db';
+import { headers } from 'next/headers';
+import { EmployeeCompletionChart } from './EmployeeCompletionChart';
+import type { Member, Policy, User } from '@prisma/client';
 
 // Define EmployeeWithUser type similar to EmployeesList
 interface EmployeeWithUser extends Member {
@@ -48,10 +48,8 @@ export async function EmployeesOverview() {
     });
 
     employees = fetchedMembers.filter((member) => {
-      const roles = member.role.includes(",")
-        ? member.role.split(",")
-        : [member.role];
-      return roles.includes("employee");
+      const roles = member.role.includes(',') ? member.role.split(',') : [member.role];
+      return roles.includes('employee');
     });
 
     console.log(employees);
@@ -66,14 +64,13 @@ export async function EmployeesOverview() {
 
     // Fetch and process training videos if employees exist
     if (employees.length > 0) {
-      const employeeTrainingVideos =
-        await db.employeeTrainingVideoCompletion.findMany({
-          where: {
-            memberId: {
-              in: employees.map((employee) => employee.id),
-            },
+      const employeeTrainingVideos = await db.employeeTrainingVideoCompletion.findMany({
+        where: {
+          memberId: {
+            in: employees.map((employee) => employee.id),
           },
-        });
+        },
+      });
 
       for (const dbVideo of employeeTrainingVideos) {
         const videoMetadata = trainingVideosData.find(
@@ -87,7 +84,7 @@ export async function EmployeesOverview() {
             memberId: dbVideo.memberId,
             videoId: dbVideo.videoId,
             completedAt: dbVideo.completedAt,
-            metadata: videoMetadata as ProcessedTrainingVideo["metadata"],
+            metadata: videoMetadata as ProcessedTrainingVideo['metadata'],
           });
         }
       }

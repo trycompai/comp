@@ -1,6 +1,6 @@
-import { Loader2 } from "lucide-react";
-import { cn } from "../utils";
-import { Button, type ButtonProps } from "./button";
+import { Loader2 } from 'lucide-react';
+import { cn } from '../utils';
+import { Button, type ButtonProps } from './button';
 
 export function SubmitButton({
   children,
@@ -16,9 +16,9 @@ export function SubmitButton({
     <Button
       disabled={isSubmitting || disabled}
       {...props}
-      className={cn(props.className, "relative")}
+      className={cn(props.className, 'relative')}
     >
-      <span className={cn({ "opacity-0": isSubmitting })}>{children}</span>
+      <span className={cn({ 'opacity-0': isSubmitting })}>{children}</span>
 
       {isSubmitting && (
         <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">

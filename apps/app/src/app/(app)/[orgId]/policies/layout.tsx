@@ -1,4 +1,4 @@
-import { SecondaryMenu } from "@comp/ui/secondary-menu";
+import { SecondaryMenu } from '@comp/ui/secondary-menu';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -14,12 +14,12 @@ export default async function Layout({ children, params }: LayoutProps) {
         items={[
           {
             path: `/${orgId}/policies`,
-            label: "Overview",
+            label: 'Overview',
           },
           {
             path: `/${orgId}/policies/all`,
-            label: "Policies",
-            activeOverrideIdPrefix: "pol_",
+            label: 'Policies',
+            activeOverrideIdPrefix: 'pol_',
           },
         ]}
       />

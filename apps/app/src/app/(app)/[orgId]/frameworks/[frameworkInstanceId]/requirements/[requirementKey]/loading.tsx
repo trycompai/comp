@@ -1,13 +1,6 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@comp/ui/card";
-import { Skeleton } from "@comp/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@comp/ui/table";
+import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
+import { Skeleton } from '@comp/ui/skeleton';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@comp/ui/table';
 
 export default function Loading() {
   return (

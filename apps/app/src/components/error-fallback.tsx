@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { Button } from "@comp/ui/button";
-import { useRouter } from "next/navigation";
+import { Button } from '@comp/ui/button';
+import { useRouter } from 'next/navigation';
 
 export function ErrorFallback() {
   const router = useRouter();

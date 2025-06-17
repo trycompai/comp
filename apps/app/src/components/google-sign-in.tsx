@@ -1,25 +1,25 @@
-"use client";
+'use client';
 
-import { ButtonIcon } from "@/components/ui/button-icon";
-import { authClient } from "@/utils/auth-client";
-import { Button } from "@comp/ui/button";
-import { Icons } from "@comp/ui/icons";
-import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { ButtonIcon } from '@/components/ui/button-icon';
+import { authClient } from '@/utils/auth-client';
+import { Button } from '@comp/ui/button';
+import { Icons } from '@comp/ui/icons';
+import { Loader2 } from 'lucide-react';
+import { useState } from 'react';
 
 export function GoogleSignIn({ inviteCode }: { inviteCode?: string }) {
   const [isLoading, setLoading] = useState(false);
 
   const handleSignIn = async () => {
     setLoading(true);
-    let redirectTo = "/";
+    let redirectTo = '/';
 
     if (inviteCode) {
       redirectTo = `/api/auth/invitation?code=${inviteCode}`;
     }
 
     await authClient.signIn.social({
-      provider: "google",
+      provider: 'google',
     });
   };
 
@@ -35,7 +35,7 @@ export function GoogleSignIn({ inviteCode }: { inviteCode?: string }) {
           <ButtonIcon isLoading={isLoading}>
             <Icons.Google />
           </ButtonIcon>
-          <span>{"Continue with Google"}</span>
+          <span>{'Continue with Google'}</span>
         </>
       )}
     </Button>

@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import { Control, Task } from "@comp/db/types";
-import { getFrameworkWithComplianceScores } from "../data/getFrameworkWithComplianceScores";
-import type { FrameworkInstanceWithControls } from "../types";
-import { FrameworkList } from "./FrameworkList";
-import type { FrameworkEditorFramework } from "@comp/db/types";
-import { Button } from "@comp/ui/button";
-import { useState } from "react";
-import { AddFrameworkModal } from "./AddFrameworkModal";
-import { useParams } from "next/navigation";
-import { Dialog } from "@comp/ui/dialog";
-import { PlusIcon } from "lucide-react";
+import { Control, Task } from '@comp/db/types';
+import { getFrameworkWithComplianceScores } from '../data/getFrameworkWithComplianceScores';
+import type { FrameworkInstanceWithControls } from '../types';
+import { FrameworkList } from './FrameworkList';
+import type { FrameworkEditorFramework } from '@comp/db/types';
+import { Button } from '@comp/ui/button';
+import { useState } from 'react';
+import { AddFrameworkModal } from './AddFrameworkModal';
+import { useParams } from 'next/navigation';
+import { Dialog } from '@comp/ui/dialog';
+import { PlusIcon } from 'lucide-react';
 
 export interface FrameworksOverviewProps {
   frameworksWithControls: FrameworkInstanceWithControls[];
@@ -27,9 +27,7 @@ export function FrameworksOverview({
   const organizationId = params.orgId;
   const [isAddFrameworkModalOpen, setIsAddFrameworkModalOpen] = useState(false);
 
-  const instancedFrameworkIds = frameworksWithControls.map(
-    (fw) => fw.frameworkId,
-  );
+  const instancedFrameworkIds = frameworksWithControls.map((fw) => fw.frameworkId);
   const availableFrameworksToAdd = allFrameworks.filter(
     (fw) => !instancedFrameworkIds.includes(fw.id) && fw.visible,
   );
@@ -37,23 +35,14 @@ export function FrameworksOverview({
   return (
     <div className="space-y-4">
       <div className="grid w-full gap-4 select-none md:grid-cols-1">
-        <FrameworkList
-          frameworksWithControls={frameworksWithControls}
-          tasks={tasks}
-        />
+        <FrameworkList frameworksWithControls={frameworksWithControls} tasks={tasks} />
         <div className="flex items-center justify-center">
-          <Button
-            onClick={() => setIsAddFrameworkModalOpen(true)}
-            variant="outline"
-          >
-            {"Add Framework"} <PlusIcon className="h-4 w-4" />
+          <Button onClick={() => setIsAddFrameworkModalOpen(true)} variant="outline">
+            {'Add Framework'} <PlusIcon className="h-4 w-4" />
           </Button>
         </div>
       </div>
-      <Dialog
-        open={isAddFrameworkModalOpen}
-        onOpenChange={setIsAddFrameworkModalOpen}
-      >
+      <Dialog open={isAddFrameworkModalOpen} onOpenChange={setIsAddFrameworkModalOpen}>
         {isAddFrameworkModalOpen && (
           <AddFrameworkModal
             onOpenChange={setIsAddFrameworkModalOpen}

@@ -1,7 +1,7 @@
-import { getServersideSession } from "@/lib/get-session";
-import { db } from "@comp/db";
-import { headers } from "next/headers";
-import { cache } from "react";
+import { getServersideSession } from '@/lib/get-session';
+import { db } from '@comp/db';
+import { headers } from 'next/headers';
+import { cache } from 'react';
 
 export const useUsers = cache(async () => {
   const session = await getServersideSession({

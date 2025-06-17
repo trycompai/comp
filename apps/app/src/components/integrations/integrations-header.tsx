@@ -1,5 +1,5 @@
-import { SearchField } from "../search-field";
-import { AppsTabs } from "./integrations-tabs";
+import { SearchField } from '../search-field';
+import { AppsTabs } from './integrations-tabs';
 
 export function IntegrationsHeader() {
   return (

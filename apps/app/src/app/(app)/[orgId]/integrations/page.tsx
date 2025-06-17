@@ -1,10 +1,10 @@
-import { IntegrationsHeader } from "@/components/integrations/integrations-header";
-import { IntegrationsServer } from "@/components/integrations/integrations.server";
-import { auth } from "@/utils/auth";
-import { db } from "@comp/db";
-import type { Metadata } from "next";
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
+import { IntegrationsHeader } from '@/components/integrations/integrations-header';
+import { IntegrationsServer } from '@/components/integrations/integrations.server';
+import { auth } from '@/utils/auth';
+import { db } from '@comp/db';
+import type { Metadata } from 'next';
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
 
 export default async function IntegrationsPage() {
   const session = await auth.api.getSession({
@@ -12,19 +12,19 @@ export default async function IntegrationsPage() {
   });
 
   if (!session?.session.activeOrganizationId) {
-    return redirect("/");
+    return redirect('/');
   }
 
   const [organization] = await Promise.all([
     db.organization.findUnique({
       where: {
-        id: session?.session.activeOrganizationId ?? "",
+        id: session?.session.activeOrganizationId ?? '',
       },
     }),
   ]);
 
   if (!organization) {
-    return redirect("/");
+    return redirect('/');
   }
 
   return (
@@ -38,6 +38,6 @@ export default async function IntegrationsPage() {
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: "Integrations",
+    title: 'Integrations',
   };
 }

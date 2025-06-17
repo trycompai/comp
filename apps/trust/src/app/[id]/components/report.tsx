@@ -1,19 +1,14 @@
-import ComplianceHeader from "./compliance-header";
-import ComplianceSection from "./compliance-section";
-import ComplianceItem from "./compliance-item";
-import type {
-  Organization,
-  Policy,
-  Task,
-  FrameworkStatus,
-} from "@comp/db/types";
-import FrameworkItem from "./framework-item";
-import Image from "next/image";
-import { GDPR, ISO27001, SOC2 } from "./logos";
+import ComplianceHeader from './compliance-header';
+import ComplianceSection from './compliance-section';
+import ComplianceItem from './compliance-item';
+import type { Organization, Policy, Task, FrameworkStatus } from '@comp/db/types';
+import FrameworkItem from './framework-item';
+import Image from 'next/image';
+import { GDPR, ISO27001, SOC2 } from './logos';
 interface ComplianceReportProps {
   organization: Organization;
-  policies: Pick<Policy, "id" | "name" | "status">[];
-  controls: Pick<Task, "id" | "title" | "status">[];
+  policies: Pick<Policy, 'id' | 'name' | 'status'>[];
+  controls: Pick<Task, 'id' | 'title' | 'status'>[];
   frameworks: {
     soc2: boolean | undefined;
     iso27001: boolean | undefined;
@@ -50,33 +45,30 @@ export default function ComplianceReport({
               >
                 <div
                   className={`grid grid-cols-1 ${
-                    [
-                      frameworks.soc2,
-                      frameworks.iso27001,
-                      frameworks.gdpr,
-                    ].filter(Boolean).length > 1
-                      ? `md:grid-cols-3 ${[frameworks.soc2, frameworks.iso27001, frameworks.gdpr].filter(Boolean).length > 2 ? "lg:grid-cols-3" : ""}`
-                      : ""
+                    [frameworks.soc2, frameworks.iso27001, frameworks.gdpr].filter(Boolean).length >
+                    1
+                      ? `md:grid-cols-3 ${[frameworks.soc2, frameworks.iso27001, frameworks.gdpr].filter(Boolean).length > 2 ? 'lg:grid-cols-3' : ''}`
+                      : ''
                   } gap-4`}
                 >
                   {frameworks.soc2 && (
                     <FrameworkItem
                       text="SOC 2"
-                      status={frameworks.soc2_status ?? "started"}
+                      status={frameworks.soc2_status ?? 'started'}
                       icon={<SOC2 />}
                     />
                   )}
                   {frameworks.iso27001 && (
                     <FrameworkItem
                       text="ISO 27001"
-                      status={frameworks.iso27001_status ?? "started"}
+                      status={frameworks.iso27001_status ?? 'started'}
                       icon={<ISO27001 />}
                     />
                   )}
                   {frameworks.gdpr && (
                     <FrameworkItem
                       text="GDPR"
-                      status={frameworks.gdpr_status ?? "started"}
+                      status={frameworks.gdpr_status ?? 'started'}
                       icon={<GDPR />}
                     />
                   )}
@@ -97,7 +89,7 @@ export default function ComplianceReport({
                     <ComplianceItem
                       key={policy.id}
                       text={policy.name}
-                      isCompliant={policy.status === "published"}
+                      isCompliant={policy.status === 'published'}
                     />
                   ))}
                 </div>
@@ -115,7 +107,7 @@ export default function ComplianceReport({
                     <ComplianceItem
                       key={control.id}
                       text={control.title}
-                      isCompliant={control.status === "done"}
+                      isCompliant={control.status === 'done'}
                     />
                   ))}
                 </div>

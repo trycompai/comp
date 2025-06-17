@@ -1,7 +1,7 @@
-import { Badge } from "@comp/ui/badge";
+import { Badge } from '@comp/ui/badge';
 
 interface PolicyHeaderProps {
-  saveStatus: "Saved" | "Saving" | "Unsaved";
+  saveStatus: 'Saved' | 'Saving' | 'Unsaved';
 }
 
 export function PolicyHeader({ saveStatus }: PolicyHeaderProps) {

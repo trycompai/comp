@@ -1,57 +1,55 @@
-import StarterKit from "@tiptap/starter-kit";
-import { InputRule } from "@tiptap/core";
-import TiptapLink from "@tiptap/extension-link";
-import TiptapImage from "@tiptap/extension-image";
-import Placeholder from "@tiptap/extension-placeholder";
-import TaskList from "@tiptap/extension-task-list";
-import TaskItem from "@tiptap/extension-task-item";
-import type { EditorState, Transaction } from "@tiptap/pm/state"; // Import types for InputRule
+import StarterKit from '@tiptap/starter-kit';
+import { InputRule } from '@tiptap/core';
+import TiptapLink from '@tiptap/extension-link';
+import TiptapImage from '@tiptap/extension-image';
+import Placeholder from '@tiptap/extension-placeholder';
+import TaskList from '@tiptap/extension-task-list';
+import TaskItem from '@tiptap/extension-task-item';
+import type { EditorState, Transaction } from '@tiptap/pm/state'; // Import types for InputRule
 // Import Table extensions
-import Table from "@tiptap/extension-table";
-import TableRow from "@tiptap/extension-table-row";
-import TableHeader from "@tiptap/extension-table-header";
-import TableCell from "@tiptap/extension-table-cell";
-import { slashCommand } from "./slash-command"; // Import the configured slash command
+import Table from '@tiptap/extension-table';
+import TableRow from '@tiptap/extension-table-row';
+import TableHeader from '@tiptap/extension-table-header';
+import TableCell from '@tiptap/extension-table-cell';
+import { slashCommand } from './slash-command'; // Import the configured slash command
 
 // Basic Tiptap extensions - Simplified
 export const defaultExtensions = [
   StarterKit.configure({
     bulletList: {
       HTMLAttributes: {
-        class: "list-disc list-outside leading-3 -mt-2",
+        class: 'list-disc list-outside leading-3 -mt-2',
       },
     },
     orderedList: {
       HTMLAttributes: {
-        class: "list-decimal list-outside leading-3 -mt-2",
+        class: 'list-decimal list-outside leading-3 -mt-2',
       },
     },
     listItem: {
       HTMLAttributes: {
-        class: "leading-normal -mb-2",
+        class: 'leading-normal -mb-2',
       },
     },
     blockquote: {
       HTMLAttributes: {
-        class: "border-l-4 border-primary",
+        class: 'border-l-4 border-primary',
       },
     },
     codeBlock: {
       HTMLAttributes: {
-        class:
-          "rounded-xs bg-muted p-5 font-mono font-medium text-muted-foreground",
+        class: 'rounded-xs bg-muted p-5 font-mono font-medium text-muted-foreground',
       },
     },
     code: {
       HTMLAttributes: {
-        class:
-          "rounded-md bg-muted  px-1.5 py-1 font-mono font-medium text-muted-foreground",
-        spellcheck: "false",
+        class: 'rounded-md bg-muted  px-1.5 py-1 font-mono font-medium text-muted-foreground',
+        spellcheck: 'false',
       },
     },
     horizontalRule: false,
     dropcursor: {
-      color: "#DBEAFE",
+      color: '#DBEAFE',
       width: 4,
     },
     gapcursor: false,
@@ -70,22 +68,22 @@ export const defaultExtensions = [
   TiptapLink.configure({
     HTMLAttributes: {
       class:
-        "text-muted-foreground underline underline-offset-[3px] hover:text-primary transition-colors cursor-pointer",
+        'text-muted-foreground underline underline-offset-[3px] hover:text-primary transition-colors cursor-pointer',
     },
   }),
 
   TiptapImage.configure({
     HTMLAttributes: {
-      class: "rounded-lg border border-muted",
+      class: 'rounded-lg border border-muted',
     },
   }),
 
   Placeholder.configure({
     placeholder: ({ node }) => {
-      if (node.type.name === "heading") {
+      if (node.type.name === 'heading') {
         return `Heading ${node.attrs.level}`;
       }
-      return "Enter policy content..."; // Simplified placeholder
+      return 'Enter policy content...'; // Simplified placeholder
     },
     includeChildren: true,
   }),
@@ -95,7 +93,7 @@ export const defaultExtensions = [
   TaskItem.configure({
     nested: true,
     HTMLAttributes: {
-      class: "flex items-start my-4",
+      class: 'flex items-start my-4',
     },
   }),
 
@@ -105,18 +103,18 @@ export const defaultExtensions = [
   Table.configure({
     resizable: true,
     HTMLAttributes: {
-      class: "table-fixed border-collapse border border-muted",
+      class: 'table-fixed border-collapse border border-muted',
     },
   }),
   TableRow,
   TableHeader.configure({
     HTMLAttributes: {
-      class: "border border-muted bg-muted p-2 text-left font-medium",
+      class: 'border border-muted bg-muted p-2 text-left font-medium',
     },
   }),
   TableCell.configure({
     HTMLAttributes: {
-      class: "border border-muted p-2 align-top",
+      class: 'border border-muted p-2 align-top',
     },
   }),
 

@@ -1,8 +1,8 @@
 export function stripSpecialCharacters(inputString: string) {
   // Remove special characters and spaces, keep alphanumeric, hyphens/underscores, and dots
   return inputString
-    .replace(/[^a-zA-Z0-9-_\s.]/g, "") // Remove special chars except hyphen/underscore/dot
-    .replace(/\s+/g, "-") // Replace spaces with hyphens
+    .replace(/[^a-zA-Z0-9-_\s.]/g, '') // Remove special chars except hyphen/underscore/dot
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
     .toLowerCase(); // Convert to lowercase for consistency
 }
 
@@ -15,8 +15,8 @@ export function shuffle<T>(array: T[]) {
 }
 
 export enum FileType {
-  Pdf = "application/pdf",
-  Heic = "image/heic",
+  Pdf = 'application/pdf',
+  Heic = 'image/heic',
 }
 
 export const isSupportedFilePreview = (type: FileType) => {
@@ -28,7 +28,7 @@ export const isSupportedFilePreview = (type: FileType) => {
     return false;
   }
 
-  if (type?.startsWith("image")) {
+  if (type?.startsWith('image')) {
     return true;
   }
 

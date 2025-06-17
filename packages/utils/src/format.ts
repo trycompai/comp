@@ -9,7 +9,7 @@ type FormatAmountParams = {
 export function formatAmount({
   currency,
   amount,
-  locale = "en-US",
+  locale = 'en-US',
   minimumFractionDigits,
   maximumFractionDigits,
 }: FormatAmountParams) {
@@ -18,7 +18,7 @@ export function formatAmount({
   }
 
   return Intl.NumberFormat(locale, {
-    style: "currency",
+    style: 'currency',
     currency,
     minimumFractionDigits,
     maximumFractionDigits,

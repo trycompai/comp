@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { ButtonIcon } from "@/components/ui/button-icon";
-import { authClient } from "@/utils/auth-client";
-import { Button } from "@comp/ui/button";
-import { Icons } from "@comp/ui/icons";
-import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { ButtonIcon } from '@/components/ui/button-icon';
+import { authClient } from '@/utils/auth-client';
+import { Button } from '@comp/ui/button';
+import { Icons } from '@comp/ui/icons';
+import { Loader2 } from 'lucide-react';
+import { useState } from 'react';
 
 export function GithubSignIn({ inviteCode }: { inviteCode?: string }) {
   const [isLoading, setLoading] = useState(false);
@@ -13,12 +13,10 @@ export function GithubSignIn({ inviteCode }: { inviteCode?: string }) {
   const handleSignIn = async () => {
     setLoading(true);
 
-    const redirectTo = inviteCode
-      ? `/api/auth/invitation?code=${inviteCode}`
-      : "/";
+    const redirectTo = inviteCode ? `/api/auth/invitation?code=${inviteCode}` : '/';
 
     await authClient.signIn.social({
-      provider: "github",
+      provider: 'github',
     });
   };
 
@@ -34,7 +32,7 @@ export function GithubSignIn({ inviteCode }: { inviteCode?: string }) {
           <ButtonIcon isLoading={isLoading}>
             <Icons.Github />
           </ButtonIcon>
-          <span>{"Continue with GitHub"}</span>
+          <span>{'Continue with GitHub'}</span>
         </>
       )}
     </Button>

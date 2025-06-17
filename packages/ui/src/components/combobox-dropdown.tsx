@@ -1,19 +1,13 @@
-"use client";
+'use client';
 
-import { Check, ChevronsUpDown } from "lucide-react";
-import * as React from "react";
+import { Check, ChevronsUpDown } from 'lucide-react';
+import * as React from 'react';
 
-import { CommandList } from "cmdk";
-import { cn } from "../utils";
-import { Button } from "./button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from "./command";
-import { Popover, PopoverContent, PopoverTrigger } from "./popover";
+import { CommandList } from 'cmdk';
+import { cn } from '../utils';
+import { Button } from './button';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from './command';
+import { Popover, PopoverContent, PopoverTrigger } from './popover';
 
 export type ComboboxItem = {
   id: string;
@@ -29,10 +23,7 @@ type Props<T> = {
   selectedItem?: T;
   renderSelectedItem?: (selectedItem: T) => React.ReactNode;
   renderOnCreate?: (value: string) => React.ReactNode;
-  renderListItem?: (listItem: {
-    isChecked: boolean;
-    item: T;
-  }) => React.ReactNode;
+  renderListItem?: (listItem: { isChecked: boolean; item: T }) => React.ReactNode;
   emptyResults?: React.ReactNode;
   popoverProps?: React.ComponentProps<typeof PopoverContent>;
   disabled?: boolean;
@@ -58,10 +49,8 @@ export function ComboboxDropdown<T extends ComboboxItem>({
   className,
 }: Props<T>) {
   const [open, setOpen] = React.useState(false);
-  const [internalSelectedItem, setInternalSelectedItem] = React.useState<
-    T | undefined
-  >();
-  const [inputValue, setInputValue] = React.useState("");
+  const [internalSelectedItem, setInternalSelectedItem] = React.useState<T | undefined>();
+  const [inputValue, setInputValue] = React.useState('');
 
   const selectedItem = incomingSelectedItem ?? internalSelectedItem;
 
@@ -76,7 +65,7 @@ export function ComboboxDropdown<T extends ComboboxItem>({
       <CommandInput
         value={inputValue}
         onValueChange={setInputValue}
-        placeholder={searchPlaceholder ?? "Search item..."}
+        placeholder={searchPlaceholder ?? 'Search item...'}
         className="px-3"
       />
 
@@ -88,7 +77,7 @@ export function ComboboxDropdown<T extends ComboboxItem>({
             return (
               <CommandItem
                 disabled={item.disabled}
-                className={cn("cursor-pointer", className)}
+                className={cn('cursor-pointer', className)}
                 key={item.id}
                 value={item.id}
                 onSelect={(id) => {
@@ -108,10 +97,7 @@ export function ComboboxDropdown<T extends ComboboxItem>({
                 ) : (
                   <>
                     <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        isChecked ? "opacity-100" : "opacity-0",
-                      )}
+                      className={cn('mr-2 h-4 w-4', isChecked ? 'opacity-100' : 'opacity-0')}
                     />
                     {item.label}
                   </>
@@ -120,7 +106,7 @@ export function ComboboxDropdown<T extends ComboboxItem>({
             );
           })}
 
-          <CommandEmpty>{emptyResults ?? "No item found"}</CommandEmpty>
+          <CommandEmpty>{emptyResults ?? 'No item found'}</CommandEmpty>
 
           {showCreate && (
             <CommandItem
@@ -129,7 +115,7 @@ export function ComboboxDropdown<T extends ComboboxItem>({
               onSelect={() => {
                 onCreate(inputValue);
                 setOpen(false);
-                setInputValue("");
+                setInputValue('');
               }}
               onMouseDown={(event) => {
                 event.preventDefault();
@@ -151,18 +137,14 @@ export function ComboboxDropdown<T extends ComboboxItem>({
   return (
     <Popover open={open} onOpenChange={setOpen} modal>
       <PopoverTrigger asChild disabled={disabled} className="w-full">
-        <Button
-          variant="outline"
-          aria-expanded={open}
-          className="relative w-full justify-between"
-        >
+        <Button variant="outline" aria-expanded={open} className="relative w-full justify-between">
           <span className="truncate pr-3 text-ellipsis">
             {selectedItem ? (
               <span className="flex items-center overflow-hidden text-ellipsis whitespace-nowrap">
                 {renderSelectedItem?.(selectedItem)}
               </span>
             ) : (
-              (placeholder ?? "Select item...")
+              (placeholder ?? 'Select item...')
             )}
           </span>
           <ChevronsUpDown className="absolute right-2 size-4 opacity-50" />
@@ -173,7 +155,7 @@ export function ComboboxDropdown<T extends ComboboxItem>({
         className="p-0"
         {...popoverProps}
         style={{
-          width: "var(--radix-popover-trigger-width)",
+          width: 'var(--radix-popover-trigger-width)',
           ...popoverProps?.style,
         }}
       >

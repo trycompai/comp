@@ -1,24 +1,22 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { sendGTMEvent } from "@next/third-parties/google";
-import { useAction } from "next-safe-action/hooks";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
-import { toast } from "sonner";
-import { z } from "zod";
-import { onboardOrganization } from "../actions/onboard-organization";
-import { skipOnboarding } from "../actions/skip-onboarding";
-import { useLocalStorage } from "./useLocalStorage";
-import { STORAGE_KEY, companyDetailsSchema, steps } from "../lib/constants";
-import type { CompanyDetails } from "../lib/types";
-import type { OnboardingFormFields } from "../components/OnboardingStepInput";
+import { zodResolver } from '@hookform/resolvers/zod';
+import { sendGTMEvent } from '@next/third-parties/google';
+import { useAction } from 'next-safe-action/hooks';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import { z } from 'zod';
+import { onboardOrganization } from '../actions/onboard-organization';
+import { skipOnboarding } from '../actions/skip-onboarding';
+import { useLocalStorage } from './useLocalStorage';
+import { STORAGE_KEY, companyDetailsSchema, steps } from '../lib/constants';
+import type { CompanyDetails } from '../lib/types';
+import type { OnboardingFormFields } from '../components/OnboardingStepInput';
 
 export function useOnboardingForm() {
   const router = useRouter();
   const [stepIndex, setStepIndex] = useState(0);
-  const [savedAnswers, setSavedAnswers] = useLocalStorage<
-    Partial<CompanyDetails>
-  >(STORAGE_KEY, {});
+  const [savedAnswers, setSavedAnswers] = useLocalStorage<Partial<CompanyDetails>>(STORAGE_KEY, {});
   const [showSkipDialog, setShowSkipDialog] = useState(false);
   const [isSkipping, setIsSkipping] = useState(false);
   const [isOnboarding, setIsOnboarding] = useState(false);
@@ -36,23 +34,23 @@ export function useOnboardingForm() {
 
   const form = useForm<OnboardingFormFields>({
     resolver: zodResolver(stepSchema),
-    mode: "onSubmit",
-    defaultValues: { [step.key]: savedAnswers[step.key] || "" },
+    mode: 'onSubmit',
+    defaultValues: { [step.key]: savedAnswers[step.key] || '' },
   });
 
   // Reset form defaultValues when stepIndex or savedAnswers change for the current step
   useEffect(() => {
-    form.reset({ [step.key]: savedAnswers[step.key] || "" });
+    form.reset({ [step.key]: savedAnswers[step.key] || '' });
   }, [savedAnswers, step.key, form]);
 
   const skipOnboardingAction = useAction(skipOnboarding, {
     onSuccess: () => {
       setIsFinalizing(true);
-      sendGTMEvent({ event: "conversion" });
-      router.push("/");
+      sendGTMEvent({ event: 'conversion' });
+      router.push('/');
     },
     onError: () => {
-      toast.error("Failed to skip onboarding");
+      toast.error('Failed to skip onboarding');
     },
     onExecute: () => {
       setIsSkipping(true);
@@ -62,18 +60,18 @@ export function useOnboardingForm() {
   const onboardOrganizationAction = useAction(onboardOrganization, {
     onSuccess: (result) => {
       setIsFinalizing(true);
-      sendGTMEvent({ event: "conversion" });
+      sendGTMEvent({ event: 'conversion' });
       if (result.data?.success) {
         router.push(`/${result.data.organizationId}/frameworks`);
         setSavedAnswers({});
       } else {
-        toast.error("Failed to onboard organization");
+        toast.error('Failed to onboard organization');
         setIsFinalizing(false);
         setIsOnboarding(false);
       }
     },
     onError: () => {
-      toast.error("Failed to onboard organization");
+      toast.error('Failed to onboard organization');
       setIsFinalizing(false);
       setIsOnboarding(false);
     },
@@ -82,28 +80,26 @@ export function useOnboardingForm() {
     },
   });
 
-  const handleOnboardOrganizationAction = (
-    currentAnswers: Partial<CompanyDetails>,
-  ) => {
+  const handleOnboardOrganizationAction = (currentAnswers: Partial<CompanyDetails>) => {
     onboardOrganizationAction.execute({
-      legalName: currentAnswers.legalName || "",
-      website: currentAnswers.website || "",
-      describe: currentAnswers.describe || "",
-      industry: currentAnswers.industry || "",
-      teamSize: currentAnswers.teamSize || "",
-      devices: currentAnswers.devices || "",
-      authentication: currentAnswers.authentication || "",
-      workLocation: currentAnswers.workLocation || "",
-      infrastructure: currentAnswers.infrastructure || "",
-      dataTypes: currentAnswers.dataTypes || "",
-      software: currentAnswers.software || "",
+      legalName: currentAnswers.legalName || '',
+      website: currentAnswers.website || '',
+      describe: currentAnswers.describe || '',
+      industry: currentAnswers.industry || '',
+      teamSize: currentAnswers.teamSize || '',
+      devices: currentAnswers.devices || '',
+      authentication: currentAnswers.authentication || '',
+      workLocation: currentAnswers.workLocation || '',
+      infrastructure: currentAnswers.infrastructure || '',
+      dataTypes: currentAnswers.dataTypes || '',
+      software: currentAnswers.software || '',
     });
   };
 
   const handleSkipOnboardingAction = () => {
     skipOnboardingAction.execute({
-      legalName: savedAnswers.legalName || "My Organization",
-      website: savedAnswers.website || "https://my-organization.com",
+      legalName: savedAnswers.legalName || 'My Organization',
+      website: savedAnswers.website || 'https://my-organization.com',
     });
     setSavedAnswers({});
   };
@@ -113,19 +109,16 @@ export function useOnboardingForm() {
 
     for (const key of Object.keys(newAnswers)) {
       if (step.options && step.key === key) {
-        const customValue = newAnswers[`${key}Other`] || "";
-        const values = (newAnswers[key] || "").split(",").filter(Boolean);
+        const customValue = newAnswers[`${key}Other`] || '';
+        const values = (newAnswers[key] || '').split(',').filter(Boolean);
 
         if (customValue) {
           values.push(customValue);
         }
 
         newAnswers[key] = values
-          .filter(
-            (v: string, i: number, arr: string[]) =>
-              arr.indexOf(v) === i && v !== "",
-          )
-          .join(",");
+          .filter((v: string, i: number, arr: string[]) => arr.indexOf(v) === i && v !== '')
+          .join(',');
         delete newAnswers[`${key}Other`];
       }
     }
@@ -142,9 +135,7 @@ export function useOnboardingForm() {
     if (stepIndex > 0) setStepIndex(stepIndex - 1);
   };
 
-  const canShowSkipButton = Boolean(
-    savedAnswers.legalName && savedAnswers.website,
-  );
+  const canShowSkipButton = Boolean(savedAnswers.legalName && savedAnswers.website);
   const isLastStep = stepIndex === steps.length - 1;
 
   return {

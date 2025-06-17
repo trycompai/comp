@@ -1,24 +1,17 @@
-"use client";
+'use client';
 
-import { updateResidualRiskAction } from "@/actions/risk/update-residual-risk-action";
-import { updateResidualRiskSchema } from "@/actions/schema";
-import { Button } from "@comp/ui/button";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-} from "@comp/ui/form";
-import { Slider } from "@comp/ui/slider";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
-import { useAction } from "next-safe-action/hooks";
-import { useQueryState } from "nuqs";
-import { useForm } from "react-hook-form";
-import { toast } from "sonner";
-import type { z } from "zod";
+import { updateResidualRiskAction } from '@/actions/risk/update-residual-risk-action';
+import { updateResidualRiskSchema } from '@/actions/schema';
+import { Button } from '@comp/ui/button';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel } from '@comp/ui/form';
+import { Slider } from '@comp/ui/slider';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Loader2 } from 'lucide-react';
+import { useAction } from 'next-safe-action/hooks';
+import { useQueryState } from 'nuqs';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import type { z } from 'zod';
 
 interface ResidualRiskFormProps {
   riskId: string;
@@ -37,7 +30,7 @@ export function VendorResidualRiskForm({
   initialProbability,
   initialImpact,
 }: ResidualRiskFormProps) {
-  const [_, setOpen] = useQueryState("residual-risk-sheet");
+  const [_, setOpen] = useQueryState('residual-risk-sheet');
 
   const form = useForm<z.infer<typeof updateResidualRiskSchema>>({
     resolver: zodResolver(updateResidualRiskSchema),
@@ -50,11 +43,11 @@ export function VendorResidualRiskForm({
 
   const updateResidualRisk = useAction(updateResidualRiskAction, {
     onSuccess: () => {
-      toast.success("Residual risk updated successfully");
+      toast.success('Residual risk updated successfully');
       setOpen(null);
     },
     onError: () => {
-      toast.error("Failed to update residual risk");
+      toast.error('Failed to update residual risk');
     },
   });
 
@@ -70,7 +63,7 @@ export function VendorResidualRiskForm({
           name="probability"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>{"Probability"}</FormLabel>
+              <FormLabel>{'Probability'}</FormLabel>
               <FormControl>
                 <Slider
                   min={1}
@@ -81,9 +74,7 @@ export function VendorResidualRiskForm({
                   className="py-4"
                 />
               </FormControl>
-              <FormDescription className="text-right">
-                {field.value} / 10
-              </FormDescription>
+              <FormDescription className="text-right">{field.value} / 10</FormDescription>
             </FormItem>
           )}
         />
@@ -93,7 +84,7 @@ export function VendorResidualRiskForm({
           name="impact"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>{"Impact"}</FormLabel>
+              <FormLabel>{'Impact'}</FormLabel>
               <FormControl>
                 <Slider
                   min={1}
@@ -104,9 +95,7 @@ export function VendorResidualRiskForm({
                   className="py-4"
                 />
               </FormControl>
-              <FormDescription className="text-right">
-                {field.value} / 10
-              </FormDescription>
+              <FormDescription className="text-right">{field.value} / 10</FormDescription>
             </FormItem>
           )}
         />
@@ -115,12 +104,12 @@ export function VendorResidualRiskForm({
           <Button
             type="submit"
             variant="default"
-            disabled={updateResidualRisk.status === "executing"}
+            disabled={updateResidualRisk.status === 'executing'}
           >
-            {updateResidualRisk.status === "executing" ? (
+            {updateResidualRisk.status === 'executing' ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              "Save"
+              'Save'
             )}
           </Button>
         </div>

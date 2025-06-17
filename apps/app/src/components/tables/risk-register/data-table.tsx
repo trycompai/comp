@@ -1,15 +1,11 @@
-"use client";
+'use client';
 
-import { cn } from "@comp/ui/cn";
-import { Table, TableBody, TableCell, TableRow } from "@comp/ui/table";
-import {
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
-import { type RiskRegisterType, columns as getColumns } from "./columns";
-import { DataTableHeader } from "./data-table-header";
-import { DataTablePagination } from "./data-table-pagination";
+import { cn } from '@comp/ui/cn';
+import { Table, TableBody, TableCell, TableRow } from '@comp/ui/table';
+import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
+import { type RiskRegisterType, columns as getColumns } from './columns';
+import { DataTableHeader } from './data-table-header';
+import { DataTablePagination } from './data-table-pagination';
 
 interface DataTableProps<TData, TValue> {
   columnHeaders: {
@@ -51,19 +47,16 @@ export function DataTable<TData, TValue>({
         <TableBody>
           {table.getRowModel().rows?.length ? (
             table.getRowModel().rows.map((row) => (
-              <TableRow
-                key={row.id}
-                data-state={row.getIsSelected() && "selected"}
-              >
+              <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
                 {row.getVisibleCells().map((cell) => (
                   <TableCell
                     key={cell.id}
                     className={cn(
-                      (cell.column.id === "department" ||
-                        cell.column.id === "assigneeId" ||
-                        cell.column.id === "assignedTo" ||
-                        cell.column.id === "status") &&
-                        "hidden md:table-cell",
+                      (cell.column.id === 'department' ||
+                        cell.column.id === 'assigneeId' ||
+                        cell.column.id === 'assignedTo' ||
+                        cell.column.id === 'status') &&
+                        'hidden md:table-cell',
                     )}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}

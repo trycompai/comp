@@ -1,34 +1,32 @@
-import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
-import { VendorStatus } from "@/components/vendor-status";
-import { Avatar, AvatarFallback, AvatarImage } from "@comp/ui/avatar";
-import { Badge } from "@comp/ui/badge";
-import type { ColumnDef } from "@tanstack/react-table";
-import { UserIcon } from "lucide-react";
-import Link from "next/link";
-import type { GetVendorsResult } from "../data/queries";
+import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
+import { VendorStatus } from '@/components/vendor-status';
+import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
+import { Badge } from '@comp/ui/badge';
+import type { ColumnDef } from '@tanstack/react-table';
+import { UserIcon } from 'lucide-react';
+import Link from 'next/link';
+import type { GetVendorsResult } from '../data/queries';
 
-type VendorRow = GetVendorsResult["data"][number];
+type VendorRow = GetVendorsResult['data'][number];
 
 export const columns: ColumnDef<VendorRow>[] = [
   {
-    id: "name",
-    accessorKey: "name",
+    id: 'name',
+    accessorKey: 'name',
     header: ({ column }) => {
       return <DataTableColumnHeader column={column} title="Vendor Name" />;
     },
     cell: ({ row }) => {
       return (
-        <Link
-          href={`/${row.original.organizationId}/vendors/${row.original.id}`}
-        >
+        <Link href={`/${row.original.organizationId}/vendors/${row.original.id}`}>
           {row.original.name}
         </Link>
       );
     },
     meta: {
-      label: "Vendor Name",
-      placeholder: "Search for vendor name...",
-      variant: "text",
+      label: 'Vendor Name',
+      placeholder: 'Search for vendor name...',
+      variant: 'text',
     },
     size: 250,
     minSize: 200,
@@ -36,8 +34,8 @@ export const columns: ColumnDef<VendorRow>[] = [
     enableColumnFilter: true,
   },
   {
-    id: "status",
-    accessorKey: "status",
+    id: 'status',
+    accessorKey: 'status',
     header: ({ column }) => {
       return <DataTableColumnHeader column={column} title="Status" />;
     },
@@ -45,27 +43,27 @@ export const columns: ColumnDef<VendorRow>[] = [
       return <VendorStatus status={row.original.status} />;
     },
     meta: {
-      label: "Status",
-      placeholder: "Search by status...",
-      variant: "select",
+      label: 'Status',
+      placeholder: 'Search by status...',
+      variant: 'select',
     },
   },
   {
-    id: "category",
-    accessorKey: "category",
+    id: 'category',
+    accessorKey: 'category',
     header: ({ column }) => {
       return <DataTableColumnHeader column={column} title="Category" />;
     },
     cell: ({ row }) => {
       const categoryMap: Record<string, string> = {
-        cloud: "Cloud",
-        infrastructure: "Infrastructure",
-        software_as_a_service: "SaaS",
-        finance: "Finance",
-        marketing: "Marketing",
-        sales: "Sales",
-        hr: "HR",
-        other: "Other",
+        cloud: 'Cloud',
+        infrastructure: 'Infrastructure',
+        software_as_a_service: 'SaaS',
+        finance: 'Finance',
+        marketing: 'Marketing',
+        sales: 'Sales',
+        hr: 'HR',
+        other: 'Other',
       };
 
       return (
@@ -75,14 +73,14 @@ export const columns: ColumnDef<VendorRow>[] = [
       );
     },
     meta: {
-      label: "Category",
-      placeholder: "Search by category...",
-      variant: "select",
+      label: 'Category',
+      placeholder: 'Search by category...',
+      variant: 'select',
     },
   },
   {
-    id: "assignee",
-    accessorKey: "assignee",
+    id: 'assignee',
+    accessorKey: 'assignee',
     header: ({ column }) => {
       return <DataTableColumnHeader column={column} title="Assignee" />;
     },
@@ -105,30 +103,26 @@ export const columns: ColumnDef<VendorRow>[] = [
           <Avatar className="h-8 w-8">
             <AvatarImage
               src={row.original.assignee.user?.image || undefined}
-              alt={
-                row.original.assignee.user?.name ||
-                row.original.assignee.user?.email ||
-                ""
-              }
+              alt={row.original.assignee.user?.name || row.original.assignee.user?.email || ''}
             />
             <AvatarFallback>
               {row.original.assignee.user?.name?.charAt(0) ||
                 row.original.assignee.user?.email?.charAt(0).toUpperCase() ||
-                "?"}
+                '?'}
             </AvatarFallback>
           </Avatar>
           <p className="text-sm font-medium">
             {row.original.assignee.user?.name ||
               row.original.assignee.user?.email ||
-              "Unknown User"}
+              'Unknown User'}
           </p>
         </div>
       );
     },
     meta: {
-      label: "Assignee",
-      placeholder: "Search by assignee...",
-      variant: "select",
+      label: 'Assignee',
+      placeholder: 'Search by assignee...',
+      variant: 'select',
     },
   },
 ];

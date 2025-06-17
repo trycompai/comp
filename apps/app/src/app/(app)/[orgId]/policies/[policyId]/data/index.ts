@@ -1,8 +1,8 @@
-"use server";
+'use server';
 
-import { auth } from "@/utils/auth";
-import { headers } from "next/headers";
-import { CommentWithAuthor } from "@/components/comments/Comments";
+import { auth } from '@/utils/auth';
+import { headers } from 'next/headers';
+import { CommentWithAuthor } from '@/components/comments/Comments';
 import {
   AttachmentEntityType,
   AuditLogEntityType,
@@ -11,8 +11,8 @@ import {
   User,
   Member,
   Organization,
-} from "@comp/db/types";
-import { db } from "@comp/db";
+} from '@comp/db/types';
+import { db } from '@comp/db';
 
 // Define the type for AuditLog with its relations
 export type AuditLogWithRelations = AuditLog & {
@@ -21,9 +21,7 @@ export type AuditLogWithRelations = AuditLog & {
   organization: Organization;
 };
 
-export const getLogsForPolicy = async (
-  policyId: string,
-): Promise<AuditLogWithRelations[]> => {
+export const getLogsForPolicy = async (policyId: string): Promise<AuditLogWithRelations[]> => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -46,7 +44,7 @@ export const getLogsForPolicy = async (
       organization: true,
     },
     orderBy: {
-      timestamp: "desc",
+      timestamp: 'desc',
     },
     take: 3,
   });
@@ -137,7 +135,7 @@ export const getAssignees = async () => {
     where: {
       organizationId,
       role: {
-        notIn: ["employee"],
+        notIn: ['employee'],
       },
     },
     include: {
@@ -148,9 +146,7 @@ export const getAssignees = async () => {
   return assignees;
 };
 
-export const getComments = async (
-  policyId: string,
-): Promise<CommentWithAuthor[]> => {
+export const getComments = async (policyId: string): Promise<CommentWithAuthor[]> => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -158,7 +154,7 @@ export const getComments = async (
   const activeOrgId = session?.session.activeOrganizationId;
 
   if (!activeOrgId) {
-    console.warn("Could not determine active organization ID in getComments");
+    console.warn('Could not determine active organization ID in getComments');
     return [];
   }
 
@@ -176,7 +172,7 @@ export const getComments = async (
       },
     },
     orderBy: {
-      createdAt: "desc",
+      createdAt: 'desc',
     },
   });
 

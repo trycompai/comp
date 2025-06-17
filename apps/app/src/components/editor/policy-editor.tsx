@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import type { JSONContent } from "@tiptap/react";
-import { useState } from "react";
-import AdvancedEditor from "./advanced-editor";
-import { GetConfigurationResponseBodyDisabledReason } from "@vercel/sdk/models/getconfigurationop.js";
+import type { JSONContent } from '@tiptap/react';
+import { useState } from 'react';
+import AdvancedEditor from './advanced-editor';
+import { GetConfigurationResponseBodyDisabledReason } from '@vercel/sdk/models/getconfigurationop.js';
 
 interface PolicyEditorProps {
   content: JSONContent[];
@@ -11,22 +11,18 @@ interface PolicyEditorProps {
   onSave?: (content: JSONContent[]) => Promise<void>;
 }
 
-export function PolicyEditor({
-  content,
-  readOnly = false,
-  onSave,
-}: PolicyEditorProps) {
+export function PolicyEditor({ content, readOnly = false, onSave }: PolicyEditorProps) {
   const [editorContent, setEditorContent] = useState<JSONContent | null>(null);
 
   const documentContent = {
-    type: "doc",
+    type: 'doc',
     content:
       Array.isArray(content) && content.length > 0
         ? content
         : [
             {
-              type: "paragraph",
-              content: [{ type: "text", text: "" }],
+              type: 'paragraph',
+              content: [{ type: 'text', text: '' }],
             },
           ],
   };
@@ -42,7 +38,7 @@ export function PolicyEditor({
       const contentArray = contentToSave.content as JSONContent[];
       await onSave(contentArray);
     } catch (error) {
-      console.error("Error saving policy:", error);
+      console.error('Error saving policy:', error);
       throw error;
     }
   };

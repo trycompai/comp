@@ -1,4 +1,4 @@
-import { db } from "@comp/db";
+import { db } from '@comp/db';
 // Import types directly from @prisma/client
 import type {
   Member,
@@ -6,16 +6,16 @@ import type {
   Policy,
   EmployeeTrainingVideoCompletion,
   Organization,
-} from "@prisma/client";
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
+} from '@prisma/client';
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
 // Removed EmployeeTasksList import as it's not used directly here
-import { NoAccessMessage } from "./NoAccessMessage";
+import { NoAccessMessage } from './NoAccessMessage';
 // Removed OrganizationSelector import
-import { OrganizationDashboard } from "../[orgId]/components/OrganizationDashboard";
-import { Card, CardContent, CardHeader, CardTitle } from "@comp/ui/card";
-import Link from "next/link";
-import { auth } from "@/app/lib/auth";
+import { OrganizationDashboard } from '../[orgId]/components/OrganizationDashboard';
+import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
+import Link from 'next/link';
+import { auth } from '@/app/lib/auth';
 
 // Define the type for the member prop including the user and organization relations
 interface MemberWithUserOrg extends Member {
@@ -31,7 +31,7 @@ export async function Overview() {
   });
 
   if (!session?.user) {
-    redirect("/login"); // Or appropriate login/auth route
+    redirect('/login'); // Or appropriate login/auth route
   }
 
   // Fetch all memberships for the user, including organization details
@@ -61,13 +61,10 @@ export async function Overview() {
   // If after filtering, there are no valid memberships with organizations
   if (validMemberships.length === 0) {
     // This case might indicate memberships exist but lack organization links
-    console.warn(
-      "User has memberships but none with associated organizations.",
-      { userId: session.user.id },
-    );
-    return (
-      <NoAccessMessage message="You don't seem to belong to any organizations currently." />
-    );
+    console.warn('User has memberships but none with associated organizations.', {
+      userId: session.user.id,
+    });
+    return <NoAccessMessage message="You don't seem to belong to any organizations currently." />;
   }
 
   // Render a dashboard for each valid membership

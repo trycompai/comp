@@ -1,22 +1,19 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import type { FrameworkEditorPolicyTemplate } from "@prisma/client";
-import PageLayout from "@/app/components/PageLayout";
-import { DataTable } from "@/app/components/DataTable";
-import { columns } from "./components/columns";
-import { CreatePolicyDialog } from "./components/CreatePolicyDialog";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import type { FrameworkEditorPolicyTemplate } from '@prisma/client';
+import PageLayout from '@/app/components/PageLayout';
+import { DataTable } from '@/app/components/DataTable';
+import { columns } from './components/columns';
+import { CreatePolicyDialog } from './components/CreatePolicyDialog';
 
 interface PoliciesClientPageProps {
   initialPolicies: FrameworkEditorPolicyTemplate[];
 }
 
-export function PoliciesClientPage({
-  initialPolicies,
-}: PoliciesClientPageProps) {
-  const [isCreatePolicyDialogOpen, setIsCreatePolicyDialogOpen] =
-    useState(false);
+export function PoliciesClientPage({ initialPolicies }: PoliciesClientPageProps) {
+  const [isCreatePolicyDialogOpen, setIsCreatePolicyDialogOpen] = useState(false);
   const router = useRouter();
 
   const handleRowClick = (policy: FrameworkEditorPolicyTemplate) => {
@@ -24,7 +21,7 @@ export function PoliciesClientPage({
   };
 
   return (
-    <PageLayout breadcrumbs={[{ label: "Policies", href: "/policies" }]}>
+    <PageLayout breadcrumbs={[{ label: 'Policies', href: '/policies' }]}>
       <DataTable
         data={initialPolicies}
         columns={columns}

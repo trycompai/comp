@@ -1,26 +1,22 @@
-"use client";
+'use client';
 
-import { Member, User } from "@comp/db/types";
-import { Button } from "@comp/ui/button";
-import { Drawer, DrawerContent, DrawerTitle } from "@comp/ui/drawer";
-import { useMediaQuery } from "@comp/ui/hooks";
-import { ScrollArea } from "@comp/ui/scroll-area";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@comp/ui/sheet";
-import { X } from "lucide-react";
-import { useQueryState } from "nuqs";
-import { CreateRisk } from "../forms/risks/create-risk-form";
+import { Member, User } from '@comp/db/types';
+import { Button } from '@comp/ui/button';
+import { Drawer, DrawerContent, DrawerTitle } from '@comp/ui/drawer';
+import { useMediaQuery } from '@comp/ui/hooks';
+import { ScrollArea } from '@comp/ui/scroll-area';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@comp/ui/sheet';
+import { X } from 'lucide-react';
+import { useQueryState } from 'nuqs';
+import { CreateRisk } from '../forms/risks/create-risk-form';
 
-export function CreateRiskSheet({
-  assignees,
-}: {
-  assignees: (Member & { user: User })[];
-}) {
-  const isDesktop = useMediaQuery("(min-width: 768px)");
-  const [open, setOpen] = useQueryState("create-risk-sheet");
+export function CreateRiskSheet({ assignees }: { assignees: (Member & { user: User })[] }) {
+  const isDesktop = useMediaQuery('(min-width: 768px)');
+  const [open, setOpen] = useQueryState('create-risk-sheet');
   const isOpen = Boolean(open);
 
   const handleOpenChange = (open: boolean) => {
-    setOpen(open ? "true" : null);
+    setOpen(open ? 'true' : null);
   };
 
   if (isDesktop) {
@@ -28,7 +24,7 @@ export function CreateRiskSheet({
       <Sheet open={isOpen} onOpenChange={handleOpenChange}>
         <SheetContent stack>
           <SheetHeader className="mb-8 flex flex-row items-center justify-between">
-            <SheetTitle>{"Create New Risk"}</SheetTitle>
+            <SheetTitle>{'Create New Risk'}</SheetTitle>
             <Button
               size="icon"
               variant="ghost"
@@ -49,7 +45,7 @@ export function CreateRiskSheet({
 
   return (
     <Drawer open={isOpen} onOpenChange={handleOpenChange}>
-      <DrawerTitle hidden>{"Create New Risk"}</DrawerTitle>
+      <DrawerTitle hidden>{'Create New Risk'}</DrawerTitle>
       <DrawerContent className="p-6">
         <CreateRisk assignees={assignees} />
       </DrawerContent>

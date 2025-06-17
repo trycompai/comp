@@ -1,11 +1,6 @@
-import React, { useLayoutEffect, useRef } from "react";
-import type { CellProps, Column } from "react-datasheet-grid";
-import Select, {
-  GroupBase,
-  SelectInstance,
-  StylesConfig,
-  type SingleValue,
-} from "react-select";
+import React, { useLayoutEffect, useRef } from 'react';
+import type { CellProps, Column } from 'react-datasheet-grid';
+import Select, { GroupBase, SelectInstance, StylesConfig, type SingleValue } from 'react-select';
 
 export interface Choice {
   label: string;
@@ -22,14 +17,7 @@ export interface SelectOptions {
 type SelectCellComponentProps = CellProps<string | null, SelectOptions>;
 
 const SelectCellComponentInternal = React.memo(
-  ({
-    active,
-    rowData,
-    setRowData,
-    focus,
-    stopEditing,
-    columnData,
-  }: SelectCellComponentProps) => {
+  ({ active, rowData, setRowData, focus, stopEditing, columnData }: SelectCellComponentProps) => {
     const ref = useRef<SelectInstance<Choice, false, GroupBase<Choice>>>(null);
 
     useLayoutEffect(() => {
@@ -40,25 +28,24 @@ const SelectCellComponentInternal = React.memo(
       }
     }, [focus]);
 
-    const currentChoice =
-      columnData.choices.find(({ value }) => value === rowData) ?? null;
+    const currentChoice = columnData.choices.find(({ value }) => value === rowData) ?? null;
 
     const selectStyles: StylesConfig<Choice, false, GroupBase<Choice>> = {
       container: (provided) => ({
         ...provided,
         flex: 1,
-        alignSelf: "stretch",
-        pointerEvents: focus ? undefined : "none",
+        alignSelf: 'stretch',
+        pointerEvents: focus ? undefined : 'none',
       }),
       control: (provided) => ({
         ...provided,
-        height: "100%",
-        border: "none",
-        boxShadow: "none",
-        background: "transparent", // Ensure background is transparent
+        height: '100%',
+        border: 'none',
+        boxShadow: 'none',
+        background: 'transparent', // Ensure background is transparent
       }),
       indicatorSeparator: () => ({
-        display: "none", // Hide separator
+        display: 'none', // Hide separator
       }),
       indicatorsContainer: (provided) => ({
         ...provided,
@@ -95,20 +82,20 @@ const SelectCellComponentInternal = React.memo(
         }}
         onMenuClose={() => stopEditing?.({ nextRow: false })} // Don't navigate on menu close
         options={columnData.choices}
-        placeholder={columnData.placeholder ?? "Select..."}
+        placeholder={columnData.placeholder ?? 'Select...'}
       />
     );
   },
 );
 
-SelectCellComponentInternal.displayName = "SelectCellComponentInternal";
+SelectCellComponentInternal.displayName = 'SelectCellComponentInternal';
 
 export const SelectCell = SelectCellComponentInternal;
 
 // Factory function to create a column definition for use with keyColumn
 export const selectColumnDefinition = (
   options: SelectOptions,
-): Omit<Column<string | null, SelectOptions, string>, "id"> => ({
+): Omit<Column<string | null, SelectOptions, string>, 'id'> => ({
   component: SelectCellComponentInternal,
   columnData: options,
   disableKeys: true, // react-select handles arrow keys for menu navigation
@@ -118,14 +105,14 @@ export const selectColumnDefinition = (
   copyValue: ({ rowData }) => {
     // rowData is cell's value (string | null)
     const choice = options.choices.find((c) => c.value === rowData);
-    return choice ? choice.label : ""; // Return empty string instead of null
+    return choice ? choice.label : ''; // Return empty string instead of null
   },
   pasteValue: ({ value: pastedStringValue }: { value: string }) => {
     // value is pasted string, return new cell value
     // If an empty string was pasted (potentially from our new copyValue logic for nulls),
     // and an empty string label doesn't map to a choice, treat as null or no change.
-    if (pastedStringValue === "") {
-      const emptyLabelChoice = options.choices.find((c) => c.label === "");
+    if (pastedStringValue === '') {
+      const emptyLabelChoice = options.choices.find((c) => c.label === '');
       return emptyLabelChoice ? emptyLabelChoice.value : null;
     }
     const choice = options.choices.find(

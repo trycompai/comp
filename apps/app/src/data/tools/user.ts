@@ -1,7 +1,7 @@
-import { auth } from "@/utils/auth";
-import { tool } from "ai";
-import { headers } from "next/headers";
-import { z } from "zod";
+import { auth } from '@/utils/auth';
+import { tool } from 'ai';
+import { headers } from 'next/headers';
+import { z } from 'zod';
 
 export function getUserTools() {
   return {
@@ -18,7 +18,7 @@ export const getUser = tool({
     });
 
     if (!session?.session.activeOrganizationId) {
-      return { error: "Unauthorized" };
+      return { error: 'Unauthorized' };
     }
 
     return {

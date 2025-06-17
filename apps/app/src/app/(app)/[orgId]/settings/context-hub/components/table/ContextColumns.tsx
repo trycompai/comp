@@ -1,10 +1,10 @@
-import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
-import { Badge } from "@comp/ui/badge";
-import type { ColumnDef } from "@tanstack/react-table";
-import type { Context } from "@prisma/client";
-import { Trash2 } from "lucide-react";
-import { useAction } from "next-safe-action/hooks";
-import { useState } from "react";
+import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
+import { Badge } from '@comp/ui/badge';
+import type { ColumnDef } from '@tanstack/react-table';
+import type { Context } from '@prisma/client';
+import { Trash2 } from 'lucide-react';
+import { useAction } from 'next-safe-action/hooks';
+import { useState } from 'react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,19 +15,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@comp/ui/alert-dialog";
-import { Button } from "@comp/ui/button";
-import { deleteContextEntryAction } from "@/actions/context-hub/delete-context-entry-action";
+} from '@comp/ui/alert-dialog';
+import { Button } from '@comp/ui/button';
+import { deleteContextEntryAction } from '@/actions/context-hub/delete-context-entry-action';
 
 export const columns = (): ColumnDef<Context>[] => [
   {
-    id: "question",
-    accessorKey: "question",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Question" />
-    ),
+    id: 'question',
+    accessorKey: 'question',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Question" />,
     cell: ({ row }) => <span>{row.original.question}</span>,
-    meta: { label: "Question", variant: "text" },
+    meta: { label: 'Question', variant: 'text' },
     size: 200,
     minSize: 200,
     maxSize: 200,
@@ -35,13 +33,11 @@ export const columns = (): ColumnDef<Context>[] => [
     enableSorting: true,
   },
   {
-    id: "answer",
-    accessorKey: "answer",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Answer" />
-    ),
+    id: 'answer',
+    accessorKey: 'answer',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Answer" />,
     cell: ({ row }) => <span>{row.original.answer}</span>,
-    meta: { label: "Answer" },
+    meta: { label: 'Answer' },
     enableColumnFilter: true,
     enableSorting: false,
     size: 300,
@@ -49,7 +45,7 @@ export const columns = (): ColumnDef<Context>[] => [
     maxSize: 400,
   },
   {
-    id: "delete",
+    id: 'delete',
     header: () => <span>Delete</span>,
     cell: ({ row }) => {
       const [open, setOpen] = useState(false);
@@ -74,25 +70,24 @@ export const columns = (): ColumnDef<Context>[] => [
             <AlertDialogHeader>
               <AlertDialogTitle>Delete Entry</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to delete this entry? This action cannot
-                be undone.
+                Are you sure you want to delete this entry? This action cannot be undone.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction
                 onClick={() => execute({ id: row.original.id })}
-                disabled={status === "executing"}
+                disabled={status === 'executing'}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
-                {status === "executing" ? "Deleting..." : "Delete"}
+                {status === 'executing' ? 'Deleting...' : 'Delete'}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
       );
     },
-    meta: { label: "Delete" },
+    meta: { label: 'Delete' },
     enableColumnFilter: false,
     enableSorting: false,
     size: 20,

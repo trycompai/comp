@@ -1,28 +1,24 @@
-"use server";
+'use server';
 
-import { authActionClient } from "@/actions/safe-action";
-import { auth } from "@/utils/auth";
-import { db } from "@comp/db";
-import type { Departments } from "@comp/db/types";
-import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
-import {
-  type AppError,
-  appErrors,
-  updateEmployeeDepartmentSchema,
-} from "../types";
+import { authActionClient } from '@/actions/safe-action';
+import { auth } from '@/utils/auth';
+import { db } from '@comp/db';
+import type { Departments } from '@comp/db/types';
+import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
+import { type AppError, appErrors, updateEmployeeDepartmentSchema } from '../types';
 
 export type ActionResponse<T = any> = Promise<
   { success: true; data: T } | { success: false; error: AppError }
 >;
 
 export const updateEmployeeDepartment = authActionClient
-  .schema(updateEmployeeDepartmentSchema)
+  .inputSchema(updateEmployeeDepartmentSchema)
   .metadata({
-    name: "update-employee-department",
+    name: 'update-employee-department',
     track: {
-      event: "update-employee-department",
-      channel: "server",
+      event: 'update-employee-department',
+      channel: 'server',
     },
   })
   .action(async ({ parsedInput }): Promise<ActionResponse> => {
@@ -75,7 +71,7 @@ export const updateEmployeeDepartment = authActionClient
         data: updatedEmployee,
       };
     } catch (error) {
-      console.error("Error updating employee department:", error);
+      console.error('Error updating employee department:', error);
       return {
         success: false,
         error: appErrors.UNEXPECTED_ERROR,

@@ -1,9 +1,9 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from '@prisma/client';
 
 const createPrismaClient = () => {
   return new PrismaClient({
     datasourceUrl: process.env.DATABASE_URL,
-    log: ["error", "warn"],
+    log: ['error', 'warn'],
   });
 };
 
@@ -13,4 +13,4 @@ const globalForPrisma = globalThis as unknown as {
 
 export const db = globalForPrisma.prisma ?? createPrismaClient();
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db;
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db;

@@ -1,8 +1,8 @@
-import { db } from "@comp/db";
-import type { Member, User } from "@comp/db/types";
-import type { Vendor } from "@comp/db/types"; // Import Vendor type
-import { cache } from "react";
-import type { GetVendorsSchema } from "./validations";
+import { db } from '@comp/db';
+import type { Member, User } from '@comp/db/types';
+import type { Vendor } from '@comp/db/types'; // Import Vendor type
+import { cache } from 'react';
+import type { GetVendorsSchema } from './validations';
 
 // Define and export return types used by the functions below
 export type GetVendorsResult = {
@@ -12,27 +12,15 @@ export type GetVendorsResult = {
 export type GetAssigneesResult = (Member & { user: User })[];
 
 export const getVendors = cache(
-  async (
-    orgId: string,
-    searchParams: GetVendorsSchema,
-  ): Promise<GetVendorsResult> => {
-    const {
-      page,
-      perPage,
-      status,
-      department,
-      assigneeId,
-      filters,
-      sort,
-      name,
-    } = searchParams;
+  async (orgId: string, searchParams: GetVendorsSchema): Promise<GetVendorsResult> => {
+    const { page, perPage, status, department, assigneeId, filters, sort, name } = searchParams;
 
     const whereClause: any = {
       organizationId: orgId,
       ...(status && { status: status }),
       ...(department && { department: department }),
       ...(assigneeId && { assigneeId: assigneeId }),
-      ...(name && { name: { contains: name, mode: "insensitive" } }),
+      ...(name && { name: { contains: name, mode: 'insensitive' } }),
     };
 
     if (filters) {
@@ -59,26 +47,24 @@ export const getVendors = cache(
     const pageCount = Math.ceil(totalCount / perPage);
 
     return {
-      data: vendors as GetVendorsResult["data"],
+      data: vendors as GetVendorsResult['data'],
       pageCount, // Return calculated pageCount
     };
   },
 );
 
-export const getAssignees = cache(
-  async (orgId: string): Promise<GetAssigneesResult> => {
-    const assignees = await db.member.findMany({
-      where: {
-        organizationId: orgId,
-        role: {
-          notIn: ["employee"],
-        },
+export const getAssignees = cache(async (orgId: string): Promise<GetAssigneesResult> => {
+  const assignees = await db.member.findMany({
+    where: {
+      organizationId: orgId,
+      role: {
+        notIn: ['employee'],
       },
-      include: {
-        user: true,
-      },
-    });
+    },
+    include: {
+      user: true,
+    },
+  });
 
-    return assignees;
-  },
-);
+  return assignees;
+});

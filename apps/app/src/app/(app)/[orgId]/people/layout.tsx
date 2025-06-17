@@ -1,24 +1,20 @@
-import { getPostHogClient } from "@/app/posthog";
-import { AppOnboarding } from "@/components/app-onboarding";
-import { auth } from "@/utils/auth";
-import { db } from "@comp/db";
-import { SecondaryMenu } from "@comp/ui/secondary-menu";
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
-import { Suspense } from "react";
+import { getPostHogClient } from '@/app/posthog';
+import { AppOnboarding } from '@/components/app-onboarding';
+import { auth } from '@/utils/auth';
+import { db } from '@comp/db';
+import { SecondaryMenu } from '@comp/ui/secondary-menu';
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
 
-export default async function Layout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default async function Layout({ children }: { children: React.ReactNode }) {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
   const orgId = session?.session.activeOrganizationId;
 
   if (!orgId) {
-    return redirect("/");
+    return redirect('/');
   }
 
   // Fetch all members first
@@ -29,14 +25,12 @@ export default async function Layout({
   });
 
   const employees = allMembers.filter((member) => {
-    const roles = member.role.includes(",")
-      ? member.role.split(",")
-      : [member.role];
-    return roles.includes("employee");
+    const roles = member.role.includes(',') ? member.role.split(',') : [member.role];
+    return roles.includes('employee');
   });
 
   const isFleetEnabled = await getPostHogClient()?.isFeatureEnabled(
-    "is-fleet-enabled",
+    'is-fleet-enabled',
     session?.session.userId,
   );
 
@@ -46,13 +40,13 @@ export default async function Layout({
         items={[
           {
             path: `/${orgId}/people/all`,
-            label: "People",
+            label: 'People',
           },
           ...(employees.length > 0
             ? [
                 {
                   path: `/${orgId}/people/dashboard`,
-                  label: "Employee Tasks",
+                  label: 'Employee Tasks',
                 },
               ]
             : []),
@@ -60,14 +54,14 @@ export default async function Layout({
             ? [
                 {
                   path: `/${orgId}/people/devices`,
-                  label: "Employee Devices",
+                  label: 'Employee Devices',
                 },
               ]
             : []),
         ]}
       />
 
-      <main className="mt-4">{children}</main>
+      <main>{children}</main>
     </div>
   );
 }

@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { Integration } from "@comp/db/types";
-import { integrations } from "@comp/integrations";
-import { Button } from "@comp/ui/button";
-import { useRouter, useSearchParams } from "next/navigation";
-import { IntegrationsCard } from "./integrations-card";
+import { Integration } from '@comp/db/types';
+import { integrations } from '@comp/integrations';
+import { Button } from '@comp/ui/button';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { IntegrationsCard } from './integrations-card';
 
 // Update the type to include lastRunAt and nextRunAt
 type ExtendedOrganizationIntegrations = Integration & {
@@ -18,14 +18,12 @@ export function OrganizationIntegration({
   installed: ExtendedOrganizationIntegrations[];
 }) {
   const searchParams = useSearchParams();
-  const isInstalledPage = searchParams.get("tab") === "installed";
-  const search = searchParams.get("q");
+  const isInstalledPage = searchParams.get('tab') === 'installed';
+  const search = searchParams.get('q');
   const router = useRouter();
 
   // Map installed integrations by their integration_id rather than name
-  const installedIntegrations = installed.map((i) =>
-    i.integrationId.toLowerCase(),
-  );
+  const installedIntegrations = installed.map((i) => i.integrationId.toLowerCase());
 
   const installedSettings: Record<string, unknown> = installed.reduce(
     (acc, integration) => {
@@ -37,15 +35,13 @@ export function OrganizationIntegration({
 
   const integrationsByCategory = integrations
     .filter((integration) => {
-      const shouldInclude =
-        !isInstalledPage || installedIntegrations.includes(integration.id);
+      const shouldInclude = !isInstalledPage || installedIntegrations.includes(integration.id);
 
       return shouldInclude;
     })
     .filter((integration) => {
       const matchesSearch =
-        !search ||
-        integration.name.toLowerCase().includes(search.toLowerCase());
+        !search || integration.name.toLowerCase().includes(search.toLowerCase());
 
       return matchesSearch;
     })
@@ -64,19 +60,13 @@ export function OrganizationIntegration({
   if (search && Object.keys(integrationsByCategory).length === 0) {
     return (
       <div className="flex h-[calc(100vh-400px)] flex-col items-center justify-center">
-        <h3 className="text-foreground text-lg font-semibold">
-          No integrations found
-        </h3>
+        <h3 className="text-foreground text-lg font-semibold">No integrations found</h3>
         <p className="text-muted-foreground mt-2 max-w-md text-center text-sm">
-          No integrations found for your search, let us know if you want to see
-          a specific integration.
+          No integrations found for your search, let us know if you want to see a specific
+          integration.
         </p>
 
-        <Button
-          onClick={() => router.push("/integrations")}
-          className="mt-4"
-          variant="outline"
-        >
+        <Button onClick={() => router.push('/integrations')} className="mt-4" variant="outline">
           Clear search
         </Button>
       </div>
@@ -86,12 +76,10 @@ export function OrganizationIntegration({
   if (!search && Object.keys(integrationsByCategory).length === 0) {
     return (
       <div className="flex h-[calc(100vh-400px)] flex-col items-center justify-center">
-        <h3 className="text-foreground text-lg font-semibold">
-          No integrations installed
-        </h3>
+        <h3 className="text-foreground text-lg font-semibold">No integrations installed</h3>
         <p className="text-muted-foreground mt-2 max-w-md text-center text-sm">
-          You haven't installed any integrations yet. Go to the 'All
-          Integrations' tab to browse available integrations.
+          You haven't installed any integrations yet. Go to the 'All Integrations' tab to browse
+          available integrations.
         </p>
       </div>
     );
@@ -115,21 +103,19 @@ export function OrganizationIntegration({
                 logo: integration.logo,
                 name: integration.name,
                 short_description:
-                  "short_description" in integration
+                  'short_description' in integration
                     ? integration.short_description
-                    : (integration as any).description || "",
-                description: (integration as any).description || "",
-                guide_url: (integration as any).guide_url || "",
+                    : (integration as any).description || '',
+                description: (integration as any).description || '',
+                guide_url: (integration as any).guide_url || '',
                 settings:
-                  "settings" in integration
+                  'settings' in integration
                     ? (integration as any).settings
-                    : "fields" in integration
+                    : 'fields' in integration
                       ? (integration as any).fields
                       : [],
-                images:
-                  "images" in integration ? (integration as any).images : [],
-                active:
-                  "active" in integration ? (integration as any).active : true,
+                images: 'images' in integration ? (integration as any).images : [],
+                active: 'active' in integration ? (integration as any).active : true,
                 installed: installedIntegrations.includes(integration.id),
                 category: integration.category,
                 installedSettings: installedSettings[integration.id] || {},
@@ -138,9 +124,7 @@ export function OrganizationIntegration({
                 nextRunAt: installedIntegration?.nextRunAt,
               };
 
-              return (
-                <IntegrationsCard key={integration.id} {...integrationProps} />
-              );
+              return <IntegrationsCard key={integration.id} {...integrationProps} />;
             })}
           </div>
         </div>

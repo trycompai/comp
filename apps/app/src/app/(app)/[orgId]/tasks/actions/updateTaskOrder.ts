@@ -1,12 +1,12 @@
-"use server";
+'use server';
 
-import { db } from "@comp/db";
-import { z } from "zod";
-import { TaskStatus } from "@comp/db/types";
-import { revalidatePath } from "next/cache";
-import type { ActionResponse } from "@/types/actions";
-import { auth } from "@/utils/auth";
-import { headers } from "next/headers";
+import { db } from '@comp/db';
+import { z } from 'zod';
+import { TaskStatus } from '@comp/db/types';
+import { revalidatePath } from 'next/cache';
+import type { ActionResponse } from '@/types/actions';
+import { auth } from '@/utils/auth';
+import { headers } from 'next/headers';
 
 const updateTaskOrderSchema = z.array(
   z.object({
@@ -25,7 +25,7 @@ export const updateTaskOrder = async (
   if (!session?.session?.activeOrganizationId) {
     return {
       success: false,
-      error: "Not authorized - no organization found",
+      error: 'Not authorized - no organization found',
     };
   }
   try {
@@ -42,10 +42,10 @@ export const updateTaskOrder = async (
     revalidatePath(`/${orgId}/tasks`);
     return { success: true, data: null };
   } catch (error) {
-    console.error("Failed to update task order:", error);
+    console.error('Failed to update task order:', error);
     return {
       success: false,
-      error: "Failed to update task order",
+      error: 'Failed to update task order',
     };
   }
 };

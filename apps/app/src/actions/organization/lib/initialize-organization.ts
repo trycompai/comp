@@ -1,13 +1,12 @@
-import { db } from "@comp/db";
-import { Prisma } from "@comp/db/types";
+import { db } from '@comp/db';
+import { Prisma } from '@comp/db/types';
 
 // Define a type for FrameworkEditorFramework with requirements included
 // This assumes FrameworkEditorFramework and FrameworkEditorRequirement are valid Prisma types.
 // Adjust if your Prisma client exposes these differently (e.g., via Prisma.FrameworkEditorFrameworkGetPayload).
-type FrameworkEditorFrameworkWithRequirements =
-  Prisma.FrameworkEditorFrameworkGetPayload<{
-    include: { requirements: true };
-  }>;
+type FrameworkEditorFrameworkWithRequirements = Prisma.FrameworkEditorFrameworkGetPayload<{
+  include: { requirements: true };
+}>;
 
 export type InitializeOrganizationInput = {
   frameworkIds: string[];
@@ -93,16 +92,12 @@ export const _upsertOrgFrameworkStructureCore = async ({
     },
   });
 
-  const groupedControlTemplateRelations = controlRelations.map(
-    (controlTemplate) => ({
-      controlTemplateId: controlTemplate.id,
-      requirementTemplateIds: controlTemplate.requirements.map((req) => req.id),
-      policyTemplateIds: controlTemplate.policyTemplates.map(
-        (policy) => policy.id,
-      ),
-      taskTemplateIds: controlTemplate.taskTemplates.map((task) => task.id),
-    }),
-  );
+  const groupedControlTemplateRelations = controlRelations.map((controlTemplate) => ({
+    controlTemplateId: controlTemplate.id,
+    requirementTemplateIds: controlTemplate.requirements.map((req) => req.id),
+    policyTemplateIds: controlTemplate.policyTemplates.map((policy) => policy.id),
+    taskTemplateIds: controlTemplate.taskTemplates.map((task) => task.id),
+  }));
 
   /**
     |--------------------------------------------------
@@ -126,8 +121,7 @@ export const _upsertOrgFrameworkStructureCore = async ({
   const frameworkInstancesToCreateData = frameworkEditorFrameworks
     .filter(
       (f) =>
-        targetFrameworkEditorIds.includes(f.id) &&
-        !existingFrameworkInstanceFrameworkIds.has(f.id),
+        targetFrameworkEditorIds.includes(f.id) && !existingFrameworkInstanceFrameworkIds.has(f.id),
     )
     .map((framework) => ({
       organizationId: organizationId,
@@ -164,9 +158,7 @@ export const _upsertOrgFrameworkStructureCore = async ({
     select: { controlTemplateId: true },
   });
   const existingControlTemplateIdsSet = new Set(
-    existingControlsQuery
-      .map((c) => c.controlTemplateId)
-      .filter((id) => id !== null) as string[],
+    existingControlsQuery.map((c) => c.controlTemplateId).filter((id) => id !== null) as string[],
   );
 
   const controlTemplatesForCreation = controlTemplates.filter(
@@ -197,9 +189,7 @@ export const _upsertOrgFrameworkStructureCore = async ({
     select: { policyTemplateId: true },
   });
   const existingPolicyTemplateIdsSet = new Set(
-    existingPoliciesQuery
-      .map((p) => p.policyTemplateId)
-      .filter((id) => id !== null) as string[],
+    existingPoliciesQuery.map((p) => p.policyTemplateId).filter((id) => id !== null) as string[],
   );
 
   const policyTemplatesForCreation = policyTemplates.filter(
@@ -213,7 +203,7 @@ export const _upsertOrgFrameworkStructureCore = async ({
         description: policyTemplate.description,
         department: policyTemplate.department,
         frequency: policyTemplate.frequency,
-        content: policyTemplate.content as Prisma.PolicyCreateInput["content"],
+        content: policyTemplate.content as Prisma.PolicyCreateInput['content'],
         organizationId: organizationId,
         policyTemplateId: policyTemplate.id,
       })),
@@ -233,9 +223,7 @@ export const _upsertOrgFrameworkStructureCore = async ({
     select: { taskTemplateId: true },
   });
   const existingTaskTemplateIdsSet = new Set(
-    existingTasksQuery
-      .map((t) => t.taskTemplateId)
-      .filter((id) => id !== null) as string[],
+    existingTasksQuery.map((t) => t.taskTemplateId).filter((id) => id !== null) as string[],
   );
 
   const taskTemplatesForCreation = taskTemplates.filter(
@@ -294,13 +282,10 @@ export const _upsertOrgFrameworkStructureCore = async ({
       .map((p) => [p.policyTemplateId!, p.id]),
   );
   const taskTemplateIdToInstanceIdMap = new Map(
-    allRelevantTasks
-      .filter((t) => t.taskTemplateId != null)
-      .map((t) => [t.taskTemplateId!, t.id]),
+    allRelevantTasks.filter((t) => t.taskTemplateId != null).map((t) => [t.taskTemplateId!, t.id]),
   );
 
-  const requirementMapEntriesToCreate: Prisma.RequirementMapCreateManyInput[] =
-    [];
+  const requirementMapEntriesToCreate: Prisma.RequirementMapCreateManyInput[] = [];
 
   for (const controlTemplateRelation of groupedControlTemplateRelations) {
     const newControlId = controlTemplateIdToInstanceIdMap.get(
@@ -328,9 +313,7 @@ export const _upsertOrgFrameworkStructureCore = async ({
           }
         }
         const frameworkInstanceId = frameworkEditorFrameworkIdForReq
-          ? editorFrameworkIdToInstanceIdMap.get(
-              frameworkEditorFrameworkIdForReq,
-            )
+          ? editorFrameworkIdToInstanceIdMap.get(frameworkEditorFrameworkIdForReq)
           : undefined;
 
         if (frameworkInstanceId) {
@@ -351,8 +334,7 @@ export const _upsertOrgFrameworkStructureCore = async ({
     if (controlTemplateRelation.policyTemplateIds.length > 0) {
       const policiesToConnect = [];
       for (const policyTemplateId of controlTemplateRelation.policyTemplateIds) {
-        const newPolicyId =
-          policyTemplateIdToInstanceIdMap.get(policyTemplateId);
+        const newPolicyId = policyTemplateIdToInstanceIdMap.get(policyTemplateId);
         if (newPolicyId) {
           policiesToConnect.push({ id: newPolicyId });
         } else {
@@ -414,20 +396,18 @@ export const initializeOrganization = async ({
   frameworkIds,
   organizationId,
 }: InitializeOrganizationInput) => {
-  const frameworksAndReqsToProcess = await db.frameworkEditorFramework.findMany(
-    {
-      where: {
-        id: { in: frameworkIds },
-      },
-      include: {
-        requirements: true,
-      },
+  const frameworksAndReqsToProcess = await db.frameworkEditorFramework.findMany({
+    where: {
+      id: { in: frameworkIds },
     },
-  );
+    include: {
+      requirements: true,
+    },
+  });
 
   if (frameworksAndReqsToProcess.length === 0 && frameworkIds.length > 0) {
     console.warn(
-      `InitializeOrganization: No FrameworkEditorFrameworks found for IDs: ${frameworkIds.join(", ")}`,
+      `InitializeOrganization: No FrameworkEditorFrameworks found for IDs: ${frameworkIds.join(', ')}`,
     );
   }
 

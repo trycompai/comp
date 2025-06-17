@@ -1,25 +1,20 @@
-"use client";
+'use client';
 
-import { useI18n } from "@/app/locales/client";
-import { Button } from "@comp/ui/button";
-import { cn } from "@comp/ui/cn";
-import { Icons } from "@comp/ui/icons";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@comp/ui/tooltip";
-import { useClickAway } from "@uidotdev/usehooks";
-import { Reorder, motion, useMotionValue } from "framer-motion";
-import { useAction } from "next-safe-action/hooks";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState } from "react";
-import { useLongPress } from "use-long-press";
+import { useI18n } from '@/app/locales/client';
+import { Button } from '@comp/ui/button';
+import { cn } from '@comp/ui/cn';
+import { Icons } from '@comp/ui/icons';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
+import { useClickAway } from '@uidotdev/usehooks';
+import { Reorder, motion, useMotionValue } from 'framer-motion';
+import { useAction } from 'next-safe-action/hooks';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useState } from 'react';
+import { useLongPress } from 'use-long-press';
 
 const icons = {
-  "/": () => <Icons.Overview size={22} />,
+  '/': () => <Icons.Overview size={22} />,
 };
 
 interface ItemProps {
@@ -36,9 +31,7 @@ const Item = ({ item, isActive, onSelect, disabled }: ItemProps) => {
   return (
     <TooltipProvider delayDuration={70}>
       {linkDisabled ? (
-        <div className="flex h-[45px] w-[45px] items-center md:justify-center">
-          Coming
-        </div>
+        <div className="flex h-[45px] w-[45px] items-center md:justify-center">Coming</div>
       ) : (
         <Link prefetch href={item.path} onClick={() => onSelect?.()}>
           <Tooltip>
@@ -49,10 +42,10 @@ const Item = ({ item, isActive, onSelect, disabled }: ItemProps) => {
                 id={item.path}
                 layoutRoot
                 className={cn(
-                  "relative flex h-[45px] items-center border border-transparent md:w-[45px] md:justify-center",
-                  "hover:bg-accent hover:border-[#DCDAD2] hover:dark:border-[#2C2C2C]",
+                  'relative flex h-[45px] items-center border border-transparent md:w-[45px] md:justify-center',
+                  'hover:bg-accent hover:border-[#DCDAD2] hover:dark:border-[#2C2C2C]',
                   isActive &&
-                    "dark:bg-secondary border-[#DCDAD2] bg-[#F2F1EF] dark:border-[#2C2C2C]",
+                    'dark:bg-secondary border-[#DCDAD2] bg-[#F2F1EF] dark:border-[#2C2C2C]',
                 )}
               >
                 <motion.div
@@ -107,19 +100,17 @@ export function MainMenu({ initialItems, onSelect }: Props) {
 
   const defaultItems = [
     {
-      path: "/",
-      name: "Frameworks",
+      path: '/',
+      name: 'Frameworks',
       disabled: false,
     },
   ];
 
   const [items, setItems] = useState(initialItems ?? defaultItems);
   const pathname = usePathname();
-  const part = pathname?.split("/")[1];
+  const part = pathname?.split('/')[1];
 
-  const hiddenItems = defaultItems.filter(
-    (item) => !items.some((i) => i.path === item.path),
-  );
+  const hiddenItems = defaultItems.filter((item) => !items.some((i) => i.path === item.path));
 
   const onReorder = (
     items: {
@@ -144,8 +135,8 @@ export function MainMenu({ initialItems, onSelect }: Props) {
             .filter((item) => !item.disabled)
             .map((item) => {
               const isActive =
-                (pathname === "/" && item.path === "/") ||
-                (pathname !== "/" && item.path.startsWith(`/${part}`));
+                (pathname === '/' && item.path === '/') ||
+                (pathname !== '/' && item.path.startsWith(`/${part}`));
 
               return (
                 <Item

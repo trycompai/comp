@@ -1,6 +1,6 @@
-import type React from "react";
-import type { FrameworkStatus } from "@comp/db/types";
-import { Badge } from "@comp/ui/badge";
+import type React from 'react';
+import type { FrameworkStatus } from '@comp/db/types';
+import { Badge } from '@comp/ui/badge';
 
 interface FrameworkItemProps {
   text: string;
@@ -8,21 +8,17 @@ interface FrameworkItemProps {
   icon?: React.ReactNode;
 }
 
-export default function FrameworkItem({
-  text,
-  status,
-  icon,
-}: FrameworkItemProps) {
+export default function FrameworkItem({ text, status, icon }: FrameworkItemProps) {
   const getStatusText = (status: FrameworkStatus) => {
     switch (status) {
-      case "started":
-        return "Started";
-      case "in_progress":
-        return "In progress";
-      case "compliant":
-        return "Compliant";
+      case 'started':
+        return 'Started';
+      case 'in_progress':
+        return 'In progress';
+      case 'compliant':
+        return 'Compliant';
       default:
-        return "Unknown";
+        return 'Unknown';
     }
   };
 

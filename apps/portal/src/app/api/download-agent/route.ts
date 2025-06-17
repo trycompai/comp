@@ -1,129 +1,110 @@
-import { auth } from "@/app/lib/auth";
-import { getFleetInstance } from "@/utils/fleet";
-import { logger } from "@/utils/logger";
-import { getFleetAgent } from "@/utils/s3";
-import { db } from "@comp/db";
-import archiver from "archiver";
-import { AxiosError } from "axios";
-import { type NextRequest, NextResponse } from "next/server";
-import type { Readable } from "node:stream";
-import { PassThrough } from "node:stream";
+import { auth } from '@/app/lib/auth';
+import { logger } from '@/utils/logger';
+import { type NextRequest, NextResponse } from 'next/server';
+import { promises as fs } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { createAgentArchive } from './archive';
+import { createFleetLabel } from './fleet-label';
+import { generateMacScript, generateWindowsScript } from './scripts';
+import type { DownloadAgentRequest, SupportedOS } from './types';
+import { detectOSFromUserAgent, validateMemberAndOrg } from './utils';
 
 export async function POST(req: NextRequest) {
+  // Authentication
   const session = await auth.api.getSession({
     headers: req.headers,
   });
 
   if (!session?.user) {
-    return new NextResponse("Unauthorized", { status: 401 });
+    return new NextResponse('Unauthorized', { status: 401 });
   }
 
-  const { orgId, employeeId } = await req.json();
+  // Validate request body
+  const { orgId, employeeId }: DownloadAgentRequest = await req.json();
 
   if (!orgId || !employeeId) {
-    return new NextResponse("Missing orgId or employeeId", { status: 400 });
+    return new NextResponse('Missing orgId or employeeId', { status: 400 });
   }
 
-  const user = session.user;
-  const fleetDevicePathMac = process.env.FLEET_DEVICE_PATH_MAC;
+  // Auto-detect OS from User-Agent
+  const userAgent = req.headers.get('user-agent');
+  const detectedOS = detectOSFromUserAgent(userAgent);
 
-  if (!fleetDevicePathMac) {
-    logger("FLEET_DEVICE_PATH_MAC not configured in environment variables");
+  if (!detectedOS) {
     return new NextResponse(
-      "Server configuration error: FLEET_DEVICE_PATH_MAC is missing.",
-      { status: 500 },
+      'Could not detect OS from User-Agent. Please use a standard browser on macOS or Windows.',
+      { status: 400 },
     );
   }
 
-  const member = await db.member.findFirst({
-    where: {
-      userId: user.id,
-      organizationId: orgId,
-    },
-  });
+  const os = detectedOS;
+  logger('Auto-detected OS from User-Agent', { os, userAgent });
 
+  // Check environment configuration
+  const fleetDevicePathMac = process.env.FLEET_DEVICE_PATH_MAC;
+  const fleetDevicePathWindows = process.env.FLEET_DEVICE_PATH_WINDOWS;
+
+  if (!fleetDevicePathMac || !fleetDevicePathWindows) {
+    logger(
+      'FLEET_DEVICE_PATH_MAC or FLEET_DEVICE_PATH_WINDOWS not configured in environment variables',
+    );
+    return new NextResponse(
+      'Server configuration error: FLEET_DEVICE_PATH_MAC or FLEET_DEVICE_PATH_WINDOWS is missing.',
+      {
+        status: 500,
+      },
+    );
+  }
+
+  // Validate member and organization
+  const member = await validateMemberAndOrg(session.user.id, orgId);
   if (!member) {
-    logger("Member not found", { userId: user.id, orgId });
-    return new NextResponse("Member not found", { status: 404 });
+    return new NextResponse('Member not found or organization invalid', { status: 404 });
   }
 
-  const org = await db.organization.findUnique({
-    where: {
-      id: orgId,
-    },
-  });
+  // Generate OS-specific script
+  const fleetDevicePath = os === 'macos' ? fleetDevicePathMac : fleetDevicePathWindows;
+  const script =
+    os === 'macos'
+      ? generateMacScript({ orgId, employeeId, fleetDevicePath })
+      : generateWindowsScript({ orgId, employeeId, fleetDevicePath });
 
-  if (!org) {
-    logger("Organization not found", { orgId });
-    return new NextResponse("Organization not found", { status: 404 });
-  }
-
-  const script = `#!/bin/bash
-# Create org marker for Fleet policies/labels
-set -euo pipefail
-ORG_ID="${orgId}"
-EMPLOYEE_ID="${employeeId}"
-FLEET_DIR="${fleetDevicePathMac}"
-mkdir -p "$FLEET_DIR"
-echo "$ORG_ID" > "$FLEET_DIR/${orgId}"
-echo "$EMPLOYEE_ID" > "$FLEET_DIR/${employeeId}"
-chmod 755 "$FLEET_DIR"
-chmod 644 "$FLEET_DIR/${orgId}"
-chmod 644 "$FLEET_DIR/${employeeId}"
-exit 0`;
-
-  const stream = new PassThrough();
-  const archive = archiver("zip", { zlib: { level: 9 } });
-  archive.pipe(stream);
-
-  archive.append(script, { name: "run_me_first.command", mode: 0o755 });
-
-  const pkg = await getFleetAgent({ os: "macos" });
-
-  archive.append(pkg as Readable, {
-    name: "compai-device-agent.pkg",
-    store: true,
-  });
-
-  archive.finalize().catch((err) => {
-    logger("Error finalizing archive", { error: err });
-    stream.destroy();
-  });
-
-  const filename = "compai-device-agent.zip";
+  // Create temporary directory
+  const tempDir = path.join(tmpdir(), `compai-agent-${Date.now()}`);
+  await fs.mkdir(tempDir, { recursive: true });
 
   try {
-    const fleet = await getFleetInstance();
-
-    const response = await fleet.post("/labels", {
-      name: employeeId,
-      query: `SELECT 1 FROM file WHERE path = '${fleetDevicePathMac}/${employeeId}' LIMIT 1;`,
+    // Create the archive
+    const stream = await createAgentArchive({
+      os: os as SupportedOS,
+      script,
+      tempDir,
     });
 
-    const labelId = response.data.label.id;
+    // Create Fleet label
+    await createFleetLabel({
+      employeeId,
+      memberId: member.id,
+      os: os as SupportedOS,
+      fleetDevicePathMac,
+      fleetDevicePathWindows,
+    });
 
-    await db.member.update({
-      where: {
-        id: member.id,
-      },
-      data: {
-        fleetDmLabelId: labelId,
+    const filename = `compai-device-agent-${os}.zip`;
+
+    return new NextResponse(stream as unknown as ReadableStream, {
+      headers: {
+        'Content-Type': 'application/zip',
+        'Content-Disposition': `attachment; filename="${filename}"`,
       },
     });
-  } catch (error) {
-    if (error instanceof AxiosError && error.response?.status === 409) {
-      // Label already exists, which is fine.
-      logger("Fleet label already exists, skipping creation.", { employeeId });
-    } else {
-      // Re-throw other errors
-      throw error;
+  } finally {
+    // Clean up temp directory
+    try {
+      await fs.rm(tempDir, { recursive: true, force: true });
+    } catch (cleanupError) {
+      logger('Failed to clean up temp directory', { error: cleanupError, tempDir });
     }
   }
-
-  return new NextResponse(stream as unknown as ReadableStream, {
-    headers: {
-      "Content-Type": "application/zip",
-      "Content-Disposition": `attachment; filename="${filename}"`,
-    },
-  });
 }

@@ -1,19 +1,19 @@
-"use server";
+'use server';
 
-import { db } from "@comp/db";
-import { PolicyStatus } from "@comp/db/types";
-import { revalidatePath, revalidateTag } from "next/cache";
-import { authActionClient } from "../safe-action";
-import { updatePolicyFormSchema } from "../schema";
+import { db } from '@comp/db';
+import { PolicyStatus } from '@comp/db/types';
+import { revalidatePath, revalidateTag } from 'next/cache';
+import { authActionClient } from '../safe-action';
+import { updatePolicyFormSchema } from '../schema';
 
 export const submitPolicyForApprovalAction = authActionClient
-  .schema(updatePolicyFormSchema)
+  .inputSchema(updatePolicyFormSchema)
   .metadata({
-    name: "submit-policy-for-approval",
+    name: 'submit-policy-for-approval',
     track: {
-      event: "submit-policy-for-approval",
-      description: "Submit Policy for Approval",
-      channel: "server",
+      event: 'submit-policy-for-approval',
+      description: 'Submit Policy for Approval',
+      channel: 'server',
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -29,11 +29,11 @@ export const submitPolicyForApprovalAction = authActionClient
     const { user, session } = ctx;
 
     if (!user.id || !session.activeOrganizationId) {
-      throw new Error("Unauthorized");
+      throw new Error('Unauthorized');
     }
 
     if (!approverId) {
-      throw new Error("Approver is required");
+      throw new Error('Approver is required');
     }
 
     try {
@@ -50,7 +50,7 @@ export const submitPolicyForApprovalAction = authActionClient
           department,
           frequency: review_frequency,
           reviewDate: newReviewDate,
-          isRequiredToSign: isRequiredToSign === "required",
+          isRequiredToSign: isRequiredToSign === 'required',
           approverId,
         },
       });
@@ -61,7 +61,7 @@ export const submitPolicyForApprovalAction = authActionClient
         success: true,
       };
     } catch (error) {
-      console.error("Error submitting policy for approval:", error);
+      console.error('Error submitting policy for approval:', error);
 
       return {
         success: false,

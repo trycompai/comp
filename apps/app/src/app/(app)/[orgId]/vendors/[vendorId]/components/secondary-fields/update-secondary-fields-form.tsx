@@ -1,32 +1,19 @@
-"use client";
+'use client';
 
-import { SelectAssignee } from "@/components/SelectAssignee";
-import { VENDOR_STATUS_TYPES, VendorStatus } from "@/components/vendor-status";
-import { Member, type User, type Vendor, VendorCategory } from "@comp/db/types";
-import { Button } from "@comp/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@comp/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@comp/ui/select";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
-import { useAction } from "next-safe-action/hooks";
-import { useForm } from "react-hook-form";
-import { toast } from "sonner";
-import type { z } from "zod";
-import { updateVendorSchema } from "../../actions/schema";
-import { updateVendorAction } from "../../actions/update-vendor-action";
+import { SelectAssignee } from '@/components/SelectAssignee';
+import { VENDOR_STATUS_TYPES, VendorStatus } from '@/components/vendor-status';
+import { Member, type User, type Vendor, VendorCategory } from '@comp/db/types';
+import { Button } from '@comp/ui/button';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Loader2 } from 'lucide-react';
+import { useAction } from 'next-safe-action/hooks';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import type { z } from 'zod';
+import { updateVendorSchema } from '../../actions/schema';
+import { updateVendorAction } from '../../actions/update-vendor-action';
 
 export function UpdateSecondaryFieldsForm({
   vendor,
@@ -37,10 +24,10 @@ export function UpdateSecondaryFieldsForm({
 }) {
   const updateVendor = useAction(updateVendorAction, {
     onSuccess: () => {
-      toast.success("Vendor updated successfully");
+      toast.success('Vendor updated successfully');
     },
     onError: () => {
-      toast.error("Failed to update vendor");
+      toast.error('Failed to update vendor');
     },
   });
 
@@ -58,7 +45,7 @@ export function UpdateSecondaryFieldsForm({
 
   const onSubmit = (data: z.infer<typeof updateVendorSchema>) => {
     // Explicitly set assigneeId to null if it's an empty string (representing "None")
-    const finalAssigneeId = data.assigneeId === "" ? null : data.assigneeId;
+    const finalAssigneeId = data.assigneeId === '' ? null : data.assigneeId;
 
     updateVendor.execute({
       id: data.id,
@@ -79,10 +66,10 @@ export function UpdateSecondaryFieldsForm({
             name="assigneeId"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{"Assignee"}</FormLabel>
+                <FormLabel>{'Assignee'}</FormLabel>
                 <FormControl>
                   <SelectAssignee
-                    disabled={updateVendor.status === "executing"}
+                    disabled={updateVendor.status === 'executing'}
                     withTitle={false}
                     assignees={assignees}
                     assigneeId={field.value}
@@ -98,11 +85,11 @@ export function UpdateSecondaryFieldsForm({
             name="status"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{"Status"}</FormLabel>
+                <FormLabel>{'Status'}</FormLabel>
                 <FormControl>
                   <Select value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger>
-                      <SelectValue placeholder={"Select a status..."}>
+                      <SelectValue placeholder={'Select a status...'}>
                         {field.value && <VendorStatus status={field.value} />}
                       </SelectValue>
                     </SelectTrigger>
@@ -124,26 +111,19 @@ export function UpdateSecondaryFieldsForm({
             name="category"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{"Category"}</FormLabel>
+                <FormLabel>{'Category'}</FormLabel>
                 <FormControl>
-                  <Select
-                    {...field}
-                    value={field.value}
-                    onValueChange={field.onChange}
-                  >
+                  <Select {...field} value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger>
-                      <SelectValue placeholder={"Select a category..."} />
+                      <SelectValue placeholder={'Select a category...'} />
                     </SelectTrigger>
                     <SelectContent>
                       {Object.values(VendorCategory).map((category) => {
                         const formattedCategory = category
                           .toLowerCase()
-                          .split("_")
-                          .map(
-                            (word) =>
-                              word.charAt(0).toUpperCase() + word.slice(1),
-                          )
-                          .join(" ");
+                          .split('_')
+                          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                          .join(' ');
                         return (
                           <SelectItem key={category} value={category}>
                             {formattedCategory}
@@ -159,15 +139,11 @@ export function UpdateSecondaryFieldsForm({
           />
         </div>
         <div className="mt-4 flex justify-end">
-          <Button
-            type="submit"
-            variant="default"
-            disabled={updateVendor.status === "executing"}
-          >
-            {updateVendor.status === "executing" ? (
+          <Button type="submit" variant="default" disabled={updateVendor.status === 'executing'}>
+            {updateVendor.status === 'executing' ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              "Save"
+              'Save'
             )}
           </Button>
         </div>

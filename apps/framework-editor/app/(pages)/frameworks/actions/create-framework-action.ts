@@ -1,9 +1,9 @@
-"use server";
+'use server';
 
-import { z } from "zod";
-import { db } from "@comp/db";
-import { revalidatePath } from "next/cache";
-import { FrameworkBaseSchema } from "../schemas"; // Import the shared schema
+import { z } from 'zod';
+import { db } from '@comp/db';
+import { revalidatePath } from 'next/cache';
+import { FrameworkBaseSchema } from '../schemas'; // Import the shared schema
 // Assuming revalidatePath might be used later, uncomment if needed.
 // import { revalidatePath } from 'next/cache'
 
@@ -30,9 +30,9 @@ export async function createFrameworkAction(
   formData: FormData,
 ): Promise<CreateFrameworkActionState> {
   const rawInput = {
-    name: formData.get("name"),
-    description: formData.get("description"),
-    version: formData.get("version") || "1.0.0",
+    name: formData.get('name'),
+    description: formData.get('description'),
+    version: formData.get('version') || '1.0.0',
   };
 
   const validationResult = CreateFrameworkSchema.safeParse(rawInput);
@@ -40,7 +40,7 @@ export async function createFrameworkAction(
   if (!validationResult.success) {
     return {
       success: false,
-      error: "Invalid input.",
+      error: 'Invalid input.',
       issues: validationResult.error.issues,
     };
   }
@@ -55,7 +55,7 @@ export async function createFrameworkAction(
         version,
       },
     });
-    revalidatePath("/frameworks");
+    revalidatePath('/frameworks');
     return {
       success: true,
       data: {
@@ -68,12 +68,12 @@ export async function createFrameworkAction(
       },
     };
   } catch (error) {
-    console.error("Failed to create framework:", error);
+    console.error('Failed to create framework:', error);
     // In a real app, you might want to log this error more formally
     // and provide a more user-friendly error message.
     return {
       success: false,
-      error: "Failed to create framework in the database. Please try again.",
+      error: 'Failed to create framework in the database. Please try again.',
     };
   }
 }

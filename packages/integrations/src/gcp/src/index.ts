@@ -1,7 +1,7 @@
-import jwt from "jsonwebtoken";
-import nodeFetch from "node-fetch";
+import jwt from 'jsonwebtoken';
+import nodeFetch from 'node-fetch';
 
-const TOKEN_URI = "https://oauth2.googleapis.com/token";
+const TOKEN_URI = 'https://oauth2.googleapis.com/token';
 const filter = encodeURIComponent('state="ACTIVE" OR state="INACTIVE"');
 
 interface GCPCredentials {
@@ -35,14 +35,12 @@ function parseServiceAccountKey(serviceAccountKey: string): ServiceAccountKey {
   try {
     return JSON.parse(serviceAccountKey);
   } catch (error) {
-    throw new Error("Invalid service account key format");
+    throw new Error('Invalid service account key format');
   }
 }
 
 function generateJWT(credentials: GCPCredentials): string {
-  const serviceAccount = parseServiceAccountKey(
-    credentials.service_account_key,
-  );
+  const serviceAccount = parseServiceAccountKey(credentials.service_account_key);
   const now = Math.floor(Date.now() / 1000);
   const payload = {
     iss: serviceAccount.client_email,
@@ -50,20 +48,20 @@ function generateJWT(credentials: GCPCredentials): string {
     aud: TOKEN_URI,
     iat: now,
     exp: now + 3600,
-    scope: "https://www.googleapis.com/auth/cloud-platform",
+    scope: 'https://www.googleapis.com/auth/cloud-platform',
   };
   return jwt.sign(payload, serviceAccount.private_key, {
-    algorithm: "RS256",
+    algorithm: 'RS256',
   });
 }
 
 async function getAccessToken(credentials: GCPCredentials): Promise<string> {
   const jwtToken = generateJWT(credentials);
   const res = await nodeFetch(TOKEN_URI, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
-      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
       assertion: jwtToken,
     }),
   });
@@ -79,9 +77,7 @@ async function getAccessToken(credentials: GCPCredentials): Promise<string> {
  */
 async function fetch(credentials: GCPCredentials): Promise<GCPFinding[]> {
   try {
-    const serviceAccount = parseServiceAccountKey(
-      credentials.service_account_key,
-    );
+    const serviceAccount = parseServiceAccountKey(credentials.service_account_key);
     const token = await getAccessToken(credentials);
     const BASE_FINDINGS_URL = `https://securitycenter.googleapis.com/v2/organizations/${credentials.organization_id}/sources/-/findings?pageSize=1000&filter=${filter}`;
 
@@ -94,10 +90,10 @@ async function fetch(credentials: GCPCredentials): Promise<GCPFinding[]> {
         : BASE_FINDINGS_URL;
 
       const res = await nodeFetch(url, {
-        method: "GET",
+        method: 'GET',
         headers: {
           Authorization: `Bearer ${token}`,
-          "X-Goog-User-Project": serviceAccount.project_id,
+          'X-Goog-User-Project': serviceAccount.project_id,
         },
       });
 
@@ -107,19 +103,17 @@ async function fetch(credentials: GCPCredentials): Promise<GCPFinding[]> {
       }
 
       const data = await res.json();
-      const findings =
-        data.listFindingsResults?.map((r: any) => r.finding) || [];
+      const findings = data.listFindingsResults?.map((r: any) => r.finding) || [];
 
       for (const finding of findings) {
         const transformedFinding: GCPFinding = {
-          title: finding.description || "Untitled Finding",
-          description:
-            finding.sourceProperties?.Explanation || "No description available",
+          title: finding.description || 'Untitled Finding',
+          description: finding.sourceProperties?.Explanation || 'No description available',
           remediation:
-            (finding.sourceProperties?.Recommendation || "") +
-            (finding.sourceProperties?.ExceptionInstructions || ""),
-          status: finding.state === "ACTIVE" ? "FAILED" : "PASSED",
-          severity: finding.severity || "INFO",
+            (finding.sourceProperties?.Recommendation || '') +
+            (finding.sourceProperties?.ExceptionInstructions || ''),
+          status: finding.state === 'ACTIVE' ? 'FAILED' : 'PASSED',
+          severity: finding.severity || 'INFO',
           resultDetails: finding,
         };
         allFindings.push(transformedFinding);
@@ -130,7 +124,7 @@ async function fetch(credentials: GCPCredentials): Promise<GCPFinding[]> {
 
     return allFindings;
   } catch (error) {
-    console.error("Error fetching GCP security findings:", error);
+    console.error('Error fetching GCP security findings:', error);
     throw error;
   }
 }

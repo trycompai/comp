@@ -1,8 +1,8 @@
-import { getI18n } from "@/app/locales/server";
-import type { Metadata } from "next";
-import { setStaticParamsLocale } from "next-international/server";
-import { Overview } from "./components/Overview";
-import { Suspense } from "react";
+import { getI18n } from '@/app/locales/server';
+import type { Metadata } from 'next';
+import { setStaticParamsLocale } from 'next-international/server';
+import { Overview } from './components/Overview';
+import { Suspense } from 'react';
 
 interface HomePageProps {
   params: Promise<{ locale: string }>;
@@ -32,6 +32,6 @@ export async function generateMetadata({
   const t = await getI18n();
 
   return {
-    title: t("sidebar.dashboard"),
+    title: t('sidebar.dashboard'),
   };
 }

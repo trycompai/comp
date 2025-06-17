@@ -1,35 +1,29 @@
-"use client";
+'use client';
 
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@comp/ui/card";
-import { Badge } from "@comp/ui/badge";
-import { cn } from "@comp/ui/cn";
-import { BadgeProps } from "@comp/ui/badge";
-import { useState } from "react";
-import { Button } from "@comp/ui/button";
-import { ArrowRight } from "lucide-react";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@comp/ui/card';
+import { Badge } from '@comp/ui/badge';
+import { cn } from '@comp/ui/cn';
+import { BadgeProps } from '@comp/ui/badge';
+import { useState } from 'react';
+import { Button } from '@comp/ui/button';
+import { ArrowRight } from 'lucide-react';
 
 const severityBadgeMap: {
-  [key: string]: BadgeProps["variant"];
+  [key: string]: BadgeProps['variant'];
 } = {
-  critical: "destructive",
-  high: "destructive",
-  medium: "warning",
-  low: "default",
+  critical: 'destructive',
+  high: 'destructive',
+  medium: 'warning',
+  low: 'default',
 };
 
 const severityBorderMap: {
   [key: string]: string;
 } = {
-  critical: "border-t-destructive",
-  high: "border-t-destructive",
-  medium: "border-t-warning",
-  low: "border-t-primary",
+  critical: 'border-t-destructive',
+  high: 'border-t-destructive',
+  medium: 'border-t-warning',
+  low: 'border-t-primary',
 };
 
 export function TestCard({
@@ -55,10 +49,9 @@ export function TestCard({
       <Card
         key={test.id}
         className={cn(
-          "flex flex-col border-t-4",
-          severityBorderMap[
-            test.severity?.toLocaleLowerCase() as keyof typeof severityBorderMap
-          ] || "border-t-secondary",
+          'flex flex-col border-t-4',
+          severityBorderMap[test.severity?.toLocaleLowerCase() as keyof typeof severityBorderMap] ||
+            'border-t-secondary',
         )}
       >
         <CardHeader>
@@ -84,11 +77,7 @@ export function TestCard({
           })}
         </CardContent>
         <CardFooter className="flex justify-end py-4">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setShowRemediation(false)}
-          >
+          <Button size="sm" variant="outline" onClick={() => setShowRemediation(false)}>
             Close
           </Button>
         </CardFooter>
@@ -100,10 +89,9 @@ export function TestCard({
     <Card
       key={test.id}
       className={cn(
-        "flex flex-col border-t-4 break-all",
-        severityBorderMap[
-          test.severity?.toLocaleLowerCase() as keyof typeof severityBorderMap
-        ] || "border-t-secondary",
+        'flex flex-col border-t-4 break-all',
+        severityBorderMap[test.severity?.toLocaleLowerCase() as keyof typeof severityBorderMap] ||
+          'border-t-secondary',
       )}
     >
       <CardHeader className="relative flex flex-col gap-2 break-all">
@@ -115,30 +103,23 @@ export function TestCard({
             <Badge
               className="select-none"
               variant={
-                (severityBadgeMap[
-                  test.severity.toLowerCase() as keyof typeof severityBadgeMap
-                ] || "default") as BadgeProps["variant"]
+                (severityBadgeMap[test.severity.toLowerCase() as keyof typeof severityBadgeMap] ||
+                  'default') as BadgeProps['variant']
               }
             >
               {test.severity}
             </Badge>
           )}
         </div>
-        <CardTitle>{test.title || "Untitled Test"}</CardTitle>
+        <CardTitle>{test.title || 'Untitled Test'}</CardTitle>
       </CardHeader>
       <CardContent className="text-muted-foreground flex h-full flex-col gap-3 text-sm">
         {test.description && <p>{test.description}</p>}
         <span className="flex-grow" />
       </CardContent>
       <CardFooter className="flex items-center justify-between py-4">
-        <div className="text-muted-foreground text-xs">
-          Status: {test.status}
-        </div>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => setShowRemediation(true)}
-        >
+        <div className="text-muted-foreground text-xs">Status: {test.status}</div>
+        <Button size="sm" variant="outline" onClick={() => setShowRemediation(true)}>
           Remediate <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </CardFooter>

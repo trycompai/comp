@@ -1,35 +1,23 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import PageLayout from "@/app/components/PageLayout";
-import { DataTable } from "@/app/components/DataTable";
-import { getColumns } from "./components/columns";
-import type {
-  FrameworkEditorRequirement,
-  FrameworkEditorFramework,
-} from "@prisma/client";
-import { Button } from "@comp/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@comp/ui/card";
-import { Badge } from "@comp/ui/badge";
-import { PencilIcon, FileText, Trash2 } from "lucide-react";
-import { EditFrameworkDialog } from "./components/EditFrameworkDialog";
-import { EditRequirementDialog } from "./components/EditRequirementDialog";
-import { DeleteFrameworkDialog } from "./components/DeleteFrameworkDialog";
-import { AddRequirementDialog } from "./components/AddRequirementDialog";
-import { DeleteRequirementDialog } from "./components/DeleteRequirementDialog";
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import PageLayout from '@/app/components/PageLayout';
+import { DataTable } from '@/app/components/DataTable';
+import { getColumns } from './components/columns';
+import type { FrameworkEditorRequirement, FrameworkEditorFramework } from '@prisma/client';
+import { Button } from '@comp/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
+import { Badge } from '@comp/ui/badge';
+import { PencilIcon, FileText, Trash2 } from 'lucide-react';
+import { EditFrameworkDialog } from './components/EditFrameworkDialog';
+import { EditRequirementDialog } from './components/EditRequirementDialog';
+import { DeleteFrameworkDialog } from './components/DeleteFrameworkDialog';
+import { AddRequirementDialog } from './components/AddRequirementDialog';
+import { DeleteRequirementDialog } from './components/DeleteRequirementDialog';
 
 interface FrameworkDetails
-  extends Pick<
-    FrameworkEditorFramework,
-    "id" | "name" | "version" | "description" | "visible"
-  > {}
+  extends Pick<FrameworkEditorFramework, 'id' | 'name' | 'version' | 'description' | 'visible'> {}
 
 interface FrameworkRequirementsClientPageProps {
   frameworkDetails: FrameworkDetails;
@@ -45,23 +33,21 @@ export function FrameworkRequirementsClientPage({
   initialRequirements,
 }: FrameworkRequirementsClientPageProps) {
   const router = useRouter();
-  const [isFrameworkEditDialogOpen, setIsFrameworkEditDialogOpen] =
-    useState(false);
+  const [isFrameworkEditDialogOpen, setIsFrameworkEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isAddRequirementDialogOpen, setIsAddRequirementDialogOpen] =
-    useState(false);
-  const [isDeleteRequirementDialogOpen, setIsDeleteRequirementDialogOpen] =
-    useState(false);
-  const [requirementToDelete, setRequirementToDelete] =
-    useState<FrameworkEditorRequirement | null>(null);
+  const [isAddRequirementDialogOpen, setIsAddRequirementDialogOpen] = useState(false);
+  const [isDeleteRequirementDialogOpen, setIsDeleteRequirementDialogOpen] = useState(false);
+  const [requirementToDelete, setRequirementToDelete] = useState<FrameworkEditorRequirement | null>(
+    null,
+  );
 
   const [requirementsList, setRequirementsList] =
     useState<FrameworkEditorRequirement[]>(initialRequirements);
 
-  const [isEditRequirementDialogOpen, setIsEditRequirementDialogOpen] =
-    useState(false);
-  const [selectedRequirement, setSelectedRequirement] =
-    useState<SelectedRequirementToEdit | null>(null);
+  const [isEditRequirementDialogOpen, setIsEditRequirementDialogOpen] = useState(false);
+  const [selectedRequirement, setSelectedRequirement] = useState<SelectedRequirementToEdit | null>(
+    null,
+  );
 
   useEffect(() => {
     setRequirementsList(initialRequirements);
@@ -72,9 +58,7 @@ export function FrameworkRequirementsClientPage({
     router.refresh();
   };
 
-  const handleOpenEditRequirementDialog = (
-    requirement: FrameworkEditorRequirement,
-  ) => {
+  const handleOpenEditRequirementDialog = (requirement: FrameworkEditorRequirement) => {
     setSelectedRequirement({
       ...requirement,
       frameworkId: frameworkDetails.id,
@@ -85,14 +69,12 @@ export function FrameworkRequirementsClientPage({
   const handleRequirementUpdated = (
     updatedRequirement: Pick<
       FrameworkEditorRequirement,
-      "id" | "name" | "description" | "identifier"
+      'id' | 'name' | 'description' | 'identifier'
     >,
   ) => {
     setRequirementsList((prevList) =>
       prevList.map((req) =>
-        req.id === updatedRequirement.id
-          ? { ...req, ...updatedRequirement }
-          : req,
+        req.id === updatedRequirement.id ? { ...req, ...updatedRequirement } : req,
       ),
     );
     setIsEditRequirementDialogOpen(false);
@@ -104,9 +86,7 @@ export function FrameworkRequirementsClientPage({
     router.refresh();
   };
 
-  const handleOpenDeleteRequirementDialog = (
-    requirement: FrameworkEditorRequirement,
-  ) => {
+  const handleOpenDeleteRequirementDialog = (requirement: FrameworkEditorRequirement) => {
     setRequirementToDelete(requirement);
     setIsDeleteRequirementDialogOpen(true);
   };
@@ -117,15 +97,12 @@ export function FrameworkRequirementsClientPage({
     router.refresh();
   };
 
-  const columns = getColumns(
-    handleOpenEditRequirementDialog,
-    handleOpenDeleteRequirementDialog,
-  );
+  const columns = getColumns(handleOpenEditRequirementDialog, handleOpenDeleteRequirementDialog);
 
   return (
     <PageLayout
       breadcrumbs={[
-        { label: "Frameworks", href: "/frameworks" },
+        { label: 'Frameworks', href: '/frameworks' },
         {
           label: frameworkDetails.name,
           href: `/frameworks/${frameworkDetails.id}`,
@@ -142,10 +119,10 @@ export function FrameworkRequirementsClientPage({
                   Version: {frameworkDetails.version}
                 </Badge>
                 <Badge
-                  variant={frameworkDetails.visible ? "default" : "secondary"}
+                  variant={frameworkDetails.visible ? 'default' : 'secondary'}
                   className="ml-2 text-sm font-normal"
                 >
-                  {frameworkDetails.visible ? "Visible" : "Hidden"}
+                  {frameworkDetails.visible ? 'Visible' : 'Hidden'}
                 </Badge>
               </CardTitle>
               <CardDescription className="mt-2 text-base">

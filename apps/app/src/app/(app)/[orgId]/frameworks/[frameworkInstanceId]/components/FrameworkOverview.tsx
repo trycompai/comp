@@ -1,29 +1,22 @@
-"use client";
+'use client';
 
-import { Badge } from "@comp/ui/badge";
-import { Button } from "@comp/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@comp/ui/card";
+import { Badge } from '@comp/ui/badge';
+import { Button } from '@comp/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@comp/ui/dropdown-menu";
-import { Progress } from "@comp/ui/progress";
-import { Control, Task } from "@comp/db/types";
-import {
-  MoreVertical,
-  Trash2,
-  CheckCircle2,
-  Clock,
-  BarChart3,
-  Target,
-} from "lucide-react";
-import { useState } from "react";
-import { cn } from "@comp/ui/cn";
-import { getControlStatus } from "../../lib/utils";
-import { FrameworkInstanceWithControls } from "../../types";
-import { FrameworkDeleteDialog } from "./FrameworkDeleteDialog";
+} from '@comp/ui/dropdown-menu';
+import { Progress } from '@comp/ui/progress';
+import { Control, Task } from '@comp/db/types';
+import { MoreVertical, Trash2, CheckCircle2, Clock, BarChart3, Target } from 'lucide-react';
+import { useState } from 'react';
+import { cn } from '@comp/ui/cn';
+import { getControlStatus } from '../../lib/utils';
+import { FrameworkInstanceWithControls } from '../../types';
+import { FrameworkDeleteDialog } from './FrameworkDeleteDialog';
 
 interface FrameworkOverviewProps {
   frameworkInstanceWithControls: FrameworkInstanceWithControls;
@@ -43,26 +36,23 @@ export function FrameworkOverview({
 
   // Calculate compliant controls (all artifacts completed)
   const compliantControls = allControls.filter(
-    (control: any) =>
-      getControlStatus(control.policies, tasks, control.id) === "completed",
+    (control: any) => getControlStatus(control.policies, tasks, control.id) === 'completed',
   ).length;
 
   // Calculate compliance percentage based on compliant controls
   const compliancePercentage =
-    totalControls > 0
-      ? Math.round((compliantControls / totalControls) * 100)
-      : 0;
+    totalControls > 0 ? Math.round((compliantControls / totalControls) * 100) : 0;
 
   const getComplianceColor = (score: number) => {
-    if (score >= 80) return "text-green-600 dark:text-green-400";
-    if (score >= 60) return "text-yellow-600 dark:text-yellow-400";
-    return "text-red-600 dark:text-red-400";
+    if (score >= 80) return 'text-green-600 dark:text-green-400';
+    if (score >= 60) return 'text-yellow-600 dark:text-yellow-400';
+    return 'text-red-600 dark:text-red-400';
   };
 
   const getComplianceBadgeVariant = () => {
-    if (compliancePercentage >= 80) return "default";
-    if (compliancePercentage >= 60) return "secondary";
-    return "destructive";
+    if (compliancePercentage >= 80) return 'default';
+    if (compliancePercentage >= 60) return 'secondary';
+    return 'destructive';
   };
 
   const inProgressControls = totalControls - compliantControls;
@@ -76,9 +66,7 @@ export function FrameworkOverview({
             <h1 className="text-2xl font-semibold tracking-tight">
               {frameworkInstanceWithControls.framework.name}
             </h1>
-            <Badge variant={getComplianceBadgeVariant()}>
-              {compliancePercentage}%
-            </Badge>
+            <Badge variant={getComplianceBadgeVariant()}>{compliancePercentage}%</Badge>
           </div>
           <p className="text-muted-foreground max-w-2xl text-sm">
             {frameworkInstanceWithControls.framework.description}
@@ -121,15 +109,13 @@ export function FrameworkOverview({
                 <div className="mb-2 flex items-baseline gap-2">
                   <span
                     className={cn(
-                      "text-3xl font-bold tabular-nums",
+                      'text-3xl font-bold tabular-nums',
                       getComplianceColor(compliancePercentage),
                     )}
                   >
                     {compliancePercentage}
                   </span>
-                  <span className="text-muted-foreground text-sm">
-                    % complete
-                  </span>
+                  <span className="text-muted-foreground text-sm">% complete</span>
                 </div>
                 <Progress value={compliancePercentage} className="h-2" />
               </div>
@@ -156,24 +142,18 @@ export function FrameworkOverview({
                 <div className="h-2 w-2 rounded-full bg-green-500"></div>
                 <span className="text-sm">Complete</span>
               </div>
-              <span className="font-medium tabular-nums">
-                {compliantControls}
-              </span>
+              <span className="font-medium tabular-nums">{compliantControls}</span>
             </div>
             <div className="flex items-center justify-between py-2">
               <div className="flex items-center gap-2">
                 <div className="h-2 w-2 rounded-full bg-blue-500"></div>
                 <span className="text-sm">In Progress</span>
               </div>
-              <span className="font-medium tabular-nums">
-                {inProgressControls}
-              </span>
+              <span className="font-medium tabular-nums">{inProgressControls}</span>
             </div>
             <div className="flex items-center justify-between border-t py-2 pt-3">
               <span className="text-sm font-medium">Total</span>
-              <span className="font-semibold tabular-nums">
-                {totalControls}
-              </span>
+              <span className="font-semibold tabular-nums">{totalControls}</span>
             </div>
           </CardContent>
         </Card>

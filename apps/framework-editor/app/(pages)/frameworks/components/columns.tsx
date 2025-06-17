@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import type { ColumnDef } from "@tanstack/react-table";
-import Link from "next/link";
+import type { ColumnDef } from '@tanstack/react-table';
+import Link from 'next/link';
 // We will import the new type from the client page
-import type { FrameworkWithCounts } from "../FrameworksClientPage";
-import { Badge } from "@comp/ui/badge"; // Import the Badge component
+import type { FrameworkWithCounts } from '../FrameworksClientPage';
+import { Badge } from '@comp/ui/badge'; // Import the Badge component
 
 // TODO: Replace 'any' with the actual Framework type from your database schema
 // e.g., import type { Framework } from "@comp/db";
@@ -17,8 +17,8 @@ export interface Framework {
 
 export const columns: ColumnDef<FrameworkWithCounts>[] = [
   {
-    accessorKey: "name",
-    header: "Name",
+    accessorKey: 'name',
+    header: 'Name',
     size: 200,
     cell: ({ row }) => {
       const framework = row.original;
@@ -30,42 +30,38 @@ export const columns: ColumnDef<FrameworkWithCounts>[] = [
     },
   },
   {
-    accessorKey: "version",
-    header: "Version",
+    accessorKey: 'version',
+    header: 'Version',
     size: 100, // Adjusted size
   },
   {
-    accessorKey: "visible",
-    header: "Status",
+    accessorKey: 'visible',
+    header: 'Status',
     size: 100,
     cell: ({ row }) => {
       const framework = row.original;
       return (
-        <Badge variant={framework.visible ? "default" : "outline"}>
-          {framework.visible ? "Visible" : "Hidden"}
+        <Badge variant={framework.visible ? 'default' : 'outline'}>
+          {framework.visible ? 'Visible' : 'Hidden'}
         </Badge>
       );
     },
   },
   {
-    accessorKey: "requirementsCount",
-    header: "Requirements",
+    accessorKey: 'requirementsCount',
+    header: 'Requirements',
     size: 150, // Adjusted size
-    cell: ({ row }) => (
-      <Badge variant="secondary">{row.original.requirementsCount}</Badge>
-    ),
+    cell: ({ row }) => <Badge variant="secondary">{row.original.requirementsCount}</Badge>,
   },
   {
-    accessorKey: "controlsCount",
-    header: "Controls",
+    accessorKey: 'controlsCount',
+    header: 'Controls',
     size: 150, // Adjusted size
-    cell: ({ row }) => (
-      <Badge variant="secondary">{row.original.controlsCount}</Badge>
-    ),
+    cell: ({ row }) => <Badge variant="secondary">{row.original.controlsCount}</Badge>,
   },
   {
-    accessorKey: "description",
-    header: "Description",
+    accessorKey: 'description',
+    header: 'Description',
     size: 400, // Adjusted size
     minSize: 250, // Adjusted size
   },

@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { TriggerAuthContext } from "@trigger.dev/react-hooks";
+import { TriggerAuthContext } from '@trigger.dev/react-hooks';
 
 export function TriggerProvider({
   accessToken,

@@ -1,22 +1,22 @@
-"use server";
+'use server';
 
-import { auth } from "@/utils/auth";
-import { db } from "@comp/db";
-import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
-import { authActionClient } from "../safe-action";
-import { organizationSchema } from "../schema";
-import { createStripeCustomer } from "./lib/create-stripe-customer";
-import { initializeOrganization } from "./lib/initialize-organization";
-import { createFleetLabelForOrg } from "@/jobs/tasks/device/create-fleet-label-for-org";
+import { auth } from '@/utils/auth';
+import { db } from '@comp/db';
+import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
+import { authActionClient } from '../safe-action';
+import { organizationSchema } from '../schema';
+import { createStripeCustomer } from './lib/create-stripe-customer';
+import { initializeOrganization } from './lib/initialize-organization';
+import { createFleetLabelForOrg } from '@/jobs/tasks/device/create-fleet-label-for-org';
 
 export const createOrganizationAction = authActionClient
-  .schema(organizationSchema)
+  .inputSchema(organizationSchema)
   .metadata({
-    name: "create-organization",
+    name: 'create-organization',
     track: {
-      event: "create-organization",
-      channel: "server",
+      event: 'create-organization',
+      channel: 'server',
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -28,7 +28,7 @@ export const createOrganizationAction = authActionClient
       });
 
       if (!session?.session.activeOrganizationId) {
-        throw new Error("User is not part of an organization");
+        throw new Error('User is not part of an organization');
       }
 
       await db.onboarding.create({
@@ -41,13 +41,13 @@ export const createOrganizationAction = authActionClient
       const organizationId = session.session.activeOrganizationId;
 
       const stripeCustomerId = await createStripeCustomer({
-        name: "My Organization",
+        name: 'My Organization',
         email: session.user.email,
         organizationId,
       });
 
       if (!stripeCustomerId) {
-        throw new Error("Failed to create Stripe customer");
+        throw new Error('Failed to create Stripe customer');
       }
 
       await db.organization.update({
@@ -86,8 +86,8 @@ export const createOrganizationAction = authActionClient
         organizationId,
       };
     } catch (error) {
-      console.error("Error during organization creation/update:", error);
+      console.error('Error during organization creation/update:', error);
 
-      throw new Error("Failed to create or update organization structure");
+      throw new Error('Failed to create or update organization structure');
     }
   });

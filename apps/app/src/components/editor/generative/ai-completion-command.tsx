@@ -1,5 +1,5 @@
-import { CommandGroup, CommandItem, CommandSeparator } from "@comp/ui/command";
-import { TrashIcon } from "lucide-react";
+import { CommandGroup, CommandItem, CommandSeparator } from '@comp/ui/command';
+import { TrashIcon } from 'lucide-react';
 
 const AICompletionCommands = ({ onDiscard }: { onDiscard: () => void }) => {
   return (

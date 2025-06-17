@@ -1,35 +1,23 @@
-"use client";
+'use client';
 
-import { createApiKeyAction } from "@/actions/organization/create-api-key-action";
-import { Button } from "@comp/ui/button";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@comp/ui/select";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@comp/ui/sheet";
+import { createApiKeyAction } from '@/actions/organization/create-api-key-action';
+import { Button } from '@comp/ui/button';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@comp/ui/select';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@comp/ui/sheet';
 import {
   Drawer,
   DrawerContent,
   DrawerDescription,
   DrawerHeader,
   DrawerTitle,
-} from "@comp/ui/drawer";
-import { useMediaQuery } from "@comp/ui/hooks";
-import { ScrollArea } from "@comp/ui/scroll-area";
-import { X, Check, Copy, Loader2 } from "lucide-react";
-import { useAction } from "next-safe-action/hooks";
-import { useState } from "react";
-import { toast } from "sonner";
-import { Input } from "@comp/ui/input";
+} from '@comp/ui/drawer';
+import { useMediaQuery } from '@comp/ui/hooks';
+import { ScrollArea } from '@comp/ui/scroll-area';
+import { X, Check, Copy, Loader2 } from 'lucide-react';
+import { useAction } from 'next-safe-action/hooks';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { Input } from '@comp/ui/input';
 
 interface CreateApiKeyDialogProps {
   open: boolean;
@@ -37,33 +25,24 @@ interface CreateApiKeyDialogProps {
   onSuccess?: () => void;
 }
 
-export function CreateApiKeyDialog({
-  open,
-  onOpenChange,
-  onSuccess,
-}: CreateApiKeyDialogProps) {
-  const isDesktop = useMediaQuery("(min-width: 768px)");
-  const [name, setName] = useState("");
-  const [expiration, setExpiration] = useState<
-    "never" | "30days" | "90days" | "1year"
-  >("never");
+export function CreateApiKeyDialog({ open, onOpenChange, onSuccess }: CreateApiKeyDialogProps) {
+  const isDesktop = useMediaQuery('(min-width: 768px)');
+  const [name, setName] = useState('');
+  const [expiration, setExpiration] = useState<'never' | '30days' | '90days' | '1year'>('never');
   const [createdApiKey, setCreatedApiKey] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const { execute: createApiKey, status: isCreating } = useAction(
-    createApiKeyAction,
-    {
-      onSuccess: (data) => {
-        if (data.data?.data?.key) {
-          setCreatedApiKey(data.data.data.key);
-          if (onSuccess) onSuccess();
-        }
-      },
-      onError: (error) => {
-        toast.error("Failed to create API key");
-      },
+  const { execute: createApiKey, status: isCreating } = useAction(createApiKeyAction, {
+    onSuccess: (data) => {
+      if (data.data?.data?.key) {
+        setCreatedApiKey(data.data.data.key);
+        if (onSuccess) onSuccess();
+      }
     },
-  );
+    onError: (error) => {
+      toast.error('Failed to create API key');
+    },
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,9 +54,9 @@ export function CreateApiKeyDialog({
   };
 
   const handleClose = () => {
-    if (isCreating !== "executing") {
-      setName("");
-      setExpiration("never");
+    if (isCreating !== 'executing') {
+      setName('');
+      setExpiration('never');
       setCreatedApiKey(null);
       setCopied(false);
       onOpenChange(false);
@@ -89,14 +68,14 @@ export function CreateApiKeyDialog({
       try {
         await navigator.clipboard.writeText(createdApiKey);
         setCopied(true);
-        toast.success("API key copied to clipboard");
+        toast.success('API key copied to clipboard');
 
         // Reset copied state after 2 seconds
         setTimeout(() => {
           setCopied(false);
         }, 2000);
       } catch (err) {
-        toast.error("Error");
+        toast.error('Error');
       }
     }
   };
@@ -106,54 +85,43 @@ export function CreateApiKeyDialog({
     <form onSubmit={handleSubmit} className="space-y-4 p-1">
       <div className="space-y-2">
         <label htmlFor="name" className="text-sm leading-none font-medium">
-          {"Name"}
+          {'Name'}
         </label>
         <Input
           id="name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder={"Enter a name for this API key"}
+          placeholder={'Enter a name for this API key'}
           required
           className="w-full"
         />
       </div>
       <div className="space-y-2">
-        <label
-          htmlFor="expiration"
-          className="text-sm leading-none font-medium"
-        >
-          {"Expiration"}
+        <label htmlFor="expiration" className="text-sm leading-none font-medium">
+          {'Expiration'}
         </label>
         <Select
           value={expiration}
-          onValueChange={(value) =>
-            setExpiration(value as "never" | "30days" | "90days" | "1year")
-          }
+          onValueChange={(value) => setExpiration(value as 'never' | '30days' | '90days' | '1year')}
         >
           <SelectTrigger id="expiration" className="w-full">
-            <SelectValue placeholder={"Select expiration"} />
+            <SelectValue placeholder={'Select expiration'} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="never">{"Never"}</SelectItem>
-            <SelectItem value="30days">{"30 days"}</SelectItem>
-            <SelectItem value="90days">{"90 days"}</SelectItem>
-            <SelectItem value="1year">{"1 year"}</SelectItem>
+            <SelectItem value="never">{'Never'}</SelectItem>
+            <SelectItem value="30days">{'30 days'}</SelectItem>
+            <SelectItem value="90days">{'90 days'}</SelectItem>
+            <SelectItem value="1year">{'1 year'}</SelectItem>
           </SelectContent>
         </Select>
       </div>
       <div className="flex flex-col justify-end gap-2 pt-2 sm:flex-row">
         <Button type="button" variant="outline" onClick={handleClose}>
-          {"Cancel"}
+          {'Cancel'}
         </Button>
-        <Button
-          type="submit"
-          disabled={isCreating === "executing"}
-          className="w-full sm:w-auto"
-        >
-          {isCreating === "executing" && (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          )}
-          {"New API Key"}
+        <Button type="submit" disabled={isCreating === 'executing'} className="w-full sm:w-auto">
+          {isCreating === 'executing' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {'New API Key'}
         </Button>
       </div>
     </form>
@@ -164,7 +132,7 @@ export function CreateApiKeyDialog({
     <>
       <div className="space-y-4 py-4">
         <div className="space-y-2">
-          <p className="text-sm font-medium">{"API Key"}</p>
+          <p className="text-sm font-medium">{'API Key'}</p>
           <div className="flex items-center">
             <div className="relative w-full">
               <div className="bg-muted overflow-hidden rounded-sm p-3 pr-10">
@@ -179,30 +147,25 @@ export function CreateApiKeyDialog({
                 className="absolute top-1/2 right-1 -translate-y-1/2"
                 onClick={copyToClipboard}
               >
-                {copied ? (
-                  <Check className="h-4 w-4" />
-                ) : (
-                  <Copy className="h-4 w-4" />
-                )}
+                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               </Button>
             </div>
           </div>
           <p className="text-muted-foreground mt-2 text-xs">
-            {"This key will only be shown once. Make sure to copy it now."}
+            {'This key will only be shown once. Make sure to copy it now.'}
           </p>
         </div>
       </div>
       <div className="flex justify-end">
         <Button onClick={handleClose} className="w-full sm:w-auto">
-          {"Done"}
+          {'Done'}
         </Button>
       </div>
     </>
   );
 
   // Shared content for both Sheet and Drawer
-  const renderContent = () =>
-    createdApiKey ? renderCreatedKeyContent() : renderFormContent();
+  const renderContent = () => (createdApiKey ? renderCreatedKeyContent() : renderFormContent());
 
   if (isDesktop) {
     return (
@@ -210,9 +173,7 @@ export function CreateApiKeyDialog({
         <SheetContent stack className="rounded-sm">
           <SheetHeader className="mb-8 flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <SheetTitle>
-                {createdApiKey ? "API Key Created" : "New API Key"}
-              </SheetTitle>
+              <SheetTitle>{createdApiKey ? 'API Key Created' : 'New API Key'}</SheetTitle>
               <Button
                 size="icon"
                 variant="ghost"
@@ -229,11 +190,7 @@ export function CreateApiKeyDialog({
             </SheetDescription>
           </SheetHeader>
           <ScrollArea className="h-full p-0 pb-[100px]" hideScrollbar>
-            {createdApiKey ? (
-              <>{renderCreatedKeyContent()}</>
-            ) : (
-              <>{renderFormContent()}</>
-            )}
+            {createdApiKey ? <>{renderCreatedKeyContent()}</> : <>{renderFormContent()}</>}
           </ScrollArea>
         </SheetContent>
       </Sheet>
@@ -243,20 +200,14 @@ export function CreateApiKeyDialog({
     <Drawer open={open} onOpenChange={handleClose}>
       <DrawerContent className="rounded-sm p-6">
         <DrawerHeader>
-          <DrawerTitle>
-            {createdApiKey ? "API Key Created" : "New API Key"}
-          </DrawerTitle>
+          <DrawerTitle>{createdApiKey ? 'API Key Created' : 'New API Key'}</DrawerTitle>
           <DrawerDescription>
             {createdApiKey
               ? "Your API key has been created. Make sure to copy it now as you won't be able to see it again."
               : "Create a new API key for programmatic access to your organization's data."}
           </DrawerDescription>
         </DrawerHeader>
-        {createdApiKey ? (
-          <>{renderCreatedKeyContent()}</>
-        ) : (
-          <>{renderFormContent()}</>
-        )}
+        {createdApiKey ? <>{renderCreatedKeyContent()}</> : <>{renderFormContent()}</>}
       </DrawerContent>
     </Drawer>
   );

@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { updateOrganizationWebsiteAction } from "@/actions/organization/update-organization-website-action";
-import { organizationWebsiteSchema } from "@/actions/schema";
-import { Button } from "@comp/ui/button";
+import { updateOrganizationWebsiteAction } from '@/actions/organization/update-organization-website-action';
+import { organizationWebsiteSchema } from '@/actions/schema';
+import { Button } from '@comp/ui/button';
 import {
   Card,
   CardContent,
@@ -10,21 +10,15 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@comp/ui/card";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormMessage,
-} from "@comp/ui/form";
-import { Input } from "@comp/ui/input";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Building, Loader2 } from "lucide-react";
-import { useAction } from "next-safe-action/hooks";
-import { useForm } from "react-hook-form";
-import { toast } from "sonner";
-import type { z } from "zod";
+} from '@comp/ui/card';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@comp/ui/form';
+import { Input } from '@comp/ui/input';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Building, Loader2 } from 'lucide-react';
+import { useAction } from 'next-safe-action/hooks';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import type { z } from 'zod';
 
 export function UpdateOrganizationWebsite({
   organizationWebsite,
@@ -33,10 +27,10 @@ export function UpdateOrganizationWebsite({
 }) {
   const updateOrganizationWebsite = useAction(updateOrganizationWebsiteAction, {
     onSuccess: () => {
-      toast.success("Organization website updated");
+      toast.success('Organization website updated');
     },
     onError: () => {
-      toast.error("Error updating organization website");
+      toast.error('Error updating organization website');
     },
   });
 
@@ -56,13 +50,11 @@ export function UpdateOrganizationWebsite({
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <Card>
           <CardHeader>
-            <CardTitle>{"Organization Website"}</CardTitle>
+            <CardTitle>{'Organization Website'}</CardTitle>
 
             <CardDescription>
               <div className="max-w-[600px]">
-                {
-                  "This is your organization's official website. Include https:// in the URL."
-                }
+                {"This is your organization's official website. Include https:// in the URL."}
               </div>
             </CardDescription>
           </CardHeader>
@@ -91,16 +83,13 @@ export function UpdateOrganizationWebsite({
           </CardContent>
           <CardFooter className="flex justify-between">
             <div className="text-muted-foreground text-xs">
-              {"Please enter a valid URL including https://"}
+              {'Please enter a valid URL including https://'}
             </div>
-            <Button
-              type="submit"
-              disabled={updateOrganizationWebsite.status === "executing"}
-            >
-              {updateOrganizationWebsite.status === "executing" ? (
+            <Button type="submit" disabled={updateOrganizationWebsite.status === 'executing'}>
+              {updateOrganizationWebsite.status === 'executing' ? (
                 <Loader2 className="mr-1 h-4 w-4 animate-spin" />
               ) : null}
-              {"Save"}
+              {'Save'}
             </Button>
           </CardFooter>
         </Card>

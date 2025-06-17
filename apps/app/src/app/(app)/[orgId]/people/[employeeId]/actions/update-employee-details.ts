@@ -1,34 +1,32 @@
-"use server";
+'use server';
 
-import { authActionClient } from "@/actions/safe-action";
-import { auth } from "@/utils/auth";
-import { db } from "@comp/db";
-import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
-import { z } from "zod";
-import { appErrors } from "../types";
+import { authActionClient } from '@/actions/safe-action';
+import { auth } from '@/utils/auth';
+import { db } from '@comp/db';
+import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
+import { z } from 'zod';
+import { appErrors } from '../types';
 
 const schema = z.object({
   employeeId: z.string(),
-  name: z.string().min(1, "Name is required"),
-  email: z.string().email("Invalid email address"),
+  name: z.string().min(1, 'Name is required'),
+  email: z.string().email('Invalid email address'),
 });
 
 export const updateEmployeeDetails = authActionClient
-  .schema(schema)
+  .inputSchema(schema)
   .metadata({
-    name: "update-employee-details",
+    name: 'update-employee-details',
     track: {
-      event: "update-employee-details",
-      channel: "server",
+      event: 'update-employee-details',
+      channel: 'server',
     },
   })
   .action(
     async ({
       parsedInput,
-    }): Promise<
-      { success: true; data: any } | { success: false; error: any }
-    > => {
+    }): Promise<{ success: true; data: any } | { success: false; error: any }> => {
       const { employeeId, name, email } = parsedInput;
 
       const session = await auth.api.getSession({
@@ -83,7 +81,7 @@ export const updateEmployeeDetails = authActionClient
           data: updatedEmployee,
         };
       } catch (error) {
-        console.error("Error updating employee details:", error);
+        console.error('Error updating employee details:', error);
         return {
           success: false,
           error: appErrors.UNEXPECTED_ERROR,

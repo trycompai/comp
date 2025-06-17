@@ -1,17 +1,12 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { Lock, X, ChevronsUpDown } from "lucide-react";
-import type { Role } from "@prisma/client"; // Assuming Role is from prisma
-import { Button } from "@comp/ui/button";
-import { Badge } from "@comp/ui/badge";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@comp/ui/tooltip";
-import { cn } from "@comp/ui/cn";
+import * as React from 'react';
+import { Lock, X, ChevronsUpDown } from 'lucide-react';
+import type { Role } from '@prisma/client'; // Assuming Role is from prisma
+import { Button } from '@comp/ui/button';
+import { Badge } from '@comp/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
+import { cn } from '@comp/ui/cn';
 
 interface MultiRoleComboboxTriggerProps {
   selectedRoles: Role[];
@@ -52,10 +47,7 @@ export function MultiRoleComboboxTrigger({
           <Badge
             key={role}
             variant="secondary"
-            className={cn(
-              "text-xs",
-              lockedRoles.includes(role) && "border-primary border",
-            )}
+            className={cn('text-xs', lockedRoles.includes(role) && 'border-primary border')}
             onClick={(e) => {
               e.stopPropagation(); // Prevent popover from closing if it's open
               handleSelect(role);
@@ -71,7 +63,7 @@ export function MultiRoleComboboxTrigger({
                     <Lock className="text-primary ml-1 h-3 w-3" />
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>{"The owner role cannot be removed."}</p>
+                    <p>{'The owner role cannot be removed.'}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>

@@ -1,11 +1,11 @@
-"use server";
+'use server';
 
-import { auth } from "@/utils/auth";
-import { db } from "@comp/db";
-import { AttachmentEntityType, CommentEntityType } from "@comp/db/types"; // Import AttachmentEntityType
-import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
-import { z } from "zod";
+import { auth } from '@/utils/auth';
+import { db } from '@comp/db';
+import { AttachmentEntityType, CommentEntityType } from '@comp/db/types'; // Import AttachmentEntityType
+import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
+import { z } from 'zod';
 
 // Define the input schema
 const createCommentSchema = z
@@ -22,16 +22,13 @@ const createCommentSchema = z
       (data.content && data.content.trim().length > 0) ||
       (data.attachmentIds && data.attachmentIds.length > 0),
     {
-      message: "Comment cannot be empty unless attachments are provided.",
-      path: ["content"],
+      message: 'Comment cannot be empty unless attachments are provided.',
+      path: ['content'],
     },
   );
 
-export const createComment = async (
-  input: z.infer<typeof createCommentSchema>,
-) => {
-  const { content, entityId, entityType, attachmentIds, pathToRevalidate } =
-    input;
+export const createComment = async (input: z.infer<typeof createCommentSchema>) => {
+  const { content, entityId, entityType, attachmentIds, pathToRevalidate } = input;
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -40,16 +37,16 @@ export const createComment = async (
   if (!orgId) {
     return {
       success: false,
-      error: "Not authorized - no active organization found.",
+      error: 'Not authorized - no active organization found.',
       data: null,
     };
   }
 
   if (!entityId) {
-    console.error("Entity ID missing after validation in createComment");
+    console.error('Entity ID missing after validation in createComment');
     return {
       success: false,
-      error: "Internal error: Entity ID missing.",
+      error: 'Internal error: Entity ID missing.',
       data: null,
     };
   }
@@ -67,7 +64,7 @@ export const createComment = async (
     if (!member) {
       return {
         success: false,
-        error: "Not authorized - member not found in organization.",
+        error: 'Not authorized - member not found in organization.',
         data: null,
       };
     }
@@ -75,7 +72,7 @@ export const createComment = async (
     // Wrap create and update in a transaction
     const result = await db.$transaction(async (tx) => {
       // 1. Create the comment within the transaction
-      console.log("Creating comment:", {
+      console.log('Creating comment:', {
         content,
         entityId,
         entityType,
@@ -84,7 +81,7 @@ export const createComment = async (
       });
       const comment = await tx.comment.create({
         data: {
-          content: content ?? "",
+          content: content ?? '',
           entityId,
           entityType,
           authorId: member.id,
@@ -94,7 +91,7 @@ export const createComment = async (
 
       // 2. Link attachments if provided (using updateMany)
       if (attachmentIds && attachmentIds.length > 0) {
-        console.log("Linking attachments to comment:", attachmentIds);
+        console.log('Linking attachments to comment:', attachmentIds);
         await tx.attachment.updateMany({
           where: {
             id: { in: attachmentIds },
@@ -113,9 +110,8 @@ export const createComment = async (
     });
 
     const headersList = await headers();
-    let path =
-      headersList.get("x-pathname") || headersList.get("referer") || "";
-    path = path.replace(/\/[a-z]{2}\//, "/");
+    let path = headersList.get('x-pathname') || headersList.get('referer') || '';
+    path = path.replace(/\/[a-z]{2}\//, '/');
 
     revalidatePath(path);
 
@@ -125,13 +121,10 @@ export const createComment = async (
       error: null,
     };
   } catch (error) {
-    console.error(
-      "Failed to create comment with attachments transaction:",
-      error,
-    );
+    console.error('Failed to create comment with attachments transaction:', error);
     return {
       success: false,
-      error: "Failed to save comment and link attachments.", // More specific error
+      error: 'Failed to save comment and link attachments.', // More specific error
       data: null,
     };
   }

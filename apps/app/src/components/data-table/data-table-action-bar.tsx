@@ -1,16 +1,15 @@
-"use client";
+'use client';
 
-import { Button } from "@comp/ui/button";
-import { cn } from "@comp/ui/cn";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@comp/ui/tooltip";
-import type { Table } from "@tanstack/react-table";
-import { Loader } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
-import * as React from "react";
-import * as ReactDOM from "react-dom";
+import { Button } from '@comp/ui/button';
+import { cn } from '@comp/ui/cn';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@comp/ui/tooltip';
+import type { Table } from '@tanstack/react-table';
+import { Loader } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
+import * as React from 'react';
+import * as ReactDOM from 'react-dom';
 
-interface DataTableActionBarProps<TData>
-  extends React.ComponentProps<typeof motion.div> {
+interface DataTableActionBarProps<TData> extends React.ComponentProps<typeof motion.div> {
   table: Table<TData>;
   visible?: boolean;
   container?: Element | DocumentFragment | null;
@@ -32,22 +31,20 @@ function DataTableActionBar<TData>({
 
   React.useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
+      if (event.key === 'Escape') {
         table.toggleAllRowsSelected(false);
       }
     }
 
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
   }, [table]);
 
-  const container =
-    containerProp ?? (mounted ? globalThis.document?.body : null);
+  const container = containerProp ?? (mounted ? globalThis.document?.body : null);
 
   if (!container) return null;
 
-  const visible =
-    visibleProp ?? table.getFilteredSelectedRowModel().rows.length > 0;
+  const visible = visibleProp ?? table.getFilteredSelectedRowModel().rows.length > 0;
 
   return ReactDOM.createPortal(
     <AnimatePresence>
@@ -58,9 +55,9 @@ function DataTableActionBar<TData>({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.2, ease: "easeInOut" }}
+          transition={{ duration: 0.2, ease: 'easeInOut' }}
           className={cn(
-            "bg-background text-foreground fixed inset-x-0 bottom-6 z-50 mx-auto flex w-fit flex-wrap items-center justify-center gap-2 border p-2 shadow-xs",
+            'bg-background text-foreground fixed inset-x-0 bottom-6 z-50 mx-auto flex w-fit flex-wrap items-center justify-center gap-2 border p-2 shadow-xs',
             className,
           )}
           {...props}
@@ -73,14 +70,13 @@ function DataTableActionBar<TData>({
   );
 }
 
-interface DataTableActionBarActionProps
-  extends React.ComponentProps<typeof Button> {
+interface DataTableActionBarActionProps extends React.ComponentProps<typeof Button> {
   tooltip?: string;
   isPending?: boolean;
 }
 
 function DataTableActionBarAction({
-  size = "sm",
+  size = 'sm',
   tooltip,
   isPending,
   disabled,
@@ -93,8 +89,8 @@ function DataTableActionBarAction({
       variant="secondary"
       size={size}
       className={cn(
-        "border-secondary bg-secondary/50 hover:bg-secondary/70 gap-1.5 border [&>svg]:size-3.5",
-        size === "icon" ? "size-7" : "h-7",
+        'border-secondary bg-secondary/50 hover:bg-secondary/70 gap-1.5 border [&>svg]:size-3.5',
+        size === 'icon' ? 'size-7' : 'h-7',
         className,
       )}
       disabled={disabled || isPending}

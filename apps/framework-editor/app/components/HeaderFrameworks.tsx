@@ -1,6 +1,6 @@
-import { Skeleton } from "@comp/ui/skeleton";
-import { Suspense } from "react";
-import { UserMenu } from "./user-menu";
+import { Skeleton } from '@comp/ui/skeleton';
+import { Suspense } from 'react';
+import { UserMenu } from './user-menu';
 
 export async function Header() {
   return (

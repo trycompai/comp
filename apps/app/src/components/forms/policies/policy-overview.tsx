@@ -1,58 +1,36 @@
-"use client";
+'use client';
 
-import { updatePolicyFormAction } from "@/actions/policies/update-policy-form-action";
-import { updatePolicyFormSchema } from "@/actions/schema";
-import { StatusIndicator } from "@/components/status-indicator";
-import { useSession } from "@/utils/auth-client";
-import {
-  Departments,
-  Frequency,
-  type Policy,
-  type PolicyStatus,
-} from "@comp/db/types";
-import { Button } from "@comp/ui/button";
-import { Calendar } from "@comp/ui/calendar";
-import { cn } from "@comp/ui/cn";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@comp/ui/form";
-import { Popover, PopoverContent, PopoverTrigger } from "@comp/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@comp/ui/select";
-import { Switch } from "@comp/ui/switch";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { format } from "date-fns";
-import { CalendarIcon, Loader2 } from "lucide-react";
-import { useAction } from "next-safe-action/hooks";
-import { useForm } from "react-hook-form";
-import { toast } from "sonner";
-import type { z } from "zod";
+import { updatePolicyFormAction } from '@/actions/policies/update-policy-form-action';
+import { updatePolicyFormSchema } from '@/actions/schema';
+import { StatusIndicator } from '@/components/status-indicator';
+import { useSession } from '@/utils/auth-client';
+import { Departments, Frequency, type Policy, type PolicyStatus } from '@comp/db/types';
+import { Button } from '@comp/ui/button';
+import { Calendar } from '@comp/ui/calendar';
+import { cn } from '@comp/ui/cn';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
+import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
+import { Switch } from '@comp/ui/switch';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { format } from 'date-fns';
+import { CalendarIcon, Loader2 } from 'lucide-react';
+import { useAction } from 'next-safe-action/hooks';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import type { z } from 'zod';
 
-const policyStatuses: PolicyStatus[] = [
-  "draft",
-  "published",
-  "needs_review",
-] as const;
+const policyStatuses: PolicyStatus[] = ['draft', 'published', 'needs_review'] as const;
 
 export function UpdatePolicyOverview({ policy }: { policy: Policy }) {
   const session = useSession();
 
   const updatePolicyForm = useAction(updatePolicyFormAction, {
     onSuccess: () => {
-      toast.success("Policy updated successfully");
+      toast.success('Policy updated successfully');
     },
     onError: () => {
-      toast.error("Failed to update policy");
+      toast.error('Failed to update policy');
     },
   });
 
@@ -74,7 +52,7 @@ export function UpdatePolicyOverview({ policy }: { policy: Policy }) {
       department: policy.department ?? Departments.admin,
       review_frequency: policy.frequency ?? Frequency.monthly,
       review_date: reviewDate,
-      isRequiredToSign: policy.isRequiredToSign ? "required" : "not_required",
+      isRequiredToSign: policy.isRequiredToSign ? 'required' : 'not_required',
     },
   });
 
@@ -100,14 +78,12 @@ export function UpdatePolicyOverview({ policy }: { policy: Policy }) {
             name="status"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{"Status"}</FormLabel>
+                <FormLabel>{'Status'}</FormLabel>
                 <FormControl>
                   <Select value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger>
-                      <SelectValue placeholder={"Select a status"}>
-                        {field.value && (
-                          <StatusIndicator status={field.value} />
-                        )}
+                      <SelectValue placeholder={'Select a status'}>
+                        {field.value && <StatusIndicator status={field.value} />}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
@@ -128,17 +104,16 @@ export function UpdatePolicyOverview({ policy }: { policy: Policy }) {
             name="review_frequency"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{"Review Frequency"}</FormLabel>
+                <FormLabel>{'Review Frequency'}</FormLabel>
                 <FormControl>
                   <Select value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger>
-                      <SelectValue placeholder={"Select a frequency"} />
+                      <SelectValue placeholder={'Select a frequency'} />
                     </SelectTrigger>
                     <SelectContent>
                       {Object.values(Frequency).map((frequency) => {
                         const formattedFrequency =
-                          frequency.charAt(0).toUpperCase() +
-                          frequency.slice(1);
+                          frequency.charAt(0).toUpperCase() + frequency.slice(1);
                         return (
                           <SelectItem key={frequency} value={frequency}>
                             {formattedFrequency}
@@ -157,15 +132,11 @@ export function UpdatePolicyOverview({ policy }: { policy: Policy }) {
             name="department"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{"Department"}</FormLabel>
+                <FormLabel>{'Department'}</FormLabel>
                 <FormControl>
-                  <Select
-                    {...field}
-                    value={field.value}
-                    onValueChange={field.onChange}
-                  >
+                  <Select {...field} value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger>
-                      <SelectValue placeholder={"Select a department"} />
+                      <SelectValue placeholder={'Select a department'} />
                     </SelectTrigger>
                     <SelectContent>
                       {Object.values(Departments).map((department) => {
@@ -191,23 +162,19 @@ export function UpdatePolicyOverview({ policy }: { policy: Policy }) {
             name="review_date"
             render={({ field }) => (
               <FormItem className="flex flex-col">
-                <FormLabel>{"Review Date"}</FormLabel>
+                <FormLabel>{'Review Date'}</FormLabel>
                 <Popover>
                   <PopoverTrigger asChild>
                     <FormControl>
                       <div className="pt-1.5">
                         <Button
-                          variant={"outline"}
+                          variant={'outline'}
                           className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground",
+                            'w-full pl-3 text-left font-normal',
+                            !field.value && 'text-muted-foreground',
                           )}
                         >
-                          {field.value ? (
-                            format(field.value, "PPP")
-                          ) : (
-                            <span>{"Pick a date"}</span>
-                          )}
+                          {field.value ? format(field.value, 'PPP') : <span>{'Pick a date'}</span>}
                           <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                         </Button>
                       </div>
@@ -232,12 +199,12 @@ export function UpdatePolicyOverview({ policy }: { policy: Policy }) {
             name="isRequiredToSign"
             render={({ field }) => (
               <FormItem className="flex flex-col gap-3">
-                <FormLabel>{"Signature Requirement"}</FormLabel>
+                <FormLabel>{'Signature Requirement'}</FormLabel>
                 <FormControl>
                   <Switch
-                    checked={field.value === "required"}
+                    checked={field.value === 'required'}
                     onCheckedChange={(checked) => {
-                      field.onChange(checked ? "required" : "not_required");
+                      field.onChange(checked ? 'required' : 'not_required');
                     }}
                   />
                 </FormControl>
@@ -250,12 +217,12 @@ export function UpdatePolicyOverview({ policy }: { policy: Policy }) {
           <Button
             type="submit"
             variant="default"
-            disabled={updatePolicyForm.status === "executing"}
+            disabled={updatePolicyForm.status === 'executing'}
           >
-            {updatePolicyForm.status === "executing" ? (
+            {updatePolicyForm.status === 'executing' ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              "Save"
+              'Save'
             )}
           </Button>
         </div>

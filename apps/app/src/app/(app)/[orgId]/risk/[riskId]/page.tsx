@@ -1,18 +1,15 @@
-import PageWithBreadcrumb from "@/components/pages/PageWithBreadcrumb";
-import { InherentRiskChart } from "@/components/risks/charts/InherentRiskChart";
-import { ResidualRiskChart } from "@/components/risks/charts/ResidualRiskChart";
-import { RiskOverview } from "@/components/risks/risk-overview";
-import { auth } from "@/utils/auth";
-import { db } from "@comp/db";
-import { AttachmentEntityType, CommentEntityType } from "@comp/db/types";
-import type { Metadata } from "next";
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
-import { cache } from "react";
-import {
-  Comments,
-  CommentWithAuthor,
-} from "../../../../../components/comments/Comments";
+import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
+import { InherentRiskChart } from '@/components/risks/charts/InherentRiskChart';
+import { ResidualRiskChart } from '@/components/risks/charts/ResidualRiskChart';
+import { RiskOverview } from '@/components/risks/risk-overview';
+import { auth } from '@/utils/auth';
+import { db } from '@comp/db';
+import { AttachmentEntityType, CommentEntityType } from '@comp/db/types';
+import type { Metadata } from 'next';
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { cache } from 'react';
+import { Comments, CommentWithAuthor } from '../../../../../components/comments/Comments';
 
 interface PageProps {
   searchParams: Promise<{
@@ -31,13 +28,13 @@ export default async function RiskPage({ searchParams, params }: PageProps) {
   const comments = await getComments(riskId);
   const assignees = await getAssignees();
   if (!risk) {
-    redirect("/");
+    redirect('/');
   }
 
   return (
     <PageWithBreadcrumb
       breadcrumbs={[
-        { label: "Risks", href: `/${orgId}/risk` },
+        { label: 'Risks', href: `/${orgId}/risk` },
         { label: risk.title, current: true },
       ]}
     >
@@ -47,11 +44,7 @@ export default async function RiskPage({ searchParams, params }: PageProps) {
           <InherentRiskChart risk={risk} />
           <ResidualRiskChart risk={risk} />
         </div>
-        <Comments
-          entityId={riskId}
-          entityType={CommentEntityType.risk}
-          comments={comments}
-        />
+        <Comments entityId={riskId} entityType={CommentEntityType.risk} comments={comments} />
       </div>
     </PageWithBreadcrumb>
   );
@@ -91,7 +84,7 @@ const getComments = async (riskId: string): Promise<CommentWithAuthor[]> => {
   const activeOrgId = session?.session.activeOrganizationId;
 
   if (!activeOrgId) {
-    console.warn("Could not determine active organization ID in getComments");
+    console.warn('Could not determine active organization ID in getComments');
     return [];
   }
 
@@ -109,7 +102,7 @@ const getComments = async (riskId: string): Promise<CommentWithAuthor[]> => {
       },
     },
     orderBy: {
-      createdAt: "desc",
+      createdAt: 'desc',
     },
   });
 
@@ -145,7 +138,7 @@ const getAssignees = cache(async () => {
     where: {
       organizationId: session.session.activeOrganizationId,
       role: {
-        notIn: ["employee"],
+        notIn: ['employee'],
       },
     },
     include: {
@@ -158,6 +151,6 @@ const getAssignees = cache(async () => {
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: "Risk Overview",
+    title: 'Risk Overview',
   };
 }

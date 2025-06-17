@@ -1,13 +1,13 @@
-"use server";
+'use server';
 
-import { GetObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { db } from "@comp/db";
-import { AttachmentEntityType } from "@comp/db/types";
-import { z } from "zod";
-import { s3Client, BUCKET_NAME, extractS3KeyFromUrl } from "@/app/s3"; // Import shared client
-import { auth } from "@/utils/auth";
-import { headers } from "next/headers";
+import { GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { db } from '@comp/db';
+import { AttachmentEntityType } from '@comp/db/types';
+import { z } from 'zod';
+import { s3Client, BUCKET_NAME, extractS3KeyFromUrl } from '@/app/s3'; // Import shared client
+import { auth } from '@/utils/auth';
+import { headers } from 'next/headers';
 
 const schema = z.object({
   attachmentId: z.string(),
@@ -23,7 +23,7 @@ export const getTaskAttachmentUrl = async (input: z.infer<typeof schema>) => {
   if (!organizationId) {
     return {
       success: false,
-      error: "Not authorized - no organization found",
+      error: 'Not authorized - no organization found',
     } as const;
   }
 
@@ -40,7 +40,7 @@ export const getTaskAttachmentUrl = async (input: z.infer<typeof schema>) => {
     if (!attachment) {
       return {
         success: false,
-        error: "Attachment not found or access denied",
+        error: 'Attachment not found or access denied',
       } as const;
     }
 
@@ -49,14 +49,10 @@ export const getTaskAttachmentUrl = async (input: z.infer<typeof schema>) => {
     try {
       key = extractS3KeyFromUrl(attachment.url);
     } catch (extractError) {
-      console.error(
-        "Error extracting S3 key for attachment:",
-        attachmentId,
-        extractError,
-      );
+      console.error('Error extracting S3 key for attachment:', attachmentId, extractError);
       return {
         success: false,
-        error: "Could not process attachment URL",
+        error: 'Could not process attachment URL',
       } as const;
     }
 
@@ -73,29 +69,29 @@ export const getTaskAttachmentUrl = async (input: z.infer<typeof schema>) => {
 
       if (!signedUrl) {
         // This case is unlikely if getSignedUrl doesn't throw, but good to check
-        console.error("getSignedUrl returned undefined for key:", key);
+        console.error('getSignedUrl returned undefined for key:', key);
         return {
           success: false,
-          error: "Failed to generate signed URL",
+          error: 'Failed to generate signed URL',
         } as const;
       }
 
       // 4. Return Success
       return { success: true, data: { signedUrl } };
     } catch (s3Error) {
-      console.error("S3 getSignedUrl Error:", s3Error);
+      console.error('S3 getSignedUrl Error:', s3Error);
       // Provide a generic error message to the client
       return {
         success: false,
-        error: "Could not generate access URL for the file",
+        error: 'Could not generate access URL for the file',
       } as const;
     }
   } catch (dbError) {
     // Catch potential DB errors during findUnique
-    console.error("Database Error fetching attachment:", dbError);
+    console.error('Database Error fetching attachment:', dbError);
     return {
       success: false,
-      error: "Failed to retrieve attachment details",
+      error: 'Failed to retrieve attachment details',
     } as const;
   }
 };

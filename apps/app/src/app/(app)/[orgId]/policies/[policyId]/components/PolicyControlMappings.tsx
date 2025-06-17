@@ -1,18 +1,12 @@
-import { Control } from "@comp/db/types";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@comp/ui/card";
-import { SelectPills } from "@comp/ui/select-pills";
-import { toast } from "sonner";
-import { mapPolicyToControls } from "../actions/mapPolicyToControls";
-import { unmapPolicyFromControl } from "../actions/unmapPolicyFromControl";
-import { useParams } from "next/navigation";
-import { useAction } from "next-safe-action/hooks";
-import { useState } from "react";
+import { Control } from '@comp/db/types';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
+import { SelectPills } from '@comp/ui/select-pills';
+import { toast } from 'sonner';
+import { mapPolicyToControls } from '../actions/mapPolicyToControls';
+import { unmapPolicyFromControl } from '../actions/unmapPolicyFromControl';
+import { useParams } from 'next/navigation';
+import { useAction } from 'next-safe-action/hooks';
+import { useState } from 'react';
 
 export const PolicyControlMappings = ({
   mappedControls,
@@ -28,21 +22,21 @@ export const PolicyControlMappings = ({
 
   const mapControlsAction = useAction(mapPolicyToControls, {
     onSuccess: () => {
-      toast.success("Controls mapped successfully");
+      toast.success('Controls mapped successfully');
     },
     onError: (err) => {
-      toast.error(err.error.serverError || "Failed to map controls");
+      toast.error(err.error.serverError || 'Failed to map controls');
       setLoading(false);
     },
   });
 
   const unmapControlAction = useAction(unmapPolicyFromControl, {
     onSuccess: () => {
-      toast.success("Controls unmapped successfully");
+      toast.success('Controls unmapped successfully');
       setLoading(false);
     },
     onError: (err) => {
-      toast.error(err.error.serverError || "Failed to unmap control");
+      toast.error(err.error.serverError || 'Failed to unmap control');
       setLoading(false);
     },
   });
@@ -53,9 +47,7 @@ export const PolicyControlMappings = ({
     if (isPendingApproval || loading) return;
     setLoading(true);
     const prevIds = mappedControls.map((c) => c.id);
-    const nextControls = allControls.filter((c) =>
-      selectedNames.includes(c.name),
-    );
+    const nextControls = allControls.filter((c) => selectedNames.includes(c.name));
     const nextIds = nextControls.map((c) => c.id);
 
     const added = nextControls.filter((c) => !prevIds.includes(c.id));
@@ -75,7 +67,7 @@ export const PolicyControlMappings = ({
         });
       }
     } catch (err) {
-      toast.error("Failed to update controls");
+      toast.error('Failed to update controls');
     } finally {
       setLoading(false);
     }
@@ -85,9 +77,7 @@ export const PolicyControlMappings = ({
     <Card>
       <CardHeader>
         <CardTitle>Map Controls</CardTitle>
-        <CardDescription>
-          Map controls that are relevant to this policy.
-        </CardDescription>
+        <CardDescription>Map controls that are relevant to this policy.</CardDescription>
       </CardHeader>
       <CardContent className="flex w-full flex-col gap-2">
         <SelectPills

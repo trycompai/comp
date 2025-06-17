@@ -1,26 +1,14 @@
-"use client";
+'use client';
 
-import { LogoSpinner } from "@/components/logo-spinner";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@comp/ui/card";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormMessage,
-} from "@comp/ui/form";
-import { motion } from "framer-motion";
-import { Loader2 } from "lucide-react";
-import { OnboardingFormActions } from "./OnboardingFormActions";
-import { OnboardingStepInput } from "./OnboardingStepInput";
-import { SkipOnboardingDialog } from "./SkipOnboardingDialog";
-import { useOnboardingForm } from "../hooks/useOnboardingForm";
+import { LogoSpinner } from '@/components/logo-spinner';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@comp/ui/card';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@comp/ui/form';
+import { motion } from 'framer-motion';
+import { Loader2 } from 'lucide-react';
+import { OnboardingFormActions } from './OnboardingFormActions';
+import { OnboardingStepInput } from './OnboardingStepInput';
+import { SkipOnboardingDialog } from './SkipOnboardingDialog';
+import { useOnboardingForm } from '../hooks/useOnboardingForm';
 
 export function OnboardingForm() {
   const {

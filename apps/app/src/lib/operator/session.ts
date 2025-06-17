@@ -1,4 +1,4 @@
-import Browserbase from "@browserbasehq/sdk";
+import Browserbase from '@browserbasehq/sdk';
 
 export const BROWSER_WIDTH = 1440;
 export const BROWSER_HEIGHT = 900;
@@ -13,7 +13,7 @@ export async function createSession() {
   });
 
   const session = await bb.sessions.create({
-    projectId: process.env.BROWSERBASE_PROJECT_ID || "",
+    projectId: process.env.BROWSERBASE_PROJECT_ID || '',
     browserSettings: {
       fingerprint: {
         screen: {
@@ -35,8 +35,8 @@ export async function closeBrowserSession(sessionId: string) {
     apiKey: process.env.BROWSERBASE_API_KEY,
   });
   await bb.sessions.update(sessionId, {
-    projectId: process.env.BROWSERBASE_PROJECT_ID || "",
-    status: "REQUEST_RELEASE",
+    projectId: process.env.BROWSERBASE_PROJECT_ID || '',
+    status: 'REQUEST_RELEASE',
   });
 }
 

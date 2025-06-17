@@ -1,20 +1,20 @@
-"use server";
+'use server';
 
-import { z } from "zod";
-import { authActionClient } from "@/actions/safe-action";
-import { db } from "@comp/db";
-import { revalidatePath, revalidateTag } from "next/cache";
-import { Vercel } from "@vercel/sdk";
-import { env } from "@/env.mjs";
+import { z } from 'zod';
+import { authActionClient } from '@/actions/safe-action';
+import { db } from '@comp/db';
+import { revalidatePath, revalidateTag } from 'next/cache';
+import { Vercel } from '@vercel/sdk';
+import { env } from '@/env.mjs';
 
 const checkDnsSchema = z.object({
   domain: z
     .string()
-    .min(1, "Domain cannot be empty.")
-    .max(63, "Domain too long. Max 63 chars.")
+    .min(1, 'Domain cannot be empty.')
+    .max(63, 'Domain too long. Max 63 chars.')
     .regex(
       /^(?!-)[A-Za-z0-9-]+([-\.]{1}[a-z0-9]+)*\.[A-Za-z]{2,6}$/,
-      "Invalid domain format. Use format like sub.example.com",
+      'Invalid domain format. Use format like sub.example.com',
     )
     .trim(),
 });
@@ -24,27 +24,25 @@ const vercel = new Vercel({
 });
 
 export const checkDnsRecordAction = authActionClient
-  .schema(checkDnsSchema)
+  .inputSchema(checkDnsSchema)
   .metadata({
-    name: "check-dns-record",
+    name: 'check-dns-record',
     track: {
-      event: "add-custom-domain",
-      channel: "server",
+      event: 'add-custom-domain',
+      channel: 'server',
     },
   })
   .action(async ({ parsedInput, ctx }) => {
     const { domain } = parsedInput;
 
     if (!ctx.session.activeOrganizationId) {
-      throw new Error("No active organization");
+      throw new Error('No active organization');
     }
 
-    const rootDomain = domain.split(".").slice(-2).join(".");
+    const rootDomain = domain.split('.').slice(-2).join('.');
     const activeOrgId = ctx.session.activeOrganizationId;
 
-    const response = await fetch(
-      `https://networkcalc.com/api/dns/lookup/${domain}`,
-    );
+    const response = await fetch(`https://networkcalc.com/api/dns/lookup/${domain}`);
     const txtResponse = await fetch(
       `https://networkcalc.com/api/dns/lookup/${rootDomain}?type=TXT`,
     );
@@ -58,14 +56,14 @@ export const checkDnsRecordAction = authActionClient
 
     if (
       response.status !== 200 ||
-      data.status !== "OK" ||
+      data.status !== 'OK' ||
       txtResponse.status !== 200 ||
-      txtData.status !== "OK"
+      txtData.status !== 'OK'
     ) {
-      console.error("DNS lookup failed:", data);
+      console.error('DNS lookup failed:', data);
       throw new Error(
         data.message ||
-          "DNS record verification failed, check the records are valid or try again later.",
+          'DNS record verification failed, check the records are valid or try again later.',
       );
     }
 
@@ -82,7 +80,7 @@ export const checkDnsRecordAction = authActionClient
         vercelVerification: true,
       },
     });
-    const expectedCnameValue = "cname.vercel-dns.com";
+    const expectedCnameValue = 'cname.vercel-dns.com';
     const expectedTxtValue = `compai-domain-verification=${activeOrgId}`;
     const expectedVercelTxtValue = isVercelDomain?.vercelVerification;
 
@@ -90,8 +88,7 @@ export const checkDnsRecordAction = authActionClient
 
     if (cnameRecords) {
       isCnameVerified = cnameRecords.some(
-        (record: { address: string }) =>
-          record.address.toLowerCase() === expectedCnameValue,
+        (record: { address: string }) => record.address.toLowerCase() === expectedCnameValue,
       );
     }
 
@@ -101,10 +98,10 @@ export const checkDnsRecordAction = authActionClient
     if (txtRecords) {
       // Check for our custom TXT record
       isTxtVerified = txtRecords.some((record: any) => {
-        if (typeof record === "string") {
+        if (typeof record === 'string') {
           return record === expectedTxtValue;
         }
-        if (record && typeof record.value === "string") {
+        if (record && typeof record.value === 'string') {
           return record.value === expectedTxtValue;
         }
         if (record && Array.isArray(record.txt) && record.txt.length > 0) {
@@ -116,16 +113,14 @@ export const checkDnsRecordAction = authActionClient
 
     if (vercelTxtRecords) {
       isVercelTxtVerified = vercelTxtRecords.some((record: any) => {
-        if (typeof record === "string") {
+        if (typeof record === 'string') {
           return record === expectedVercelTxtValue;
         }
-        if (record && typeof record.value === "string") {
+        if (record && typeof record.value === 'string') {
           return record.value === expectedVercelTxtValue;
         }
         if (record && Array.isArray(record.txt) && record.txt.length > 0) {
-          return record.txt.some(
-            (txt: string) => txt === expectedVercelTxtValue,
-          );
+          return record.txt.some((txt: string) => txt === expectedVercelTxtValue);
         }
         return false;
       });
@@ -140,14 +135,14 @@ export const checkDnsRecordAction = authActionClient
         isTxtVerified,
         isVercelTxtVerified,
         error:
-          "Error verifying DNS records. Please ensure both CNAME and TXT records are correctly configured, or wait a few minutes and try again.",
+          'Error verifying DNS records. Please ensure both CNAME and TXT records are correctly configured, or wait a few minutes and try again.',
       };
     }
 
     if (!env.TRUST_PORTAL_PROJECT_ID) {
       return {
         success: false,
-        error: "Vercel project ID is not set.",
+        error: 'Vercel project ID is not set.',
       };
     }
 
@@ -158,12 +153,12 @@ export const checkDnsRecordAction = authActionClient
       },
       update: {
         domainVerified: true,
-        status: "published",
+        status: 'published',
       },
       create: {
         organizationId: activeOrgId,
         domain,
-        status: "published",
+        status: 'published',
       },
     });
 

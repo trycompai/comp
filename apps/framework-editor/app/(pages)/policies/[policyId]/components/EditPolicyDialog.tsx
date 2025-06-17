@@ -1,17 +1,13 @@
-"use client";
+'use client';
 
-import { useState, useTransition, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import {
-  type FrameworkEditorPolicyTemplate,
-  Frequency,
-  Departments,
-} from "@prisma/client";
-import { toast } from "sonner";
+import { useState, useTransition, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { type FrameworkEditorPolicyTemplate, Frequency, Departments } from '@prisma/client';
+import { toast } from 'sonner';
 
-import { Button } from "@comp/ui/button";
+import { Button } from '@comp/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -20,29 +16,16 @@ import {
   DialogDescription,
   DialogFooter,
   DialogClose,
-} from "@comp/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@comp/ui/form";
-import { Input } from "@comp/ui/input";
-import { Textarea } from "@comp/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@comp/ui/select";
-import { updatePolicyTemplateDetails } from "../../actions"; // Path to server actions
+} from '@comp/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
+import { Input } from '@comp/ui/input';
+import { Textarea } from '@comp/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
+import { updatePolicyTemplateDetails } from '../../actions'; // Path to server actions
 
 // Schema for the form, consistent with server action
 const EditPolicySchema = z.object({
-  name: z.string().min(1, "Name is required"),
+  name: z.string().min(1, 'Name is required'),
   description: z.string().nullish(),
   frequency: z.nativeEnum(Frequency),
   department: z.nativeEnum(Departments),
@@ -68,8 +51,8 @@ export function EditPolicyDialog({
   const form = useForm<EditPolicyFormValues>({
     resolver: zodResolver(EditPolicySchema),
     defaultValues: {
-      name: policy.name || "",
-      description: policy.description || "",
+      name: policy.name || '',
+      description: policy.description || '',
       frequency: policy.frequency || Frequency.yearly, // Default if null
       department: policy.department || Departments.none, // Default if null
     },
@@ -78,8 +61,8 @@ export function EditPolicyDialog({
   useEffect(() => {
     if (isOpen) {
       form.reset({
-        name: policy.name || "",
-        description: policy.description || "",
+        name: policy.name || '',
+        description: policy.description || '',
         frequency: policy.frequency || Frequency.yearly,
         department: policy.department || Departments.none,
       });
@@ -91,15 +74,15 @@ export function EditPolicyDialog({
       try {
         const result = await updatePolicyTemplateDetails(policy.id, values);
         if (result.success) {
-          toast.success(result.message || "Policy updated successfully!");
+          toast.success(result.message || 'Policy updated successfully!');
           onPolicyUpdated(); // Refresh data on the page
           onClose(); // Close the dialog
         } else {
-          toast.error(result.message || "Failed to update policy.");
+          toast.error(result.message || 'Failed to update policy.');
         }
       } catch (error) {
-        toast.error("An unexpected error occurred.");
-        console.error("Update error:", error);
+        toast.error('An unexpected error occurred.');
+        console.error('Update error:', error);
       }
     });
   };
@@ -135,11 +118,7 @@ export function EditPolicyDialog({
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea
-                      {...field}
-                      value={field.value ?? ""}
-                      className="rounded-sm"
-                    />
+                    <Textarea {...field} value={field.value ?? ''} className="rounded-sm" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -151,10 +130,7 @@ export function EditPolicyDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Frequency</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger className="rounded-sm">
                         <SelectValue placeholder="Select frequency" />
@@ -162,13 +138,9 @@ export function EditPolicyDialog({
                     </FormControl>
                     <SelectContent>
                       {Object.values(Frequency).map((freq) => (
-                        <SelectItem
-                          key={freq}
-                          value={freq}
-                          className="rounded-sm"
-                        >
+                        <SelectItem key={freq} value={freq} className="rounded-sm">
                           {freq.charAt(0).toUpperCase() +
-                            freq.slice(1).toLowerCase().replace("_", " ")}
+                            freq.slice(1).toLowerCase().replace('_', ' ')}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -183,10 +155,7 @@ export function EditPolicyDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Department</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger className="rounded-sm">
                         <SelectValue placeholder="Select department" />
@@ -194,13 +163,9 @@ export function EditPolicyDialog({
                     </FormControl>
                     <SelectContent>
                       {Object.values(Departments).map((dept) => (
-                        <SelectItem
-                          key={dept}
-                          value={dept}
-                          className="rounded-sm"
-                        >
+                        <SelectItem key={dept} value={dept} className="rounded-sm">
                           {dept.charAt(0).toUpperCase() +
-                            dept.slice(1).toLowerCase().replace("_", " ")}
+                            dept.slice(1).toLowerCase().replace('_', ' ')}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -216,7 +181,7 @@ export function EditPolicyDialog({
                 </Button>
               </DialogClose>
               <Button type="submit" disabled={isPending} className="rounded-sm">
-                {isPending ? "Saving..." : "Save Changes"}
+                {isPending ? 'Saving...' : 'Save Changes'}
               </Button>
             </DialogFooter>
           </form>

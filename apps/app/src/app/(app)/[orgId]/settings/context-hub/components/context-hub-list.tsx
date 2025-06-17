@@ -1,12 +1,6 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@comp/ui/card";
-import { Badge } from "@comp/ui/badge";
-import type { Context } from "@prisma/client";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
+import { Badge } from '@comp/ui/badge';
+import type { Context } from '@prisma/client';
 
 export async function ContextHubList({ entries }: { entries: Context[] }) {
   return (
@@ -14,8 +8,8 @@ export async function ContextHubList({ entries }: { entries: Context[] }) {
       <CardHeader>
         <CardTitle>Context</CardTitle>
         <CardDescription>
-          You can add context to the Comp AI platform to help it better
-          understand your organization/processes.
+          You can add context to the Comp AI platform to help it better understand your
+          organization/processes.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

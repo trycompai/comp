@@ -1,14 +1,8 @@
-import React, { SVGProps } from "react";
+import React, { SVGProps } from 'react';
 
 export const Logo: React.FC<SVGProps<SVGSVGElement>> = (props) => {
   return (
-    <svg
-      width={150}
-      height={150}
-      viewBox="0 0 96 96"
-      xmlns="http://www.w3.org/2000/svg"
-      {...props}
-    >
+    <svg width={150} height={150} viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" {...props}>
       <defs>
         <linearGradient
           id="a"

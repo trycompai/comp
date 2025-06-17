@@ -1,20 +1,16 @@
-import { Header } from "@/app/components/header";
-import { Sidebar } from "@/app/components/sidebar";
-import { auth } from "@/app/lib/auth";
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
+import { Header } from '@/app/components/header';
+import { Sidebar } from '@/app/components/sidebar';
+import { auth } from '@/app/lib/auth';
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
 
-export default async function Layout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default async function Layout({ children }: { children: React.ReactNode }) {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
 
   if (!session?.user) {
-    redirect("/auth");
+    redirect('/auth');
   }
 
   return (

@@ -1,16 +1,12 @@
-"use client";
+'use client';
 
-import {
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
+import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 
-import type { Task, Policy, FrameworkEditorRequirement } from "@comp/db/types";
-import { Table, TableBody, TableCell, TableRow } from "@comp/ui/table";
-import { useParams, useRouter } from "next/navigation";
-import { ControlRequirementsTableColumns } from "./ControlRequirementsTableColumns";
-import { ControlRequirementsTableHeader } from "./ControlRequirementsTableHeader";
+import type { Task, Policy, FrameworkEditorRequirement } from '@comp/db/types';
+import { Table, TableBody, TableCell, TableRow } from '@comp/ui/table';
+import { useParams, useRouter } from 'next/navigation';
+import { ControlRequirementsTableColumns } from './ControlRequirementsTableColumns';
+import { ControlRequirementsTableHeader } from './ControlRequirementsTableHeader';
 
 // Define the type that matches what we receive from the hook
 export type RequirementTableData = FrameworkEditorRequirement & {
@@ -33,13 +29,13 @@ export function ControlRequirementsTable({ data }: DataTableProps) {
   });
 
   const onRowClick = (requirement: RequirementTableData) => {
-    switch (requirement.policy ? "policy" : "task") {
-      case "policy":
+    switch (requirement.policy ? 'policy' : 'task') {
+      case 'policy':
         if (requirement.policy?.id) {
           router.push(`/${orgId}/policies/all/${requirement.policy.id}`);
         }
         break;
-      case "task":
+      case 'task':
         if (requirement.task?.id) {
           router.push(`/${orgId}/tasks/${requirement.task.id}`);
         }
@@ -59,16 +55,13 @@ export function ControlRequirementsTable({ data }: DataTableProps) {
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
+                  data-state={row.getIsSelected() && 'selected'}
                   className="hover:bg-muted/50 cursor-pointer"
                   onClick={() => onRowClick(row.original)}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id} className="p-4">
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
                 </TableRow>

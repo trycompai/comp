@@ -1,7 +1,7 @@
-import { env } from "@/env.mjs";
-import { db } from "@comp/db";
-import { logger } from "@trigger.dev/sdk/v3";
-import { z, ZodSchema } from "zod";
+import { env } from '@/env.mjs';
+import { db } from '@comp/db';
+import { logger } from '@trigger.dev/sdk/v3';
+import { z, ZodSchema } from 'zod';
 
 export const initialResponseSchema = z.object({
   success: z.boolean(),
@@ -11,7 +11,7 @@ export const initialResponseSchema = z.object({
 // Make statusResponseSchema generic to allow any data shape
 export const statusResponseSchema = z.object({
   success: z.boolean(),
-  status: z.enum(["processing", "completed", "failed", "cancelled"]),
+  status: z.enum(['processing', 'completed', 'failed', 'cancelled']),
   data: z.unknown().optional(),
   expiresAt: z.string().optional(),
 });
@@ -38,65 +38,59 @@ export async function researchJobCore<T>({
   zodSchema,
   dbSave,
 }: ResearchJobOptions<T>) {
-  logger.info("Starting generic research job", { website, prompt });
+  logger.info('Starting generic research job', { website, prompt });
   const startTime = Date.now();
 
   try {
-    const initialResponse = await fetch(
-      "https://api.firecrawl.dev/v1/extract",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${env.FIRECRAWL_API_KEY}`,
-        },
-        body: JSON.stringify({
-          urls: [website],
-          prompt,
-          schema,
-          scrapeOptions: {
-            onlyMainContent: true,
-            removeBase64Images: true,
-          },
-        }),
+    const initialResponse = await fetch('https://api.firecrawl.dev/v1/extract', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${env.FIRECRAWL_API_KEY}`,
       },
-    );
+      body: JSON.stringify({
+        urls: [website],
+        prompt,
+        schema,
+        scrapeOptions: {
+          onlyMainContent: true,
+          removeBase64Images: true,
+        },
+      }),
+    });
 
     const initialData = await initialResponse.json();
-    logger.info("Initial Firecrawl response", { initialData });
+    logger.info('Initial Firecrawl response', { initialData });
 
     const parsedInitial = initialResponseSchema.safeParse(initialData);
     if (!parsedInitial.success || !parsedInitial.data.id) {
-      logger.error("Failed to parse initial Firecrawl response or missing id", {
+      logger.error('Failed to parse initial Firecrawl response or missing id', {
         error: parsedInitial.error?.issues,
         data: initialData,
       });
       return {
         success: false,
-        error: "Invalid initial response from Firecrawl",
+        error: 'Invalid initial response from Firecrawl',
       };
     }
 
     const { id: jobId } = parsedInitial.data;
-    logger.info("Firecrawl job started", { jobId });
+    logger.info('Firecrawl job started', { jobId });
 
     while (Date.now() - startTime < MAX_POLL_DURATION_MS) {
       await sleep(POLL_INTERVAL_MS);
-      const statusCheckResponse = await fetch(
-        `https://api.firecrawl.dev/v1/extract/${jobId}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${env.FIRECRAWL_API_KEY}`,
-          },
+      const statusCheckResponse = await fetch(`https://api.firecrawl.dev/v1/extract/${jobId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${env.FIRECRAWL_API_KEY}`,
         },
-      );
+      });
       const statusData = await statusCheckResponse.json();
-      logger.debug("Polling Firecrawl job status", { jobId, statusData });
+      logger.debug('Polling Firecrawl job status', { jobId, statusData });
       const parsedStatus = statusResponseSchema.safeParse(statusData);
       if (!parsedStatus.success) {
-        logger.warn("Failed to parse Firecrawl status response", {
+        logger.warn('Failed to parse Firecrawl status response', {
           error: parsedStatus.error?.issues,
           data: statusData,
         });
@@ -104,20 +98,20 @@ export async function researchJobCore<T>({
       }
       const { status, data } = parsedStatus.data;
       switch (status) {
-        case "completed": {
-          logger.info("Firecrawl job completed successfully", {
+        case 'completed': {
+          logger.info('Firecrawl job completed successfully', {
             jobId,
             data,
           });
           const finalDataValidation = zodSchema.safeParse(data);
           if (!finalDataValidation.success) {
-            logger.error("Final data validation failed", {
+            logger.error('Final data validation failed', {
               error: finalDataValidation.error.issues,
               data,
             });
             return {
               success: false,
-              error: "Invalid final data structure from Firecrawl",
+              error: 'Invalid final data structure from Firecrawl',
             };
           }
           if (dbSave) {
@@ -128,43 +122,43 @@ export async function researchJobCore<T>({
             data: finalDataValidation.data,
           };
         }
-        case "processing":
-          logger.info("Firecrawl job still processing", { jobId });
+        case 'processing':
+          logger.info('Firecrawl job still processing', { jobId });
           continue;
-        case "failed":
-          logger.error("Firecrawl job failed", { jobId, statusData });
+        case 'failed':
+          logger.error('Firecrawl job failed', { jobId, statusData });
           return {
             success: false,
-            error: "Firecrawl job failed",
+            error: 'Firecrawl job failed',
           };
-        case "cancelled":
-          logger.warn("Firecrawl job was cancelled", {
+        case 'cancelled':
+          logger.warn('Firecrawl job was cancelled', {
             jobId,
             statusData,
           });
           return {
             success: false,
-            error: "Firecrawl job cancelled",
+            error: 'Firecrawl job cancelled',
           };
         default:
-          logger.warn("Unknown Firecrawl job status", {
+          logger.warn('Unknown Firecrawl job status', {
             jobId,
             status,
           });
           continue;
       }
     }
-    logger.error("Firecrawl job polling timed out", { jobId, website });
-    return { success: false, error: "Firecrawl job polling timed out" };
+    logger.error('Firecrawl job polling timed out', { jobId, website });
+    return { success: false, error: 'Firecrawl job polling timed out' };
   } catch (error: any) {
-    logger.error("Error during research job or polling", {
+    logger.error('Error during research job or polling', {
       error: error.message,
       stack: error.stack,
       website,
     });
     return {
       success: false,
-      error: error.message || "Unknown error occurred",
+      error: error.message || 'Unknown error occurred',
     };
   }
 }

@@ -1,27 +1,21 @@
-"use client";
+'use client';
 
-import type { Departments } from "@comp/db/types";
-import { Button } from "@comp/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@comp/ui/select";
-import { useAction } from "next-safe-action/hooks";
-import { useState } from "react";
-import { toast } from "sonner";
-import { updateEmployeeDepartment } from "../actions/update-department";
+import type { Departments } from '@comp/db/types';
+import { Button } from '@comp/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
+import { useAction } from 'next-safe-action/hooks';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { updateEmployeeDepartment } from '../actions/update-department';
 
 const DEPARTMENTS = [
-  { value: "admin", label: "Admin" },
-  { value: "gov", label: "Governance" },
-  { value: "hr", label: "HR" },
-  { value: "it", label: "IT" },
-  { value: "itsm", label: "IT Service Management" },
-  { value: "qms", label: "Quality Management" },
-  { value: "none", label: "None" },
+  { value: 'admin', label: 'Admin' },
+  { value: 'gov', label: 'Governance' },
+  { value: 'hr', label: 'HR' },
+  { value: 'it', label: 'IT' },
+  { value: 'itsm', label: 'IT Service Management' },
+  { value: 'qms', label: 'Quality Management' },
+  { value: 'none', label: 'None' },
 ];
 
 interface EditableDepartmentProps {
@@ -39,11 +33,11 @@ export function EditableDepartment({
 
   const { execute, status } = useAction(updateEmployeeDepartment, {
     onSuccess: () => {
-      toast.success("Department updated successfully");
+      toast.success('Department updated successfully');
       onSuccess?.();
     },
     onError: (error) => {
-      toast.error(error?.error?.serverError || "Failed to update department");
+      toast.error(error?.error?.serverError || 'Failed to update department');
     },
   });
 
@@ -53,10 +47,7 @@ export function EditableDepartment({
 
   return (
     <div>
-      <Select
-        value={department}
-        onValueChange={(value) => setDepartment(value as Departments)}
-      >
+      <Select value={department} onValueChange={(value) => setDepartment(value as Departments)}>
         <SelectTrigger className="h-8 w-full">
           <SelectValue placeholder="Select department" />
         </SelectTrigger>

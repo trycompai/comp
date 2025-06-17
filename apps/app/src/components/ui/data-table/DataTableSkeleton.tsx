@@ -1,12 +1,5 @@
-import { Skeleton } from "@comp/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@comp/ui/table";
+import { Skeleton } from '@comp/ui/skeleton';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@comp/ui/table';
 
 interface DataTableSkeletonProps {
   columns?: number;

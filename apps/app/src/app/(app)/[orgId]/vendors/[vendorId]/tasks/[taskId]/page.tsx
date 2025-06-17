@@ -1,11 +1,11 @@
-"use server";
+'use server';
 
-import { auth } from "@/utils/auth";
-import { db } from "@comp/db";
-import { headers } from "next/headers";
-import { notFound, redirect } from "next/navigation";
-import SecondaryFields from "./components/secondary-fields/secondary-fields";
-import Title from "./components/title/title";
+import { auth } from '@/utils/auth';
+import { db } from '@comp/db';
+import { headers } from 'next/headers';
+import { notFound, redirect } from 'next/navigation';
+import SecondaryFields from './components/secondary-fields/secondary-fields';
+import Title from './components/title/title';
 
 interface PageProps {
   params: Promise<{
@@ -21,7 +21,7 @@ export default async function TaskPage({ params }: PageProps) {
   });
 
   if (!session?.user) {
-    redirect("/auth/signin");
+    redirect('/auth/signin');
   }
 
   // Fetch the task
@@ -48,7 +48,7 @@ export default async function TaskPage({ params }: PageProps) {
       where: {
         organizationId: orgId,
         role: {
-          notIn: ["employee"],
+          notIn: ['employee'],
         },
       },
       include: {

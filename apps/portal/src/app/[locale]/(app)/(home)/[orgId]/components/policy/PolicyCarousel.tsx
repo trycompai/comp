@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { Button } from "@comp/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useRef, useState, useEffect } from "react";
-import { PolicyCard } from "./PolicyCard";
-import type { Policy, Member } from "@comp/db/types";
-import { useAction } from "next-safe-action/hooks";
-import { markPolicyAsCompleted } from "../../../actions/markPolicyAsCompleted";
-import { toast } from "sonner";
+import { Button } from '@comp/ui/button';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useRef, useState, useEffect } from 'react';
+import { PolicyCard } from './PolicyCard';
+import type { Policy, Member } from '@comp/db/types';
+import { useAction } from 'next-safe-action/hooks';
+import { markPolicyAsCompleted } from '../../../actions/markPolicyAsCompleted';
+import { toast } from 'sonner';
 
 interface PolicyCarouselProps {
   policies: Policy[];
@@ -26,10 +26,10 @@ export function PolicyCarousel({
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const onCompletePolicy = useAction(markPolicyAsCompleted, {
     onSuccess: () => {
-      toast.success("Policy completed");
+      toast.success('Policy completed');
     },
     onError: () => {
-      toast.error("Failed to complete policy");
+      toast.error('Failed to complete policy');
     },
   });
 
@@ -39,7 +39,7 @@ export function PolicyCarousel({
     const itemWidth = container.clientWidth;
     container.scrollTo({
       left: index * itemWidth,
-      behavior: "instant",
+      behavior: 'instant',
     });
     setCurrentIndex(index);
     onIndexChange?.(index);
@@ -52,7 +52,7 @@ export function PolicyCarousel({
       const itemWidth = container.clientWidth;
       container.scrollTo({
         left: initialIndex * itemWidth,
-        behavior: "instant",
+        behavior: 'instant',
       });
     }
   }, [initialIndex]);
@@ -91,9 +91,7 @@ export function PolicyCarousel({
             <PolicyCard
               policy={policy}
               onNext={handleNext}
-              onComplete={() =>
-                onCompletePolicy.execute({ policyId: policy.id })
-              }
+              onComplete={() => onCompletePolicy.execute({ policyId: policy.id })}
               onClick={() => handleNext()}
               member={member}
               isLastPolicy={currentIndex === policies.length - 1}

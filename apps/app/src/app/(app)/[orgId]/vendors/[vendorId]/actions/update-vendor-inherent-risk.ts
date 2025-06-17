@@ -1,12 +1,12 @@
-"use server";
+'use server';
 
-import { appErrors } from "@/lib/errors";
-import type { ActionResponse } from "@/types/actions";
-import { db } from "@comp/db";
-import { Impact, Likelihood } from "@prisma/client";
-import { createSafeActionClient } from "next-safe-action";
-import { revalidatePath } from "next/cache";
-import { z } from "zod";
+import { appErrors } from '@/lib/errors';
+import type { ActionResponse } from '@/types/actions';
+import { db } from '@comp/db';
+import { Impact, Likelihood } from '@prisma/client';
+import { createSafeActionClient } from 'next-safe-action';
+import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
 
 const schema = z.object({
   vendorId: z.string(),
@@ -15,7 +15,7 @@ const schema = z.object({
 });
 
 export const updateVendorInherentRisk = createSafeActionClient()
-  .schema(schema)
+  .inputSchema(schema)
   .action(async ({ parsedInput }): Promise<ActionResponse> => {
     try {
       await db.vendor.update({
@@ -32,8 +32,7 @@ export const updateVendorInherentRisk = createSafeActionClient()
     } catch (error) {
       return {
         success: false,
-        error:
-          error instanceof Error ? error.message : appErrors.UNEXPECTED_ERROR,
+        error: error instanceof Error ? error.message : appErrors.UNEXPECTED_ERROR,
       };
     }
   });

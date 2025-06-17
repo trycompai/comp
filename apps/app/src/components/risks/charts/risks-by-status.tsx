@@ -1,9 +1,9 @@
-import { auth } from "@/utils/auth";
-import { db } from "@comp/db";
-import { Card, CardContent, CardHeader, CardTitle } from "@comp/ui/card";
-import { headers } from "next/headers";
-import { cache } from "react";
-import { StatusChart } from "./status-chart";
+import { auth } from '@/utils/auth';
+import { db } from '@comp/db';
+import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
+import { headers } from 'next/headers';
+import { cache } from 'react';
+import { StatusChart } from './status-chart';
 
 export async function RisksByStatus() {
   const risks = await getRisksByStatus();
@@ -16,7 +16,7 @@ export async function RisksByStatus() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{"Risks by Status"}</CardTitle>
+        <CardTitle>{'Risks by Status'}</CardTitle>
       </CardHeader>
       <CardContent>
         <StatusChart data={data} />
@@ -35,7 +35,7 @@ const getRisksByStatus = cache(async () => {
   }
 
   const risks = await db.risk.groupBy({
-    by: ["status"],
+    by: ['status'],
     where: { organizationId: session.session.activeOrganizationId },
     _count: true,
   });

@@ -1,9 +1,9 @@
 ---
 name: Report a bug
 about: Any issues with the platform, unexpected behavior, etc.
-title: ""
-labels: ["🐛 bug"]
-assignees: ""
+title: ''
+labels: ['🐛 bug']
+assignees: ''
 ---
 
 Found a bug? Please fill out the sections below. 👍

@@ -1,7 +1,7 @@
-import React from "react";
-import { cn } from "@comp/ui/cn";
-import { Button } from "@comp/ui/button";
-import { Loader2, Trash2 } from "lucide-react";
+import React from 'react';
+import { cn } from '@comp/ui/cn';
+import { Button } from '@comp/ui/button';
+import { Loader2, Trash2 } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,9 +12,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@comp/ui/alert-dialog";
-import type { Attachment, AttachmentType } from "@comp/db/types";
-import { getAttachmentIconAndColor } from "../utils/attachmentUtils";
+} from '@comp/ui/alert-dialog';
+import type { Attachment, AttachmentType } from '@comp/db/types';
+import { getAttachmentIconAndColor } from '../utils/attachmentUtils';
 
 interface PendingAttachment {
   id: string;
@@ -38,19 +38,19 @@ interface AttachmentItemProps {
 }
 
 function mapFileTypeToAttachmentType(fileType: string): AttachmentType {
-  const type = fileType.split("/")[0];
+  const type = fileType.split('/')[0];
   switch (type) {
-    case "image":
-      return "image" as AttachmentType;
-    case "video":
-      return "video" as AttachmentType;
-    case "audio":
-      return "audio" as AttachmentType;
-    case "application":
-      if (fileType === "application/pdf") return "document" as AttachmentType;
-      return "document" as AttachmentType;
+    case 'image':
+      return 'image' as AttachmentType;
+    case 'video':
+      return 'video' as AttachmentType;
+    case 'audio':
+      return 'audio' as AttachmentType;
+    case 'application':
+      if (fileType === 'application/pdf') return 'document' as AttachmentType;
+      return 'document' as AttachmentType;
     default:
-      return "other" as AttachmentType;
+      return 'other' as AttachmentType;
   }
 }
 
@@ -65,11 +65,9 @@ export function AttachmentItem({
   canDelete = true, // Default to true if not provided
 }: AttachmentItemProps) {
   const isExisting = !!attachment;
-  const id = attachment?.id ?? pendingAttachment?.id ?? "";
-  const name = attachment?.name ?? pendingAttachment?.name ?? "";
-  const type =
-    attachment?.type ??
-    mapFileTypeToAttachmentType(pendingAttachment?.fileType ?? "");
+  const id = attachment?.id ?? pendingAttachment?.id ?? '';
+  const name = attachment?.name ?? pendingAttachment?.name ?? '';
+  const type = attachment?.type ?? mapFileTypeToAttachmentType(pendingAttachment?.fileType ?? '');
 
   const { Icon, colorClass } = getAttachmentIconAndColor(type);
 
@@ -91,17 +89,15 @@ export function AttachmentItem({
     <div
       key={id}
       className={cn(
-        "bg-background flex items-center justify-between gap-2 rounded-md border p-2 text-sm",
+        'bg-background flex items-center justify-between gap-2 rounded-md border p-2 text-sm',
         className,
       )}
     >
       <div className="flex min-w-0 flex-1 items-center gap-2">
         {isBusy ? (
-          <Loader2
-            className={cn("h-4 w-4 shrink-0 animate-spin", colorClass)}
-          />
+          <Loader2 className={cn('h-4 w-4 shrink-0 animate-spin', colorClass)} />
         ) : (
-          <Icon className={cn("h-4 w-4 shrink-0", colorClass)} />
+          <Icon className={cn('h-4 w-4 shrink-0', colorClass)} />
         )}
 
         {onClickFilename ? (
@@ -144,16 +140,14 @@ export function AttachmentItem({
               <AlertDialogTitle>Are you sure?</AlertDialogTitle>
               <AlertDialogDescription>
                 {isExisting
-                  ? "This action cannot be undone. This will permanently delete the attachment."
+                  ? 'This action cannot be undone. This will permanently delete the attachment.'
                   : "This will remove the attachment from your pending list. It won't be included when you submit."}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel disabled={isBusy}>Cancel</AlertDialogCancel>
               <AlertDialogAction onClick={handleDelete} disabled={isBusy}>
-                {isBusy ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : null}
+                {isBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 Remove
               </AlertDialogAction>
             </AlertDialogFooter>

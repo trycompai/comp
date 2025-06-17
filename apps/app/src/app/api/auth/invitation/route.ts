@@ -1,15 +1,15 @@
-import { auth } from "@/utils/auth";
-import { authClient } from "@/utils/auth-client";
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
-import { NextResponse } from "next/server";
+import { auth } from '@/utils/auth';
+import { authClient } from '@/utils/auth-client';
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const inviteCode = searchParams.get("code");
+  const inviteCode = searchParams.get('code');
 
   if (!inviteCode) {
-    return redirect("/");
+    return redirect('/');
   }
 
   const session = await auth.api.getSession({
@@ -25,14 +25,10 @@ export async function GET(request: Request) {
       invitationId: inviteCode,
     });
 
-    return NextResponse.redirect(new URL("/", request.url));
+    return NextResponse.redirect(new URL('/', request.url));
   } catch (error) {
-    console.error("Error accepting invitation:", error);
+    console.error('Error accepting invitation:', error);
 
-    return redirect(
-      `/auth/invite/error?message=${encodeURIComponent(
-        (error as Error).message,
-      )}`,
-    );
+    return redirect(`/auth/invite/error?message=${encodeURIComponent((error as Error).message)}`);
   }
 }

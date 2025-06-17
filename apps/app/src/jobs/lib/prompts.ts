@@ -1,6 +1,6 @@
-import { Policy, Risk } from "@comp/db/types";
-import { logger } from "@trigger.dev/sdk/v3";
-import { JSONContent } from "novel";
+import { Policy, Risk } from '@comp/db/types';
+import { logger } from '@trigger.dev/sdk/v3';
+import { JSONContent } from 'novel';
 
 export const generatePrompt = ({
   policy,
@@ -19,9 +19,7 @@ export const generatePrompt = ({
   logger.info(`Company Name: ${companyName}`);
   logger.info(`Company Website: ${companyWebsite}`);
   logger.info(`Context: ${contextHub}`);
-  logger.info(
-    `Existing Policy Content: ${JSON.stringify(existingPolicyContent)}`,
-  );
+  logger.info(`Existing Policy Content: ${JSON.stringify(existingPolicyContent)}`);
 
   return `
 Company details:

@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { Button } from "@comp/ui/button";
+import { Button } from '@comp/ui/button';
 import {
   Dialog,
   DialogClose,
@@ -9,27 +9,20 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@comp/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@comp/ui/form";
-import { Input } from "@comp/ui/input";
-import { Textarea } from "@comp/ui/textarea";
-import { zodResolver } from "@hookform/resolvers/zod";
-import React, { useEffect, useRef } from "react";
-import { useForm } from "react-hook-form";
-import { toast } from "sonner";
-import { z } from "zod";
+} from '@comp/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
+import { Input } from '@comp/ui/input';
+import { Textarea } from '@comp/ui/textarea';
+import { zodResolver } from '@hookform/resolvers/zod';
+import React, { useEffect, useRef } from 'react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import { z } from 'zod';
 import {
   createFrameworkAction,
   type CreateFrameworkActionState,
-} from "../actions/create-framework-action";
-import { FrameworkBaseSchema } from "../schemas";
+} from '../actions/create-framework-action';
+import { FrameworkBaseSchema } from '../schemas';
 
 interface CreateFrameworkDialogProps {
   isOpen: boolean;
@@ -46,26 +39,27 @@ export function CreateFrameworkDialog({
   onOpenChange,
   onFrameworkCreated,
 }: CreateFrameworkDialogProps) {
-  const [actionState, setActionState] = React.useState<
-    CreateFrameworkActionState | undefined
-  >(undefined);
+  const [actionState, setActionState] = React.useState<CreateFrameworkActionState | undefined>(
+    undefined,
+  );
   const formRef = useRef<HTMLFormElement>(null);
 
   const form = useForm<FrameworkFormValues>({
     resolver: zodResolver(frameworkFormSchema),
     defaultValues: {
-      name: "",
-      description: "",
-      version: "1.0.0",
+      name: '',
+      description: '',
+      version: '1.0.0',
+      visible: true,
     },
-    mode: "onChange",
+    mode: 'onChange',
   });
 
   useEffect(() => {
     if (!actionState) return;
 
     if (actionState.success) {
-      toast.success("Framework created successfully!");
+      toast.success('Framework created successfully!');
       onOpenChange(false);
       form.reset();
       if (onFrameworkCreated) {
@@ -76,12 +70,12 @@ export function CreateFrameworkDialog({
         actionState.issues.forEach((issue) => {
           if (
             issue.path.length > 0 &&
-            (issue.path[0] === "name" ||
-              issue.path[0] === "description" ||
-              issue.path[0] === "version")
+            (issue.path[0] === 'name' ||
+              issue.path[0] === 'description' ||
+              issue.path[0] === 'version')
           ) {
             form.setError(issue.path[0] as keyof FrameworkFormValues, {
-              type: "server",
+              type: 'server',
               message: issue.message,
             });
           } else {
@@ -97,9 +91,10 @@ export function CreateFrameworkDialog({
 
   async function onSubmit(values: FrameworkFormValues) {
     const serverActionFormData = new FormData();
-    serverActionFormData.append("name", values.name);
-    serverActionFormData.append("description", values.description);
-    serverActionFormData.append("version", values.version);
+    serverActionFormData.append('name', values.name);
+    serverActionFormData.append('description', values.description);
+    serverActionFormData.append('version', values.version);
+    serverActionFormData.append('visible', String(values.visible));
 
     const result = await createFrameworkAction(null, serverActionFormData);
     setActionState(result);
@@ -120,16 +115,11 @@ export function CreateFrameworkDialog({
         <DialogHeader>
           <DialogTitle>Create New Framework</DialogTitle>
           <DialogDescription>
-            Fill in the details below to create a new framework. Click create
-            when you're done.
+            Fill in the details below to create a new framework. Click create when you're done.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            ref={formRef}
-            className="grid gap-2 py-4"
-          >
+          <form onSubmit={form.handleSubmit(onSubmit)} ref={formRef} className="grid gap-2 py-4">
             <FormField
               control={form.control}
               name="name"
@@ -152,10 +142,7 @@ export function CreateFrameworkDialog({
                 <FormItem className="grid grid-cols-4 items-center gap-2">
                   <FormLabel className="text-right">Description</FormLabel>
                   <FormControl className="col-span-3">
-                    <Textarea
-                      placeholder="Enter framework description"
-                      {...field}
-                    />
+                    <Textarea placeholder="Enter framework description" {...field} />
                   </FormControl>
                   <div className="col-span-3 col-start-2">
                     <FormMessage />
@@ -191,9 +178,7 @@ export function CreateFrameworkDialog({
                 </Button>
               </DialogClose>
               <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting
-                  ? "Creating..."
-                  : "Create Framework"}
+                {form.formState.isSubmitting ? 'Creating...' : 'Create Framework'}
               </Button>
             </DialogFooter>
           </form>

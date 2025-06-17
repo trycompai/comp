@@ -13,13 +13,7 @@
     {
       "label": "Ensure React is consistent",
       "packages": ["**"],
-      "dependencies": [
-        "react",
-        "react-dom",
-        "@types/react",
-        "@types/react-dom",
-        "react-is"
-      ],
+      "dependencies": ["react", "react-dom", "@types/react", "@types/react-dom", "react-is"],
       "isIgnored": false
     },
     {
@@ -37,12 +31,7 @@
     {
       "label": "Ensure common build tools are consistent",
       "packages": ["**"],
-      "dependencies": [
-        "postcss",
-        "tailwindcss",
-        "@tailwindcss/**",
-        "autoprefixer"
-      ],
+      "dependencies": ["postcss", "tailwindcss", "@tailwindcss/**", "autoprefixer"],
       "isIgnored": false
     },
     {
@@ -60,15 +49,7 @@
   ],
   "lintRules": {
     "forbiddenDependencies": {
-      "dependencies": [
-        "crypto",
-        "buffer",
-        "fs",
-        "path",
-        "os",
-        "install",
-        "npm"
-      ],
+      "dependencies": ["crypto", "buffer", "fs", "path", "os", "install", "npm"],
       "message": "This is a Node.js built-in module or a mistakenly added dependency"
     }
   }

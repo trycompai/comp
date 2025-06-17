@@ -1,8 +1,8 @@
-"use server";
+'use server';
 
-import { auth } from "@/utils/auth";
-import { headers } from "next/headers";
-import { z } from "zod";
+import { auth } from '@/utils/auth';
+import { headers } from 'next/headers';
+import { z } from 'zod';
 
 // Placeholder for database/storage interaction
 // Replace with your actual implementation for getting attachment data
@@ -15,8 +15,8 @@ async function getAttachmentData(attachmentId: string) {
     id: attachmentId,
     // ... other attachment properties like path/key, ownerId, taskId, orgId etc.
     filePath: `attachments/${attachmentId}.pdf`, // Example path/key
-    orgId: "org_placeholder", // Example orgId for permission check
-    taskId: "task_placeholder", // Example taskId
+    orgId: 'org_placeholder', // Example orgId for permission check
+    taskId: 'task_placeholder', // Example taskId
   };
 }
 
@@ -49,9 +49,7 @@ export async function getAttachmentUrl(
     // 1. Get User Session
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session?.user) {
-      console.error(
-        "getAttachmentUrl: Authentication failed - No user session",
-      );
+      console.error('getAttachmentUrl: Authentication failed - No user session');
       return null;
     }
 
@@ -76,15 +74,13 @@ export async function getAttachmentUrl(
     const signedUrl = await generateSignedUrl(attachmentData.filePath);
 
     if (!signedUrl) {
-      console.error(
-        `getAttachmentUrl: Failed to generate signed URL for ${attachmentId}`,
-      );
+      console.error(`getAttachmentUrl: Failed to generate signed URL for ${attachmentId}`);
       return null;
     }
 
     return signedUrl;
   } catch (error) {
-    console.error("getAttachmentUrl: Unexpected error:", error);
+    console.error('getAttachmentUrl: Unexpected error:', error);
     return null;
   }
 }

@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 // Import types from the new types.ts file
-import { useToast } from "@comp/ui/use-toast";
-import type { FrameworkEditorControlTemplate } from "@prisma/client";
-import { createControl, deleteControl, updateControlDetails } from "../actions";
-import type { ControlsPageGridData, DSGOperation } from "../types";
+import { useToast } from '@comp/ui/use-toast';
+import type { FrameworkEditorControlTemplate } from '@prisma/client';
+import { createControl, deleteControl, updateControlDetails } from '../actions';
+import type { ControlsPageGridData, DSGOperation } from '../types';
 
 // Define result types for creation operations to help with type inference
 type CreationSuccessResult = {
@@ -55,12 +55,9 @@ export const useChangeTracking = (initialData: ControlsPageGridData[]) => {
     };
   }, []);
 
-  const setDisplayedData = useCallback(
-    (displayedData: ControlsPageGridData[]) => {
-      displayedDataRef.current = displayedData;
-    },
-    [],
-  );
+  const setDisplayedData = useCallback((displayedData: ControlsPageGridData[]) => {
+    displayedDataRef.current = displayedData;
+  }, []);
 
   const handleGridChange = useCallback(
     (newValue: ControlsPageGridData[], operations: DSGOperation[]) => {
@@ -74,42 +71,32 @@ export const useChangeTracking = (initialData: ControlsPageGridData[]) => {
         const originalDataForDelete = displayedDataRef.current;
 
         operations.forEach((op) => {
-          if (op.type === "CREATE") {
-            workingNewValue
-              .slice(op.fromRowIndex, op.toRowIndex)
-              .forEach((row) => {
-                if (row.id) createdRowIds.add(row.id);
-              });
-          } else if (op.type === "UPDATE") {
-            workingNewValue
-              .slice(op.fromRowIndex, op.toRowIndex)
-              .forEach((row) => {
-                if (
-                  row.id &&
-                  !createdRowIds.has(row.id) &&
-                  !deletedRowIds.has(row.id)
-                ) {
-                  updatedRowIds.add(row.id);
-                }
-              });
-          } else if (op.type === "DELETE") {
+          if (op.type === 'CREATE') {
+            workingNewValue.slice(op.fromRowIndex, op.toRowIndex).forEach((row) => {
+              if (row.id) createdRowIds.add(row.id);
+            });
+          } else if (op.type === 'UPDATE') {
+            workingNewValue.slice(op.fromRowIndex, op.toRowIndex).forEach((row) => {
+              if (row.id && !createdRowIds.has(row.id) && !deletedRowIds.has(row.id)) {
+                updatedRowIds.add(row.id);
+              }
+            });
+          } else if (op.type === 'DELETE') {
             let keptRowsForDisplay = 0;
-            originalDataForDelete
-              .slice(op.fromRowIndex, op.toRowIndex)
-              .forEach((deletedRow, i) => {
-                if (!deletedRow.id) return;
-                updatedRowIds.delete(deletedRow.id);
-                if (createdRowIds.has(deletedRow.id)) {
-                  createdRowIds.delete(deletedRow.id);
-                } else {
-                  deletedRowIds.add(deletedRow.id);
-                  workingNewValue.splice(
-                    op.fromRowIndex + keptRowsForDisplay++,
-                    0,
-                    originalDataForDelete[op.fromRowIndex + i],
-                  );
-                }
-              });
+            originalDataForDelete.slice(op.fromRowIndex, op.toRowIndex).forEach((deletedRow, i) => {
+              if (!deletedRow.id) return;
+              updatedRowIds.delete(deletedRow.id);
+              if (createdRowIds.has(deletedRow.id)) {
+                createdRowIds.delete(deletedRow.id);
+              } else {
+                deletedRowIds.add(deletedRow.id);
+                workingNewValue.splice(
+                  op.fromRowIndex + keptRowsForDisplay++,
+                  0,
+                  originalDataForDelete[op.fromRowIndex + i],
+                );
+              }
+            });
           }
         });
         return workingNewValue;
@@ -120,11 +107,11 @@ export const useChangeTracking = (initialData: ControlsPageGridData[]) => {
 
   const getRowClassName = useCallback(
     ({ rowData }: { rowData: ControlsPageGridData }) => {
-      if (!rowData || !rowData.id) return "";
-      if (deletedRowIds.has(rowData.id)) return "row-deleted";
-      if (createdRowIds.has(rowData.id)) return "row-created";
-      if (updatedRowIds.has(rowData.id)) return "row-updated";
-      return "";
+      if (!rowData || !rowData.id) return '';
+      if (deletedRowIds.has(rowData.id)) return 'row-deleted';
+      if (createdRowIds.has(rowData.id)) return 'row-created';
+      if (updatedRowIds.has(rowData.id)) return 'row-updated';
+      return '';
     },
     [createdRowIds, updatedRowIds, deletedRowIds],
   );
@@ -147,20 +134,15 @@ export const useChangeTracking = (initialData: ControlsPageGridData[]) => {
               }) as CreationSuccessResult,
           )
           .catch((error) => {
-            console.error(
-              `Failed to create control (tempId: ${tempId}):`,
-              error,
-            );
+            console.error(`Failed to create control (tempId: ${tempId}):`, error);
             return { success: false, tempId, error } as CreationFailureResult;
           });
       }
-      console.warn(
-        `Skipping creation for row with tempId ${tempId} due to missing data or name.`,
-      );
+      console.warn(`Skipping creation for row with tempId ${tempId} due to missing data or name.`);
       return Promise.resolve({
         success: false,
         tempId,
-        error: new Error("Missing data or name for creation"),
+        error: new Error('Missing data or name for creation'),
       } as CreationFailureResult);
     });
     const creationResults = await Promise.allSettled(creationOps);
@@ -174,7 +156,7 @@ export const useChangeTracking = (initialData: ControlsPageGridData[]) => {
       if (row && row.name) {
         return updateControlDetails(id, {
           name: row.name,
-          description: row.description || "",
+          description: row.description || '',
         })
           .then(() => ({ success: true, id }))
           .catch((error) => {
@@ -182,13 +164,11 @@ export const useChangeTracking = (initialData: ControlsPageGridData[]) => {
             return { success: false, id, error };
           });
       }
-      console.warn(
-        `Skipping update for row with id ${id} due to missing data or name.`,
-      );
+      console.warn(`Skipping update for row with id ${id} due to missing data or name.`);
       return Promise.resolve({
         success: false,
         id,
-        error: new Error("Missing data or name for update"),
+        error: new Error('Missing data or name for update'),
       });
     });
     const updateResults = await Promise.allSettled(updateOps);
@@ -199,7 +179,7 @@ export const useChangeTracking = (initialData: ControlsPageGridData[]) => {
         createdRowIds.has(id) &&
         !creationResults.some(
           (res) =>
-            res.status === "fulfilled" &&
+            res.status === 'fulfilled' &&
             (res.value as CreationOperationResult).success &&
             (res.value as CreationSuccessResult).tempId === id &&
             (res.value as CreationSuccessResult).newId,
@@ -222,7 +202,7 @@ export const useChangeTracking = (initialData: ControlsPageGridData[]) => {
     // 1. Update IDs for successful creations and collect created data
     const serverCreatedRows = new Map<string, ControlsPageGridData>();
     creationResults.forEach((res) => {
-      if (res.status === "fulfilled") {
+      if (res.status === 'fulfilled') {
         const creationValue = res.value as CreationOperationResult;
         if (creationValue.success) {
           // Now TypeScript knows creationValue is CreationSuccessResult
@@ -245,7 +225,7 @@ export const useChangeTracking = (initialData: ControlsPageGridData[]) => {
 
     // 2. Remove successfully updated items from tracking set
     updateResults.forEach((res) => {
-      if (res.status === "fulfilled" && res.value.success && res.value.id) {
+      if (res.status === 'fulfilled' && res.value.success && res.value.id) {
         updatedRowIds.delete(res.value.id);
       }
     });
@@ -253,7 +233,7 @@ export const useChangeTracking = (initialData: ControlsPageGridData[]) => {
     // 3. Prepare final list of data, handling deletions and incorporating server-created items
     const actuallyDeletedIds = new Set<string>();
     deletionResults.forEach((res) => {
-      if (res.status === "fulfilled" && res.value.success && res.value.id) {
+      if (res.status === 'fulfilled' && res.value.success && res.value.id) {
         actuallyDeletedIds.add(res.value.id);
         deletedRowIds.delete(res.value.id);
         createdRowIds.delete(res.value.id); // If it was created then deleted
@@ -269,18 +249,12 @@ export const useChangeTracking = (initialData: ControlsPageGridData[]) => {
       // Check if this row corresponds to a successfully created item (identified by its original tempId)
       let wasSuccessfullyCreated = false;
       for (const res of creationResults) {
-        if (res.status === "fulfilled") {
+        if (res.status === 'fulfilled') {
           const creationValue = res.value as CreationOperationResult;
-          if (
-            creationValue.success &&
-            creationValue.tempId === row.id &&
-            creationValue.newId
-          ) {
+          if (creationValue.success && creationValue.tempId === row.id && creationValue.newId) {
             // This row was a temp row that got created. Its data is on serverCreatedRows map.
             if (serverCreatedRows.has(creationValue.newId)) {
-              finalProcessedData.push(
-                serverCreatedRows.get(creationValue.newId)!,
-              );
+              finalProcessedData.push(serverCreatedRows.get(creationValue.newId)!);
             }
             wasSuccessfullyCreated = true;
             break;
@@ -297,7 +271,7 @@ export const useChangeTracking = (initialData: ControlsPageGridData[]) => {
       setPrevData(finalProcessedData);
     }
 
-    console.log("Commit completed. Remaining dirty items:", {
+    console.log('Commit completed. Remaining dirty items:', {
       created: Array.from(createdRowIds),
       updated: Array.from(updatedRowIds),
       deleted: Array.from(deletedRowIds),
@@ -319,27 +293,27 @@ export const useChangeTracking = (initialData: ControlsPageGridData[]) => {
     const errors: string[] = [];
 
     creationResults.forEach((res) => {
-      if (res.status === "fulfilled") {
+      if (res.status === 'fulfilled') {
         const result = res.value as CreationOperationResult;
         if (result.success) {
           const createdRow = serverCreatedRows.get(result.newId);
           successes.push(`Created: ${createdRow?.name || result.newId}`);
         } else {
           errors.push(
-            `Failed to create (tempId: ${result.tempId}): ${result.error?.message || "Unknown error"}`,
+            `Failed to create (tempId: ${result.tempId}): ${result.error?.message || 'Unknown error'}`,
           );
         }
       } else {
         // res.reason should be an Error object or contain a message
         const reason = res.reason as any;
         errors.push(
-          `Creation operation failed: ${reason?.message || String(reason) || "Unknown reason"}`,
+          `Creation operation failed: ${reason?.message || String(reason) || 'Unknown reason'}`,
         );
       }
     });
 
     updateResults.forEach((res) => {
-      if (res.status === "fulfilled") {
+      if (res.status === 'fulfilled') {
         const result = res.value as {
           success: boolean;
           id: string;
@@ -351,25 +325,25 @@ export const useChangeTracking = (initialData: ControlsPageGridData[]) => {
           successes.push(`Updated: ${updatedRow?.name || result.id}`);
         } else if (result.id) {
           errors.push(
-            `Failed to update (${result.id}): ${result.error?.message || "Unknown error"}`,
+            `Failed to update (${result.id}): ${result.error?.message || 'Unknown error'}`,
           );
         }
         // If result.id is undefined but it was a fulfilled promise, it implies an issue with the op function not returning id
         else if (!result.id && !result.success) {
           errors.push(
-            `Failed to update item: ${result.error?.message || "Unknown error, ID missing"}`,
+            `Failed to update item: ${result.error?.message || 'Unknown error, ID missing'}`,
           );
         }
       } else {
         const reason = res.reason as any;
         errors.push(
-          `Update operation failed: ${reason?.message || String(reason) || "Unknown reason"}`,
+          `Update operation failed: ${reason?.message || String(reason) || 'Unknown reason'}`,
         );
       }
     });
 
     deletionResults.forEach((res) => {
-      if (res.status === "fulfilled") {
+      if (res.status === 'fulfilled') {
         const result = res.value as {
           success: boolean;
           id: string;
@@ -386,19 +360,19 @@ export const useChangeTracking = (initialData: ControlsPageGridData[]) => {
           }
         } else if (result.id) {
           errors.push(
-            `Failed to delete (${result.id}): ${result.error?.message || "Unknown error"}`,
+            `Failed to delete (${result.id}): ${result.error?.message || 'Unknown error'}`,
           );
         }
         // If result.id is undefined but it was a fulfilled promise, it implies an issue with the op function not returning id
         else if (!result.id && !result.success) {
           errors.push(
-            `Failed to delete item: ${result.error?.message || "Unknown error, ID missing"}`,
+            `Failed to delete item: ${result.error?.message || 'Unknown error, ID missing'}`,
           );
         }
       } else {
         const reason = res.reason as any;
         errors.push(
-          `Deletion operation failed: ${reason?.message || String(reason) || "Unknown reason"}`,
+          `Deletion operation failed: ${reason?.message || String(reason) || 'Unknown reason'}`,
         );
       }
     });
@@ -406,22 +380,22 @@ export const useChangeTracking = (initialData: ControlsPageGridData[]) => {
     const toastTitle =
       errors.length > 0
         ? successes.length > 0
-          ? "Commit Partially Successful"
-          : "Commit Failed"
-        : "Commit Successful";
-    let toastDescription = "";
+          ? 'Commit Partially Successful'
+          : 'Commit Failed'
+        : 'Commit Successful';
+    let toastDescription = '';
 
     if (successes.length > 0) {
-      toastDescription += `Successes (${successes.length}):\n${successes.map((s) => ` - ${s}`).join("\n")}`;
+      toastDescription += `Successes (${successes.length}):\n${successes.map((s) => ` - ${s}`).join('\n')}`;
     }
     if (errors.length > 0) {
-      if (toastDescription) toastDescription += "\n\n"; // Add separator if there were successes
-      toastDescription += `Errors (${errors.length}):\n${errors.map((e) => ` - ${e}`).join("\n")}`;
+      if (toastDescription) toastDescription += '\n\n'; // Add separator if there were successes
+      toastDescription += `Errors (${errors.length}):\n${errors.map((e) => ` - ${e}`).join('\n')}`;
     }
     if (successes.length === 0 && errors.length === 0) {
       // This case might occur if handleCommit was called with no pending changes, though isDirty should prevent this.
       // Or if all operations were somehow filtered out before being processed.
-      toastDescription = "No operations were performed.";
+      toastDescription = 'No operations were performed.';
     }
 
     if (isMounted.current && (successes.length > 0 || errors.length > 0)) {
@@ -429,7 +403,7 @@ export const useChangeTracking = (initialData: ControlsPageGridData[]) => {
       toast({
         title: toastTitle,
         description: toastDescription,
-        variant: errors.length > 0 ? "destructive" : "default",
+        variant: errors.length > 0 ? 'destructive' : 'default',
         duration: errors.length > 0 || successes.length > 5 ? 9000 : 5000, // Longer duration for errors or many successes
       });
     }
@@ -442,22 +416,20 @@ export const useChangeTracking = (initialData: ControlsPageGridData[]) => {
     deletedRowIds.clear();
   }, [prevData, createdRowIds, updatedRowIds, deletedRowIds]);
 
-  const isDirty =
-    createdRowIds.size > 0 || updatedRowIds.size > 0 || deletedRowIds.size > 0;
+  const isDirty = createdRowIds.size > 0 || updatedRowIds.size > 0 || deletedRowIds.size > 0;
 
   const changesSummaryString = useMemo(() => {
-    if (!isDirty) return "";
+    if (!isDirty) return '';
 
-    const totalChanges =
-      createdRowIds.size + updatedRowIds.size + deletedRowIds.size;
+    const totalChanges = createdRowIds.size + updatedRowIds.size + deletedRowIds.size;
 
     if (totalChanges === 0) {
       // This case should ideally not be hit if isDirty is true,
       // but as a fallback if counts are 0 but something else makes it dirty.
-      return "(Pending Changes)"; // Or simply '' if the button text itself is enough.
+      return '(Pending Changes)'; // Or simply '' if the button text itself is enough.
     }
 
-    return `(${totalChanges} ${totalChanges === 1 ? "change" : "changes"})`;
+    return `(${totalChanges} ${totalChanges === 1 ? 'change' : 'changes'})`;
   }, [isDirty, createdRowIds.size, updatedRowIds.size, deletedRowIds.size]);
 
   return {

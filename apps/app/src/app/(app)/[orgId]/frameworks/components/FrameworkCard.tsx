@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import type { Task, Control } from "@comp/db/types";
-import { Badge } from "@comp/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@comp/ui/card";
-import { Progress } from "@comp/ui/progress";
-import { cn } from "@comp/ui/cn";
-import { BarChart3, Clock } from "lucide-react";
-import Link from "next/link";
-import { useParams } from "next/navigation";
-import type { FrameworkInstanceWithControls } from "../types";
+import type { Task, Control } from '@comp/db/types';
+import { Badge } from '@comp/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
+import { Progress } from '@comp/ui/progress';
+import { cn } from '@comp/ui/cn';
+import { BarChart3, Clock } from 'lucide-react';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
+import type { FrameworkInstanceWithControls } from '../types';
 
 interface FrameworkCardProps {
   frameworkInstance: FrameworkInstanceWithControls;
@@ -26,48 +26,41 @@ export function FrameworkCard({
   const getStatusBadge = (score: number) => {
     if (score >= 95)
       return {
-        label: "Compliant",
-        variant: "default" as const,
+        label: 'Compliant',
+        variant: 'default' as const,
       };
     if (score >= 80)
       return {
-        label: "Nearly Compliant",
-        variant: "secondary" as const,
+        label: 'Nearly Compliant',
+        variant: 'secondary' as const,
       };
     if (score >= 50)
       return {
-        label: "In Progress",
-        variant: "outline" as const,
+        label: 'In Progress',
+        variant: 'outline' as const,
       };
     return {
-      label: "Needs Attention",
-      variant: "destructive" as const,
+      label: 'Needs Attention',
+      variant: 'destructive' as const,
     };
   };
 
   const getComplianceColor = (score: number) => {
-    if (score >= 80) return "text-green-600 dark:text-green-400";
-    if (score >= 60) return "text-yellow-600 dark:text-yellow-400";
-    return "text-red-600 dark:text-red-400";
+    if (score >= 80) return 'text-green-600 dark:text-green-400';
+    if (score >= 60) return 'text-yellow-600 dark:text-yellow-400';
+    return 'text-red-600 dark:text-red-400';
   };
 
   const controlsCount = frameworkInstance.controls?.length || 0;
-  const compliantControlsCount = Math.round(
-    (complianceScore / 100) * controlsCount,
-  );
+  const compliantControlsCount = Math.round((complianceScore / 100) * controlsCount);
 
   // Calculate not started controls: controls where all policies are draft or non-existent AND all tasks are todo or non-existent
   const notStartedControlsCount =
     frameworkInstance.controls?.filter((control) => {
       // If a control has no policies and no tasks, it's not started.
-      const controlTasks = tasks.filter((task) =>
-        task.controls.some((c) => c.id === control.id),
-      );
+      const controlTasks = tasks.filter((task) => task.controls.some((c) => c.id === control.id));
 
-      if (
-        (!control.policies || control.policies.length === 0) &&
-        controlTasks.length === 0
-      ) {
+      if ((!control.policies || control.policies.length === 0) && controlTasks.length === 0) {
         return true;
       }
 
@@ -75,12 +68,11 @@ export function FrameworkCard({
       const policiesNotStarted =
         !control.policies ||
         control.policies.length === 0 ||
-        control.policies.every((policy) => policy.status === "draft");
+        control.policies.every((policy) => policy.status === 'draft');
 
       // Check if ALL tasks are in todo state or there are no tasks
       const tasksNotStarted =
-        controlTasks.length === 0 ||
-        controlTasks.every((task) => task.status === "todo");
+        controlTasks.length === 0 || controlTasks.every((task) => task.status === 'todo');
 
       return policiesNotStarted && tasksNotStarted;
       // If either any policy is not draft or any task is not todo, it's in progress
@@ -100,10 +92,7 @@ export function FrameworkCard({
   const lastActivityDate = new Date().toLocaleDateString();
 
   return (
-    <Link
-      href={`/${orgId}/frameworks/${frameworkInstance.id}`}
-      className="group block"
-    >
+    <Link href={`/${orgId}/frameworks/${frameworkInstance.id}`} className="group block">
       <Card className="flex h-full flex-col transition-shadow hover:shadow-sm">
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-3">
@@ -129,12 +118,7 @@ export function FrameworkCard({
                 <BarChart3 className="text-muted-foreground h-3 w-3" />
                 <span className="text-muted-foreground">Progress</span>
               </div>
-              <span
-                className={cn(
-                  "font-medium tabular-nums",
-                  getComplianceColor(complianceScore),
-                )}
-              >
+              <span className={cn('font-medium tabular-nums', getComplianceColor(complianceScore))}>
                 {complianceScore}%
               </span>
             </div>

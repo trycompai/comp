@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 export interface AppError {
   code: string;
@@ -7,12 +7,12 @@ export interface AppError {
 
 export const appErrors = {
   UNAUTHORIZED: {
-    code: "UNAUTHORIZED",
-    message: "You are not authorized to access this resource",
+    code: 'UNAUTHORIZED',
+    message: 'You are not authorized to access this resource',
   },
   UNEXPECTED_ERROR: {
-    code: "UNEXPECTED_ERROR",
-    message: "An unexpected error occurred",
+    code: 'UNEXPECTED_ERROR',
+    message: 'An unexpected error occurred',
   },
 };
 

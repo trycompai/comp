@@ -1,62 +1,62 @@
-"use client";
+'use client';
 
-import { useRouter } from "next/navigation";
-import { useQueryState } from "nuqs";
-import { useHotkeys } from "react-hotkeys-hook";
+import { useRouter } from 'next/navigation';
+import { useQueryState } from 'nuqs';
+import { useHotkeys } from 'react-hotkeys-hook';
 
 export function HotKeys() {
   const router = useRouter();
-  const [, setAssistantOpen] = useQueryState("assistant", {
-    history: "push",
-    parse: (value) => value === "true",
+  const [, setAssistantOpen] = useQueryState('assistant', {
+    history: 'push',
+    parse: (value) => value === 'true',
     serialize: (value) => value.toString(),
   });
 
   const [showOrganizationSwitcher, setShowOrganizationSwitcher] = useQueryState(
-    "showOrganizationSwitcher",
+    'showOrganizationSwitcher',
     {
-      history: "push",
-      parse: (value) => value === "true",
+      history: 'push',
+      parse: (value) => value === 'true',
       serialize: (value) => value.toString(),
     },
   );
 
-  useHotkeys("ctrl+m", (evt) => {
+  useHotkeys('ctrl+m', (evt) => {
     evt.preventDefault();
-    router.push("/settings/users");
+    router.push('/settings/users');
   });
 
-  useHotkeys("meta+m", (evt) => {
+  useHotkeys('meta+m', (evt) => {
     evt.preventDefault();
-    router.push("/settings/users");
+    router.push('/settings/users');
   });
 
-  useHotkeys("ctrl+e", (evt) => {
+  useHotkeys('ctrl+e', (evt) => {
     evt.preventDefault();
-    router.push("/account/teams");
+    router.push('/account/teams');
   });
 
-  useHotkeys("ctrl+a", (evt) => {
+  useHotkeys('ctrl+a', (evt) => {
     evt.preventDefault();
-    router.push("/apps");
+    router.push('/apps');
   });
 
-  useHotkeys("ctrl+meta+p", (evt) => {
+  useHotkeys('ctrl+meta+p', (evt) => {
     evt.preventDefault();
-    router.push("/account");
+    router.push('/account');
   });
 
-  useHotkeys("shift+meta+p", (evt) => {
+  useHotkeys('shift+meta+p', (evt) => {
     evt.preventDefault();
-    router.push("/account");
+    router.push('/account');
   });
 
-  useHotkeys("meta+k", (evt) => {
+  useHotkeys('meta+k', (evt) => {
     evt.preventDefault();
     setAssistantOpen(true);
   });
 
-  useHotkeys("meta+o", (evt) => {
+  useHotkeys('meta+o', (evt) => {
     evt.preventDefault();
     setShowOrganizationSwitcher(!showOrganizationSwitcher);
   });

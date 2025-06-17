@@ -1,34 +1,30 @@
-"use client";
+'use client';
 
-import type { Member, Task, User } from "@comp/db/types";
-import { useAction } from "next-safe-action/hooks";
-import { parseAsStringLiteral, useQueryState } from "nuqs";
-import { useCallback, useMemo } from "react";
-import { DndProvider } from "react-dnd";
-import { HTML5Backend } from "react-dnd-html5-backend";
+import type { Member, Task, User } from '@comp/db/types';
+import { useAction } from 'next-safe-action/hooks';
+import { parseAsStringLiteral, useQueryState } from 'nuqs';
+import { useCallback, useMemo } from 'react';
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
 
-import { updateTask } from "../actions/updateTask";
+import { updateTask } from '../actions/updateTask';
 // updateTaskOrder is called directly within the StatusGroup component now.
 
-import { StatusGroup } from "./StatusGroup";
-import type { DragItem, StatusId } from "./TaskCard";
-import { TaskFilterHeader } from "./TaskFilterHeader";
-import { updateTaskAction } from "@/actions/risk/task/update-task-action";
-import { Card } from "@comp/ui/card";
+import { StatusGroup } from './StatusGroup';
+import type { DragItem, StatusId } from './TaskCard';
+import { TaskFilterHeader } from './TaskFilterHeader';
+import { updateTaskAction } from '@/actions/risk/task/update-task-action';
+import { Card } from '@comp/ui/card';
 
 // Defines the standard task statuses and their display order.
 const statuses = [
-  { id: "in_progress", title: "In Progress" },
-  { id: "todo", title: "Todo" },
-  { id: "done", title: "Done" },
+  { id: 'in_progress', title: 'In Progress' },
+  { id: 'todo', title: 'Todo' },
+  { id: 'done', title: 'Done' },
 ] as const;
 
 // Parser for validating StatusId from URL query parameters.
-const statusIdParser = parseAsStringLiteral<StatusId>([
-  "in_progress",
-  "todo",
-  "done",
-]);
+const statusIdParser = parseAsStringLiteral<StatusId>(['in_progress', 'todo', 'done']);
 
 /**
  * Renders the main task list view, including filtering and drag-and-drop capabilities.
@@ -43,14 +39,11 @@ export function TaskList({
   members: (Member & { user: User })[];
 }) {
   // Hook to execute the server action for updating a task's status.
-  const { execute: updateTaskExecute, status: updateTaskStatus } = useAction(
-    updateTaskAction,
-    {},
-  );
+  const { execute: updateTaskExecute, status: updateTaskStatus } = useAction(updateTaskAction, {});
 
   // State for the status filter, synced with the URL query parameter.
   const [statusFilter, setStatusFilter] = useQueryState(
-    "status",
+    'status',
     statusIdParser.withOptions({ shallow: false }),
   );
 
@@ -75,20 +68,18 @@ export function TaskList({
   // Modify handleDropTaskInternal to accept hoverIndex
   const handleDropTaskInternal = useCallback(
     (item: DragItem, targetStatus: StatusId, hoverIndex: number) => {
-      console.log("DEBUG: handleDropTaskInternal called with:", {
+      console.log('DEBUG: handleDropTaskInternal called with:', {
         item,
         targetStatus,
         hoverIndex,
       });
-      if (item.status !== targetStatus && updateTaskStatus !== "executing") {
+      if (item.status !== targetStatus && updateTaskStatus !== 'executing') {
         // Find the target group tasks and calculate new order
         const targetGroup = tasksByStatus[targetStatus] || [];
         // Find the order of the task we are hovering over (if any)
         // Note: This assumes tasks are already sorted by order in tasksByStatus
         const hoverTaskOrder =
-          hoverIndex < targetGroup.length
-            ? targetGroup[hoverIndex].order
-            : null;
+          hoverIndex < targetGroup.length ? targetGroup[hoverIndex].order : null;
 
         let newOrder: number;
         if (hoverTaskOrder !== null) {
@@ -97,10 +88,7 @@ export function TaskList({
           newOrder = hoverTaskOrder;
         } else {
           // Dropped at the end, find max order + 1
-          newOrder =
-            targetGroup.length > 0
-              ? Math.max(...targetGroup.map((t) => t.order)) + 1
-              : 0;
+          newOrder = targetGroup.length > 0 ? Math.max(...targetGroup.map((t) => t.order)) + 1 : 0;
         }
 
         // TODO: Update the server action (updateTask) to accept and set the 'order'

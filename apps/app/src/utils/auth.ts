@@ -1,13 +1,13 @@
-import { env } from "@/env.mjs";
-import { db } from "@comp/db";
-import { MagicLinkEmail, OTPVerificationEmail } from "@comp/email";
-import { sendInviteMemberEmail } from "@comp/email/lib/invite-member";
-import { sendEmail } from "@comp/email/lib/resend";
-import { betterAuth } from "better-auth";
-import { prismaAdapter } from "better-auth/adapters/prisma";
-import { nextCookies } from "better-auth/next-js";
-import { emailOTP, magicLink, organization } from "better-auth/plugins";
-import { ac, allRoles } from "./permissions";
+import { env } from '@/env.mjs';
+import { db } from '@comp/db';
+import { MagicLinkEmail, OTPVerificationEmail } from '@comp/email';
+import { sendInviteMemberEmail } from '@comp/email/lib/invite-member';
+import { sendEmail } from '@comp/email/lib/resend';
+import { betterAuth } from 'better-auth';
+import { prismaAdapter } from 'better-auth/adapters/prisma';
+import { nextCookies } from 'better-auth/next-js';
+import { emailOTP, magicLink, organization } from 'better-auth/plugins';
+import { ac, allRoles } from './permissions';
 
 let socialProviders = {};
 
@@ -33,13 +33,9 @@ if (env.AUTH_GITHUB_ID && env.AUTH_GITHUB_SECRET) {
 
 export const auth = betterAuth({
   database: prismaAdapter(db, {
-    provider: "postgresql",
+    provider: 'postgresql',
   }),
-  trustedOrigins: [
-    "http://localhost:3000",
-    "https://app.trycomp.ai",
-    "https://dev.trycomp.ai",
-  ],
+  trustedOrigins: ['http://localhost:3000', 'https://app.trycomp.ai', 'https://dev.trycomp.ai'],
   advanced: {
     database: {
       // This will enable us to fall back to DB for ID generation.
@@ -51,18 +47,18 @@ export const auth = betterAuth({
   plugins: [
     organization({
       async sendInvitationEmail(data) {
-        const isLocalhost = process.env.NODE_ENV === "development";
-        const protocol = isLocalhost ? "http" : "https";
+        const isLocalhost = process.env.NODE_ENV === 'development';
+        const protocol = isLocalhost ? 'http' : 'https';
 
         const betterAuthUrl = process.env.BETTER_AUTH_URL;
-        const isDevEnv = betterAuthUrl?.includes("dev.trycomp.ai");
-        const isProdEnv = betterAuthUrl?.includes("app.trycomp.ai");
+        const isDevEnv = betterAuthUrl?.includes('dev.trycomp.ai');
+        const isProdEnv = betterAuthUrl?.includes('app.trycomp.ai');
 
         const domain = isDevEnv
-          ? "dev.trycomp.ai"
+          ? 'dev.trycomp.ai'
           : isProdEnv
-            ? "app.trycomp.ai"
-            : "localhost:3000";
+            ? 'app.trycomp.ai'
+            : 'localhost:3000';
         const inviteLink = `${protocol}://${domain}/auth?inviteCode=${data.invitation.id}`;
 
         await sendInviteMemberEmail({
@@ -75,7 +71,7 @@ export const auth = betterAuth({
       roles: allRoles,
       schema: {
         organization: {
-          modelName: "Organization",
+          modelName: 'Organization',
         },
       },
     }),
@@ -84,7 +80,7 @@ export const auth = betterAuth({
         const urlWithInviteCode = `${url}`;
         await sendEmail({
           to: email,
-          subject: "Login to Comp AI",
+          subject: 'Login to Comp AI',
           react: MagicLinkEmail({
             email,
             url: urlWithInviteCode,
@@ -98,7 +94,7 @@ export const auth = betterAuth({
       async sendVerificationOTP({ email, otp }) {
         await sendEmail({
           to: email,
-          subject: "One-Time Password for Comp AI",
+          subject: 'One-Time Password for Comp AI',
           react: OTPVerificationEmail({ email, otp }),
         });
       },
@@ -107,25 +103,25 @@ export const auth = betterAuth({
   ],
   socialProviders,
   user: {
-    modelName: "User",
+    modelName: 'User',
   },
   organization: {
-    modelName: "Organization",
+    modelName: 'Organization',
   },
   member: {
-    modelName: "Member",
+    modelName: 'Member',
   },
   invitation: {
-    modelName: "Invitation",
+    modelName: 'Invitation',
   },
   session: {
-    modelName: "Session",
+    modelName: 'Session',
   },
   account: {
-    modelName: "Account",
+    modelName: 'Account',
   },
   verification: {
-    modelName: "Verification",
+    modelName: 'Verification',
   },
 });
 

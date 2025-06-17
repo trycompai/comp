@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { type Editor } from "@tiptap/core";
-import { Check, Trash } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@comp/ui/popover";
-import { Button } from "@comp/ui/button";
-import { Input } from "@comp/ui/input";
-import { useCallback, useEffect, useRef } from "react";
+import { type Editor } from '@tiptap/core';
+import { Check, Trash } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
+import { Button } from '@comp/ui/button';
+import { Input } from '@comp/ui/input';
+import { useCallback, useEffect, useRef } from 'react';
 
 interface LinkSelectorProps {
   editor: Editor | null;
@@ -13,11 +13,7 @@ interface LinkSelectorProps {
   onOpenChange: (isOpen: boolean) => void;
 }
 
-export function LinkSelector({
-  editor,
-  isOpen,
-  onOpenChange,
-}: LinkSelectorProps) {
+export function LinkSelector({ editor, isOpen, onOpenChange }: LinkSelectorProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleSetLink = useCallback(() => {
@@ -25,8 +21,8 @@ export function LinkSelector({
     const url = inputRef.current.value;
 
     // Unset link if URL is empty
-    if (url === "") {
-      editor.chain().focus().extendMarkRange("link").unsetLink().run();
+    if (url === '') {
+      editor.chain().focus().extendMarkRange('link').unsetLink().run();
       onOpenChange(false);
       return;
     }
@@ -37,12 +33,7 @@ export function LinkSelector({
       finalUrl = `https://${url}`;
     }
 
-    editor
-      .chain()
-      .focus()
-      .extendMarkRange("link")
-      .setLink({ href: finalUrl })
-      .run();
+    editor.chain().focus().extendMarkRange('link').setLink({ href: finalUrl }).run();
     onOpenChange(false);
   }, [editor, onOpenChange]);
 
@@ -51,8 +42,8 @@ export function LinkSelector({
     if (isOpen) {
       inputRef.current?.focus();
       // Pre-fill with existing link if any
-      if (editor?.isActive("link")) {
-        const existingUrl = editor.getAttributes("link").href;
+      if (editor?.isActive('link')) {
+        const existingUrl = editor.getAttributes('link').href;
         if (inputRef.current) {
           inputRef.current.value = existingUrl;
         }
@@ -77,7 +68,7 @@ export function LinkSelector({
             placeholder="Paste a link..."
             className="bg-background flex-1"
             onKeyDown={(e) => {
-              if (e.key === "Enter") {
+              if (e.key === 'Enter') {
                 handleSetLink();
               }
             }}

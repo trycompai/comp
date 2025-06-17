@@ -1,8 +1,8 @@
-"use server";
+'use server';
 
-import { auth } from "@/utils/auth";
-import { db } from "@comp/db";
-import { headers } from "next/headers";
+import { auth } from '@/utils/auth';
+import { db } from '@comp/db';
+import { headers } from 'next/headers';
 
 export interface ControlProgressResponse {
   total: number;
@@ -23,7 +23,7 @@ export const getOrganizationControlProgress = async (controlId: string) => {
 
   if (!session) {
     return {
-      error: "Unauthorized",
+      error: 'Unauthorized',
     };
   }
 
@@ -31,7 +31,7 @@ export const getOrganizationControlProgress = async (controlId: string) => {
 
   if (!orgId) {
     return {
-      error: "Unauthorized",
+      error: 'Unauthorized',
     };
   }
 
@@ -48,7 +48,7 @@ export const getOrganizationControlProgress = async (controlId: string) => {
 
   if (!control) {
     return {
-      error: "Control not found",
+      error: 'Control not found',
     };
   }
 
@@ -63,7 +63,7 @@ export const getOrganizationControlProgress = async (controlId: string) => {
 
   // Process policies
   for (const policy of policies) {
-    const policyTypeKey = "policy";
+    const policyTypeKey = 'policy';
     // Initialize type counters if not exists
     if (!progress.byType[policyTypeKey]) {
       progress.byType[policyTypeKey] = {
@@ -75,7 +75,7 @@ export const getOrganizationControlProgress = async (controlId: string) => {
     progress.byType[policyTypeKey].total++;
 
     // Check completion based on policy status
-    const isCompleted = policy.status === "published";
+    const isCompleted = policy.status === 'published';
 
     if (isCompleted) {
       progress.completed++;
@@ -85,7 +85,7 @@ export const getOrganizationControlProgress = async (controlId: string) => {
 
   // Process tasks
   for (const task of tasks) {
-    const taskTypeKey = "task";
+    const taskTypeKey = 'task';
     // Initialize type counters if not exists
     if (!progress.byType[taskTypeKey]) {
       progress.byType[taskTypeKey] = {
@@ -96,7 +96,7 @@ export const getOrganizationControlProgress = async (controlId: string) => {
 
     progress.byType[taskTypeKey].total++;
 
-    const isCompleted = task.status === "done";
+    const isCompleted = task.status === 'done';
 
     if (isCompleted) {
       progress.completed++;
@@ -106,9 +106,7 @@ export const getOrganizationControlProgress = async (controlId: string) => {
 
   // Calculate overall progress percentage
   progress.progress =
-    progress.total > 0
-      ? Math.round((progress.completed / progress.total) * 100)
-      : 0;
+    progress.total > 0 ? Math.round((progress.completed / progress.total) * 100) : 0;
 
   return {
     data: {

@@ -1,15 +1,10 @@
-import { authClient } from "@/utils/auth-client";
-import { db } from "@comp/db";
-import { Member, User } from "@comp/db/types";
-import { Avatar, AvatarFallback, AvatarImage } from "@comp/ui/avatar";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-} from "@comp/ui/select";
-import { Badge, UserIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { authClient } from '@/utils/auth-client';
+import { db } from '@comp/db';
+import { Member, User } from '@comp/db/types';
+import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@comp/ui/select';
+import { Badge, UserIcon } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface SelectAssigneeProps {
   assigneeId: string | null;
@@ -27,9 +22,7 @@ export const SelectAssignee = ({
   withTitle = true,
 }: SelectAssigneeProps) => {
   const { data: activeMember } = authClient.useActiveMember();
-  const [selectedAssignee, setSelectedAssignee] = useState<
-    (Member & { user: User }) | null
-  >(null);
+  const [selectedAssignee, setSelectedAssignee] = useState<(Member & { user: User }) | null>(null);
 
   // Initialize selectedAssignee based on assigneeId prop
   useEffect(() => {
@@ -44,7 +37,7 @@ export const SelectAssignee = ({
   }, [assigneeId, assignees]);
 
   const handleAssigneeChange = (value: string) => {
-    const newAssigneeId = value === "none" ? null : value;
+    const newAssigneeId = value === 'none' ? null : value;
     onAssigneeChange(newAssigneeId);
 
     if (newAssigneeId && assignees) {
@@ -61,10 +54,10 @@ export const SelectAssignee = ({
 
   // Function to safely prepare image URLs
   const getImageUrl = (image: string | null) => {
-    if (!image) return "";
+    if (!image) return '';
 
     // If image is a relative URL, ensure it's properly formed
-    if (image.startsWith("/")) {
+    if (image.startsWith('/')) {
       return image;
     }
 
@@ -85,33 +78,23 @@ export const SelectAssignee = ({
           <span className="font-medium">Assignee</span>
         </div>
       )}
-      <Select
-        value={assigneeId || "none"}
-        onValueChange={handleAssigneeChange}
-        disabled={disabled}
-      >
+      <Select value={assigneeId || 'none'} onValueChange={handleAssigneeChange} disabled={disabled}>
         <SelectTrigger className="w-full">
           {selectedAssignee ? (
             <div className="flex items-center gap-2">
               <Avatar className="h-5 w-5 shrink-0">
                 <AvatarImage
                   src={getImageUrl(selectedAssignee.user.image)}
-                  alt={
-                    selectedAssignee.user.name ||
-                    selectedAssignee.user.email ||
-                    "User"
-                  }
+                  alt={selectedAssignee.user.name || selectedAssignee.user.email || 'User'}
                 />
                 <AvatarFallback>
                   {selectedAssignee.user.name?.charAt(0) ||
                     selectedAssignee.user.email?.charAt(0).toUpperCase() ||
-                    "?"}
+                    '?'}
                 </AvatarFallback>
               </Avatar>
               <span className="truncate">
-                {selectedAssignee.user.name ||
-                  selectedAssignee.user.email ||
-                  "Unknown User"}
+                {selectedAssignee.user.name || selectedAssignee.user.email || 'Unknown User'}
               </span>
             </div>
           ) : (
@@ -127,10 +110,7 @@ export const SelectAssignee = ({
           sideOffset={5}
           align="start"
         >
-          <SelectItem
-            value="none"
-            className="hover:bg-accent w-full overflow-hidden p-0"
-          >
+          <SelectItem value="none" className="hover:bg-accent w-full overflow-hidden p-0">
             <div className="flex w-full items-center gap-2 px-3 py-1.5">
               {renderNoneAvatar()}
               <span>None</span>
@@ -146,17 +126,17 @@ export const SelectAssignee = ({
                 <Avatar className="h-5 w-5 shrink-0">
                   <AvatarImage
                     src={getImageUrl(assignee.user.image)}
-                    alt={assignee.user.name || assignee.user.email || "User"}
+                    alt={assignee.user.name || assignee.user.email || 'User'}
                   />
                   <AvatarFallback>
                     {assignee.user.name?.charAt(0) ||
                       assignee.user.email?.charAt(0).toUpperCase() ||
-                      "?"}
+                      '?'}
                   </AvatarFallback>
                 </Avatar>
                 <span className="truncate">
-                  {assignee.user.name || assignee.user.email || "Unknown User"}{" "}
-                  {assignee.id === activeMember?.id && "(You)"}
+                  {assignee.user.name || assignee.user.email || 'Unknown User'}{' '}
+                  {assignee.id === activeMember?.id && '(You)'}
                 </span>
               </div>
             </SelectItem>

@@ -1,30 +1,18 @@
-"use client";
+'use client';
 
-import { addCommentAction } from "@/actions/add-comment";
-import { addCommentSchema } from "@/actions/schema";
-import { CommentEntityType } from "@comp/db/types";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@comp/ui/accordion";
-import { Button } from "@comp/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@comp/ui/form";
-import { Textarea } from "@comp/ui/textarea";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRightIcon } from "lucide-react";
-import { useAction } from "next-safe-action/hooks";
-import { useForm } from "react-hook-form";
-import { toast } from "sonner";
-import { z } from "zod";
+import { addCommentAction } from '@/actions/add-comment';
+import { addCommentSchema } from '@/actions/schema';
+import { CommentEntityType } from '@comp/db/types';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
+import { Button } from '@comp/ui/button';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
+import { Textarea } from '@comp/ui/textarea';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { ArrowRightIcon } from 'lucide-react';
+import { useAction } from 'next-safe-action/hooks';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import { z } from 'zod';
 
 export function CreateCommentForm({
   entityId,
@@ -35,11 +23,11 @@ export function CreateCommentForm({
 }) {
   const addComment = useAction(addCommentAction, {
     onSuccess: () => {
-      toast.success("Comment added successfully");
+      toast.success('Comment added successfully');
       form.reset();
     },
     onError: () => {
-      toast.error("Error adding comment");
+      toast.error('Error adding comment');
     },
   });
 
@@ -54,11 +42,11 @@ export function CreateCommentForm({
   const form = useForm<z.infer<typeof addCommentSchema>>({
     resolver: zodResolver(addCommentSchema),
     defaultValues: {
-      content: "",
+      content: '',
       entityId,
       entityType,
     },
-    mode: "onChange",
+    mode: 'onChange',
   });
 
   return (
@@ -66,7 +54,7 @@ export function CreateCommentForm({
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <div className="scrollbar-hide overflow-auto">
           <div>
-            <Accordion type="multiple" defaultValue={["comment"]}>
+            <Accordion type="multiple" defaultValue={['comment']}>
               <AccordionItem value="comment">
                 <AccordionTrigger>Comment</AccordionTrigger>
                 <AccordionContent>
@@ -88,10 +76,10 @@ export function CreateCommentForm({
                     <Button
                       type="submit"
                       variant="default"
-                      disabled={addComment.status === "executing"}
+                      disabled={addComment.status === 'executing'}
                     >
                       <div className="flex items-center justify-center">
-                        {"Create"}
+                        {'Create'}
                         <ArrowRightIcon className="ml-2 h-4 w-4" />
                       </div>
                     </Button>

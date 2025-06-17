@@ -1,16 +1,13 @@
-"use client";
+'use client';
 
-import { Button } from "@comp/ui/button";
-import { Icons } from "@comp/ui/icons";
-import { Sheet, SheetContent } from "@comp/ui/sheet";
-import { useState } from "react";
-import { MainMenu } from "./main-menu";
-import { OrganizationSwitcher } from "./organization-switcher";
-import type { Organization as AuthOrganization } from "better-auth/plugins";
-import type {
-  Organization as DbOrganization,
-  FrameworkEditorFramework,
-} from "@comp/db/types";
+import { Button } from '@comp/ui/button';
+import { Icons } from '@comp/ui/icons';
+import { Sheet, SheetContent } from '@comp/ui/sheet';
+import { useState } from 'react';
+import { MainMenu } from './main-menu';
+import { OrganizationSwitcher } from './organization-switcher';
+import type { Organization as AuthOrganization } from 'better-auth/plugins';
+import type { Organization as DbOrganization, FrameworkEditorFramework } from '@comp/db/types';
 
 interface MobileMenuProps {
   organizations: AuthOrganization[];
@@ -18,15 +15,11 @@ interface MobileMenuProps {
   organizationId: string;
   frameworks: Pick<
     FrameworkEditorFramework,
-    "id" | "name" | "description" | "version" | "visible"
+    'id' | 'name' | 'description' | 'version' | 'visible'
   >[];
 }
 
-export function MobileMenu({
-  organizationId,
-  organizations,
-  frameworks,
-}: MobileMenuProps) {
+export function MobileMenu({ organizationId, organizations, frameworks }: MobileMenuProps) {
   const [isOpen, setOpen] = useState(false);
 
   const handleCloseSheet = () => {
@@ -43,8 +36,7 @@ export function MobileMenu({
     isFleetSetupCompleted: false,
   }));
 
-  const currentOrganization =
-    adaptedOrganizations.find((org) => org.id === organizationId) || null;
+  const currentOrganization = adaptedOrganizations.find((org) => org.id === organizationId) || null;
 
   return (
     <Sheet open={isOpen} onOpenChange={setOpen}>
@@ -69,10 +61,7 @@ export function MobileMenu({
             isCollapsed={false}
             frameworks={frameworks}
           />
-          <MainMenu
-            organizationId={organizationId}
-            onItemClick={handleCloseSheet}
-          />
+          <MainMenu organizationId={organizationId} onItemClick={handleCloseSheet} />
         </div>
       </SheetContent>
     </Sheet>

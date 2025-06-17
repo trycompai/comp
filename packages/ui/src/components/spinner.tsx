@@ -7,7 +7,7 @@ export const Spinner = ({ size = 16 }) => {
         className="loading-wrapper"
         data-visible
         // @ts-ignore
-        style={{ "--spinner-size": `${size}px` }}
+        style={{ '--spinner-size': `${size}px` }}
       >
         <div className="spinner">
           {bars.map((_, i) => (

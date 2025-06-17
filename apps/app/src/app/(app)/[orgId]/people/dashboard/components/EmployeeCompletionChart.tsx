@@ -1,17 +1,12 @@
-"use client";
+'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from "@comp/ui/card";
-import * as React from "react";
-import type { CSSProperties } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
+import * as React from 'react';
+import type { CSSProperties } from 'react';
 
 // Use correct types from the database
-import { TrainingVideo } from "@/lib/data/training-videos";
-import {
-  EmployeeTrainingVideoCompletion,
-  Member,
-  Policy,
-  User,
-} from "@comp/db/types";
+import { TrainingVideo } from '@/lib/data/training-videos';
+import { EmployeeTrainingVideoCompletion, Member, Policy, User } from '@comp/db/types';
 
 interface EmployeeCompletionChartProps {
   employees: (Member & {
@@ -25,8 +20,8 @@ interface EmployeeCompletionChartProps {
 
 // Define colors for the chart
 const taskColors = {
-  completed: "bg-primary", // Green/Blue
-  incomplete: "bg-[var(--chart-open)]", // Yellow
+  completed: 'bg-primary', // Green/Blue
+  incomplete: 'bg-[var(--chart-open)]', // Yellow
 };
 
 interface EmployeeTaskStats {
@@ -80,8 +75,7 @@ export function EmployeeCompletionChart({
 
       // Calculate total completion percentage
       const totalItems = policies.length + trainingVideosTotal;
-      const totalCompletedItems =
-        policiesCompletedCount + trainingsCompletedCount;
+      const totalCompletedItems = policiesCompletedCount + trainingsCompletedCount;
 
       const overallPercentage = totalItems
         ? Math.round((totalCompletedItems / totalItems) * 100)
@@ -89,7 +83,7 @@ export function EmployeeCompletionChart({
 
       return {
         id: employee.id,
-        name: employee.user.name || employee.user.email.split("@")[0],
+        name: employee.user.name || employee.user.email.split('@')[0],
         email: employee.user.email,
         totalTasks: totalItems,
         policiesCompleted: policiesCompletedCount,
@@ -108,11 +102,11 @@ export function EmployeeCompletionChart({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>{"Employee Task Completion"}</CardTitle>
+          <CardTitle>{'Employee Task Completion'}</CardTitle>
         </CardHeader>
         <CardContent className="flex h-[300px] items-center justify-center">
           <p className="text-muted-foreground text-center text-sm">
-            {"No employee data available"}
+            {'No employee data available'}
           </p>
         </CardContent>
       </Card>
@@ -124,11 +118,11 @@ export function EmployeeCompletionChart({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>{"Employee Task Completion"}</CardTitle>
+          <CardTitle>{'Employee Task Completion'}</CardTitle>
         </CardHeader>
         <CardContent className="flex h-[300px] items-center justify-center">
           <p className="text-muted-foreground text-center text-sm">
-            {"No tasks available to complete"}
+            {'No tasks available to complete'}
           </p>
         </CardContent>
       </Card>
@@ -143,7 +137,7 @@ export function EmployeeCompletionChart({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{"Employee Task Completion"}</CardTitle>
+        <CardTitle>{'Employee Task Completion'}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-8">
@@ -152,8 +146,7 @@ export function EmployeeCompletionChart({
               <div className="flex items-center justify-between text-sm">
                 <p>{stat.name}</p>
                 <span className="text-muted-foreground">
-                  {stat.policiesCompleted + stat.trainingsCompleted} /{" "}
-                  {stat.totalTasks} {"tasks"}
+                  {stat.policiesCompleted + stat.trainingsCompleted} / {stat.totalTasks} {'tasks'}
                 </span>
               </div>
 
@@ -162,11 +155,11 @@ export function EmployeeCompletionChart({
               <div className="text-muted-foreground flex flex-wrap gap-3 text-xs">
                 <div className="flex items-center gap-1">
                   <div className="bg-primary size-2" />
-                  <span>{"Completed"}</span>
+                  <span>{'Completed'}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="size-2 bg-[var(--chart-open)]" />
-                  <span>{"Not Completed"}</span>
+                  <span>{'Not Completed'}</span>
                 </div>
               </div>
             </div>
@@ -190,7 +183,7 @@ function TaskBarChart({ stat }: { stat: EmployeeTaskStats }) {
   return (
     <div
       className="relative h-[var(--height)]"
-      style={{ "--height": `${barHeight}px` } as CSSProperties}
+      style={{ '--height': `${barHeight}px` } as CSSProperties}
     >
       <div className="absolute inset-0 h-full w-full overflow-visible">
         {/* Completed segment */}
@@ -200,14 +193,14 @@ function TaskBarChart({ stat }: { stat: EmployeeTaskStats }) {
             style={{
               width: `${(totalCompleted / stat.totalTasks) * 100}%`,
               height: `${barHeight}px`,
-              left: "0%",
+              left: '0%',
             }}
           >
             <div
               className={taskColors.completed}
               style={{
-                width: "100%",
-                height: "100%",
+                width: '100%',
+                height: '100%',
               }}
               title={`Completed: ${totalCompleted}`}
             />
@@ -227,8 +220,8 @@ function TaskBarChart({ stat }: { stat: EmployeeTaskStats }) {
             <div
               className={taskColors.incomplete}
               style={{
-                width: "100%",
-                height: "100%",
+                width: '100%',
+                height: '100%',
               }}
               title={`Incomplete: ${totalIncomplete}`}
             />

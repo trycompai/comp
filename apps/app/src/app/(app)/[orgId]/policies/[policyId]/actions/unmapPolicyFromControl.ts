@@ -1,10 +1,10 @@
-"use server";
+'use server';
 
-import { authActionClient } from "@/actions/safe-action";
-import { z } from "zod";
-import { db } from "@comp/db";
-import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
+import { authActionClient } from '@/actions/safe-action';
+import { z } from 'zod';
+import { db } from '@comp/db';
+import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
 
 const unmapPolicyFromControlSchema = z.object({
   policyId: z.string(),
@@ -12,12 +12,12 @@ const unmapPolicyFromControlSchema = z.object({
 });
 
 export const unmapPolicyFromControl = authActionClient
-  .schema(unmapPolicyFromControlSchema)
+  .inputSchema(unmapPolicyFromControlSchema)
   .metadata({
-    name: "unmap-policy-from-control",
+    name: 'unmap-policy-from-control',
     track: {
-      event: "unmap-policy-from-control",
-      channel: "server",
+      event: 'unmap-policy-from-control',
+      channel: 'server',
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -27,7 +27,7 @@ export const unmapPolicyFromControl = authActionClient
     if (!session.activeOrganizationId) {
       return {
         success: false,
-        error: "Not authorized",
+        error: 'Not authorized',
       };
     }
 
@@ -46,20 +46,18 @@ export const unmapPolicyFromControl = authActionClient
 
       console.log(`Control ${controlId} unmapped from policy ${policyId}`);
       const headersList = await headers();
-      let path =
-        headersList.get("x-pathname") || headersList.get("referer") || "";
-      path = path.replace(/\/[a-z]{2}\//, "/");
+      let path = headersList.get('x-pathname') || headersList.get('referer') || '';
+      path = path.replace(/\/[a-z]{2}\//, '/');
       revalidatePath(path);
 
       return {
         success: true,
       };
     } catch (error) {
-      console.error("Error unmapping control from policy:", error);
+      console.error('Error unmapping control from policy:', error);
       return {
         success: false,
-        error:
-          error instanceof Error ? error.message : "Failed to unmap control",
+        error: error instanceof Error ? error.message : 'Failed to unmap control',
       };
     }
   });

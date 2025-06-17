@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   Card,
@@ -7,47 +7,35 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@comp/ui/card";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-} from "@comp/ui/form";
-import { Switch } from "@comp/ui/switch";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useAction } from "next-safe-action/hooks";
-import { useForm } from "react-hook-form";
-import { toast } from "sonner";
-import { z } from "zod";
-import { trustPortalSwitchAction } from "../actions/trust-portal-switch";
-import Link from "next/link";
-import { ExternalLink } from "lucide-react";
-import { Input } from "@comp/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@comp/ui/select";
-import { updateTrustPortalFrameworks } from "../actions/update-trust-portal-frameworks";
-import { SOC2, ISO27001, GDPR } from "./logos";
-import { isFriendlyAvailable } from "../actions/is-friendly-available";
-import { useDebounce } from "@/hooks/useDebounce";
-import { useState, useEffect, useRef, useCallback } from "react";
+} from '@comp/ui/card';
+import { Form, FormControl, FormField, FormItem, FormLabel } from '@comp/ui/form';
+import { Switch } from '@comp/ui/switch';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useAction } from 'next-safe-action/hooks';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import { z } from 'zod';
+import { trustPortalSwitchAction } from '../actions/trust-portal-switch';
+import Link from 'next/link';
+import { ExternalLink } from 'lucide-react';
+import { Input } from '@comp/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
+import { updateTrustPortalFrameworks } from '../actions/update-trust-portal-frameworks';
+import { SOC2, ISO27001, GDPR } from './logos';
+import { isFriendlyAvailable } from '../actions/is-friendly-available';
+import { useDebounce } from '@/hooks/useDebounce';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 const trustPortalSwitchSchema = z.object({
   enabled: z.boolean(),
-  contactEmail: z.string().email().or(z.literal("")).optional(),
+  contactEmail: z.string().email().or(z.literal('')).optional(),
   friendlyUrl: z.string().optional(),
   soc2: z.boolean(),
   iso27001: z.boolean(),
   gdpr: z.boolean(),
-  soc2Status: z.enum(["started", "in_progress", "compliant"]),
-  iso27001Status: z.enum(["started", "in_progress", "compliant"]),
-  gdprStatus: z.enum(["started", "in_progress", "compliant"]),
+  soc2Status: z.enum(['started', 'in_progress', 'compliant']),
+  iso27001Status: z.enum(['started', 'in_progress', 'compliant']),
+  gdprStatus: z.enum(['started', 'in_progress', 'compliant']),
 });
 
 export function TrustPortalSwitch({
@@ -74,17 +62,17 @@ export function TrustPortalSwitch({
   soc2: boolean;
   iso27001: boolean;
   gdpr: boolean;
-  soc2Status: "started" | "in_progress" | "compliant";
-  iso27001Status: "started" | "in_progress" | "compliant";
-  gdprStatus: "started" | "in_progress" | "compliant";
+  soc2Status: 'started' | 'in_progress' | 'compliant';
+  iso27001Status: 'started' | 'in_progress' | 'compliant';
+  gdprStatus: 'started' | 'in_progress' | 'compliant';
   friendlyUrl: string | null;
 }) {
   const trustPortalSwitch = useAction(trustPortalSwitchAction, {
     onSuccess: () => {
-      toast.success("Trust portal status updated");
+      toast.success('Trust portal status updated');
     },
     onError: () => {
-      toast.error("Failed to update trust portal status");
+      toast.error('Failed to update trust portal status');
     },
   });
 
@@ -98,9 +86,9 @@ export function TrustPortalSwitch({
       soc2: soc2 ?? false,
       iso27001: iso27001 ?? false,
       gdpr: gdpr ?? false,
-      soc2Status: soc2Status ?? "started",
-      iso27001Status: iso27001Status ?? "started",
-      gdprStatus: gdprStatus ?? "started",
+      soc2Status: soc2Status ?? 'started',
+      iso27001Status: iso27001Status ?? 'started',
+      gdprStatus: gdprStatus ?? 'started',
       friendlyUrl: friendlyUrl ?? undefined,
     },
   });
@@ -109,13 +97,11 @@ export function TrustPortalSwitch({
     await trustPortalSwitch.execute(data);
   };
 
-  const portalUrl = domainVerified
-    ? `https://${domain}`
-    : `https://trust.inc/${slug}`;
+  const portalUrl = domainVerified ? `https://${domain}` : `https://trust.inc/${slug}`;
 
   const lastSaved = useRef<{ [key: string]: string | boolean }>({
-    contactEmail: contactEmail ?? "",
-    friendlyUrl: friendlyUrl ?? "",
+    contactEmail: contactEmail ?? '',
+    friendlyUrl: friendlyUrl ?? '',
     enabled: enabled,
   });
 
@@ -131,9 +117,7 @@ export function TrustPortalSwitch({
     [form, onSubmit],
   );
 
-  const [contactEmailValue, setContactEmailValue] = useState(
-    form.getValues("contactEmail") || "",
-  );
+  const [contactEmailValue, setContactEmailValue] = useState(form.getValues('contactEmail') || '');
   const debouncedContactEmail = useDebounce(contactEmailValue, 500);
 
   useEffect(() => {
@@ -141,59 +125,54 @@ export function TrustPortalSwitch({
       debouncedContactEmail !== undefined &&
       debouncedContactEmail !== lastSaved.current.contactEmail
     ) {
-      form.setValue("contactEmail", debouncedContactEmail);
-      autoSave("contactEmail", debouncedContactEmail);
+      form.setValue('contactEmail', debouncedContactEmail);
+      autoSave('contactEmail', debouncedContactEmail);
     }
   }, [debouncedContactEmail]);
 
   const handleContactEmailBlur = useCallback(
     (e: React.FocusEvent<HTMLInputElement>) => {
       const value = e.target.value;
-      form.setValue("contactEmail", value);
-      autoSave("contactEmail", value);
+      form.setValue('contactEmail', value);
+      autoSave('contactEmail', value);
     },
     [form, autoSave],
   );
 
-  const [friendlyUrlValue, setFriendlyUrlValue] = useState(
-    form.getValues("friendlyUrl") || "",
-  );
+  const [friendlyUrlValue, setFriendlyUrlValue] = useState(form.getValues('friendlyUrl') || '');
   const debouncedFriendlyUrl = useDebounce(friendlyUrlValue, 500);
   const [friendlyUrlStatus, setFriendlyUrlStatus] = useState<
-    "idle" | "checking" | "available" | "unavailable"
-  >("idle");
+    'idle' | 'checking' | 'available' | 'unavailable'
+  >('idle');
 
   useEffect(() => {
-    if (!debouncedFriendlyUrl || debouncedFriendlyUrl === (friendlyUrl ?? "")) {
-      setFriendlyUrlStatus("idle");
+    if (!debouncedFriendlyUrl || debouncedFriendlyUrl === (friendlyUrl ?? '')) {
+      setFriendlyUrlStatus('idle');
       return;
     }
-    setFriendlyUrlStatus("checking");
+    setFriendlyUrlStatus('checking');
     checkFriendlyUrl.execute({ friendlyUrl: debouncedFriendlyUrl, orgId });
   }, [debouncedFriendlyUrl, orgId, friendlyUrl]);
   useEffect(() => {
-    if (checkFriendlyUrl.status === "executing") return;
+    if (checkFriendlyUrl.status === 'executing') return;
     if (checkFriendlyUrl.result?.data?.isAvailable === true) {
-      setFriendlyUrlStatus("available");
+      setFriendlyUrlStatus('available');
 
       if (debouncedFriendlyUrl !== lastSaved.current.friendlyUrl) {
-        form.setValue("friendlyUrl", debouncedFriendlyUrl);
-        autoSave("friendlyUrl", debouncedFriendlyUrl);
+        form.setValue('friendlyUrl', debouncedFriendlyUrl);
+        autoSave('friendlyUrl', debouncedFriendlyUrl);
       }
     } else if (checkFriendlyUrl.result?.data?.isAvailable === false) {
-      setFriendlyUrlStatus("unavailable");
+      setFriendlyUrlStatus('unavailable');
     }
   }, [checkFriendlyUrl.status, checkFriendlyUrl.result]);
 
   const handleFriendlyUrlBlur = useCallback(
     (e: React.FocusEvent<HTMLInputElement>) => {
       const value = e.target.value;
-      if (
-        friendlyUrlStatus === "available" &&
-        value !== lastSaved.current.friendlyUrl
-      ) {
-        form.setValue("friendlyUrl", value);
-        autoSave("friendlyUrl", value);
+      if (friendlyUrlStatus === 'available' && value !== lastSaved.current.friendlyUrl) {
+        form.setValue('friendlyUrl', value);
+        autoSave('friendlyUrl', value);
       }
     },
     [form, autoSave, friendlyUrlStatus],
@@ -201,8 +180,8 @@ export function TrustPortalSwitch({
 
   const handleEnabledChange = useCallback(
     (val: boolean) => {
-      form.setValue("enabled", val);
-      autoSave("enabled", val);
+      form.setValue('enabled', val);
+      autoSave('enabled', val);
     },
     [form, autoSave],
   );
@@ -237,7 +216,7 @@ export function TrustPortalSwitch({
                       <Switch
                         checked={field.value}
                         onCheckedChange={handleEnabledChange}
-                        disabled={trustPortalSwitch.status === "executing"}
+                        disabled={trustPortalSwitch.status === 'executing'}
                       />
                     </FormControl>
                   </FormItem>
@@ -246,11 +225,9 @@ export function TrustPortalSwitch({
             </div>
           </CardHeader>
           <CardContent className="space-y-6 pt-0">
-            {form.watch("enabled") && (
+            {form.watch('enabled') && (
               <div className="pt-2">
-                <h3 className="mb-4 text-sm font-medium">
-                  Trust Portal Settings
-                </h3>
+                <h3 className="mb-4 text-sm font-medium">Trust Portal Settings</h3>
                 <div className="grid grid-cols-1 gap-x-4 lg:grid-cols-2">
                   <FormField
                     control={form.control}
@@ -279,16 +256,13 @@ export function TrustPortalSwitch({
                             </div>
                             {friendlyUrlValue && (
                               <div className="mt-1 min-h-[18px] text-xs">
-                                {friendlyUrlStatus === "checking" &&
-                                  "Checking availability..."}
-                                {friendlyUrlStatus === "available" && (
-                                  <span className="text-green-600">
-                                    {"This URL is available!"}
-                                  </span>
+                                {friendlyUrlStatus === 'checking' && 'Checking availability...'}
+                                {friendlyUrlStatus === 'available' && (
+                                  <span className="text-green-600">{'This URL is available!'}</span>
                                 )}
-                                {friendlyUrlStatus === "unavailable" && (
+                                {friendlyUrlStatus === 'unavailable' && (
                                   <span className="text-red-600">
-                                    {"This URL is already taken."}
+                                    {'This URL is already taken.'}
                                   </span>
                                 )}
                               </div>
@@ -327,16 +301,13 @@ export function TrustPortalSwitch({
                 </div>
               </div>
             )}
-            {form.watch("enabled") && (
+            {form.watch('enabled') && (
               <div className="">
                 {/* Compliance Frameworks Section */}
                 <div>
-                  <h3 className="mb-2 text-sm font-medium">
-                    Compliance Frameworks
-                  </h3>
+                  <h3 className="mb-2 text-sm font-medium">Compliance Frameworks</h3>
                   <p className="text-muted-foreground mb-4 text-sm">
-                    Share the frameworks your organization is compliant with or
-                    working towards.
+                    Share the frameworks your organization is compliant with or working towards.
                   </p>
                   <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
                     {/* SOC 2 */}
@@ -349,14 +320,11 @@ export function TrustPortalSwitch({
                         try {
                           await updateTrustPortalFrameworks({
                             orgId,
-                            soc2Status: value as
-                              | "started"
-                              | "in_progress"
-                              | "compliant",
+                            soc2Status: value as 'started' | 'in_progress' | 'compliant',
                           });
-                          toast.success("SOC 2 status updated");
+                          toast.success('SOC 2 status updated');
                         } catch (error) {
-                          toast.error("Failed to update SOC 2 status");
+                          toast.error('Failed to update SOC 2 status');
                         }
                       }}
                       onToggle={async (checked) => {
@@ -365,9 +333,9 @@ export function TrustPortalSwitch({
                             orgId,
                             soc2: checked,
                           });
-                          toast.success("SOC 2 status updated");
+                          toast.success('SOC 2 status updated');
                         } catch (error) {
-                          toast.error("Failed to update SOC 2 status");
+                          toast.error('Failed to update SOC 2 status');
                         }
                       }}
                     />
@@ -381,14 +349,11 @@ export function TrustPortalSwitch({
                         try {
                           await updateTrustPortalFrameworks({
                             orgId,
-                            iso27001Status: value as
-                              | "started"
-                              | "in_progress"
-                              | "compliant",
+                            iso27001Status: value as 'started' | 'in_progress' | 'compliant',
                           });
-                          toast.success("ISO 27001 status updated");
+                          toast.success('ISO 27001 status updated');
                         } catch (error) {
-                          toast.error("Failed to update ISO 27001 status");
+                          toast.error('Failed to update ISO 27001 status');
                         }
                       }}
                       onToggle={async (checked) => {
@@ -397,9 +362,9 @@ export function TrustPortalSwitch({
                             orgId,
                             iso27001: checked,
                           });
-                          toast.success("ISO 27001 status updated");
+                          toast.success('ISO 27001 status updated');
                         } catch (error) {
-                          toast.error("Failed to update ISO 27001 status");
+                          toast.error('Failed to update ISO 27001 status');
                         }
                       }}
                     />
@@ -413,14 +378,11 @@ export function TrustPortalSwitch({
                         try {
                           await updateTrustPortalFrameworks({
                             orgId,
-                            gdprStatus: value as
-                              | "started"
-                              | "in_progress"
-                              | "compliant",
+                            gdprStatus: value as 'started' | 'in_progress' | 'compliant',
                           });
-                          toast.success("GDPR status updated");
+                          toast.success('GDPR status updated');
                         } catch (error) {
-                          toast.error("Failed to update GDPR status");
+                          toast.error('Failed to update GDPR status');
                         }
                       }}
                       onToggle={async (checked) => {
@@ -429,9 +391,9 @@ export function TrustPortalSwitch({
                             orgId,
                             gdpr: checked,
                           });
-                          toast.success("GDPR status updated");
+                          toast.success('GDPR status updated');
                         } catch (error) {
-                          toast.error("Failed to update GDPR status");
+                          toast.error('Failed to update GDPR status');
                         }
                       }}
                     />
@@ -463,9 +425,9 @@ function ComplianceFramework({
   onToggle: (checked: boolean) => Promise<void>;
 }) {
   const logo =
-    title === "SOC 2" ? (
+    title === 'SOC 2' ? (
       <SOC2 className="h-16 w-16" />
-    ) : title === "ISO 27001" ? (
+    ) : title === 'ISO 27001' ? (
       <ISO27001 className="h-16 w-16" />
     ) : (
       <GDPR className="h-16 w-16" />
@@ -478,9 +440,7 @@ function ComplianceFramework({
           <div className="flex items-center gap-4">
             <div className="shrink-0">{logo}</div>
             <div>
-              <CardTitle className="text-lg leading-tight font-semibold">
-                {title}
-              </CardTitle>
+              <CardTitle className="text-lg leading-tight font-semibold">{title}</CardTitle>
               <CardDescription className="text-muted-foreground mt-1 line-clamp-3 text-sm">
                 {description}
               </CardDescription>
@@ -494,10 +454,7 @@ function ComplianceFramework({
               {isEnabled ? (
                 <Select defaultValue={status} onValueChange={onStatusChange}>
                   <SelectTrigger className="min-w-[180px] text-base font-medium">
-                    <SelectValue
-                      placeholder="Select status"
-                      className="w-auto"
-                    />
+                    <SelectValue placeholder="Select status" className="w-auto" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="started">

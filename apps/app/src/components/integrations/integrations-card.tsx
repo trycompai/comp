@@ -1,31 +1,15 @@
-import { deleteIntegrationConnectionAction } from "@/actions/integrations/delete-integration-connection";
-import { retrieveIntegrationSessionTokenAction } from "@/actions/integrations/retrieve-integration-session-token";
-import { updateIntegrationSettingsAction } from "@/actions/integrations/update-integration-settings-action";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@comp/ui/accordion";
-import { Badge } from "@comp/ui/badge";
-import { Button } from "@comp/ui/button";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@comp/ui/card";
-import { Input } from "@comp/ui/input";
-import { ScrollArea } from "@comp/ui/scroll-area";
-import { Sheet, SheetContent } from "@comp/ui/sheet";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@comp/ui/tooltip";
-import { format, formatDistanceToNow } from "date-fns";
+import { deleteIntegrationConnectionAction } from '@/actions/integrations/delete-integration-connection';
+import { retrieveIntegrationSessionTokenAction } from '@/actions/integrations/retrieve-integration-session-token';
+import { updateIntegrationSettingsAction } from '@/actions/integrations/update-integration-settings-action';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
+import { Badge } from '@comp/ui/badge';
+import { Button } from '@comp/ui/button';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@comp/ui/card';
+import { Input } from '@comp/ui/input';
+import { ScrollArea } from '@comp/ui/scroll-area';
+import { Sheet, SheetContent } from '@comp/ui/sheet';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
+import { format, formatDistanceToNow } from 'date-fns';
 import {
   Calendar,
   Check,
@@ -36,18 +20,15 @@ import {
   InfoIcon,
   Loader2,
   Settings,
-} from "lucide-react";
-import { useAction } from "next-safe-action/hooks";
-import type { StaticImageData } from "next/image";
-import { useRouter } from "next/navigation";
-import { parseAsBoolean, parseAsString, useQueryStates } from "nuqs";
-import { useState } from "react";
-import { toast } from "sonner";
-import {
-  IntegrationSettings,
-  type IntegrationSettingsItem,
-} from "./integration-settings";
-import Link from "next/link";
+} from 'lucide-react';
+import { useAction } from 'next-safe-action/hooks';
+import type { StaticImageData } from 'next/image';
+import { useRouter } from 'next/navigation';
+import { parseAsBoolean, parseAsString, useQueryStates } from 'nuqs';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { IntegrationSettings, type IntegrationSettingsItem } from './integration-settings';
+import Link from 'next/link';
 
 export function IntegrationsCard({
   id,
@@ -91,34 +72,29 @@ export function IntegrationsCard({
     settings: parseAsBoolean,
   });
 
-  const retrieveIntegrationSessionToken = useAction(
-    retrieveIntegrationSessionTokenAction,
-  );
+  const retrieveIntegrationSessionToken = useAction(retrieveIntegrationSessionTokenAction);
 
-  const deleteIntegrationConnection = useAction(
-    deleteIntegrationConnectionAction,
-    {
-      onSuccess: () => {
-        toast.success("Integration disconnected successfully");
-      },
-      onError: () => {
-        toast.error("Failed to disconnect integration");
-      },
+  const deleteIntegrationConnection = useAction(deleteIntegrationConnectionAction, {
+    onSuccess: () => {
+      toast.success('Integration disconnected successfully');
     },
-  );
+    onError: () => {
+      toast.error('Failed to disconnect integration');
+    },
+  });
 
   const updateIntegrationSettings = useAction(updateIntegrationSettingsAction, {
     onSuccess: () => {
-      toast.success("Settings updated successfully");
+      toast.success('Settings updated successfully');
       setIsEditingApiKey(false); // Exit edit mode on success
     },
     onError: () => {
-      toast.error("Failed to update settings");
+      toast.error('Failed to update settings');
     },
   });
 
   const [isLoading, setLoading] = useState(false);
-  const [apiKeyInput, setApiKeyInput] = useState("");
+  const [apiKeyInput, setApiKeyInput] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   const handleConnect = async () => {
@@ -129,7 +105,7 @@ export function IntegrationsCard({
       // Use the API key from the state
       const keyToUse = apiKeyInput.trim();
       if (!keyToUse) {
-        toast.error("Please enter an API key");
+        toast.error('Please enter an API key');
         setLoading(false);
         setIsSaving(false);
         return;
@@ -138,14 +114,14 @@ export function IntegrationsCard({
       // First save the API key if provided
       await updateIntegrationSettings.executeAsync({
         integration_id: id,
-        option: { id: "api_key", value: keyToUse },
+        option: { id: 'api_key', value: keyToUse },
       });
 
       // Show appropriate message based on whether we're updating or setting for first time
       if (isEditingApiKey) {
-        toast.success("API key updated successfully");
+        toast.success('API key updated successfully');
       } else {
-        toast.success("API key saved successfully");
+        toast.success('API key saved successfully');
       }
 
       // If not already installed (first time setup), then retrieve session token to complete connection
@@ -156,12 +132,12 @@ export function IntegrationsCard({
       }
 
       // Handle success
-      setApiKeyInput("");
+      setApiKeyInput('');
       setIsEditingApiKey(false);
       router.refresh();
     } catch (error) {
-      console.error("Connection error:", error);
-      toast.error("Failed to connect integration");
+      console.error('Connection error:', error);
+      toast.error('Failed to connect integration');
     } finally {
       setLoading(false);
       setIsSaving(false);
@@ -170,28 +146,26 @@ export function IntegrationsCard({
 
   // Function to get a friendly message about time to midnight UTC
   const getUTCMidnightMessage = (nextRunAt: Date): string => {
-    if (!nextRunAt) return "";
+    if (!nextRunAt) return '';
 
     const now = new Date();
     const diffInMs = nextRunAt.getTime() - now.getTime();
     const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
-    const diffInMinutes = Math.floor(
-      (diffInMs % (1000 * 60 * 60)) / (1000 * 60),
-    );
+    const diffInMinutes = Math.floor((diffInMs % (1000 * 60 * 60)) / (1000 * 60));
 
     if (diffInHours <= 0 && diffInMinutes <= 0) {
-      return "Running soon";
+      return 'Running soon';
     }
 
     if (diffInHours === 0) {
-      return `Runs in ${diffInMinutes} minute${diffInMinutes !== 1 ? "s" : ""}`;
+      return `Runs in ${diffInMinutes} minute${diffInMinutes !== 1 ? 's' : ''}`;
     }
 
     if (diffInMinutes === 0) {
-      return `Runs in ${diffInHours} hour${diffInHours !== 1 ? "s" : ""}`;
+      return `Runs in ${diffInHours} hour${diffInHours !== 1 ? 's' : ''}`;
     }
 
-    return `Runs in ${diffInHours} hour${diffInHours !== 1 ? "s" : ""} and ${diffInMinutes} minute${diffInMinutes !== 1 ? "s" : ""}`;
+    return `Runs in ${diffInHours} hour${diffInHours !== 1 ? 's' : ''} and ${diffInMinutes} minute${diffInMinutes !== 1 ? 's' : ''}`;
   };
 
   return (
@@ -227,7 +201,7 @@ export function IntegrationsCard({
           <div className="bg-secondary/50 relative h-1 w-full overflow-hidden rounded-full">
             <div
               className="bg-primary h-full transition-all"
-              style={{ width: installed ? "100%" : "0%" }}
+              style={{ width: installed ? '100%' : '0%' }}
             />
           </div>
         </CardHeader>
@@ -238,13 +212,13 @@ export function IntegrationsCard({
 
         <CardFooter className="flex justify-between border-t py-2">
           <Button
-            variant={installed ? "default" : "ghost"}
+            variant={installed ? 'default' : 'ghost'}
             size="sm"
             className="w-full"
             disabled={!active}
             onClick={() => setParams({ app: id })}
           >
-            {installed ? "Manage" : "Install"}
+            {installed ? 'Manage' : 'Install'}
           </Button>
         </CardFooter>
 
@@ -268,9 +242,7 @@ export function IntegrationsCard({
                     )}
                   </div>
 
-                  <span className="text-muted-foreground mt-1 text-xs">
-                    {category}
-                  </span>
+                  <span className="text-muted-foreground mt-1 text-xs">{category}</span>
                 </div>
               </div>
 
@@ -286,9 +258,9 @@ export function IntegrationsCard({
                       });
                     }}
                   >
-                    {deleteIntegrationConnection.status === "executing"
-                      ? "Disconnecting..."
-                      : "Disconnect"}
+                    {deleteIntegrationConnection.status === 'executing'
+                      ? 'Disconnecting...'
+                      : 'Disconnect'}
                   </Button>
                 )}
               </div>
@@ -300,7 +272,7 @@ export function IntegrationsCard({
             <ScrollArea className="flex-1 px-6">
               <Accordion
                 type="multiple"
-                defaultValue={["description", "settings", "sync-status"]}
+                defaultValue={['description', 'settings', 'sync-status']}
                 className="mt-4 space-y-4"
               >
                 {guide_url && (
@@ -308,9 +280,7 @@ export function IntegrationsCard({
                     <AccordionTrigger className="py-3 hover:no-underline">
                       <div className="flex items-center gap-2">
                         <InfoIcon className="mr-1 h-3.5 w-3.5" />
-                        <span className="text-sm font-medium">
-                          How to get credentials
-                        </span>
+                        <span className="text-sm font-medium">How to get credentials</span>
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="text-muted-foreground pb-4 text-sm">
@@ -326,10 +296,7 @@ export function IntegrationsCard({
                   </AccordionItem>
                 )}
 
-                <AccordionItem
-                  value="description"
-                  className="border-0 border-b"
-                >
+                <AccordionItem value="description" className="border-0 border-b">
                   <AccordionTrigger className="py-3 hover:no-underline">
                     <div className="flex items-center gap-2">
                       <InfoIcon className="mr-1 h-3.5 w-3.5" />
@@ -342,10 +309,7 @@ export function IntegrationsCard({
                 </AccordionItem>
 
                 {installed && (
-                  <AccordionItem
-                    value="sync-status"
-                    className="border-0 border-b"
-                  >
+                  <AccordionItem value="sync-status" className="border-0 border-b">
                     <AccordionTrigger className="py-3 hover:no-underline">
                       <div className="flex items-center gap-2">
                         <Clock className="mr-1 h-3.5 w-3.5" />
@@ -358,18 +322,14 @@ export function IntegrationsCard({
                           <Calendar className="text-muted-foreground mt-0.5 h-3.5 w-3.5" />
                           <div>
                             <div className="flex items-center gap-1">
-                              <p className="text-foreground text-sm font-medium">
-                                Last Sync
-                              </p>
+                              <p className="text-foreground text-sm font-medium">Last Sync</p>
                               <TooltipProvider>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <Globe className="text-muted-foreground h-3 w-3 cursor-help" />
                                   </TooltipTrigger>
                                   <TooltipContent>
-                                    <p>
-                                      Dates are shown in your local timezone
-                                    </p>
+                                    <p>Dates are shown in your local timezone</p>
                                   </TooltipContent>
                                 </Tooltip>
                               </TooltipProvider>
@@ -386,9 +346,7 @@ export function IntegrationsCard({
                                 </span>
                               </p>
                             ) : (
-                              <p className="text-muted-foreground text-xs">
-                                Never run
-                              </p>
+                              <p className="text-muted-foreground text-xs">Never run</p>
                             )}
                           </div>
                         </div>
@@ -397,13 +355,8 @@ export function IntegrationsCard({
                           <Clock className="text-muted-foreground mt-0.5 h-3.5 w-3.5" />
                           <div>
                             <div className="flex items-center gap-1.5">
-                              <p className="text-foreground text-sm font-medium">
-                                Next Sync
-                              </p>
-                              <Badge
-                                variant="outline"
-                                className="h-4 text-[9px]"
-                              >
+                              <p className="text-foreground text-sm font-medium">Next Sync</p>
+                              <Badge variant="outline" className="h-4 text-[9px]">
                                 UTC 00:00
                               </Badge>
                               <TooltipProvider>
@@ -417,9 +370,8 @@ export function IntegrationsCard({
                                     className="max-w-[250px]"
                                   >
                                     <p>
-                                      This integration runs at midnight UTC
-                                      (00:00). Times are converted to your local
-                                      timezone for display.
+                                      This integration runs at midnight UTC (00:00). Times are
+                                      converted to your local timezone for display.
                                     </p>
                                   </TooltipContent>
                                 </Tooltip>
@@ -444,9 +396,7 @@ export function IntegrationsCard({
                               </div>
                             ) : (
                               <p className="text-muted-foreground text-xs">
-                                {lastRunAt
-                                  ? "Calculating..."
-                                  : "Will run at the next midnight UTC"}
+                                {lastRunAt ? 'Calculating...' : 'Will run at the next midnight UTC'}
                               </p>
                             )}
                           </div>
@@ -455,8 +405,7 @@ export function IntegrationsCard({
 
                       <div className="mt-3 rounded-sm border p-3 text-xs">
                         <p>
-                          This integration syncs automatically every day at
-                          midnight UTC (00:00).
+                          This integration syncs automatically every day at midnight UTC (00:00).
                         </p>
                       </div>
                     </AccordionContent>
@@ -472,7 +421,7 @@ export function IntegrationsCard({
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground pb-4 text-sm">
                     {/* For Deel, always show the API key input */}
-                    {id === "deel" ? (
+                    {id === 'deel' ? (
                       <div className="space-y-4">
                         {/* API Key status with checkmark if set */}
                         <div className="flex items-center justify-between">
@@ -506,9 +455,7 @@ export function IntegrationsCard({
                                 htmlFor={`${id}-api-key`}
                                 className="text-sm leading-none font-medium"
                               >
-                                {isEditingApiKey
-                                  ? "Update API Key"
-                                  : "Enter API Key"}
+                                {isEditingApiKey ? 'Update API Key' : 'Enter API Key'}
                               </label>
                               <Input
                                 id={`${id}-api-key`}
@@ -518,8 +465,7 @@ export function IntegrationsCard({
                                 onChange={(e) => setApiKeyInput(e.target.value)}
                               />
                               <p className="text-muted-foreground text-xs">
-                                You can find your API key in your Deel account
-                                settings.
+                                You can find your API key in your Deel account settings.
                               </p>
                             </div>
                             <div className="flex gap-2">
@@ -545,9 +491,9 @@ export function IntegrationsCard({
                                     Saving...
                                   </>
                                 ) : isEditingApiKey ? (
-                                  "Update"
+                                  'Update'
                                 ) : (
-                                  "Save"
+                                  'Save'
                                 )}
                               </Button>
                             </div>
@@ -562,9 +508,7 @@ export function IntegrationsCard({
                       />
                     ) : (
                       <div className="border p-4">
-                        <p className="text-muted-foreground text-sm">
-                          No settings available
-                        </p>
+                        <p className="text-muted-foreground text-sm">No settings available</p>
                       </div>
                     )}
                   </AccordionContent>
@@ -580,8 +524,7 @@ export function IntegrationsCard({
           <div className="border-border bg-muted/30 mt-auto border-t p-6">
             <div className="flex items-center justify-between">
               <p className="text-muted-foreground text-[10px]">
-                All integrations on the Comp AI store are open-source and
-                peer-reviewed.
+                All integrations on the Comp AI store are open-source and peer-reviewed.
               </p>
 
               <a

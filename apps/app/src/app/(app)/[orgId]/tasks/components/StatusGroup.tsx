@@ -1,21 +1,17 @@
-"use client";
+'use client';
 
-import type { Member, Task, User } from "@comp/db/types";
-import { useDrop } from "react-dnd";
-import { useRef } from "react";
-import { TaskCard, type DragItem, ItemTypes, type StatusId } from "./TaskCard";
-import { updateTaskOrder } from "../actions/updateTaskOrder";
-import clsx from "clsx";
+import type { Member, Task, User } from '@comp/db/types';
+import { useDrop } from 'react-dnd';
+import { useRef } from 'react';
+import { TaskCard, type DragItem, ItemTypes, type StatusId } from './TaskCard';
+import { updateTaskOrder } from '../actions/updateTaskOrder';
+import clsx from 'clsx';
 
 // --- StatusGroup Component Props Interface ---
 interface StatusGroupProps {
   status: { id: StatusId; title: string };
   tasks: Task[]; // Tasks belonging to this specific status group.
-  handleDropTaskInternal: (
-    item: DragItem,
-    targetStatus: StatusId,
-    hoverIndex: number,
-  ) => void; // Callback for drops *between* different status groups.
+  handleDropTaskInternal: (item: DragItem, targetStatus: StatusId, hoverIndex: number) => void; // Callback for drops *between* different status groups.
   members: (Member & { user: User })[];
   statusFilter: string | null | undefined; // Current status filter applied from the URL.
 }
@@ -46,9 +42,9 @@ export function StatusGroup({
       accept: ItemTypes.TASK,
       drop: (item: DragItem) => {
         console.log(
-          "DEBUG: StatusGroup drop activated on status:",
+          'DEBUG: StatusGroup drop activated on status:',
           status.id,
-          "for item:",
+          'for item:',
           item.id,
         );
         handleDropTaskInternal(item, status.id, tasks.length);
@@ -93,9 +89,7 @@ export function StatusGroup({
         <h2 className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
           {status.title}
         </h2>
-        <span className="text-muted-foreground ml-2 text-xs">
-          {tasks.length}
-        </span>
+        <span className="text-muted-foreground ml-2 text-xs">{tasks.length}</span>
       </div>
 
       {/* Task List Area - Only apply visual feedback here */}
@@ -103,10 +97,10 @@ export function StatusGroup({
         ref={taskListRef} // Keep separate ref if needed elsewhere
         className={clsx(
           // Remove py-px
-          "transition-colors duration-150 ease-in-out", // Keep transitions
+          'transition-colors duration-150 ease-in-out', // Keep transitions
           {
             // Background highlights when hovering EITHER header or list area
-            "bg-secondary/50": isOver && canDrop,
+            'bg-secondary/50': isOver && canDrop,
             hidden: !shouldRenderTasks,
           },
         )}

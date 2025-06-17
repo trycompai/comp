@@ -1,18 +1,18 @@
-import { db } from "@comp/db";
-import { FrameworksClientPage } from "./FrameworksClientPage"; // Import the Client Component
-import { isAuthorized } from "@/app/lib/utils";
-import { redirect } from "next/navigation";
+import { db } from '@comp/db';
+import { FrameworksClientPage } from './FrameworksClientPage'; // Import the Client Component
+import { isAuthorized } from '@/app/lib/utils';
+import { redirect } from 'next/navigation';
 
 export default async function Page() {
   const isAllowed = await isAuthorized();
 
   if (!isAllowed) {
-    redirect("/auth");
+    redirect('/auth');
   }
 
   const frameworks = await db.frameworkEditorFramework.findMany({
     orderBy: {
-      name: "asc",
+      name: 'asc',
     },
     include: {
       _count: {

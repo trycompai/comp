@@ -1,21 +1,10 @@
-"use client";
+'use client';
 
-import type { Task } from "@comp/db/types";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@comp/ui/table";
-import {
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useGetColumnHeaders } from "./client-columns";
+import type { Task } from '@comp/db/types';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@comp/ui/table';
+import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useGetColumnHeaders } from './client-columns';
 
 interface DataTableProps {
   data: Task[];
@@ -40,7 +29,7 @@ export function DataTable({ data, pageCount, currentPage }: DataTableProps) {
 
   function onPageChange(page: number) {
     const params = new URLSearchParams(searchParams);
-    params.set("page", page.toString());
+    params.set('page', page.toString());
     router.push(`${pathname}?${params.toString()}`);
   }
 
@@ -56,10 +45,7 @@ export function DataTable({ data, pageCount, currentPage }: DataTableProps) {
                     <TableHead key={header.id}>
                       {header.isPlaceholder
                         ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          )}
+                        : flexRender(header.column.columnDef.header, header.getContext())}
                     </TableHead>
                   );
                 })}
@@ -69,26 +55,17 @@ export function DataTable({ data, pageCount, currentPage }: DataTableProps) {
           <TableBody>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
+                <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell
-                  colSpan={columnHeaders.length}
-                  className="h-24 text-center"
-                >
+                <TableCell colSpan={columnHeaders.length} className="h-24 text-center">
                   No results.
                 </TableCell>
               </TableRow>

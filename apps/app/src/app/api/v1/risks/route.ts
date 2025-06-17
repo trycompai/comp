@@ -1,17 +1,11 @@
-import { getOrganizationFromApiKey } from "@/lib/api-key";
-import { db } from "@comp/db";
-import {
-  Departments,
-  Impact,
-  Likelihood,
-  RiskCategory,
-  RiskStatus,
-} from "@comp/db/types";
-import { type NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
+import { getOrganizationFromApiKey } from '@/lib/api-key';
+import { db } from '@comp/db';
+import { Departments, Impact, Likelihood, RiskCategory, RiskStatus } from '@comp/db/types';
+import { type NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 
 // Configure this route to use Node.js runtime instead of Edge
-export const runtime = "nodejs";
+export const runtime = 'nodejs';
 
 // Define the schema for query parameters
 const queryParamsSchema = z.object({
@@ -23,20 +17,14 @@ const queryParamsSchema = z.object({
 
 // Define the schema for risk creation
 const riskCreateSchema = z.object({
-  title: z.string().min(1, { message: "Title is required" }),
-  description: z.string().min(1, { message: "Description is required" }),
+  title: z.string().min(1, { message: 'Title is required' }),
+  description: z.string().min(1, { message: 'Description is required' }),
   category: z.nativeEnum(RiskCategory),
   department: z.nativeEnum(Departments).optional(),
   status: z.nativeEnum(RiskStatus).optional().default(RiskStatus.open),
-  likelihood: z
-    .nativeEnum(Likelihood)
-    .optional()
-    .default(Likelihood.very_unlikely),
+  likelihood: z.nativeEnum(Likelihood).optional().default(Likelihood.very_unlikely),
   impact: z.nativeEnum(Impact).optional().default(Impact.insignificant),
-  residualLikelihood: z
-    .nativeEnum(Likelihood)
-    .optional()
-    .default(Likelihood.very_unlikely),
+  residualLikelihood: z.nativeEnum(Likelihood).optional().default(Likelihood.very_unlikely),
   residualImpact: z.nativeEnum(Impact).optional().default(Impact.insignificant),
   assigneeId: z.string().optional().nullable(),
 });
@@ -66,8 +54,7 @@ type RiskCreateInput = z.infer<typeof riskCreateSchema>;
  */
 export async function GET(request: NextRequest) {
   // Get the organization ID from the API key
-  const { organizationId, errorResponse } =
-    await getOrganizationFromApiKey(request);
+  const { organizationId, errorResponse } = await getOrganizationFromApiKey(request);
 
   // If there's an error response, return it
   if (errorResponse) {
@@ -80,10 +67,10 @@ export async function GET(request: NextRequest) {
 
     // Create an object from the search params
     const queryParamsObj = {
-      status: searchParams.get("status") || undefined,
-      category: searchParams.get("category") || undefined,
-      department: searchParams.get("department") || undefined,
-      search: searchParams.get("search") || undefined,
+      status: searchParams.get('status') || undefined,
+      category: searchParams.get('category') || undefined,
+      department: searchParams.get('department') || undefined,
+      search: searchParams.get('search') || undefined,
     };
 
     // Validate query parameters
@@ -93,7 +80,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: "Validation failed",
+          error: 'Validation failed',
           details: validationResult.error.format(),
         },
         { status: 400 },
@@ -129,13 +116,13 @@ export async function GET(request: NextRequest) {
         {
           title: {
             contains: search,
-            mode: "insensitive",
+            mode: 'insensitive',
           },
         },
         {
           description: {
             contains: search,
-            mode: "insensitive",
+            mode: 'insensitive',
           },
         },
       ];
@@ -171,7 +158,7 @@ export async function GET(request: NextRequest) {
         },
       },
       orderBy: {
-        updatedAt: "desc",
+        updatedAt: 'desc',
       },
     });
 
@@ -184,11 +171,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: formattedRisks });
   } catch (error) {
-    console.error("Error fetching risks:", error);
-    return NextResponse.json(
-      { success: false, error: "Failed to fetch risks" },
-      { status: 500 },
-    );
+    console.error('Error fetching risks:', error);
+    return NextResponse.json({ success: false, error: 'Failed to fetch risks' }, { status: 500 });
   }
 }
 
@@ -220,8 +204,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   // Get the organization ID from the API key
-  const { organizationId, errorResponse } =
-    await getOrganizationFromApiKey(request);
+  const { organizationId, errorResponse } = await getOrganizationFromApiKey(request);
 
   // If there's an error response, return it
   if (errorResponse) {
@@ -239,7 +222,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: "Validation failed",
+          error: 'Validation failed',
           details: validationResult.error.format(),
         },
         { status: 400 },
@@ -269,11 +252,11 @@ export async function POST(request: NextRequest) {
       data: formattedRisk,
     });
   } catch (error) {
-    console.error("Error creating risk:", error);
+    console.error('Error creating risk:', error);
     return NextResponse.json(
       {
         success: false,
-        error: "Failed to create risk",
+        error: 'Failed to create risk',
       },
       { status: 500 },
     );

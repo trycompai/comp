@@ -1,21 +1,15 @@
-import { auth } from "@/utils/auth";
-import { db } from "@comp/db";
-import { headers } from "next/headers";
-import { TestsLayout } from "./components/TestsLayout";
+import { auth } from '@/utils/auth';
+import { db } from '@comp/db';
+import { headers } from 'next/headers';
+import { TestsLayout } from './components/TestsLayout';
 
 export default async function TestsDashboard() {
   const tests = await getTests();
   const cloudProviders = await getCloudProviders();
 
-  const awsTests = tests.filter(
-    (test) => test.integration.integrationId === "aws",
-  );
-  const gcpTests = tests.filter(
-    (test) => test.integration.integrationId === "gcp",
-  );
-  const azureTests = tests.filter(
-    (test) => test.integration.integrationId === "azure",
-  );
+  const awsTests = tests.filter((test) => test.integration.integrationId === 'aws');
+  const gcpTests = tests.filter((test) => test.integration.integrationId === 'gcp');
+  const azureTests = tests.filter((test) => test.integration.integrationId === 'azure');
 
   return (
     <TestsLayout
@@ -46,7 +40,7 @@ const getTests = async () => {
       organizationId: orgId,
       integration: {
         integrationId: {
-          in: ["aws", "gcp", "azure"],
+          in: ['aws', 'gcp', 'azure'],
         },
       },
     },
@@ -88,7 +82,7 @@ const getCloudProviders = async () => {
     where: {
       organizationId: orgId,
       integrationId: {
-        in: ["aws", "gcp", "azure"],
+        in: ['aws', 'gcp', 'azure'],
       },
     },
   });

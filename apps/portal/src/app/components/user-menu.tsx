@@ -1,5 +1,5 @@
-import { getI18n } from "@/app/locales/server";
-import { Avatar, AvatarFallback, AvatarImageNext } from "@comp/ui/avatar";
+import { getI18n } from '@/app/locales/server';
+import { Avatar, AvatarFallback, AvatarImageNext } from '@comp/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,30 +7,29 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@comp/ui/dropdown-menu";
-import { headers } from "next/headers";
-import { auth } from "@/app/lib/auth";
-import { LocaleSwitch } from "./locale-switch";
-import { Logout } from "./logout";
-import { ThemeSwitch } from "./theme-switch";
+} from '@comp/ui/dropdown-menu';
+import { headers } from 'next/headers';
+import { auth } from '@/app/lib/auth';
+import { LocaleSwitch } from './locale-switch';
+import { Logout } from './logout';
+import { ThemeSwitch } from './theme-switch';
 
 // Helper function to get initials
 function getInitials(name?: string | null, email?: string | null): string {
   if (name) {
-    const names = name.split(" ");
-    const firstInitial = names[0]?.charAt(0) ?? "";
-    const lastInitial =
-      names.length > 1 ? names[names.length - 1]?.charAt(0) : "";
+    const names = name.split(' ');
+    const firstInitial = names[0]?.charAt(0) ?? '';
+    const lastInitial = names.length > 1 ? names[names.length - 1]?.charAt(0) : '';
     const initials = `${firstInitial}${lastInitial}`.toUpperCase();
     // Ensure we return something, even if splitting/chartAt fails unexpectedly
-    return initials || "?";
+    return initials || '?';
   }
   if (email) {
     // Use first letter of email if name is missing
     return email.charAt(0).toUpperCase();
   }
   // Fallback if both name and email are missing
-  return "?";
+  return '?';
 }
 
 export async function UserMenu() {
@@ -49,7 +48,7 @@ export async function UserMenu() {
           {session?.user?.image && (
             <AvatarImageNext
               src={session.user.image}
-              alt={session?.user?.name ?? "User Avatar"}
+              alt={session?.user?.name ?? 'User Avatar'}
               width={32}
               height={32}
               quality={100}
@@ -61,7 +60,7 @@ export async function UserMenu() {
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-[240px]" sideOffset={10} align="end">
-        {" "}
+        {' '}
         <DropdownMenuLabel>
           <div className="flex items-center justify-between">
             <div className="flex flex-col">
@@ -72,21 +71,19 @@ export async function UserMenu() {
                 {session?.user?.email}
               </span>
             </div>
-            <div className="rounded-full border px-3 py-0.5 text-[11px] font-normal">
-              Beta
-            </div>
+            <div className="rounded-full border px-3 py-0.5 text-[11px] font-normal">Beta</div>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <div className="flex flex-row items-center justify-between p-2">
-          <p className="text-sm">{t("user_menu.theme")}</p>
+          <p className="text-sm">{t('user_menu.theme')}</p>
           <ThemeSwitch />
-        </div>{" "}
-        <DropdownMenuSeparator />{" "}
+        </div>{' '}
+        <DropdownMenuSeparator />{' '}
         <div className="flex flex-row items-center justify-between p-2">
-          <p className="text-sm">{t("user_menu.language")}</p>
+          <p className="text-sm">{t('user_menu.language')}</p>
           <LocaleSwitch />
-        </div>{" "}
+        </div>{' '}
         <DropdownMenuSeparator />
         <Logout />
       </DropdownMenuContent>

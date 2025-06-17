@@ -1,13 +1,13 @@
-"use client";
-import { useState, useRef, type FC } from "react";
+'use client';
+import { useState, useRef, type FC } from 'react';
 
-import { cn } from "@comp/ui/cn";
+import { cn } from '@comp/ui/cn';
 
-import { Badge } from "@comp/ui/badge";
-import { Input } from "@comp/ui/input";
-import { Popover, PopoverContent, PopoverAnchor } from "@comp/ui/popover";
+import { Badge } from '@comp/ui/badge';
+import { Input } from '@comp/ui/input';
+import { Popover, PopoverContent, PopoverAnchor } from '@comp/ui/popover';
 
-import { X } from "lucide-react";
+import { X } from 'lucide-react';
 
 interface DataItem {
   id?: string;
@@ -29,13 +29,11 @@ export const SelectPills: FC<SelectPillsProps> = ({
   defaultValue = [],
   value,
   onValueChange,
-  placeholder = "Type to search...",
+  placeholder = 'Type to search...',
   disabled = false,
 }) => {
-  const [inputValue, setInputValue] = useState<string>("");
-  const [selectedPills, setSelectedPills] = useState<string[]>(
-    value || defaultValue,
-  );
+  const [inputValue, setInputValue] = useState<string>('');
+  const [selectedPills, setSelectedPills] = useState<string[]>(value || defaultValue);
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -69,7 +67,7 @@ export const SelectPills: FC<SelectPillsProps> = ({
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     switch (e.key) {
-      case "Enter":
+      case 'Enter':
         e.preventDefault();
         if (inputValue.trim()) {
           // Add custom value
@@ -77,7 +75,7 @@ export const SelectPills: FC<SelectPillsProps> = ({
           handleItemSelect(customItem);
         }
         break;
-      case "ArrowDown":
+      case 'ArrowDown':
         e.preventDefault();
         if (isOpen && filteredItems.length > 0) {
           // Move focus to first radio button
@@ -88,18 +86,15 @@ export const SelectPills: FC<SelectPillsProps> = ({
           setHighlightedIndex(0);
         }
         break;
-      case "Escape":
+      case 'Escape':
         setIsOpen(false);
         break;
     }
   };
 
-  const handleRadioKeyDown = (
-    e: React.KeyboardEvent<HTMLDivElement>,
-    index: number,
-  ) => {
+  const handleRadioKeyDown = (e: React.KeyboardEvent<HTMLDivElement>, index: number) => {
     switch (e.key) {
-      case "ArrowDown":
+      case 'ArrowDown':
         e.preventDefault();
         if (index < filteredItems.length - 1) {
           setHighlightedIndex(index + 1);
@@ -108,13 +103,13 @@ export const SelectPills: FC<SelectPillsProps> = ({
           ) as HTMLElement;
           if (nextItem) {
             nextItem.scrollIntoView({
-              behavior: "smooth",
-              block: "nearest",
+              behavior: 'smooth',
+              block: 'nearest',
             });
           }
         }
         break;
-      case "ArrowUp":
+      case 'ArrowUp':
         e.preventDefault();
         if (index > 0) {
           setHighlightedIndex(index - 1);
@@ -123,8 +118,8 @@ export const SelectPills: FC<SelectPillsProps> = ({
           ) as HTMLElement;
           if (prevItem) {
             prevItem.scrollIntoView({
-              behavior: "smooth",
-              block: "nearest",
+              behavior: 'smooth',
+              block: 'nearest',
             });
           }
         } else {
@@ -132,7 +127,7 @@ export const SelectPills: FC<SelectPillsProps> = ({
           setHighlightedIndex(-1);
         }
         break;
-      case "Enter": {
+      case 'Enter': {
         e.preventDefault();
         const itemToSelect = filteredItems[index];
         if (itemToSelect) {
@@ -141,7 +136,7 @@ export const SelectPills: FC<SelectPillsProps> = ({
         inputRef.current?.focus();
         break;
       }
-      case "Escape":
+      case 'Escape':
         e.preventDefault();
         setIsOpen(false);
         inputRef.current?.focus();
@@ -152,7 +147,7 @@ export const SelectPills: FC<SelectPillsProps> = ({
   const handleItemSelect = (item: DataItem) => {
     const newSelectedPills = [...selectedPills, item.name];
     setSelectedPills(newSelectedPills);
-    setInputValue("");
+    setInputValue('');
     setIsOpen(false);
     setHighlightedIndex(-1);
     if (onValueChange) {
@@ -161,9 +156,7 @@ export const SelectPills: FC<SelectPillsProps> = ({
   };
 
   const handlePillRemove = (pillToRemove: string) => {
-    const newSelectedPills = selectedPills.filter(
-      (pill) => pill !== pillToRemove,
-    );
+    const newSelectedPills = selectedPills.filter((pill) => pill !== pillToRemove);
     setSelectedPills(newSelectedPills);
     if (onValueChange) {
       onValueChange(newSelectedPills);
@@ -188,8 +181,8 @@ export const SelectPills: FC<SelectPillsProps> = ({
             variant="secondary"
             onClick={() => !disabled && handlePillRemove(pill)}
             className={cn(
-              "group gap-1 hover:cursor-pointer",
-              disabled && "cursor-not-allowed opacity-50",
+              'group gap-1 hover:cursor-pointer',
+              disabled && 'cursor-not-allowed opacity-50',
             )}
           >
             {pill}
@@ -236,8 +229,8 @@ export const SelectPills: FC<SelectPillsProps> = ({
             <div
               key={item.id || item.value || item.name}
               className={cn(
-                "hover:bg-accent/70 focus:bg-accent focus:text-accent-foreground relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden transition-colors select-none data-disabled:pointer-events-none data-disabled:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0",
-                highlightedIndex === index && "bg-accent",
+                'hover:bg-accent/70 focus:bg-accent focus:text-accent-foreground relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden transition-colors select-none data-disabled:pointer-events-none data-disabled:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0',
+                highlightedIndex === index && 'bg-accent',
               )}
             >
               <input

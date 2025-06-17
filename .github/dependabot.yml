@@ -1,8 +1,8 @@
 version: 2
 updates:
   - package-ecosystem: npm
-    directory: "/"
+    directory: '/'
     schedule:
       interval: daily
-    target-branch: "main"
+    target-branch: 'main'
     open-pull-requests-limit: 3

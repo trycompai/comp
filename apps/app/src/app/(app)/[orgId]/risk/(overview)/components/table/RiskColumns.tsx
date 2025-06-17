@@ -1,19 +1,17 @@
-import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
-import { StatusIndicator } from "@/components/status-indicator";
-import { Avatar, AvatarFallback, AvatarImage } from "@comp/ui/avatar";
-import { Badge } from "@comp/ui/badge";
-import type { ColumnDef } from "@tanstack/react-table";
-import { UserIcon } from "lucide-react";
-import Link from "next/link";
-import { RiskRow } from "../../RisksTable";
+import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
+import { StatusIndicator } from '@/components/status-indicator';
+import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
+import { Badge } from '@comp/ui/badge';
+import type { ColumnDef } from '@tanstack/react-table';
+import { UserIcon } from 'lucide-react';
+import Link from 'next/link';
+import { RiskRow } from '../../RisksTable';
 
 export const columns = (orgId: string): ColumnDef<RiskRow>[] => [
   {
-    id: "title",
-    accessorKey: "title",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Risk" />
-    ),
+    id: 'title',
+    accessorKey: 'title',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Risk" />,
     cell: ({ row }) => {
       return (
         <Link href={`/${orgId}/risk/${row.original.id}`}>
@@ -22,9 +20,9 @@ export const columns = (orgId: string): ColumnDef<RiskRow>[] => [
       );
     },
     meta: {
-      label: "Risk",
-      placeholder: "Search for a risk...",
-      variant: "text",
+      label: 'Risk',
+      placeholder: 'Search for a risk...',
+      variant: 'text',
     },
     size: 250,
     minSize: 200,
@@ -33,26 +31,22 @@ export const columns = (orgId: string): ColumnDef<RiskRow>[] => [
     enableSorting: true,
   },
   {
-    id: "status",
-    accessorKey: "status",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Status" />
-    ),
+    id: 'status',
+    accessorKey: 'status',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
     cell: ({ row }) => {
       return <StatusIndicator status={row.original.status} />;
     },
     meta: {
-      label: "Status",
+      label: 'Status',
     },
     enableColumnFilter: true,
     enableSorting: true,
   },
   {
-    id: "department",
-    accessorKey: "department",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Department" />
-    ),
+    id: 'department',
+    accessorKey: 'department',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Department" />,
     cell: ({ row }) => {
       return (
         <Badge variant="marketing" className="w-fit uppercase">
@@ -61,17 +55,15 @@ export const columns = (orgId: string): ColumnDef<RiskRow>[] => [
       );
     },
     meta: {
-      label: "Department",
+      label: 'Department',
     },
     enableColumnFilter: true,
     enableSorting: true,
   },
   {
-    id: "assignee",
-    accessorKey: "assignee.name",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Assignee" />
-    ),
+    id: 'assignee',
+    accessorKey: 'assignee.name',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Assignee" />,
     enableSorting: false,
     cell: ({ row }) => {
       if (!row.original.assignee) {
@@ -90,14 +82,12 @@ export const columns = (orgId: string): ColumnDef<RiskRow>[] => [
           <Avatar className="h-8 w-8">
             <AvatarImage
               src={row.original.assignee.image || undefined}
-              alt={
-                row.original.assignee.name || row.original.assignee.email || ""
-              }
+              alt={row.original.assignee.name || row.original.assignee.email || ''}
             />
             <AvatarFallback>
               {row.original.assignee.name?.charAt(0) ||
                 row.original.assignee.email?.charAt(0).toUpperCase() ||
-                "?"}
+                '?'}
             </AvatarFallback>
           </Avatar>
           <p className="text-sm font-medium">
@@ -107,7 +97,7 @@ export const columns = (orgId: string): ColumnDef<RiskRow>[] => [
       );
     },
     meta: {
-      label: "Assignee",
+      label: 'Assignee',
     },
     enableColumnFilter: true,
   },

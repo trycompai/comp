@@ -1,5 +1,5 @@
-import { WaitlistEmail } from "@comp/email/emails/waitlist";
-import { sendEmail } from "@comp/email/lib/resend";
+import { WaitlistEmail } from '@comp/email/emails/waitlist';
+import { sendEmail } from '@comp/email/lib/resend';
 
 export const sendWaitlistEmail = async (params: { email: string }) => {
   const { email } = params;
@@ -9,7 +9,7 @@ export const sendWaitlistEmail = async (params: { email: string }) => {
   try {
     await sendEmail({
       to: email,
-      subject: "Confirm your email to join the Comp AI waitlist",
+      subject: 'Confirm your email to join the Comp AI waitlist',
       react: emailTemplate,
     });
   } catch (e) {

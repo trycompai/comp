@@ -1,16 +1,16 @@
-import { betterAuth } from "better-auth";
-import { db } from "@comp/db";
-import { prismaAdapter } from "better-auth/adapters/prisma";
-import { emailOTP, organization } from "better-auth/plugins";
-import { ac, owner, admin, auditor, member, employee } from "./permissions";
-import { sendInviteMemberEmail } from "@comp/email/lib/invite-member";
-import { sendEmail } from "@comp/email/lib/resend";
-import { nextCookies } from "better-auth/next-js";
-import { OTPVerificationEmail } from "@comp/email";
+import { betterAuth } from 'better-auth';
+import { db } from '@comp/db';
+import { prismaAdapter } from 'better-auth/adapters/prisma';
+import { emailOTP, organization } from 'better-auth/plugins';
+import { ac, owner, admin, auditor, member, employee } from './permissions';
+import { sendInviteMemberEmail } from '@comp/email/lib/invite-member';
+import { sendEmail } from '@comp/email/lib/resend';
+import { nextCookies } from 'better-auth/next-js';
+import { OTPVerificationEmail } from '@comp/email';
 
 export const auth = betterAuth({
   database: prismaAdapter(db, {
-    provider: "postgresql",
+    provider: 'postgresql',
   }),
   advanced: {
     // This will enable us to fall back to DB for ID generation.
@@ -21,9 +21,9 @@ export const auth = betterAuth({
   plugins: [
     organization({
       async sendInvitationEmail(data) {
-        const isLocalhost = process.env.NODE_ENV === "development";
-        const protocol = isLocalhost ? "http" : "https";
-        const domain = isLocalhost ? "localhost:3000" : "app.trycomp.ai";
+        const isLocalhost = process.env.NODE_ENV === 'development';
+        const protocol = isLocalhost ? 'http' : 'https';
+        const domain = isLocalhost ? 'localhost:3000' : 'app.trycomp.ai';
         const inviteLink = `${protocol}://${domain}/auth?inviteCode=${data.invitation.id}`;
 
         await sendInviteMemberEmail({
@@ -41,7 +41,7 @@ export const auth = betterAuth({
       },
       schema: {
         organization: {
-          modelName: "Organization",
+          modelName: 'Organization',
         },
       },
     }),
@@ -51,7 +51,7 @@ export const auth = betterAuth({
       async sendVerificationOTP({ email, otp }) {
         await sendEmail({
           to: email,
-          subject: "One-Time Password for Comp AI",
+          subject: 'One-Time Password for Comp AI',
           react: OTPVerificationEmail({ email, otp }),
         });
       },
@@ -65,25 +65,25 @@ export const auth = betterAuth({
     },
   },
   user: {
-    modelName: "User",
+    modelName: 'User',
   },
   organization: {
-    modelName: "Organization",
+    modelName: 'Organization',
   },
   member: {
-    modelName: "Member",
+    modelName: 'Member',
   },
   invitation: {
-    modelName: "Invitation",
+    modelName: 'Invitation',
   },
   session: {
-    modelName: "Session",
+    modelName: 'Session',
   },
   account: {
-    modelName: "Account",
+    modelName: 'Account',
   },
   verification: {
-    modelName: "Verification",
+    modelName: 'Verification',
   },
 });
 

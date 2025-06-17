@@ -1,23 +1,23 @@
-"use server";
+'use server';
 
-import { auth } from "@/utils/auth";
-import { db } from "@comp/db";
-import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
-import { z } from "zod";
-import { authActionClient } from "./safe-action";
+import { auth } from '@/utils/auth';
+import { db } from '@comp/db';
+import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
+import { z } from 'zod';
+import { authActionClient } from './safe-action';
 
 export const changeOrganizationAction = authActionClient
-  .schema(
+  .inputSchema(
     z.object({
       organizationId: z.string(),
     }),
   )
   .metadata({
-    name: "change-organization",
+    name: 'change-organization',
     track: {
-      event: "create-employee",
-      channel: "server",
+      event: 'create-employee',
+      channel: 'server',
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -34,7 +34,7 @@ export const changeOrganizationAction = authActionClient
     if (!organizationMember) {
       return {
         success: false,
-        error: "Unauthorized",
+        error: 'Unauthorized',
       };
     }
 
@@ -48,7 +48,7 @@ export const changeOrganizationAction = authActionClient
       if (!organization) {
         return {
           success: false,
-          error: "Organization not found",
+          error: 'Organization not found',
         };
       }
 
@@ -66,11 +66,11 @@ export const changeOrganizationAction = authActionClient
         data: organization,
       };
     } catch (error) {
-      console.error("Error changing organization:", error);
+      console.error('Error changing organization:', error);
 
       return {
         success: false,
-        error: "Failed to change organization",
+        error: 'Failed to change organization',
       };
     }
   });

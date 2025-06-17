@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import type { Table } from "@tanstack/react-table";
-import { Check, ChevronsUpDown, Settings2 } from "lucide-react";
+import type { Table } from '@tanstack/react-table';
+import { Check, ChevronsUpDown, Settings2 } from 'lucide-react';
 
-import { Button } from "@comp/ui/button";
-import { cn } from "@comp/ui/cn";
+import { Button } from '@comp/ui/button';
+import { cn } from '@comp/ui/cn';
 import {
   Command,
   CommandEmpty,
@@ -12,25 +12,20 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@comp/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@comp/ui/popover";
-import * as React from "react";
+} from '@comp/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
+import * as React from 'react';
 
 interface DataTableViewOptionsProps<TData> {
   table: Table<TData>;
 }
 
-export function DataTableViewOptions<TData>({
-  table,
-}: DataTableViewOptionsProps<TData>) {
+export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps<TData>) {
   const columns = React.useMemo(
     () =>
       table
         .getAllColumns()
-        .filter(
-          (column) =>
-            typeof column.accessorFn !== "undefined" && column.getCanHide(),
-        ),
+        .filter((column) => typeof column.accessorFn !== 'undefined' && column.getCanHide()),
     [table],
   );
 
@@ -57,17 +52,13 @@ export function DataTableViewOptions<TData>({
               {columns.map((column) => (
                 <CommandItem
                   key={column.id}
-                  onSelect={() =>
-                    column.toggleVisibility(!column.getIsVisible())
-                  }
+                  onSelect={() => column.toggleVisibility(!column.getIsVisible())}
                 >
-                  <span className="truncate">
-                    {column.columnDef.meta?.label ?? column.id}
-                  </span>
+                  <span className="truncate">{column.columnDef.meta?.label ?? column.id}</span>
                   <Check
                     className={cn(
-                      "ml-auto size-4 shrink-0",
-                      column.getIsVisible() ? "opacity-100" : "opacity-0",
+                      'ml-auto size-4 shrink-0',
+                      column.getIsVisible() ? 'opacity-100' : 'opacity-0',
                     )}
                   />
                 </CommandItem>

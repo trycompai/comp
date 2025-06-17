@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import type { User, Vendor } from "@comp/db/types";
-import { Alert, AlertDescription, AlertTitle } from "@comp/ui/alert";
-import { Button } from "@comp/ui/button";
-import { Icons } from "@comp/ui/icons";
-import { PencilIcon } from "lucide-react";
-import { useQueryState } from "nuqs";
-import { UpdateTitleAndDescriptionSheet } from "./update-title-and-description-sheet";
+import type { User, Vendor } from '@comp/db/types';
+import { Alert, AlertDescription, AlertTitle } from '@comp/ui/alert';
+import { Button } from '@comp/ui/button';
+import { Icons } from '@comp/ui/icons';
+import { PencilIcon } from 'lucide-react';
+import { useQueryState } from 'nuqs';
+import { UpdateTitleAndDescriptionSheet } from './update-title-and-description-sheet';
 
 export function TitleAndDescription({
   vendor,
 }: {
   vendor: Vendor & { assignee: { user: User | null } | null };
 }) {
-  const [_, setOpen] = useQueryState("vendor-overview-sheet");
+  const [_, setOpen] = useQueryState('vendor-overview-sheet');
 
   return (
     <div className="space-y-4">
@@ -26,15 +26,13 @@ export function TitleAndDescription({
               size="icon"
               variant="ghost"
               className="m-0 size-auto p-0"
-              onClick={() => setOpen("true")}
+              onClick={() => setOpen('true')}
             >
               <PencilIcon className="h-3 w-3" />
             </Button>
           </div>
         </AlertTitle>
-        <AlertDescription className="mt-4">
-          {vendor.description}
-        </AlertDescription>
+        <AlertDescription className="mt-4">{vendor.description}</AlertDescription>
       </Alert>
       <UpdateTitleAndDescriptionSheet vendor={vendor} />
     </div>

@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { UpdateTaskForm } from "@/components/forms/risks/task/update-task-form";
-import { TaskOverviewSheet } from "@/components/sheets/task-overview-sheet";
-import type { Task, User } from "@comp/db/types";
-import { Alert, AlertDescription, AlertTitle } from "@comp/ui/alert";
-import { Button } from "@comp/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@comp/ui/card";
-import { PencilIcon, ShieldAlert } from "lucide-react";
-import { useQueryState } from "nuqs";
-import React from "react";
+import { UpdateTaskForm } from '@/components/forms/risks/task/update-task-form';
+import { TaskOverviewSheet } from '@/components/sheets/task-overview-sheet';
+import type { Task, User } from '@comp/db/types';
+import { Alert, AlertDescription, AlertTitle } from '@comp/ui/alert';
+import { Button } from '@comp/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
+import { PencilIcon, ShieldAlert } from 'lucide-react';
+import { useQueryState } from 'nuqs';
+import React from 'react';
 
 export function TaskOverview({ task, users }: { task: Task; users: User[] }) {
-  const [open, setOpen] = useQueryState("task-overview-sheet");
+  const [open, setOpen] = useQueryState('task-overview-sheet');
 
   return (
     <div className="space-y-4">
@@ -24,7 +24,7 @@ export function TaskOverview({ task, users }: { task: Task; users: User[] }) {
               size="icon"
               variant="ghost"
               className="m-0 size-auto p-0"
-              onClick={() => setOpen("true")}
+              onClick={() => setOpen('true')}
             >
               <PencilIcon className="h-3 w-3" />
             </Button>
@@ -36,9 +36,7 @@ export function TaskOverview({ task, users }: { task: Task; users: User[] }) {
       <Card>
         <CardHeader>
           <CardTitle>
-            <div className="flex items-center justify-between gap-2">
-              {"Overview"}
-            </div>
+            <div className="flex items-center justify-between gap-2">{'Overview'}</div>
           </CardTitle>
         </CardHeader>
         <CardContent>

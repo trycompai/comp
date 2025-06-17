@@ -1,5 +1,5 @@
-import { stripe } from "@/actions/organization/lib/stripe";
-import { client } from "@comp/kv";
+import { stripe } from '@/actions/organization/lib/stripe';
+import { client } from '@comp/kv';
 
 // The contents of this function should probably be wrapped in a try/catch
 export async function syncStripeDataToKV(customerId: string) {
@@ -7,12 +7,12 @@ export async function syncStripeDataToKV(customerId: string) {
   const subscriptions = await stripe.subscriptions.list({
     customer: customerId,
     limit: 1,
-    status: "all",
-    expand: ["data.default_payment_method"],
+    status: 'all',
+    expand: ['data.default_payment_method'],
   });
 
   if (subscriptions.data.length === 0) {
-    const subData = { status: "none" };
+    const subData = { status: 'none' };
     await client.set(`stripe:customer:${customerId}`, subData);
     return subData;
   }
@@ -29,8 +29,7 @@ export async function syncStripeDataToKV(customerId: string) {
     currentPeriodStart: subscription.items.data[0].current_period_start,
     cancelAtPeriodEnd: subscription.cancel_at_period_end,
     paymentMethod:
-      subscription.default_payment_method &&
-      typeof subscription.default_payment_method !== "string"
+      subscription.default_payment_method && typeof subscription.default_payment_method !== 'string'
         ? {
             brand: subscription.default_payment_method.card?.brand ?? null,
             last4: subscription.default_payment_method.card?.last4 ?? null,

@@ -1,20 +1,17 @@
-"use server";
+'use server';
 
-import PageWithBreadcrumb from "@/components/pages/PageWithBreadcrumb";
-import { auth } from "@/utils/auth";
-import { db } from "@comp/db";
-import { AttachmentEntityType, CommentEntityType } from "@comp/db/types";
-import type { Metadata } from "next";
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
-import { cache } from "react";
-import {
-  Comments,
-  CommentWithAuthor,
-} from "../../../../../components/comments/Comments";
-import { VendorInherentRiskChart } from "./components/VendorInherentRiskChart";
-import { VendorResidualRiskChart } from "./components/VendorResidualRiskChart";
-import { SecondaryFields } from "./components/secondary-fields/secondary-fields";
+import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
+import { auth } from '@/utils/auth';
+import { db } from '@comp/db';
+import { AttachmentEntityType, CommentEntityType } from '@comp/db/types';
+import type { Metadata } from 'next';
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { cache } from 'react';
+import { Comments, CommentWithAuthor } from '../../../../../components/comments/Comments';
+import { VendorInherentRiskChart } from './components/VendorInherentRiskChart';
+import { VendorResidualRiskChart } from './components/VendorResidualRiskChart';
+import { SecondaryFields } from './components/secondary-fields/secondary-fields';
 
 interface PageProps {
   params: Promise<{ vendorId: string; locale: string; orgId: string }>;
@@ -27,13 +24,13 @@ export default async function VendorPage({ params }: PageProps) {
   const comments = await getComments(vendorId);
 
   if (!vendor) {
-    redirect("/");
+    redirect('/');
   }
 
   return (
     <PageWithBreadcrumb
       breadcrumbs={[
-        { label: "Vendors", href: `/${orgId}/vendors` },
+        { label: 'Vendors', href: `/${orgId}/vendors` },
         { label: vendor.name, current: true },
       ]}
     >
@@ -43,11 +40,7 @@ export default async function VendorPage({ params }: PageProps) {
           <VendorInherentRiskChart vendor={vendor} />
           <VendorResidualRiskChart vendor={vendor} />
         </div>
-        <Comments
-          entityId={vendorId}
-          comments={comments}
-          entityType={CommentEntityType.vendor}
-        />
+        <Comments entityId={vendorId} comments={comments} entityType={CommentEntityType.vendor} />
       </div>
     </PageWithBreadcrumb>
   );
@@ -87,7 +80,7 @@ const getComments = async (vendorId: string): Promise<CommentWithAuthor[]> => {
   const activeOrgId = session?.session.activeOrganizationId;
 
   if (!activeOrgId) {
-    console.warn("Could not determine active organization ID in getComments");
+    console.warn('Could not determine active organization ID in getComments');
     return [];
   }
 
@@ -105,7 +98,7 @@ const getComments = async (vendorId: string): Promise<CommentWithAuthor[]> => {
       },
     },
     orderBy: {
-      createdAt: "desc",
+      createdAt: 'desc',
     },
   });
 
@@ -141,7 +134,7 @@ const getAssignees = cache(async () => {
     where: {
       organizationId: session.session.activeOrganizationId,
       role: {
-        notIn: ["employee"],
+        notIn: ['employee'],
       },
     },
     include: {
@@ -154,6 +147,6 @@ const getAssignees = cache(async () => {
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: "Vendors",
+    title: 'Vendors',
   };
 }

@@ -1,29 +1,23 @@
-"use client";
+'use client';
 
-import { Button } from "@comp/ui/button";
-import { Drawer, DrawerContent, DrawerTitle } from "@comp/ui/drawer";
-import { useMediaQuery } from "@comp/ui/hooks";
-import { ScrollArea } from "@comp/ui/scroll-area";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@comp/ui/sheet";
-import { X } from "lucide-react";
-import { useQueryState } from "nuqs";
+import { Button } from '@comp/ui/button';
+import { Drawer, DrawerContent, DrawerTitle } from '@comp/ui/drawer';
+import { useMediaQuery } from '@comp/ui/hooks';
+import { ScrollArea } from '@comp/ui/scroll-area';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@comp/ui/sheet';
+import { X } from 'lucide-react';
+import { useQueryState } from 'nuqs';
 
-import type { Task } from "@comp/db/types";
-import { UpdateTaskOverviewForm } from "../forms/risks/task/update-task-overview-form";
+import type { Task } from '@comp/db/types';
+import { UpdateTaskOverviewForm } from '../forms/risks/task/update-task-overview-form';
 
 export function TaskOverviewSheet({ task }: { task: Task }) {
-  const isDesktop = useMediaQuery("(min-width: 768px)");
-  const [open, setOpen] = useQueryState("task-overview-sheet");
+  const isDesktop = useMediaQuery('(min-width: 768px)');
+  const [open, setOpen] = useQueryState('task-overview-sheet');
   const isOpen = Boolean(open);
 
   const handleOpenChange = (open: boolean) => {
-    setOpen(open ? "true" : null);
+    setOpen(open ? 'true' : null);
   };
 
   if (isDesktop) {
@@ -32,7 +26,7 @@ export function TaskOverviewSheet({ task }: { task: Task }) {
         <SheetContent stack>
           <SheetHeader className="mb-8">
             <div className="flex flex-row items-center justify-between">
-              <SheetTitle>{"Update Task"}</SheetTitle>
+              <SheetTitle>{'Update Task'}</SheetTitle>
               <Button
                 size="icon"
                 variant="ghost"
@@ -41,10 +35,8 @@ export function TaskOverviewSheet({ task }: { task: Task }) {
               >
                 <X className="h-5 w-5" />
               </Button>
-            </div>{" "}
-            <SheetDescription>
-              {"Update task details and metadata"}
-            </SheetDescription>
+            </div>{' '}
+            <SheetDescription>{'Update task details and metadata'}</SheetDescription>
           </SheetHeader>
 
           <ScrollArea className="h-full p-0 pb-[100px]" hideScrollbar>
@@ -57,7 +49,7 @@ export function TaskOverviewSheet({ task }: { task: Task }) {
 
   return (
     <Drawer open={isOpen} onOpenChange={handleOpenChange}>
-      <DrawerTitle hidden>{"Update Risk"}</DrawerTitle>
+      <DrawerTitle hidden>{'Update Risk'}</DrawerTitle>
       <DrawerContent className="p-6">
         <UpdateTaskOverviewForm task={task} />
       </DrawerContent>

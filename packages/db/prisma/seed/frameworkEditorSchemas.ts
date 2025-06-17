@@ -1,15 +1,12 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 // Assuming Frequency and Departments enums are defined elsewhere and imported
 // For now, we'll use z.string() as a placeholder if their definitions aren't available.
 // import { Frequency, Departments } from './path-to-shared-enums'; // Example import
 
 const datePreprocess = (arg: unknown) => {
-  if (
-    typeof arg === "string" &&
-    /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}$/.test(arg)
-  ) {
-    return arg.replace(" ", "T") + "Z";
+  if (typeof arg === 'string' && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}$/.test(arg)) {
+    return arg.replace(' ', 'T') + 'Z';
   }
   return arg;
 };
@@ -24,8 +21,7 @@ export const FrameworkEditorVideoSchema = z.object({
     .preprocess(
       datePreprocess,
       z.string().datetime({
-        message:
-          "Invalid datetime string for createdAt. Expected ISO 8601 format.",
+        message: 'Invalid datetime string for createdAt. Expected ISO 8601 format.',
       }),
     )
     .optional(), // @default(now())
@@ -33,8 +29,7 @@ export const FrameworkEditorVideoSchema = z.object({
     .preprocess(
       datePreprocess,
       z.string().datetime({
-        message:
-          "Invalid datetime string for updatedAt. Expected ISO 8601 format.",
+        message: 'Invalid datetime string for updatedAt. Expected ISO 8601 format.',
       }),
     )
     .optional(), // @default(now()) @updatedAt
@@ -52,8 +47,7 @@ export const FrameworkEditorFrameworkSchema = z.object({
     .preprocess(
       datePreprocess,
       z.string().datetime({
-        message:
-          "Invalid datetime string for createdAt. Expected ISO 8601 format.",
+        message: 'Invalid datetime string for createdAt. Expected ISO 8601 format.',
       }),
     )
     .optional(), // @default(now())
@@ -61,8 +55,7 @@ export const FrameworkEditorFrameworkSchema = z.object({
     .preprocess(
       datePreprocess,
       z.string().datetime({
-        message:
-          "Invalid datetime string for updatedAt. Expected ISO 8601 format.",
+        message: 'Invalid datetime string for updatedAt. Expected ISO 8601 format.',
       }),
     )
     .optional(), // @default(now()) @updatedAt
@@ -81,8 +74,7 @@ export const FrameworkEditorRequirementSchema = z.object({
     .preprocess(
       datePreprocess,
       z.string().datetime({
-        message:
-          "Invalid datetime string for createdAt. Expected ISO 8601 format.",
+        message: 'Invalid datetime string for createdAt. Expected ISO 8601 format.',
       }),
     )
     .optional(), // @default(now())
@@ -90,8 +82,7 @@ export const FrameworkEditorRequirementSchema = z.object({
     .preprocess(
       datePreprocess,
       z.string().datetime({
-        message:
-          "Invalid datetime string for updatedAt. Expected ISO 8601 format.",
+        message: 'Invalid datetime string for updatedAt. Expected ISO 8601 format.',
       }),
     )
     .optional(), // @default(now()) @updatedAt
@@ -109,8 +100,7 @@ export const FrameworkEditorPolicyTemplateSchema = z.object({
     .preprocess(
       datePreprocess,
       z.string().datetime({
-        message:
-          "Invalid datetime string for createdAt. Expected ISO 8601 format.",
+        message: 'Invalid datetime string for createdAt. Expected ISO 8601 format.',
       }),
     )
     .optional(), // @default(now())
@@ -118,8 +108,7 @@ export const FrameworkEditorPolicyTemplateSchema = z.object({
     .preprocess(
       datePreprocess,
       z.string().datetime({
-        message:
-          "Invalid datetime string for updatedAt. Expected ISO 8601 format.",
+        message: 'Invalid datetime string for updatedAt. Expected ISO 8601 format.',
       }),
     )
     .optional(), // @default(now()) @updatedAt
@@ -137,8 +126,7 @@ export const FrameworkEditorTaskTemplateSchema = z.object({
     .preprocess(
       datePreprocess,
       z.string().datetime({
-        message:
-          "Invalid datetime string for createdAt. Expected ISO 8601 format.",
+        message: 'Invalid datetime string for createdAt. Expected ISO 8601 format.',
       }),
     )
     .optional(), // @default(now())
@@ -146,8 +134,7 @@ export const FrameworkEditorTaskTemplateSchema = z.object({
     .preprocess(
       datePreprocess,
       z.string().datetime({
-        message:
-          "Invalid datetime string for updatedAt. Expected ISO 8601 format.",
+        message: 'Invalid datetime string for updatedAt. Expected ISO 8601 format.',
       }),
     )
     .optional(), // @default(now()) @updatedAt
@@ -165,8 +152,7 @@ export const FrameworkEditorControlTemplateSchema = z.object({
     .preprocess(
       datePreprocess,
       z.string().datetime({
-        message:
-          "Invalid datetime string for createdAt. Expected ISO 8601 format.",
+        message: 'Invalid datetime string for createdAt. Expected ISO 8601 format.',
       }),
     )
     .optional(), // @default(now())
@@ -174,8 +160,7 @@ export const FrameworkEditorControlTemplateSchema = z.object({
     .preprocess(
       datePreprocess,
       z.string().datetime({
-        message:
-          "Invalid datetime string for updatedAt. Expected ISO 8601 format.",
+        message: 'Invalid datetime string for updatedAt. Expected ISO 8601 format.',
       }),
     )
     .optional(), // @default(now()) @updatedAt

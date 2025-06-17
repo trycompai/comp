@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { Icons } from "@comp/ui/icons";
-import { Input } from "@comp/ui/input";
-import { useQueryState } from "nuqs";
-import { useHotkeys } from "react-hotkeys-hook";
+import { Icons } from '@comp/ui/icons';
+import { Input } from '@comp/ui/input';
+import { useQueryState } from 'nuqs';
+import { useHotkeys } from 'react-hotkeys-hook';
 
 type Props = {
   placeholder: string;
@@ -11,11 +11,11 @@ type Props = {
 };
 
 export function SearchField({ placeholder, shallow = false }: Props) {
-  const [search, setSearch] = useQueryState("q", {
+  const [search, setSearch] = useQueryState('q', {
     shallow,
   });
 
-  useHotkeys("esc", () => setSearch(null), {
+  useHotkeys('esc', () => setSearch(null), {
     enableOnFormTags: true,
   });
 
@@ -34,7 +34,7 @@ export function SearchField({ placeholder, shallow = false }: Props) {
       <Input
         placeholder={placeholder}
         className="w-full"
-        value={search ?? ""}
+        value={search ?? ''}
         onChange={handleSearch}
         autoComplete="off"
         autoCapitalize="none"

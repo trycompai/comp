@@ -1,9 +1,9 @@
-import { getOrganizationFromApiKey } from "@/lib/api-key";
-import { db } from "@comp/db";
-import { type NextRequest, NextResponse } from "next/server";
+import { getOrganizationFromApiKey } from '@/lib/api-key';
+import { db } from '@comp/db';
+import { type NextRequest, NextResponse } from 'next/server';
 
 // Configure this route to use Node.js runtime instead of Edge
-export const runtime = "nodejs";
+export const runtime = 'nodejs';
 
 /**
  * GET /api/v1/people/:id
@@ -22,13 +22,9 @@ export const runtime = "nodejs";
  * - 404: { success: false, error: "Employee not found" }
  * - 500: { success: false, error: "Failed to fetch employee" }
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   // Get the organization ID from the API key
-  const { organizationId, errorResponse } =
-    await getOrganizationFromApiKey(request);
+  const { organizationId, errorResponse } = await getOrganizationFromApiKey(request);
 
   // If there's an error response, return it
   if (errorResponse) {
@@ -62,7 +58,7 @@ export async function GET(
       return NextResponse.json(
         {
           success: false,
-          error: "Employee not found",
+          error: 'Employee not found',
         },
         { status: 404 },
       );
@@ -73,11 +69,11 @@ export async function GET(
       data: employee,
     });
   } catch (error) {
-    console.error("Error fetching employee:", error);
+    console.error('Error fetching employee:', error);
     return NextResponse.json(
       {
         success: false,
-        error: "Failed to fetch employee",
+        error: 'Failed to fetch employee',
       },
       { status: 500 },
     );
@@ -106,8 +102,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   // Get the organization ID from the API key
-  const { organizationId, errorResponse } =
-    await getOrganizationFromApiKey(request);
+  const { organizationId, errorResponse } = await getOrganizationFromApiKey(request);
 
   // If there's an error response, return it
   if (errorResponse) {
@@ -129,7 +124,7 @@ export async function DELETE(
       return NextResponse.json(
         {
           success: false,
-          error: "Employee not found",
+          error: 'Employee not found',
         },
         { status: 404 },
       );
@@ -145,15 +140,15 @@ export async function DELETE(
     return NextResponse.json({
       success: true,
       data: {
-        message: "Employee deleted successfully",
+        message: 'Employee deleted successfully',
       },
     });
   } catch (error) {
-    console.error("Error deleting employee:", error);
+    console.error('Error deleting employee:', error);
     return NextResponse.json(
       {
         success: false,
-        error: "Failed to delete employee",
+        error: 'Failed to delete employee',
       },
       { status: 500 },
     );

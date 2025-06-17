@@ -1,17 +1,13 @@
-"use client";
+'use client';
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import {
-  useForm,
-  type ControllerRenderProps,
-  FieldValues,
-} from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Departments, Frequency } from "@prisma/client"; // Assuming enums are available
-import { toast } from "sonner"; // Correct sonner import
+import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import { useForm, type ControllerRenderProps, FieldValues } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Departments, Frequency } from '@prisma/client'; // Assuming enums are available
+import { toast } from 'sonner'; // Correct sonner import
 
-import { Button } from "@comp/ui/button";
+import { Button } from '@comp/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -19,25 +15,12 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@comp/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@comp/ui/form";
-import { Input } from "@comp/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@comp/ui/select";
-import { CreatePolicySchema, type CreatePolicySchemaType } from "../schemas";
-import { createPolicyAction } from "../actions";
+} from '@comp/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
+import { Input } from '@comp/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
+import { CreatePolicySchema, type CreatePolicySchemaType } from '../schemas';
+import { createPolicyAction } from '../actions';
 
 // Define props for external control
 interface CreatePolicyDialogProps {
@@ -45,18 +28,15 @@ interface CreatePolicyDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export function CreatePolicyDialog({
-  isOpen,
-  onOpenChange,
-}: CreatePolicyDialogProps) {
+export function CreatePolicyDialog({ isOpen, onOpenChange }: CreatePolicyDialogProps) {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
   const form = useForm<CreatePolicySchemaType>({
     resolver: zodResolver(CreatePolicySchema),
     defaultValues: {
-      name: "",
-      description: "",
+      name: '',
+      description: '',
       // Provide default enum values if necessary, or handle undefined
       // frequency: Frequency.YEARLY, // Example default
       // department: Departments.ENGINEERING, // Example default
@@ -69,18 +49,18 @@ export function CreatePolicyDialog({
 
       if (result.errors) {
         // Handle validation errors (e.g., display in form)
-        console.error("Validation errors:", result.errors);
-        toast.error("Validation failed", { description: result.message });
+        console.error('Validation errors:', result.errors);
+        toast.error('Validation failed', { description: result.message });
         // You might want to iterate through result.errors and set form errors
         // form.setError('name', { type: 'server', message: result.errors.name?.[0] }); // Example
       } else if (result.success && result.policyId) {
-        toast.success("Policy created successfully!");
+        toast.success('Policy created successfully!');
         onOpenChange(false); // Call the external state setter
         form.reset();
         router.push(`/policies/${result.policyId}`);
         router.refresh(); // Refresh data on the page
       } else {
-        toast.error("Error creating policy", { description: result.message });
+        toast.error('Error creating policy', { description: result.message });
       }
     });
   };
@@ -93,9 +73,7 @@ export function CreatePolicyDialog({
       <DialogContent className="sm:max-w-[525px]">
         <DialogHeader>
           <DialogTitle>Create New Policy</DialogTitle>
-          <DialogDescription>
-            Fill in the details for the new policy template.
-          </DialogDescription>
+          <DialogDescription>Fill in the details for the new policy template.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -105,7 +83,7 @@ export function CreatePolicyDialog({
               render={({
                 field,
               }: {
-                field: ControllerRenderProps<CreatePolicySchemaType, "name">;
+                field: ControllerRenderProps<CreatePolicySchemaType, 'name'>;
               }) => (
                 <FormItem>
                   <FormLabel>Name</FormLabel>
@@ -126,19 +104,12 @@ export function CreatePolicyDialog({
               render={({
                 field,
               }: {
-                field: ControllerRenderProps<
-                  CreatePolicySchemaType,
-                  "description"
-                >;
+                field: ControllerRenderProps<CreatePolicySchemaType, 'description'>;
               }) => (
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="Describe the policy..."
-                      {...field}
-                      className="rounded-sm"
-                    />
+                    <Input placeholder="Describe the policy..." {...field} className="rounded-sm" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -150,17 +121,11 @@ export function CreatePolicyDialog({
               render={({
                 field,
               }: {
-                field: ControllerRenderProps<
-                  CreatePolicySchemaType,
-                  "frequency"
-                >;
+                field: ControllerRenderProps<CreatePolicySchemaType, 'frequency'>;
               }) => (
                 <FormItem>
                   <FormLabel>Frequency</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger className="rounded-sm">
                         <SelectValue placeholder="Select frequency" />
@@ -168,11 +133,7 @@ export function CreatePolicyDialog({
                     </FormControl>
                     <SelectContent>
                       {getEnumKeys(Frequency).map((key) => (
-                        <SelectItem
-                          key={key}
-                          value={key}
-                          className="rounded-sm"
-                        >
+                        <SelectItem key={key} value={key} className="rounded-sm">
                           {key}
                         </SelectItem>
                       ))}
@@ -188,17 +149,11 @@ export function CreatePolicyDialog({
               render={({
                 field,
               }: {
-                field: ControllerRenderProps<
-                  CreatePolicySchemaType,
-                  "department"
-                >;
+                field: ControllerRenderProps<CreatePolicySchemaType, 'department'>;
               }) => (
                 <FormItem>
                   <FormLabel>Department</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger className="rounded-sm">
                         <SelectValue placeholder="Select department" />
@@ -206,11 +161,7 @@ export function CreatePolicyDialog({
                     </FormControl>
                     <SelectContent>
                       {getEnumKeys(Departments).map((key) => (
-                        <SelectItem
-                          key={key}
-                          value={key}
-                          className="rounded-sm"
-                        >
+                        <SelectItem key={key} value={key} className="rounded-sm">
                           {key}
                         </SelectItem>
                       ))}
@@ -230,7 +181,7 @@ export function CreatePolicyDialog({
                 Cancel
               </Button>
               <Button type="submit" disabled={isPending} className="rounded-sm">
-                {isPending ? "Creating..." : "Create Policy"}
+                {isPending ? 'Creating...' : 'Create Policy'}
               </Button>
             </DialogFooter>
           </form>

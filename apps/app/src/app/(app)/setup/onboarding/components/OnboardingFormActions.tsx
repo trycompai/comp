@@ -1,6 +1,6 @@
-import { Button } from "@comp/ui/button";
-import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
+import { Button } from '@comp/ui/button';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 
 interface OnboardingFormActionsProps {
   onBack: () => void;

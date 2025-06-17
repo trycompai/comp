@@ -1,18 +1,12 @@
-"use client";
+'use client';
 
-import { Button } from "@comp/ui/button";
-import { Input } from "@comp/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@comp/ui/select";
-import { Search as SearchIcon, SortAsc, SortDesc } from "lucide-react";
-import type React from "react";
+import { Button } from '@comp/ui/button';
+import { Input } from '@comp/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
+import { Search as SearchIcon, SortAsc, SortDesc } from 'lucide-react';
+import type React from 'react';
 // Import types from the common types definition file
-import type { SortDirection, SortableColumnOption } from "../types/common";
+import type { SortDirection, SortableColumnOption } from '../types/common';
 
 export interface TableToolbarProps {
   searchTerm: string;
@@ -47,16 +41,16 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
   isDirty = false,
   onCommit,
   onCancel,
-  commitButtonDetailText = "",
+  commitButtonDetailText = '',
   children,
 }) => {
-  let commitButtonLabelText = "No Changes";
+  let commitButtonLabelText = 'No Changes';
   if (isDirty) {
     if (commitButtonDetailText && commitButtonDetailText.length > 0) {
       commitButtonLabelText = `Commit ${commitButtonDetailText}`;
     } else {
       // Fallback if isDirty is true but commitButtonDetailText is empty (e.g. hook logic yields empty for some reason)
-      commitButtonLabelText = "Commit Changes";
+      commitButtonLabelText = 'Commit Changes';
     }
   }
 
@@ -72,10 +66,8 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
       />
       <div className="flex items-center gap-2">
         <Select
-          value={sortColumnKey ?? "__NONE__"}
-          onValueChange={(value) =>
-            onSortColumnKeyChange(value === "__NONE__" ? null : value)
-          }
+          value={sortColumnKey ?? '__NONE__'}
+          onValueChange={(value) => onSortColumnKeyChange(value === '__NONE__' ? null : value)}
         >
           <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="Sort by..." />
@@ -94,9 +86,9 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
           size="icon"
           onClick={onSortDirectionChange}
           disabled={!sortColumnKey}
-          title={`Sort direction: ${sortDirection === "asc" ? "Ascending" : "Descending"}`}
+          title={`Sort direction: ${sortDirection === 'asc' ? 'Ascending' : 'Descending'}`}
         >
-          {sortDirection === "asc" ? (
+          {sortDirection === 'asc' ? (
             <SortAsc className="h-4 w-4" />
           ) : (
             <SortDesc className="h-4 w-4" />

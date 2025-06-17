@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { VaultContext, type VaultProps, createVaultStore } from "./store";
+import { useEffect } from 'react';
+import { VaultContext, type VaultProps, createVaultStore } from './store';
 
 type VaultProviderProps = React.PropsWithChildren<VaultProps>;
 
@@ -12,7 +12,5 @@ export function VaultProvider({ children, data }: VaultProviderProps) {
     store.setState({ data });
   }, [data, store]);
 
-  return (
-    <VaultContext.Provider value={store}>{children}</VaultContext.Provider>
-  );
+  return <VaultContext.Provider value={store}>{children}</VaultContext.Provider>;
 }

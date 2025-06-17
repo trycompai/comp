@@ -1,6 +1,6 @@
-"server only";
-import { type Browser, type Page, chromium } from "playwright-core";
-import { createSession } from "./session";
+'server only';
+import { type Browser, type Page, chromium } from 'playwright-core';
+import { createSession } from './session';
 
 interface BrowserSession {
   browser: Browser;
@@ -15,14 +15,12 @@ async function getBrowser(sessionId: string) {
   const context = browser.contexts()[0];
   const page = context?.pages()[0];
   if (!page) {
-    throw new Error("No page to use, error configuring browser session");
+    throw new Error('No page to use, error configuring browser session');
   }
   return { browser, page };
 }
 
-export async function getOrCreateBrowser(
-  sessionId: string,
-): Promise<BrowserSession> {
+export async function getOrCreateBrowser(sessionId: string): Promise<BrowserSession> {
   const existing = sessions.get(sessionId);
   if (existing) {
     return existing;

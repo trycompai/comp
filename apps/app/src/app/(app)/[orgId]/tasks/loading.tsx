@@ -1,9 +1,3 @@
-import { Spinner } from "@comp/ui/spinner";
+import Loader from '@/components/ui/loader';
 
-export default function TasksLoading() {
-  return (
-    <div className="flex h-full items-center justify-center">
-      <Spinner size={20} />
-    </div>
-  );
-}
+export default Loader;

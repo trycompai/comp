@@ -1,13 +1,13 @@
 // custom-domain-action.ts
 
-"use server";
+'use server';
 
-import { db } from "@comp/db";
-import { authActionClient } from "@/actions/safe-action";
-import { z } from "zod";
-import { revalidatePath, revalidateTag } from "next/cache";
-import { env } from "node:process";
-import { Vercel } from "@vercel/sdk";
+import { db } from '@comp/db';
+import { authActionClient } from '@/actions/safe-action';
+import { z } from 'zod';
+import { revalidatePath, revalidateTag } from 'next/cache';
+import { env } from 'node:process';
+import { Vercel } from '@vercel/sdk';
 
 const customDomainSchema = z.object({
   domain: z.string().min(1),
@@ -18,12 +18,12 @@ const vercel = new Vercel({
 });
 
 export const customDomainAction = authActionClient
-  .schema(customDomainSchema)
+  .inputSchema(customDomainSchema)
   .metadata({
-    name: "custom-domain",
+    name: 'custom-domain',
     track: {
-      event: "add-custom-domain",
-      channel: "server",
+      event: 'add-custom-domain',
+      channel: 'server',
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -31,7 +31,7 @@ export const customDomainAction = authActionClient
     const { activeOrganizationId } = ctx.session;
 
     if (!activeOrganizationId) {
-      throw new Error("No active organization");
+      throw new Error('No active organization');
     }
 
     try {
@@ -55,10 +55,7 @@ export const customDomainAction = authActionClient
           },
         });
 
-        if (
-          !domainOwner ||
-          domainOwner.organizationId === activeOrganizationId
-        ) {
+        if (!domainOwner || domainOwner.organizationId === activeOrganizationId) {
           await vercel.projects.removeProjectDomain({
             idOrName: env.TRUST_PORTAL_PROJECT_ID!,
             teamId: env.VERCEL_TEAM_ID!,
@@ -67,7 +64,7 @@ export const customDomainAction = authActionClient
         } else {
           return {
             success: false,
-            error: "Domain is already in use by another organization",
+            error: 'Domain is already in use by another organization',
           };
         }
       }
@@ -84,8 +81,7 @@ export const customDomainAction = authActionClient
       const isVercelDomain = addDomainToProject.verified === false;
 
       // Store the verification details from Vercel if available
-      const vercelVerification =
-        addDomainToProject.verification?.[0]?.value || null;
+      const vercelVerification = addDomainToProject.verification?.[0]?.value || null;
 
       await db.trust.upsert({
         where: { organizationId: activeOrganizationId },
@@ -113,6 +109,6 @@ export const customDomainAction = authActionClient
       };
     } catch (error) {
       console.error(error);
-      throw new Error("Failed to update custom domain");
+      throw new Error('Failed to update custom domain');
     }
   });

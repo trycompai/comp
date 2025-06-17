@@ -1,14 +1,14 @@
-"use server";
+'use server';
 
-import { env } from "@/env.mjs";
-import axios from "axios";
-import { authActionClient } from "./safe-action";
-import { sendFeedbackSchema } from "./schema";
+import { env } from '@/env.mjs';
+import axios from 'axios';
+import { authActionClient } from './safe-action';
+import { sendFeedbackSchema } from './schema';
 
 export const sendFeebackAction = authActionClient
-  .schema(sendFeedbackSchema)
+  .inputSchema(sendFeedbackSchema)
   .metadata({
-    name: "send-feedback",
+    name: 'send-feedback',
   })
   .action(async ({ parsedInput: { feedback }, ctx: { user } }) => {
     if (env.DISCORD_WEBHOOK_URL) {

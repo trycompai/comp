@@ -1,11 +1,11 @@
-import { auth } from "@/utils/auth";
-import { headers } from "next/headers";
-import { cache } from "react";
+import { auth } from '@/utils/auth';
+import { headers } from 'next/headers';
+import { cache } from 'react';
 
-import { ApiKeysTable } from "./components/table/ApiKeysTable";
-import { db } from "@comp/db";
-import type { Metadata } from "next";
-import PageCore from "@/components/pages/PageCore.tsx";
+import { ApiKeysTable } from './components/table/ApiKeysTable';
+import { db } from '@comp/db';
+import type { Metadata } from 'next';
+import PageCore from '@/components/pages/PageCore.tsx';
 
 export default async function ApiKeysPage() {
   const apiKeys = await getApiKeys();
@@ -19,7 +19,7 @@ export default async function ApiKeysPage() {
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: "API",
+    title: 'API',
   };
 }
 
@@ -46,7 +46,7 @@ const getApiKeys = cache(async () => {
       isActive: true,
     },
     orderBy: {
-      createdAt: "desc",
+      createdAt: 'desc',
     },
   });
 

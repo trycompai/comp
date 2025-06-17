@@ -1,13 +1,13 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@comp/ui/card";
-import { Skeleton } from "@comp/ui/skeleton";
-import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
+import { Skeleton } from '@comp/ui/skeleton';
+import React from 'react';
 
 interface Props {
   amount: number;
   prefix?: string;
 }
 
-export const SkeletonLoader = ({ amount, prefix = "item" }: Props) => {
+export const SkeletonLoader = ({ amount, prefix = 'item' }: Props) => {
   return (
     <div className="grid grid-cols-1 gap-8 py-8 md:grid-cols-2">
       {Array.from({ length: amount }, (_, i) => (

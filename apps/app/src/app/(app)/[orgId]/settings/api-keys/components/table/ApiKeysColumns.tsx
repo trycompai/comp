@@ -1,9 +1,9 @@
-import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
-import type { ColumnDef } from "@tanstack/react-table";
-import type { ApiKey } from "@/hooks/use-api-keys";
-import { Trash2 } from "lucide-react";
-import { useAction } from "next-safe-action/hooks";
-import { useState } from "react";
+import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
+import type { ColumnDef } from '@tanstack/react-table';
+import type { ApiKey } from '@/hooks/use-api-keys';
+import { Trash2 } from 'lucide-react';
+import { useAction } from 'next-safe-action/hooks';
+import { useState } from 'react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,18 +14,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@comp/ui/alert-dialog";
-import { Button } from "@comp/ui/button";
-import { revokeApiKeyAction } from "@/actions/organization/revoke-api-key-action";
+} from '@comp/ui/alert-dialog';
+import { Button } from '@comp/ui/button';
+import { revokeApiKeyAction } from '@/actions/organization/revoke-api-key-action';
 export const columns = (): ColumnDef<ApiKey>[] => [
   {
-    id: "name",
-    accessorKey: "name",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Name" />
-    ),
+    id: 'name',
+    accessorKey: 'name',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
     cell: ({ row }) => <span>{row.original.name}</span>,
-    meta: { label: "Name", variant: "text" },
+    meta: { label: 'Name', variant: 'text' },
     enableColumnFilter: true,
     enableSorting: true,
     size: 200,
@@ -33,15 +31,11 @@ export const columns = (): ColumnDef<ApiKey>[] => [
     maxSize: 200,
   },
   {
-    id: "createdAt",
-    accessorKey: "createdAt",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Created" />
-    ),
-    cell: ({ row }) => (
-      <span>{new Date(row.original.createdAt).toISOString().slice(0, 10)}</span>
-    ),
-    meta: { label: "Created" },
+    id: 'createdAt',
+    accessorKey: 'createdAt',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Created" />,
+    cell: ({ row }) => <span>{new Date(row.original.createdAt).toISOString().slice(0, 10)}</span>,
+    meta: { label: 'Created' },
     enableColumnFilter: false,
     enableSorting: false,
     size: 120,
@@ -49,19 +43,17 @@ export const columns = (): ColumnDef<ApiKey>[] => [
     maxSize: 150,
   },
   {
-    id: "expiresAt",
-    accessorKey: "expiresAt",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Expires" />
-    ),
+    id: 'expiresAt',
+    accessorKey: 'expiresAt',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Expires" />,
     cell: ({ row }) => (
       <span>
         {row.original.expiresAt
           ? new Date(row.original.expiresAt).toISOString().slice(0, 10)
-          : "Never"}
+          : 'Never'}
       </span>
     ),
-    meta: { label: "Expires" },
+    meta: { label: 'Expires' },
     enableColumnFilter: false,
     enableSorting: false,
     size: 120,
@@ -69,19 +61,17 @@ export const columns = (): ColumnDef<ApiKey>[] => [
     maxSize: 150,
   },
   {
-    id: "lastUsedAt",
-    accessorKey: "lastUsedAt",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Last Used" />
-    ),
+    id: 'lastUsedAt',
+    accessorKey: 'lastUsedAt',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Last Used" />,
     cell: ({ row }) => (
       <span>
         {row.original.lastUsedAt
           ? new Date(row.original.lastUsedAt).toISOString().slice(0, 10)
-          : "Never"}
+          : 'Never'}
       </span>
     ),
-    meta: { label: "Last Used" },
+    meta: { label: 'Last Used' },
     enableColumnFilter: false,
     enableSorting: false,
     size: 120,
@@ -89,7 +79,7 @@ export const columns = (): ColumnDef<ApiKey>[] => [
     maxSize: 150,
   },
   {
-    id: "actions",
+    id: 'actions',
     header: () => <span>Actions</span>,
     cell: ({ row }) => {
       const [open, setOpen] = useState(false);
@@ -112,28 +102,26 @@ export const columns = (): ColumnDef<ApiKey>[] => [
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>{"Revoke API Key"}</AlertDialogTitle>
+              <AlertDialogTitle>{'Revoke API Key'}</AlertDialogTitle>
               <AlertDialogDescription>
-                {
-                  "Are you sure you want to revoke this API key? This action cannot be undone."
-                }
+                {'Are you sure you want to revoke this API key? This action cannot be undone.'}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>{"Cancel"}</AlertDialogCancel>
+              <AlertDialogCancel>{'Cancel'}</AlertDialogCancel>
               <AlertDialogAction
                 onClick={() => execute({ id: row.original.id })}
-                disabled={status === "executing"}
+                disabled={status === 'executing'}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
-                {status === "executing" ? "Revoking..." : "Revoke"}
+                {status === 'executing' ? 'Revoking...' : 'Revoke'}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
       );
     },
-    meta: { label: "Actions" },
+    meta: { label: 'Actions' },
     enableColumnFilter: false,
     enableSorting: false,
     size: 60,

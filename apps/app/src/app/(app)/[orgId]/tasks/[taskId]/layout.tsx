@@ -1,5 +1,5 @@
-import PageWithBreadcrumb from "@/components/pages/PageWithBreadcrumb";
-import { db } from "@comp/db";
+import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
+import { db } from '@comp/db';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -7,7 +7,7 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@comp/ui/breadcrumb";
+} from '@comp/ui/breadcrumb';
 
 export default async function Layout({
   children,
@@ -27,8 +27,8 @@ export default async function Layout({
   return (
     <PageWithBreadcrumb
       breadcrumbs={[
-        { label: "Tasks", href: `/${orgId}/tasks` },
-        { label: task?.title ?? "", href: `/${orgId}/tasks/${taskId}` },
+        { label: 'Tasks', href: `/${orgId}/tasks` },
+        { label: task?.title ?? '', href: `/${orgId}/tasks/${taskId}` },
       ]}
     >
       {children}

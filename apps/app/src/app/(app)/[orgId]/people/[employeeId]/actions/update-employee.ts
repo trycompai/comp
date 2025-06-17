@@ -1,34 +1,33 @@
-"use server";
+'use server';
 
-import { authActionClient } from "@/actions/safe-action";
-import { db } from "@comp/db";
-import type { Departments } from "@comp/db/types";
-import { Prisma } from "@prisma/client";
-import { revalidatePath } from "next/cache";
-import { z } from "zod";
-import { appErrors } from "../types";
+import { authActionClient } from '@/actions/safe-action';
+import { db } from '@comp/db';
+import type { Departments } from '@comp/db/types';
+import { Prisma } from '@prisma/client';
+import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
+import { appErrors } from '../types';
 
 const schema = z.object({
   employeeId: z.string(),
-  name: z.string().min(1, "Name cannot be empty").optional(),
-  email: z.string().email("Invalid email format").optional(),
+  name: z.string().min(1, 'Name cannot be empty').optional(),
+  email: z.string().email('Invalid email format').optional(),
   department: z.string().optional(),
   isActive: z.boolean().optional(),
   createdAt: z.date().optional(),
 });
 
 export const updateEmployee = authActionClient
-  .schema(schema)
+  .inputSchema(schema)
   .metadata({
-    name: "update-employee",
+    name: 'update-employee',
     track: {
-      event: "update-employee",
-      channel: "server",
+      event: 'update-employee',
+      channel: 'server',
     },
   })
   .action(async ({ parsedInput, ctx }) => {
-    const { employeeId, name, email, department, isActive, createdAt } =
-      parsedInput;
+    const { employeeId, name, email, department, isActive, createdAt } = parsedInput;
 
     const organizationId = ctx.session.activeOrganizationId;
     if (!organizationId) throw new Error(appErrors.UNAUTHORIZED.message);
@@ -58,10 +57,7 @@ export const updateEmployee = authActionClient
     if (isActive !== undefined && isActive !== member.isActive) {
       memberUpdateData.isActive = isActive;
     }
-    if (
-      createdAt !== undefined &&
-      createdAt.toISOString() !== member.createdAt.toISOString()
-    ) {
+    if (createdAt !== undefined && createdAt.toISOString() !== member.createdAt.toISOString()) {
       memberUpdateData.createdAt = createdAt;
     }
     if (name !== undefined && name !== member.user.name) {
@@ -112,10 +108,10 @@ export const updateEmployee = authActionClient
       return { success: true, data: updatedMemberResult };
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === "P2002") {
+        if (error.code === 'P2002') {
           const targetFields = error.meta?.target as string[] | undefined;
-          if (targetFields?.includes("email")) {
-            throw new Error("Email address is already in use.");
+          if (targetFields?.includes('email')) {
+            throw new Error('Email address is already in use.');
           }
         }
       }

@@ -1,10 +1,10 @@
-import PageWithBreadcrumb from "@/components/pages/PageWithBreadcrumb";
-import { getValidFilters } from "@/lib/data-table";
-import type { SearchParams } from "@/types";
-import type { Metadata } from "next";
-import { PoliciesTable } from "./components/policies-table";
-import { getPolicies } from "./data/queries";
-import { searchParamsCache } from "./data/validations";
+import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
+import { getValidFilters } from '@/lib/data-table';
+import type { SearchParams } from '@/types';
+import type { Metadata } from 'next';
+import { PoliciesTable } from './components/policies-table';
+import { getPolicies } from './data/queries';
+import { searchParamsCache } from './data/validations';
 
 interface PolicyTableProps {
   searchParams: Promise<SearchParams>;
@@ -23,7 +23,7 @@ export default async function PoliciesPage({ ...props }: PolicyTableProps) {
   ]);
 
   return (
-    <PageWithBreadcrumb breadcrumbs={[{ label: "Policies", current: true }]}>
+    <PageWithBreadcrumb breadcrumbs={[{ label: 'Policies', current: true }]}>
       <PoliciesTable promises={promises} />
     </PageWithBreadcrumb>
   );
@@ -31,6 +31,6 @@ export default async function PoliciesPage({ ...props }: PolicyTableProps) {
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: "Policies",
+    title: 'Policies',
   };
 }

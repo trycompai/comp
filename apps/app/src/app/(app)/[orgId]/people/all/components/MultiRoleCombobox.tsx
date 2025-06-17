@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import type { Role } from "@prisma/client";
-import * as React from "react";
+import type { Role } from '@prisma/client';
+import * as React from 'react';
 
-import { Dialog, DialogContent } from "@comp/ui/dialog";
-import { MultiRoleComboboxContent } from "./MultiRoleComboboxContent";
-import { MultiRoleComboboxTrigger } from "./MultiRoleComboboxTrigger";
+import { Dialog, DialogContent } from '@comp/ui/dialog';
+import { MultiRoleComboboxContent } from './MultiRoleComboboxContent';
+import { MultiRoleComboboxTrigger } from './MultiRoleComboboxTrigger';
 
 // Define the selectable roles explicitly (exclude owner)
 const selectableRoles: {
@@ -14,24 +14,24 @@ const selectableRoles: {
   descriptionKey: string;
 }[] = [
   {
-    value: "owner",
-    labelKey: "people.roles.owner",
-    descriptionKey: "people.roles.owner_description",
+    value: 'owner',
+    labelKey: 'people.roles.owner',
+    descriptionKey: 'people.roles.owner_description',
   },
   {
-    value: "admin",
-    labelKey: "people.roles.admin",
-    descriptionKey: "people.roles.admin_description",
+    value: 'admin',
+    labelKey: 'people.roles.admin',
+    descriptionKey: 'people.roles.admin_description',
   },
   {
-    value: "employee",
-    labelKey: "people.roles.employee",
-    descriptionKey: "people.roles.employee_description",
+    value: 'employee',
+    labelKey: 'people.roles.employee',
+    descriptionKey: 'people.roles.employee_description',
   },
   {
-    value: "auditor",
-    labelKey: "people.roles.auditor",
-    descriptionKey: "people.roles.auditor_description",
+    value: 'auditor',
+    labelKey: 'people.roles.auditor',
+    descriptionKey: 'people.roles.auditor_description',
   },
 ];
 
@@ -51,27 +51,25 @@ export function MultiRoleCombobox({
   lockedRoles = [],
 }: MultiRoleComboboxProps) {
   const [open, setOpen] = React.useState(false);
-  const [searchTerm, setSearchTerm] = React.useState("");
+  const [searchTerm, setSearchTerm] = React.useState('');
 
   // Process selected roles to handle comma-separated values
   const selectedRoles = React.useMemo(() => {
     return inputSelectedRoles.flatMap((role) =>
-      typeof role === "string" && role.includes(",")
-        ? (role.split(",") as Role[])
-        : [role],
+      typeof role === 'string' && role.includes(',') ? (role.split(',') as Role[]) : [role],
     );
   }, [inputSelectedRoles]);
 
-  const isOwner = selectedRoles.includes("owner");
+  const isOwner = selectedRoles.includes('owner');
 
   // Filter out owner role for non-owners
   const availableRoles = React.useMemo(() => {
-    return selectableRoles.filter((role) => role.value !== "owner" || isOwner);
+    return selectableRoles.filter((role) => role.value !== 'owner' || isOwner);
   }, [isOwner]);
 
   const handleSelect = (roleValue: Role) => {
     // Never allow owner role to be changed
-    if (roleValue === "owner") {
+    if (roleValue === 'owner') {
       return;
     }
 
@@ -89,35 +87,33 @@ export function MultiRoleCombobox({
 
   const getRoleLabel = (roleValue: Role) => {
     switch (roleValue) {
-      case "owner":
-        return "Owner";
-      case "admin":
-        return "Admin";
-      case "auditor":
-        return "Auditor";
-      case "employee":
-        return "Employee";
+      case 'owner':
+        return 'Owner';
+      case 'admin':
+        return 'Admin';
+      case 'auditor':
+        return 'Auditor';
+      case 'employee':
+        return 'Employee';
       default:
         return roleValue;
     }
   };
 
   const triggerText =
-    selectedRoles.length > 0
-      ? `${selectedRoles.length} selected`
-      : placeholder || "Select role(s)";
+    selectedRoles.length > 0 ? `${selectedRoles.length} selected` : placeholder || 'Select role(s)';
 
   const filteredRoles = availableRoles.filter((role) => {
     const label = (() => {
       switch (role.value) {
-        case "admin":
-          return "Admin";
-        case "auditor":
-          return "Auditor";
-        case "employee":
-          return "Employee";
-        case "owner":
-          return "Owner";
+        case 'admin':
+          return 'Admin';
+        case 'auditor':
+          return 'Auditor';
+        case 'employee':
+          return 'Employee';
+        case 'owner':
+          return 'Owner';
         default:
           return role.value;
       }

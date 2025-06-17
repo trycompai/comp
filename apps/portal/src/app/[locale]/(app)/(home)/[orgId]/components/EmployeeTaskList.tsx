@@ -1,20 +1,16 @@
-"use client";
+'use client';
 
-import type {
-  Policy,
-  EmployeeTrainingVideoCompletion,
-  Member,
-} from "@comp/db/types";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@comp/ui/tabs";
-import { PolicyList } from "./policy";
-import { VideoCarousel } from "./video";
-import { Button } from "@comp/ui/button";
-import { useState } from "react";
-import { toast } from "sonner";
-import type { FleetPolicy, Host } from "../types";
-import { Card, CardContent, CardHeader, CardTitle } from "@comp/ui/card";
-import { cn } from "@comp/ui/cn";
-import { CheckCircle2, XCircle } from "lucide-react";
+import type { Policy, EmployeeTrainingVideoCompletion, Member } from '@comp/db/types';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
+import { PolicyList } from './policy';
+import { VideoCarousel } from './video';
+import { Button } from '@comp/ui/button';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import type { FleetPolicy, Host } from '../types';
+import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
+import { cn } from '@comp/ui/cn';
+import { CheckCircle2, XCircle } from 'lucide-react';
 
 interface EmployeeTasksListProps {
   policies: Policy[];
@@ -36,9 +32,9 @@ export const EmployeeTasksList = ({
   const handleDownload = async () => {
     setIsDownloading(true);
     try {
-      const response = await fetch("/api/download-agent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/download-agent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           orgId: member.organizationId,
           employeeId: member.id,
@@ -47,23 +43,21 @@ export const EmployeeTasksList = ({
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(errorText || "Failed to download agent.");
+        throw new Error(errorText || 'Failed to download agent.');
       }
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
+      const a = document.createElement('a');
       a.href = url;
-      a.download = "compai-device-agent.zip";
+      a.download = 'compai-device-agent.zip';
       document.body.appendChild(a);
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error(error);
-      toast.error(
-        error instanceof Error ? error.message : "An unknown error occurred.",
-      );
+      toast.error(error instanceof Error ? error.message : 'An unknown error occurred.');
     } finally {
       setIsDownloading(false);
     }
@@ -95,14 +89,12 @@ export const EmployeeTasksList = ({
                 <div
                   key={policy.id}
                   className={cn(
-                    "hover:bg-muted/50 flex items-center justify-between rounded-md border border-l-4 p-3 shadow-sm transition-colors",
-                    policy.response === "pass"
-                      ? "border-l-green-500"
-                      : "border-l-red-500",
+                    'hover:bg-muted/50 flex items-center justify-between rounded-md border border-l-4 p-3 shadow-sm transition-colors',
+                    policy.response === 'pass' ? 'border-l-green-500' : 'border-l-red-500',
                   )}
                 >
                   <p className="font-medium">{policy.name}</p>
-                  {policy.response === "pass" ? (
+                  {policy.response === 'pass' ? (
                     <div className="flex items-center gap-1 text-green-600">
                       <CheckCircle2 size={16} />
                       <span>Pass</span>
@@ -119,7 +111,7 @@ export const EmployeeTasksList = ({
           </Card>
         ) : (
           <Button disabled={isDownloading} onClick={handleDownload}>
-            {isDownloading ? "Downloading..." : "Download Agent"}
+            {isDownloading ? 'Downloading...' : 'Download Agent'}
           </Button>
         )}
       </TabsContent>

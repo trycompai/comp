@@ -1,11 +1,11 @@
-"use server";
+'use server';
 
-import { authActionClient } from "@/actions/safe-action";
-import { auth } from "@/utils/auth";
-import { db } from "@comp/db";
-import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
-import { z } from "zod";
+import { authActionClient } from '@/actions/safe-action';
+import { auth } from '@/utils/auth';
+import { db } from '@comp/db';
+import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
+import { z } from 'zod';
 
 const skipOnboardingSchema = z.object({
   legalName: z.string(),
@@ -13,12 +13,12 @@ const skipOnboardingSchema = z.object({
 });
 
 export const skipOnboarding = authActionClient
-  .schema(skipOnboardingSchema)
+  .inputSchema(skipOnboardingSchema)
   .metadata({
-    name: "skip-onboarding",
+    name: 'skip-onboarding',
     track: {
-      event: "skip-onboarding",
-      channel: "server",
+      event: 'skip-onboarding',
+      channel: 'server',
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -30,7 +30,7 @@ export const skipOnboarding = authActionClient
       if (!session?.session?.activeOrganizationId) {
         return {
           success: false,
-          error: "Not authorized - no active organization found.",
+          error: 'Not authorized - no active organization found.',
         };
       }
 
@@ -75,8 +75,8 @@ export const skipOnboarding = authActionClient
         success: true,
       };
     } catch (error) {
-      console.error("Error during organization creation/update:", error);
+      console.error('Error during organization creation/update:', error);
 
-      throw new Error("Failed to create or update organization structure");
+      throw new Error('Failed to create or update organization structure');
     }
   });

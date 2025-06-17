@@ -1,25 +1,25 @@
-"use server";
+'use server';
 
-import { db } from "@comp/db";
-import { AttachmentEntityType, AttachmentType } from "@comp/db/types";
-import { z } from "zod";
-import { s3Client, BUCKET_NAME } from "@/app/s3";
-import { auth } from "@/utils/auth";
-import { headers } from "next/headers";
-import { PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { revalidatePath } from "next/cache";
+import { db } from '@comp/db';
+import { AttachmentEntityType, AttachmentType } from '@comp/db/types';
+import { z } from 'zod';
+import { s3Client, BUCKET_NAME } from '@/app/s3';
+import { auth } from '@/utils/auth';
+import { headers } from 'next/headers';
+import { PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { revalidatePath } from 'next/cache';
 
 function mapFileTypeToAttachmentType(fileType: string): AttachmentType {
-  const type = fileType.split("/")[0];
+  const type = fileType.split('/')[0];
   switch (type) {
-    case "image":
+    case 'image':
       return AttachmentType.image;
-    case "video":
+    case 'video':
       return AttachmentType.video;
-    case "audio":
+    case 'audio':
       return AttachmentType.audio;
-    case "application":
+    case 'application':
       return AttachmentType.document;
     default:
       return AttachmentType.other;
@@ -35,30 +35,21 @@ const uploadAttachmentSchema = z.object({
   pathToRevalidate: z.string().optional(),
 });
 
-export const uploadFile = async (
-  input: z.infer<typeof uploadAttachmentSchema>,
-) => {
-  const {
-    fileName,
-    fileType,
-    fileData,
-    entityId,
-    entityType,
-    pathToRevalidate,
-  } = input;
+export const uploadFile = async (input: z.infer<typeof uploadAttachmentSchema>) => {
+  const { fileName, fileType, fileData, entityId, entityType, pathToRevalidate } = input;
   const session = await auth.api.getSession({ headers: await headers() });
   const organizationId = session?.session.activeOrganizationId;
 
   if (!organizationId) {
     return {
       success: false,
-      error: "Not authorized - no organization found",
+      error: 'Not authorized - no organization found',
       data: null,
     };
   }
 
   try {
-    const fileBuffer = Buffer.from(fileData, "base64");
+    const fileBuffer = Buffer.from(fileData, 'base64');
 
     const MAX_FILE_SIZE_MB = 5;
     const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
@@ -71,7 +62,7 @@ export const uploadFile = async (
     }
 
     const timestamp = Date.now();
-    const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, "_");
+    const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
     const key = `${organizationId}/attachments/${entityType}/${entityId}/${timestamp}-${sanitizedFileName}`;
 
     const putCommand = new PutObjectCommand({
@@ -83,7 +74,7 @@ export const uploadFile = async (
 
     await s3Client.send(putCommand);
 
-    console.log("Creating attachment...");
+    console.log('Creating attachment...');
     console.log({
       name: fileName,
       url: key,
@@ -126,11 +117,11 @@ export const uploadFile = async (
       error: null,
     } as const;
   } catch (error) {
-    console.error("Upload file action error:", error);
+    console.error('Upload file action error:', error);
 
     return {
       success: false,
-      error: "Failed to process file upload.",
+      error: 'Failed to process file upload.',
       data: null,
     } as const;
   }

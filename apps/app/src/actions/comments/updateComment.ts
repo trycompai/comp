@@ -1,13 +1,13 @@
-"use server";
+'use server';
 
-import { db } from "@comp/db";
-import { AttachmentEntityType, Comment } from "@comp/db/types";
-import { revalidatePath } from "next/cache";
-import { z } from "zod";
-import { auth } from "@/utils/auth";
-import { headers } from "next/headers";
-import { BUCKET_NAME, extractS3KeyFromUrl, s3Client } from "@/app/s3";
-import { DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { db } from '@comp/db';
+import { AttachmentEntityType, Comment } from '@comp/db/types';
+import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
+import { auth } from '@/utils/auth';
+import { headers } from 'next/headers';
+import { BUCKET_NAME, extractS3KeyFromUrl, s3Client } from '@/app/s3';
+import { DeleteObjectCommand } from '@aws-sdk/client-s3';
 
 const schema = z
   .object({
@@ -21,22 +21,21 @@ const schema = z
       data.content !== undefined ||
       data.attachmentIdsToAdd?.length ||
       data.attachmentIdsToRemove?.length,
-    { message: "No changes provided for update." },
+    { message: 'No changes provided for update.' },
   );
 
 export const updateComment = async (input: z.infer<typeof schema>) => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
-  const { commentId, content, attachmentIdsToAdd, attachmentIdsToRemove } =
-    schema.parse(input);
+  const { commentId, content, attachmentIdsToAdd, attachmentIdsToRemove } = schema.parse(input);
   const organizationId = session?.session?.activeOrganizationId;
   const userId = session?.session.userId;
 
   if (!organizationId) {
     return {
       success: false,
-      error: "Not authorized",
+      error: 'Not authorized',
       data: null,
     };
   }
@@ -51,7 +50,7 @@ export const updateComment = async (input: z.infer<typeof schema>) => {
     if (!comment) {
       return {
         success: false,
-        error: "Comment not found",
+        error: 'Comment not found',
         data: null,
       };
     }
@@ -65,7 +64,7 @@ export const updateComment = async (input: z.infer<typeof schema>) => {
       // TODO: Add role-based check for admins
       return {
         success: false,
-        error: "Not authorized",
+        error: 'Not authorized',
         data: null,
       };
     }
@@ -105,10 +104,7 @@ export const updateComment = async (input: z.infer<typeof schema>) => {
               }),
             );
           } catch (s3Error: unknown) {
-            console.error(
-              `Failed to delete attachment ${att.id} from S3:`,
-              s3Error,
-            );
+            console.error(`Failed to delete attachment ${att.id} from S3:`, s3Error);
             // Continue even if S3 delete fails
           }
         }
@@ -154,10 +150,9 @@ export const updateComment = async (input: z.infer<typeof schema>) => {
     };
   } catch (error) {
     // Use unknown for outer catch block
-    console.error("Failed to update comment:", error);
+    console.error('Failed to update comment:', error);
     // Type checking before accessing message
-    const errorMessage =
-      error instanceof Error ? error.message : "Could not update comment.";
+    const errorMessage = error instanceof Error ? error.message : 'Could not update comment.';
     return {
       success: false,
       error: errorMessage,

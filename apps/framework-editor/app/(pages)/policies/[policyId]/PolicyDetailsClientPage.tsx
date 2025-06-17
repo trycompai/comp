@@ -1,29 +1,21 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@comp/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@comp/ui/card";
-import { PencilIcon, Trash2 } from "lucide-react";
-import type { FrameworkEditorPolicyTemplate } from "@prisma/client"; // Assuming this is the correct type
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@comp/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
+import { PencilIcon, Trash2 } from 'lucide-react';
+import type { FrameworkEditorPolicyTemplate } from '@prisma/client'; // Assuming this is the correct type
 
 // Import the actual dialog components
-import { EditPolicyDialog } from "./components/EditPolicyDialog";
-import { DeletePolicyDialog } from "./components/DeletePolicyDialog";
+import { EditPolicyDialog } from './components/EditPolicyDialog';
+import { DeletePolicyDialog } from './components/DeletePolicyDialog';
 
 interface PolicyDetailsClientPageProps {
   policy: FrameworkEditorPolicyTemplate; // Use the specific Prisma type
 }
 
-export function PolicyDetailsClientPage({
-  policy,
-}: PolicyDetailsClientPageProps) {
+export function PolicyDetailsClientPage({ policy }: PolicyDetailsClientPageProps) {
   const router = useRouter();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -35,7 +27,7 @@ export function PolicyDetailsClientPage({
 
   const handlePolicyDeleted = () => {
     setIsDeleteDialogOpen(false);
-    router.push("/policies"); // Navigate back to policies list
+    router.push('/policies'); // Navigate back to policies list
   };
 
   return (
@@ -48,9 +40,7 @@ export function PolicyDetailsClientPage({
                 {policy.name}
               </CardTitle>
               {policy.description && (
-                <CardDescription className="mt-2 text-base">
-                  {policy.description}
-                </CardDescription>
+                <CardDescription className="mt-2 text-base">{policy.description}</CardDescription>
               )}
             </div>
             <div className="flex gap-2">
@@ -78,10 +68,10 @@ export function PolicyDetailsClientPage({
         <CardContent>
           <div className="space-y-2">
             <p>
-              <strong>Frequency:</strong> {policy.frequency || "N/A"}
+              <strong>Frequency:</strong> {policy.frequency || 'N/A'}
             </p>
             <p>
-              <strong>Department:</strong> {policy.department || "N/A"}
+              <strong>Department:</strong> {policy.department || 'N/A'}
             </p>
             {/* <p><strong>ID:</strong> {policy.id}</p> */}
           </div>

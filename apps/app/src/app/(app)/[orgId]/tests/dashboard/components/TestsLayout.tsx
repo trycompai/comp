@@ -1,20 +1,14 @@
-"use client";
+'use client';
 
-import { Button } from "@comp/ui/button";
-import { runTests } from "../actions/run-tests";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@comp/ui/tabs";
-import { RefreshCw } from "lucide-react";
-import { TestCard } from "./TestCard";
-import { useState, useEffect } from "react";
-import { toast } from "sonner";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@comp/ui/select";
-import { Integration } from "@comp/db/types";
+import { Button } from '@comp/ui/button';
+import { runTests } from '../actions/run-tests';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
+import { RefreshCw } from 'lucide-react';
+import { TestCard } from './TestCard';
+import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
+import { Integration } from '@comp/db/types';
 
 // Define props for the reusable component
 interface TestProviderTabContentProps {
@@ -39,9 +33,9 @@ interface TestProviderTabContentProps {
 }
 
 interface TestsLayoutProps {
-  awsTests: TestProviderTabContentProps["tests"];
-  gcpTests: TestProviderTabContentProps["tests"];
-  azureTests: TestProviderTabContentProps["tests"];
+  awsTests: TestProviderTabContentProps['tests'];
+  gcpTests: TestProviderTabContentProps['tests'];
+  azureTests: TestProviderTabContentProps['tests'];
   cloudProviders: Integration[];
 }
 
@@ -52,7 +46,7 @@ export const TestsLayout = ({
   cloudProviders,
 }: TestsLayoutProps) => {
   const [executing, setExecuting] = useState(false);
-  const [timeToNextRun, setTimeToNextRun] = useState("");
+  const [timeToNextRun, setTimeToNextRun] = useState('');
 
   useEffect(() => {
     const calculateTimeToNextRun = () => {
@@ -69,9 +63,7 @@ export const TestsLayout = ({
       const hours = Math.floor(diff / (1000 * 60 * 60));
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
 
-      setTimeToNextRun(
-        `Next scheduled run in ${hours}h ${minutes}m (daily at 5:00 AM UTC)`,
-      );
+      setTimeToNextRun(`Next scheduled run in ${hours}h ${minutes}m (daily at 5:00 AM UTC)`);
     };
 
     calculateTimeToNextRun(); // Initial calculation
@@ -80,19 +72,11 @@ export const TestsLayout = ({
     return () => clearInterval(intervalId); // Cleanup interval on component unmount
   }, []);
 
-  const hasAws = cloudProviders.some(
-    (integration) => integration.integrationId === "aws",
-  );
-  const hasGcp = cloudProviders.some(
-    (integration) => integration.integrationId === "gcp",
-  );
-  const hasAzure = cloudProviders.some(
-    (integration) => integration.integrationId === "azure",
-  );
+  const hasAws = cloudProviders.some((integration) => integration.integrationId === 'aws');
+  const hasGcp = cloudProviders.some((integration) => integration.integrationId === 'gcp');
+  const hasAzure = cloudProviders.some((integration) => integration.integrationId === 'azure');
 
-  const activeProvidersCount = [hasAws, hasGcp, hasAzure].filter(
-    Boolean,
-  ).length;
+  const activeProvidersCount = [hasAws, hasGcp, hasAzure].filter(Boolean).length;
 
   const handleRunTests = async () => {
     try {
@@ -100,9 +84,7 @@ export const TestsLayout = ({
       await runTests();
     } catch (error) {
       console.error(error);
-      toast.error(
-        "Failed to run tests, please try again later or contact support.",
-      );
+      toast.error('Failed to run tests, please try again later or contact support.');
     } finally {
       setExecuting(false);
     }
@@ -159,28 +141,20 @@ export const TestsLayout = ({
       {activeProvidersCount > 1 && (
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">
-              Cloud Tests Results
-            </h1>
-            {timeToNextRun && (
-              <p className="text-muted-foreground mt-1 text-xs">
-                {timeToNextRun}
-              </p>
-            )}
+            <h1 className="text-2xl font-semibold tracking-tight">Cloud Tests Results</h1>
+            {timeToNextRun && <p className="text-muted-foreground mt-1 text-xs">{timeToNextRun}</p>}
           </div>
           <div className="flex flex-col items-end">
             <Button onClick={() => handleRunTests()} disabled={executing}>
-              Run Tests Again{" "}
-              <RefreshCw
-                className={`ml-2 h-4 w-4 ${executing ? "animate-spin" : ""}`}
-              />
+              Run Tests Again{' '}
+              <RefreshCw className={`ml-2 h-4 w-4 ${executing ? 'animate-spin' : ''}`} />
             </Button>
           </div>
         </div>
       )}
 
       {activeProvidersCount > 1 ? (
-        <Tabs defaultValue={hasAws ? "AWS" : hasGcp ? "GCP" : "Azure"}>
+        <Tabs defaultValue={hasAws ? 'AWS' : hasGcp ? 'GCP' : 'Azure'}>
           <TabsList className={`grid w-full grid-cols-${activeProvidersCount}`}>
             {hasAws && <TabsTrigger value="AWS">AWS</TabsTrigger>}
             {hasGcp && <TabsTrigger value="GCP">GCP</TabsTrigger>}
@@ -234,35 +208,30 @@ function TestProviderTabContent({
   mainTitle,
   timeToNextRunInfo,
 }: TestProviderTabContentProps) {
-  const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [selectedStatus, setSelectedStatus] = useState<string>('all');
 
   const uniqueStatuses = Array.from(
     new Set(tests.map((test) => test.status).filter(Boolean) as string[]),
   );
 
   const filteredTests = tests.filter((test) => {
-    if (selectedStatus === "all") return true;
+    if (selectedStatus === 'all') return true;
     return test.status === selectedStatus;
   });
 
   const sortedTests = [...filteredTests].sort((a, b) => {
     const severityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
     const severityA = a.severity
-      ? (severityOrder[
-          a.severity.toLowerCase() as keyof typeof severityOrder
-        ] ?? 999)
+      ? (severityOrder[a.severity.toLowerCase() as keyof typeof severityOrder] ?? 999)
       : 999;
     const severityB = b.severity
-      ? (severityOrder[
-          b.severity.toLowerCase() as keyof typeof severityOrder
-        ] ?? 999)
+      ? (severityOrder[b.severity.toLowerCase() as keyof typeof severityOrder] ?? 999)
       : 999;
     return severityA - severityB;
   });
 
   const showFilter = sortedTests.length > 0;
-  const showRunButton =
-    isSingleProviderView && handleRunTests && typeof executing === "boolean";
+  const showRunButton = isSingleProviderView && handleRunTests && typeof executing === 'boolean';
 
   return (
     <div className="flex flex-col gap-4">
@@ -271,13 +240,9 @@ function TestProviderTabContent({
           {/* Left side: Title and Countdown (only for single provider view) */}
           {isSingleProviderView && mainTitle && (
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight">
-                {mainTitle}
-              </h1>
+              <h1 className="text-2xl font-semibold tracking-tight">{mainTitle}</h1>
               {timeToNextRunInfo && (
-                <p className="text-muted-foreground mt-1 text-xs">
-                  {timeToNextRunInfo}
-                </p>
+                <p className="text-muted-foreground mt-1 text-xs">{timeToNextRunInfo}</p>
               )}
             </div>
           )}
@@ -288,10 +253,7 @@ function TestProviderTabContent({
           {(showFilter || showRunButton) && (
             <div className="flex items-center gap-2">
               {showFilter && (
-                <Select
-                  value={selectedStatus}
-                  onValueChange={setSelectedStatus}
-                >
+                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
                   <SelectTrigger className="bg-background w-[180px]">
                     <SelectValue placeholder="Filter by status" />
                   </SelectTrigger>
@@ -307,12 +269,8 @@ function TestProviderTabContent({
               )}
               {showRunButton && (
                 <Button onClick={handleRunTests!} disabled={executing!}>
-                  Run Tests Again{" "}
-                  <RefreshCw
-                    className={`ml-2 h-4 w-4 ${
-                      executing ? "animate-spin" : ""
-                    }`}
-                  />
+                  Run Tests Again{' '}
+                  <RefreshCw className={`ml-2 h-4 w-4 ${executing ? 'animate-spin' : ''}`} />
                 </Button>
               )}
             </div>
@@ -330,7 +288,7 @@ function TestProviderTabContent({
         <div className="text-muted-foreground rounded-lg border border-dashed p-10 text-center">
           <p>
             No {providerName} test results found
-            {selectedStatus !== "all" && ` with status "${selectedStatus}"`}
+            {selectedStatus !== 'all' && ` with status "${selectedStatus}"`}
           </p>
         </div>
       )}

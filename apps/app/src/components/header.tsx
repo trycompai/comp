@@ -1,17 +1,17 @@
-import { UserMenu } from "@/components/user-menu";
-import { getOrganizations } from "@/data/getOrganizations";
-import { auth } from "@/utils/auth";
-import { Inbox } from "lucide-react";
-import { db } from "@comp/db";
-import { buttonVariants } from "@comp/ui/button";
-import { Icons } from "@comp/ui/icons";
-import { Skeleton } from "@comp/ui/skeleton";
-import { headers } from "next/headers";
-import Link from "next/link";
-import { redirect } from "next/navigation";
-import { Suspense } from "react";
-import { AssistantButton } from "./ai/chat-button";
-import { MobileMenu } from "./mobile-menu";
+import { UserMenu } from '@/components/user-menu';
+import { getOrganizations } from '@/data/getOrganizations';
+import { auth } from '@/utils/auth';
+import { Inbox } from 'lucide-react';
+import { db } from '@comp/db';
+import { buttonVariants } from '@comp/ui/button';
+import { Icons } from '@comp/ui/icons';
+import { Skeleton } from '@comp/ui/skeleton';
+import { headers } from 'next/headers';
+import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
+import { AssistantButton } from './ai/chat-button';
+import { MobileMenu } from './mobile-menu';
 
 export async function Header() {
   const session = await auth.api.getSession({
@@ -21,7 +21,7 @@ export async function Header() {
   const currentOrganizationId = session?.session.activeOrganizationId;
 
   if (!currentOrganizationId) {
-    redirect("/");
+    redirect('/');
   }
 
   const { organizations } = await getOrganizations();
@@ -50,8 +50,8 @@ export async function Header() {
         <div className="hidden gap-2 md:flex">
           <Link
             className={buttonVariants({
-              variant: "ghost",
-              size: "sm",
+              variant: 'ghost',
+              size: 'sm',
             })}
             href="https://roadmap.trycomp.ai"
             target="_blank"
@@ -61,14 +61,14 @@ export async function Header() {
           </Link>
           <Link
             className={buttonVariants({
-              variant: "ghost",
-              size: "sm",
+              variant: 'ghost',
+              size: 'sm',
             })}
             href="https://discord.gg/compai"
             target="_blank"
           >
             <Icons.Discord className="h-4 w-4" />
-            {"Ask in our Discord"}
+            {'Ask in our Discord'}
           </Link>
         </div>
 

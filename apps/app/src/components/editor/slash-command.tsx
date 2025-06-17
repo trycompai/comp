@@ -1,4 +1,4 @@
-import type { Extension } from "@tiptap/core";
+import type { Extension } from '@tiptap/core';
 import {
   CheckSquare,
   Code,
@@ -10,102 +10,82 @@ import {
   Text,
   TextQuote,
   Youtube,
-} from "lucide-react";
-import { Command, createSuggestionItems, renderItems } from "novel";
+} from 'lucide-react';
+import { Command, createSuggestionItems, renderItems } from 'novel';
 
 export const suggestionItems = createSuggestionItems([
   {
-    title: "Text",
-    description: "Just start typing with plain text.",
-    searchTerms: ["p", "paragraph"],
+    title: 'Text',
+    description: 'Just start typing with plain text.',
+    searchTerms: ['p', 'paragraph'],
     icon: <Text size={18} />,
     command: ({ editor, range }) => {
-      editor
-        .chain()
-        .focus()
-        .deleteRange(range)
-        .toggleNode("paragraph", "paragraph")
-        .run();
+      editor.chain().focus().deleteRange(range).toggleNode('paragraph', 'paragraph').run();
     },
   },
   {
-    title: "Heading 1",
-    description: "Big section heading.",
-    searchTerms: ["title", "big", "large"],
+    title: 'Heading 1',
+    description: 'Big section heading.',
+    searchTerms: ['title', 'big', 'large'],
     icon: <Heading1 size={18} />,
     command: ({ editor, range }) => {
-      editor
-        .chain()
-        .focus()
-        .deleteRange(range)
-        .setNode("heading", { level: 1 })
-        .run();
+      editor.chain().focus().deleteRange(range).setNode('heading', { level: 1 }).run();
     },
   },
   {
-    title: "Heading 2",
-    description: "Medium section heading.",
-    searchTerms: ["subtitle", "medium"],
+    title: 'Heading 2',
+    description: 'Medium section heading.',
+    searchTerms: ['subtitle', 'medium'],
     icon: <Heading2 size={18} />,
     command: ({ editor, range }) => {
-      editor
-        .chain()
-        .focus()
-        .deleteRange(range)
-        .setNode("heading", { level: 2 })
-        .run();
+      editor.chain().focus().deleteRange(range).setNode('heading', { level: 2 }).run();
     },
   },
   {
-    title: "Heading 3",
-    description: "Small section heading.",
-    searchTerms: ["subtitle", "small"],
+    title: 'Heading 3',
+    description: 'Small section heading.',
+    searchTerms: ['subtitle', 'small'],
     icon: <Heading3 size={18} />,
     command: ({ editor, range }) => {
-      editor
-        .chain()
-        .focus()
-        .deleteRange(range)
-        .setNode("heading", { level: 3 })
-        .run();
+      editor.chain().focus().deleteRange(range).setNode('heading', { level: 3 }).run();
     },
   },
   {
-    title: "Bullet List",
-    description: "Create a simple bullet list.",
-    searchTerms: ["unordered", "point"],
+    title: 'Bullet List',
+    description: 'Create a simple bullet list.',
+    searchTerms: ['unordered', 'point'],
     icon: <List size={18} />,
     command: ({ editor, range }) => {
       editor.chain().focus().deleteRange(range).toggleBulletList().run();
     },
   },
   {
-    title: "Numbered List",
-    description: "Create a list with numbering.",
-    searchTerms: ["ordered"],
+    title: 'Numbered List',
+    description: 'Create a list with numbering.',
+    searchTerms: ['ordered'],
     icon: <ListOrdered size={18} />,
     command: ({ editor, range }) => {
       editor.chain().focus().deleteRange(range).toggleOrderedList().run();
     },
   },
   {
-    title: "Quote",
-    description: "Capture a quote.",
-    searchTerms: ["blockquote"],
+    title: 'Quote',
+    description: 'Capture a quote.',
+    searchTerms: ['blockquote'],
     icon: <TextQuote size={18} />,
     command: ({ editor, range }) =>
       editor
         .chain()
         .focus()
         .deleteRange(range)
-        .toggleNode("paragraph", "paragraph")
+        .toggleNode('paragraph', 'paragraph')
         .toggleBlockquote()
         .run(),
   },
   {
-    title: "Code",
-    description: "Capture a code snippet.",
-    searchTerms: ["codeblock"],
+    title: 'Code',
+    description: 'Capture a code snippet.',
+    searchTerms: ['codeblock'],
     icon: <Code size={18} />,
     command: ({ editor, range }) =>
       editor.chain().focus().deleteRange(range).toggleCodeBlock().run(),

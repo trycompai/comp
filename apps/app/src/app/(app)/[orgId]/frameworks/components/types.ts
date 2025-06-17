@@ -1,10 +1,5 @@
-import type {
-  FrameworkInstance,
-  IntegrationResult,
-  Policy,
-  Task,
-} from "@comp/db/types";
-import { FrameworkInstanceWithControls } from "../types";
+import type { FrameworkInstance, IntegrationResult, Policy, Task } from '@comp/db/types';
+import { FrameworkInstanceWithControls } from '../types';
 
 export interface ComplianceScoresProps {
   policiesCompliance: number;

@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { Button } from "@comp/ui/button";
-import { useAction } from "next-safe-action/hooks";
-import { useState } from "react";
-import { toast } from "sonner";
-import { updateEmployeeDetails } from "../actions/update-employee-details";
+import { Button } from '@comp/ui/button';
+import { useAction } from 'next-safe-action/hooks';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { updateEmployeeDetails } from '../actions/update-employee-details';
 
 interface EditableDetailsProps {
   employeeId: string;
@@ -13,11 +13,7 @@ interface EditableDetailsProps {
   onSuccess?: () => void;
 }
 
-export function EditableDetails({
-  employeeId,
-  currentName,
-  currentEmail,
-}: EditableDetailsProps) {
+export function EditableDetails({ employeeId, currentName, currentEmail }: EditableDetailsProps) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">

@@ -1,44 +1,31 @@
-"use client";
+'use client';
 
-import { updatePolicyOverviewAction } from "@/actions/policies/update-policy-overview-action";
-import { updatePolicyOverviewSchema } from "@/actions/schema";
-import { Policy } from "@comp/db/types";
-import { Button } from "@comp/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@comp/ui/form";
-import { Input } from "@comp/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@comp/ui/select";
-import { Textarea } from "@comp/ui/textarea";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
-import { useAction } from "next-safe-action/hooks";
-import { useQueryState } from "nuqs";
-import { useForm } from "react-hook-form";
-import { toast } from "sonner";
-import type { z } from "zod";
+import { updatePolicyOverviewAction } from '@/actions/policies/update-policy-overview-action';
+import { updatePolicyOverviewSchema } from '@/actions/schema';
+import { Policy } from '@comp/db/types';
+import { Button } from '@comp/ui/button';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
+import { Input } from '@comp/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
+import { Textarea } from '@comp/ui/textarea';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Loader2 } from 'lucide-react';
+import { useAction } from 'next-safe-action/hooks';
+import { useQueryState } from 'nuqs';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import type { z } from 'zod';
 
 export function UpdatePolicyForm({ policy }: { policy: Policy }) {
-  const [open, setOpen] = useQueryState("policy-overview-sheet");
+  const [open, setOpen] = useQueryState('policy-overview-sheet');
 
   const updatePolicy = useAction(updatePolicyOverviewAction, {
     onSuccess: () => {
-      toast.success("Policy updated successfully");
+      toast.success('Policy updated successfully');
       setOpen(null);
     },
     onError: () => {
-      toast.error("Failed to update policy");
+      toast.error('Failed to update policy');
     },
   });
 
@@ -47,8 +34,8 @@ export function UpdatePolicyForm({ policy }: { policy: Policy }) {
     defaultValues: {
       id: policy.id,
       title: policy.name,
-      description: policy.description ?? "",
-      isRequiredToSign: policy.isRequiredToSign ? "required" : "not_required",
+      description: policy.description ?? '',
+      isRequiredToSign: policy.isRequiredToSign ? 'required' : 'not_required',
     },
   });
 
@@ -71,13 +58,13 @@ export function UpdatePolicyForm({ policy }: { policy: Policy }) {
             name="title"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{"Policy Title"}</FormLabel>
+                <FormLabel>{'Policy Title'}</FormLabel>
                 <FormControl>
                   <Input
                     {...field}
                     autoFocus
                     className="mt-3"
-                    placeholder={"Policy Title"}
+                    placeholder={'Policy Title'}
                     autoCorrect="off"
                   />
                 </FormControl>
@@ -107,19 +94,15 @@ export function UpdatePolicyForm({ policy }: { policy: Policy }) {
             name="isRequiredToSign"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{"Signature Requirement"}</FormLabel>
+                <FormLabel>{'Signature Requirement'}</FormLabel>
                 <FormControl>
                   <Select value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger>
-                      <SelectValue
-                        placeholder={"Select signature requirement"}
-                      />
+                      <SelectValue placeholder={'Select signature requirement'} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="required">{"Required"}</SelectItem>
-                      <SelectItem value="not_required">
-                        {"Not Required"}
-                      </SelectItem>
+                      <SelectItem value="required">{'Required'}</SelectItem>
+                      <SelectItem value="not_required">{'Not Required'}</SelectItem>
                     </SelectContent>
                   </Select>
                 </FormControl>
@@ -128,15 +111,11 @@ export function UpdatePolicyForm({ policy }: { policy: Policy }) {
           />
         </div>
         <div className="mt-8 flex justify-end">
-          <Button
-            type="submit"
-            variant="default"
-            disabled={updatePolicy.status === "executing"}
-          >
-            {updatePolicy.status === "executing" ? (
+          <Button type="submit" variant="default" disabled={updatePolicy.status === 'executing'}>
+            {updatePolicy.status === 'executing' ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              "Save"
+              'Save'
             )}
           </Button>
         </div>

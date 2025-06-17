@@ -1,23 +1,23 @@
-"use server";
+'use server';
 
-import { authActionClient } from "@/actions/safe-action";
-import { auth } from "@/utils/auth";
-import { db } from "@comp/db";
-import { steps } from "../lib/constants";
-import { revalidatePath } from "next/cache";
-import { cookies, headers } from "next/headers";
-import { z } from "zod";
-import { tasks } from "@trigger.dev/sdk/v3";
-import { onboardOrganization as onboardOrganizationTask } from "@/jobs/tasks/onboarding/onboard-organization";
-import { companyDetailsSchema } from "../lib/constants";
+import { authActionClient } from '@/actions/safe-action';
+import { auth } from '@/utils/auth';
+import { db } from '@comp/db';
+import { steps } from '../lib/constants';
+import { revalidatePath } from 'next/cache';
+import { cookies, headers } from 'next/headers';
+import { z } from 'zod';
+import { tasks } from '@trigger.dev/sdk/v3';
+import { onboardOrganization as onboardOrganizationTask } from '@/jobs/tasks/onboarding/onboard-organization';
+import { companyDetailsSchema } from '../lib/constants';
 
 export const onboardOrganization = authActionClient
-  .schema(companyDetailsSchema)
+  .inputSchema(companyDetailsSchema)
   .metadata({
-    name: "onboard-organization",
+    name: 'onboard-organization',
     track: {
-      event: "onboard-organization",
-      channel: "server",
+      event: 'onboard-organization',
+      channel: 'server',
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -29,7 +29,7 @@ export const onboardOrganization = authActionClient
       if (!session?.session?.activeOrganizationId) {
         return {
           success: false,
-          error: "Not authorized - no active organization found.",
+          error: 'Not authorized - no active organization found.',
         };
       }
 
@@ -44,13 +44,11 @@ export const onboardOrganization = authActionClient
           website: parsedInput.website,
           context: {
             create: steps
-              .filter(
-                (step) => step.key !== "legalName" && step.key !== "website",
-              )
+              .filter((step) => step.key !== 'legalName' && step.key !== 'website')
               .map((step) => ({
                 question: step.question,
                 answer: parsedInput[step.key as keyof typeof parsedInput],
-                tags: ["onboarding"],
+                tags: ['onboarding'],
               })),
           },
         },
@@ -77,13 +75,13 @@ export const onboardOrganization = authActionClient
       }
 
       const handle = await tasks.trigger<typeof onboardOrganizationTask>(
-        "onboard-organization",
+        'onboard-organization',
         {
           organizationId: orgId,
         },
         {
           queue: {
-            name: "onboard-organization",
+            name: 'onboard-organization',
             concurrencyLimit: 5,
           },
           concurrencyKey: orgId,
@@ -98,11 +96,11 @@ export const onboardOrganization = authActionClient
         data: { triggerJobId: handle.id },
       });
 
-      revalidatePath("/");
+      revalidatePath('/');
       revalidatePath(`/${orgId}`);
-      revalidatePath("/setup/onboarding");
+      revalidatePath('/setup/onboarding');
 
-      (await cookies()).set("publicAccessToken", handle.publicAccessToken);
+      (await cookies()).set('publicAccessToken', handle.publicAccessToken);
 
       return {
         success: true,
@@ -111,8 +109,8 @@ export const onboardOrganization = authActionClient
         organizationId: orgId,
       };
     } catch (error) {
-      console.error("Error during organization creation/update:", error);
+      console.error('Error during organization creation/update:', error);
 
-      throw new Error("Failed to create or update organization structure");
+      throw new Error('Failed to create or update organization structure');
     }
   });

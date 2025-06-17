@@ -1,5 +1,5 @@
-import { createEnv } from "@t3-oss/env-nextjs";
-import { z } from "zod";
+import { createEnv } from '@t3-oss/env-nextjs';
+import { z } from 'zod';
 
 export const env = createEnv({
   server: {
@@ -13,8 +13,8 @@ export const env = createEnv({
     RESEND_API_KEY: z.string(),
     UPSTASH_REDIS_REST_URL: z.string().optional(),
     UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
-    STRIPE_SECRET_KEY: z.string().optional(),
-    STRIPE_WEBHOOK_SECRET: z.string().optional(),
+    STRIPE_SECRET_KEY: z.string().min(1),
+    STRIPE_WEBHOOK_SECRET: z.string().min(1),
     DISCORD_WEBHOOK_URL: z.string().optional(),
     TRIGGER_SECRET_KEY: z.string().optional(),
     TRIGGER_API_KEY: z.string().optional(),
@@ -43,6 +43,7 @@ export const env = createEnv({
     NEXT_PUBLIC_POSTHOG_HOST: z.string().optional(),
     NEXT_PUBLIC_VERCEL_URL: z.string().optional(),
     NEXT_PUBLIC_NOVU_IDENTIFIER: z.string().optional(),
+    NEXT_PUBLIC_STRIPE_SUBSCRIPTION_PRICE_ID: z.string().optional(),
   },
 
   runtimeEnv: {
@@ -58,6 +59,7 @@ export const env = createEnv({
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+    NEXT_PUBLIC_STRIPE_SUBSCRIPTION_PRICE_ID: process.env.NEXT_PUBLIC_STRIPE_SUBSCRIPTION_PRICE_ID,
     DISCORD_WEBHOOK_URL: process.env.DISCORD_WEBHOOK_URL,
     TRIGGER_SECRET_KEY: process.env.TRIGGER_SECRET_KEY,
     TRIGGER_API_KEY: process.env.TRIGGER_API_KEY,

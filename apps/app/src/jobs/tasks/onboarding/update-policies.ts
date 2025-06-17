@@ -1,17 +1,17 @@
-import { openai } from "@ai-sdk/openai";
-import { db } from "@comp/db";
-import { logger, schemaTask } from "@trigger.dev/sdk/v3";
-import { generateObject, generateText, NoObjectGeneratedError } from "ai";
-import { JSONContent } from "novel";
-import { z } from "zod";
-import { generatePrompt } from "../../lib/prompts";
+import { openai } from '@ai-sdk/openai';
+import { db } from '@comp/db';
+import { logger, schemaTask } from '@trigger.dev/sdk/v3';
+import { generateObject, generateText, NoObjectGeneratedError } from 'ai';
+import { JSONContent } from 'novel';
+import { z } from 'zod';
+import { generatePrompt } from '../../lib/prompts';
 
 if (!process.env.OPENAI_API_KEY) {
-  throw new Error("OPENAI_API_KEY is not set");
+  throw new Error('OPENAI_API_KEY is not set');
 }
 
 export const updatePolicies = schemaTask({
-  id: "update-policies",
+  id: 'update-policies',
   schema: z.object({
     organizationId: z.string(),
     policyId: z.string(),
@@ -46,18 +46,17 @@ export const updatePolicies = schemaTask({
         existingPolicyContent: policy?.content,
         contextHub,
         policy,
-        companyName: organization?.name ?? "Company",
-        companyWebsite: organization?.website ?? "https://company.com",
+        companyName: organization?.name ?? 'Company',
+        companyWebsite: organization?.website ?? 'https://company.com',
       });
 
       try {
         const { text } = await generateText({
-          model: openai("o4-mini"),
-          system:
-            "You are an expert at writing security policies in TipTap JSON.",
+          model: openai('o4-mini'),
+          system: 'You are an expert at writing security policies in TipTap JSON.',
           prompt: `Update the following policy to be strictly aligned with SOC 2 standards and controls. Only include JSON content as your output.
 
-					${prompt.replace(/\\n/g, "\n")}`,
+					${prompt.replace(/\\n/g, '\n')}`,
         });
 
         if (!text) {
@@ -66,10 +65,9 @@ export const updatePolicies = schemaTask({
         }
 
         const { object } = await generateObject({
-          model: openai("gpt-4.1-mini"),
-          mode: "json",
-          system:
-            "You are an expert at writing security policies in TipTap JSON.",
+          model: openai('gpt-4.1-mini'),
+          mode: 'json',
+          system: 'You are an expert at writing security policies in TipTap JSON.',
           prompt: `Convert the following text into TipTap JSON. Do not include any other text in your output: ${JSON.stringify(text)}`,
           schema: z.object({
             json: z.array(z.any()),

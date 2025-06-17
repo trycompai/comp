@@ -1,11 +1,11 @@
-"use server";
+'use server';
 
-import { addFrameworksSchema } from "@/actions/schema";
-import { db } from "@comp/db";
-import { Prisma } from "@comp/db/types";
-import { revalidatePath } from "next/cache";
-import { z } from "zod";
-import { _upsertOrgFrameworkStructureCore } from "./lib/initialize-organization";
+import { addFrameworksSchema } from '@/actions/schema';
+import { db } from '@comp/db';
+import { Prisma } from '@comp/db/types';
+import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
+import { _upsertOrgFrameworkStructureCore } from './lib/initialize-organization';
 
 // Duplicating the InitializeOrganizationInput type for clarity, can be shared if preferred
 export type AddFrameworksInput = z.infer<typeof addFrameworksSchema>;
@@ -24,26 +24,21 @@ export const addFrameworksToOrganizationAction = async (
 
     await db.$transaction(async (tx) => {
       // 1. Fetch FrameworkEditorFrameworks and their requirements for the given frameworkIds, filtering by visible: true
-      const frameworksAndRequirements =
-        await tx.frameworkEditorFramework.findMany({
-          where: {
-            id: { in: frameworkIds },
-            visible: true,
-          },
-          include: {
-            requirements: true,
-          },
-        });
+      const frameworksAndRequirements = await tx.frameworkEditorFramework.findMany({
+        where: {
+          id: { in: frameworkIds },
+          visible: true,
+        },
+        include: {
+          requirements: true,
+        },
+      });
 
       if (frameworksAndRequirements.length === 0) {
-        throw new Error(
-          "No valid or visible frameworks found for the provided IDs.",
-        );
+        throw new Error('No valid or visible frameworks found for the provided IDs.');
       }
 
-      const finalFrameworkEditorIds = frameworksAndRequirements.map(
-        (f) => f.id,
-      );
+      const finalFrameworkEditorIds = frameworksAndRequirements.map((f) => f.id);
 
       // 2. Call the renamed core function
       await _upsertOrgFrameworkStructureCore({
@@ -56,18 +51,18 @@ export const addFrameworksToOrganizationAction = async (
       // The rest of the logic (creating instances, relations) is now inside _upsertOrgFrameworkStructureCore
     });
 
-    revalidatePath("/"); // Revalidate all paths, or be more specific e.g. /${organizationId}/frameworks
+    revalidatePath('/'); // Revalidate all paths, or be more specific e.g. /${organizationId}/frameworks
     return { success: true };
   } catch (error) {
-    console.error("Error in addFrameworksToOrganizationAction:", error);
+    console.error('Error in addFrameworksToOrganizationAction:', error);
     if (error instanceof z.ZodError) {
       return {
         success: false,
-        error: error.errors.map((e) => e.message).join(", "),
+        error: error.errors.map((e) => e.message).join(', '),
       };
     } else if (error instanceof Error) {
       return { success: false, error: error.message };
     }
-    return { success: false, error: "An unexpected error occurred." };
+    return { success: false, error: 'An unexpected error occurred.' };
   }
 };

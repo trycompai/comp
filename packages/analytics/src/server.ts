@@ -1,7 +1,7 @@
-"use server";
+'use server';
 
-import type { Properties } from "posthog-js";
-import { PostHog } from "posthog-node";
+import type { Properties } from 'posthog-js';
+import { PostHog } from 'posthog-node';
 
 let serverInstance: PostHog | null = null;
 
@@ -21,11 +21,7 @@ export async function initializeServer(config: AnalyticsConfig) {
   return serverInstance;
 }
 
-export async function track(
-  distinctId: string,
-  eventName: string,
-  properties?: Properties,
-) {
+export async function track(distinctId: string, eventName: string, properties?: Properties) {
   if (!serverInstance) return;
 
   await serverInstance.capture({

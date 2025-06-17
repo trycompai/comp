@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { UserContext, type UserProps, createUserStore } from "./store";
+import { useEffect } from 'react';
+import { UserContext, type UserProps, createUserStore } from './store';
 
 type UserProviderProps = React.PropsWithChildren<UserProps>;
 

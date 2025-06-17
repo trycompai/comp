@@ -1,10 +1,10 @@
-"use server";
+'use server';
 
-import { authActionClient } from "@/actions/safe-action";
-import { z } from "zod";
-import { db } from "@comp/db";
-import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
+import { authActionClient } from '@/actions/safe-action';
+import { z } from 'zod';
+import { db } from '@comp/db';
+import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
 
 const mapPolicyToControlsSchema = z.object({
   policyId: z.string(),
@@ -12,12 +12,12 @@ const mapPolicyToControlsSchema = z.object({
 });
 
 export const mapPolicyToControls = authActionClient
-  .schema(mapPolicyToControlsSchema)
+  .inputSchema(mapPolicyToControlsSchema)
   .metadata({
-    name: "map-policy-to-controls",
+    name: 'map-policy-to-controls',
     track: {
-      event: "map-policy-to-controls",
-      channel: "server",
+      event: 'map-policy-to-controls',
+      channel: 'server',
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -27,7 +27,7 @@ export const mapPolicyToControls = authActionClient
     if (!session.activeOrganizationId) {
       return {
         success: false,
-        error: "Not authorized",
+        error: 'Not authorized',
       };
     }
 
@@ -48,13 +48,12 @@ export const mapPolicyToControls = authActionClient
         },
       });
 
-      console.log("Policy updated with controls:", updatedPolicy.controls);
+      console.log('Policy updated with controls:', updatedPolicy.controls);
       console.log(`Controls mapped successfully to policy ${policyId}`);
 
       const headersList = await headers();
-      let path =
-        headersList.get("x-pathname") || headersList.get("referer") || "";
-      path = path.replace(/\/[a-z]{2}\//, "/");
+      let path = headersList.get('x-pathname') || headersList.get('referer') || '';
+      path = path.replace(/\/[a-z]{2}\//, '/');
       revalidatePath(path);
 
       return {
@@ -62,11 +61,10 @@ export const mapPolicyToControls = authActionClient
         data: updatedPolicy.controls,
       };
     } catch (error) {
-      console.error("Error mapping controls to policy:", error);
+      console.error('Error mapping controls to policy:', error);
       return {
         success: false,
-        error:
-          error instanceof Error ? error.message : "Failed to map controls",
+        error: error instanceof Error ? error.message : 'Failed to map controls',
       };
     }
   });

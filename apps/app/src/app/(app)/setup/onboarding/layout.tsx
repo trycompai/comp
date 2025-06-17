@@ -1,7 +1,7 @@
-import { AnimatedLayout } from "@/components/animated-layout";
-import { Sidebar } from "@/components/sidebar";
-import { SidebarProvider } from "@/context/sidebar-context";
-import { getCurrentOrganization } from "@/lib/currentOrganization";
+import { AnimatedLayout } from '@/components/animated-layout';
+import { Sidebar } from '@/components/sidebar';
+import { SidebarProvider } from '@/context/sidebar-context';
+import { getCurrentOrganization } from '@/lib/currentOrganization';
 
 export default async function Layout({
   children,
@@ -19,15 +19,11 @@ export default async function Layout({
   return (
     <SidebarProvider>
       <AnimatedLayout
-        sidebar={
-          <Sidebar organization={currentOrganization} collapsed={true} />
-        }
+        sidebar={<Sidebar organization={currentOrganization} collapsed={true} />}
         isCollapsed={true}
         blurred={true}
       >
-        <main className="mx-auto max-h-[calc(100vh-100px)] px-4 pb-8">
-          {children}
-        </main>
+        <main className="mx-auto max-h-[calc(100vh-100px)] px-4 pb-8">{children}</main>
       </AnimatedLayout>
     </SidebarProvider>
   );

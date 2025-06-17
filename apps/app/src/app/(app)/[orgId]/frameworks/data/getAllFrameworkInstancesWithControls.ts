@@ -1,9 +1,9 @@
-"use server";
+'use server';
 
-import { db } from "@comp/db";
-import type { FrameworkInstanceWithControls } from "../types";
-import type { Control, PolicyStatus, RequirementMap } from "@comp/db/types";
-import { cache } from "react";
+import { db } from '@comp/db';
+import type { FrameworkInstanceWithControls } from '../types';
+import type { Control, PolicyStatus, RequirementMap } from '@comp/db/types';
+import { cache } from 'react';
 
 export const getAllFrameworkInstancesWithControls = cache(
   async function getAllFrameworkInstancesWithControls({
@@ -36,8 +36,8 @@ export const getAllFrameworkInstancesWithControls = cache(
       },
     });
 
-    const frameworksWithControls: FrameworkInstanceWithControls[] =
-      frameworkInstancesFromDb.map((fi) => {
+    const frameworksWithControls: FrameworkInstanceWithControls[] = frameworkInstancesFromDb.map(
+      (fi) => {
         const controlsMap = new Map<
           string,
           Control & {
@@ -69,7 +69,8 @@ export const getAllFrameworkInstancesWithControls = cache(
           ...restOfFi,
           controls: Array.from(controlsMap.values()),
         };
-      });
+      },
+    );
 
     return frameworksWithControls;
   },

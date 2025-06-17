@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useEffect, useState, useActionState } from "react";
-import { useFormStatus } from "react-dom";
+import { useEffect, useState, useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import {
   Dialog,
   DialogContent,
@@ -9,16 +9,16 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@comp/ui/dialog";
-import { Button } from "@comp/ui/button";
-import { Input } from "@comp/ui/input";
-import { Textarea } from "@comp/ui/textarea";
-import { Label } from "@comp/ui/label";
-import { useToast } from "@comp/ui/use-toast";
+} from '@comp/ui/dialog';
+import { Button } from '@comp/ui/button';
+import { Input } from '@comp/ui/input';
+import { Textarea } from '@comp/ui/textarea';
+import { Label } from '@comp/ui/label';
+import { useToast } from '@comp/ui/use-toast';
 import {
   addRequirementAction,
   type AddRequirementActionState,
-} from "../actions/add-requirement-action";
+} from '../actions/add-requirement-action';
 
 const initialFormState: AddRequirementActionState = {
   success: false,
@@ -39,7 +39,7 @@ function SubmitButton() {
   const { pending } = useFormStatus();
   return (
     <Button type="submit" disabled={pending}>
-      {pending ? "Adding Requirement..." : "Add Requirement"}
+      {pending ? 'Adding Requirement...' : 'Add Requirement'}
     </Button>
   );
 }
@@ -52,35 +52,29 @@ export function AddRequirementDialog({
 }: AddRequirementDialogProps) {
   const { toast } = useToast();
   const [formKey, setFormKey] = useState(Date.now());
-  const [formState, formAction, isPending] = useActionState(
-    addRequirementAction,
-    initialFormState,
-  );
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [identifier, setIdentifier] = useState("");
+  const [formState, formAction, isPending] = useActionState(addRequirementAction, initialFormState);
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [identifier, setIdentifier] = useState('');
 
   useEffect(() => {
     if (formState.success && formState.data) {
       toast({
-        title: "Success!",
-        description: formState.message || "New requirement added successfully.",
+        title: 'Success!',
+        description: formState.message || 'New requirement added successfully.',
       });
       onRequirementAdded(); // Close dialog and refresh list
-      setName(""); // Reset local state
-      setDescription("");
-      setIdentifier("");
+      setName(''); // Reset local state
+      setDescription('');
+      setIdentifier('');
       // The form itself will reset due to the key change on next open if desired, or if onOpenChange triggers a reset
     } else if (!formState.success && (formState.error || formState.issues)) {
       const issueMessages =
-        formState.issues
-          ?.map((i) => `${i.path.join(".")} : ${i.message}`)
-          .join("; ") || "";
+        formState.issues?.map((i) => `${i.path.join('.')} : ${i.message}`).join('; ') || '';
       toast({
-        title: "Error Adding Requirement",
-        description:
-          formState.error || issueMessages || "An unexpected error occurred.",
-        variant: "destructive",
+        title: 'Error Adding Requirement',
+        description: formState.error || issueMessages || 'An unexpected error occurred.',
+        variant: 'destructive',
       });
     }
   }, [formState, onRequirementAdded, toast]);
@@ -88,9 +82,9 @@ export function AddRequirementDialog({
   const handleOpenChange = (open: boolean) => {
     if (open) {
       // Reset form fields and formState when dialog is opened
-      setName("");
-      setDescription("");
-      setIdentifier("");
+      setName('');
+      setDescription('');
+      setIdentifier('');
       setFormKey(Date.now()); // Reset form state by changing key, ensuring useFormState re-initializes
     } else {
       // If dialog is closed ensure parent knows
@@ -115,7 +109,7 @@ export function AddRequirementDialog({
           </DialogDescription>
         </DialogHeader>
         <form action={formAction} key={formKey}>
-          {" "}
+          {' '}
           {/* Add key here */}
           <input type="hidden" name="frameworkId" value={frameworkId} />
           <div className="grid gap-4 py-4">
@@ -132,23 +126,14 @@ export function AddRequirementDialog({
                 required
                 disabled={isPending}
               />
-              {formState.issues?.find((issue) =>
-                issue.path.includes("name"),
-              ) && (
+              {formState.issues?.find((issue) => issue.path.includes('name')) && (
                 <p className="text-destructive col-span-4 text-right text-sm">
-                  {
-                    formState.issues.find((issue) =>
-                      issue.path.includes("name"),
-                    )?.message
-                  }
+                  {formState.issues.find((issue) => issue.path.includes('name'))?.message}
                 </p>
               )}
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label
-                htmlFor={`identifier-${frameworkId}`}
-                className="text-right"
-              >
+              <Label htmlFor={`identifier-${frameworkId}`} className="text-right">
                 Identifier
               </Label>
               <Input
@@ -160,23 +145,14 @@ export function AddRequirementDialog({
                 placeholder="e.g., cc1-1"
                 disabled={isPending}
               />
-              {formState.issues?.find((issue) =>
-                issue.path.includes("identifier"),
-              ) && (
+              {formState.issues?.find((issue) => issue.path.includes('identifier')) && (
                 <p className="text-destructive col-span-4 text-right text-sm">
-                  {
-                    formState.issues.find((issue) =>
-                      issue.path.includes("identifier"),
-                    )?.message
-                  }
+                  {formState.issues.find((issue) => issue.path.includes('identifier'))?.message}
                 </p>
               )}
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label
-                htmlFor={`description-${frameworkId}`}
-                className="text-right"
-              >
+              <Label htmlFor={`description-${frameworkId}`} className="text-right">
                 Description
               </Label>
               <Textarea
@@ -189,15 +165,9 @@ export function AddRequirementDialog({
                 rows={4}
                 disabled={isPending}
               />
-              {formState.issues?.find((issue) =>
-                issue.path.includes("description"),
-              ) && (
+              {formState.issues?.find((issue) => issue.path.includes('description')) && (
                 <p className="text-destructive col-span-4 text-right text-sm">
-                  {
-                    formState.issues.find((issue) =>
-                      issue.path.includes("description"),
-                    )?.message
-                  }
+                  {formState.issues.find((issue) => issue.path.includes('description'))?.message}
                 </p>
               )}
             </div>

@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { DataTable } from "@/components/data-table/data-table";
-import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
-import { StatusIndicator } from "@/components/status-indicator";
-import { useDataTable } from "@/hooks/use-data-table";
-import { Policy } from "@comp/db/types";
-import { Input } from "@comp/ui/input";
-import { Icons } from "@comp/ui/icons";
-import { ColumnDef } from "@tanstack/react-table";
-import { useMemo, useState } from "react";
+import { DataTable } from '@/components/data-table/data-table';
+import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
+import { StatusIndicator } from '@/components/status-indicator';
+import { useDataTable } from '@/hooks/use-data-table';
+import { Policy } from '@comp/db/types';
+import { Input } from '@comp/ui/input';
+import { Icons } from '@comp/ui/icons';
+import { ColumnDef } from '@tanstack/react-table';
+import { useMemo, useState } from 'react';
 
 interface PoliciesTableProps {
   policies: Policy[];
@@ -16,39 +16,29 @@ interface PoliciesTableProps {
   controlId: string;
 }
 
-export function PoliciesTable({
-  policies,
-  orgId,
-  controlId,
-}: PoliciesTableProps) {
-  const [searchTerm, setSearchTerm] = useState("");
+export function PoliciesTable({ policies, orgId, controlId }: PoliciesTableProps) {
+  const [searchTerm, setSearchTerm] = useState('');
 
   const columns = useMemo<ColumnDef<Policy>[]>(
     () => [
       {
-        accessorKey: "name",
-        header: ({ column }) => (
-          <DataTableColumnHeader column={column} title={"Name"} />
-        ),
+        accessorKey: 'name',
+        header: ({ column }) => <DataTableColumnHeader column={column} title={'Name'} />,
         cell: ({ row }) => {
           const name = row.original.name;
           return <span>{name}</span>;
         },
         enableSorting: true,
         sortingFn: (rowA, rowB) => {
-          const nameA = rowA.original.name || "";
-          const nameB = rowB.original.name || "";
+          const nameA = rowA.original.name || '';
+          const nameB = rowB.original.name || '';
           return nameA.localeCompare(nameB);
         },
       },
       {
-        accessorKey: "createdAt",
-        header: ({ column }) => (
-          <DataTableColumnHeader column={column} title={"Created At"} />
-        ),
-        cell: ({ row }) => (
-          <span>{new Date(row.original.createdAt).toLocaleDateString()}</span>
-        ),
+        accessorKey: 'createdAt',
+        header: ({ column }) => <DataTableColumnHeader column={column} title={'Created At'} />,
+        cell: ({ row }) => <span>{new Date(row.original.createdAt).toLocaleDateString()}</span>,
         enableSorting: true,
         sortingFn: (rowA, rowB) => {
           const dateA = new Date(rowA.original.createdAt);
@@ -57,10 +47,8 @@ export function PoliciesTable({
         },
       },
       {
-        accessorKey: "status",
-        header: ({ column }) => (
-          <DataTableColumnHeader column={column} title={"Status"} />
-        ),
+        accessorKey: 'status',
+        header: ({ column }) => <DataTableColumnHeader column={column} title={'Status'} />,
         cell: ({ row }) => {
           const rawStatus = row.original.status;
           return <StatusIndicator status={rawStatus} />;
@@ -88,9 +76,9 @@ export function PoliciesTable({
     shallow: false,
     getRowId: (row) => row.id,
     initialState: {
-      sorting: [{ id: "createdAt", desc: true }],
+      sorting: [{ id: 'createdAt', desc: true }],
     },
-    tableId: "policiesTable",
+    tableId: 'policiesTable',
   });
 
   return (
@@ -109,7 +97,7 @@ export function PoliciesTable({
         table={table.table}
         rowClickBasePath={`/${orgId}/policies/`}
         getRowId={(row) => row.id}
-        tableId={"policiesTable"}
+        tableId={'policiesTable'}
       />
     </div>
   );

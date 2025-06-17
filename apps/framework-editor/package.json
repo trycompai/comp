@@ -3,7 +3,7 @@
   "dependencies": {
     "@comp/db": "workspace:*",
     "@comp/ui": "workspace:*",
-    "@hookform/resolvers": "^3.9.1",
+    "@hookform/resolvers": "^5.1.1",
     "@radix-ui/react-accordion": "1.2.2",
     "@radix-ui/react-alert-dialog": "1.1.4",
     "@radix-ui/react-aspect-ratio": "1.1.1",
@@ -51,7 +51,7 @@
     "react-datasheet-grid": "^4.11.5",
     "react-day-picker": "8.10.1",
     "react-email": "^4.0.15",
-    "react-resizable-panels": "^2.1.7",
+    "react-resizable-panels": "^3.0.3",
     "react-select": "^5.10.1",
     "recharts": "2.15.0",
     "sonner": "^1.7.1",
@@ -67,14 +67,14 @@
     "postcss": "^8.5.4",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "react-hook-form": "^7.57.0",
+    "react-hook-form": "^7.58.1",
     "tailwindcss": "^4.1.8",
     "typescript": "^5.8.3"
   },
   "peerDependencies": {
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "react-hook-form": "^7.57.0"
+    "react-hook-form": "^7.58.1"
   },
   "private": true,
   "scripts": {

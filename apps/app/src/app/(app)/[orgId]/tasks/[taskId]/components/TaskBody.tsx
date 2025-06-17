@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import { uploadFile } from "@/actions/files/upload-file";
-import type { Attachment } from "@comp/db/types";
-import { AttachmentEntityType } from "@comp/db/types";
-import { Button } from "@comp/ui/button";
-import { Input } from "@comp/ui/input";
-import { Label } from "@comp/ui/label";
-import { Textarea } from "@comp/ui/textarea";
-import { Loader2, Paperclip, Plus } from "lucide-react";
-import { useRouter } from "next/navigation";
-import type React from "react";
-import { useCallback, useRef, useState } from "react";
-import { toast } from "sonner";
-import { deleteTaskAttachment } from "../../actions/deleteTaskAttachment";
-import { getTaskAttachmentUrl } from "../../actions/getTaskAttachmentUrl";
-import { AttachmentItem } from "./AttachmentItem";
+import { uploadFile } from '@/actions/files/upload-file';
+import type { Attachment } from '@comp/db/types';
+import { AttachmentEntityType } from '@comp/db/types';
+import { Button } from '@comp/ui/button';
+import { Input } from '@comp/ui/input';
+import { Label } from '@comp/ui/label';
+import { Textarea } from '@comp/ui/textarea';
+import { Loader2, Paperclip, Plus } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import type React from 'react';
+import { useCallback, useRef, useState } from 'react';
+import { toast } from 'sonner';
+import { deleteTaskAttachment } from '../../actions/deleteTaskAttachment';
+import { getTaskAttachmentUrl } from '../../actions/getTaskAttachmentUrl';
+import { AttachmentItem } from './AttachmentItem';
 
 interface TaskBodyProps {
   taskId: string;
@@ -45,7 +45,7 @@ export function TaskBody({
   const resetState = () => {
     setIsUploading(false);
     if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+      fileInputRef.current.value = '';
     }
   };
 
@@ -60,17 +60,15 @@ export function TaskBody({
           const MAX_FILE_SIZE_MB = 5;
           const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
           if (file.size > MAX_FILE_SIZE_BYTES) {
-            toast.error(
-              `File "${file.name}" exceeds the ${MAX_FILE_SIZE_MB}MB limit.`,
-            );
+            toast.error(`File "${file.name}" exceeds the ${MAX_FILE_SIZE_MB}MB limit.`);
             continue;
           }
 
           const reader = new FileReader();
           reader.onloadend = async () => {
-            const base64Data = (reader.result as string)?.split(",")[1];
+            const base64Data = (reader.result as string)?.split(',')[1];
             if (!base64Data) {
-              toast.error("Failed to read file data.");
+              toast.error('Failed to read file data.');
               resetState();
               return;
             }
@@ -85,13 +83,12 @@ export function TaskBody({
             if (success && data) {
               uploadedAttachments.push(data);
             } else {
-              const errorMessage =
-                error || "Failed to process attachment after upload.";
+              const errorMessage = error || 'Failed to process attachment after upload.';
               toast.error(String(errorMessage));
             }
           };
           reader.onerror = () => {
-            toast.error("Error reading file.");
+            toast.error('Error reading file.');
             resetState();
           };
           reader.readAsDataURL(file);
@@ -125,14 +122,12 @@ export function TaskBody({
       });
 
       if (success && data?.signedUrl) {
-        window.open(data.signedUrl, "_blank");
+        window.open(data.signedUrl, '_blank');
       } else {
-        toast.error(String(error || "Failed to get attachment URL."));
+        toast.error(String(error || 'Failed to get attachment URL.'));
       }
     } catch (err) {
-      toast.error(
-        "An unexpected error occurred while fetching the attachment URL.",
-      );
+      toast.error('An unexpected error occurred while fetching the attachment URL.');
     } finally {
       setBusyAttachmentId(null);
     }
@@ -216,8 +211,8 @@ export function TaskBody({
         ) : (
           !isUploadingFile && (
             <p className="text-muted-foreground pt-1 text-sm italic">
-              No attachments yet. Click the{" "}
-              <Paperclip className="inline h-4 w-4" /> icon above to add one.
+              No attachments yet. Click the <Paperclip className="inline h-4 w-4" /> icon above to
+              add one.
             </p>
           )
         )}

@@ -1,7 +1,7 @@
 pre {
   background: #0d0d0d;
   color: #fff;
-  font-family: "JetBrainsMono", monospace;
+  font-family: 'JetBrainsMono', monospace;
   padding: 0.75rem 1rem;
 
   code {
@@ -123,14 +123,14 @@ pre {
 }
 
 .ProseMirror ol li::before {
-  content: counters(item, ".") ".";
+  content: counters(item, '.') '.';
   counter-increment: item;
   position: absolute;
   left: -1.5em;
 }
 
 /* Spacing between sections */
-.ProseMirror div[data-type="heading"] + p,
+.ProseMirror div[data-type='heading'] + p,
 .ProseMirror h1 + p,
 .ProseMirror h2 + p,
 .ProseMirror h3 + p,
@@ -153,11 +153,11 @@ pre {
 }
 
 /* Task lists */
-.ProseMirror ul[data-type="taskList"] {
+.ProseMirror ul[data-type='taskList'] {
   @reference list-none p-0;
 }
 
-.ProseMirror ul[data-type="taskList"] li {
+.ProseMirror ul[data-type='taskList'] li {
   @reference flex items-start gap-2;
 }
 

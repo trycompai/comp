@@ -1,10 +1,10 @@
-"use server";
+'use server';
 
-import { authActionClient } from "@/actions/safe-action";
-import { auth } from "@/utils/auth";
-import { db } from "@comp/db";
-import { headers } from "next/headers";
-import { type AppError, appErrors, employeeDetailsInputSchema } from "../types";
+import { authActionClient } from '@/actions/safe-action';
+import { auth } from '@/utils/auth';
+import { db } from '@comp/db';
+import { headers } from 'next/headers';
+import { type AppError, appErrors, employeeDetailsInputSchema } from '../types';
 
 // Type-safe action response
 export type ActionResponse<T> = Promise<
@@ -12,12 +12,12 @@ export type ActionResponse<T> = Promise<
 >;
 
 export const getEmployeeDetails = authActionClient
-  .schema(employeeDetailsInputSchema)
+  .inputSchema(employeeDetailsInputSchema)
   .metadata({
-    name: "get-employee-details",
+    name: 'get-employee-details',
     track: {
-      event: "get-employee-details",
-      channel: "server",
+      event: 'get-employee-details',
+      channel: 'server',
     },
   })
   .action(async ({ parsedInput }) => {
@@ -30,7 +30,7 @@ export const getEmployeeDetails = authActionClient
     const organizationId = session?.session.activeOrganizationId;
 
     if (!organizationId) {
-      throw new Error("Organization ID not found");
+      throw new Error('Organization ID not found');
     }
 
     try {
@@ -60,7 +60,7 @@ export const getEmployeeDetails = authActionClient
         data: employee,
       };
     } catch (error) {
-      console.error("Error fetching employee details:", error);
+      console.error('Error fetching employee details:', error);
       return {
         success: false,
         error: appErrors.UNEXPECTED_ERROR.message,

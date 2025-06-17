@@ -3,15 +3,11 @@ import {
   getFrameworks,
   getPublishedControls,
   getPublishedPolicies,
-} from "./lib/data";
-import ComplianceReport from "./components/report";
-import { Metadata } from "next";
+} from './lib/data';
+import ComplianceReport from './components/report';
+import { Metadata } from 'next';
 
-export default async function Page({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   const id = (await params).id;
 
   const organization = await findOrganizationByAnyId(id);
@@ -46,9 +42,9 @@ export default async function Page({
             soc2: frameworks?.soc2?.enabled ?? false,
             iso27001: frameworks?.iso27001?.enabled ?? false,
             gdpr: frameworks?.gdpr?.enabled ?? false,
-            soc2_status: frameworks?.soc2?.status ?? "started",
-            iso27001_status: frameworks?.iso27001?.status ?? "started",
-            gdpr_status: frameworks?.gdpr?.status ?? "started",
+            soc2_status: frameworks?.soc2?.status ?? 'started',
+            iso27001_status: frameworks?.iso27001?.status ?? 'started',
+            gdpr_status: frameworks?.gdpr?.status ?? 'started',
           }}
         />
       </div>
@@ -66,17 +62,15 @@ export async function generateMetadata({
 
   if (!organization) {
     return {
-      title: "Trust Portal Not Published",
+      title: 'Trust Portal Not Published',
     };
   }
 
   const title = `${organization.name} - Security Trust Center`;
   const description = `Find out the compliance and security posture of ${organization.name} against common cybersecurity frameworks like SOC 2, ISO 27001, and more.`;
-  const isCustomDomain = organization.trust.find(
-    (trust) => trust.status === "published",
-  )?.domain;
+  const isCustomDomain = organization.trust.find((trust) => trust.status === 'published')?.domain;
   const isFriendlyUrl = organization.trust.find(
-    (trust) => trust.status === "published",
+    (trust) => trust.status === 'published',
   )?.friendlyUrl;
 
   const url = `https://${isCustomDomain ?? `trust.inc/${isFriendlyUrl ?? organization.id}`}`;
@@ -88,14 +82,14 @@ export async function generateMetadata({
       canonical: url,
     },
     openGraph: {
-      type: "website",
+      type: 'website',
       url,
       title,
       description,
-      siteName: "Comp AI Trust Center",
+      siteName: 'Comp AI Trust Center',
       images: [
         {
-          url: "https://trycomp.ai/og.png",
+          url: 'https://trycomp.ai/og.png',
           width: 1200,
           height: 630,
           alt: `${organization.name} Trust Center`,
@@ -103,11 +97,11 @@ export async function generateMetadata({
       ],
     },
     twitter: {
-      card: "summary_large_image",
-      site: "@trycompai",
+      card: 'summary_large_image',
+      site: '@trycompai',
       title,
       description,
-      images: ["https://trycomp.ai/og.png"],
+      images: ['https://trycomp.ai/og.png'],
     },
   };
 }

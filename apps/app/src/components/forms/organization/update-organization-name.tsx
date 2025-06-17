@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { updateOrganizationNameAction } from "@/actions/organization/update-organization-name-action";
-import { organizationNameSchema } from "@/actions/schema";
-import { Button } from "@comp/ui/button";
+import { updateOrganizationNameAction } from '@/actions/organization/update-organization-name-action';
+import { organizationNameSchema } from '@/actions/schema';
+import { Button } from '@comp/ui/button';
 import {
   Card,
   CardContent,
@@ -10,33 +10,23 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@comp/ui/card";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormMessage,
-} from "@comp/ui/form";
-import { Input } from "@comp/ui/input";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Building, Loader2 } from "lucide-react";
-import { useAction } from "next-safe-action/hooks";
-import { useForm } from "react-hook-form";
-import { toast } from "sonner";
-import type { z } from "zod";
+} from '@comp/ui/card';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@comp/ui/form';
+import { Input } from '@comp/ui/input';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Building, Loader2 } from 'lucide-react';
+import { useAction } from 'next-safe-action/hooks';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import type { z } from 'zod';
 
-export function UpdateOrganizationName({
-  organizationName,
-}: {
-  organizationName: string;
-}) {
+export function UpdateOrganizationName({ organizationName }: { organizationName: string }) {
   const updateOrganizationName = useAction(updateOrganizationNameAction, {
     onSuccess: () => {
-      toast.success("Organization name updated");
+      toast.success('Organization name updated');
     },
     onError: () => {
-      toast.error("Error updating organization name");
+      toast.error('Error updating organization name');
     },
   });
 
@@ -56,12 +46,12 @@ export function UpdateOrganizationName({
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <Card>
           <CardHeader>
-            <CardTitle>{"Organization name"}</CardTitle>
+            <CardTitle>{'Organization name'}</CardTitle>
 
             <CardDescription>
               <div className="max-w-[600px]">
                 {
-                  "This is your organizations visible name. You should use the legal name of your organization."
+                  'This is your organizations visible name. You should use the legal name of your organization.'
                 }
               </div>
             </CardDescription>
@@ -90,16 +80,13 @@ export function UpdateOrganizationName({
           </CardContent>
           <CardFooter className="flex justify-between">
             <div className="text-muted-foreground text-xs">
-              {"Please use 32 characters at maximum."}
+              {'Please use 32 characters at maximum.'}
             </div>
-            <Button
-              type="submit"
-              disabled={updateOrganizationName.status === "executing"}
-            >
-              {updateOrganizationName.status === "executing" ? (
+            <Button type="submit" disabled={updateOrganizationName.status === 'executing'}>
+              {updateOrganizationName.status === 'executing' ? (
                 <Loader2 className="mr-1 h-4 w-4 animate-spin" />
               ) : null}
-              {"Save"}
+              {'Save'}
             </Button>
           </CardFooter>
         </Card>

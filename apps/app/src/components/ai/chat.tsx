@@ -1,37 +1,27 @@
-"use client";
+'use client';
 
-import type { modelID } from "@/hooks/ai/providers";
-import { useSession } from "@/utils/auth-client";
-import { useChat } from "@ai-sdk/react";
-import { ScrollArea } from "@comp/ui/scroll-area";
-import { useState } from "react";
-import { ChatEmpty } from "./chat-empty";
-import { ChatTextarea } from "./chat-text-area";
-import { Messages } from "./messages";
+import type { modelID } from '@/hooks/ai/providers';
+import { useSession } from '@/utils/auth-client';
+import { useChat } from '@ai-sdk/react';
+import { ScrollArea } from '@comp/ui/scroll-area';
+import { useState } from 'react';
+import { ChatEmpty } from './chat-empty';
+import { ChatTextarea } from './chat-text-area';
+import { Messages } from './messages';
 
 export default function Chat() {
   const { data: session } = useSession();
 
-  const [selectedModel, setSelectedModel] = useState<modelID>(
-    "deepseek-r1-distill-llama-70b",
-  );
+  const [selectedModel, setSelectedModel] = useState<modelID>('deepseek-r1-distill-llama-70b');
 
-  const {
-    messages,
-    input,
-    handleInputChange,
-    handleSubmit,
-    error,
-    status,
-    stop,
-  } = useChat({
+  const { messages, input, handleInputChange, handleSubmit, error, status, stop } = useChat({
     maxSteps: 5,
     body: {
       selectedModel,
     },
   });
 
-  const isLoading = status === "streaming" || status === "submitted";
+  const isLoading = status === 'streaming' || status === 'submitted';
 
   if (error) return <div>{error.message}</div>;
 
@@ -40,9 +30,7 @@ export default function Chat() {
       <ScrollArea className="h-[calc(100vh-100px)]">
         {messages.length === 0 ? (
           <div className="mx-auto w-full max-w-xl">
-            <ChatEmpty
-              firstName={session?.user?.name?.split(" ").at(0) ?? ""}
-            />
+            <ChatEmpty firstName={session?.user?.name?.split(' ').at(0) ?? ''} />
           </div>
         ) : (
           <Messages messages={messages} isLoading={isLoading} status={status} />

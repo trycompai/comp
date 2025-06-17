@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useMemo } from "react";
-import { Input } from "@comp/ui/input";
-import { Button } from "@comp/ui/button";
-import { ScrollArea } from "@comp/ui/scroll-area";
-import { Loader2, PlusCircleIcon, Link2OffIcon } from "lucide-react";
-import { Separator } from "@comp/ui/separator";
-import { Badge } from "@comp/ui/badge"; // Import Badge for default display if needed
+import { useState, useEffect, useMemo } from 'react';
+import { Input } from '@comp/ui/input';
+import { Button } from '@comp/ui/button';
+import { ScrollArea } from '@comp/ui/scroll-area';
+import { Loader2, PlusCircleIcon, Link2OffIcon } from 'lucide-react';
+import { Separator } from '@comp/ui/separator';
+import { Badge } from '@comp/ui/badge'; // Import Badge for default display if needed
 
 // Base item structure expected by this component
 export interface SearchableItemForLinking {
@@ -36,10 +36,8 @@ export function SearchAndLinkList({
   onUnlinkItem,
   renderItemDisplay,
 }: SearchAndLinkListProps) {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [availableItems, setAvailableItems] = useState<
-    SearchableItemForLinking[]
-  >([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [availableItems, setAvailableItems] = useState<SearchableItemForLinking[]>([]);
   const [isLoadingInitial, setIsLoadingInitial] = useState(true); // For the initial fetch of all items
   const [isLoadingAction, setIsLoadingAction] = useState<string | null>(null);
 
@@ -116,9 +114,7 @@ export function SearchAndLinkList({
                   key={item.id}
                   className="hover:bg-muted/50 flex items-center justify-between rounded-sm p-1.5 text-sm"
                 >
-                  {renderItemDisplay
-                    ? renderItemDisplay(item)
-                    : defaultItemDisplay(item)}
+                  {renderItemDisplay ? renderItemDisplay(item) : defaultItemDisplay(item)}
                   <Button
                     variant="ghost"
                     size="sm"
@@ -189,17 +185,12 @@ export function SearchAndLinkList({
                     key={item.id}
                     className="hover:bg-muted/50 flex items-center justify-between rounded-sm p-1.5 text-sm"
                   >
-                    {renderItemDisplay
-                      ? renderItemDisplay(item)
-                      : defaultItemDisplay(item)}
+                    {renderItemDisplay ? renderItemDisplay(item) : defaultItemDisplay(item)}
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleLink(item)}
-                      disabled={
-                        isLoadingAction === item.id ||
-                        linkedItemIds.has(item.id)
-                      }
+                      disabled={isLoadingAction === item.id || linkedItemIds.has(item.id)}
                       className="text-primary hover:text-primary hover:bg-primary/10 ml-2 flex h-auto shrink-0 items-center gap-1 rounded-sm px-2 py-1"
                     >
                       <span className="flex h-4 w-4 items-center justify-center">

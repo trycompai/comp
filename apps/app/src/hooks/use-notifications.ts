@@ -1,7 +1,7 @@
-import { env } from "@/env.mjs";
-import { useSession } from "@/utils/auth-client";
-import { HeadlessService, type IMessage } from "@novu/headless";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { env } from '@/env.mjs';
+import { useSession } from '@/utils/auth-client';
+import { HeadlessService, type IMessage } from '@novu/headless';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface Notification {
   id: string;
@@ -111,9 +111,7 @@ export function useNotifications() {
 
   useEffect(() => {
     if (session?.user) {
-      setSubscriberId(
-        `${session.session.activeOrganizationId}_${session.user.id}`,
-      );
+      setSubscriberId(`${session.session.activeOrganizationId}_${session.user.id}`);
     }
   }, [session]);
 
@@ -130,11 +128,7 @@ export function useNotifications() {
   }, [headlessServiceRef.current]);
 
   useEffect(() => {
-    if (
-      subscriberId &&
-      !headlessServiceRef.current &&
-      env.NEXT_PUBLIC_NOVU_IDENTIFIER
-    ) {
+    if (subscriberId && !headlessServiceRef.current && env.NEXT_PUBLIC_NOVU_IDENTIFIER) {
       const headlessService = new HeadlessService({
         applicationIdentifier: env.NEXT_PUBLIC_NOVU_IDENTIFIER!,
         subscriberId,
@@ -147,7 +141,7 @@ export function useNotifications() {
           fetchNotifications();
         },
         onError: (error) => {
-          console.error("Failed to initialize Novu session:", error);
+          console.error('Failed to initialize Novu session:', error);
         },
       });
     }
@@ -158,9 +152,7 @@ export function useNotifications() {
     markAllMessagesAsRead,
     markMessageAsRead,
     markAllMessagesAsSeen,
-    hasUnseenNotifications: notifications.some(
-      (notification) => !notification.seen,
-    ),
+    hasUnseenNotifications: notifications.some((notification) => !notification.seen),
     notifications,
     subscriberId,
   };

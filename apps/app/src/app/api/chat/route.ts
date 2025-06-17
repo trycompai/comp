@@ -1,23 +1,21 @@
-import { tools } from "@/data/tools";
-import { model, type modelID } from "@/hooks/ai/providers";
-import { auth } from "@/utils/auth";
-import { type UIMessage, smoothStream, streamText } from "ai";
-import { headers } from "next/headers";
+import { tools } from '@/data/tools';
+import { model, type modelID } from '@/hooks/ai/providers';
+import { auth } from '@/utils/auth';
+import { type UIMessage, smoothStream, streamText } from 'ai';
+import { headers } from 'next/headers';
 
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
-  const {
-    messages,
-    selectedModel,
-  }: { messages: UIMessage[]; selectedModel: modelID } = await req.json();
+  const { messages, selectedModel }: { messages: UIMessage[]; selectedModel: modelID } =
+    await req.json();
 
   const session = await auth.api.getSession({
     headers: await headers(),
   });
 
   if (!session?.session.activeOrganizationId) {
-    return new Response("Unauthorized", { status: 401 });
+    return new Response('Unauthorized', { status: 401 });
   }
 
   const systemPrompt = `

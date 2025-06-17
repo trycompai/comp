@@ -1,7 +1,7 @@
-"use server";
+'use server';
 
-import { db } from "@comp/db";
-import { authActionClient } from "../safe-action";
+import { db } from '@comp/db';
+import { authActionClient } from '../safe-action';
 
 interface User {
   id: string;
@@ -11,17 +11,14 @@ interface User {
 
 export const getOrganizationUsersAction = authActionClient
   .metadata({
-    name: "get-organization-users",
+    name: 'get-organization-users',
   })
   .action(
-    async ({
-      parsedInput,
-      ctx,
-    }): Promise<{ success: boolean; error?: string; data?: User[] }> => {
+    async ({ parsedInput, ctx }): Promise<{ success: boolean; error?: string; data?: User[] }> => {
       if (!ctx.session.activeOrganizationId) {
         return {
           success: false,
-          error: "User does not have an organization",
+          error: 'User does not have an organization',
         };
       }
 
@@ -41,7 +38,7 @@ export const getOrganizationUsersAction = authActionClient
           },
           orderBy: {
             user: {
-              name: "asc",
+              name: 'asc',
             },
           },
         });
@@ -50,14 +47,14 @@ export const getOrganizationUsersAction = authActionClient
           success: true,
           data: users.map((user) => ({
             id: user.user.id,
-            name: user.user.name || "",
-            image: user.user.image || "",
+            name: user.user.name || '',
+            image: user.user.image || '',
           })),
         };
       } catch (error) {
         return {
           success: false,
-          error: "Failed to fetch organization users",
+          error: 'Failed to fetch organization users',
         };
       }
     },

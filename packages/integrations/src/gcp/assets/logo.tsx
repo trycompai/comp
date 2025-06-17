@@ -1,14 +1,8 @@
-import React, { SVGProps } from "react";
+import React, { SVGProps } from 'react';
 
 export const Logo: React.FC<SVGProps<SVGSVGElement>> = (props) => {
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width={40}
-      height={40}
-      viewBox="0 0 40 40"
-      {...props}
-    >
+    <svg xmlns="http://www.w3.org/2000/svg" width={40} height={40} viewBox="0 0 40 40" {...props}>
       <path
         d="m25.455 12.805 1.281 0.022 3.481 -3.481 0.169 -1.475A15.581 15.581 0 0 0 19.996 3.912c-7.212 0 -13.3 4.908 -15.102 11.555 0.38 -0.265 1.192 -0.066 1.192 -0.066l6.956 -1.144s0.357 -0.592 0.539 -0.563A8.675 8.675 0 0 1 20 10.859c2.063 0.004 3.962 0.733 5.455 1.939z"
         fill="#ea4335"

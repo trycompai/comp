@@ -1,5 +1,5 @@
-import Link from "next/link";
-import { Badge } from "@comp/ui/badge";
+import Link from 'next/link';
+import { Badge } from '@comp/ui/badge';
 
 interface ComplianceSummaryProps {
   text: string;

@@ -1,10 +1,10 @@
-import { db } from "@comp/db";
-import { logger, schedules } from "@trigger.dev/sdk/v3";
-import { sendIntegrationResults } from "./integration-results";
+import { db } from '@comp/db';
+import { logger, schedules } from '@trigger.dev/sdk/v3';
+import { sendIntegrationResults } from './integration-results';
 
 export const sendIntegrationSchedule = schedules.task({
-  id: "integration-schedule",
-  cron: "0 5 * * *", // 12:00 AM EST (5:00 AM UTC)
+  id: 'integration-schedule',
+  cron: '0 5 * * *', // 12:00 AM EST (5:00 AM UTC)
   maxDuration: 1000 * 60 * 10, // 10 minutes
   run: async () => {
     const integrations = await db.integration.findMany({

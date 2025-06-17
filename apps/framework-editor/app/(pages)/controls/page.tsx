@@ -1,13 +1,13 @@
-import { db } from "@comp/db";
-import { isAuthorized } from "@/app/lib/utils";
-import { redirect } from "next/navigation";
-import { ControlsClientPage } from "./ControlsClientPage";
+import { db } from '@comp/db';
+import { isAuthorized } from '@/app/lib/utils';
+import { redirect } from 'next/navigation';
+import { ControlsClientPage } from './ControlsClientPage';
 
 export default async function Page() {
   const isAllowed = await isAuthorized();
 
   if (!isAllowed) {
-    redirect("/auth");
+    redirect('/auth');
   }
 
   const controls = await db.frameworkEditorControlTemplate.findMany({
@@ -42,7 +42,7 @@ export default async function Page() {
       },
     },
     orderBy: {
-      createdAt: "asc",
+      createdAt: 'asc',
     },
   });
 

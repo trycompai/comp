@@ -1,17 +1,17 @@
-import { auth } from "@/utils/auth";
+import { auth } from '@/utils/auth';
 
 import {
   type TrainingVideo,
   trainingVideos as trainingVideosData,
-} from "@/lib/data/training-videos";
-import { db } from "@comp/db";
-import type { EmployeeTrainingVideoCompletion, Member } from "@comp/db/types";
-import type { Metadata } from "next";
-import { headers } from "next/headers";
-import { notFound, redirect } from "next/navigation";
-import { Employee } from "./components/Employee";
-import { getFleetInstance } from "@/lib/fleet";
-import { getPostHogClient } from "@/app/posthog";
+} from '@/lib/data/training-videos';
+import { db } from '@comp/db';
+import type { EmployeeTrainingVideoCompletion, Member } from '@comp/db/types';
+import type { Metadata } from 'next';
+import { headers } from 'next/headers';
+import { notFound, redirect } from 'next/navigation';
+import { Employee } from './components/Employee';
+import { getFleetInstance } from '@/lib/fleet';
+import { getPostHogClient } from '@/app/posthog';
 
 export default async function EmployeeDetailsPage({
   params,
@@ -27,7 +27,7 @@ export default async function EmployeeDetailsPage({
   const organizationId = session?.session.activeOrganizationId;
 
   if (!organizationId) {
-    redirect("/");
+    redirect('/');
   }
 
   const policies = await getPoliciesTasks(employeeId);
@@ -41,7 +41,7 @@ export default async function EmployeeDetailsPage({
 
   const { fleetPolicies, device } = await getFleetPolicies(employee);
   const isFleetEnabled = await getPostHogClient()?.isFeatureEnabled(
-    "is-fleet-enabled",
+    'is-fleet-enabled',
     session?.session.userId,
   );
 
@@ -59,7 +59,7 @@ export default async function EmployeeDetailsPage({
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: "Employee Details",
+    title: 'Employee Details',
   };
 }
 
@@ -71,7 +71,7 @@ const getEmployee = async (employeeId: string) => {
   const organizationId = session?.session.activeOrganizationId;
 
   if (!organizationId) {
-    redirect("/");
+    redirect('/');
   }
 
   const employee = await db.member.findFirst({
@@ -94,7 +94,7 @@ const getPoliciesTasks = async (employeeId: string) => {
   const organizationId = session?.session.activeOrganizationId;
 
   if (!organizationId) {
-    redirect("/");
+    redirect('/');
   }
 
   const policies = await db.policy.findMany({
@@ -103,7 +103,7 @@ const getPoliciesTasks = async (employeeId: string) => {
       isRequiredToSign: true,
     },
     orderBy: {
-      name: "asc",
+      name: 'asc',
     },
   });
 
@@ -118,18 +118,17 @@ const getTrainingVideos = async (employeeId: string) => {
   const organizationId = session?.session.activeOrganizationId;
 
   if (!organizationId) {
-    redirect("/");
+    redirect('/');
   }
 
-  const employeeTrainingVideos =
-    await db.employeeTrainingVideoCompletion.findMany({
-      where: {
-        memberId: employeeId,
-      },
-      orderBy: {
-        videoId: "asc",
-      },
-    });
+  const employeeTrainingVideos = await db.employeeTrainingVideoCompletion.findMany({
+    where: {
+      memberId: employeeId,
+    },
+    orderBy: {
+      videoId: 'asc',
+    },
+  });
 
   // Map the db records to include the matching metadata from the training videos data
   // Filter out any videos where metadata is not found to ensure type safety
@@ -171,9 +170,7 @@ const getFleetPolicies = async (member: Member) => {
     const device = deviceResponse.data.hosts?.[0]; // There should only be one device per label.
 
     if (!device) {
-      console.log(
-        `No host found for device label id: ${deviceLabelId} - member: ${member.id}`,
-      );
+      console.log(`No host found for device label id: ${deviceLabelId} - member: ${member.id}`);
       return { fleetPolicies: [], device: null };
     }
 
@@ -181,10 +178,7 @@ const getFleetPolicies = async (member: Member) => {
     const fleetPolicies = deviceWithPolicies.data.host.policies;
     return { fleetPolicies, device };
   } catch (error) {
-    console.error(
-      `Failed to get fleet policies for member: ${member.id}`,
-      error,
-    );
+    console.error(`Failed to get fleet policies for member: ${member.id}`, error);
     return { fleetPolicies: [], device: null };
   }
 };

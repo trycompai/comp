@@ -1,8 +1,8 @@
-import { cache } from "react";
-import { db } from "@comp/db";
-import type { MetadataRoute } from "next";
+import { cache } from 'react';
+import { db } from '@comp/db';
+import type { MetadataRoute } from 'next';
 
-const baseUrl = "https://trust.inc";
+const baseUrl = 'https://trust.inc';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const organizations = await getOrganizations();
@@ -11,7 +11,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     {
       url: baseUrl,
       lastModified: new Date(),
-      changeFrequency: "daily",
+      changeFrequency: 'daily',
       priority: 1,
     },
     ...organizations,
@@ -21,7 +21,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 const getOrganizations = cache(async () => {
   const published = await db.trust.findMany({
     where: {
-      status: "published",
+      status: 'published',
     },
     select: {
       friendlyUrl: true,
@@ -32,7 +32,7 @@ const getOrganizations = cache(async () => {
   return published.map((trust) => ({
     url: `${baseUrl}/${trust.friendlyUrl ?? trust.organizationId}`,
     lastModified: new Date(),
-    changeFrequency: "weekly" as const,
+    changeFrequency: 'weekly' as const,
     priority: 0.8,
   }));
 });

@@ -1,23 +1,23 @@
-"use client";
+'use client';
 
-import { cn } from "@comp/ui/cn";
-import { useQueryState } from "nuqs";
+import { cn } from '@comp/ui/cn';
+import { useQueryState } from 'nuqs';
 
 const tabs = [
   {
-    name: "All",
-    value: "all",
+    name: 'All',
+    value: 'all',
   },
   {
-    name: "Installed",
-    value: "installed",
+    name: 'Installed',
+    value: 'installed',
   },
 ];
 
 export function AppsTabs() {
-  const [currentTab, setTab] = useQueryState("tab", {
+  const [currentTab, setTab] = useQueryState('tab', {
     shallow: false,
-    defaultValue: "all",
+    defaultValue: 'all',
   });
 
   return (
@@ -28,11 +28,9 @@ export function AppsTabs() {
           key={tab.value}
           type="button"
           className={cn(
-            "relative px-4 py-2.5 text-sm font-medium transition-colors",
-            "hover:text-foreground/80",
-            currentTab === tab.value
-              ? "text-foreground"
-              : "text-muted-foreground",
+            'relative px-4 py-2.5 text-sm font-medium transition-colors',
+            'hover:text-foreground/80',
+            currentTab === tab.value ? 'text-foreground' : 'text-muted-foreground',
           )}
         >
           <span>{tab.name}</span>

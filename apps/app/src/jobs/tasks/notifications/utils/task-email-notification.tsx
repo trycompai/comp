@@ -1,6 +1,6 @@
-import TaskReminderEmail from "@comp/email/emails/reminders/task-reminder";
-import { TriggerEvents, trigger } from "@comp/notifications";
-import { render } from "@react-email/render";
+import TaskReminderEmail from '@comp/email/emails/reminders/task-reminder';
+import { TriggerEvents, trigger } from '@comp/notifications';
+import { render } from '@react-email/render';
 
 interface Props {
   owner: {
@@ -20,7 +20,7 @@ export async function sendTaskEmailNotification({ owner, task }: Props) {
     const html = await render(
       <TaskReminderEmail
         email={owner.email}
-        name={owner.fullName ?? "there"}
+        name={owner.fullName ?? 'there'}
         dueDate={task.dueDate}
         recordId={task.recordId}
       />,
@@ -29,7 +29,7 @@ export async function sendTaskEmailNotification({ owner, task }: Props) {
     const triggerData = {
       name: TriggerEvents.TaskReminderEmail,
       payload: {
-        subject: "Task Reminder",
+        subject: 'Task Reminder',
         html,
       },
       replyTo: owner.email,
@@ -43,7 +43,7 @@ export async function sendTaskEmailNotification({ owner, task }: Props) {
 
     await trigger(triggerData);
   } catch (error) {
-    console.error("Failed to send task email notification: ", error);
+    console.error('Failed to send task email notification: ', error);
     throw error;
   }
 }

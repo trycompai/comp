@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { SelectAssignee } from "@/components/SelectAssignee";
-import { Member, User } from "@comp/db/types";
-import { Button } from "@comp/ui/button";
+import { SelectAssignee } from '@/components/SelectAssignee';
+import { Member, User } from '@comp/db/types';
+import { Button } from '@comp/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -10,8 +10,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@comp/ui/dialog";
-import { Loader2 } from "lucide-react";
+} from '@comp/ui/dialog';
+import { Loader2 } from 'lucide-react';
 
 interface SubmitApprovalDialogProps {
   isOpen: boolean;
@@ -37,9 +37,7 @@ export const SubmitApprovalDialog = ({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Submit for Approval</DialogTitle>
-          <DialogDescription>
-            Please select an approver for this policy.
-          </DialogDescription>
+          <DialogDescription>Please select an approver for this policy.</DialogDescription>
         </DialogHeader>
         <SelectAssignee
           assignees={assignees}
@@ -51,10 +49,7 @@ export const SubmitApprovalDialog = ({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button
-            onClick={onConfirm}
-            disabled={isSubmitting || !selectedApproverId}
-          >
+          <Button onClick={onConfirm} disabled={isSubmitting || !selectedApproverId}>
             {isSubmitting ? <Loader2 className="mr-2 animate-spin" /> : null}
             Confirm & Submit
           </Button>

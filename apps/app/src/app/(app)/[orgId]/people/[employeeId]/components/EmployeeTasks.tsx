@@ -1,16 +1,11 @@
-import type { TrainingVideo } from "@/lib/data/training-videos";
-import type {
-  EmployeeTrainingVideoCompletion,
-  Member,
-  Policy,
-  User,
-} from "@comp/db/types";
+import type { TrainingVideo } from '@/lib/data/training-videos';
+import type { EmployeeTrainingVideoCompletion, Member, Policy, User } from '@comp/db/types';
 
-import { Card, CardHeader, CardTitle, CardContent } from "@comp/ui/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@comp/ui/tabs";
-import { AlertCircle, CheckCircle2, XCircle } from "lucide-react";
-import type { FleetPolicy, Host } from "../../devices/types";
-import { cn } from "@/lib/utils";
+import { Card, CardHeader, CardTitle, CardContent } from '@comp/ui/card';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@comp/ui/tabs';
+import { AlertCircle, CheckCircle2, XCircle } from 'lucide-react';
+import type { FleetPolicy, Host } from '../../devices/types';
+import { cn } from '@/lib/utils';
 
 export const EmployeeTasks = ({
   employee,
@@ -109,9 +104,8 @@ export const EmployeeTasks = ({
                         </div>
                         {isCompleted && (
                           <span className="text-muted-foreground self-start text-xs">
-                            Completed -{" "}
-                            {video.completedAt &&
-                              new Date(video.completedAt).toLocaleDateString()}
+                            Completed -{' '}
+                            {video.completedAt && new Date(video.completedAt).toLocaleDateString()}
                           </span>
                         )}
                       </h2>
@@ -134,14 +128,12 @@ export const EmployeeTasks = ({
                       <div
                         key={policy.id}
                         className={cn(
-                          "hover:bg-muted/50 flex items-center justify-between rounded-md border border-l-4 p-3 shadow-sm transition-colors",
-                          policy.response === "pass"
-                            ? "border-l-green-500"
-                            : "border-l-red-500",
+                          'hover:bg-muted/50 flex items-center justify-between rounded-md border border-l-4 p-3 shadow-sm transition-colors',
+                          policy.response === 'pass' ? 'border-l-green-500' : 'border-l-red-500',
                         )}
                       >
                         <p className="font-medium">{policy.name}</p>
-                        {policy.response === "pass" ? (
+                        {policy.response === 'pass' ? (
                           <div className="flex items-center gap-1 text-green-600">
                             <CheckCircle2 size={16} />
                             <span>Pass</span>

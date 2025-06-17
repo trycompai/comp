@@ -1,64 +1,45 @@
-"use client";
+'use client';
 
-import PageLayout from "@/app/components/PageLayout";
-import { useRouter } from "next/navigation"; // Added for potential refresh
-import { useMemo, useEffect } from "react";
-import { toast } from "sonner"; // Import toast for user feedback
-import {
-  relationalColumn,
-  type ItemWithName,
-} from "../../components/grid/RelationalCell"; // Import relationalColumn and ItemWithName
-import { friendlyDateColumnBase } from "../../components/gridUtils"; // Added import
-import { TableToolbar } from "../../components/TableToolbar"; // Adjusted path
-import { useTableSearchSort } from "../../hooks/useTableSearchSort"; // Adjusted path
-import type { SortConfig } from "../../types/common"; // Adjusted path
-import {
-  getAllControlsForLinking,
-  linkControlToTask,
-  unlinkControlFromTask,
-} from "./actions"; // Import actions
+import PageLayout from '@/app/components/PageLayout';
+import { useRouter } from 'next/navigation'; // Added for potential refresh
+import { useMemo, useEffect } from 'react';
+import { toast } from 'sonner'; // Import toast for user feedback
+import { relationalColumn, type ItemWithName } from '../../components/grid/RelationalCell'; // Import relationalColumn and ItemWithName
+import { friendlyDateColumnBase } from '../../components/gridUtils'; // Added import
+import { TableToolbar } from '../../components/TableToolbar'; // Adjusted path
+import { useTableSearchSort } from '../../hooks/useTableSearchSort'; // Adjusted path
+import type { SortConfig } from '../../types/common'; // Adjusted path
+import { getAllControlsForLinking, linkControlToTask, unlinkControlFromTask } from './actions'; // Import actions
 import {
   simpleUUID,
   useTaskChangeTracking,
   type TasksPageGridData,
-} from "./hooks/useTaskChangeTracking"; // Adjusted path and added type
-import { textAreaColumn } from "../../components/grid/TextAreaCell"; // For Description column
-import {
-  selectColumnDefinition,
-  type Choice,
-} from "../../components/grid/SelectCell"; // Import for SelectCell
+} from './hooks/useTaskChangeTracking'; // Adjusted path and added type
+import { textAreaColumn } from '../../components/grid/TextAreaCell'; // For Description column
+import { selectColumnDefinition, type Choice } from '../../components/grid/SelectCell'; // Import for SelectCell
 
-import {
-  type Column,
-  DataSheetGrid,
-  keyColumn,
-  textColumn,
-} from "react-datasheet-grid";
-import "react-datasheet-grid/dist/style.css";
+import { type Column, DataSheetGrid, keyColumn, textColumn } from 'react-datasheet-grid';
+import 'react-datasheet-grid/dist/style.css';
 
-import { Button } from "@comp/ui/button";
-import type {
-  FrameworkEditorControlTemplate,
-  FrameworkEditorTaskTemplate,
-} from "@prisma/client"; // Keep for initial props type
-import { Frequency, Departments } from "@prisma/client"; // Import Prisma enums
+import { Button } from '@comp/ui/button';
+import type { FrameworkEditorControlTemplate, FrameworkEditorTaskTemplate } from '@prisma/client'; // Keep for initial props type
+import { Frequency, Departments } from '@prisma/client'; // Import Prisma enums
 
 // Define a type for tasks that includes their related control templates
-interface FrameworkEditorTaskTemplateWithRelatedControls
-  extends FrameworkEditorTaskTemplate {
-  controlTemplates?: Pick<FrameworkEditorControlTemplate, "id" | "name">[]; // Or FrameworkEditorControlTemplate[] if more fields are needed
+interface FrameworkEditorTaskTemplateWithRelatedControls extends FrameworkEditorTaskTemplate {
+  controlTemplates?: Pick<FrameworkEditorControlTemplate, 'id' | 'name'>[]; // Or FrameworkEditorControlTemplate[] if more fields are needed
 }
 
 // Options for Frequency select
 const frequencyChoices: Choice[] = Object.values(Frequency).map((freq) => ({
   value: freq,
-  label: freq.charAt(0).toUpperCase() + freq.slice(1).replace("_", " "), // e.g., "Monthly", "Quarterly"
+  label: freq.charAt(0).toUpperCase() + freq.slice(1).replace('_', ' '), // e.g., "Monthly", "Quarterly"
 }));
 
 // Options for Departments select
 const departmentChoices: Choice[] = Object.values(Departments).map((dept) => ({
   value: dept,
-  label: dept === "none" ? "None" : dept.toUpperCase(), // e.g., "IT", "HR", "None"
+  label: dept === 'none' ? 'None' : dept.toUpperCase(), // e.g., "IT", "HR", "None"
 }));
 
 // Define sortable column options for tasks
@@ -66,32 +47,32 @@ const sortableColumnsOptions: {
   value: keyof TasksPageGridData;
   label: string;
 }[] = [
-  { value: "name", label: "Name" },
-  { value: "description", label: "Description" },
-  { value: "frequency", label: "Frequency" },
-  { value: "department", label: "Department" },
-  { value: "controlsLength", label: "Linked Controls" },
-  { value: "createdAt", label: "Created At" },
-  { value: "updatedAt", label: "Updated At" },
+  { value: 'name', label: 'Name' },
+  { value: 'description', label: 'Description' },
+  { value: 'frequency', label: 'Frequency' },
+  { value: 'department', label: 'Department' },
+  { value: 'controlsLength', label: 'Linked Controls' },
+  { value: 'createdAt', label: 'Created At' },
+  { value: 'updatedAt', label: 'Updated At' },
 ];
 
 // Define searchable keys for tasks
 const tasksSearchableKeys: (keyof TasksPageGridData)[] = [
-  "name",
-  "description",
-  "frequency",
-  "department",
+  'name',
+  'description',
+  'frequency',
+  'department',
 ];
 
 // Define sort configuration for tasks
 const tasksSortConfig: SortConfig<keyof TasksPageGridData> = {
-  name: "string",
-  description: "string",
-  frequency: "string", // Assuming string for now, adjust if enum/specific type
-  department: "string", // Assuming string for now, adjust if enum/specific type
-  controlsLength: "number",
-  createdAt: "number", // Dates are handled as numbers (timestamps) by useTableSearchSort
-  updatedAt: "number",
+  name: 'string',
+  description: 'string',
+  frequency: 'string', // Assuming string for now, adjust if enum/specific type
+  department: 'string', // Assuming string for now, adjust if enum/specific type
+  controlsLength: 'number',
+  createdAt: 'number', // Dates are handled as numbers (timestamps) by useTableSearchSort
+  updatedAt: 'number',
 };
 
 interface TasksClientPageProps {
@@ -108,9 +89,7 @@ export function TasksClientPage({ initialTasks }: TasksClientPageProps) {
       description: task.description ?? null,
       frequency: task.frequency ?? null, // This will be a string from the enum
       department: task.department ?? null, // This will be a string from the enum
-      controls:
-        task.controlTemplates?.map((ct) => ({ id: ct.id, name: ct.name })) ||
-        [], // Corrected: use task.controlTemplates
+      controls: task.controlTemplates?.map((ct) => ({ id: ct.id, name: ct.name })) || [], // Corrected: use task.controlTemplates
       controlsLength: task.controlTemplates?.length || 0, // Corrected: use task.controlTemplates
       createdAt: task.createdAt ? new Date(task.createdAt) : null,
       updatedAt: task.updatedAt ? new Date(task.updatedAt) : null,
@@ -144,18 +123,18 @@ export function TasksClientPage({ initialTasks }: TasksClientPageProps) {
     dataForGrid, // Use dataForGrid from useTaskChangeTracking
     tasksSearchableKeys,
     tasksSortConfig,
-    "createdAt", // Default sort column
-    "asc", // Default sort direction
+    'createdAt', // Default sort column
+    'asc', // Default sort direction
   );
 
   // Convert timestamps back to Date objects if useTableSearchSort changed them
   const dataForDisplay = useMemo(() => {
     return sortedDataWithPotentialTimestamps.map((row) => {
       const newRow = { ...row };
-      if (typeof newRow.createdAt === "number") {
+      if (typeof newRow.createdAt === 'number') {
         newRow.createdAt = new Date(newRow.createdAt);
       }
-      if (typeof newRow.updatedAt === "number") {
+      if (typeof newRow.updatedAt === 'number') {
         newRow.updatedAt = new Date(newRow.updatedAt);
       }
       return newRow;
@@ -168,43 +147,43 @@ export function TasksClientPage({ initialTasks }: TasksClientPageProps) {
 
   // Define columns for DataSheetGrid
   const columns: Column<TasksPageGridData>[] = [
-    { ...keyColumn("name", textColumn), title: "Name", minWidth: 250 },
+    { ...keyColumn('name', textColumn), title: 'Name', minWidth: 250 },
     {
-      ...keyColumn("description", textAreaColumn),
-      title: "Description",
+      ...keyColumn('description', textAreaColumn),
+      title: 'Description',
       minWidth: 350,
       grow: 1,
     },
     {
       ...keyColumn(
-        "frequency",
+        'frequency',
         selectColumnDefinition({
           choices: frequencyChoices,
-          placeholder: "Select frequency...",
+          placeholder: 'Select frequency...',
         }),
       ),
-      title: "Frequency",
+      title: 'Frequency',
       minWidth: 180,
     },
     {
       ...keyColumn(
-        "department",
+        'department',
         selectColumnDefinition({
           choices: departmentChoices,
-          placeholder: "Select department...",
+          placeholder: 'Select department...',
         }),
       ),
-      title: "Department",
+      title: 'Department',
       minWidth: 180,
     },
     {
-      ...relationalColumn<TasksPageGridData, "controls">({
-        itemsKey: "controls",
+      ...relationalColumn<TasksPageGridData, 'controls'>({
+        itemsKey: 'controls',
         getAllSearchableItems: getAllControlsForLinking,
         linkItemAction: async (taskId, controlId) => {
           try {
             await linkControlToTask(taskId, controlId);
-            toast.success("Control linked successfully.");
+            toast.success('Control linked successfully.');
             // router.refresh(); // Consider if refresh is needed immediately
           } catch (error) {
             toast.error(
@@ -215,7 +194,7 @@ export function TasksClientPage({ initialTasks }: TasksClientPageProps) {
         unlinkItemAction: async (taskId, controlId) => {
           try {
             await unlinkControlFromTask(taskId, controlId);
-            toast.success("Control unlinked successfully.");
+            toast.success('Control unlinked successfully.');
             // router.refresh(); // Consider if refresh is needed immediately
           } catch (error) {
             toast.error(
@@ -223,28 +202,28 @@ export function TasksClientPage({ initialTasks }: TasksClientPageProps) {
             );
           }
         },
-        itemTypeLabel: "Control",
+        itemTypeLabel: 'Control',
         createdRowIds: createdRowIds, // Pass createdRowIds from useTaskChangeTracking
       }),
-      id: "controls", // Unique ID for the column
-      title: "Linked Controls",
+      id: 'controls', // Unique ID for the column
+      title: 'Linked Controls',
       minWidth: 200,
     },
     {
-      ...keyColumn("createdAt", friendlyDateColumnBase),
-      title: "Created At",
+      ...keyColumn('createdAt', friendlyDateColumnBase),
+      title: 'Created At',
       minWidth: 220,
       disabled: true,
     },
     {
-      ...keyColumn("updatedAt", friendlyDateColumnBase),
-      title: "Updated At",
+      ...keyColumn('updatedAt', friendlyDateColumnBase),
+      title: 'Updated At',
       minWidth: 220,
       disabled: true,
     },
     {
-      ...keyColumn("id", textColumn as Partial<Column<string, any, string>>),
-      title: "ID",
+      ...keyColumn('id', textColumn as Partial<Column<string, any, string>>),
+      title: 'ID',
       minWidth: 280,
       disabled: true,
     },
@@ -252,12 +231,10 @@ export function TasksClientPage({ initialTasks }: TasksClientPageProps) {
 
   return (
     <>
-      <PageLayout breadcrumbs={[{ label: "Tasks", href: "/tasks" }]}>
+      <PageLayout breadcrumbs={[{ label: 'Tasks', href: '/tasks' }]}>
         {isDirty && (
           <div className="bg-secondary/80 mb-4 flex items-center space-x-2 rounded-sm p-2">
-            <span className="text-muted-foreground text-sm">
-              {changesSummaryString}
-            </span>
+            <span className="text-muted-foreground text-sm">{changesSummaryString}</span>
             <Button
               variant="outline"
               onClick={async () => {
@@ -288,9 +265,7 @@ export function TasksClientPage({ initialTasks }: TasksClientPageProps) {
           onSearchTermChange={setSearchTerm}
           sortableColumnOptions={sortableColumnsOptions}
           sortColumnKey={sortColumnKey}
-          onSortColumnKeyChange={(key) =>
-            setSortColumnKey(key as keyof TasksPageGridData | null)
-          }
+          onSortColumnKeyChange={(key) => setSortColumnKey(key as keyof TasksPageGridData | null)}
           sortDirection={sortDirection}
           onSortDirectionChange={toggleSortDirection}
         />
@@ -305,8 +280,8 @@ export function TasksClientPage({ initialTasks }: TasksClientPageProps) {
             createRow={() => ({
               // Default structure for new rows created directly in grid
               id: simpleUUID(),
-              name: "New Task Name",
-              description: "Task Description",
+              name: 'New Task Name',
+              description: 'Task Description',
               frequency: null, // Initially null, user selects from dropdown
               department: null, // Initially null, user selects from dropdown
               controls: [],
@@ -317,7 +292,7 @@ export function TasksClientPage({ initialTasks }: TasksClientPageProps) {
             duplicateRow={({ rowData }) => ({
               ...rowData,
               id: simpleUUID(),
-              name: rowData.name ? `Copy of ${rowData.name}` : "Copied Task",
+              name: rowData.name ? `Copy of ${rowData.name}` : 'Copied Task',
               description: rowData.description,
               frequency: rowData.frequency, // Copied as string (enum value)
               department: rowData.department, // Copied as string (enum value)

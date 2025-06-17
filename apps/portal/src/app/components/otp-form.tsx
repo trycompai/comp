@@ -1,29 +1,23 @@
-"use client";
+'use client';
 
-import { Button } from "@comp/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormMessage,
-} from "@comp/ui/form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
-import { useAction } from "next-safe-action/hooks";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { toast } from "sonner";
-import { z } from "zod";
-import { login } from "../actions/login";
-import { OtpStyledInput } from "./otp-input";
+import { Button } from '@comp/ui/button';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@comp/ui/form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Loader2 } from 'lucide-react';
+import { useAction } from 'next-safe-action/hooks';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import { z } from 'zod';
+import { login } from '../actions/login';
+import { OtpStyledInput } from './otp-input';
 
 const INPUT_LENGTH = 6;
 
 const otpFormSchema = z.object({
   email: z.string().email(),
-  otp: z.string().min(INPUT_LENGTH, "OTP is required"),
+  otp: z.string().min(INPUT_LENGTH, 'OTP is required'),
 });
 
 type OtpFormValues = z.infer<typeof otpFormSchema>;
@@ -39,14 +33,14 @@ export function OtpForm({ email }: OtpFormProps) {
     resolver: zodResolver(otpFormSchema),
     defaultValues: {
       email,
-      otp: "",
+      otp: '',
     },
   });
 
   const { execute, isExecuting } = useAction(login, {
     onSuccess: () => {
-      toast.success("OTP verified");
-      router.push("/");
+      toast.success('OTP verified');
+      router.push('/');
     },
     onError: (error) => {
       toast.error(error.error.serverError as string);
@@ -62,7 +56,7 @@ export function OtpForm({ email }: OtpFormProps) {
         email: formData.email,
       });
     } catch (error) {
-      toast.error("An unexpected error occurred");
+      toast.error('An unexpected error occurred');
     } finally {
       setIsLoading(false);
     }
@@ -88,11 +82,7 @@ export function OtpForm({ email }: OtpFormProps) {
           disabled={isLoading}
           className="flex h-[40px] w-fit space-x-2 px-6 py-4 font-medium active:scale-[0.98]"
         >
-          {isLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <span>Continue</span>
-          )}
+          {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <span>Continue</span>}
         </Button>
       </form>
     </Form>

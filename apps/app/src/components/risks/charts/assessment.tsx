@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from "@comp/ui/card";
-import { type ChartConfig, ChartContainer, ChartTooltip } from "@comp/ui/chart";
-import { Legend, Line, LineChart, XAxis, YAxis } from "recharts";
+import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
+import { type ChartConfig, ChartContainer, ChartTooltip } from '@comp/ui/chart';
+import { Legend, Line, LineChart, XAxis, YAxis } from 'recharts';
 
 interface AssessmentChartProps {
   data: Array<{
@@ -12,12 +12,12 @@ interface AssessmentChartProps {
 }
 
 const riskData = [
-  { month: "Jan", inherentRisk: 15, residualRisk: 9 },
-  { month: "Feb", inherentRisk: 14, residualRisk: 8 },
-  { month: "Mar", inherentRisk: 16, residualRisk: 7 },
-  { month: "Apr", inherentRisk: 15, residualRisk: 6 },
-  { month: "May", inherentRisk: 14, residualRisk: 5 },
-  { month: "Jun", inherentRisk: 13, residualRisk: 4 },
+  { month: 'Jan', inherentRisk: 15, residualRisk: 9 },
+  { month: 'Feb', inherentRisk: 14, residualRisk: 8 },
+  { month: 'Mar', inherentRisk: 16, residualRisk: 7 },
+  { month: 'Apr', inherentRisk: 15, residualRisk: 6 },
+  { month: 'May', inherentRisk: 14, residualRisk: 5 },
+  { month: 'Jun', inherentRisk: 13, residualRisk: 4 },
 ];
 
 export function AssessmentChart() {

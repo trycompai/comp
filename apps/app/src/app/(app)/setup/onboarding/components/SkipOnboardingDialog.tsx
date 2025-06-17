@@ -1,4 +1,4 @@
-import { Button } from "@comp/ui/button";
+import { Button } from '@comp/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -7,8 +7,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@comp/ui/dialog";
-import { Loader2 } from "lucide-react";
+} from '@comp/ui/dialog';
+import { Loader2 } from 'lucide-react';
 
 interface SkipOnboardingDialogProps {
   open: boolean;
@@ -36,24 +36,16 @@ export function SkipOnboardingDialog({
         <DialogHeader>
           <DialogTitle>Are you sure?</DialogTitle>
           <DialogDescription>
-            If you skip the onboarding process, we won't be able to create
-            custom policies, automatically add vendors and risks to the Comp AI
-            platform. You will have to manually add them later.
+            If you skip the onboarding process, we won't be able to create custom policies,
+            automatically add vendors and risks to the Comp AI platform. You will have to manually
+            add them later.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button
-            variant="ghost"
-            onClick={() => onOpenChange(false)}
-            disabled={isSkipping}
-          >
+          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isSkipping}>
             Cancel
           </Button>
-          <Button
-            variant="destructive"
-            onClick={onConfirmSkip}
-            disabled={isSkipping}
-          >
+          <Button variant="destructive" onClick={onConfirmSkip} disabled={isSkipping}>
             <div className="flex items-center gap-2">
               {isSkipping && <Loader2 className="h-4 w-4 animate-spin" />}
               Confirm

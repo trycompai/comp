@@ -1,11 +1,11 @@
-import { auth } from "@/utils/auth";
-import { db } from "@comp/db";
-import type { Comment, Member, User, Attachment } from "@comp/db/types";
-import { CommentEntityType, AttachmentEntityType } from "@comp/db/types";
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
-import { SingleTask } from "./components/SingleTask";
-import { CommentWithAuthor } from "../../../../../components/comments/Comments";
+import { auth } from '@/utils/auth';
+import { db } from '@comp/db';
+import type { Comment, Member, User, Attachment } from '@comp/db/types';
+import { CommentEntityType, AttachmentEntityType } from '@comp/db/types';
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { SingleTask } from './components/SingleTask';
+import { CommentWithAuthor } from '../../../../../components/comments/Comments';
 
 export default async function TaskPage({
   params,
@@ -22,14 +22,7 @@ export default async function TaskPage({
     redirect(`/${orgId}/tasks`);
   }
 
-  return (
-    <SingleTask
-      task={task}
-      members={members}
-      comments={comments}
-      attachments={attachments}
-    />
-  );
+  return <SingleTask task={task} members={members} comments={comments} attachments={attachments} />;
 }
 
 const getTask = async (taskId: string) => {
@@ -40,7 +33,7 @@ const getTask = async (taskId: string) => {
   const activeOrgId = session?.session.activeOrganizationId;
 
   if (!activeOrgId) {
-    console.warn("Could not determine active organization ID in getTask");
+    console.warn('Could not determine active organization ID in getTask');
     return null;
   }
 
@@ -62,7 +55,7 @@ const getComments = async (taskId: string): Promise<CommentWithAuthor[]> => {
   const activeOrgId = session?.session.activeOrganizationId;
 
   if (!activeOrgId) {
-    console.warn("Could not determine active organization ID in getComments");
+    console.warn('Could not determine active organization ID in getComments');
     return [];
   }
 
@@ -80,7 +73,7 @@ const getComments = async (taskId: string): Promise<CommentWithAuthor[]> => {
       },
     },
     orderBy: {
-      createdAt: "desc",
+      createdAt: 'desc',
     },
   });
 
@@ -111,9 +104,7 @@ const getAttachments = async (taskId: string): Promise<Attachment[]> => {
   const activeOrgId = session?.session.activeOrganizationId;
 
   if (!activeOrgId) {
-    console.warn(
-      "Could not determine active organization ID in getAttachments",
-    );
+    console.warn('Could not determine active organization ID in getAttachments');
     return [];
   }
   const attachments = await db.attachment.findMany({
@@ -123,7 +114,7 @@ const getAttachments = async (taskId: string): Promise<Attachment[]> => {
       entityType: AttachmentEntityType.task,
     },
     orderBy: {
-      createdAt: "asc",
+      createdAt: 'asc',
     },
   });
   return attachments;
@@ -136,7 +127,7 @@ const getMembers = async (orgId: string) => {
 
   const activeOrgId = orgId ?? session?.session.activeOrganizationId;
   if (!activeOrgId) {
-    console.warn("Could not determine active organization ID in getMembers");
+    console.warn('Could not determine active organization ID in getMembers');
     return [];
   }
 

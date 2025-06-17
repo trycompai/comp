@@ -1,6 +1,6 @@
-import { useScrollToBottom } from "@/hooks/use-scroll-to-bottom";
-import type { Message as TMessage } from "ai";
-import { Message } from "./message";
+import { useScrollToBottom } from '@/hooks/use-scroll-to-bottom';
+import type { Message as TMessage } from 'ai';
+import { Message } from './message';
 
 export const Messages = ({
   messages,
@@ -9,7 +9,7 @@ export const Messages = ({
 }: {
   messages: TMessage[];
   isLoading: boolean;
-  status: "error" | "submitted" | "streaming" | "ready";
+  status: 'error' | 'submitted' | 'streaming' | 'ready';
 }) => {
   const [containerRef, endRef] = useScrollToBottom();
 

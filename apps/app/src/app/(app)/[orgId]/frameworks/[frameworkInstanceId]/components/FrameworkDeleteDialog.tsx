@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { deleteFrameworkAction } from "../actions/delete-framework";
-import { Button } from "@comp/ui/button";
+import { deleteFrameworkAction } from '../actions/delete-framework';
+import { Button } from '@comp/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -9,17 +9,17 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@comp/ui/dialog";
-import { Form } from "@comp/ui/form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Trash2 } from "lucide-react";
-import { useAction } from "next-safe-action/hooks";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { toast } from "sonner";
-import { z } from "zod";
-import { FrameworkInstanceWithControls } from "../../types";
+} from '@comp/ui/dialog';
+import { Form } from '@comp/ui/form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Trash2 } from 'lucide-react';
+import { useAction } from 'next-safe-action/hooks';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import { z } from 'zod';
+import { FrameworkInstanceWithControls } from '../../types';
 
 const formSchema = z.object({
   comment: z.string().optional(),
@@ -44,18 +44,18 @@ export function FrameworkDeleteDialog({
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      comment: "",
+      comment: '',
     },
   });
 
   const deleteFramework = useAction(deleteFrameworkAction, {
     onSuccess: () => {
-      toast.info("Framework deleted! Redirecting to frameworks list...");
+      toast.info('Framework deleted! Redirecting to frameworks list...');
       onClose();
       router.push(`/${frameworkInstance.organizationId}/frameworks`);
     },
     onError: () => {
-      toast.error("Failed to delete framework.");
+      toast.error('Failed to delete framework.');
       setIsSubmitting(false);
     },
   });
@@ -74,30 +74,16 @@ export function FrameworkDeleteDialog({
         <DialogHeader>
           <DialogTitle>Delete Framework</DialogTitle>
           <DialogDescription>
-            Are you sure you want to delete this framework? This action cannot
-            be undone.
+            Are you sure you want to delete this framework? This action cannot be undone.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(handleSubmit)}
-            className="space-y-4"
-          >
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <DialogFooter className="gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClose}
-                disabled={isSubmitting}
-              >
+              <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                variant="destructive"
-                disabled={isSubmitting}
-                className="gap-2"
-              >
+              <Button type="submit" variant="destructive" disabled={isSubmitting} className="gap-2">
                 {isSubmitting ? (
                   <span className="flex items-center gap-2">
                     <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />

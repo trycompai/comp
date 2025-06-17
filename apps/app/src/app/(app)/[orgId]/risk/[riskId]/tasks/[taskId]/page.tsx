@@ -1,11 +1,11 @@
-import { TaskOverview } from "@/components/risks/tasks/task-overview";
-import { useUsers } from "@/hooks/use-users";
-import { auth } from "@/utils/auth";
-import { db } from "@comp/db";
-import type { Metadata } from "next";
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
-import { cache } from "react";
+import { TaskOverview } from '@/components/risks/tasks/task-overview';
+import { useUsers } from '@/hooks/use-users';
+import { auth } from '@/utils/auth';
+import { db } from '@comp/db';
+import type { Metadata } from 'next';
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { cache } from 'react';
 interface PageProps {
   params: Promise<{ riskId: string; taskId: string }>;
 }
@@ -16,7 +16,7 @@ export default async function RiskPage({ params }: PageProps) {
   const users = await useUsers();
 
   if (!task) {
-    redirect("/");
+    redirect('/');
   }
 
   return (
@@ -32,7 +32,7 @@ const getTask = cache(async (riskId: string, taskId: string) => {
   });
 
   if (!session || !session.session.activeOrganizationId) {
-    redirect("/");
+    redirect('/');
   }
 
   const task = await db.task.findUnique({
@@ -50,6 +50,6 @@ const getTask = cache(async (riskId: string, taskId: string) => {
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: "Task Overview",
+    title: 'Task Overview',
   };
 }

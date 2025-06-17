@@ -1,8 +1,8 @@
-import { auth } from "@/utils/auth";
-import { db } from "@comp/db";
-import { tool } from "ai";
-import { headers } from "next/headers";
-import { z } from "zod";
+import { auth } from '@/utils/auth';
+import { db } from '@comp/db';
+import { tool } from 'ai';
+import { headers } from 'next/headers';
+import { z } from 'zod';
 
 export function getOrganizationTools() {
   return {
@@ -19,7 +19,7 @@ export const findOrganization = tool({
     });
 
     if (!session?.session.activeOrganizationId) {
-      return { error: "Unauthorized" };
+      return { error: 'Unauthorized' };
     }
 
     const org = await db.organization.findUnique({
@@ -32,7 +32,7 @@ export const findOrganization = tool({
     if (!org) {
       return {
         organization: null,
-        message: "Organization not found",
+        message: 'Organization not found',
       };
     }
 

@@ -1,10 +1,10 @@
-"use server";
+'use server';
 
-import { db } from "@comp/db";
-import { Departments, Frequency, PolicyStatus } from "@comp/db/types";
-import { revalidatePath, revalidateTag } from "next/cache";
-import { authActionClient } from "../safe-action";
-import { z } from "zod";
+import { db } from '@comp/db';
+import { Departments, Frequency, PolicyStatus } from '@comp/db/types';
+import { revalidatePath, revalidateTag } from 'next/cache';
+import { authActionClient } from '../safe-action';
+import { z } from 'zod';
 
 const acceptRequestedPolicyChangesSchema = z.object({
   id: z.string(),
@@ -14,13 +14,13 @@ const acceptRequestedPolicyChangesSchema = z.object({
 });
 
 export const acceptRequestedPolicyChangesAction = authActionClient
-  .schema(acceptRequestedPolicyChangesSchema)
+  .inputSchema(acceptRequestedPolicyChangesSchema)
   .metadata({
-    name: "accept-requested-policy-changes",
+    name: 'accept-requested-policy-changes',
     track: {
-      event: "accept-requested-policy-changes",
-      description: "Accept Policy Changes",
-      channel: "server",
+      event: 'accept-requested-policy-changes',
+      description: 'Accept Policy Changes',
+      channel: 'server',
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -28,11 +28,11 @@ export const acceptRequestedPolicyChangesAction = authActionClient
     const { user, session } = ctx;
 
     if (!user.id || !session.activeOrganizationId) {
-      throw new Error("Unauthorized");
+      throw new Error('Unauthorized');
     }
 
     if (!approverId) {
-      throw new Error("Approver is required");
+      throw new Error('Approver is required');
     }
 
     try {
@@ -44,11 +44,11 @@ export const acceptRequestedPolicyChangesAction = authActionClient
       });
 
       if (!policy) {
-        throw new Error("Policy not found");
+        throw new Error('Policy not found');
       }
 
       if (policy.approverId !== approverId) {
-        throw new Error("Approver is not the same");
+        throw new Error('Approver is not the same');
       }
 
       // Update policy status
@@ -64,7 +64,7 @@ export const acceptRequestedPolicyChangesAction = authActionClient
       });
 
       // If a comment was provided, create a comment
-      if (comment && comment.trim() !== "") {
+      if (comment && comment.trim() !== '') {
         const member = await db.member.findFirst({
           where: {
             userId: user.id,
@@ -77,7 +77,7 @@ export const acceptRequestedPolicyChangesAction = authActionClient
             data: {
               content: `Policy changes accepted: ${comment}`,
               entityId: id,
-              entityType: "policy",
+              entityType: 'policy',
               organizationId: session.activeOrganizationId,
               authorId: member.id,
             },
@@ -87,13 +87,13 @@ export const acceptRequestedPolicyChangesAction = authActionClient
 
       revalidatePath(`/${session.activeOrganizationId}/policies`);
       revalidatePath(`/${session.activeOrganizationId}/policies/${id}`);
-      revalidateTag("policies");
+      revalidateTag('policies');
 
       return {
         success: true,
       };
     } catch (error) {
-      console.error("Error submitting policy for approval:", error);
+      console.error('Error submitting policy for approval:', error);
 
       return {
         success: false,

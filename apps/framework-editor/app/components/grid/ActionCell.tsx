@@ -1,17 +1,15 @@
-"use client";
+'use client';
 
-import { Button } from "@comp/ui/button";
-import { useRouter } from "next/navigation";
-import React from "react";
-import type { CellProps } from "react-datasheet-grid";
-import type { ControlsPageGridData } from "../../(pages)/controls/types"; // Needs to be generic or passed in
+import { Button } from '@comp/ui/button';
+import { useRouter } from 'next/navigation';
+import React from 'react';
+import type { CellProps } from 'react-datasheet-grid';
+import type { ControlsPageGridData } from '../../(pages)/controls/types'; // Needs to be generic or passed in
 
 // TODO: Make rowData type generic to be reusable for Tasks, etc.
 // For now, keeping ControlsPageGridData to ensure it works for existing usage.
 // We can create a more generic interface like `GridDataWithIdAndName` if needed.
-export const ActionCell: React.FC<CellProps<ControlsPageGridData, any>> = ({
-  rowData,
-}) => {
+export const ActionCell: React.FC<CellProps<ControlsPageGridData, any>> = ({ rowData }) => {
   const router = useRouter();
 
   if (!rowData || !rowData.id) {
@@ -32,7 +30,7 @@ export const ActionCell: React.FC<CellProps<ControlsPageGridData, any>> = ({
         size="sm"
         variant="outline"
         className="w-full"
-        title={`View details for ${rowData.name || "item"}`} // Made title more generic
+        title={`View details for ${rowData.name || 'item'}`} // Made title more generic
       >
         View →
       </Button>

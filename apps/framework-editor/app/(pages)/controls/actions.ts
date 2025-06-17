@@ -1,18 +1,16 @@
-"use server";
+'use server';
 
-import { db } from "@comp/db";
-import { revalidatePath } from "next/cache";
-import type { SearchableItemForLinking } from "@/app/components/SearchAndLinkList"; // Assuming this path is correct
-import { z } from "zod";
-import { createControlTemplateSchema } from "./schemas";
-import type { FrameworkEditorControlTemplate } from "@prisma/client";
+import { db } from '@comp/db';
+import { revalidatePath } from 'next/cache';
+import type { SearchableItemForLinking } from '@/app/components/SearchAndLinkList'; // Assuming this path is correct
+import { z } from 'zod';
+import { createControlTemplateSchema } from './schemas';
+import type { FrameworkEditorControlTemplate } from '@prisma/client';
 
 /**
  * Fetches all requirements, including their framework name and identifier.
  */
-export async function getAllRequirements(): Promise<
-  SearchableItemForLinking[]
-> {
+export async function getAllRequirements(): Promise<SearchableItemForLinking[]> {
   try {
     const requirements = await db.frameworkEditorRequirement.findMany({
       select: {
@@ -27,7 +25,7 @@ export async function getAllRequirements(): Promise<
       },
       orderBy: {
         // Consider if ordering by identifier or name is preferred. Currently descriptive name.
-        name: "asc",
+        name: 'asc',
       },
     });
     return requirements.map((r) => {
@@ -40,7 +38,7 @@ export async function getAllRequirements(): Promise<
         primaryDisplayLabel = r.name;
       }
       // If only identifier exists, it's already set. If neither, fallback.
-      primaryDisplayLabel = primaryDisplayLabel || "Unnamed Requirement";
+      primaryDisplayLabel = primaryDisplayLabel || 'Unnamed Requirement';
 
       return {
         id: r.id,
@@ -49,8 +47,8 @@ export async function getAllRequirements(): Promise<
       };
     });
   } catch (error) {
-    console.error("Error fetching all requirements:", error);
-    throw new Error("Failed to fetch all requirements.");
+    console.error('Error fetching all requirements:', error);
+    throw new Error('Failed to fetch all requirements.');
   }
 }
 
@@ -62,7 +60,7 @@ export async function linkRequirementToControl(
   requirementId: string,
 ): Promise<void> {
   if (!controlId || !requirementId) {
-    throw new Error("Control ID and Requirement ID must be provided.");
+    throw new Error('Control ID and Requirement ID must be provided.');
   }
   try {
     await db.frameworkEditorControlTemplate.update({
@@ -74,10 +72,10 @@ export async function linkRequirementToControl(
       },
     });
     revalidatePath(`/controls/${controlId}`);
-    revalidatePath("/controls"); // Also revalidate the list page if counts are shown there
+    revalidatePath('/controls'); // Also revalidate the list page if counts are shown there
   } catch (error) {
-    console.error("Error linking requirement to control:", error);
-    throw new Error("Failed to link requirement.");
+    console.error('Error linking requirement to control:', error);
+    throw new Error('Failed to link requirement.');
   }
 }
 
@@ -89,7 +87,7 @@ export async function unlinkRequirementFromControl(
   requirementId: string,
 ): Promise<void> {
   if (!controlId || !requirementId) {
-    throw new Error("Control ID and Requirement ID must be provided.");
+    throw new Error('Control ID and Requirement ID must be provided.');
   }
   try {
     await db.frameworkEditorControlTemplate.update({
@@ -101,10 +99,10 @@ export async function unlinkRequirementFromControl(
       },
     });
     revalidatePath(`/controls/${controlId}`);
-    revalidatePath("/controls");
+    revalidatePath('/controls');
   } catch (error) {
-    console.error("Error unlinking requirement from control:", error);
-    throw new Error("Failed to unlink requirement.");
+    console.error('Error unlinking requirement from control:', error);
+    throw new Error('Failed to unlink requirement.');
   }
 }
 
@@ -113,9 +111,7 @@ export async function unlinkRequirementFromControl(
 /**
  * Fetches all policy templates.
  */
-export async function getAllPolicyTemplates(): Promise<
-  SearchableItemForLinking[]
-> {
+export async function getAllPolicyTemplates(): Promise<SearchableItemForLinking[]> {
   try {
     const policyTemplates = await db.frameworkEditorPolicyTemplate.findMany({
       select: {
@@ -123,7 +119,7 @@ export async function getAllPolicyTemplates(): Promise<
         name: true,
       },
       orderBy: {
-        name: "asc",
+        name: 'asc',
       },
     });
     // Policy templates only have a name, sublabel will be undefined
@@ -133,8 +129,8 @@ export async function getAllPolicyTemplates(): Promise<
       // sublabel will be implicitly undefined
     }));
   } catch (error) {
-    console.error("Error fetching all policy templates:", error);
-    throw new Error("Failed to fetch all policy templates.");
+    console.error('Error fetching all policy templates:', error);
+    throw new Error('Failed to fetch all policy templates.');
   }
 }
 
@@ -146,7 +142,7 @@ export async function linkPolicyTemplateToControl(
   policyTemplateId: string,
 ): Promise<void> {
   if (!controlId || !policyTemplateId) {
-    throw new Error("Control ID and Policy Template ID must be provided.");
+    throw new Error('Control ID and Policy Template ID must be provided.');
   }
   try {
     await db.frameworkEditorControlTemplate.update({
@@ -159,10 +155,10 @@ export async function linkPolicyTemplateToControl(
       },
     });
     revalidatePath(`/controls/${controlId}`);
-    revalidatePath("/controls");
+    revalidatePath('/controls');
   } catch (error) {
-    console.error("Error linking policy template to control:", error);
-    throw new Error("Failed to link policy template.");
+    console.error('Error linking policy template to control:', error);
+    throw new Error('Failed to link policy template.');
   }
 }
 
@@ -174,7 +170,7 @@ export async function unlinkPolicyTemplateFromControl(
   policyTemplateId: string,
 ): Promise<void> {
   if (!controlId || !policyTemplateId) {
-    throw new Error("Control ID and Policy Template ID must be provided.");
+    throw new Error('Control ID and Policy Template ID must be provided.');
   }
   try {
     await db.frameworkEditorControlTemplate.update({
@@ -186,10 +182,10 @@ export async function unlinkPolicyTemplateFromControl(
       },
     });
     revalidatePath(`/controls/${controlId}`);
-    revalidatePath("/controls");
+    revalidatePath('/controls');
   } catch (error) {
-    console.error("Error unlinking policy template from control:", error);
-    throw new Error("Failed to unlink policy template.");
+    console.error('Error unlinking policy template from control:', error);
+    throw new Error('Failed to unlink policy template.');
   }
 }
 
@@ -198,9 +194,7 @@ export async function unlinkPolicyTemplateFromControl(
 /**
  * Fetches all task templates.
  */
-export async function getAllTaskTemplates(): Promise<
-  SearchableItemForLinking[]
-> {
+export async function getAllTaskTemplates(): Promise<SearchableItemForLinking[]> {
   try {
     const taskTemplates = await db.frameworkEditorTaskTemplate.findMany({
       select: {
@@ -208,7 +202,7 @@ export async function getAllTaskTemplates(): Promise<
         name: true,
       },
       orderBy: {
-        name: "asc",
+        name: 'asc',
       },
     });
     // Task templates only have a name, sublabel will be undefined
@@ -218,8 +212,8 @@ export async function getAllTaskTemplates(): Promise<
       // sublabel will be implicitly undefined
     }));
   } catch (error) {
-    console.error("Error fetching all task templates:", error);
-    throw new Error("Failed to fetch all task templates.");
+    console.error('Error fetching all task templates:', error);
+    throw new Error('Failed to fetch all task templates.');
   }
 }
 
@@ -231,7 +225,7 @@ export async function linkTaskTemplateToControl(
   taskTemplateId: string,
 ): Promise<void> {
   if (!controlId || !taskTemplateId) {
-    throw new Error("Control ID and Task Template ID must be provided.");
+    throw new Error('Control ID and Task Template ID must be provided.');
   }
   try {
     await db.frameworkEditorControlTemplate.update({
@@ -244,10 +238,10 @@ export async function linkTaskTemplateToControl(
       },
     });
     revalidatePath(`/controls/${controlId}`);
-    revalidatePath("/controls");
+    revalidatePath('/controls');
   } catch (error) {
-    console.error("Error linking task template to control:", error);
-    throw new Error("Failed to link task template.");
+    console.error('Error linking task template to control:', error);
+    throw new Error('Failed to link task template.');
   }
 }
 
@@ -259,7 +253,7 @@ export async function unlinkTaskTemplateFromControl(
   taskTemplateId: string,
 ): Promise<void> {
   if (!controlId || !taskTemplateId) {
-    throw new Error("Control ID and Task Template ID must be provided.");
+    throw new Error('Control ID and Task Template ID must be provided.');
   }
   try {
     await db.frameworkEditorControlTemplate.update({
@@ -271,10 +265,10 @@ export async function unlinkTaskTemplateFromControl(
       },
     });
     revalidatePath(`/controls/${controlId}`);
-    revalidatePath("/controls");
+    revalidatePath('/controls');
   } catch (error) {
-    console.error("Error unlinking task template from control:", error);
-    throw new Error("Failed to unlink task template.");
+    console.error('Error unlinking task template from control:', error);
+    throw new Error('Failed to unlink task template.');
   }
 }
 
@@ -293,10 +287,10 @@ export async function updateControlDetails(
   data: UpdateControlPayload,
 ): Promise<void> {
   if (!controlId) {
-    throw new Error("Control ID must be provided.");
+    throw new Error('Control ID must be provided.');
   }
-  if (!data.name || data.name.trim() === "") {
-    throw new Error("Control name must be provided.");
+  if (!data.name || data.name.trim() === '') {
+    throw new Error('Control name must be provided.');
   }
 
   try {
@@ -308,10 +302,10 @@ export async function updateControlDetails(
       },
     });
     revalidatePath(`/controls/${controlId}`);
-    revalidatePath("/controls");
+    revalidatePath('/controls');
   } catch (error) {
-    console.error("Error updating control details:", error);
-    throw new Error("Failed to update control details.");
+    console.error('Error updating control details:', error);
+    throw new Error('Failed to update control details.');
   }
 }
 
@@ -320,7 +314,7 @@ export async function updateControlDetails(
  */
 export async function deleteControl(controlId: string): Promise<void> {
   if (!controlId) {
-    throw new Error("Control ID must be provided.");
+    throw new Error('Control ID must be provided.');
   }
   try {
     // Note: Depending on DB constraints, you might need to disconnect relations first
@@ -329,11 +323,11 @@ export async function deleteControl(controlId: string): Promise<void> {
       where: { id: controlId },
     });
     revalidatePath(`/controls/${controlId}`); // Or just /controls if navigating away
-    revalidatePath("/controls");
+    revalidatePath('/controls');
   } catch (error) {
-    console.error("Error deleting control:", error);
+    console.error('Error deleting control:', error);
     // Consider more specific error handling, e.g., if control not found or if relations prevent deletion
-    throw new Error("Failed to delete control.");
+    throw new Error('Failed to delete control.');
   }
 }
 
@@ -348,8 +342,8 @@ export async function createControl(rawData: {
 
   if (!validationResult.success) {
     const errorMessages = validationResult.error.issues
-      .map((issue: z.ZodIssue) => `${issue.path.join(".")}: ${issue.message}`)
-      .join(", ");
+      .map((issue: z.ZodIssue) => `${issue.path.join('.')}: ${issue.message}`)
+      .join(', ');
     throw new Error(`Invalid input for creating control: ${errorMessages}`);
   }
 
@@ -359,18 +353,16 @@ export async function createControl(rawData: {
     const controlTemplate = await db.frameworkEditorControlTemplate.create({
       data: {
         name,
-        description: description || "", // Ensure description is not undefined for Prisma
+        description: description || '', // Ensure description is not undefined for Prisma
       },
     });
 
-    revalidatePath("/controls");
+    revalidatePath('/controls');
     return controlTemplate;
   } catch (error) {
-    console.error("Failed to create control template:", error);
+    console.error('Failed to create control template:', error);
     const errorMessage =
-      error instanceof Error
-        ? error.message
-        : "Failed to create control template in the database.";
+      error instanceof Error ? error.message : 'Failed to create control template in the database.';
     throw new Error(`Database error: ${errorMessage}`);
   }
 }

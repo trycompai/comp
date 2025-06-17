@@ -1,5 +1,5 @@
-import { AttachmentType } from "@comp/db/types";
-import { FileText, FileVideo, FileAudio, FileQuestion } from "lucide-react";
+import { AttachmentType } from '@comp/db/types';
+import { FileText, FileVideo, FileAudio, FileQuestion } from 'lucide-react';
 
 // Formats a date object into relative time string (e.g., "5m ago")
 export function formatRelativeTime(date: Date): string {
@@ -27,8 +27,6 @@ export function getIconForAttachmentType(type: AttachmentType) {
     case AttachmentType.image:
       return null;
     default:
-      return (
-        <FileQuestion className="text-muted-foreground h-8 w-8 shrink-0" />
-      );
+      return <FileQuestion className="text-muted-foreground h-8 w-8 shrink-0" />;
   }
 }

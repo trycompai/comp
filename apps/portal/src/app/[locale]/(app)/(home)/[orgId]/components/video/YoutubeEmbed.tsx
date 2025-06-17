@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { Button } from "@comp/ui/button";
-import { Check, ArrowRight } from "lucide-react";
-import type { EmployeeTrainingVideoCompletion } from "@comp/db/types";
-import { useState } from "react";
+import { Button } from '@comp/ui/button';
+import { Check, ArrowRight } from 'lucide-react';
+import type { EmployeeTrainingVideoCompletion } from '@comp/db/types';
+import { useState } from 'react';
 
 // Define our own TrainingVideo interface since we can't find the import
 interface TrainingVideo {
@@ -48,13 +48,13 @@ export function YoutubeEmbed({
       <div className="flex justify-end">
         {!allVideosCompleted && (
           <Button
-            variant={isCompleted ? "secondary" : "default"}
+            variant={isCompleted ? 'secondary' : 'default'}
             onClick={onComplete}
             disabled={isCompleted}
             className="gap-2"
           >
             <Check className="h-4 w-4" />
-            {isCompleted ? "Completed" : "Mark as Complete"}
+            {isCompleted ? 'Completed' : 'Mark as Complete'}
           </Button>
         )}
       </div>
@@ -65,11 +65,7 @@ export function YoutubeEmbed({
               <Check className="text-primary mx-auto h-12 w-12" />
               <h3 className="text-xl font-semibold">Video Completed</h3>
               <div className="flex justify-center gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setIsRewatching(true)}
-                  className="gap-2"
-                >
+                <Button variant="outline" onClick={() => setIsRewatching(true)} className="gap-2">
                   Watch Again
                 </Button>
                 {onNext && (

@@ -1,43 +1,36 @@
-"use client";
+'use client';
 
-import { createOrganizationAction } from "@/actions/organization/create-organization-action";
-import { organizationSchema } from "@/actions/schema";
-import { authClient } from "@/utils/auth-client";
-import type { Organization } from "@comp/db/types";
-import { Button } from "@comp/ui/button";
-import { Checkbox } from "@comp/ui/checkbox";
-import { cn } from "@comp/ui/cn";
+import { createOrganizationAction } from '@/actions/organization/create-organization-action';
+import { organizationSchema } from '@/actions/schema';
+import { authClient } from '@/utils/auth-client';
+import type { Organization } from '@comp/db/types';
+import { Button } from '@comp/ui/button';
+import { Checkbox } from '@comp/ui/checkbox';
+import { cn } from '@comp/ui/cn';
 import {
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@comp/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@comp/ui/form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
-import { useAction } from "next-safe-action/hooks";
-import { useRef, useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { toast } from "sonner";
-import type { z } from "zod";
-import { LogoSpinner } from "../logo-spinner";
-import { useRouter } from "next/navigation";
-import type { FrameworkEditorFramework } from "@comp/db/types";
+} from '@comp/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Loader2 } from 'lucide-react';
+import { useAction } from 'next-safe-action/hooks';
+import { useRef, useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import type { z } from 'zod';
+import { LogoSpinner } from '../logo-spinner';
+import { useRouter } from 'next/navigation';
+import type { FrameworkEditorFramework } from '@comp/db/types';
 
 type Props = {
   onOpenChange: (isOpen: boolean) => void;
   frameworks: Pick<
     FrameworkEditorFramework,
-    "id" | "name" | "description" | "version" | "visible"
+    'id' | 'name' | 'description' | 'version' | 'visible'
   >[];
 };
 
@@ -46,22 +39,17 @@ export function CreateOrgModal({ onOpenChange, frameworks }: Props) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const newOrganizationRef = useRef<Pick<
-    Organization,
-    "id" | "name" | "website"
-  > | null>(null);
+  const newOrganizationRef = useRef<Pick<Organization, 'id' | 'name' | 'website'> | null>(null);
 
-  const [formData, setFormData] = useState<z.infer<
-    typeof organizationSchema
-  > | null>(null);
+  const [formData, setFormData] = useState<z.infer<typeof organizationSchema> | null>(null);
 
   const createOrganization = useAction(createOrganizationAction, {
     onSuccess: async (data) => {
       if (data.data?.organizationId) {
         newOrganizationRef.current = {
           id: data.data.organizationId,
-          name: "",
-          website: "",
+          name: '',
+          website: '',
         };
 
         router.push(`/${data.data.organizationId}`);
@@ -70,7 +58,7 @@ export function CreateOrgModal({ onOpenChange, frameworks }: Props) {
       }
     },
     onError: () => {
-      toast.error("Error", { duration: 5000 });
+      toast.error('Error', { duration: 5000 });
     },
   });
 
@@ -79,7 +67,7 @@ export function CreateOrgModal({ onOpenChange, frameworks }: Props) {
     defaultValues: {
       frameworkIds: [],
     },
-    mode: "onChange",
+    mode: 'onChange',
   });
 
   const onSubmit = async (data: z.infer<typeof organizationSchema>) => {
@@ -88,7 +76,7 @@ export function CreateOrgModal({ onOpenChange, frameworks }: Props) {
 
     await authClient.organization
       .create({
-        name: "My Organization",
+        name: 'My Organization',
         slug: `my-organization-${randomSuffix}`,
       })
       .then(async (organization) => {
@@ -109,7 +97,7 @@ export function CreateOrgModal({ onOpenChange, frameworks }: Props) {
       });
   };
 
-  const isExecuting = createOrganization.status === "executing" || isSubmitting;
+  const isExecuting = createOrganization.status === 'executing' || isSubmitting;
 
   // Prevent dialog from closing when executing
   const handleOpenChange = (open: boolean) => {
@@ -125,10 +113,10 @@ export function CreateOrgModal({ onOpenChange, frameworks }: Props) {
       <DialogHeader className="my-4">
         {!isExecuting ? (
           <>
-            <DialogTitle>{"Create an organization"}</DialogTitle>
+            <DialogTitle>{'Create an organization'}</DialogTitle>
             <DialogDescription>
               {
-                "Tell us a bit about your organization and what framework(s) you want to get started with."
+                'Tell us a bit about your organization and what framework(s) you want to get started with.'
               }
             </DialogDescription>
           </>
@@ -148,7 +136,7 @@ export function CreateOrgModal({ onOpenChange, frameworks }: Props) {
                     {"Hold tight, we're creating your organization"}
                   </h2>
                   <p className="text-muted-foreground text-center text-sm">
-                    {"This may take a minute or two..."}
+                    {'This may take a minute or two...'}
                   </p>
                 </div>
               </div>
@@ -169,9 +157,7 @@ export function CreateOrgModal({ onOpenChange, frameworks }: Props) {
               name="frameworkIds"
               render={({ field }) => (
                 <FormItem className="space-y-2">
-                  <FormLabel className="text-sm font-medium">
-                    {"Select Frameworks"}
-                  </FormLabel>
+                  <FormLabel className="text-sm font-medium">{'Select Frameworks'}</FormLabel>
                   <FormControl>
                     <fieldset className="flex flex-col gap-2 select-none">
                       <div className="flex max-h-[300px] flex-col gap-2 overflow-y-auto">
@@ -184,36 +170,30 @@ export function CreateOrgModal({ onOpenChange, frameworks }: Props) {
                                 key={frameworkId}
                                 htmlFor={`framework-${frameworkId}`}
                                 className={cn(
-                                  "focus-within:ring-ring relative flex w-full cursor-pointer flex-col border p-4 text-left transition-colors focus-within:ring-2 focus-within:ring-offset-2",
+                                  'focus-within:ring-ring relative flex w-full cursor-pointer flex-col border p-4 text-left transition-colors focus-within:ring-2 focus-within:ring-offset-2',
                                   field.value.includes(frameworkId) &&
-                                    "border-primary bg-primary/5",
+                                    'border-primary bg-primary/5',
                                 )}
                               >
                                 <div className="flex items-start justify-between">
                                   <div>
-                                    <h3 className="font-semibold">
-                                      {framework.name}
-                                    </h3>
+                                    <h3 className="font-semibold">{framework.name}</h3>
                                     <p className="text-muted-foreground mt-1 text-sm">
                                       {framework.description}
                                     </p>
                                     <p className="text-muted-foreground/75 mt-2 text-xs">
-                                      {`${"Version"}: ${framework.version}`}
+                                      {`${'Version'}: ${framework.version}`}
                                     </p>
                                   </div>
                                   <div>
                                     <Checkbox
                                       id={`framework-${frameworkId}`}
-                                      checked={field.value.includes(
-                                        frameworkId,
-                                      )}
+                                      checked={field.value.includes(frameworkId)}
                                       className="mt-1"
                                       onCheckedChange={(checked) => {
                                         const newValue = checked
                                           ? [...field.value, frameworkId]
-                                          : field.value.filter(
-                                              (name) => name !== frameworkId,
-                                            );
+                                          : field.value.filter((name) => name !== frameworkId);
                                         field.onChange(newValue);
                                       }}
                                     />
@@ -238,17 +218,17 @@ export function CreateOrgModal({ onOpenChange, frameworks }: Props) {
                     onClick={() => onOpenChange(false)}
                     disabled={isExecuting}
                   >
-                    {"Cancel"}
+                    {'Cancel'}
                   </Button>
                   <Button
                     type="submit"
-                    disabled={createOrganization.status === "executing"}
+                    disabled={createOrganization.status === 'executing'}
                     suppressHydrationWarning
                   >
-                    {createOrganization.status === "executing" && (
+                    {createOrganization.status === 'executing' && (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     )}
-                    {"Finish setup"}
+                    {'Finish setup'}
                   </Button>
                 </div>
               </DialogFooter>

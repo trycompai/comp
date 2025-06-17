@@ -1,8 +1,8 @@
-import type { modelID } from "@/hooks/ai/providers";
-import { Icons } from "@comp/ui/icons";
-import { Popover, PopoverContent, PopoverTrigger } from "@comp/ui/popover";
-import { Textarea as ShadcnTextarea } from "@comp/ui/textarea";
-import { useRouter } from "next/navigation";
+import type { modelID } from '@/hooks/ai/providers';
+import { Icons } from '@comp/ui/icons';
+import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
+import { Textarea as ShadcnTextarea } from '@comp/ui/textarea';
+import { useRouter } from 'next/navigation';
 
 interface InputProps {
   input: string;
@@ -14,11 +14,7 @@ interface InputProps {
   setSelectedModel: (model: modelID) => void;
 }
 
-export const ChatTextarea = ({
-  input,
-  handleInputChange,
-  isLoading,
-}: InputProps) => {
+export const ChatTextarea = ({ input, handleInputChange, isLoading }: InputProps) => {
   const router = useRouter();
 
   const handleOpenUrl = (url: string) => {
@@ -30,14 +26,14 @@ export const ChatTextarea = ({
         className="mb-2 h-12 min-h-12 resize-none border-none pt-3"
         value={input}
         autoFocus
-        placeholder={"Ask Comp AI something..."}
+        placeholder={'Ask Comp AI something...'}
         onChange={handleInputChange}
         onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
+          if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             if (input.trim() && !isLoading) {
               // @ts-expect-error err
-              const form = e.target.closest("form");
+              const form = e.target.closest('form');
               if (form) form.requestSubmit();
             }
           }
@@ -63,7 +59,7 @@ export const ChatTextarea = ({
                 <button
                   type="button"
                   className="flex w-full items-center space-x-2 rounded-sm p-1 text-xs transition-colors hover:bg-[#F2F1EF] dark:hover:bg-[#2b2b2b]"
-                  onClick={() => handleOpenUrl("https://x.com/compai")}
+                  onClick={() => handleOpenUrl('https://x.com/compai')}
                 >
                   <Icons.X className="h-[16px] w-[16px]" />
                   <span>Follow Comp AI</span>
@@ -73,7 +69,7 @@ export const ChatTextarea = ({
                 <button
                   type="button"
                   className="flex w-full items-center space-x-2 rounded-sm p-1 text-xs transition-colors hover:bg-[#F2F1EF] dark:hover:bg-[#2b2b2b]"
-                  onClick={() => handleOpenUrl("https://discord.gg/compai")}
+                  onClick={() => handleOpenUrl('https://discord.gg/compai')}
                 >
                   <Icons.Discord className="h-[16px] w-[16px]" />
                   <span>Join our Discord</span>
@@ -84,7 +80,7 @@ export const ChatTextarea = ({
                 <button
                   type="button"
                   className="flex w-full items-center space-x-2 rounded-sm p-1 text-xs transition-colors hover:bg-[#F2F1EF] dark:hover:bg-[#2b2b2b]"
-                  onClick={() => handleOpenUrl("https://git.new/compai")}
+                  onClick={() => handleOpenUrl('https://git.new/compai')}
                 >
                   <Icons.GithubOutline className="h-[16px] w-[16px]" />
                   <span>GitHub</span>

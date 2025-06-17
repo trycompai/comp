@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useI18n } from "@/app/locales/client";
-import { DropdownMenuItem } from "@comp/ui/dropdown-menu";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { authClient } from "@/app/lib/auth-client";
+import { useI18n } from '@/app/locales/client';
+import { DropdownMenuItem } from '@comp/ui/dropdown-menu';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { authClient } from '@/app/lib/auth-client';
 
 export function Logout() {
   const t = useI18n();
@@ -16,7 +16,7 @@ export function Logout() {
     await authClient.signOut({
       fetchOptions: {
         onSuccess: () => {
-          router.push("/auth"); // Redirect to /auth instead of /login
+          router.push('/auth'); // Redirect to /auth instead of /login
         },
       },
     });
@@ -25,7 +25,7 @@ export function Logout() {
 
   return (
     <DropdownMenuItem onClick={handleLogout}>
-      {isLoading ? "Loading..." : t("user_menu.sign_out")}
+      {isLoading ? 'Loading...' : t('user_menu.sign_out')}
     </DropdownMenuItem>
   );
 }

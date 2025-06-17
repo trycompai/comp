@@ -1,28 +1,22 @@
-"use client";
+'use client';
 
-import { UpdatePolicyForm } from "@/components/forms/policies/update-policy-form";
-import { Policy } from "@comp/db/types";
-import { Button } from "@comp/ui/button";
-import { Drawer, DrawerContent, DrawerTitle } from "@comp/ui/drawer";
-import { useMediaQuery } from "@comp/ui/hooks";
-import { ScrollArea } from "@comp/ui/scroll-area";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@comp/ui/sheet";
-import { X } from "lucide-react";
-import { useQueryState } from "nuqs";
+import { UpdatePolicyForm } from '@/components/forms/policies/update-policy-form';
+import { Policy } from '@comp/db/types';
+import { Button } from '@comp/ui/button';
+import { Drawer, DrawerContent, DrawerTitle } from '@comp/ui/drawer';
+import { useMediaQuery } from '@comp/ui/hooks';
+import { ScrollArea } from '@comp/ui/scroll-area';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@comp/ui/sheet';
+import { X } from 'lucide-react';
+import { useQueryState } from 'nuqs';
 
 export function PolicyOverviewSheet({ policy }: { policy: Policy }) {
-  const isDesktop = useMediaQuery("(min-width: 768px)");
-  const [open, setOpen] = useQueryState("policy-overview-sheet");
+  const isDesktop = useMediaQuery('(min-width: 768px)');
+  const [open, setOpen] = useQueryState('policy-overview-sheet');
   const isOpen = Boolean(open);
 
   const handleOpenChange = (open: boolean) => {
-    setOpen(open ? "true" : null);
+    setOpen(open ? 'true' : null);
   };
 
   if (isDesktop) {
@@ -31,7 +25,7 @@ export function PolicyOverviewSheet({ policy }: { policy: Policy }) {
         <SheetContent stack>
           <SheetHeader className="mb-8">
             <div className="flex flex-row items-center justify-between">
-              <SheetTitle>{"Update Policy"}</SheetTitle>
+              <SheetTitle>{'Update Policy'}</SheetTitle>
               <Button
                 size="icon"
                 variant="ghost"
@@ -40,10 +34,8 @@ export function PolicyOverviewSheet({ policy }: { policy: Policy }) {
               >
                 <X className="h-5 w-5" />
               </Button>
-            </div>{" "}
-            <SheetDescription>
-              {"Update policy details, content and metadata."}
-            </SheetDescription>
+            </div>{' '}
+            <SheetDescription>{'Update policy details, content and metadata.'}</SheetDescription>
           </SheetHeader>
 
           <ScrollArea className="h-full p-0 pb-[100px]" hideScrollbar>
@@ -56,7 +48,7 @@ export function PolicyOverviewSheet({ policy }: { policy: Policy }) {
 
   return (
     <Drawer open={isOpen} onOpenChange={handleOpenChange}>
-      <DrawerTitle hidden>{"Update Policy"}</DrawerTitle>
+      <DrawerTitle hidden>{'Update Policy'}</DrawerTitle>
       <DrawerContent className="p-6">
         <UpdatePolicyForm policy={policy} />
       </DrawerContent>

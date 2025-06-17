@@ -1,5 +1,5 @@
-import { Button } from "@comp/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from '@comp/ui/button';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface CarouselControlsProps {
   currentIndex: number;

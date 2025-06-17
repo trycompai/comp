@@ -1,5 +1,5 @@
-import { getOrganizationFromApiKey } from "@/lib/api-key";
-import { db } from "@comp/db";
+import { getOrganizationFromApiKey } from '@/lib/api-key';
+import { db } from '@comp/db';
 import type {
   Departments,
   Impact,
@@ -7,11 +7,11 @@ import type {
   RiskCategory,
   RiskStatus,
   RiskTreatmentType,
-} from "@comp/db/types";
-import { type NextRequest, NextResponse } from "next/server";
+} from '@comp/db/types';
+import { type NextRequest, NextResponse } from 'next/server';
 
 // Configure this route to use Node.js runtime instead of Edge
-export const runtime = "nodejs";
+export const runtime = 'nodejs';
 
 /**
  * GET /api/v1/risks/:id
@@ -30,13 +30,9 @@ export const runtime = "nodejs";
  * - 404: { success: false, error: "Risk not found" }
  * - 500: { success: false, error: "Failed to fetch risk" }
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   // Get the organization ID from the API key
-  const { organizationId, errorResponse } =
-    await getOrganizationFromApiKey(request);
+  const { organizationId, errorResponse } = await getOrganizationFromApiKey(request);
 
   // If there's an error response, return it
   if (errorResponse) {
@@ -87,7 +83,7 @@ export async function GET(
       return NextResponse.json(
         {
           success: false,
-          error: "Risk not found",
+          error: 'Risk not found',
         },
         { status: 404 },
       );
@@ -123,7 +119,7 @@ export async function GET(
         },
       },
       orderBy: {
-        createdAt: "desc",
+        createdAt: 'desc',
       },
     });
 
@@ -144,11 +140,11 @@ export async function GET(
       data: formattedRisk,
     });
   } catch (error) {
-    console.error("Error fetching risk:", error);
+    console.error('Error fetching risk:', error);
     return NextResponse.json(
       {
         success: false,
-        error: "Failed to fetch risk",
+        error: 'Failed to fetch risk',
       },
       { status: 500 },
     );
@@ -177,8 +173,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   // Get the organization ID from the API key
-  const { organizationId, errorResponse } =
-    await getOrganizationFromApiKey(request);
+  const { organizationId, errorResponse } = await getOrganizationFromApiKey(request);
 
   // If there's an error response, return it
   if (errorResponse) {
@@ -200,7 +195,7 @@ export async function DELETE(
       return NextResponse.json(
         {
           success: false,
-          error: "Risk not found",
+          error: 'Risk not found',
         },
         { status: 404 },
       );
@@ -216,15 +211,15 @@ export async function DELETE(
     return NextResponse.json({
       success: true,
       data: {
-        message: "Risk deleted successfully",
+        message: 'Risk deleted successfully',
       },
     });
   } catch (error) {
-    console.error("Error deleting risk:", error);
+    console.error('Error deleting risk:', error);
     return NextResponse.json(
       {
         success: false,
-        error: "Failed to delete risk",
+        error: 'Failed to delete risk',
       },
       { status: 500 },
     );

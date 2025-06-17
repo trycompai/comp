@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import { uploadFile } from "@/actions/files/upload-file";
-import { authClient } from "@/utils/auth-client";
-import type { AttachmentEntityType, CommentEntityType } from "@comp/db/types";
-import { Button } from "@comp/ui/button";
-import { Label } from "@comp/ui/label";
-import { Textarea } from "@comp/ui/textarea";
-import clsx from "clsx";
-import { ArrowUp, Loader2, Paperclip } from "lucide-react";
-import type React from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
-import { useParams, useRouter } from "next/navigation";
-import { createComment } from "@/actions/comments/createComment";
-import { AttachmentItem } from "../../app/(app)/[orgId]/tasks/[taskId]/components/AttachmentItem";
-import { Input } from "@comp/ui/input";
+import { uploadFile } from '@/actions/files/upload-file';
+import { authClient } from '@/utils/auth-client';
+import type { AttachmentEntityType, CommentEntityType } from '@comp/db/types';
+import { Button } from '@comp/ui/button';
+import { Label } from '@comp/ui/label';
+import { Textarea } from '@comp/ui/textarea';
+import clsx from 'clsx';
+import { ArrowUp, Loader2, Paperclip } from 'lucide-react';
+import type React from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
+import { useParams, useRouter } from 'next/navigation';
+import { createComment } from '@/actions/comments/createComment';
+import { AttachmentItem } from '../../app/(app)/[orgId]/tasks/[taskId]/components/AttachmentItem';
+import { Input } from '@comp/ui/input';
 
 interface CommentFormProps {
   entityId: string;
@@ -32,10 +32,8 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
   const session = authClient.useSession();
   const router = useRouter();
   const params = useParams();
-  const [newComment, setNewComment] = useState("");
-  const [pendingAttachments, setPendingAttachments] = useState<
-    PendingAttachment[]
-  >([]);
+  const [newComment, setNewComment] = useState('');
+  const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [hasMounted, setHasMounted] = useState(false);
@@ -44,15 +42,15 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
     setHasMounted(true);
   }, []);
 
-  let pathToRevalidate = "";
+  let pathToRevalidate = '';
   switch (entityType) {
-    case "task":
+    case 'task':
       pathToRevalidate = `/${params.orgId}/tasks/${entityId}`;
       break;
-    case "vendor":
+    case 'vendor':
       pathToRevalidate = `/${params.orgId}/vendors/${entityId}`;
       break;
-    case "risk":
+    case 'risk':
       pathToRevalidate = `/${params.orgId}/risks/${entityId}`;
       break;
   }
@@ -75,19 +73,17 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
           const MAX_FILE_SIZE_MB = 5;
           const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
           if (file.size > MAX_FILE_SIZE_BYTES) {
-            toast.error(
-              `File "${file.name}" exceeds the ${MAX_FILE_SIZE_MB}MB limit.`,
-            );
+            toast.error(`File "${file.name}" exceeds the ${MAX_FILE_SIZE_MB}MB limit.`);
             return resolve(); // Skip processing this file
           }
 
-          if (!file.type.startsWith("image/")) {
-            toast.info("Only image previews are shown before submitting.");
+          if (!file.type.startsWith('image/')) {
+            toast.info('Only image previews are shown before submitting.');
           }
           const reader = new FileReader();
           reader.onloadend = async () => {
             const dataUrlResult = reader.result as string;
-            const base64Data = dataUrlResult?.split(",")[1];
+            const base64Data = dataUrlResult?.split(',')[1];
             if (!base64Data) {
               toast.error(`Failed to read file data for ${file.name}`);
               return resolve();
@@ -101,23 +97,21 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
               pathToRevalidate,
             });
             if (error) {
-              console.error("Upload file action error occurred:", error);
+              console.error('Upload file action error occurred:', error);
               toast.error(`Failed to upload "${file.name}": ${error}`);
             } else if (success && data?.id && data.signedUrl) {
               setPendingAttachments((prev) => [
                 ...prev,
                 {
-                  id: data?.id ?? "",
-                  name: data?.name ?? "",
+                  id: data?.id ?? '',
+                  name: data?.name ?? '',
                   fileType: file.type,
                   signedUrl: data.signedUrl,
                 },
               ]);
-              toast.success(
-                `File "${data?.name ?? "unknown"}" ready for attachment.`,
-              );
+              toast.success(`File "${data?.name ?? 'unknown'}" ready for attachment.`);
             } else {
-              console.error("Upload succeeded but missing data:", data);
+              console.error('Upload succeeded but missing data:', data);
               toast.error(`Failed to process "${file.name}" after upload.`);
             }
             resolve();
@@ -136,31 +130,27 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
           await processFile(file);
         }
         setIsUploading(false);
-        if (fileInputRef.current) fileInputRef.current.value = "";
+        if (fileInputRef.current) fileInputRef.current.value = '';
       })();
     },
     [entityId, entityType, pendingAttachments.length],
   );
 
   const handleRemovePendingAttachment = (attachmentIdToRemove: string) => {
-    setPendingAttachments((prev) =>
-      prev.filter((att) => att.id !== attachmentIdToRemove),
-    );
-    toast.info("Attachment removed from comment draft.");
+    setPendingAttachments((prev) => prev.filter((att) => att.id !== attachmentIdToRemove));
+    toast.info('Attachment removed from comment draft.');
   };
 
   const handlePendingAttachmentClick = (attachmentId: string) => {
-    const pendingAttachment = pendingAttachments.find(
-      (att) => att.id === attachmentId,
-    );
+    const pendingAttachment = pendingAttachments.find((att) => att.id === attachmentId);
     if (!pendingAttachment) {
-      console.error("Could not find pending attachment for ID:", attachmentId);
-      toast.error("Could not find attachment data.");
+      console.error('Could not find pending attachment for ID:', attachmentId);
+      toast.error('Could not find attachment data.');
       return;
     }
 
     console.log(
-      "DEBUG: Opening signed URL for:",
+      'DEBUG: Opening signed URL for:',
       pendingAttachment.name,
       pendingAttachment.signedUrl,
     );
@@ -169,14 +159,14 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
     if (signedUrl) {
       try {
         // Directly open the signed URL
-        window.open(signedUrl, "_blank", "noopener,noreferrer");
+        window.open(signedUrl, '_blank', 'noopener,noreferrer');
       } catch (e) {
-        console.error("Error opening signed URL:", e);
-        toast.error("Could not open attachment preview.");
+        console.error('Error opening signed URL:', e);
+        toast.error('Could not open attachment preview.');
       }
     } else {
       // Handle case where signedUrl might be missing/null (shouldn't happen if upload worked)
-      toast.error("Attachment preview URL is not available.");
+      toast.error('Attachment preview URL is not available.');
     }
   };
 
@@ -192,8 +182,8 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
     });
 
     if (success && data) {
-      toast.success("Comment added!");
-      setNewComment("");
+      toast.success('Comment added!');
+      setNewComment('');
       setPendingAttachments([]);
     }
 
@@ -222,7 +212,7 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (
       (event.metaKey || event.ctrlKey) &&
-      event.key === "Enter" &&
+      event.key === 'Enter' &&
       !isLoading &&
       (newComment.trim() || pendingAttachments.length > 0)
     ) {
@@ -255,9 +245,7 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
 
           {pendingAttachments.length > 0 && (
             <div className="space-y-2 px-4 pt-2">
-              <Label className="text-muted-foreground text-xs">
-                Pending Attachments:
-              </Label>
+              <Label className="text-muted-foreground text-xs">Pending Attachments:</Label>
               {pendingAttachments.map((pendingAttachment) => (
                 <AttachmentItem
                   key={pendingAttachment.id}
@@ -288,10 +276,8 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
 
           <div
             className={clsx(
-              "flex items-center px-4 pt-1 pb-4",
-              pendingAttachments.length === 0
-                ? "justify-between"
-                : "justify-end",
+              'flex items-center px-4 pt-1 pb-4',
+              pendingAttachments.length === 0 ? 'justify-between' : 'justify-end',
             )}
           >
             {pendingAttachments.length === 0 && (
@@ -316,10 +302,7 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
               variant="outline"
               className="border-muted-foreground/50 cursor-pointer rounded-full px-2"
               onClick={handleCommentSubmit}
-              disabled={
-                isLoading ||
-                (!newComment.trim() && pendingAttachments.length === 0)
-              }
+              disabled={isLoading || (!newComment.trim() && pendingAttachments.length === 0)}
               aria-label="Submit comment"
             >
               <ArrowUp className="h-4 w-4" />

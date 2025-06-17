@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import type { modelID } from "@/hooks/ai/providers";
+import type { modelID } from '@/hooks/ai/providers';
 import {
   Select,
   SelectContent,
@@ -8,7 +8,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@comp/ui/select";
+} from '@comp/ui/select';
 
 interface ModelPickerProps {
   selectedModel: modelID;
@@ -16,13 +16,10 @@ interface ModelPickerProps {
 }
 
 const MODELS: Record<modelID, string> = {
-  "deepseek-r1-distill-llama-70b": "A reasoning model",
+  'deepseek-r1-distill-llama-70b': 'A reasoning model',
 };
 
-export const ModelPicker = ({
-  selectedModel,
-  setSelectedModel,
-}: ModelPickerProps) => {
+export const ModelPicker = ({ selectedModel, setSelectedModel }: ModelPickerProps) => {
   return (
     <div className="absolute bottom-2 left-2 flex flex-col gap-2">
       <Select value={selectedModel} onValueChange={setSelectedModel}>

@@ -1,20 +1,20 @@
-"use server";
+'use server';
 
-import { authActionClient } from "@/actions/safe-action";
-import { db } from "@comp/db";
-import { z } from "zod";
+import { authActionClient } from '@/actions/safe-action';
+import { db } from '@comp/db';
+import { z } from 'zod';
 
 const schema = z.object({
   name: z.string().min(1),
 });
 
 export const searchGlobalVendorsAction = authActionClient
-  .schema(schema)
+  .inputSchema(schema)
   .metadata({
-    name: "search-global-vendors",
+    name: 'search-global-vendors',
     track: {
-      event: "search-global-vendors",
-      channel: "server",
+      event: 'search-global-vendors',
+      channel: 'server',
     },
   })
   .action(async ({ parsedInput }) => {
@@ -27,10 +27,10 @@ export const searchGlobalVendorsAction = authActionClient
             {
               company_name: {
                 contains: name,
-                mode: "insensitive",
+                mode: 'insensitive',
               },
             },
-            { legal_name: { contains: name, mode: "insensitive" } },
+            { legal_name: { contains: name, mode: 'insensitive' } },
           ],
         },
         take: 5,
@@ -38,7 +38,7 @@ export const searchGlobalVendorsAction = authActionClient
 
       return { success: true, data: { vendors } };
     } catch (error) {
-      console.error("Error searching global vendors:", error);
-      return { success: false, error: "Failed to search global vendors" };
+      console.error('Error searching global vendors:', error);
+      return { success: false, error: 'Failed to search global vendors' };
     }
   });

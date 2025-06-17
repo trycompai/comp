@@ -1,26 +1,17 @@
-"use client";
+'use client';
 
-import { Button } from "@comp/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@comp/ui/select";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback } from "react";
+import { Button } from '@comp/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useCallback } from 'react';
 
 interface DataTablePaginationProps {
   pageCount: number;
   currentPage: number;
 }
 
-export function DataTablePagination({
-  pageCount,
-  currentPage,
-}: DataTablePaginationProps) {
+export function DataTablePagination({ pageCount, currentPage }: DataTablePaginationProps) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
@@ -28,7 +19,7 @@ export function DataTablePagination({
   const createPageQuery = useCallback(
     (value: number) => {
       const params = new URLSearchParams(searchParams);
-      params.set("page", value.toString());
+      params.set('page', value.toString());
       router.replace(`${pathname}?${params.toString()}`);
     },
     [searchParams, router, pathname],
@@ -37,8 +28,8 @@ export function DataTablePagination({
   const createPerPageQuery = useCallback(
     (value: string) => {
       const params = new URLSearchParams(searchParams);
-      params.set("per_page", value);
-      params.set("page", "1"); // Reset to first page when changing items per page
+      params.set('per_page', value);
+      params.set('page', '1'); // Reset to first page when changing items per page
       router.replace(`${pathname}?${params.toString()}`);
     },
     [searchParams, router, pathname],
@@ -47,10 +38,7 @@ export function DataTablePagination({
   return (
     <div className="mt-4 flex items-center justify-between">
       <div className="flex items-center space-x-2">
-        <Select
-          value={searchParams.get("per_page") || "5"}
-          onValueChange={createPerPageQuery}
-        >
+        <Select value={searchParams.get('per_page') || '5'} onValueChange={createPerPageQuery}>
           <SelectTrigger className="h-8 w-[70px]">
             <SelectValue placeholder="5" />
           </SelectTrigger>

@@ -1,18 +1,12 @@
-"use server";
+'use server';
 
-import { z } from "zod";
-import { db } from "@comp/db";
-import { CreatePolicySchema } from "./schemas";
-import { revalidatePath } from "next/cache";
-import {
-  FrameworkEditorPolicyTemplate,
-  Frequency,
-  Departments,
-} from "@prisma/client"; // Import necessary types
+import { z } from 'zod';
+import { db } from '@comp/db';
+import { CreatePolicySchema } from './schemas';
+import { revalidatePath } from 'next/cache';
+import { FrameworkEditorPolicyTemplate, Frequency, Departments } from '@prisma/client'; // Import necessary types
 
-export async function createPolicyAction(
-  formData: z.infer<typeof CreatePolicySchema>,
-) {
+export async function createPolicyAction(formData: z.infer<typeof CreatePolicySchema>) {
   const validatedFields = CreatePolicySchema.safeParse(formData);
 
   if (!validatedFields.success) {
@@ -20,7 +14,7 @@ export async function createPolicyAction(
     // For now, throwing an error or returning a simple error object
     return {
       errors: validatedFields.error.flatten().fieldErrors,
-      message: "Validation failed. Policy not created.",
+      message: 'Validation failed. Policy not created.',
     };
   }
 
@@ -37,15 +31,15 @@ export async function createPolicyAction(
       },
     });
 
-    revalidatePath("/policies");
+    revalidatePath('/policies');
     // Redirect will be handled on the client after a successful response
     // or we can redirect here and handle the response on the client to show a success message before redirect
     return { success: true, policyId: newPolicy.id };
   } catch (error) {
-    console.error("Error creating policy:", error);
+    console.error('Error creating policy:', error);
     return {
       errors: null,
-      message: "An error occurred while creating the policy.",
+      message: 'An error occurred while creating the policy.',
     };
   }
 }
@@ -53,7 +47,7 @@ export async function createPolicyAction(
 // --- Validation Schemas ---
 
 const PolicyDetailsSchema = z.object({
-  name: z.string().min(1, "Name is required"),
+  name: z.string().min(1, 'Name is required'),
   description: z.string().nullish(), // Allow null or undefined, map to null for Prisma
   frequency: z.nativeEnum(Frequency), // Use the correct enum name
   department: z.nativeEnum(Departments), // Use the correct enum name
@@ -76,14 +70,14 @@ export async function updatePolicyTemplateDetails(
   const validationResult = PolicyDetailsSchema.safeParse(data);
 
   if (!validationResult.success) {
-    console.error("Validation failed:", validationResult.error.flatten());
+    console.error('Validation failed:', validationResult.error.flatten());
     const errorMessages = validationResult.error.flatten().fieldErrors;
     const formattedErrors = Object.entries(errorMessages)
-      .map(([field, messages]) => `${field}: ${messages?.join(", ")}`)
-      .join("; ");
+      .map(([field, messages]) => `${field}: ${messages?.join(', ')}`)
+      .join('; ');
     return {
       success: false,
-      message: `Invalid data: ${formattedErrors || "Please check your input."}`,
+      message: `Invalid data: ${formattedErrors || 'Please check your input.'}`,
       policy: undefined,
     };
   }
@@ -99,18 +93,18 @@ export async function updatePolicyTemplateDetails(
       where: { id: policyId },
       data: prismaData, // Use the potentially modified data
     });
-    revalidatePath("/policies");
+    revalidatePath('/policies');
     revalidatePath(`/policies/${policyId}`);
     return {
       success: true,
-      message: "Policy updated successfully.",
+      message: 'Policy updated successfully.',
       policy: updatedPolicy,
     };
   } catch (error) {
-    console.error("Failed to update policy:", error);
+    console.error('Failed to update policy:', error);
     return {
       success: false,
-      message: "Database error: Failed to update policy.",
+      message: 'Database error: Failed to update policy.',
       policy: undefined,
     };
   }
@@ -122,20 +116,20 @@ export async function deletePolicyTemplate(
   policyId: string,
 ): Promise<{ success: boolean; message: string }> {
   if (!policyId) {
-    return { success: false, message: "Policy ID is required." };
+    return { success: false, message: 'Policy ID is required.' };
   }
 
   try {
     await db.frameworkEditorPolicyTemplate.delete({
       where: { id: policyId },
     });
-    revalidatePath("/policies");
-    return { success: true, message: "Policy deleted successfully." };
+    revalidatePath('/policies');
+    return { success: true, message: 'Policy deleted successfully.' };
   } catch (error) {
-    console.error("Failed to delete policy:", error);
+    console.error('Failed to delete policy:', error);
     return {
       success: false,
-      message: "Database error: Failed to delete policy.",
+      message: 'Database error: Failed to delete policy.',
     };
   }
 }

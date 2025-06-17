@@ -1,6 +1,6 @@
-import { Icons } from "@comp/ui/icons";
-import Link from "next/link";
-import { MainMenu } from "./main-menu";
+import { Icons } from '@comp/ui/icons';
+import Link from 'next/link';
+import { MainMenu } from './main-menu';
 
 export async function Sidebar() {
   return (

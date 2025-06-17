@@ -1,12 +1,7 @@
-"use client";
+'use client';
 
-import {
-  EditorContent,
-  EditorRoot,
-  type JSONContent,
-  handleCommandNavigation,
-} from "novel";
-import { defaultExtensions } from "./extensions";
+import { EditorContent, EditorRoot, type JSONContent, handleCommandNavigation } from 'novel';
+import { defaultExtensions } from './extensions';
 
 interface AdvancedEditorProps {
   initialContent?: JSONContent | JSONContent[];
@@ -20,17 +15,17 @@ const AdvancedEditor = ({ initialContent }: AdvancedEditorProps) => {
 
   // Ensure content is properly structured with a doc type
   const formattedContent = Array.isArray(initialContent)
-    ? { type: "doc", content: initialContent }
-    : initialContent.type === "doc"
+    ? { type: 'doc', content: initialContent }
+    : initialContent.type === 'doc'
       ? initialContent
-      : { type: "doc", content: [initialContent] };
+      : { type: 'doc', content: [initialContent] };
 
   // Ensure there's at least one paragraph with text content
   if (!formattedContent.content || formattedContent.content.length === 0) {
     formattedContent.content = [
       {
-        type: "paragraph",
-        content: [{ type: "text", text: "" }],
+        type: 'paragraph',
+        content: [{ type: 'text', text: '' }],
       },
     ];
   }
@@ -50,7 +45,7 @@ const AdvancedEditor = ({ initialContent }: AdvancedEditorProps) => {
             },
             attributes: {
               class:
-                "prose prose-lg dark:prose-invert prose-headings:font-title font-default focus:outline-hidden max-w-full",
+                'prose prose-lg dark:prose-invert prose-headings:font-title font-default focus:outline-hidden max-w-full',
             },
           }}
         />

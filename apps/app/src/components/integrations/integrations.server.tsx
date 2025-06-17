@@ -1,8 +1,8 @@
-import { auth } from "@/utils/auth";
-import { db } from "@comp/db";
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
-import { OrganizationIntegration } from "./integrations";
+import { auth } from '@/utils/auth';
+import { db } from '@comp/db';
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { OrganizationIntegration } from './integrations';
 
 export async function IntegrationsServer() {
   const session = await auth.api.getSession({
@@ -10,7 +10,7 @@ export async function IntegrationsServer() {
   });
 
   if (!session?.session.activeOrganizationId) {
-    return redirect("/");
+    return redirect('/');
   }
 
   const organization = await db.organization.findUnique({
@@ -20,7 +20,7 @@ export async function IntegrationsServer() {
   });
 
   if (!organization) {
-    return redirect("/");
+    return redirect('/');
   }
 
   // Fetch organization integrations

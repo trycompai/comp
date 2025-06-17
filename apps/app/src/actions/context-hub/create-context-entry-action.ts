@@ -1,18 +1,18 @@
-"use server";
+'use server';
 
-import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
-import { authActionClient } from "../safe-action";
-import { createContextEntrySchema } from "../schema";
-import { db } from "@comp/db";
+import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
+import { authActionClient } from '../safe-action';
+import { createContextEntrySchema } from '../schema';
+import { db } from '@comp/db';
 
 export const createContextEntryAction = authActionClient
-  .schema(createContextEntrySchema)
-  .metadata({ name: "create-context-entry" })
+  .inputSchema(createContextEntrySchema)
+  .metadata({ name: 'create-context-entry' })
   .action(async ({ parsedInput, ctx }) => {
     const { question, answer, tags } = parsedInput;
     const organizationId = ctx.session.activeOrganizationId;
-    if (!organizationId) throw new Error("No active organization");
+    if (!organizationId) throw new Error('No active organization');
 
     await db.context.create({
       data: {
@@ -20,7 +20,7 @@ export const createContextEntryAction = authActionClient
         answer,
         tags: tags
           ? tags
-              .split(",")
+              .split(',')
               .map((t) => t.trim())
               .filter(Boolean)
           : [],
@@ -29,9 +29,8 @@ export const createContextEntryAction = authActionClient
     });
 
     const headersList = await headers();
-    let path =
-      headersList.get("x-pathname") || headersList.get("referer") || "";
-    path = path.replace(/\/[a-z]{2}\//, "/");
+    let path = headersList.get('x-pathname') || headersList.get('referer') || '';
+    path = path.replace(/\/[a-z]{2}\//, '/');
 
     revalidatePath(path);
 

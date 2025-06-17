@@ -1,21 +1,21 @@
-import type { Page } from "playwright-core";
+import type { Page } from 'playwright-core';
 
 // ------------------------------------------------------------------
 // 1) Standard DOM type definitions
 // ------------------------------------------------------------------
 export interface DOMBaseNode {
-  type: "TEXT_NODE" | "ELEMENT_NODE";
+  type: 'TEXT_NODE' | 'ELEMENT_NODE';
   isVisible: boolean;
   parent?: DOMElementNode;
 }
 
 export interface DOMTextNode extends DOMBaseNode {
-  type: "TEXT_NODE";
+  type: 'TEXT_NODE';
   text: string;
 }
 
 export interface DOMElementNode extends DOMBaseNode {
-  type: "ELEMENT_NODE";
+  type: 'ELEMENT_NODE';
   tagName: string;
   xpath: string;
   attributes: Record<string, string>;
@@ -210,9 +210,9 @@ const GATHER_DOM_TREE_JS = String.raw`
 function parseNode(nodeData: any, parent?: DOMElementNode): DOMBaseNode | null {
   if (!nodeData) return null;
 
-  if (nodeData.type === "TEXT_NODE") {
+  if (nodeData.type === 'TEXT_NODE') {
     const textNode: DOMTextNode = {
-      type: "TEXT_NODE",
+      type: 'TEXT_NODE',
       text: nodeData.text,
       isVisible: !!nodeData.isVisible,
       parent,
@@ -220,11 +220,11 @@ function parseNode(nodeData: any, parent?: DOMElementNode): DOMBaseNode | null {
     return textNode;
   }
 
-  if (nodeData.type === "ELEMENT_NODE") {
+  if (nodeData.type === 'ELEMENT_NODE') {
     const elementNode: DOMElementNode = {
-      type: "ELEMENT_NODE",
-      tagName: nodeData.tagName || "",
-      xpath: nodeData.xpath || "",
+      type: 'ELEMENT_NODE',
+      tagName: nodeData.tagName || '',
+      xpath: nodeData.xpath || '',
       attributes: nodeData.attributes || {},
       children: [],
       isVisible: !!nodeData.isVisible,
@@ -249,15 +249,13 @@ function parseNode(nodeData: any, parent?: DOMElementNode): DOMBaseNode | null {
   return null;
 }
 
-function createSelectorMap(
-  elementTree: DOMElementNode,
-): Record<number, DOMElementNode> {
+function createSelectorMap(elementTree: DOMElementNode): Record<number, DOMElementNode> {
   const selectorMap: Record<number, DOMElementNode> = {};
 
   function traverse(node: DOMBaseNode) {
-    if (node.type === "ELEMENT_NODE") {
+    if (node.type === 'ELEMENT_NODE') {
       const el = node as DOMElementNode;
-      if (typeof el.highlightIndex === "number") {
+      if (typeof el.highlightIndex === 'number') {
         selectorMap[el.highlightIndex] = el;
       }
       for (const child of el.children) {
@@ -272,10 +270,7 @@ function createSelectorMap(
 // ------------------------------------------------------------------
 // 4) "Get the DOM" method, separate from highlighting
 // ------------------------------------------------------------------
-export async function getDomState(
-  page: Page,
-  highlightElements = true,
-): Promise<DomResult> {
+export async function getDomState(page: Page, highlightElements = true): Promise<DomResult> {
   // 1) Collect raw JSON from the browser
   const rawTree = await page.evaluate(
     ({ script, doHighlight }) => {
@@ -285,11 +280,11 @@ export async function getDomState(
     { script: GATHER_DOM_TREE_JS, doHighlight: highlightElements },
   );
 
-  if (!rawTree) throw new Error("No DOM returned from browser!");
+  if (!rawTree) throw new Error('No DOM returned from browser!');
 
   // 2) Parse into typed structure
   const elementTree = parseNode(rawTree) as DOMElementNode;
-  if (!elementTree) throw new Error("Failed to parse root element node!");
+  if (!elementTree) throw new Error('Failed to parse root element node!');
 
   // 3) Build highlightIndex -> DOMElement map
   const selectorMap = createSelectorMap(elementTree);
@@ -303,10 +298,7 @@ export async function getDomState(
 //    so it won't jump around. Also a bigger label text,
 //    bigger background for better readability.
 // ------------------------------------------------------------------
-export async function highlightDomElements(
-  page: Page,
-  rawDom: any,
-): Promise<void> {
+export async function highlightDomElements(page: Page, rawDom: any): Promise<void> {
   await page.evaluate((rawData) => {
     if (!rawData) return;
 
@@ -314,10 +306,7 @@ export async function highlightDomElements(
     const nodesWithIndex: any[] = [];
     function dfs(node: any) {
       if (!node) return;
-      if (
-        node.type === "ELEMENT_NODE" &&
-        typeof node.highlightIndex === "number"
-      ) {
+      if (node.type === 'ELEMENT_NODE' && typeof node.highlightIndex === 'number') {
         nodesWithIndex.push(node);
       }
       if (Array.isArray(node.children)) {
@@ -329,9 +318,9 @@ export async function highlightDomElements(
     dfs(rawData);
 
     // 2) Insert style if not present
-    const styleId = "dom-highlighter-style";
+    const styleId = 'dom-highlighter-style';
     if (!document.getElementById(styleId)) {
-      const styleEl = document.createElement("style");
+      const styleEl = document.createElement('style');
       styleEl.id = styleId;
       styleEl.textContent = `
         .dom-highlighter-overlay {
@@ -361,36 +350,36 @@ export async function highlightDomElements(
     }
 
     // 3) Clear old overlays
-    for (const el of document.querySelectorAll(".dom-highlighter-overlay")) {
+    for (const el of document.querySelectorAll('.dom-highlighter-overlay')) {
       el.remove();
     }
 
     // 4) Some color rotation
     const highlightColors = [
       {
-        border: "#FF5D5D",
-        bg: "#FF5D5D",
-        highlight: "rgba(255,93,93,0.08)",
+        border: '#FF5D5D',
+        bg: '#FF5D5D',
+        highlight: 'rgba(255,93,93,0.08)',
       },
       {
-        border: "#4CAF50",
-        bg: "#4CAF50",
-        highlight: "rgba(76,175,80,0.08)",
+        border: '#4CAF50',
+        bg: '#4CAF50',
+        highlight: 'rgba(76,175,80,0.08)',
       },
       {
-        border: "#2196F3",
-        bg: "#2196F3",
-        highlight: "rgba(33,150,243,0.08)",
+        border: '#2196F3',
+        bg: '#2196F3',
+        highlight: 'rgba(33,150,243,0.08)',
       },
       {
-        border: "#FFC107",
-        bg: "#FFC107",
-        highlight: "rgba(255,193,7,0.08)",
+        border: '#FFC107',
+        bg: '#FFC107',
+        highlight: 'rgba(255,193,7,0.08)',
       },
       {
-        border: "#9C27B0",
-        bg: "#9C27B0",
-        highlight: "rgba(156,39,176,0.08)",
+        border: '#9C27B0',
+        bg: '#9C27B0',
+        highlight: 'rgba(156,39,176,0.08)',
       },
     ];
 
@@ -413,16 +402,15 @@ export async function highlightDomElements(
       const rect = el.getBoundingClientRect();
       if (rect.width === 0 && rect.height === 0) return;
 
-      const colorStyle =
-        highlightColors[highlightIndex % highlightColors.length];
-      const overlay = document.createElement("div");
-      overlay.className = "dom-highlighter-overlay";
+      const colorStyle = highlightColors[highlightIndex % highlightColors.length];
+      const overlay = document.createElement('div');
+      overlay.className = 'dom-highlighter-overlay';
 
-      const numberSpan = document.createElement("span");
-      numberSpan.className = "dom-highlighter-number";
+      const numberSpan = document.createElement('span');
+      numberSpan.className = 'dom-highlighter-number';
       numberSpan.textContent = String(highlightIndex);
       numberSpan.style.backgroundColor = colorStyle.bg;
-      numberSpan.style.color = "white";
+      numberSpan.style.color = 'white';
       overlay.appendChild(numberSpan);
 
       overlay.style.top = `${rect.top}px`;
@@ -439,10 +427,10 @@ export async function highlightDomElements(
 
 export async function clearDomHighlights(page: Page): Promise<void> {
   await page.evaluate(() => {
-    for (const el of document.querySelectorAll(".dom-highlighter-overlay")) {
+    for (const el of document.querySelectorAll('.dom-highlighter-overlay')) {
       el.remove();
     }
-    const styleEl = document.getElementById("dom-highlighter-style");
+    const styleEl = document.getElementById('dom-highlighter-style');
     if (styleEl) styleEl.remove();
   });
 }

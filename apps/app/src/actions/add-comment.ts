@@ -1,15 +1,15 @@
-"use server";
+'use server';
 
-import { AppError, appErrors } from "@/lib/errors";
-import { db } from "@comp/db";
-import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
-import { z } from "zod";
-import { authActionClient } from "./safe-action";
-import { CommentEntityType } from "@comp/db/types";
+import { AppError, appErrors } from '@/lib/errors';
+import { db } from '@comp/db';
+import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
+import { z } from 'zod';
+import { authActionClient } from './safe-action';
+import { CommentEntityType } from '@comp/db/types';
 
 export const addCommentAction = authActionClient
-  .schema(
+  .inputSchema(
     z.object({
       content: z.string(),
       entityId: z.string(),
@@ -17,10 +17,10 @@ export const addCommentAction = authActionClient
     }),
   )
   .metadata({
-    name: "add-comment",
+    name: 'add-comment',
     track: {
-      event: "add-comment",
-      channel: "server",
+      event: 'add-comment',
+      channel: 'server',
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -60,9 +60,8 @@ export const addCommentAction = authActionClient
       });
 
       const headersList = await headers();
-      let path =
-        headersList.get("x-pathname") || headersList.get("referer") || "";
-      path = path.replace(/\/[a-z]{2}\//, "/");
+      let path = headersList.get('x-pathname') || headersList.get('referer') || '';
+      path = path.replace(/\/[a-z]{2}\//, '/');
 
       revalidatePath(path);
 

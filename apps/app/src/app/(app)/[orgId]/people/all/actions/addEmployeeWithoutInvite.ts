@@ -1,7 +1,7 @@
-"use server";
+'use server';
 
-import { auth } from "@/utils/auth";
-import { db } from "@comp/db";
+import { auth } from '@/utils/auth';
+import { db } from '@comp/db';
 
 export const addEmployeeWithoutInvite = async ({
   email,
@@ -11,7 +11,7 @@ export const addEmployeeWithoutInvite = async ({
   organizationId: string;
 }) => {
   try {
-    let userId = "";
+    let userId = '';
     const existingUser = await db.user.findUnique({
       where: {
         email,
@@ -23,7 +23,7 @@ export const addEmployeeWithoutInvite = async ({
         data: {
           emailVerified: false,
           email,
-          name: email.split("@")[0],
+          name: email.split('@')[0],
         },
       });
 
@@ -34,13 +34,13 @@ export const addEmployeeWithoutInvite = async ({
       body: {
         userId: existingUser?.id ?? userId,
         organizationId,
-        role: "employee",
+        role: 'employee',
       },
     });
 
     return { success: true, data: member };
   } catch (error) {
-    console.error("Error adding employee:", error);
-    return { success: false, error: "Failed to add employee" };
+    console.error('Error adding employee:', error);
+    return { success: false, error: 'Failed to add employee' };
   }
 };

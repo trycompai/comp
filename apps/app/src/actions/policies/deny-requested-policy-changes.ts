@@ -1,10 +1,10 @@
-"use server";
+'use server';
 
-import { db } from "@comp/db";
-import { PolicyStatus } from "@comp/db/types";
-import { revalidatePath, revalidateTag } from "next/cache";
-import { authActionClient } from "../safe-action";
-import { z } from "zod";
+import { db } from '@comp/db';
+import { PolicyStatus } from '@comp/db/types';
+import { revalidatePath, revalidateTag } from 'next/cache';
+import { authActionClient } from '../safe-action';
+import { z } from 'zod';
 
 const denyRequestedPolicyChangesSchema = z.object({
   id: z.string(),
@@ -14,13 +14,13 @@ const denyRequestedPolicyChangesSchema = z.object({
 });
 
 export const denyRequestedPolicyChangesAction = authActionClient
-  .schema(denyRequestedPolicyChangesSchema)
+  .inputSchema(denyRequestedPolicyChangesSchema)
   .metadata({
-    name: "deny-requested-policy-changes",
+    name: 'deny-requested-policy-changes',
     track: {
-      event: "deny-requested-policy-changes",
-      description: "Deny Policy Changes",
-      channel: "server",
+      event: 'deny-requested-policy-changes',
+      description: 'Deny Policy Changes',
+      channel: 'server',
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -28,11 +28,11 @@ export const denyRequestedPolicyChangesAction = authActionClient
     const { user, session } = ctx;
 
     if (!user.id || !session.activeOrganizationId) {
-      throw new Error("Unauthorized");
+      throw new Error('Unauthorized');
     }
 
     if (!approverId) {
-      throw new Error("Approver is required");
+      throw new Error('Approver is required');
     }
 
     try {
@@ -44,11 +44,11 @@ export const denyRequestedPolicyChangesAction = authActionClient
       });
 
       if (!policy) {
-        throw new Error("Policy not found");
+        throw new Error('Policy not found');
       }
 
       if (policy.approverId !== approverId) {
-        throw new Error("Approver is not the same");
+        throw new Error('Approver is not the same');
       }
 
       // Update policy status
@@ -64,7 +64,7 @@ export const denyRequestedPolicyChangesAction = authActionClient
       });
 
       // If a comment was provided, create a comment
-      if (comment && comment.trim() !== "") {
+      if (comment && comment.trim() !== '') {
         const member = await db.member.findFirst({
           where: {
             userId: user.id,
@@ -77,7 +77,7 @@ export const denyRequestedPolicyChangesAction = authActionClient
             data: {
               content: `Policy changes denied: ${comment}`,
               entityId: id,
-              entityType: "policy",
+              entityType: 'policy',
               organizationId: session.activeOrganizationId,
               authorId: member.id,
             },
@@ -87,13 +87,13 @@ export const denyRequestedPolicyChangesAction = authActionClient
 
       revalidatePath(`/${session.activeOrganizationId}/policies`);
       revalidatePath(`/${session.activeOrganizationId}/policies/${id}`);
-      revalidateTag("policies");
+      revalidateTag('policies');
 
       return {
         success: true,
       };
     } catch (error) {
-      console.error("Error submitting policy for approval:", error);
+      console.error('Error submitting policy for approval:', error);
 
       return {
         success: false,

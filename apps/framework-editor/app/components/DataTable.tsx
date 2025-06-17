@@ -1,18 +1,11 @@
-"use client";
+'use client';
 
-import { useMemo, type ElementType } from "react";
-import { useQueryState } from "nuqs";
-import { Input } from "@comp/ui/input";
-import { Button } from "@comp/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@comp/ui/table";
-import { Search, PlusCircle, TableIcon } from "lucide-react";
+import { useMemo, type ElementType } from 'react';
+import { useQueryState } from 'nuqs';
+import { Input } from '@comp/ui/input';
+import { Button } from '@comp/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@comp/ui/table';
+import { Search, PlusCircle, TableIcon } from 'lucide-react';
 import {
   type ColumnDef,
   flexRender,
@@ -21,8 +14,8 @@ import {
   useReactTable,
   type SortingState,
   getSortedRowModel,
-} from "@tanstack/react-table";
-import React from "react";
+} from '@tanstack/react-table';
+import React from 'react';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -38,15 +31,15 @@ interface DataTableProps<TData, TValue> {
 export function DataTable<TData, TValue>({
   columns,
   data,
-  searchQueryParamName = "q",
+  searchQueryParamName = 'q',
   onCreateClick,
-  createButtonLabel = "Create New",
+  createButtonLabel = 'Create New',
   CreateButtonIcon = PlusCircle,
   onRowClick,
-  searchPlaceholder = "Search table...",
+  searchPlaceholder = 'Search table...',
 }: DataTableProps<TData, TValue>) {
   const [globalFilter, setGlobalFilter] = useQueryState(searchQueryParamName, {
-    defaultValue: "",
+    defaultValue: '',
   });
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
@@ -54,7 +47,7 @@ export function DataTable<TData, TValue>({
     data,
     columns,
     state: {
-      globalFilter: globalFilter ?? "",
+      globalFilter: globalFilter ?? '',
       sorting,
     },
     onGlobalFilterChange: setGlobalFilter,
@@ -64,7 +57,7 @@ export function DataTable<TData, TValue>({
     getSortedRowModel: getSortedRowModel(),
   });
 
-  const searchTerm = globalFilter ?? "";
+  const searchTerm = globalFilter ?? '';
   const { rows } = table.getRowModel();
 
   // Memoize filtered data for "No results" message logic
@@ -75,8 +68,8 @@ export function DataTable<TData, TValue>({
     return data.some((item) =>
       columns.some((colDef) => {
         const column = colDef as any;
-        let cellValueString = "";
-        if (typeof column.accessorFn === "function") {
+        let cellValueString = '';
+        if (typeof column.accessorFn === 'function') {
           const cellValue = column.accessorFn(item, 0);
           cellValueString = String(cellValue);
         } else if (column.accessorKey) {
@@ -142,10 +135,7 @@ export function DataTable<TData, TValue>({
                   >
                     {header.isPlaceholder
                       ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
+                      : flexRender(header.column.columnDef.header, header.getContext())}
                   </TableHead>
                 ))}
               </TableRow>
@@ -156,21 +146,13 @@ export function DataTable<TData, TValue>({
               return (
                 <TableRow
                   key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                  onClick={() =>
-                    onRowClick && onRowClick(row.original as TData)
-                  }
-                  className={`group ${onRowClick ? "hover:bg-muted/50 cursor-pointer" : ""}`.trim()}
+                  data-state={row.getIsSelected() && 'selected'}
+                  onClick={() => onRowClick && onRowClick(row.original as TData)}
+                  className={`group ${onRowClick ? 'hover:bg-muted/50 cursor-pointer' : ''}`.trim()}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell
-                      key={cell.id}
-                      style={{ width: cell.column.getSize() }}
-                    >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
+                    <TableCell key={cell.id} style={{ width: cell.column.getSize() }}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
                 </TableRow>
@@ -181,10 +163,7 @@ export function DataTable<TData, TValue>({
       ) : searchTerm && !hasFilteredResults && data.length > 0 ? (
         <p className="py-4 text-center">No results found for "{searchTerm}".</p>
       ) : (
-        !searchTerm &&
-        data.length === 0 && (
-          <p className="py-4 text-center">No data available.</p>
-        )
+        !searchTerm && data.length === 0 && <p className="py-4 text-center">No data available.</p>
       )}
     </div>
   );

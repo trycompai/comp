@@ -1,21 +1,21 @@
-"use client";
+'use client';
 
-import { Button } from "@comp/ui/button";
-import { Drawer, DrawerContent, DrawerTitle } from "@comp/ui/drawer";
-import { useMediaQuery } from "@comp/ui/hooks";
-import { ScrollArea } from "@comp/ui/scroll-area";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@comp/ui/sheet";
-import { X } from "lucide-react";
-import { useQueryState } from "nuqs";
+import { Button } from '@comp/ui/button';
+import { Drawer, DrawerContent, DrawerTitle } from '@comp/ui/drawer';
+import { useMediaQuery } from '@comp/ui/hooks';
+import { ScrollArea } from '@comp/ui/scroll-area';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@comp/ui/sheet';
+import { X } from 'lucide-react';
+import { useQueryState } from 'nuqs';
 // import { CreateVendorTaskForm } from "./create-vendor-task-form";
 
 export function CreateVendorTaskSheet() {
-  const isDesktop = useMediaQuery("(min-width: 768px)");
-  const [open, setOpen] = useQueryState("create-vendor-task-sheet");
+  const isDesktop = useMediaQuery('(min-width: 768px)');
+  const [open, setOpen] = useQueryState('create-vendor-task-sheet');
   const isOpen = Boolean(open);
 
   const handleOpenChange = (open: boolean) => {
-    setOpen(open ? "true" : null);
+    setOpen(open ? 'true' : null);
   };
 
   if (isDesktop) {
@@ -23,7 +23,7 @@ export function CreateVendorTaskSheet() {
       <Sheet open={isOpen} onOpenChange={handleOpenChange}>
         <SheetContent stack>
           <SheetHeader className="mb-8 flex flex-row items-center justify-between">
-            <SheetTitle>{"Create Vendor Task"}</SheetTitle>
+            <SheetTitle>{'Create Vendor Task'}</SheetTitle>
             <Button
               size="icon"
               variant="ghost"
@@ -44,7 +44,7 @@ export function CreateVendorTaskSheet() {
 
   return (
     <Drawer open={isOpen} onOpenChange={handleOpenChange}>
-      <DrawerTitle hidden>{"Create Vendor Task"}</DrawerTitle>
+      <DrawerTitle hidden>{'Create Vendor Task'}</DrawerTitle>
       <DrawerContent className="p-6">
         {/* <CreateVendorTaskForm assignees={assignees} /> */}
       </DrawerContent>

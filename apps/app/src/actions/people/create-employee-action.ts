@@ -1,18 +1,18 @@
-"use server";
+'use server';
 
-import { completeEmployeeCreation } from "@/lib/db/employee";
-import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
-import { authActionClient } from "../safe-action";
-import { createEmployeeSchema } from "../schema";
-import type { ActionResponse } from "../types";
+import { completeEmployeeCreation } from '@/lib/db/employee';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import { authActionClient } from '../safe-action';
+import { createEmployeeSchema } from '../schema';
+import type { ActionResponse } from '../types';
 
 export const createEmployeeAction = authActionClient
-  .schema(createEmployeeSchema)
+  .inputSchema(createEmployeeSchema)
   .metadata({
-    name: "create-employee",
+    name: 'create-employee',
     track: {
-      event: "create-employee",
-      channel: "server",
+      event: 'create-employee',
+      channel: 'server',
     },
   })
   .action(async ({ parsedInput, ctx }): Promise<ActionResponse> => {
@@ -22,7 +22,7 @@ export const createEmployeeAction = authActionClient
     if (!session.activeOrganizationId) {
       return {
         success: false,
-        error: "Not authorized - no organization found",
+        error: 'Not authorized - no organization found',
       };
     }
 
@@ -40,23 +40,18 @@ export const createEmployeeAction = authActionClient
         data: employee,
       };
     } catch (error) {
-      console.error("Error creating employee:", error);
+      console.error('Error creating employee:', error);
 
-      if (
-        error instanceof PrismaClientKnownRequestError &&
-        error.code === "P2002"
-      ) {
+      if (error instanceof PrismaClientKnownRequestError && error.code === 'P2002') {
         return {
           success: false,
-          error:
-            "An employee with this email already exists in your organization",
+          error: 'An employee with this email already exists in your organization',
         };
       }
 
       return {
         success: false,
-        error:
-          error instanceof Error ? error.message : "Failed to create employee",
+        error: error instanceof Error ? error.message : 'Failed to create employee',
       };
     }
   });

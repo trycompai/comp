@@ -1,5 +1,5 @@
-import { ReactNode, useState } from "react";
-import { Popover, PopoverContent, PopoverTrigger } from "@comp/ui/popover";
+import { ReactNode, useState } from 'react';
+import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
 import {
   Command,
   CommandEmpty,
@@ -7,9 +7,9 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@comp/ui/command";
-import { Check } from "lucide-react";
-import { cn } from "@comp/ui/cn";
+} from '@comp/ui/command';
+import { Check } from 'lucide-react';
+import { cn } from '@comp/ui/cn';
 
 export interface PropertySelectorProps<T> {
   trigger: ReactNode;
@@ -34,13 +34,13 @@ export function PropertySelector<T>({
   getKey,
   renderOption,
   onSelect,
-  searchPlaceholder = "Search...",
-  emptyText = "No results found.",
-  contentWidth = "w-56", // Default width
+  searchPlaceholder = 'Search...',
+  emptyText = 'No results found.',
+  contentWidth = 'w-56', // Default width
   disabled = false,
   allowUnassign = false,
-  unassignValue = "unassigned",
-  unassignLabel = "Unassigned",
+  unassignValue = 'unassigned',
+  unassignLabel = 'Unassigned',
 }: PropertySelectorProps<T>) {
   const [popoverOpen, setPopoverOpen] = useState(false);
 
@@ -67,10 +67,8 @@ export function PropertySelector<T>({
                 >
                   <Check
                     className={cn(
-                      "mr-2 h-4 w-4",
-                      value === null || value === undefined
-                        ? "opacity-100"
-                        : "opacity-0",
+                      'mr-2 h-4 w-4',
+                      value === null || value === undefined ? 'opacity-100' : 'opacity-0',
                     )}
                   />
                   <span className="text-muted-foreground">{unassignLabel}</span>
@@ -89,10 +87,7 @@ export function PropertySelector<T>({
                     }}
                   >
                     <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        value === key ? "opacity-100" : "opacity-0",
-                      )}
+                      className={cn('mr-2 h-4 w-4', value === key ? 'opacity-100' : 'opacity-0')}
                     />
                     {renderOption(option)}
                   </CommandItem>

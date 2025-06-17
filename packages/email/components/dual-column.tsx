@@ -1,5 +1,5 @@
-import { Section } from "@react-email/components";
-import type React from "react";
+import { Section } from '@react-email/components';
+import type React from 'react';
 
 interface DualColumnProps {
   styles?: React.CSSProperties;
@@ -22,9 +22,9 @@ export const DualColumn: React.FC<DualColumnProps> = ({
 }) => {
   const colMaxWidth = pX ? (600 - 2 * pX) / 2 : 600 / 2;
   const baseColumnStyles = {
-    display: "inline-block",
-    verticalAlign: "top",
-    boxSizing: "border-box" as const,
+    display: 'inline-block',
+    verticalAlign: 'top',
+    boxSizing: 'border-box' as const,
   };
 
   return (

@@ -1,22 +1,22 @@
-"use server";
+'use server';
 
-import { authActionClient } from "@/actions/safe-action";
-import { DeleteObjectCommand } from "@aws-sdk/client-s3";
-import { db } from "@comp/db";
-import { AttachmentEntityType } from "@comp/db/types";
-import { revalidatePath } from "next/cache";
-import { z } from "zod";
-import { s3Client, BUCKET_NAME, extractS3KeyFromUrl } from "@/app/s3";
+import { authActionClient } from '@/actions/safe-action';
+import { DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { db } from '@comp/db';
+import { AttachmentEntityType } from '@comp/db/types';
+import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
+import { s3Client, BUCKET_NAME, extractS3KeyFromUrl } from '@/app/s3';
 
 const schema = z.object({
   attachmentId: z.string(),
 });
 
 export const deleteCommentAttachment = authActionClient
-  .schema(schema)
+  .inputSchema(schema)
   .metadata({
-    name: "deleteCommentAttachment",
-    track: { event: "delete-comment-attachment", channel: "server" },
+    name: 'deleteCommentAttachment',
+    track: { event: 'delete-comment-attachment', channel: 'server' },
   })
   .action(async ({ parsedInput, ctx }) => {
     const { session, user } = ctx;
@@ -25,7 +25,7 @@ export const deleteCommentAttachment = authActionClient
     const userId = user.id;
 
     if (!organizationId) {
-      return { success: false, error: "Not authorized" } as const;
+      return { success: false, error: 'Not authorized' } as const;
     }
 
     try {
@@ -41,19 +41,19 @@ export const deleteCommentAttachment = authActionClient
       if (!attachmentToDelete) {
         return {
           success: false,
-          error: "Attachment not found or access denied",
+          error: 'Attachment not found or access denied',
         } as const;
       }
 
       // 1b. Verify it's a comment attachment
       if (attachmentToDelete.entityType !== AttachmentEntityType.comment) {
         console.error(
-          "Attachment requested for deletion is not a comment attachment",
+          'Attachment requested for deletion is not a comment attachment',
           attachmentId,
         );
         return {
           success: false,
-          error: "Invalid attachment type for deletion",
+          error: 'Invalid attachment type for deletion',
         } as const;
       }
 
@@ -71,7 +71,7 @@ export const deleteCommentAttachment = authActionClient
 
       if (!comment) {
         console.error(
-          "Comment associated with attachment not found during delete",
+          'Comment associated with attachment not found during delete',
           attachmentId,
           attachmentToDelete.entityId,
         );
@@ -93,7 +93,7 @@ export const deleteCommentAttachment = authActionClient
         // Add role-based check here if admins should also be able to delete
         return {
           success: false,
-          error: "Not authorized to delete this attachment",
+          error: 'Not authorized to delete this attachment',
         } as const;
       }
 
@@ -108,11 +108,7 @@ export const deleteCommentAttachment = authActionClient
         await s3Client.send(deleteCommand);
       } catch (s3Error: any) {
         // Log error but proceed to delete DB record (orphan file is better than inconsistent state)
-        console.error(
-          "S3 Delete Error for comment attachment:",
-          attachmentId,
-          s3Error,
-        );
+        console.error('S3 Delete Error for comment attachment:', attachmentId, s3Error);
       }
 
       // 5. Delete Attachment record from Database
@@ -134,10 +130,10 @@ export const deleteCommentAttachment = authActionClient
         data: { deletedAttachmentId: attachmentId },
       };
     } catch (error: any) {
-      console.error("Error deleting comment attachment:", attachmentId, error);
+      console.error('Error deleting comment attachment:', attachmentId, error);
       return {
         success: false,
-        error: "Failed to delete attachment.",
+        error: 'Failed to delete attachment.',
       } as const;
     }
   });

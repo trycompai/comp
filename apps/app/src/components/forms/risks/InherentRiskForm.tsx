@@ -1,30 +1,18 @@
-"use client";
+'use client';
 
-import { updateInherentRiskAction } from "@/actions/risk/update-inherent-risk-action";
-import { updateInherentRiskSchema } from "@/actions/schema";
-import { Button } from "@comp/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-} from "@comp/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@comp/ui/select";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Impact, Likelihood } from "@prisma/client";
-import { Loader2 } from "lucide-react";
-import { useAction } from "next-safe-action/hooks";
-import { useQueryState } from "nuqs";
-import { useForm } from "react-hook-form";
-import { toast } from "sonner";
-import type { z } from "zod";
+import { updateInherentRiskAction } from '@/actions/risk/update-inherent-risk-action';
+import { updateInherentRiskSchema } from '@/actions/schema';
+import { Button } from '@comp/ui/button';
+import { Form, FormControl, FormField, FormItem, FormLabel } from '@comp/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Impact, Likelihood } from '@prisma/client';
+import { Loader2 } from 'lucide-react';
+import { useAction } from 'next-safe-action/hooks';
+import { useQueryState } from 'nuqs';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import type { z } from 'zod';
 
 interface InherentRiskFormProps {
   riskId: string;
@@ -34,20 +22,20 @@ interface InherentRiskFormProps {
 
 // Map for displaying readable labels
 const LIKELIHOOD_LABELS: Record<Likelihood, string> = {
-  [Likelihood.very_unlikely]: "Very Unlikely",
-  [Likelihood.unlikely]: "Unlikely",
-  [Likelihood.possible]: "Possible",
-  [Likelihood.likely]: "Likely",
-  [Likelihood.very_likely]: "Very Likely",
+  [Likelihood.very_unlikely]: 'Very Unlikely',
+  [Likelihood.unlikely]: 'Unlikely',
+  [Likelihood.possible]: 'Possible',
+  [Likelihood.likely]: 'Likely',
+  [Likelihood.very_likely]: 'Very Likely',
 };
 
 // Map for displaying readable labels
 const IMPACT_LABELS: Record<Impact, string> = {
-  [Impact.insignificant]: "Insignificant",
-  [Impact.minor]: "Minor",
-  [Impact.moderate]: "Moderate",
-  [Impact.major]: "Major",
-  [Impact.severe]: "Severe",
+  [Impact.insignificant]: 'Insignificant',
+  [Impact.minor]: 'Minor',
+  [Impact.moderate]: 'Moderate',
+  [Impact.major]: 'Major',
+  [Impact.severe]: 'Severe',
 };
 
 export function InherentRiskForm({
@@ -55,14 +43,14 @@ export function InherentRiskForm({
   initialProbability,
   initialImpact,
 }: InherentRiskFormProps) {
-  const [_, setOpen] = useQueryState("inherent-risk-sheet");
+  const [_, setOpen] = useQueryState('inherent-risk-sheet');
   const updateInherentRisk = useAction(updateInherentRiskAction, {
     onSuccess: () => {
-      toast.success("Inherent risk updated successfully");
+      toast.success('Inherent risk updated successfully');
       setOpen(null);
     },
     onError: () => {
-      toast.error("Failed to update inherent risk");
+      toast.error('Failed to update inherent risk');
     },
   });
 
@@ -87,11 +75,11 @@ export function InherentRiskForm({
           name="probability"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>{"Probability"}</FormLabel>
+              <FormLabel>{'Probability'}</FormLabel>
               <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder={"Select a probability"} />
+                    <SelectValue placeholder={'Select a probability'} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -111,11 +99,11 @@ export function InherentRiskForm({
           name="impact"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>{"Impact"}</FormLabel>
+              <FormLabel>{'Impact'}</FormLabel>
               <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder={"Select an impact"} />
+                    <SelectValue placeholder={'Select an impact'} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -134,12 +122,12 @@ export function InherentRiskForm({
           <Button
             type="submit"
             variant="default"
-            disabled={updateInherentRisk.status === "executing"}
+            disabled={updateInherentRisk.status === 'executing'}
           >
-            {updateInherentRisk.status === "executing" ? (
+            {updateInherentRisk.status === 'executing' ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              "Save"
+              'Save'
             )}
           </Button>
         </div>

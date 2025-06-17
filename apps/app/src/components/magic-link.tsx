@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { authClient } from "@/utils/auth-client";
-import { Button } from "@comp/ui/button";
-import { cn } from "@comp/ui/cn";
-import { Form, FormControl, FormField, FormItem } from "@comp/ui/form";
-import { Icons } from "@comp/ui/icons";
-import { Input } from "@comp/ui/input";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { toast } from "sonner";
-import { z } from "zod";
+import { authClient } from '@/utils/auth-client';
+import { Button } from '@comp/ui/button';
+import { cn } from '@comp/ui/cn';
+import { Form, FormControl, FormField, FormItem } from '@comp/ui/form';
+import { Icons } from '@comp/ui/icons';
+import { Input } from '@comp/ui/input';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import { z } from 'zod';
 
 const formSchema = z.object({
   email: z.string().email(),
@@ -30,7 +30,7 @@ export function MagicLinkSignIn({ className, inviteCode }: Props) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: "",
+      email: '',
     },
   });
 
@@ -45,7 +45,7 @@ export function MagicLinkSignIn({ className, inviteCode }: Props) {
     });
 
     if (error) {
-      toast.error("Error sending email - try again?");
+      toast.error('Error sending email - try again?');
     } else {
       setSent(true);
     }
@@ -53,19 +53,19 @@ export function MagicLinkSignIn({ className, inviteCode }: Props) {
 
   if (isSent) {
     return (
-      <div className={cn("flex flex-col items-center space-y-4", className)}>
-        <h1 className="text-2xl font-medium">{"Magic link sent"}</h1>
+      <div className={cn('flex flex-col items-center space-y-4', className)}>
+        <h1 className="text-2xl font-medium">{'Magic link sent'}</h1>
 
         <div className="flex flex-col">
           <span className="text-muted-foreground text-sm">
-            {"Check your inbox for a magic link."}
+            {'Check your inbox for a magic link.'}
           </span>
           <button
             onClick={() => setSent(false)}
             type="button"
             className="text-primary text-sm font-medium underline"
           >
-            {"Try again."}
+            {'Try again.'}
           </button>
         </div>
       </div>
@@ -75,7 +75,7 @@ export function MagicLinkSignIn({ className, inviteCode }: Props) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
-        <div className={cn("flex flex-col space-y-4", className)}>
+        <div className={cn('flex flex-col space-y-4', className)}>
           <FormField
             control={form.control}
             name="email"
@@ -83,7 +83,7 @@ export function MagicLinkSignIn({ className, inviteCode }: Props) {
               <FormItem>
                 <FormControl>
                   <Input
-                    placeholder={"example@acme.com"}
+                    placeholder={'example@acme.com'}
                     {...field}
                     autoFocus
                     className="h-[40px]"
@@ -105,7 +105,7 @@ export function MagicLinkSignIn({ className, inviteCode }: Props) {
             ) : (
               <>
                 <Icons.EmailIcon />
-                <span>{"Continue with email"}</span>
+                <span>{'Continue with email'}</span>
               </>
             )}
           </Button>

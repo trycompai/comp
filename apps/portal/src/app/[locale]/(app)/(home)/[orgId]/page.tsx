@@ -1,17 +1,13 @@
-import { db } from "@comp/db";
-import { OrganizationDashboard } from "./components/OrganizationDashboard";
-import { auth } from "@/app/lib/auth";
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
-import { getFleetInstance } from "@/utils/fleet";
-import type { Member } from "@comp/db/types";
-import { getPostHogClient } from "@/app/posthog";
+import { db } from '@comp/db';
+import { OrganizationDashboard } from './components/OrganizationDashboard';
+import { auth } from '@/app/lib/auth';
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { getFleetInstance } from '@/utils/fleet';
+import type { Member } from '@comp/db/types';
+import { getPostHogClient } from '@/app/posthog';
 
-export default async function OrganizationPage({
-  params,
-}: {
-  params: Promise<{ orgId: string }>;
-}) {
+export default async function OrganizationPage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
 
   const session = await auth.api.getSession({
@@ -19,7 +15,7 @@ export default async function OrganizationPage({
   });
 
   if (!session?.user) {
-    redirect("/login"); // Or appropriate login/auth route
+    redirect('/login'); // Or appropriate login/auth route
   }
 
   const member = await db.member.findFirst({
@@ -34,12 +30,12 @@ export default async function OrganizationPage({
   });
 
   if (!member) {
-    redirect("/"); // Or appropriate login/auth route
+    redirect('/'); // Or appropriate login/auth route
   }
 
   const { fleetPolicies, device } = await getFleetPolicies(member);
   const isFleetEnabled = await getPostHogClient()?.isFeatureEnabled(
-    "is-fleet-enabled",
+    'is-fleet-enabled',
     session?.user.id,
   );
 

@@ -1,4 +1,4 @@
-import { stripe } from "./stripe";
+import { stripe } from './stripe';
 
 async function createStripeCustomer(input: {
   name: string;
@@ -7,7 +7,7 @@ async function createStripeCustomer(input: {
 }): Promise<string> {
   try {
     if (!stripe) {
-      return "test_customer_id";
+      return 'test_customer_id';
     }
 
     const customer = await stripe.customers.create({
@@ -20,7 +20,7 @@ async function createStripeCustomer(input: {
 
     return customer.id;
   } catch (error) {
-    console.error("Error creating Stripe customer", error);
+    console.error('Error creating Stripe customer', error);
     throw error;
   }
 }

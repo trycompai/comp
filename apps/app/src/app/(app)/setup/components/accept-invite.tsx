@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { authClient } from "@/utils/auth-client";
-import { Button } from "@comp/ui/button";
-import { Icons } from "@comp/ui/icons";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { authClient } from '@/utils/auth-client';
+import { Button } from '@comp/ui/button';
+import { Icons } from '@comp/ui/icons';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export function AcceptInvite({
   inviteCode,
@@ -38,25 +38,15 @@ export function AcceptInvite({
 
         <div className="mb-8 space-y-2">
           <h1 className="text-2xl font-semibold tracking-tight">
-            You have been invited to join{" "}
-            {organizationName || "an organization"}.
+            You have been invited to join {organizationName || 'an organization'}.
           </h1>
           <p className="text-muted-foreground text-sm">
             Please accept the invitation to join the organization.
           </p>
         </div>
 
-        <form
-          onSubmit={onSubmit}
-          className="space-y-6"
-          suppressHydrationWarning
-        >
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={false}
-            suppressHydrationWarning
-          >
+        <form onSubmit={onSubmit} className="space-y-6" suppressHydrationWarning>
+          <Button type="submit" className="w-full" disabled={false} suppressHydrationWarning>
             Accept Invitation
           </Button>
         </form>

@@ -1,24 +1,24 @@
-"use server";
+'use server';
 
-import { db } from "@comp/db";
-import { revalidatePath, revalidateTag } from "next/cache";
-import { z } from "zod";
-import { authActionClient } from "../safe-action";
+import { db } from '@comp/db';
+import { revalidatePath, revalidateTag } from 'next/cache';
+import { z } from 'zod';
+import { authActionClient } from '../safe-action';
 
 const archivePolicySchema = z.object({
   id: z.string(),
-  action: z.enum(["archive", "restore"]).optional(),
+  action: z.enum(['archive', 'restore']).optional(),
   entityId: z.string(),
 });
 
 export const archivePolicyAction = authActionClient
-  .schema(archivePolicySchema)
+  .inputSchema(archivePolicySchema)
   .metadata({
-    name: "archive-policy",
+    name: 'archive-policy',
     track: {
-      event: "archive-policy",
-      description: "Archive Policy",
-      channel: "server",
+      event: 'archive-policy',
+      description: 'Archive Policy',
+      channel: 'server',
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -28,7 +28,7 @@ export const archivePolicyAction = authActionClient
     if (!activeOrganizationId) {
       return {
         success: false,
-        error: "Not authorized",
+        error: 'Not authorized',
       };
     }
 
@@ -43,13 +43,12 @@ export const archivePolicyAction = authActionClient
       if (!policy) {
         return {
           success: false,
-          error: "Policy not found",
+          error: 'Policy not found',
         };
       }
 
       // Determine if we should archive or restore based on action or current state
-      const shouldArchive =
-        action === "archive" || (action === undefined && !policy.isArchived);
+      const shouldArchive = action === 'archive' || (action === undefined && !policy.isArchived);
 
       await db.policy.update({
         where: { id },
@@ -61,7 +60,7 @@ export const archivePolicyAction = authActionClient
       revalidatePath(`/${activeOrganizationId}/policies/${id}`);
       revalidatePath(`/${activeOrganizationId}/policies/all`);
       revalidatePath(`/${activeOrganizationId}/policies`);
-      revalidateTag("policies");
+      revalidateTag('policies');
 
       return {
         success: true,
@@ -71,7 +70,7 @@ export const archivePolicyAction = authActionClient
       console.error(error);
       return {
         success: false,
-        error: "Failed to update policy archive status",
+        error: 'Failed to update policy archive status',
       };
     }
   });

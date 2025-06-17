@@ -2,20 +2,18 @@ import type {
   DomainConfigResponse,
   DomainResponse,
   DomainVerificationResponse,
-} from "@/actions/types";
+} from '@/actions/types';
 
 export const addDomainToVercel = async (domain: string) => {
   return await fetch(
-    `https://api.vercel.com/v10/projects/${
-      process.env.VERCEL_PROJECT_ID
-    }/domains${
-      process.env.VERCEL_TEAM_ID ? `?teamId=${process.env.VERCEL_TEAM_ID}` : ""
+    `https://api.vercel.com/v10/projects/${process.env.VERCEL_PROJECT_ID}/domains${
+      process.env.VERCEL_TEAM_ID ? `?teamId=${process.env.VERCEL_TEAM_ID}` : ''
     }`,
     {
-      method: "POST",
+      method: 'POST',
       headers: {
         Authorization: `Bearer ${process.env.VERCEL_ACCESS_TOKEN}`,
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         name: domain,
@@ -26,16 +24,14 @@ export const addDomainToVercel = async (domain: string) => {
 
 export const removeDomainFromVercelProject = async (domain: string) => {
   return await fetch(
-    `https://api.vercel.com/v9/projects/${
-      process.env.VERCEL_PROJECT_ID
-    }/domains/${domain}${
-      process.env.VERCEL_TEAM_ID ? `?teamId=${process.env.VERCEL_TEAM_ID}` : ""
+    `https://api.vercel.com/v9/projects/${process.env.VERCEL_PROJECT_ID}/domains/${domain}${
+      process.env.VERCEL_TEAM_ID ? `?teamId=${process.env.VERCEL_TEAM_ID}` : ''
     }`,
     {
       headers: {
         Authorization: `Bearer ${process.env.VERCEL_ACCESS_TOKEN}`,
       },
-      method: "DELETE",
+      method: 'DELETE',
     },
   ).then((res) => res.json());
 };
@@ -43,13 +39,13 @@ export const removeDomainFromVercelProject = async (domain: string) => {
 export const removeDomainFromVercelTeam = async (domain: string) => {
   return await fetch(
     `https://api.vercel.com/v6/domains/${domain}${
-      process.env.VERCEL_TEAM_ID ? `?teamId=${process.env.VERCEL_TEAM_ID}` : ""
+      process.env.VERCEL_TEAM_ID ? `?teamId=${process.env.VERCEL_TEAM_ID}` : ''
     }`,
     {
       headers: {
         Authorization: `Bearer ${process.env.VERCEL_ACCESS_TOKEN}`,
       },
-      method: "DELETE",
+      method: 'DELETE',
     },
   ).then((res) => res.json());
 };
@@ -58,16 +54,14 @@ export const getDomainResponse = async (
   domain: string,
 ): Promise<DomainResponse & { error: { code: string; message: string } }> => {
   return await fetch(
-    `https://api.vercel.com/v9/projects/${
-      process.env.VERCEL_PROJECT_ID
-    }/domains/${domain}${
-      process.env.VERCEL_TEAM_ID ? `?teamId=${process.env.VERCEL_TEAM_ID}` : ""
+    `https://api.vercel.com/v9/projects/${process.env.VERCEL_PROJECT_ID}/domains/${domain}${
+      process.env.VERCEL_TEAM_ID ? `?teamId=${process.env.VERCEL_TEAM_ID}` : ''
     }`,
     {
-      method: "GET",
+      method: 'GET',
       headers: {
         Authorization: `Bearer ${process.env.VERCEL_ACCESS_TOKEN}`,
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
     },
   ).then((res) => {
@@ -75,37 +69,31 @@ export const getDomainResponse = async (
   });
 };
 
-export const getConfigResponse = async (
-  domain: string,
-): Promise<DomainConfigResponse> => {
+export const getConfigResponse = async (domain: string): Promise<DomainConfigResponse> => {
   return await fetch(
     `https://api.vercel.com/v6/domains/${domain}/config${
-      process.env.VERCEL_TEAM_ID ? `?teamId=${process.env.VERCEL_TEAM_ID}` : ""
+      process.env.VERCEL_TEAM_ID ? `?teamId=${process.env.VERCEL_TEAM_ID}` : ''
     }`,
     {
-      method: "GET",
+      method: 'GET',
       headers: {
         Authorization: `Bearer ${process.env.VERCEL_ACCESS_TOKEN}`,
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
     },
   ).then((res) => res.json());
 };
 
-export const verifyDomain = async (
-  domain: string,
-): Promise<DomainVerificationResponse> => {
+export const verifyDomain = async (domain: string): Promise<DomainVerificationResponse> => {
   return await fetch(
-    `https://api.vercel.com/v9/projects/${
-      process.env.VERCEL_PROJECT_ID
-    }/domains/${domain}/verify${
-      process.env.VERCEL_TEAM_ID ? `?teamId=${process.env.VERCEL_TEAM_ID}` : ""
+    `https://api.vercel.com/v9/projects/${process.env.VERCEL_PROJECT_ID}/domains/${domain}/verify${
+      process.env.VERCEL_TEAM_ID ? `?teamId=${process.env.VERCEL_TEAM_ID}` : ''
     }`,
     {
-      method: "POST",
+      method: 'POST',
       headers: {
         Authorization: `Bearer ${process.env.VERCEL_ACCESS_TOKEN}`,
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
     },
   ).then((res) => res.json());
@@ -121,11 +109,11 @@ export const getApexDomain = (url: string): string => {
   try {
     domain = new URL(url).hostname;
   } catch (e) {
-    return "";
+    return '';
   }
-  const parts = domain.split(".");
+  const parts = domain.split('.');
   if (parts.length > 2) {
-    return parts.slice(-2).join(".");
+    return parts.slice(-2).join('.');
   }
   return domain;
 };

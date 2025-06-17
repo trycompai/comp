@@ -1,5 +1,5 @@
-import { TaskFrequency } from "@comp/db/types";
-import { differenceInDays, startOfDay } from "date-fns";
+import { TaskFrequency } from '@comp/db/types';
+import { differenceInDays, startOfDay } from 'date-fns';
 
 interface ReviewInfo {
   nextReviewDate: Date;
@@ -18,13 +18,13 @@ export function calculateNextReview(
   const nextReviewDate = new Date(baseDate);
 
   switch (frequency) {
-    case "monthly":
+    case 'monthly':
       nextReviewDate.setMonth(nextReviewDate.getMonth() + 1);
       break;
-    case "quarterly":
+    case 'quarterly':
       nextReviewDate.setMonth(nextReviewDate.getMonth() + 3);
       break;
-    case "yearly":
+    case 'yearly':
       nextReviewDate.setFullYear(nextReviewDate.getFullYear() + 1);
       break;
     default:

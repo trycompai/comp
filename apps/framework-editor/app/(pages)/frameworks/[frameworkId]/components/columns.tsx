@@ -1,13 +1,10 @@
-"use client";
+'use client';
 
-import type { ColumnDef } from "@tanstack/react-table";
-import type {
-  FrameworkEditorControlTemplate,
-  FrameworkEditorRequirement,
-} from "@prisma/client";
-import { Button } from "@comp/ui/button";
-import { PencilIcon, Trash2Icon } from "lucide-react";
-import { Badge } from "@comp/ui/badge";
+import type { ColumnDef } from '@tanstack/react-table';
+import type { FrameworkEditorControlTemplate, FrameworkEditorRequirement } from '@prisma/client';
+import { Button } from '@comp/ui/button';
+import { PencilIcon, Trash2Icon } from 'lucide-react';
+import { Badge } from '@comp/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -15,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@comp/ui/dialog";
+} from '@comp/ui/dialog';
 // If you need to link to individual requirement pages later, you can import Link:
 // import Link from "next/link";
 
@@ -25,28 +22,28 @@ export function getColumns(
 ): ColumnDef<FrameworkEditorRequirement>[] {
   return [
     {
-      accessorKey: "identifier",
-      header: "Identifier",
+      accessorKey: 'identifier',
+      header: 'Identifier',
       size: 150,
       cell: ({ row }) => {
-        const identifier = row.getValue("identifier") as string;
-        return identifier || "-";
+        const identifier = row.getValue('identifier') as string;
+        return identifier || '-';
       },
     },
     {
-      accessorKey: "name",
-      header: "Name",
+      accessorKey: 'name',
+      header: 'Name',
       size: 250,
-      cell: ({ row }) => row.getValue("name"),
+      cell: ({ row }) => row.getValue('name'),
     },
     {
-      accessorKey: "description",
-      header: "Description",
+      accessorKey: 'description',
+      header: 'Description',
       size: 420,
     },
     {
-      accessorKey: "controlTemplates",
-      header: "Linked Controls",
+      accessorKey: 'controlTemplates',
+      header: 'Linked Controls',
       size: 150,
       cell: ({ row }) => {
         const requirement = row.original as FrameworkEditorRequirement & {
@@ -63,10 +60,7 @@ export function getColumns(
           <Dialog>
             <DialogTrigger asChild>
               <Button variant="link" className="h-auto p-0">
-                <Badge
-                  variant="secondary"
-                  className="hover:bg-muted cursor-pointer"
-                >
+                <Badge variant="secondary" className="hover:bg-muted cursor-pointer">
                   {controlsCount}
                 </Badge>
               </Button>
@@ -95,7 +89,7 @@ export function getColumns(
       },
     },
     {
-      id: "actions",
+      id: 'actions',
       header: () => null,
       cell: ({ row }) => {
         const requirement = row.original;

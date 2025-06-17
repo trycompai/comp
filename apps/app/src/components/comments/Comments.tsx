@@ -1,17 +1,11 @@
-import { CommentForm } from "./CommentForm";
-import { CommentList } from "./CommentList";
-import type { Comment } from "@comp/db/types";
-import type { Member } from "@comp/db/types";
-import type { User } from "@comp/db/types";
-import type { Attachment } from "@comp/db/types";
-import { CommentEntityType } from "@comp/db/types";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@comp/ui/card";
+import { CommentForm } from './CommentForm';
+import { CommentList } from './CommentList';
+import type { Comment } from '@comp/db/types';
+import type { Member } from '@comp/db/types';
+import type { User } from '@comp/db/types';
+import type { Attachment } from '@comp/db/types';
+import { CommentEntityType } from '@comp/db/types';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@comp/ui/card';
 
 export type CommentWithAuthor = Comment & {
   author: Member & {

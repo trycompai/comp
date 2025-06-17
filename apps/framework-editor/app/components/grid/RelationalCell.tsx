@@ -1,8 +1,8 @@
-import { Button } from "@comp/ui/button";
-import { Plus, XIcon } from "lucide-react";
-import React, { useEffect, useRef, useState } from "react";
-import type { CellProps, Column } from "react-datasheet-grid";
-import ReactDOM from "react-dom"; // Import ReactDOM for createPortal
+import { Button } from '@comp/ui/button';
+import { Plus, XIcon } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import type { CellProps, Column } from 'react-datasheet-grid';
+import ReactDOM from 'react-dom'; // Import ReactDOM for createPortal
 
 // Interface for items that can be displayed as pills
 export interface ItemWithName {
@@ -49,8 +49,7 @@ const RelationalCellComponent = <
   } = props;
 
   // Extract ItemWithName[] from the full rowData using itemsKey
-  const items: ItemWithName[] =
-    (rowData?.[itemsKey] as unknown as ItemWithName[]) || [];
+  const items: ItemWithName[] = (rowData?.[itemsKey] as unknown as ItemWithName[]) || [];
 
   const cellRef = useRef<HTMLDivElement>(null);
   const [popoverStyles, setPopoverStyles] = useState<React.CSSProperties>({});
@@ -59,15 +58,13 @@ const RelationalCellComponent = <
   const [isSearching, setIsSearching] = useState(false);
 
   // State for search functionality
-  const [searchTerm, setSearchTerm] = useState("");
-  const [allSearchableItems, setAllSearchableItems] = useState<ItemWithName[]>(
-    [],
-  );
+  const [searchTerm, setSearchTerm] = useState('');
+  const [allSearchableItems, setAllSearchableItems] = useState<ItemWithName[]>([]);
   const [filteredItems, setFilteredItems] = useState<ItemWithName[]>([]);
   const [isLoadingSearch, setIsLoadingSearch] = useState(false);
 
   // Access id from the full rowData object (which is props.rowData)
-  const isPendingCreation = createdRowIds?.has(rowData?.id ?? "");
+  const isPendingCreation = createdRowIds?.has(rowData?.id ?? '');
 
   useEffect(() => {
     setMounted(true);
@@ -93,32 +90,23 @@ const RelationalCellComponent = <
           allSearchableItems.filter(
             (item) =>
               item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              (item.sublabel &&
-                item.sublabel.toLowerCase().includes(searchTerm.toLowerCase())),
+              (item.sublabel && item.sublabel.toLowerCase().includes(searchTerm.toLowerCase())),
           ),
         );
       }
     }
-  }, [
-    isSearching,
-    active,
-    mounted,
-    getAllSearchableItems,
-    allSearchableItems.length,
-    searchTerm,
-  ]); // Added allSearchableItems.length and searchTerm
+  }, [isSearching, active, mounted, getAllSearchableItems, allSearchableItems.length, searchTerm]); // Added allSearchableItems.length and searchTerm
 
   // Effect to filter items when searchTerm changes
   useEffect(() => {
-    if (searchTerm === "") {
+    if (searchTerm === '') {
       setFilteredItems(allSearchableItems);
     } else {
       setFilteredItems(
         allSearchableItems.filter(
           (item) =>
             item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (item.sublabel &&
-              item.sublabel.toLowerCase().includes(searchTerm.toLowerCase())),
+            (item.sublabel && item.sublabel.toLowerCase().includes(searchTerm.toLowerCase())),
         ),
       );
     }
@@ -129,38 +117,38 @@ const RelationalCellComponent = <
     if (active && cellRef.current && mounted && !isPendingCreation) {
       const rect = cellRef.current.getBoundingClientRect();
       setPopoverStyles({
-        position: "absolute",
+        position: 'absolute',
         top: rect.top + window.scrollY,
         left: rect.left + window.scrollX,
         minWidth: rect.width,
         maxWidth: Math.max(rect.width * 1.5, 350),
-        backgroundColor: "white",
-        border: "1px solid #dee2e6",
-        borderRadius: "2px",
-        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
+        backgroundColor: 'white',
+        border: '1px solid #dee2e6',
+        borderRadius: '2px',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
         zIndex: 1050,
-        padding: "8px",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "stretch",
-        gap: "8px",
-        maxHeight: "300px",
+        padding: '8px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'stretch',
+        gap: '8px',
+        maxHeight: '300px',
       });
       setIsPortalVisible(true);
     } else {
       setIsPortalVisible(false);
       setIsSearching(false);
-      setSearchTerm("");
+      setSearchTerm('');
     }
   }, [active, mounted, isPendingCreation]); // Added isPendingCreation to dependencies
 
   const pillBaseStyle: React.CSSProperties = {
-    backgroundColor: "#f0f0f0",
-    padding: "2px 8px",
-    borderRadius: "4px",
-    fontSize: "0.875em",
-    whiteSpace: "nowrap",
-    boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+    backgroundColor: '#f0f0f0',
+    padding: '2px 8px',
+    borderRadius: '4px',
+    fontSize: '0.875em',
+    whiteSpace: 'nowrap',
+    boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
     flexShrink: 0,
   };
 
@@ -171,17 +159,17 @@ const RelationalCellComponent = <
   const InactiveView = () => (
     <div
       style={{
-        display: "flex",
-        alignItems: "center",
-        width: "100%",
-        height: "100%",
-        flexWrap: "nowrap",
-        overflow: "hidden",
-        gap: "4px",
-        padding: "5px",
+        display: 'flex',
+        alignItems: 'center',
+        width: '100%',
+        height: '100%',
+        flexWrap: 'nowrap',
+        overflow: 'hidden',
+        gap: '4px',
+        padding: '5px',
         opacity: isPendingCreation ? 0.5 : 1,
-        cursor: isPendingCreation ? "not-allowed" : "default",
-        backgroundColor: isPendingCreation ? "#f8f9fa" : "transparent", // Optional: distinct background for pending
+        cursor: isPendingCreation ? 'not-allowed' : 'default',
+        backgroundColor: isPendingCreation ? '#f8f9fa' : 'transparent', // Optional: distinct background for pending
       }}
       // Prevent click propagation and default grid actions if pending creation
       onClickCapture={
@@ -195,9 +183,7 @@ const RelationalCellComponent = <
     >
       {isPendingCreation ? (
         // If pending creation, show only specific text
-        <span style={{ fontStyle: "italic", color: "#6c757d" }}>
-          Save row to link items
-        </span>
+        <span style={{ fontStyle: 'italic', color: '#6c757d' }}>Save row to link items</span>
       ) : (
         // If not pending creation, show the item pills
         items.map((item) => (
@@ -224,10 +210,10 @@ const RelationalCellComponent = <
       }
     } else {
       console.warn(
-        "Link action or control ID missing for handleSelectItem. Ensure rowData.id and linkItemAction prop are provided.",
+        'Link action or control ID missing for handleSelectItem. Ensure rowData.id and linkItemAction prop are provided.',
       );
     }
-    setSearchTerm("");
+    setSearchTerm('');
     setIsSearching(false);
   };
 
@@ -245,7 +231,7 @@ const RelationalCellComponent = <
       }
     } else {
       console.warn(
-        "Unlink action or control ID missing for handleUnlinkItem. Ensure rowData.id and unlinkItemAction prop are provided.",
+        'Unlink action or control ID missing for handleUnlinkItem. Ensure rowData.id and unlinkItemAction prop are provided.',
       );
     }
   };
@@ -268,27 +254,21 @@ const RelationalCellComponent = <
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             style={{
-              padding: "8px",
-              border: "1px solid #ccc",
-              borderRadius: "4px",
-              marginBottom: "8px",
+              padding: '8px',
+              border: '1px solid #ccc',
+              borderRadius: '4px',
+              marginBottom: '8px',
             }}
             autoFocus
           />
           {isLoadingSearch ? (
             <p>Loading...</p>
           ) : (
-            <div style={{ flexGrow: 1, overflowY: "auto", minHeight: "100px" }}>
-              {filteredItems.length === 0 && searchTerm !== "" && (
-                <p>No {itemTypeLabel}s found.</p>
-              )}
+            <div style={{ flexGrow: 1, overflowY: 'auto', minHeight: '100px' }}>
+              {filteredItems.length === 0 && searchTerm !== '' && <p>No {itemTypeLabel}s found.</p>}
               {filteredItems.map((item) => {
-                const isLinked = items.some(
-                  (linkedItem) => linkedItem.id === item.id,
-                );
-                const buttonTitle = item.sublabel
-                  ? `${item.name} - ${item.sublabel}`
-                  : item.name;
+                const isLinked = items.some((linkedItem) => linkedItem.id === item.id);
+                const buttonTitle = item.sublabel ? `${item.name} - ${item.sublabel}` : item.name;
                 return (
                   <Button
                     key={item.id}
@@ -297,29 +277,27 @@ const RelationalCellComponent = <
                     onClick={() => handleSelectItem(item)}
                     disabled={isLinked}
                     style={{
-                      display: "block",
-                      width: "100%",
-                      textAlign: "left",
-                      marginBottom: "4px",
-                      height: "auto",
-                      lineHeight: "normal",
-                      padding: "0.3rem 0.6rem",
+                      display: 'block',
+                      width: '100%',
+                      textAlign: 'left',
+                      marginBottom: '4px',
+                      height: 'auto',
+                      lineHeight: 'normal',
+                      padding: '0.3rem 0.6rem',
                     }}
                     title={buttonTitle}
                   >
-                    <div style={{ fontWeight: "bold" }}>{item.name}</div>
+                    <div style={{ fontWeight: 'bold' }}>{item.name}</div>
                     {item.sublabel && (
-                      <div style={{ fontSize: "0.85em", color: "#555" }}>
-                        {item.sublabel}
-                      </div>
+                      <div style={{ fontSize: '0.85em', color: '#555' }}>{item.sublabel}</div>
                     )}
                     {isLinked && (
                       <span
                         style={{
-                          marginTop: "0.2em",
-                          display: "block",
-                          fontSize: "0.85em",
-                          color: "#888",
+                          marginTop: '0.2em',
+                          display: 'block',
+                          fontSize: '0.85em',
+                          color: '#888',
                         }}
                       >
                         (Linked)
@@ -335,9 +313,9 @@ const RelationalCellComponent = <
             size="sm"
             onClick={() => {
               setIsSearching(false);
-              setSearchTerm("");
+              setSearchTerm('');
             }}
-            style={{ ...addButtonStyle, marginTop: "8px" }}
+            style={{ ...addButtonStyle, marginTop: '8px' }}
           >
             Back to Pills
           </Button>
@@ -347,12 +325,12 @@ const RelationalCellComponent = <
           {items.length > 0 && (
             <div
               style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: "6px",
-                alignItems: "flex-start",
-                overflowY: "auto",
-                maxHeight: "calc(300px - 40px - 8px - 8px)",
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '6px',
+                alignItems: 'flex-start',
+                overflowY: 'auto',
+                maxHeight: 'calc(300px - 40px - 8px - 8px)',
               }}
             >
               {items.map((item) => (
@@ -360,17 +338,17 @@ const RelationalCellComponent = <
                   key={item.id}
                   style={{
                     ...pillBaseStyle,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "4px",
-                    justifyContent: "space-between",
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    justifyContent: 'space-between',
                   }}
                 >
                   <span
                     style={{
-                      textOverflow: "ellipsis",
-                      overflow: "hidden",
-                      whiteSpace: "nowrap",
+                      textOverflow: 'ellipsis',
+                      overflow: 'hidden',
+                      whiteSpace: 'nowrap',
                     }}
                   >
                     {item.name}
@@ -407,9 +385,9 @@ const RelationalCellComponent = <
               <span
                 style={{
                   ...pillBaseStyle,
-                  backgroundColor: "#e9ecef",
-                  color: "#6c757d",
-                  alignSelf: "flex-start",
+                  backgroundColor: '#e9ecef',
+                  color: '#6c757d',
+                  alignSelf: 'flex-start',
                 }}
               >
                 Save row to enable linking
@@ -422,10 +400,7 @@ const RelationalCellComponent = <
 
   return (
     <>
-      <div
-        ref={cellRef}
-        style={{ height: "100%", width: "100%", position: "relative" }}
-      >
+      <div ref={cellRef} style={{ height: '100%', width: '100%', position: 'relative' }}>
         <InactiveView />
       </div>
       {/* Portal is only rendered if conditions in useEffect (for popoverStyles) were met */}
@@ -446,7 +421,7 @@ export const RelationalCell = React.memo(RelationalCellComponent) as {
   displayName?: string;
 };
 
-RelationalCell.displayName = "RelationalCell";
+RelationalCell.displayName = 'RelationalCell';
 
 /**
  * \`relationalColumn\` is a factory function that creates a \`react-datasheet-grid\` column configuration

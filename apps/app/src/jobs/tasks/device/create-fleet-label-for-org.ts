@@ -1,9 +1,9 @@
-import { getFleetInstance } from "@/lib/fleet";
-import { db } from "@comp/db";
-import { logger, task } from "@trigger.dev/sdk/v3";
+import { getFleetInstance } from '@/lib/fleet';
+import { db } from '@comp/db';
+import { logger, task } from '@trigger.dev/sdk/v3';
 
 export const createFleetLabelForOrg = task({
-  id: "create-fleet-label-for-org",
+  id: 'create-fleet-label-for-org',
   retry: {
     maxAttempts: 3,
   },
@@ -25,25 +25,30 @@ export const createFleetLabelForOrg = task({
     }
 
     const fleetDevicePathMac = process.env.FLEET_DEVICE_PATH_MAC;
-    if (!fleetDevicePathMac) {
-      logger.error("FLEET_DEVICE_PATH_MAC not configured");
+    const fleetDevicePathWindows = process.env.FLEET_DEVICE_PATH_WINDOWS;
+
+    if (!fleetDevicePathMac || !fleetDevicePathWindows) {
+      logger.error('FLEET_DEVICE_PATH_MAC or FLEET_DEVICE_PATH_WINDOWS not configured');
       return;
     }
 
-    logger.info("Creating label", {
+    // Create a query that matches devices from either macOS or Windows
+    const query = `SELECT 1 FROM file WHERE path = '${fleetDevicePathMac}/${organizationId}' OR path = '${fleetDevicePathWindows}\\${organizationId}' LIMIT 1;`;
+
+    logger.info('Creating label', {
       name: organization.id,
-      query: `SELECT 1 FROM file WHERE path = '${fleetDevicePathMac}/${organizationId}' LIMIT 1;`,
+      query: query,
     });
 
     const fleet = await getFleetInstance();
 
     // Create a manual label that we can assign to hosts.
-    const response = await fleet.post("/labels", {
+    const response = await fleet.post('/labels', {
       name: organization.id,
-      query: `SELECT 1 FROM file WHERE path = '${fleetDevicePathMac}/${organizationId}' LIMIT 1;`,
+      query: query,
     });
 
-    logger.info("Label created", {
+    logger.info('Label created', {
       labelId: response.data.label.id,
     });
 
@@ -66,7 +71,7 @@ export const createFleetLabelForOrg = task({
       });
       logger.info(`Stored S3 bundle URL for organization ${organizationId}`);
     } catch (error) {
-      logger.error("Error in fleetctl packaging or S3 upload process", {
+      logger.error('Error in fleetctl packaging or S3 upload process', {
         error,
       });
     }

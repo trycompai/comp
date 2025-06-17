@@ -1,5 +1,5 @@
-import type { RowSelectionState, Updater } from "@tanstack/react-table";
-import { create } from "zustand";
+import type { RowSelectionState, Updater } from '@tanstack/react-table';
+import { create } from 'zustand';
 
 interface TransactionsState {
   canDelete?: boolean;
@@ -19,8 +19,7 @@ export const useTransactionsStore = create<TransactionsState>()((set) => ({
   setRowSelection: (updater: Updater<RowSelectionState>) =>
     set((state) => {
       return {
-        rowSelection:
-          typeof updater === "function" ? updater(state.rowSelection) : updater,
+        rowSelection: typeof updater === 'function' ? updater(state.rowSelection) : updater,
       };
     }),
 }));

@@ -1,4 +1,4 @@
-import * as React from "react";
+import * as React from 'react';
 
 export const SOC2 = (props: React.SVGProps<SVGSVGElement>) => (
   <svg

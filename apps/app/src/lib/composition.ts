@@ -1,4 +1,4 @@
-import * as React from "react";
+import * as React from 'react';
 
 /**
  * A utility to compose multiple event handlers into a single event handler.
@@ -12,10 +12,7 @@ function composeEventHandlers<E>(
   return function handleEvent(event: E) {
     originalEventHandler?.(event);
 
-    if (
-      checkForDefaultPrevented === false ||
-      !(event as unknown as Event).defaultPrevented
-    ) {
+    if (checkForDefaultPrevented === false || !(event as unknown as Event).defaultPrevented) {
       return ourEventHandler?.(event);
     }
   };
@@ -32,7 +29,7 @@ type PossibleRef<T> = React.Ref<T> | undefined;
  * This utility takes care of different types of refs: callback refs and RefObject(s).
  */
 function setRef<T>(ref: PossibleRef<T>, value: T) {
-  if (typeof ref === "function") {
+  if (typeof ref === 'function') {
     return ref(value);
   }
 
@@ -50,7 +47,7 @@ function composeRefs<T>(...refs: PossibleRef<T>[]): React.RefCallback<T> {
     let hasCleanup = false;
     const cleanups = refs.map((ref) => {
       const cleanup = setRef(ref, node);
-      if (!hasCleanup && typeof cleanup === "function") {
+      if (!hasCleanup && typeof cleanup === 'function') {
         hasCleanup = true;
       }
       return cleanup;
@@ -64,7 +61,7 @@ function composeRefs<T>(...refs: PossibleRef<T>[]): React.RefCallback<T> {
       return () => {
         for (let i = 0; i < cleanups.length; i++) {
           const cleanup = cleanups[i];
-          if (typeof cleanup === "function") {
+          if (typeof cleanup === 'function') {
             cleanup();
           } else {
             setRef(refs[i], null);

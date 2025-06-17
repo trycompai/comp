@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { getApiKeysAction } from "@/actions/organization/get-api-keys-action";
-import { useCallback } from "react";
-import useSWR from "swr";
+import { getApiKeysAction } from '@/actions/organization/get-api-keys-action';
+import { useCallback } from 'react';
+import useSWR from 'swr';
 
 export interface ApiKey {
   id: string;
@@ -23,7 +23,7 @@ export function useApiKeys() {
     if (result.success && result.data) {
       return result.data;
     }
-    throw new Error("Failed to fetch API keys");
+    throw new Error('Failed to fetch API keys');
   }, []);
 
   // Use SWR for data fetching with caching and revalidation
@@ -32,7 +32,7 @@ export function useApiKeys() {
     error,
     isLoading,
     mutate,
-  } = useSWR<ApiKey[]>("api-keys", fetcher, {
+  } = useSWR<ApiKey[]>('api-keys', fetcher, {
     revalidateOnFocus: false,
     dedupingInterval: 10000, // 10 seconds
   });

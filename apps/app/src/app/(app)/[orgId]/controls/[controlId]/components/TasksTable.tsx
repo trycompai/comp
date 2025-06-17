@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { DataTable } from "@/components/data-table/data-table";
-import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
-import { StatusIndicator } from "@/components/status-indicator";
-import { useDataTable } from "@/hooks/use-data-table";
-import { Task } from "@comp/db/types";
-import { Input } from "@comp/ui/input";
-import { Icons } from "@comp/ui/icons";
-import { ColumnDef } from "@tanstack/react-table";
-import { useMemo, useState } from "react";
+import { DataTable } from '@/components/data-table/data-table';
+import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
+import { StatusIndicator } from '@/components/status-indicator';
+import { useDataTable } from '@/hooks/use-data-table';
+import { Task } from '@comp/db/types';
+import { Input } from '@comp/ui/input';
+import { Icons } from '@comp/ui/icons';
+import { ColumnDef } from '@tanstack/react-table';
+import { useMemo, useState } from 'react';
 
 interface TasksTableProps {
   tasks: Task[];
@@ -17,42 +17,36 @@ interface TasksTableProps {
 }
 
 export function TasksTable({ tasks, orgId, controlId }: TasksTableProps) {
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Define columns for tasks table
   const columns = useMemo<ColumnDef<Task>[]>(
     () => [
       {
-        accessorKey: "title",
-        header: ({ column }) => (
-          <DataTableColumnHeader column={column} title={"Title"} />
-        ),
+        accessorKey: 'title',
+        header: ({ column }) => <DataTableColumnHeader column={column} title={'Title'} />,
         cell: ({ row }) => {
           const title = row.original.title;
           return <span>{title}</span>;
         },
         enableSorting: true,
         sortingFn: (rowA, rowB, columnId) => {
-          const nameA = rowA.original.title || "";
-          const nameB = rowB.original.title || "";
+          const nameA = rowA.original.title || '';
+          const nameB = rowB.original.title || '';
           return nameA.localeCompare(nameB);
         },
       },
       {
-        accessorKey: "description",
-        header: ({ column }) => (
-          <DataTableColumnHeader column={column} title={"Description"} />
-        ),
+        accessorKey: 'description',
+        header: ({ column }) => <DataTableColumnHeader column={column} title={'Description'} />,
         cell: ({ row }) => {
           const description = row.original.description;
           return <span className="line-clamp-1 capitalize">{description}</span>;
         },
       },
       {
-        accessorKey: "status",
-        header: ({ column }) => (
-          <DataTableColumnHeader column={column} title={"Status"} />
-        ),
+        accessorKey: 'status',
+        header: ({ column }) => <DataTableColumnHeader column={column} title={'Status'} />,
         cell: ({ row }) => {
           const rawStatus = row.original.status;
 
@@ -85,9 +79,9 @@ export function TasksTable({ tasks, orgId, controlId }: TasksTableProps) {
     shallow: false,
     getRowId: (row) => row.id,
     initialState: {
-      sorting: [{ id: "createdAt", desc: true }],
+      sorting: [{ id: 'createdAt', desc: true }],
     },
-    tableId: "t",
+    tableId: 't',
   });
 
   return (
@@ -106,7 +100,7 @@ export function TasksTable({ tasks, orgId, controlId }: TasksTableProps) {
         table={table.table}
         rowClickBasePath={`/${orgId}/`}
         getRowId={(row) => `/tasks/${row.id}`}
-        tableId={"t"}
+        tableId={'t'}
       />
     </div>
   );

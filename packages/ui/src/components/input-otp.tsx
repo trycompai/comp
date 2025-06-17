@@ -1,40 +1,36 @@
-"use client";
+'use client';
 
-import { DashIcon } from "@radix-ui/react-icons";
-import { OTPInput, type SlotProps } from "input-otp";
-import * as React from "react";
-import { cn } from "../utils";
+import { DashIcon } from '@radix-ui/react-icons';
+import { OTPInput, type SlotProps } from 'input-otp';
+import * as React from 'react';
+import { cn } from '../utils';
 
 const InputOTP = React.forwardRef<
   React.ElementRef<typeof OTPInput>,
   React.ComponentPropsWithoutRef<typeof OTPInput>
 >(({ className, ...props }, ref) => (
-  <OTPInput
-    ref={ref}
-    containerClassName={cn("flex items-center gap-2", className)}
-    {...props}
-  />
+  <OTPInput ref={ref} containerClassName={cn('flex items-center gap-2', className)} {...props} />
 ));
-InputOTP.displayName = "InputOTP";
+InputOTP.displayName = 'InputOTP';
 
 const InputOTPGroup = React.forwardRef<
-  React.ElementRef<"div">,
-  React.ComponentPropsWithoutRef<"div">
+  React.ElementRef<'div'>,
+  React.ComponentPropsWithoutRef<'div'>
 >(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("flex items-center", className)} {...props} />
+  <div ref={ref} className={cn('flex items-center', className)} {...props} />
 ));
-InputOTPGroup.displayName = "InputOTPGroup";
+InputOTPGroup.displayName = 'InputOTPGroup';
 
 const InputOTPSlot = React.forwardRef<
-  React.ElementRef<"div">,
-  SlotProps & React.ComponentPropsWithoutRef<"div">
+  React.ElementRef<'div'>,
+  SlotProps & React.ComponentPropsWithoutRef<'div'>
 >(({ char, hasFakeCaret, isActive, className, ...props }, ref) => {
   return (
     <div
       ref={ref}
       className={cn(
-        "border-input relative flex h-16 w-16 items-center justify-center border-y border-r text-2xl transition-all first:rounded-l-md first:border-l last:rounded-r-md",
-        isActive && "ring-ring z-10 ring-1",
+        'border-input relative flex h-16 w-16 items-center justify-center border-y border-r text-2xl transition-all first:rounded-l-md first:border-l last:rounded-r-md',
+        isActive && 'ring-ring z-10 ring-1',
         className,
       )}
       {...props}
@@ -48,16 +44,16 @@ const InputOTPSlot = React.forwardRef<
     </div>
   );
 });
-InputOTPSlot.displayName = "InputOTPSlot";
+InputOTPSlot.displayName = 'InputOTPSlot';
 
 const InputOTPSeparator = React.forwardRef<
-  React.ElementRef<"div">,
-  React.ComponentPropsWithoutRef<"div">
+  React.ElementRef<'div'>,
+  React.ComponentPropsWithoutRef<'div'>
 >(({ ...props }, ref) => (
   <div ref={ref} {...props}>
     <DashIcon />
   </div>
 ));
-InputOTPSeparator.displayName = "InputOTPSeparator";
+InputOTPSeparator.displayName = 'InputOTPSeparator';
 
 export { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator };

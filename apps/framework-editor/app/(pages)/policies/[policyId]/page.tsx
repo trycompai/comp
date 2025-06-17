@@ -1,11 +1,11 @@
-import PageLayout from "@/app/components/PageLayout";
-import { db } from "@comp/db";
-import { notFound, redirect } from "next/navigation";
+import PageLayout from '@/app/components/PageLayout';
+import { db } from '@comp/db';
+import { notFound, redirect } from 'next/navigation';
 // import { Card, CardContent, CardHeader, CardTitle } from "@comp/ui/card"; // No longer needed here
-import { PolicyEditorClient } from "./PolicyEditorClient";
-import { PolicyDetailsClientPage } from "./PolicyDetailsClientPage"; // Import the new client component
-import "@comp/ui/editor.css";
-import { isAuthorized } from "@/app/lib/utils";
+import { PolicyEditorClient } from './PolicyEditorClient';
+import { PolicyDetailsClientPage } from './PolicyDetailsClientPage'; // Import the new client component
+import '@comp/ui/editor.css';
+import { isAuthorized } from '@/app/lib/utils';
 
 interface PolicyDetailPageProps {
   params: Promise<{
@@ -13,13 +13,11 @@ interface PolicyDetailPageProps {
   }>;
 }
 
-export default async function PolicyDetailPage({
-  params,
-}: PolicyDetailPageProps) {
+export default async function PolicyDetailPage({ params }: PolicyDetailPageProps) {
   const isAllowed = await isAuthorized();
 
   if (!isAllowed) {
-    redirect("/auth");
+    redirect('/auth');
   }
 
   const { policyId } = await params;
@@ -37,7 +35,7 @@ export default async function PolicyDetailPage({
   return (
     <PageLayout
       breadcrumbs={[
-        { label: "Policies", href: "/policies" },
+        { label: 'Policies', href: '/policies' },
         { label: policy.name, href: `/policies/${policy.id}` },
       ]}
     >

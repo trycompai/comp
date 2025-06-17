@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState, useTransition } from "react";
+import { useState, useTransition } from 'react';
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -9,13 +9,13 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@comp/ui/alert-dialog";
-import { Button } from "@comp/ui/button";
-import { useToast } from "@comp/ui/use-toast";
+} from '@comp/ui/alert-dialog';
+import { Button } from '@comp/ui/button';
+import { useToast } from '@comp/ui/use-toast';
 import {
   deleteRequirementAction,
   type DeleteRequirementActionState,
-} from "../actions/delete-requirement-action";
+} from '../actions/delete-requirement-action';
 
 const initialActionState: DeleteRequirementActionState = {
   success: false,
@@ -48,30 +48,27 @@ export function DeleteRequirementDialog({
   const handleSubmit = async () => {
     setActionError(undefined);
     const formData = new FormData();
-    formData.append("requirementId", requirementId);
-    formData.append("frameworkId", frameworkId);
+    formData.append('requirementId', requirementId);
+    formData.append('frameworkId', frameworkId);
 
     startTransition(async () => {
-      const result = await deleteRequirementAction(
-        initialActionState,
-        formData,
-      ); // Pass initial state
+      const result = await deleteRequirementAction(initialActionState, formData); // Pass initial state
 
       if (result && !result.success) {
         const errorMessage =
           result.error ||
           (result.issues
-            ? result.issues.map((i) => i.message).join(", ")
-            : "Failed to delete requirement.");
+            ? result.issues.map((i) => i.message).join(', ')
+            : 'Failed to delete requirement.');
         setActionError(errorMessage);
         toast({
-          title: "Error Deleting Requirement",
+          title: 'Error Deleting Requirement',
           description: errorMessage,
-          variant: "destructive",
+          variant: 'destructive',
         });
       } else if (result && result.success) {
         toast({
-          title: "Success",
+          title: 'Success',
           description: `Requirement "${requirementName}" has been deleted.`,
         });
         onRequirementDeleted();
@@ -91,28 +88,19 @@ export function DeleteRequirementDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Delete Requirement?</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete the requirement:{" "}
-            <strong>{requirementName}</strong>? This action cannot be undone.
+            Are you sure you want to delete the requirement: <strong>{requirementName}</strong>?
+            This action cannot be undone.
             {actionError && (
-              <p className="text-destructive mt-2 text-sm font-medium">
-                Error: {actionError}
-              </p>
+              <p className="text-destructive mt-2 text-sm font-medium">Error: {actionError}</p>
             )}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel
-            disabled={isPending}
-            onClick={() => handleDialogClose(false)}
-          >
+          <AlertDialogCancel disabled={isPending} onClick={() => handleDialogClose(false)}>
             Cancel
           </AlertDialogCancel>
-          <Button
-            variant="destructive"
-            onClick={handleSubmit}
-            disabled={isPending}
-          >
-            {isPending ? "Deleting..." : "Delete Requirement"}
+          <Button variant="destructive" onClick={handleSubmit} disabled={isPending}>
+            {isPending ? 'Deleting...' : 'Delete Requirement'}
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>

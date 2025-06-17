@@ -1,37 +1,30 @@
-"use client";
+'use client';
 
-import { createOrganizationAction } from "@/actions/organization/create-organization-action";
-import { organizationSchema } from "@/actions/schema";
-import { authClient } from "@/utils/auth-client";
-import type { FrameworkEditorFramework } from "@comp/db/types";
-import { Button } from "@comp/ui/button";
-import { Checkbox } from "@comp/ui/checkbox";
-import { cn } from "@comp/ui/cn";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@comp/ui/form";
-import { Icons } from "@comp/ui/icons";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { sendGTMEvent } from "@next/third-parties/google";
-import { Loader2 } from "lucide-react";
-import { useAction } from "next-safe-action/hooks";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { toast } from "sonner";
-import type { z } from "zod";
-import { LogoSpinner } from "../logo-spinner";
+import { createOrganizationAction } from '@/actions/organization/create-organization-action';
+import { organizationSchema } from '@/actions/schema';
+import { authClient } from '@/utils/auth-client';
+import type { FrameworkEditorFramework } from '@comp/db/types';
+import { Button } from '@comp/ui/button';
+import { Checkbox } from '@comp/ui/checkbox';
+import { cn } from '@comp/ui/cn';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
+import { Icons } from '@comp/ui/icons';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { sendGTMEvent } from '@next/third-parties/google';
+import { Loader2 } from 'lucide-react';
+import { useAction } from 'next-safe-action/hooks';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import type { z } from 'zod';
+import { LogoSpinner } from '../logo-spinner';
 
 interface OnboardingClientProps {
   frameworks: Pick<
     FrameworkEditorFramework,
-    "id" | "name" | "description" | "version" | "visible"
+    'id' | 'name' | 'description' | 'version' | 'visible'
   >[];
 }
 
@@ -41,13 +34,13 @@ export function OnboardingClient({ frameworks }: OnboardingClientProps) {
   const createOrganization = useAction(createOrganizationAction, {
     onSuccess: async () => {
       sendGTMEvent({
-        event: "conversion",
+        event: 'conversion',
       });
 
-      router.push("/");
+      router.push('/');
     },
     onError: () => {
-      toast.error("Error");
+      toast.error('Error');
     },
     onExecute: () => {
       setIsCreatingOrganization(true);
@@ -58,7 +51,7 @@ export function OnboardingClient({ frameworks }: OnboardingClientProps) {
     const randomSuffix = Math.floor(100000 + Math.random() * 900000).toString();
 
     await authClient.organization.create({
-      name: "My Organization",
+      name: 'My Organization',
       slug: `my-organization-${randomSuffix}`,
     });
 
@@ -72,7 +65,7 @@ export function OnboardingClient({ frameworks }: OnboardingClientProps) {
     defaultValues: {
       frameworkIds: [],
     },
-    mode: "onChange",
+    mode: 'onChange',
   });
 
   if (isCreatingOrganization) {
@@ -86,7 +79,7 @@ export function OnboardingClient({ frameworks }: OnboardingClientProps) {
                 {"Hold tight, we're creating your organization"}
               </h2>
               <p className="text-muted-foreground text-center text-sm">
-                {"This may take a minute or two..."}
+                {'This may take a minute or two...'}
               </p>
             </div>
           </div>
@@ -105,12 +98,9 @@ export function OnboardingClient({ frameworks }: OnboardingClientProps) {
         </div>
 
         <div className="mb-8 space-y-2">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Welcome to Comp AI
-          </h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Welcome to Comp AI</h1>
           <p className="text-muted-foreground text-sm">
-            Select the frameworks you use to get started. You can add more
-            later.
+            Select the frameworks you use to get started. You can add more later.
           </p>
         </div>
 
@@ -125,9 +115,7 @@ export function OnboardingClient({ frameworks }: OnboardingClientProps) {
               name="frameworkIds"
               render={({ field }) => (
                 <FormItem className="space-y-2">
-                  <FormLabel className="text-sm font-medium">
-                    {"Select Frameworks"}
-                  </FormLabel>
+                  <FormLabel className="text-sm font-medium">{'Select Frameworks'}</FormLabel>
                   <FormControl>
                     <fieldset className="flex flex-col gap-2 select-none">
                       {frameworks
@@ -138,21 +126,18 @@ export function OnboardingClient({ frameworks }: OnboardingClientProps) {
                               key={framework.id}
                               htmlFor={`framework-${framework.id}`}
                               className={cn(
-                                "focus-within:ring-ring relative flex w-full cursor-pointer flex-col rounded-sm border p-4 text-left transition-colors focus-within:ring-2 focus-within:ring-offset-2",
-                                field.value.includes(framework.id) &&
-                                  "border-primary bg-primary/5",
+                                'focus-within:ring-ring relative flex w-full cursor-pointer flex-col rounded-sm border p-4 text-left transition-colors focus-within:ring-2 focus-within:ring-offset-2',
+                                field.value.includes(framework.id) && 'border-primary bg-primary/5',
                               )}
                             >
                               <div className="flex items-start justify-between">
                                 <div>
-                                  <h3 className="font-semibold">
-                                    {framework.name}
-                                  </h3>
+                                  <h3 className="font-semibold">{framework.name}</h3>
                                   <p className="text-muted-foreground mt-1 text-sm">
                                     {framework.description}
                                   </p>
                                   <p className="text-muted-foreground/75 mt-2 text-xs">
-                                    {`${"Version"}: ${framework.version}`}
+                                    {`${'Version'}: ${framework.version}`}
                                   </p>
                                 </div>
                                 <div>
@@ -165,8 +150,7 @@ export function OnboardingClient({ frameworks }: OnboardingClientProps) {
                                         ? [...field.value, framework.id]
                                         : field.value.filter(
                                             (currentFrameworkId) =>
-                                              currentFrameworkId !==
-                                              framework.id,
+                                              currentFrameworkId !== framework.id,
                                           );
                                       field.onChange(newValue);
                                     }}
@@ -186,13 +170,13 @@ export function OnboardingClient({ frameworks }: OnboardingClientProps) {
             <Button
               type="submit"
               className="w-full"
-              disabled={createOrganization.status === "executing"}
+              disabled={createOrganization.status === 'executing'}
               suppressHydrationWarning
             >
-              {createOrganization.status === "executing" && (
+              {createOrganization.status === 'executing' && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              {"Finish setup"}
+              {'Finish setup'}
             </Button>
           </form>
         </Form>

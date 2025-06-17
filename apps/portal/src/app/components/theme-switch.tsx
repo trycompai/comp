@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useI18n } from "@/app/locales/client";
-import { Monitor, Moon, Sun } from "lucide-react";
-import { useTheme } from "next-themes";
+import { useI18n } from '@/app/locales/client';
+import { Monitor, Moon, Sun } from 'lucide-react';
+import { useTheme } from 'next-themes';
 
 import {
   Select,
@@ -11,9 +11,9 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@comp/ui/select";
+} from '@comp/ui/select';
 
-type Theme = "dark" | "system" | "light";
+type Theme = 'dark' | 'system' | 'light';
 
 type Props = {
   currentTheme?: Theme;
@@ -21,9 +21,9 @@ type Props = {
 
 const ThemeIcon = ({ currentTheme }: Props) => {
   switch (currentTheme) {
-    case "dark":
+    case 'dark':
       return <Moon size={12} />;
-    case "system":
+    case 'system':
       return <Monitor size={12} />;
     default:
       return <Sun size={12} />;
@@ -36,20 +36,17 @@ export const ThemeSwitch = () => {
 
   return (
     <div className="relative flex items-center">
-      <Select
-        defaultValue={theme}
-        onValueChange={(value: Theme) => setTheme(value)}
-      >
+      <Select defaultValue={theme} onValueChange={(value: Theme) => setTheme(value)}>
         <SelectTrigger className="h-[32px] w-full bg-transparent py-1.5 pr-3 pl-6 text-xs capitalize outline-hidden">
-          <SelectValue placeholder={t("user_menu.theme")} />
+          <SelectValue placeholder={t('user_menu.theme')} />
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>
             {themes.map((theme) => (
               <SelectItem key={theme} value={theme} className="capitalize">
-                {theme.toLowerCase() === "dark" && t("theme.options.dark")}
-                {theme.toLowerCase() === "system" && t("theme.options.system")}
-                {theme.toLowerCase() === "light" && t("theme.options.light")}
+                {theme.toLowerCase() === 'dark' && t('theme.options.dark')}
+                {theme.toLowerCase() === 'system' && t('theme.options.system')}
+                {theme.toLowerCase() === 'light' && t('theme.options.light')}
               </SelectItem>
             ))}
           </SelectGroup>

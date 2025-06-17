@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { Button } from "@comp/ui/button";
-import { Icons } from "@comp/ui/icons";
-import { Sheet, SheetContent } from "@comp/ui/sheet";
-import { useState } from "react";
-import { MainMenu } from "./main-menu";
+import { Button } from '@comp/ui/button';
+import { Icons } from '@comp/ui/icons';
+import { Sheet, SheetContent } from '@comp/ui/sheet';
+import { useState } from 'react';
+import { MainMenu } from './main-menu';
 
 export function MobileMenu() {
   const [isOpen, setOpen] = useState(false);

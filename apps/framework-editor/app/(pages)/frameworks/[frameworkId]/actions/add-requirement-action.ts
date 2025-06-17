@@ -1,18 +1,16 @@
-"use server";
+'use server';
 
-import { z } from "zod";
-import { db } from "@comp/db";
-import { revalidatePath } from "next/cache";
-import type { FrameworkEditorRequirement } from "@prisma/client";
+import { z } from 'zod';
+import { db } from '@comp/db';
+import { revalidatePath } from 'next/cache';
+import type { FrameworkEditorRequirement } from '@prisma/client';
 
 // Schema for validating requirement input
 const AddRequirementSchema = z.object({
-  name: z
-    .string()
-    .min(3, { message: "Requirement name must be at least 3 characters long" }),
+  name: z.string().min(3, { message: 'Requirement name must be at least 3 characters long' }),
   description: z.string().optional(), // Description can be optional
   identifier: z.string().optional(), // Identifier can be optional
-  frameworkId: z.string().min(1, { message: "Framework ID is required" }),
+  frameworkId: z.string().min(1, { message: 'Framework ID is required' }),
 });
 
 export interface AddRequirementActionState {
@@ -28,10 +26,10 @@ export async function addRequirementAction(
   formData: FormData,
 ): Promise<AddRequirementActionState> {
   const rawInput = {
-    name: formData.get("name"),
-    description: formData.get("description"),
-    identifier: formData.get("identifier"),
-    frameworkId: formData.get("frameworkId"),
+    name: formData.get('name'),
+    description: formData.get('description'),
+    identifier: formData.get('identifier'),
+    frameworkId: formData.get('frameworkId'),
   };
 
   const validationResult = AddRequirementSchema.safeParse(rawInput);
@@ -39,7 +37,7 @@ export async function addRequirementAction(
   if (!validationResult.success) {
     return {
       success: false,
-      error: "Invalid input for requirement.",
+      error: 'Invalid input for requirement.',
       issues: validationResult.error.issues,
     };
   }
@@ -50,8 +48,8 @@ export async function addRequirementAction(
     const newRequirement = await db.frameworkEditorRequirement.create({
       data: {
         name,
-        description: description || "", // Ensure description is at least an empty string if optional and not provided
-        identifier: identifier || "", // Ensure identifier is at least an empty string if optional and not provided
+        description: description || '', // Ensure description is at least an empty string if optional and not provided
+        identifier: identifier || '', // Ensure identifier is at least an empty string if optional and not provided
         framework: {
           connect: { id: frameworkId },
         },
@@ -67,14 +65,12 @@ export async function addRequirementAction(
     return {
       success: true,
       data: newRequirement,
-      message: "Requirement added successfully.",
+      message: 'Requirement added successfully.',
     };
   } catch (error) {
-    console.error("Failed to create requirement:", error);
+    console.error('Failed to create requirement:', error);
     const errorMessage =
-      error instanceof Error
-        ? error.message
-        : "An unexpected database error occurred.";
+      error instanceof Error ? error.message : 'An unexpected database error occurred.';
     return {
       success: false,
       error: `Database error: ${errorMessage}`,

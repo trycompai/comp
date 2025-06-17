@@ -1,14 +1,14 @@
-import { OnboardingClient } from "@/components/forms/create-organization-form";
-import { auth } from "@/utils/auth";
-import { db } from "@comp/db";
-import type { FrameworkEditorFramework } from "@comp/db/types";
-import type { Metadata } from "next";
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
-import { AcceptInvite } from "./components/accept-invite";
+import { OnboardingClient } from '@/components/forms/create-organization-form';
+import { auth } from '@/utils/auth';
+import { db } from '@comp/db';
+import type { FrameworkEditorFramework } from '@comp/db/types';
+import type { Metadata } from 'next';
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { AcceptInvite } from './components/accept-invite';
 
 export const metadata: Metadata = {
-  title: "Organization Setup | Comp AI",
+  title: 'Organization Setup | Comp AI',
 };
 
 export default async function Page() {
@@ -19,7 +19,7 @@ export default async function Page() {
   });
 
   if (!session || !session.session) {
-    return redirect("/");
+    return redirect('/');
   }
 
   const organization = await db.organization.findFirst({
@@ -35,9 +35,9 @@ export default async function Page() {
   const hasInvite = await db.invitation.findFirst({
     where: {
       email: session.user.email,
-      status: "pending",
+      status: 'pending',
       role: {
-        not: "employee",
+        not: 'employee',
       },
     },
   });
@@ -63,12 +63,7 @@ export default async function Page() {
       },
     });
 
-    return (
-      <AcceptInvite
-        inviteCode={hasInvite.id}
-        organizationName={organization?.name || ""}
-      />
-    );
+    return <AcceptInvite inviteCode={hasInvite.id} organizationName={organization?.name || ''} />;
   }
 
   const frameworks = await db.frameworkEditorFramework.findMany({

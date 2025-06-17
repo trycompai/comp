@@ -1,4 +1,4 @@
-import { cn } from "@comp/ui/cn";
+import { cn } from '@comp/ui/cn';
 
 interface AnimatedLayoutProps {
   children: React.ReactNode;
@@ -7,19 +7,14 @@ interface AnimatedLayoutProps {
   blurred?: boolean;
 }
 
-export function AnimatedLayout({
-  children,
-  sidebar,
-  isCollapsed,
-  blurred,
-}: AnimatedLayoutProps) {
+export function AnimatedLayout({ children, sidebar, isCollapsed, blurred }: AnimatedLayoutProps) {
   return (
     <div className="flex h-screen w-full overflow-hidden">
       <div
         className={cn(
-          "bg-background hidden h-full shrink-0 overflow-y-auto border-r duration-300 ease-in-out md:block",
-          isCollapsed ? "w-[80px]" : "w-[240px]",
-          blurred ? "pointer-events-none blur-xs select-none" : "",
+          'bg-background hidden h-full shrink-0 overflow-y-auto border-r duration-300 ease-in-out md:block',
+          isCollapsed ? 'w-[80px]' : 'w-[240px]',
+          blurred ? 'pointer-events-none blur-xs select-none' : '',
         )}
       >
         {sidebar}

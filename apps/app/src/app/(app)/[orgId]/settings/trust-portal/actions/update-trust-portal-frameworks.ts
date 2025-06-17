@@ -1,18 +1,18 @@
-"use server";
+'use server';
 
-import { auth } from "@/utils/auth";
-import { headers } from "next/headers";
-import { db } from "@comp/db";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { auth } from '@/utils/auth';
+import { headers } from 'next/headers';
+import { db } from '@comp/db';
+import { revalidatePath, revalidateTag } from 'next/cache';
 
 interface UpdateTrustPortalFrameworksParams {
   orgId: string;
   soc2?: boolean;
   iso27001?: boolean;
   gdpr?: boolean;
-  soc2Status?: "started" | "in_progress" | "compliant";
-  iso27001Status?: "started" | "in_progress" | "compliant";
-  gdprStatus?: "started" | "in_progress" | "compliant";
+  soc2Status?: 'started' | 'in_progress' | 'compliant';
+  iso27001Status?: 'started' | 'in_progress' | 'compliant';
+  gdprStatus?: 'started' | 'in_progress' | 'compliant';
 }
 
 export async function updateTrustPortalFrameworks({
@@ -29,7 +29,7 @@ export async function updateTrustPortalFrameworks({
   });
 
   if (!session?.session.activeOrganizationId) {
-    throw new Error("Not authenticated");
+    throw new Error('Not authenticated');
   }
 
   const trustPortal = await db.trust.findUnique({
@@ -39,7 +39,7 @@ export async function updateTrustPortalFrameworks({
   });
 
   if (!trustPortal) {
-    throw new Error("Trust portal not found");
+    throw new Error('Trust portal not found');
   }
 
   await db.trust.update({

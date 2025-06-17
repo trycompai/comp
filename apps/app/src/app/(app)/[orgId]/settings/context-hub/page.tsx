@@ -1,7 +1,7 @@
-import type { Metadata } from "next";
-import { ContextTable } from "./ContextTable";
-import { getContextEntries } from "./data/getContextEntries";
-import PageCore from "@/components/pages/PageCore.tsx";
+import type { Metadata } from 'next';
+import { ContextTable } from './ContextTable';
+import { getContextEntries } from './data/getContextEntries';
+import PageCore from '@/components/pages/PageCore.tsx';
 
 export default async function ContextHubSettings({
   params,
@@ -26,16 +26,13 @@ export default async function ContextHubSettings({
 
   return (
     <PageCore>
-      <ContextTable
-        entries={entriesResult.data}
-        pageCount={entriesResult.pageCount}
-      />
+      <ContextTable entries={entriesResult.data} pageCount={entriesResult.pageCount} />
     </PageCore>
   );
 }
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: "Context",
+    title: 'Context',
   };
 }

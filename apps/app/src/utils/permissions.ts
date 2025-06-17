@@ -1,11 +1,11 @@
-import { createAccessControl } from "better-auth/plugins/access";
+import { createAccessControl } from 'better-auth/plugins/access';
 
 const statement = {
-  app: ["create", "update", "delete", "read"],
-  member: ["create", "update"],
-  invitation: ["create", "cancel"],
-  portal: ["read", "update"],
-  organization: ["update", "delete", "read"],
+  app: ['create', 'update', 'delete', 'read'],
+  member: ['create', 'update'],
+  invitation: ['create', 'cancel'],
+  portal: ['read', 'update'],
+  organization: ['update', 'delete', 'read'],
 } as const;
 
 export const ac = createAccessControl(statement);
@@ -15,11 +15,11 @@ export const ac = createAccessControl(statement);
  * Has complete control over apps, organizations, members, invitations, and portal
  */
 export const owner = ac.newRole({
-  app: ["create", "update", "delete", "read"],
-  organization: ["update", "delete"],
-  member: ["create", "update"],
-  invitation: ["create", "cancel"],
-  portal: ["read", "update"],
+  app: ['create', 'update', 'delete', 'read'],
+  organization: ['update', 'delete'],
+  member: ['create', 'update'],
+  invitation: ['create', 'cancel'],
+  portal: ['read', 'update'],
 });
 
 /**
@@ -27,10 +27,10 @@ export const owner = ac.newRole({
  * Can manage apps, portal settings, members and invitations, but has limited organization access
  */
 export const admin = ac.newRole({
-  app: ["create", "update", "delete", "read"],
-  portal: ["read", "update"],
-  member: ["create", "update"],
-  invitation: ["create", "cancel"],
+  app: ['create', 'update', 'delete', 'read'],
+  portal: ['read', 'update'],
+  member: ['create', 'update'],
+  invitation: ['create', 'cancel'],
 });
 
 /**
@@ -38,8 +38,8 @@ export const admin = ac.newRole({
  * Can only view apps and organization information for compliance purposes
  */
 export const auditor = ac.newRole({
-  app: ["read"],
-  organization: ["read"],
+  app: ['read'],
+  organization: ['read'],
 });
 
 /**
@@ -47,7 +47,7 @@ export const auditor = ac.newRole({
  * Can manage portal, read/update organization info, manage members and invitations, and work with apps
  */
 export const employee = ac.newRole({
-  portal: ["read", "update"],
+  portal: ['read', 'update'],
 });
 
 export const allRoles = { owner, admin, auditor, employee } as const;

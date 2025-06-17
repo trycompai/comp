@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import type { SortDirection, SortConfig } from "../types/common";
+import { useState, useMemo } from 'react';
+import type { SortDirection, SortConfig } from '../types/common';
 
 export function useTableSearchSort<
   TData extends Record<string, any>,
@@ -11,27 +11,20 @@ export function useTableSearchSort<
   defaultSortColumnKey?: TKey | null,
   defaultSortDirection?: SortDirection,
 ) {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sortColumnKey, setSortColumnKey] = useState<TKey | null>(
-    defaultSortColumnKey ?? null,
-  );
-  const [sortDirection, setSortDirection] = useState<SortDirection>(
-    defaultSortDirection ?? "asc",
-  );
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortColumnKey, setSortColumnKey] = useState<TKey | null>(defaultSortColumnKey ?? null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>(defaultSortDirection ?? 'asc');
 
   const processedData = useMemo(() => {
     let dataToProcess = [...inputData];
 
     // Filter
-    if (searchTerm.trim() !== "") {
+    if (searchTerm.trim() !== '') {
       const lowerSearchTerm = searchTerm.toLowerCase();
       dataToProcess = dataToProcess.filter((item) =>
         searchableKeys.some((key) => {
           const value = item[key];
-          return (
-            typeof value === "string" &&
-            value.toLowerCase().includes(lowerSearchTerm)
-          );
+          return typeof value === 'string' && value.toLowerCase().includes(lowerSearchTerm);
         }),
       );
     }
@@ -47,59 +40,52 @@ export function useTableSearchSort<
         let comparison = 0;
 
         if (valA === null && valB === null) comparison = 0;
-        else if (valA === null) comparison = sortDirection === "asc" ? -1 : 1;
-        else if (valB === null) comparison = sortDirection === "asc" ? 1 : -1;
-        else if (columnSortConfig === "number") {
+        else if (valA === null) comparison = sortDirection === 'asc' ? -1 : 1;
+        else if (valB === null) comparison = sortDirection === 'asc' ? 1 : -1;
+        else if (columnSortConfig === 'number') {
           // Ensure values are numbers or can be parsed to numbers
           let numA: number;
           let numB: number;
 
           // Check if valA is a Date-like object
           if (
-            typeof valA === "object" &&
+            typeof valA === 'object' &&
             valA !== null &&
-            typeof (valA as any).getTime === "function"
+            typeof (valA as any).getTime === 'function'
           ) {
             numA = (valA as Date).getTime();
           } else {
-            numA = typeof valA === "number" ? valA : parseFloat(valA as string);
+            numA = typeof valA === 'number' ? valA : parseFloat(valA as string);
           }
 
           // Check if valB is a Date-like object
           if (
-            typeof valB === "object" &&
+            typeof valB === 'object' &&
             valB !== null &&
-            typeof (valB as any).getTime === "function"
+            typeof (valB as any).getTime === 'function'
           ) {
             numB = (valB as Date).getTime();
           } else {
-            numB = typeof valB === "number" ? valB : parseFloat(valB as string);
+            numB = typeof valB === 'number' ? valB : parseFloat(valB as string);
           }
 
           if (isNaN(numA) && isNaN(numB)) comparison = 0;
           else if (isNaN(numA))
-            comparison = sortDirection === "asc" ? 1 : -1; // Treat NaN as greater
-          else if (isNaN(numB)) comparison = sortDirection === "asc" ? -1 : 1;
+            comparison = sortDirection === 'asc' ? 1 : -1; // Treat NaN as greater
+          else if (isNaN(numB)) comparison = sortDirection === 'asc' ? -1 : 1;
           else comparison = numA - numB;
         } else {
           // Default to string comparison
           comparison = String(valA).localeCompare(String(valB));
         }
-        return sortDirection === "asc" ? comparison : -comparison;
+        return sortDirection === 'asc' ? comparison : -comparison;
       });
     }
     return dataToProcess;
-  }, [
-    inputData,
-    searchTerm,
-    sortColumnKey,
-    sortDirection,
-    searchableKeys,
-    sortConfig,
-  ]);
+  }, [inputData, searchTerm, sortColumnKey, sortDirection, searchableKeys, sortConfig]);
 
   const toggleSortDirection = () => {
-    setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
   };
 
   return {

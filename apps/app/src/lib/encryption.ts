@@ -1,11 +1,6 @@
-import {
-  createCipheriv,
-  createDecipheriv,
-  randomBytes,
-  scryptSync,
-} from "node:crypto";
+import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'node:crypto';
 
-const ALGORITHM = "aes-256-gcm";
+const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 12;
 const SALT_LENGTH = 16;
 const TAG_LENGTH = 16;
@@ -32,7 +27,7 @@ export async function encrypt(text: string): Promise<EncryptedData> {
   const secretKey = process.env.SECRET_KEY;
 
   if (!secretKey) {
-    throw new Error("SECRET_KEY environment variable is not set");
+    throw new Error('SECRET_KEY environment variable is not set');
   }
 
   const salt = randomBytes(SALT_LENGTH);
@@ -40,52 +35,46 @@ export async function encrypt(text: string): Promise<EncryptedData> {
   const key = deriveKey(secretKey, salt);
   const cipher = createCipheriv(ALGORITHM, key, iv);
 
-  const encrypted = Buffer.concat([
-    cipher.update(text, "utf8"),
-    cipher.final(),
-  ]);
+  const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
 
   const tag = cipher.getAuthTag();
 
   return {
-    encrypted: encrypted.toString("base64"),
-    iv: iv.toString("base64"),
-    tag: tag.toString("base64"),
-    salt: salt.toString("base64"),
+    encrypted: encrypted.toString('base64'),
+    iv: iv.toString('base64'),
+    tag: tag.toString('base64'),
+    salt: salt.toString('base64'),
   };
 }
 
 export async function decrypt(encryptedData: EncryptedData): Promise<string> {
   const secretKey = process.env.SECRET_KEY;
   if (!secretKey) {
-    throw new Error("SECRET_KEY environment variable is not set");
+    throw new Error('SECRET_KEY environment variable is not set');
   }
 
-  const encrypted = Buffer.from(encryptedData.encrypted, "base64");
-  const iv = Buffer.from(encryptedData.iv, "base64");
-  const tag = Buffer.from(encryptedData.tag, "base64");
-  const salt = Buffer.from(encryptedData.salt, "base64");
+  const encrypted = Buffer.from(encryptedData.encrypted, 'base64');
+  const iv = Buffer.from(encryptedData.iv, 'base64');
+  const tag = Buffer.from(encryptedData.tag, 'base64');
+  const salt = Buffer.from(encryptedData.salt, 'base64');
 
   const key = deriveKey(secretKey, salt);
 
   const decipher = createDecipheriv(ALGORITHM, key, iv);
   decipher.setAuthTag(tag);
 
-  const decrypted = Buffer.concat([
-    decipher.update(encrypted),
-    decipher.final(),
-  ]);
+  const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
 
-  return decrypted.toString("utf8");
+  return decrypted.toString('utf8');
 }
 
 export function encryptObject<T extends object>(obj: T): T {
   const encrypted: any = {};
 
   for (const [key, value] of Object.entries(obj)) {
-    if (typeof value === "string") {
+    if (typeof value === 'string') {
       encrypted[key] = encrypt(value);
-    } else if (typeof value === "object" && value !== null) {
+    } else if (typeof value === 'object' && value !== null) {
       encrypted[key] = encryptObject(value);
     } else {
       encrypted[key] = value;
@@ -99,9 +88,9 @@ export function decryptObject<T extends object>(obj: T): T {
   const decrypted: any = {};
 
   for (const [key, value] of Object.entries(obj)) {
-    if (value && typeof value === "object" && "encrypted" in value) {
+    if (value && typeof value === 'object' && 'encrypted' in value) {
       decrypted[key] = decrypt(value as EncryptedData);
-    } else if (typeof value === "object" && value !== null) {
+    } else if (typeof value === 'object' && value !== null) {
       decrypted[key] = decryptObject(value);
     } else {
       decrypted[key] = value;

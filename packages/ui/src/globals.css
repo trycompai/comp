@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 @config "../tailwind.config.ts";
 
 @layer base {
@@ -120,7 +120,7 @@
     @apply bg-background text-foreground;
   }
   button:not(:disabled),
-  [role="button"]:not(:disabled) {
+  [role='button']:not(:disabled) {
     cursor: pointer;
   }
 }
@@ -128,16 +128,8 @@
 @layer utilities {
   .grid-pattern {
     background-image:
-      linear-gradient(
-        to right,
-        hsl(var(--primary) / 0.03) 1px,
-        transparent 1px
-      ),
-      linear-gradient(
-        to bottom,
-        hsl(var(--primary) / 0.03) 1px,
-        transparent 1px
-      );
+      linear-gradient(to right, hsl(var(--primary) / 0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--primary) / 0.03) 1px, transparent 1px);
     background-size: 14% 14%;
     @apply opacity-100;
   }
@@ -192,8 +184,8 @@
   scrollbar-width: none;
 }
 
-[type="search"]::-webkit-search-cancel-button,
-[type="search"]::-webkit-search-decoration {
+[type='search']::-webkit-search-cancel-button,
+[type='search']::-webkit-search-decoration {
   -webkit-appearance: none;
   appearance: none;
 }
@@ -247,7 +239,7 @@
   z-index: 10;
 }
 
-.loading-wrapper[data-visible="false"] {
+.loading-wrapper[data-visible='false'] {
   transform-origin: center;
   animation: fade-out 0.2s ease forwards;
 }
@@ -359,7 +351,7 @@
   vertical-align: bottom;
   -webkit-animation: ellipsis steps(4, end) 900ms infinite;
   animation: ellipsis steps(4, end) 900ms infinite;
-  content: "\2026"; /* ascii code for the ellipsis character */
+  content: '\2026'; /* ascii code for the ellipsis character */
   width: 0px;
 }
 
@@ -380,7 +372,7 @@
   border-radius: 100%;
 }
 
-.aria-selected\:text-accent-foreground[aria-selected="true"] {
+.aria-selected\:text-accent-foreground[aria-selected='true'] {
   border-radius: 0px;
 }
 

@@ -4988,9 +4988,7 @@
       {
         "type": "heading",
         "attrs": { "level": 2 },
-        "content": [
-          { "text": "E. Violations And Disciplinary Action", "type": "text" }
-        ]
+        "content": [{ "text": "E. Violations And Disciplinary Action", "type": "text" }]
       },
       {
         "type": "paragraph",

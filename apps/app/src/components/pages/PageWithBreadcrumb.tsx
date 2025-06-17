@@ -6,17 +6,17 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@comp/ui/breadcrumb";
+} from '@comp/ui/breadcrumb';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@comp/ui/dropdown-menu";
-import { ChevronDown } from "lucide-react";
-import Link from "next/link";
-import React from "react";
-import PageCore from "./PageCore.tsx";
+} from '@comp/ui/dropdown-menu';
+import { ChevronDown } from 'lucide-react';
+import Link from 'next/link';
+import React from 'react';
+import PageCore from './PageCore.tsx';
 
 interface BreadcrumbDropdownItem {
   label: string;
@@ -54,9 +54,7 @@ export default function PageWithBreadcrumb({
     ? [breadcrumbs[0], ...breadcrumbs.slice(totalItems - (maxItems - 1))]
     : breadcrumbs;
 
-  const hiddenItems = shouldCollapse
-    ? breadcrumbs.slice(1, totalItems - (maxItems - 1))
-    : [];
+  const hiddenItems = shouldCollapse ? breadcrumbs.slice(1, totalItems - (maxItems - 1)) : [];
 
   return (
     <PageCore>
@@ -73,7 +71,7 @@ export default function PageWithBreadcrumb({
                   {item.dropdown ? (
                     <DropdownMenu>
                       <DropdownMenuTrigger
-                        className={`flex items-center gap-1 text-sm ${item.current ? "font-medium" : ""}`}
+                        className={`flex items-center gap-1 text-sm ${item.current ? 'font-medium' : ''}`}
                       >
                         {item.current ? (
                           <BreadcrumbPage className="inline-flex items-center gap-1">
@@ -91,10 +89,7 @@ export default function PageWithBreadcrumb({
                           </>
                         )}
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent
-                        align="start"
-                        className="max-h-[300px]"
-                      >
+                      <DropdownMenuContent align="start" className="max-h-[300px]">
                         {item.dropdown.map((dropdownItem) => (
                           <DropdownMenuItem key={dropdownItem.href} asChild>
                             <Link href={dropdownItem.href}>
@@ -110,7 +105,7 @@ export default function PageWithBreadcrumb({
                     <BreadcrumbPage>{item.label}</BreadcrumbPage>
                   ) : (
                     <BreadcrumbLink asChild>
-                      <Link href={item.href || "#"}>{item.label}</Link>
+                      <Link href={item.href || '#'}>{item.label}</Link>
                     </BreadcrumbLink>
                   )}
                 </BreadcrumbItem>
@@ -125,9 +120,7 @@ export default function PageWithBreadcrumb({
                         <DropdownMenuContent align="start">
                           {hiddenItems.map((hiddenItem) => (
                             <DropdownMenuItem key={hiddenItem.label} asChild>
-                              <Link href={hiddenItem.href || "#"}>
-                                {hiddenItem.label}
-                              </Link>
+                              <Link href={hiddenItem.href || '#'}>{hiddenItem.label}</Link>
                             </DropdownMenuItem>
                           ))}
                         </DropdownMenuContent>

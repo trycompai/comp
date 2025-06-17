@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import { Command, CommandInput } from "@comp/ui/command";
+import { Command, CommandInput } from '@comp/ui/command';
 
-import { useCompletion } from "@ai-sdk/react";
-import { Button } from "@comp/ui/button";
-import { ScrollArea } from "@comp/ui/scroll-area";
-import { ArrowUp } from "lucide-react";
-import { useEditor } from "novel";
-import { addAIHighlight } from "novel";
-import { useState } from "react";
-import Markdown from "react-markdown";
-import { toast } from "sonner";
-import CrazySpinner from "../icons/crazy-spinner";
-import Magic from "../icons/magic";
-import AICompletionCommands from "./ai-completion-command";
-import AISelectorCommands from "./ai-selector-commands";
+import { useCompletion } from '@ai-sdk/react';
+import { Button } from '@comp/ui/button';
+import { ScrollArea } from '@comp/ui/scroll-area';
+import { ArrowUp } from 'lucide-react';
+import { useEditor } from 'novel';
+import { addAIHighlight } from 'novel';
+import { useState } from 'react';
+import Markdown from 'react-markdown';
+import { toast } from 'sonner';
+import CrazySpinner from '../icons/crazy-spinner';
+import Magic from '../icons/magic';
+import AICompletionCommands from './ai-completion-command';
+import AISelectorCommands from './ai-selector-commands';
 
 interface AISelectorProps {
   open: boolean;
@@ -23,13 +23,13 @@ interface AISelectorProps {
 
 export function AISelector({ onOpenChange }: AISelectorProps) {
   const { editor } = useEditor();
-  const [inputValue, setInputValue] = useState("");
+  const [inputValue, setInputValue] = useState('');
 
   const { completion, complete, isLoading } = useCompletion({
-    api: "/api/generate",
+    api: '/api/generate',
     onResponse: (response) => {
       if (response.status === 429) {
-        toast.error("You have reached your request limit for the day.");
+        toast.error('You have reached your request limit for the day.');
         return;
       }
     },
@@ -69,9 +69,7 @@ export function AISelector({ onOpenChange }: AISelectorProps) {
               onValueChange={setInputValue}
               autoFocus
               placeholder={
-                hasCompletion
-                  ? "Tell AI what to do next"
-                  : "Ask AI to edit or generate..."
+                hasCompletion ? 'Tell AI what to do next' : 'Ask AI to edit or generate...'
               }
               onFocus={() => {
                 if (editor) addAIHighlight(editor);
@@ -85,22 +83,20 @@ export function AISelector({ onOpenChange }: AISelectorProps) {
                 if (completion)
                   return complete(completion, {
                     body: {
-                      option: "zap",
+                      option: 'zap',
                       command: inputValue,
                     },
-                  }).then(() => setInputValue(""));
+                  }).then(() => setInputValue(''));
 
                 const slice = editor?.state.selection.content();
-                const text = editor?.storage.markdown.serializer.serialize(
-                  slice?.content,
-                );
+                const text = editor?.storage.markdown.serializer.serialize(slice?.content);
 
                 complete(text, {
                   body: {
-                    option: "zap",
+                    option: 'zap',
                     command: inputValue,
                   },
-                }).then(() => setInputValue(""));
+                }).then(() => setInputValue(''));
               }}
             >
               <ArrowUp className="h-4 w-4" />
@@ -115,9 +111,7 @@ export function AISelector({ onOpenChange }: AISelectorProps) {
             />
           ) : (
             <AISelectorCommands
-              onSelect={(value, option) =>
-                complete(value, { body: { option } })
-              }
+              onSelect={(value, option) => complete(value, { body: { option } })}
             />
           )}
         </>

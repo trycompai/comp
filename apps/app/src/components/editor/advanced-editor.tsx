@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { Separator } from "@comp/ui/separator";
+import { Separator } from '@comp/ui/separator';
 import {
   EditorCommand,
   EditorCommandEmpty,
@@ -10,18 +10,18 @@ import {
   EditorRoot,
   type JSONContent,
   handleCommandNavigation,
-} from "novel";
-import { useEffect, useState } from "react";
-import { useDebouncedCallback } from "use-debounce";
-import { defaultExtensions } from "./extensions";
-import { LinkSelector } from "./selectors/link-selector";
-import { MathSelector } from "./selectors/math-selector";
-import { NodeSelector } from "./selectors/node-selector";
+} from 'novel';
+import { useEffect, useState } from 'react';
+import { useDebouncedCallback } from 'use-debounce';
+import { defaultExtensions } from './extensions';
+import { LinkSelector } from './selectors/link-selector';
+import { MathSelector } from './selectors/math-selector';
+import { NodeSelector } from './selectors/node-selector';
 
-import type { Extensions } from "@tiptap/core";
-import GenerativeMenuSwitch from "./generative/generative-menu-switch";
-import { TextButtons } from "./selectors/text-buttons";
-import { suggestionItems } from "./slash-command";
+import type { Extensions } from '@tiptap/core';
+import GenerativeMenuSwitch from './generative/generative-menu-switch';
+import { TextButtons } from './selectors/text-buttons';
+import { suggestionItems } from './slash-command';
 
 const extensions: Extensions = [...defaultExtensions];
 
@@ -40,13 +40,11 @@ const AdvancedEditor = ({
   onUpdate,
   onSave,
   readOnly = false,
-  placeholder = "Start writing...",
+  placeholder = 'Start writing...',
   className,
   saveDebounceMs = 500,
 }: AdvancedEditorProps) => {
-  const [saveStatus, setSaveStatus] = useState<"Saved" | "Saving" | "Unsaved">(
-    "Saved",
-  );
+  const [saveStatus, setSaveStatus] = useState<'Saved' | 'Saving' | 'Unsaved'>('Saved');
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [charsCount, setCharsCount] = useState();
 
@@ -62,14 +60,14 @@ const AdvancedEditor = ({
   const debouncedSave = useDebouncedCallback(async (content: JSONContent) => {
     if (!onSave) return;
 
-    setSaveStatus("Saving");
+    setSaveStatus('Saving');
 
     try {
       await onSave(content);
-      setSaveStatus("Saved");
+      setSaveStatus('Saved');
     } catch (err) {
-      console.error("Failed to save content:", err);
-      setSaveStatus("Unsaved");
+      console.error('Failed to save content:', err);
+      setSaveStatus('Unsaved');
     }
   }, saveDebounceMs);
 
@@ -78,15 +76,9 @@ const AdvancedEditor = ({
   return (
     <div className="bg-background relative w-full p-4">
       <div className="absolute top-5 right-5 z-10 mb-5 flex gap-2">
-        <div className="bg-accent text-muted-foreground px-2 py-1 text-sm">
-          {saveStatus}
-        </div>
+        <div className="bg-accent text-muted-foreground px-2 py-1 text-sm">{saveStatus}</div>
         <div
-          className={
-            charsCount
-              ? "bg-accent text-muted-foreground px-2 py-1 text-sm"
-              : "hidden"
-          }
+          className={charsCount ? 'bg-accent text-muted-foreground px-2 py-1 text-sm' : 'hidden'}
         >
           {charsCount} Words
         </div>
@@ -104,7 +96,7 @@ const AdvancedEditor = ({
             },
             attributes: {
               class:
-                "max-h-[500px] prose prose-lg dark:prose-invert prose-headings:font-title font-default focus:outline-hidden max-w-full",
+                'max-h-[500px] prose prose-lg dark:prose-invert prose-headings:font-title font-default focus:outline-hidden max-w-full',
             },
           }}
           onUpdate={({ editor }) => {
@@ -118,7 +110,7 @@ const AdvancedEditor = ({
             }
 
             if (initialLoadComplete && onSave) {
-              setSaveStatus("Unsaved");
+              setSaveStatus('Unsaved');
               debouncedSave(content);
             }
           }}
@@ -142,9 +134,7 @@ const AdvancedEditor = ({
                       </div>
                       <div>
                         <p className="font-medium">{item.title}</p>
-                        <p className="text-muted-foreground text-xs">
-                          {item.description}
-                        </p>
+                        <p className="text-muted-foreground text-xs">{item.description}</p>
                       </div>
                     </EditorCommandItem>
                   ))}

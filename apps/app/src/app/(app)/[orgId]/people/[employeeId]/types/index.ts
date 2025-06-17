@@ -1,8 +1,8 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 export const employeeTaskSchema = z.object({
   id: z.string(),
-  status: z.enum(["assigned", "in_progress", "completed", "overdue"]),
+  status: z.enum(['assigned', 'in_progress', 'completed', 'overdue']),
   requiredTask: z.object({
     id: z.string(),
     name: z.string(),
@@ -29,32 +29,30 @@ export const employeeDetailsInputSchema = z.object({
 
 export const updateEmployeeDepartmentSchema = z.object({
   employeeId: z.string(),
-  department: z.enum(["admin", "gov", "hr", "it", "itsm", "qms", "none"]),
+  department: z.enum(['admin', 'gov', 'hr', 'it', 'itsm', 'qms', 'none']),
 });
 
 export type EmployeeTask = z.infer<typeof employeeTaskSchema>;
 export type EmployeeDetails = z.infer<typeof employeeDetailsSchema>;
 export type EmployeeDetailsInput = z.infer<typeof employeeDetailsInputSchema>;
-export type UpdateEmployeeDepartmentInput = z.infer<
-  typeof updateEmployeeDepartmentSchema
->;
+export type UpdateEmployeeDepartmentInput = z.infer<typeof updateEmployeeDepartmentSchema>;
 
 export type AppError = {
-  code: "NOT_FOUND" | "UNAUTHORIZED" | "UNEXPECTED_ERROR";
+  code: 'NOT_FOUND' | 'UNAUTHORIZED' | 'UNEXPECTED_ERROR';
   message: string;
 };
 
 export const appErrors = {
   NOT_FOUND: {
-    code: "NOT_FOUND" as const,
-    message: "Employee not found",
+    code: 'NOT_FOUND' as const,
+    message: 'Employee not found',
   },
   UNAUTHORIZED: {
-    code: "UNAUTHORIZED" as const,
-    message: "You are not authorized to view this employee",
+    code: 'UNAUTHORIZED' as const,
+    message: 'You are not authorized to view this employee',
   },
   UNEXPECTED_ERROR: {
-    code: "UNEXPECTED_ERROR" as const,
-    message: "An unexpected error occurred",
+    code: 'UNEXPECTED_ERROR' as const,
+    message: 'An unexpected error occurred',
   },
 } as const;

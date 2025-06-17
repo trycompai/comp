@@ -1,7 +1,7 @@
-import { Button } from "@comp/ui/button";
-import { cn } from "@comp/ui/cn";
-import { SigmaIcon } from "lucide-react";
-import { useEditor } from "novel";
+import { Button } from '@comp/ui/button';
+import { cn } from '@comp/ui/cn';
+import { SigmaIcon } from 'lucide-react';
+import { useEditor } from 'novel';
 
 export const MathSelector = () => {
   const { editor } = useEditor();
@@ -14,7 +14,7 @@ export const MathSelector = () => {
       size="sm"
       className="w-12 rounded-sm"
       onClick={(evt) => {
-        if (editor.isActive("math")) {
+        if (editor.isActive('math')) {
           editor.chain().focus().unsetLatex().run();
         } else {
           const { from, to } = editor.state.selection;
@@ -27,8 +27,8 @@ export const MathSelector = () => {
       }}
     >
       <SigmaIcon
-        className={cn("size-4", {
-          "text-blue-500": editor.isActive("math"),
+        className={cn('size-4', {
+          'text-blue-500': editor.isActive('math'),
         })}
         strokeWidth={2.3}
       />

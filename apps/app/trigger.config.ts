@@ -1,24 +1,21 @@
-import { PrismaInstrumentation } from "@prisma/instrumentation";
-import {
-  additionalPackages,
-  syncVercelEnvVars,
-} from "@trigger.dev/build/extensions/core";
+import { PrismaInstrumentation } from '@prisma/instrumentation';
+import { additionalPackages, syncVercelEnvVars } from '@trigger.dev/build/extensions/core';
 
-import { puppeteer } from "@trigger.dev/build/extensions/puppeteer";
-import { defineConfig } from "@trigger.dev/sdk/v3";
-import { PrismaExtension } from "./customPrismaExtension";
+import { puppeteer } from '@trigger.dev/build/extensions/puppeteer';
+import { defineConfig } from '@trigger.dev/sdk/v3';
+import { PrismaExtension } from './customPrismaExtension';
 
 export default defineConfig({
-  project: "proj_lhxjliiqgcdyqbgtucda",
-  logLevel: "log",
+  project: 'proj_lhxjliiqgcdyqbgtucda',
+  logLevel: 'log',
   instrumentations: [new PrismaInstrumentation()],
   maxDuration: 300, // 5 minutes
   build: {
     extensions: [
       new PrismaExtension({
-        schema: "../../packages/db/prisma",
-        version: "6.6.0",
-        clientGenerator: "client",
+        schema: '../../packages/db/prisma',
+        version: '6.6.0',
+        clientGenerator: 'client',
         isUsingSchemaFolder: true,
       }),
       puppeteer(),
@@ -35,5 +32,5 @@ export default defineConfig({
       randomize: true,
     },
   },
-  dirs: ["./src/jobs", "./src/trigger"],
+  dirs: ['./src/jobs', './src/trigger'],
 });

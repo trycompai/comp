@@ -1,12 +1,12 @@
-import { headers } from "next/headers";
-import { auth } from "./auth";
+import { headers } from 'next/headers';
+import { auth } from './auth';
 
 export function formatEnumValue(value: string | null | undefined): string {
-  if (!value) return "";
+  if (!value) return '';
   return value
-    .split("_")
+    .split('_')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
+    .join(' ');
 }
 
 export async function isAuthorized(): Promise<boolean> {
@@ -16,7 +16,7 @@ export async function isAuthorized(): Promise<boolean> {
 
   if (!session?.user) return false;
 
-  const notAuthorized = session?.user.email.split("@")[1] !== "trycomp.ai";
+  const notAuthorized = session?.user.email.split('@')[1] !== 'trycomp.ai';
 
   console.log(`[NotAuthorized] ${notAuthorized}`);
 

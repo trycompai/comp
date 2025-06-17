@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { StatusIndicator } from "@/components/status-indicator";
+import { StatusIndicator } from '@/components/status-indicator';
 import type {
   Control,
   FrameworkEditorFramework,
@@ -9,25 +9,24 @@ import type {
   Policy,
   RequirementMap,
   Task,
-} from "@comp/db/types";
-import { Button } from "@comp/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@comp/ui/tabs";
+} from '@comp/db/types';
+import { Button } from '@comp/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@comp/ui/dropdown-menu";
-import { MoreVertical, Trash2 } from "lucide-react";
-import { useState } from "react";
-import { ControlDeleteDialog } from "./ControlDeleteDialog";
-import { useParams } from "next/navigation";
-import { useMemo } from "react";
-import type { ControlProgressResponse } from "../data/getOrganizationControlProgress";
-import { PoliciesTable } from "./PoliciesTable";
-import { RequirementsTable } from "./RequirementsTable";
-import { SingleControlSkeleton } from "./SingleControlSkeleton";
-import { TasksTable } from "./TasksTable";
+} from '@comp/ui/dropdown-menu';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
+import { MoreVertical, Trash2 } from 'lucide-react';
+import { useParams } from 'next/navigation';
+import { useMemo, useState } from 'react';
+import type { ControlProgressResponse } from '../data/getOrganizationControlProgress';
+import { ControlDeleteDialog } from './ControlDeleteDialog';
+import { PoliciesTable } from './PoliciesTable';
+import { RequirementsTable } from './RequirementsTable';
+import { SingleControlSkeleton } from './SingleControlSkeleton';
+import { TasksTable } from './TasksTable';
 
 interface SingleControlProps {
   control: Control & {
@@ -56,20 +55,16 @@ export function SingleControl({
   const controlIdFromParams = params.controlId;
 
   const progressStatus = useMemo(() => {
-    if (!controlProgress) return "not_started";
-    if (controlProgress.total === controlProgress.completed) return "completed";
-    if (controlProgress.completed > 0) return "in_progress";
+    if (!controlProgress) return 'not_started';
+    if (controlProgress.total === controlProgress.completed) return 'completed';
+    if (controlProgress.completed > 0) return 'in_progress';
 
     // Check if any task is not "todo" or any policy is not "draft"
-    const anyTaskInProgress = relatedTasks.some(
-      (task) => task.status !== "todo",
-    );
-    const anyPolicyInProgress = relatedPolicies.some(
-      (policy) => policy.status !== "draft",
-    );
-    if (anyTaskInProgress || anyPolicyInProgress) return "in_progress";
+    const anyTaskInProgress = relatedTasks.some((task) => task.status !== 'todo');
+    const anyPolicyInProgress = relatedPolicies.some((policy) => policy.status !== 'draft');
+    if (anyTaskInProgress || anyPolicyInProgress) return 'in_progress';
 
-    return "not_started";
+    return 'not_started';
   }, [controlProgress, relatedPolicies, relatedTasks]);
 
   if (!control || !controlProgress) {
@@ -87,9 +82,7 @@ export function SingleControl({
               <StatusIndicator status={progressStatus} />
             </div>
             {control.description && (
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                {control.description}
-              </p>
+              <p className="text-muted-foreground text-sm leading-relaxed">{control.description}</p>
             )}
           </div>
           <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
@@ -138,10 +131,7 @@ export function SingleControl({
         </TabsList>
 
         <TabsContent value="requirements" className="space-y-0">
-          <RequirementsTable
-            requirements={control.requirementsMapped}
-            orgId={orgIdFromParams}
-          />
+          <RequirementsTable requirements={control.requirementsMapped} orgId={orgIdFromParams} />
         </TabsContent>
 
         <TabsContent value="policies" className="space-y-0">

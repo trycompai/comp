@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import * as AccordionPrimitive from "@radix-ui/react-accordion";
-import { ChevronDown } from "lucide-react";
-import * as React from "react";
-import { cn } from "../utils";
+import * as AccordionPrimitive from '@radix-ui/react-accordion';
+import { ChevronDown } from 'lucide-react';
+import * as React from 'react';
+import { cn } from '../utils';
 
 const Accordion = AccordionPrimitive.Root;
 
@@ -13,11 +13,11 @@ const AccordionItem = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <AccordionPrimitive.Item
     ref={ref}
-    className={cn("border-border border-b", className)}
+    className={cn('border-border border-b', className)}
     {...props}
   />
 ));
-AccordionItem.displayName = "AccordionItem";
+AccordionItem.displayName = 'AccordionItem';
 const AccordionTrigger = React.forwardRef<
   React.ElementRef<typeof AccordionPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Trigger> & {
@@ -28,8 +28,8 @@ const AccordionTrigger = React.forwardRef<
     <AccordionPrimitive.Trigger
       ref={ref}
       className={cn(
-        "flex flex-1 items-center justify-between py-4 font-medium transition-all [&[data-state=open]>svg]:rotate-180",
-        chevronBefore && "[&[data-state=open]>svg]:rotate-0",
+        'flex flex-1 items-center justify-between py-4 font-medium transition-all [&[data-state=open]>svg]:rotate-180',
+        chevronBefore && '[&[data-state=open]>svg]:rotate-0',
         className,
       )}
       {...props}
@@ -53,7 +53,7 @@ const AccordionContent = React.forwardRef<
   <AccordionPrimitive.Content
     ref={ref}
     className={cn(
-      "data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down overflow-hidden p-px text-sm transition-all",
+      'data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down overflow-hidden p-px text-sm transition-all',
       className,
     )}
     {...props}

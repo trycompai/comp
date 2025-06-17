@@ -1,30 +1,30 @@
-import { getOrganizationFromApiKey } from "@/lib/api-key";
-import { db } from "@comp/db";
-import { Departments, Role } from "@comp/db/types";
-import { type NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
+import { getOrganizationFromApiKey } from '@/lib/api-key';
+import { db } from '@comp/db';
+import { Departments, Role } from '@comp/db/types';
+import { type NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 
 // Configure this route to use Node.js runtime instead of Edge
-export const runtime = "nodejs";
+export const runtime = 'nodejs';
 
 // Define the schema for query parameters
 const queryParamsSchema = z.object({
   active: z
     .string()
     .optional()
-    .transform((val) => val === "true"),
+    .transform((val) => val === 'true'),
   department: z.nativeEnum(Departments).optional(),
   search: z.string().optional(),
 });
 
 // Define the schema for employee creation
 const employeeCreateSchema = z.object({
-  name: z.string().min(1, { message: "Name is required" }),
-  email: z.string().email({ message: "Valid email is required" }),
+  name: z.string().min(1, { message: 'Name is required' }),
+  email: z.string().email({ message: 'Valid email is required' }),
   department: z.nativeEnum(Departments).optional().default(Departments.none),
   isActive: z.boolean().optional().default(true),
   externalEmployeeId: z.string().optional().nullable(),
-  role: z.string().optional().default("member"),
+  role: z.string().optional().default('member'),
 });
 
 // Type for the validated query parameters
@@ -54,8 +54,7 @@ type EmployeeCreateInput = z.infer<typeof employeeCreateSchema>;
  */
 export async function GET(request: NextRequest) {
   // Get the organization ID from the API key
-  const { organizationId, errorResponse } =
-    await getOrganizationFromApiKey(request);
+  const { organizationId, errorResponse } = await getOrganizationFromApiKey(request);
 
   // If there's an error response, return it
   if (errorResponse) {
@@ -68,9 +67,9 @@ export async function GET(request: NextRequest) {
 
     // Create an object from the search params
     const queryParamsObj = {
-      active: searchParams.get("active") || undefined,
-      department: searchParams.get("department") || undefined,
-      search: searchParams.get("search") || undefined,
+      active: searchParams.get('active') || undefined,
+      department: searchParams.get('department') || undefined,
+      search: searchParams.get('search') || undefined,
     };
 
     // Validate query parameters
@@ -79,7 +78,7 @@ export async function GET(request: NextRequest) {
     if (!validationResult.success) {
       return NextResponse.json(
         {
-          error: "Validation failed",
+          error: 'Validation failed',
           details: validationResult.error.format(),
         },
         { status: 400 },
@@ -112,7 +111,7 @@ export async function GET(request: NextRequest) {
       },
       orderBy: {
         user: {
-          name: "asc",
+          name: 'asc',
         },
       },
     });
@@ -142,11 +141,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: formattedEmployees });
   } catch (error) {
-    console.error("Error fetching employees:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch employees" },
-      { status: 500 },
-    );
+    console.error('Error fetching employees:', error);
+    return NextResponse.json({ error: 'Failed to fetch employees' }, { status: 500 });
   }
 }
 
@@ -174,8 +170,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   // Get the organization ID from the API key
-  const { organizationId, errorResponse } =
-    await getOrganizationFromApiKey(request);
+  const { organizationId, errorResponse } = await getOrganizationFromApiKey(request);
 
   // If there's an error response, return it
   if (errorResponse) {
@@ -193,7 +188,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: "Validation failed",
+          error: 'Validation failed',
           details: validationResult.error.format(),
         },
         { status: 400 },
@@ -257,11 +252,11 @@ export async function POST(request: NextRequest) {
       data: result,
     });
   } catch (error) {
-    console.error("Error creating employee:", error);
+    console.error('Error creating employee:', error);
     return NextResponse.json(
       {
         success: false,
-        error: "Failed to create employee",
+        error: 'Failed to create employee',
       },
       { status: 500 },
     );

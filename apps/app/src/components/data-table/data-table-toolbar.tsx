@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import type { Column, Table } from "@tanstack/react-table";
-import { Plus, Search, X } from "lucide-react";
-import * as React from "react";
+import type { Column, Table } from '@tanstack/react-table';
+import { Plus, Search, X } from 'lucide-react';
+import * as React from 'react';
 
-import { Button } from "@comp/ui/button";
-import { cn } from "@comp/ui/cn";
-import { Input } from "@comp/ui/input";
-import { useQueryState } from "nuqs";
-import { DataTableDateFilter } from "./data-table-date-filter";
-import { DataTableFacetedFilter } from "./data-table-faceted-filter";
-import { DataTableSliderFilter } from "./data-table-slider-filter";
-import { DataTableViewOptions } from "./data-table-view-options";
+import { Button } from '@comp/ui/button';
+import { cn } from '@comp/ui/cn';
+import { Input } from '@comp/ui/input';
+import { useQueryState } from 'nuqs';
+import { DataTableDateFilter } from './data-table-date-filter';
+import { DataTableFacetedFilter } from './data-table-faceted-filter';
+import { DataTableSliderFilter } from './data-table-slider-filter';
+import { DataTableViewOptions } from './data-table-view-options';
 
-interface DataTableToolbarProps<TData> extends React.ComponentProps<"div"> {
+interface DataTableToolbarProps<TData> extends React.ComponentProps<'div'> {
   table: Table<TData>;
   sheet?: string;
   action?: string;
@@ -28,7 +28,7 @@ export function DataTableToolbar<TData>({
   ...props
 }: DataTableToolbarProps<TData>) {
   const isFiltered = table.getState().columnFilters.length > 0;
-  const [open, setOpen] = useQueryState(sheet ?? "");
+  const [open, setOpen] = useQueryState(sheet ?? '');
   const isOpen = Boolean(open);
 
   const columns = React.useMemo(
@@ -44,10 +44,7 @@ export function DataTableToolbar<TData>({
     <div
       role="toolbar"
       aria-orientation="horizontal"
-      className={cn(
-        "flex w-full items-center justify-between gap-2",
-        className,
-      )}
+      className={cn('flex w-full items-center justify-between gap-2', className)}
       {...props}
     >
       <div className="flex flex-1 flex-wrap items-center gap-2">
@@ -64,7 +61,7 @@ export function DataTableToolbar<TData>({
       <div className="flex items-center gap-2">
         {children}
         {sheet && (
-          <Button variant="default" size="sm" onClick={() => setOpen("true")}>
+          <Button variant="default" size="sm" onClick={() => setOpen('true')}>
             <Plus className="h-4 w-4" />
             <span>{action}</span>
           </Button>
@@ -78,22 +75,20 @@ interface DataTableToolbarFilterProps<TData> {
   column: Column<TData>;
 }
 
-function DataTableToolbarFilter<TData>({
-  column,
-}: DataTableToolbarFilterProps<TData>) {
+function DataTableToolbarFilter<TData>({ column }: DataTableToolbarFilterProps<TData>) {
   const columnMeta = column.columnDef.meta;
 
   const onFilterRender = React.useCallback(() => {
     if (!columnMeta?.variant) return null;
 
     switch (columnMeta.variant) {
-      case "text":
+      case 'text':
         return (
           <div className="relative w-full max-w-xs">
             <Input
               leftIcon={<Search className="h-4 w-4" />}
               placeholder={columnMeta.placeholder ?? columnMeta.label}
-              value={(column.getFilterValue() as string) ?? ""}
+              value={(column.getFilterValue() as string) ?? ''}
               onChange={(event) => {
                 column.setFilterValue(event.target.value);
               }}
@@ -102,16 +97,16 @@ function DataTableToolbarFilter<TData>({
           </div>
         );
 
-      case "number":
+      case 'number':
         return (
           <div className="relative">
             <Input
               type="number"
               inputMode="numeric"
               placeholder={columnMeta.placeholder ?? columnMeta.label}
-              value={(column.getFilterValue() as string) ?? ""}
+              value={(column.getFilterValue() as string) ?? ''}
               onChange={(event) => column.setFilterValue(event.target.value)}
-              className={cn("w-32", columnMeta.unit && "pr-8")}
+              className={cn('w-32', columnMeta.unit && 'pr-8')}
             />
             {columnMeta.unit && (
               <span className="bg-muted text-muted-foreground absolute inset-y-0 right-0 flex items-center rounded-r-md px-2 text-sm">
@@ -121,32 +116,27 @@ function DataTableToolbarFilter<TData>({
           </div>
         );
 
-      case "range":
-        return (
-          <DataTableSliderFilter
-            column={column}
-            title={columnMeta.label ?? column.id}
-          />
-        );
+      case 'range':
+        return <DataTableSliderFilter column={column} title={columnMeta.label ?? column.id} />;
 
-      case "date":
-      case "dateRange":
+      case 'date':
+      case 'dateRange':
         return (
           <DataTableDateFilter
             column={column}
             title={columnMeta.label ?? column.id}
-            multiple={columnMeta.variant === "dateRange"}
+            multiple={columnMeta.variant === 'dateRange'}
           />
         );
 
-      case "select":
-      case "multiSelect":
+      case 'select':
+      case 'multiSelect':
         return (
           <DataTableFacetedFilter
             column={column}
             title={columnMeta.label ?? column.id}
             options={columnMeta.options ?? []}
-            multiple={columnMeta.variant === "multiSelect"}
+            multiple={columnMeta.variant === 'multiSelect'}
           />
         );
 

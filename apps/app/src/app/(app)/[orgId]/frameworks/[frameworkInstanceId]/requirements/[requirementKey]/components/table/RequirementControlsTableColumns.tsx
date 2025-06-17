@@ -1,19 +1,14 @@
-"use client";
+'use client';
 
-import { isPolicyCompleted } from "@/lib/control-compliance";
-import { StatusIndicator } from "@/components/status-indicator";
-import type { Control, Policy } from "@comp/db/types";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@comp/ui/tooltip";
-import type { ColumnDef } from "@tanstack/react-table";
-import Link from "next/link";
-import { useParams } from "next/navigation";
-import { getControlStatus } from "../../../../../lib/utils";
-import type { Task } from "@comp/db/types";
+import { isPolicyCompleted } from '@/lib/control-compliance';
+import { StatusIndicator } from '@/components/status-indicator';
+import type { Control, Policy } from '@comp/db/types';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
+import type { ColumnDef } from '@tanstack/react-table';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
+import { getControlStatus } from '../../../../../lib/utils';
+import type { Task } from '@comp/db/types';
 
 export type OrganizationControlType = Control & {
   policies: Policy[];
@@ -28,16 +23,13 @@ export function RequirementControlsTableColumns({
 
   return [
     {
-      id: "name",
-      accessorKey: "name",
-      header: "Control",
+      id: 'name',
+      accessorKey: 'name',
+      header: 'Control',
       cell: ({ row }) => {
         return (
           <div className="flex w-[300px] flex-col">
-            <Link
-              href={`/${orgId}/controls/${row.original.id}`}
-              className="flex flex-col"
-            >
+            <Link href={`/${orgId}/controls/${row.original.id}`} className="flex flex-col">
               <span className="truncate font-medium">{row.original.name}</span>
             </Link>
           </div>
@@ -45,9 +37,9 @@ export function RequirementControlsTableColumns({
       },
     },
     {
-      id: "status",
-      accessorKey: "policies",
-      header: "Status",
+      id: 'status',
+      accessorKey: 'policies',
+      header: 'Status',
       cell: ({ row }) => {
         const controlData = row.original;
         const policies = controlData.policies || [];
@@ -67,11 +59,7 @@ export function RequirementControlsTableColumns({
               </TooltipTrigger>
               <TooltipContent>
                 <div className="text-sm">
-                  <p>
-                    Progress:{" "}
-                    {Math.round((completedPolicies / totalPolicies) * 100) || 0}
-                    %
-                  </p>
+                  <p>Progress: {Math.round((completedPolicies / totalPolicies) * 100) || 0}%</p>
                   <p>
                     Completed: {completedPolicies}/{totalPolicies} policies
                   </p>

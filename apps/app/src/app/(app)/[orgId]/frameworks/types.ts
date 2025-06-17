@@ -5,7 +5,7 @@ import {
   RequirementMap,
   FrameworkEditorFramework,
   PolicyStatus,
-} from "@comp/db/types";
+} from '@comp/db/types';
 
 export type FrameworkInstanceWithControls = FrameworkInstance & {
   framework: FrameworkEditorFramework;

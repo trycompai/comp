@@ -1,13 +1,13 @@
-import { auth } from "@/utils/auth";
-import { db } from "@comp/db";
-import { headers } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
+import { auth } from '@/utils/auth';
+import { db } from '@comp/db';
+import { headers } from 'next/headers';
+import { NextRequest, NextResponse } from 'next/server';
 
 export const config = {
-  runtime: "nodejs",
+  runtime: 'nodejs',
   matcher: [
     // Skip auth-related routes
-    "/((?!api|_next/static|_next/image|favicon.ico|monitoring|ingest|onboarding|research).*)",
+    '/((?!api|_next/static|_next/image|favicon.ico|monitoring|ingest|onboarding|research).*)',
   ],
 };
 
@@ -20,11 +20,11 @@ export async function middleware(request: NextRequest) {
   const nextUrl = request.nextUrl;
 
   // Add x-path-name
-  response.headers.set("x-pathname", nextUrl.pathname);
+  response.headers.set('x-pathname', nextUrl.pathname);
 
   // 1. Not authenticated
-  if (!session && nextUrl.pathname !== "/auth") {
-    const url = new URL("/auth", request.url);
+  if (!session && nextUrl.pathname !== '/auth') {
+    const url = new URL('/auth', request.url);
 
     return NextResponse.redirect(url);
   }
@@ -34,8 +34,8 @@ export async function middleware(request: NextRequest) {
     // 2.1. If the user has an active organization, redirect to implementation
     if (
       session.session.activeOrganizationId &&
-      nextUrl.pathname !== "/auth" &&
-      !nextUrl.pathname.startsWith("/setup/onboarding")
+      nextUrl.pathname !== '/auth' &&
+      !nextUrl.pathname.startsWith('/setup/onboarding')
     ) {
       const onboarding = await db.onboarding.findFirst({
         where: {
@@ -44,7 +44,7 @@ export async function middleware(request: NextRequest) {
       });
 
       if (onboarding && !onboarding.completed && !onboarding.triggerJobId) {
-        return NextResponse.redirect(new URL("/setup/onboarding", request.url));
+        return NextResponse.redirect(new URL('/setup/onboarding', request.url));
       }
     }
   }

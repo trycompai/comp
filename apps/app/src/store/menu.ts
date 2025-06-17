@@ -1,4 +1,4 @@
-import { create } from "zustand";
+import { create } from 'zustand';
 
 interface MenuState {
   isCustomizing: boolean;
@@ -9,6 +9,5 @@ interface MenuState {
 export const useMenuStore = create<MenuState>()((set) => ({
   isCustomizing: false,
   setCustomizing: (isCustomizing) => set({ isCustomizing }),
-  toggleCustomizing: () =>
-    set((state) => ({ isCustomizing: !state.isCustomizing })),
+  toggleCustomizing: () => set((state) => ({ isCustomizing: !state.isCustomizing })),
 }));

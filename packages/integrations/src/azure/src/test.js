@@ -1,7 +1,7 @@
-const { DefaultAzureCredential } = require("@azure/identity");
-const fetch = require("node-fetch");
+const { DefaultAzureCredential } = require('@azure/identity');
+const fetch = require('node-fetch');
 
-const API_VERSION = "2019-01-01";
+const API_VERSION = '2019-01-01';
 const requiredEnvVars = {
   AZURE_CLIENT_ID: process.env.AZURE_CLIENT_ID,
   AZURE_TENANT_ID: process.env.AZURE_TENANT_ID,
@@ -21,12 +21,10 @@ async function getAccessToken() {
       requiredEnvVars.AZURE_CLIENT_ID,
       requiredEnvVars.AZURE_CLIENT_SECRET,
     );
-    const tokenResponse = await credential.getToken(
-      "https://management.azure.com/.default",
-    );
+    const tokenResponse = await credential.getToken('https://management.azure.com/.default');
     return tokenResponse.token;
   } catch (error) {
-    console.error("Failed to get access token:", error);
+    console.error('Failed to get access token:', error);
     throw error;
   }
 }
@@ -40,17 +38,16 @@ async function fetchComplianceStandards(token) {
     const response = await fetch(url, {
       headers: {
         Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
     });
 
-    if (!response.ok)
-      throw new Error(`Failed to fetch standards: ${response.statusText}`);
+    if (!response.ok) throw new Error(`Failed to fetch standards: ${response.statusText}`);
     const data = await response.json();
     console.log(`✅ Found ${data.value.length} compliance standards.`);
     return data.value.map((standard) => standard.name);
   } catch (error) {
-    console.error("Error fetching compliance standards:", error);
+    console.error('Error fetching compliance standards:', error);
     return [];
   }
 }
@@ -64,14 +61,12 @@ async function fetchComplianceControls(token, standard) {
     const response = await fetch(url, {
       headers: {
         Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
     });
 
     if (!response.ok)
-      throw new Error(
-        `Failed to fetch controls for ${standard}: ${response.statusText}`,
-      );
+      throw new Error(`Failed to fetch controls for ${standard}: ${response.statusText}`);
     const data = await response.json();
     console.log(`  🔹 ${standard}: Found ${data.value.length} controls.`);
     return data.value.map((control) => control.name);
@@ -90,7 +85,7 @@ async function fetchComplianceAssessment(token, standard, control) {
     const response = await fetch(url, {
       headers: {
         Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
     });
 
@@ -105,16 +100,13 @@ async function fetchComplianceAssessment(token, standard, control) {
     data.value.forEach((assessment) => {
       console.log(`      ⚠ Concern: ${assessment.properties.description}`);
       console.log(
-        `      🔧 Remediation: ${assessment.properties.remediationDescription || "No remediation available."}`,
+        `      🔧 Remediation: ${assessment.properties.remediationDescription || 'No remediation available.'}`,
       );
     });
 
     return data;
   } catch (error) {
-    console.error(
-      `Error fetching assessment for ${control} in ${standard}:`,
-      error,
-    );
+    console.error(`Error fetching assessment for ${control} in ${standard}:`, error);
     return null;
   }
 }
@@ -128,13 +120,13 @@ async function fetchAffectedResources(token, standard, control) {
     const response = await fetch(url, {
       headers: {
         Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
     });
 
-    console.log("--------------------------------");
+    console.log('--------------------------------');
     console.log(url);
-    console.log("--------------------------------");
+    console.log('--------------------------------');
     if (!response.ok)
       throw new Error(
         `Failed to fetch affected resources for ${control} in ${standard}: ${response.statusText}`,
@@ -145,15 +137,12 @@ async function fetchAffectedResources(token, standard, control) {
     data.value.forEach((resource) => {
       console.log(`        🔹 Resource ID: ${resource.id}`);
       console.log(`        🔴 Status: ${resource.properties.state}`);
-      console.log(`        🏷 Impact: ${resource.properties.impact || "N/A"}`);
+      console.log(`        🏷 Impact: ${resource.properties.impact || 'N/A'}`);
     });
 
     return data;
   } catch (error) {
-    console.error(
-      `Error fetching affected resources for ${control} in ${standard}:`,
-      error,
-    );
+    console.error(`Error fetching affected resources for ${control} in ${standard}:`, error);
     return null;
   }
 }
@@ -163,13 +152,13 @@ async function fetchAffectedResources(token, standard, control) {
  */
 async function main() {
   try {
-    console.log("🔄 Fetching Azure compliance data...");
+    console.log('🔄 Fetching Azure compliance data...');
     const token = await getAccessToken();
 
     // Step 1: Fetch all compliance standards
     const standards = await fetchComplianceStandards(token);
     if (standards.length === 0) {
-      console.log("❌ No compliance standards found.");
+      console.log('❌ No compliance standards found.');
       return;
     }
 
@@ -186,9 +175,9 @@ async function main() {
       }
     }
 
-    console.log("✅ Compliance data retrieval complete.");
+    console.log('✅ Compliance data retrieval complete.');
   } catch (error) {
-    console.error("🚨 Error in main execution:", error);
+    console.error('🚨 Error in main execution:', error);
   }
 }
 

@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { ClientTooltip, TooltipTrigger } from "@comp/ui/chart-tooltip";
-import { type PieArcDatum, arc, pie } from "d3";
+import { ClientTooltip, TooltipTrigger } from '@comp/ui/chart-tooltip';
+import { type PieArcDatum, arc, pie } from 'd3';
 
 interface ChartItem {
   name: string;
@@ -17,7 +17,7 @@ interface DonutChartProps {
 
 export function DonutChart({
   data,
-  colors = ["#7e4cfe", "#895cfc", "#956bff", "#a37fff", "#b291fd", "#b597ff"],
+  colors = ['#7e4cfe', '#895cfc', '#956bff', '#a37fff', '#b291fd', '#b597ff'],
   showLabels = true,
 }: DonutChartProps) {
   const radius = 420; // Chart base dimensions
@@ -43,9 +43,7 @@ export function DonutChart({
     .cornerRadius(lightStrokeEffect + 2);
 
   const labelRadius = radius * 0.825;
-  const arcLabel = arc<PieArcDatum<ChartItem>>()
-    .innerRadius(labelRadius)
-    .outerRadius(labelRadius);
+  const arcLabel = arc<PieArcDatum<ChartItem>>().innerRadius(labelRadius).outerRadius(labelRadius);
 
   const arcs = pieLayout(data);
 

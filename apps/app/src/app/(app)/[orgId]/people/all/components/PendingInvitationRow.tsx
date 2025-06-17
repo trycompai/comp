@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { Avatar, AvatarFallback } from "@comp/ui/avatar";
-import { Badge } from "@comp/ui/badge";
-import { Button } from "@comp/ui/button";
+import { Avatar, AvatarFallback } from '@comp/ui/avatar';
+import { Badge } from '@comp/ui/badge';
+import { Button } from '@comp/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -12,17 +12,17 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogClose,
-} from "@comp/ui/dialog";
+} from '@comp/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@comp/ui/dropdown-menu";
-import type { Invitation } from "@prisma/client";
-import { formatDistanceToNowStrict } from "date-fns";
-import { Clock, MoreHorizontal, Trash2 } from "lucide-react";
-import { useMemo, useRef, useState, useEffect } from "react";
+} from '@comp/ui/dropdown-menu';
+import type { Invitation } from '@prisma/client';
+import { formatDistanceToNowStrict } from 'date-fns';
+import { Clock, MoreHorizontal, Trash2 } from 'lucide-react';
+import { useMemo, useRef, useState, useEffect } from 'react';
 
 interface PendingInvitationRowProps {
   invitation: Invitation & {
@@ -32,10 +32,7 @@ interface PendingInvitationRowProps {
   onCancel: (invitationId: string) => Promise<void>;
 }
 
-export function PendingInvitationRow({
-  invitation,
-  onCancel,
-}: PendingInvitationRowProps) {
+export function PendingInvitationRow({ invitation, onCancel }: PendingInvitationRowProps) {
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -83,17 +80,12 @@ export function PendingInvitationRow({
       <div className="hover:bg-muted/50 flex items-center justify-between p-4">
         <div className="flex items-center gap-3">
           <Avatar>
-            <AvatarFallback>
-              {invitation.email.charAt(0).toUpperCase()}
-            </AvatarFallback>
+            <AvatarFallback>{invitation.email.charAt(0).toUpperCase()}</AvatarFallback>
           </Avatar>
           <div>
             <div className="flex items-center gap-2 font-medium">
               <span>{invitation.email}</span>
-              <Badge
-                variant="outline"
-                className="flex items-center gap-1 text-xs"
-              >
+              <Badge variant="outline" className="flex items-center gap-1 text-xs">
                 <Clock className="mr-1 h-3 w-3" />
                 Pending
               </Badge>
@@ -105,9 +97,8 @@ export function PendingInvitationRow({
           <div className="flex max-w-[150px] flex-wrap justify-end gap-1">
             {(Array.isArray(invitation.role)
               ? invitation.role
-              : typeof invitation.role === "string" &&
-                  invitation.role.includes(",")
-                ? invitation.role.split(",")
+              : typeof invitation.role === 'string' && invitation.role.includes(',')
+                ? invitation.role.split(',')
                 : [invitation.role]
             ).map((role: string) => (
               <Badge key={role} variant="secondary" className="text-xs">
@@ -116,15 +107,8 @@ export function PendingInvitationRow({
             ))}
           </div>
           <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
-            <DropdownMenuTrigger
-              ref={dropdownTriggerRef}
-              asChild
-              disabled={isCancelling}
-            >
-              <Button
-                variant="ghost"
-                className="data-[state=open]:bg-muted flex h-8 w-8 p-0"
-              >
+            <DropdownMenuTrigger ref={dropdownTriggerRef} asChild disabled={isCancelling}>
+              <Button variant="ghost" className="data-[state=open]:bg-muted flex h-8 w-8 p-0">
                 <MoreHorizontal className="h-4 w-4" />
                 <span className="sr-only">Open menu</span>
               </Button>
@@ -140,10 +124,7 @@ export function PendingInvitationRow({
                 }
               }}
             >
-              <Dialog
-                open={isCancelDialogOpen}
-                onOpenChange={handleDialogOpenChange}
-              >
+              <Dialog open={isCancelDialogOpen} onOpenChange={handleDialogOpenChange}>
                 <DialogTrigger asChild>
                   <DropdownMenuItem
                     className="text-destructive focus:text-destructive focus:bg-destructive/10"
@@ -163,18 +144,14 @@ export function PendingInvitationRow({
                   <DialogHeader>
                     <DialogTitle>Cancel Invitation</DialogTitle>
                     <DialogDescription>
-                      Are you sure you want to cancel the invitation for{" "}
-                      {invitation.email}?
+                      Are you sure you want to cancel the invitation for {invitation.email}?
                     </DialogDescription>
                   </DialogHeader>
                   <p className="text-muted-foreground mt-1 text-xs">
                     This action cannot be undone.
                   </p>
                   <DialogFooter>
-                    <Button
-                      variant="outline"
-                      onClick={() => setIsCancelDialogOpen(false)}
-                    >
+                    <Button variant="outline" onClick={() => setIsCancelDialogOpen(false)}>
                       Cancel
                     </Button>
                     <Button

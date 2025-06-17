@@ -1,8 +1,8 @@
-import { db } from "@comp/db";
-import type { Member, Organization, User } from "@prisma/client";
-import type { FleetPolicy, Host } from "../types";
-import { EmployeeTasksList } from "./EmployeeTasksList";
-import { NoAccessMessage } from "../../components/NoAccessMessage";
+import { db } from '@comp/db';
+import type { Member, Organization, User } from '@prisma/client';
+import type { FleetPolicy, Host } from '../types';
+import { EmployeeTasksList } from './EmployeeTasksList';
+import { NoAccessMessage } from '../../components/NoAccessMessage';
 
 // Define the type for the member prop passed from Overview
 interface MemberWithUserOrg extends Member {
@@ -62,9 +62,7 @@ export async function OrganizationDashboard({
     <div className="space-y-6">
       <div className="flex flex-col gap-1">
         {/* Use organization name if available and needed */}
-        <p className="text-muted-foreground text-sm">
-          Organization: {member.organization.name}
-        </p>
+        <p className="text-muted-foreground text-sm">Organization: {member.organization.name}</p>
         <h1 className="text-2xl font-bold">Welcome back, {member.user.name}</h1>
         <p className="text-sm">
           Please complete the following tasks for {member.organization.name}:

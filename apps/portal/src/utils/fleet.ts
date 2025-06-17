@@ -1,6 +1,6 @@
-"use server";
+'use server';
 
-import axios from "axios";
+import axios from 'axios';
 
 export const getFleetInstance = async () => {
   const fleet = axios.create({

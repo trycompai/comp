@@ -1,36 +1,23 @@
-"use client";
+'use client';
 
-import { submitPolicyForApprovalAction } from "@/actions/policies/submit-policy-for-approval-action";
-import { updatePolicyFormAction } from "@/actions/policies/update-policy-form-action";
-import { SelectAssignee } from "@/components/SelectAssignee";
-import { StatusIndicator } from "@/components/status-indicator";
-import {
-  Departments,
-  Frequency,
-  Member,
-  type Policy,
-  PolicyStatus,
-  User,
-} from "@comp/db/types";
-import { Button } from "@comp/ui/button";
-import { Calendar } from "@comp/ui/calendar";
-import { cn } from "@comp/ui/cn";
-import { Popover, PopoverContent, PopoverTrigger } from "@comp/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@comp/ui/select";
-import { Switch } from "@comp/ui/switch";
-import { format } from "date-fns";
-import { CalendarIcon, Loader2 } from "lucide-react";
-import { useAction } from "next-safe-action/hooks";
-import { useRef, useState } from "react";
-import { toast } from "sonner";
-import { SubmitApprovalDialog } from "./SubmitApprovalDialog";
-import { useRouter } from "next/navigation";
+import { submitPolicyForApprovalAction } from '@/actions/policies/submit-policy-for-approval-action';
+import { updatePolicyFormAction } from '@/actions/policies/update-policy-form-action';
+import { SelectAssignee } from '@/components/SelectAssignee';
+import { StatusIndicator } from '@/components/status-indicator';
+import { Departments, Frequency, Member, type Policy, PolicyStatus, User } from '@comp/db/types';
+import { Button } from '@comp/ui/button';
+import { Calendar } from '@comp/ui/calendar';
+import { cn } from '@comp/ui/cn';
+import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
+import { Switch } from '@comp/ui/switch';
+import { format } from 'date-fns';
+import { CalendarIcon, Loader2 } from 'lucide-react';
+import { useAction } from 'next-safe-action/hooks';
+import { useRef, useState } from 'react';
+import { toast } from 'sonner';
+import { SubmitApprovalDialog } from './SubmitApprovalDialog';
+import { useRouter } from 'next/navigation';
 
 interface UpdatePolicyOverviewProps {
   policy: Policy & {
@@ -47,15 +34,11 @@ export function UpdatePolicyOverview({
 }: UpdatePolicyOverviewProps) {
   // Dialog state only - no form state
   const [isApprovalDialogOpen, setIsApprovalDialogOpen] = useState(false);
-  const [selectedApproverId, setSelectedApproverId] = useState<string | null>(
-    null,
-  );
+  const [selectedApproverId, setSelectedApproverId] = useState<string | null>(null);
   const router = useRouter();
 
   // Track selected status
-  const [selectedStatus, setSelectedStatus] = useState<PolicyStatus>(
-    policy.status,
-  );
+  const [selectedStatus, setSelectedStatus] = useState<PolicyStatus>(policy.status);
 
   // Date picker state - UI only
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
@@ -72,28 +55,28 @@ export function UpdatePolicyOverview({
 
   const updatePolicyForm = useAction(updatePolicyFormAction, {
     onSuccess: () => {
-      toast.success("Policy updated successfully");
+      toast.success('Policy updated successfully');
       setIsSubmitting(false);
       setFormInteracted(false); // Reset form interaction state after successful update
       router.refresh();
     },
     onError: () => {
-      toast.error("Failed to update policy");
+      toast.error('Failed to update policy');
       setIsSubmitting(false);
     },
   });
 
   const submitForApproval = useAction(submitPolicyForApprovalAction, {
     onSuccess: () => {
-      toast.success("Policy submitted for approval successfully!");
+      toast.success('Policy submitted for approval successfully!');
       setIsSubmitting(false);
       setIsApprovalDialogOpen(false);
       setFormInteracted(false); // Reset form interaction state after successful submission
-      setSelectedStatus("needs_review");
+      setSelectedStatus('needs_review');
       router.refresh();
     },
     onError: () => {
-      toast.error("Failed to submit policy for approval.");
+      toast.error('Failed to submit policy for approval.');
       setIsSubmitting(false);
     },
   });
@@ -115,36 +98,29 @@ export function UpdatePolicyOverview({
 
     // Get form data directly from the form element
     const formData = new FormData(e.currentTarget);
-    const status = formData.get("status") as PolicyStatus;
-    const assigneeId = (formData.get("assigneeId") as string) || null;
-    const department = formData.get("department") as Departments;
-    const reviewFrequency = formData.get("review_frequency") as Frequency;
+    const status = formData.get('status') as PolicyStatus;
+    const assigneeId = (formData.get('assigneeId') as string) || null;
+    const department = formData.get('department') as Departments;
+    const reviewFrequency = formData.get('review_frequency') as Frequency;
     const isRequiredToSign =
-      formData.get("isRequiredToSign") === "on" ? "required" : "not_required";
+      formData.get('isRequiredToSign') === 'on' ? 'required' : 'not_required';
 
     // Get review date from the form or use the existing one
-    const reviewDate =
-      tempDate ||
-      (policy.reviewDate ? new Date(policy.reviewDate) : new Date());
+    const reviewDate = tempDate || (policy.reviewDate ? new Date(policy.reviewDate) : new Date());
 
     // Check if the policy is published and if there are changes
     const isPublishedWithChanges =
-      policy.status === "published" &&
+      policy.status === 'published' &&
       (status !== policy.status ||
         assigneeId !== policy.assigneeId ||
         department !== policy.department ||
         reviewFrequency !== policy.frequency ||
-        (policy.isRequiredToSign ? "required" : "not_required") !==
-          isRequiredToSign ||
-        (policy.reviewDate
-          ? new Date(policy.reviewDate).toDateString()
-          : "") !== reviewDate.toDateString());
+        (policy.isRequiredToSign ? 'required' : 'not_required') !== isRequiredToSign ||
+        (policy.reviewDate ? new Date(policy.reviewDate).toDateString() : '') !==
+          reviewDate.toDateString());
 
     // If policy is draft and being published OR policy is published and has changes
-    if (
-      (policy.status === "draft" && status === "published") ||
-      isPublishedWithChanges
-    ) {
+    if ((policy.status === 'draft' && status === 'published') || isPublishedWithChanges) {
       setIsApprovalDialogOpen(true);
       setIsSubmitting(false);
     } else {
@@ -164,23 +140,21 @@ export function UpdatePolicyOverview({
 
   const handleConfirmApproval = () => {
     if (!selectedApproverId) {
-      toast.error("Approver is required.");
+      toast.error('Approver is required.');
       return;
     }
 
     // Get form data directly from the DOM
-    const form = document.getElementById("policy-form") as HTMLFormElement;
+    const form = document.getElementById('policy-form') as HTMLFormElement;
     const formData = new FormData(form);
-    const assigneeId = (formData.get("assigneeId") as string) || null;
-    const department = formData.get("department") as Departments;
-    const reviewFrequency = formData.get("review_frequency") as Frequency;
+    const assigneeId = (formData.get('assigneeId') as string) || null;
+    const department = formData.get('department') as Departments;
+    const reviewFrequency = formData.get('review_frequency') as Frequency;
     const isRequiredToSign =
-      formData.get("isRequiredToSign") === "on" ? "required" : "not_required";
+      formData.get('isRequiredToSign') === 'on' ? 'required' : 'not_required';
 
     // Get review date from the form or use the existing one
-    const reviewDate =
-      tempDate ||
-      (policy.reviewDate ? new Date(policy.reviewDate) : new Date());
+    const reviewDate = tempDate || (policy.reviewDate ? new Date(policy.reviewDate) : new Date());
 
     setIsSubmitting(true);
     submitForApproval.execute({
@@ -201,12 +175,9 @@ export function UpdatePolicyOverview({
   const hasFormChanges = formInteracted;
 
   // Determine button text based on status and form interaction
-  let buttonText = "Save";
-  if (
-    policy.status === "draft" ||
-    (policy.status === "published" && hasFormChanges)
-  ) {
-    buttonText = "Submit for Approval";
+  let buttonText = 'Save';
+  if (policy.status === 'draft' || (policy.status === 'published' && hasFormChanges)) {
+    buttonText = 'Submit for Approval';
   }
 
   return (
@@ -219,12 +190,7 @@ export function UpdatePolicyOverview({
               Status
             </label>
             {/* Hidden input for form submission */}
-            <input
-              type="hidden"
-              name="status"
-              id="status"
-              value={selectedStatus}
-            />
+            <input type="hidden" name="status" id="status" value={selectedStatus} />
             <Select
               value={selectedStatus}
               disabled={fieldsDisabled}
@@ -309,19 +275,17 @@ export function UpdatePolicyOverview({
               type="hidden"
               name="assigneeId"
               id="assigneeId"
-              value={policy.assigneeId || ""}
+              value={policy.assigneeId || ''}
             />
             <SelectAssignee
               assignees={assignees}
               onAssigneeChange={(id) => {
                 // Update the hidden input value
-                const input = document.getElementById(
-                  "assigneeId",
-                ) as HTMLInputElement;
-                if (input) input.value = id || "";
+                const input = document.getElementById('assigneeId') as HTMLInputElement;
+                if (input) input.value = id || '';
                 handleFormChange();
               }}
-              assigneeId={policy.assigneeId || ""}
+              assigneeId={policy.assigneeId || ''}
               disabled={fieldsDisabled}
               withTitle={false}
             />
@@ -345,21 +309,20 @@ export function UpdatePolicyOverview({
                 asChild
                 disabled={fieldsDisabled}
                 className={cn(
-                  fieldsDisabled &&
-                    "pointer-events-none cursor-not-allowed select-none",
+                  fieldsDisabled && 'pointer-events-none cursor-not-allowed select-none',
                 )}
               >
                 <div className="pt-1.5">
                   <Button
                     type="button"
-                    variant={"outline"}
+                    variant={'outline'}
                     disabled={fieldsDisabled}
-                    className={cn("w-full pl-3 text-left font-normal")}
+                    className={cn('w-full pl-3 text-left font-normal')}
                   >
                     {tempDate ? (
-                      format(tempDate, "PPP")
+                      format(tempDate, 'PPP')
                     ) : policy.reviewDate ? (
-                      format(new Date(policy.reviewDate), "PPP")
+                      format(new Date(policy.reviewDate), 'PPP')
                     ) : (
                       <span>Select review date</span>
                     )}
@@ -372,10 +335,7 @@ export function UpdatePolicyOverview({
                   <Calendar
                     mode="single"
                     selected={
-                      tempDate ||
-                      (policy.reviewDate
-                        ? new Date(policy.reviewDate)
-                        : undefined)
+                      tempDate || (policy.reviewDate ? new Date(policy.reviewDate) : undefined)
                     }
                     onSelect={(date) => {
                       setTempDate(date);
@@ -395,11 +355,7 @@ export function UpdatePolicyOverview({
                     >
                       Cancel
                     </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={() => handleDateConfirm(tempDate)}
-                    >
+                    <Button type="button" size="sm" onClick={() => handleDateConfirm(tempDate)}>
                       Confirm Date
                     </Button>
                   </div>
@@ -434,7 +390,7 @@ export function UpdatePolicyOverview({
                 onCheckedChange={handleFormChange}
               />
               <span className="text-sm text-gray-500">
-                {policy.isRequiredToSign ? "Required" : "Not Required"}
+                {policy.isRequiredToSign ? 'Required' : 'Not Required'}
               </span>
             </div>
           </div>
@@ -451,9 +407,7 @@ export function UpdatePolicyOverview({
                 submitForApproval.isExecuting
               }
             >
-              {(isSubmitting ||
-                updatePolicyForm.isExecuting ||
-                submitForApproval.isExecuting) && (
+              {(isSubmitting || updatePolicyForm.isExecuting || submitForApproval.isExecuting) && (
                 <Loader2 className="mr-2 animate-spin" />
               )}
               {buttonText}

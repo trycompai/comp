@@ -6,16 +6,16 @@
 #   - node_modules directory                                                           #
 ########################################################################################
 
-name: "Bun install"
-description: "Run bun install with cache enabled"
+name: 'Bun install'
+description: 'Run bun install with cache enabled'
 inputs:
   node_version:
-    description: "Node.js version to use"
+    description: 'Node.js version to use'
     required: false
     default: v20.x
 
 runs:
-  using: "composite"
+  using: 'composite'
   steps:
     - name: Use Node ${{ inputs.node_version }}
       uses: buildjet/setup-node@v4
@@ -41,7 +41,7 @@ runs:
       id: bun-nm-cache
       uses: buildjet/cache@v4
       with:
-        path: "**/node_modules/"
+        path: '**/node_modules/'
         key: ${{ runner.os }}-bun-nm-cache-${{ hashFiles('bun.lockb', 'package.json') }}
 
     - name: Install dependencies

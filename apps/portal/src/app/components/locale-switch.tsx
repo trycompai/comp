@@ -1,11 +1,7 @@
-"use client";
+'use client';
 
-import {
-  useChangeLocale,
-  useCurrentLocale,
-  useI18n,
-} from "@/app/locales/client";
-import { languages } from "@/app/locales/client";
+import { useChangeLocale, useCurrentLocale, useI18n } from '@/app/locales/client';
+import { languages } from '@/app/locales/client';
 import {
   Select,
   SelectContent,
@@ -13,8 +9,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@comp/ui/select";
-import { Globe } from "lucide-react";
+} from '@comp/ui/select';
+import { Globe } from 'lucide-react';
 
 export const LocaleSwitch = () => {
   const t = useI18n();
@@ -28,7 +24,7 @@ export const LocaleSwitch = () => {
         onValueChange={(value: keyof typeof languages) => changeLocale(value)}
       >
         <SelectTrigger className="h-[32px] w-full bg-transparent py-1.5 pr-3 pl-6 text-xs capitalize outline-hidden">
-          <SelectValue placeholder={t("language.placeholder")} />
+          <SelectValue placeholder={t('language.placeholder')} />
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>

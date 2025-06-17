@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   EditorContent,
@@ -11,20 +11,20 @@ import {
   EditorCommandList,
   // handleCommandNavigation is needed for keyboard nav in command list
   handleCommandNavigation,
-} from "novel";
-import { useEffect, useState } from "react";
-import { useDebouncedCallback } from "use-debounce";
-import { defaultExtensions } from "./extensions"; // Correct path (same directory)
-import type { Extensions } from "@tiptap/core";
-import type { Editor } from "@tiptap/core";
-import { Separator } from "@comp/ui/separator"; // Assuming Separator exists
+} from 'novel';
+import { useEffect, useState } from 'react';
+import { useDebouncedCallback } from 'use-debounce';
+import { defaultExtensions } from './extensions'; // Correct path (same directory)
+import type { Extensions } from '@tiptap/core';
+import type { Editor } from '@tiptap/core';
+import { Separator } from '@comp/ui/separator'; // Assuming Separator exists
 
 // Import the new selector components
-import { NodeSelector } from "./selectors/NodeSelector";
-import { LinkSelector } from "./selectors/LinkSelector";
-import { TextButtons } from "./selectors/TextButtons";
+import { NodeSelector } from './selectors/NodeSelector';
+import { LinkSelector } from './selectors/LinkSelector';
+import { TextButtons } from './selectors/TextButtons';
 // Import the suggestion items to render them
-import { suggestionItems } from "./slash-command";
+import { suggestionItems } from './slash-command';
 
 const extensionsList: Extensions = [...defaultExtensions]; // Renamed to avoid conflict
 
@@ -41,9 +41,7 @@ const AdvancedEditor = ({
   readOnly = false,
   saveDebounceMs = 1000,
 }: AdvancedEditorProps) => {
-  const [saveStatus, setSaveStatus] = useState<"Saved" | "Saving" | "Unsaved">(
-    "Saved",
-  );
+  const [saveStatus, setSaveStatus] = useState<'Saved' | 'Saving' | 'Unsaved'>('Saved');
   const [charsCount, setCharsCount] = useState<number>(0);
   const [editor, setEditor] = useState<Editor | null>(null); // Store editor instance
 
@@ -53,13 +51,13 @@ const AdvancedEditor = ({
 
   const debouncedSave = useDebouncedCallback(async (content: JSONContent) => {
     if (!onSave) return;
-    setSaveStatus("Saving");
+    setSaveStatus('Saving');
     try {
       await onSave(content);
-      setSaveStatus("Saved");
+      setSaveStatus('Saved');
     } catch (err) {
-      console.error("Failed to save content:", err);
-      setSaveStatus("Unsaved"); // Keep as Unsaved on error
+      console.error('Failed to save content:', err);
+      setSaveStatus('Unsaved'); // Keep as Unsaved on error
     }
   }, saveDebounceMs);
 
@@ -73,7 +71,7 @@ const AdvancedEditor = ({
   }, [editor, editor?.storage.characterCount]); // Depend on storage for updates
 
   if (!initialContent) {
-    console.warn("AdvancedEditor: initialContent is missing.");
+    console.warn('AdvancedEditor: initialContent is missing.');
     return null; // Or return a loading state
   }
 
@@ -121,19 +119,17 @@ const AdvancedEditor = ({
           onUpdate={({ editor: currentEditor }) => {
             setEditor(currentEditor);
             const content = currentEditor.getJSON();
-            const wordCount =
-              currentEditor.storage.characterCount?.words() ?? 0;
+            const wordCount = currentEditor.storage.characterCount?.words() ?? 0;
             setCharsCount(wordCount);
 
             if (onSave) {
-              setSaveStatus("Unsaved");
+              setSaveStatus('Unsaved');
               debouncedSave(content);
             }
           }}
           onSelectionUpdate={({ editor: currentEditor }) => {
             setEditor(currentEditor);
-            const wordCount =
-              currentEditor.storage.characterCount?.words() ?? 0;
+            const wordCount = currentEditor.storage.characterCount?.words() ?? 0;
             setCharsCount(wordCount);
           }}
         >
@@ -159,9 +155,7 @@ const AdvancedEditor = ({
                   </div>
                   <div>
                     <p className="font-medium">{item.title}</p>
-                    <p className="text-muted-foreground text-xs">
-                      {item.description}
-                    </p>
+                    <p className="text-muted-foreground text-xs">{item.description}</p>
                   </div>
                 </EditorCommandItem>
               ))}

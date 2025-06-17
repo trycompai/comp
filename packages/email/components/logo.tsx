@@ -1,10 +1,10 @@
-import { Img, Section } from "@react-email/components";
+import { Img, Section } from '@react-email/components';
 
 export function Logo() {
   return (
     <Section className="mt-[32px]">
       <Img
-        src={"https://trycomp.ai/logo.png"}
+        src={'https://trycomp.ai/logo.png'}
         width="45"
         height="45"
         alt="Comp AI"

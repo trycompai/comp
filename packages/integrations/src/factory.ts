@@ -1,11 +1,11 @@
-import { fetch as awsFetch } from "./aws/src";
-import type { AWSCredentials } from "./aws/src";
+import { fetch as awsFetch } from './aws/src';
+import type { AWSCredentials } from './aws/src';
 
-import { fetch as azureFetch } from "./azure/src";
-import type { AzureCredentials } from "./azure/src";
+import { fetch as azureFetch } from './azure/src';
+import type { AzureCredentials } from './azure/src';
 
-import { fetch as gcpFetch } from "./gcp/src";
-import type { GCPCredentials } from "./gcp/src";
+import { fetch as gcpFetch } from './gcp/src';
+import type { GCPCredentials } from './gcp/src';
 
 // Add Deel credentials type
 interface DeelCredentials {
@@ -55,11 +55,11 @@ const decryptSettings = async (
       // Check if the value has the structure of EncryptedData
       if (
         value &&
-        typeof value === "object" &&
-        "encrypted" in value &&
-        "iv" in value &&
-        "tag" in value &&
-        "salt" in value
+        typeof value === 'object' &&
+        'encrypted' in value &&
+        'iv' in value &&
+        'tag' in value &&
+        'salt' in value
       ) {
         decryptedCredentials[key] = await decrypt(value as EncryptedData);
       } else {
@@ -78,8 +78,8 @@ const decryptSettings = async (
 const handlers: Map<string, IntegrationHandler<any>> = new Map();
 
 // Initialize AWS handler
-handlers.set("aws", {
-  id: "aws",
+handlers.set('aws', {
+  id: 'aws',
   fetch: awsFetch,
   processCredentials: async (encryptedSettings, decrypt) => {
     const decrypted = await decryptSettings(encryptedSettings, decrypt);
@@ -92,8 +92,8 @@ handlers.set("aws", {
 });
 
 // Initialize Azure handler
-handlers.set("azure", {
-  id: "azure",
+handlers.set('azure', {
+  id: 'azure',
   fetch: azureFetch,
   processCredentials: async (encryptedSettings, decrypt) => {
     const decrypted = await decryptSettings(encryptedSettings, decrypt);
@@ -107,8 +107,8 @@ handlers.set("azure", {
 });
 
 // Initialize GCP handler
-handlers.set("gcp", {
-  id: "gcp",
+handlers.set('gcp', {
+  id: 'gcp',
   fetch: gcpFetch,
   processCredentials: async (encryptedSettings, decrypt) => {
     const decrypted = await decryptSettings(encryptedSettings, decrypt);
@@ -120,12 +120,10 @@ handlers.set("gcp", {
 });
 
 // Initialize Deel handler (mock implementation since we don't have the actual fetch function)
-handlers.set("deel", {
-  id: "deel",
+handlers.set('deel', {
+  id: 'deel',
   // This is a placeholder implementation; replace with actual fetch once available
-  fetch: async (
-    credentials: DeelCredentials,
-  ): Promise<IntegrationFinding[]> => {
+  fetch: async (credentials: DeelCredentials): Promise<IntegrationFinding[]> => {
     return []; // Return empty array as placeholder
   },
   processCredentials: async (encryptedSettings, decrypt) => {
@@ -146,10 +144,4 @@ export const getIntegrationHandler = <T>(
 };
 
 // Export types
-export type {
-  AWSCredentials,
-  AzureCredentials,
-  GCPCredentials,
-  DecryptFunction,
-  EncryptedData,
-};
+export type { AWSCredentials, AzureCredentials, GCPCredentials, DecryptFunction, EncryptedData };

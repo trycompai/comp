@@ -1,5 +1,5 @@
-import { Control } from "@comp/db/types";
-import { useEffect, useState } from "react";
+import { Control } from '@comp/db/types';
+import { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -8,14 +8,14 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@comp/ui/dialog";
-import { Badge } from "@comp/ui/badge";
-import { Button } from "@comp/ui/button";
-import MultipleSelector, { Option } from "@comp/ui/multiple-selector";
-import { PlusIcon } from "lucide-react";
-import { mapPolicyToControls } from "../actions/mapPolicyToControls";
-import { useParams } from "next/navigation";
-import { toast } from "sonner";
+} from '@comp/ui/dialog';
+import { Badge } from '@comp/ui/badge';
+import { Button } from '@comp/ui/button';
+import MultipleSelector, { Option } from '@comp/ui/multiple-selector';
+import { PlusIcon } from 'lucide-react';
+import { mapPolicyToControls } from '../actions/mapPolicyToControls';
+import { useParams } from 'next/navigation';
+import { toast } from 'sonner';
 
 export const PolicyControlMappingModal = ({
   allControls,
@@ -30,9 +30,7 @@ export const PolicyControlMappingModal = ({
   const { policyId } = useParams<{ policyId: string }>();
 
   // Filter out controls that are already mapped
-  const filteredControls = allControls.filter(
-    (control) => !mappedControlIds.has(control.id),
-  );
+  const filteredControls = allControls.filter((control) => !mappedControlIds.has(control.id));
 
   // Prepare options for the MultipleSelector
   const preparedOptions = filteredControls.map((control) => ({
@@ -42,9 +40,7 @@ export const PolicyControlMappingModal = ({
 
   const handleMapControls = async () => {
     try {
-      console.log(
-        `Mapping controls ${selectedControls.map((c) => c.label)} to policy ${policyId}`,
-      );
+      console.log(`Mapping controls ${selectedControls.map((c) => c.label)} to policy ${policyId}`);
       await mapPolicyToControls({
         policyId,
         controlIds: selectedControls.map((c) => c.value),
@@ -55,7 +51,7 @@ export const PolicyControlMappingModal = ({
       );
     } catch (error) {
       console.error(error);
-      toast.error("Failed to map controls");
+      toast.error('Failed to map controls');
     }
   };
 
@@ -81,9 +77,7 @@ export const PolicyControlMappingModal = ({
         <DialogHeader>
           <DialogTitle>Link New Controls</DialogTitle>
         </DialogHeader>
-        <DialogDescription>
-          Select controls you want to link to this policy
-        </DialogDescription>
+        <DialogDescription>Select controls you want to link to this policy</DialogDescription>
         <MultipleSelector
           placeholder="Search or select controls..."
           value={selectedControls}
@@ -97,9 +91,7 @@ export const PolicyControlMappingModal = ({
               if (!option) return 0;
 
               // Check if the option label contains the search string
-              return option.label.toLowerCase().includes(search.toLowerCase())
-                ? 1
-                : 0;
+              return option.label.toLowerCase().includes(search.toLowerCase()) ? 1 : 0;
             },
           }}
         />

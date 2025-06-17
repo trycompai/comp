@@ -1,11 +1,8 @@
-import { db } from "@comp/db";
-import { notFound, redirect } from "next/navigation";
-import { FrameworkRequirementsClientPage } from "./FrameworkRequirementsClientPage";
-import type {
-  FrameworkEditorFramework,
-  FrameworkEditorRequirement,
-} from "@prisma/client";
-import { isAuthorized } from "@/app/lib/utils";
+import { db } from '@comp/db';
+import { notFound, redirect } from 'next/navigation';
+import { FrameworkRequirementsClientPage } from './FrameworkRequirementsClientPage';
+import type { FrameworkEditorFramework, FrameworkEditorRequirement } from '@prisma/client';
+import { isAuthorized } from '@/app/lib/utils';
 
 interface PageProps {
   params: Promise<{
@@ -17,7 +14,7 @@ export default async function Page({ params }: PageProps) {
   const isAllowed = await isAuthorized();
 
   if (!isAllowed) {
-    redirect("/auth");
+    redirect('/auth');
   }
 
   const { frameworkId } = await params;
@@ -34,7 +31,7 @@ export default async function Page({ params }: PageProps) {
       visible: true,
       requirements: {
         orderBy: {
-          name: "asc",
+          name: 'asc',
         },
         include: {
           controlTemplates: true,

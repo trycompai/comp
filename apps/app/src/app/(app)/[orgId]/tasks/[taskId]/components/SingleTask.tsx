@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import type { Attachment, Member, Task, User } from "@comp/db/types";
-import { useMemo, useState } from "react";
-import { CommentWithAuthor } from "../../../../../../components/comments/Comments";
-import { updateTask } from "../../actions/updateTask";
-import { TaskDeleteDialog } from "./TaskDeleteDialog";
-import { TaskMainContent } from "./TaskMainContent";
-import { TaskPropertiesSidebar } from "./TaskPropertiesSidebar";
-import { Card, CardDescription } from "@comp/ui/card";
+import type { Attachment, Member, Task, User } from '@comp/db/types';
+import { useMemo, useState } from 'react';
+import { CommentWithAuthor } from '../../../../../../components/comments/Comments';
+import { updateTask } from '../../actions/updateTask';
+import { TaskDeleteDialog } from './TaskDeleteDialog';
+import { TaskMainContent } from './TaskMainContent';
+import { TaskPropertiesSidebar } from './TaskPropertiesSidebar';
+import { Card, CardDescription } from '@comp/ui/card';
 
 interface SingleTaskProps {
   task: Task & { fileUrls?: string[] };
@@ -16,12 +16,7 @@ interface SingleTaskProps {
   attachments: Attachment[];
 }
 
-export function SingleTask({
-  task,
-  members,
-  comments,
-  attachments,
-}: SingleTaskProps) {
+export function SingleTask({ task, members, comments, attachments }: SingleTaskProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const assignedMember = useMemo(() => {
@@ -30,13 +25,10 @@ export function SingleTask({
   }, [task.assigneeId, members]);
 
   const handleUpdateTask = (
-    data: Partial<
-      Pick<Task, "status" | "assigneeId" | "frequency" | "department">
-    >,
+    data: Partial<Pick<Task, 'status' | 'assigneeId' | 'frequency' | 'department'>>,
   ) => {
-    const updatePayload: Partial<
-      Pick<Task, "status" | "assigneeId" | "frequency" | "department">
-    > = {};
+    const updatePayload: Partial<Pick<Task, 'status' | 'assigneeId' | 'frequency' | 'department'>> =
+      {};
 
     if (data.status !== undefined) {
       updatePayload.status = data.status;
@@ -47,7 +39,7 @@ export function SingleTask({
     if (data.assigneeId !== undefined) {
       updatePayload.assigneeId = data.assigneeId;
     }
-    if (Object.prototype.hasOwnProperty.call(data, "frequency")) {
+    if (Object.prototype.hasOwnProperty.call(data, 'frequency')) {
       updatePayload.frequency = data.frequency;
     }
 
@@ -58,11 +50,7 @@ export function SingleTask({
 
   return (
     <Card className="flex h-full flex-col overflow-hidden p-4 lg:flex-row lg:gap-16">
-      <TaskMainContent
-        task={task}
-        comments={comments}
-        attachments={attachments}
-      />
+      <TaskMainContent task={task} comments={comments} attachments={attachments} />
       <TaskPropertiesSidebar
         task={task}
         members={members}

@@ -1,5 +1,5 @@
-import { CommentItem } from "./CommentItem";
-import { CommentWithAuthor } from "./Comments";
+import { CommentItem } from './CommentItem';
+import { CommentWithAuthor } from './Comments';
 
 export function CommentList({ comments }: { comments: CommentWithAuthor[] }) {
   return (

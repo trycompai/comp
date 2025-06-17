@@ -1,14 +1,10 @@
-import { AppOnboarding } from "@/components/app-onboarding";
-import { auth } from "@/utils/auth";
-import { db } from "@comp/db";
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
+import { AppOnboarding } from '@/components/app-onboarding';
+import { auth } from '@/utils/auth';
+import { db } from '@comp/db';
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
 
-export default async function CloudTests({
-  params,
-}: {
-  params: Promise<{ orgId: string }>;
-}) {
+export default async function CloudTests({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
 
   const cloudProviders = await getCloudProviders();
@@ -20,9 +16,9 @@ export default async function CloudTests({
   return (
     <div className="m-auto max-w-[1200px]">
       <AppOnboarding
-        title={"Cloud Compliance"}
+        title={'Cloud Compliance'}
         description={
-          "Test and validate your cloud infrastructure security with automated tests and reports."
+          'Test and validate your cloud infrastructure security with automated tests and reports.'
         }
         imageSrcLight="/onboarding/cloud-light.webp"
         imageSrcDark="/onboarding/cloud-dark.webp"
@@ -32,17 +28,17 @@ export default async function CloudTests({
         href={`/${orgId}/integrations`}
         faqs={[
           {
-            questionKey: "What are cloud compliance tests?",
+            questionKey: 'What are cloud compliance tests?',
             answerKey:
-              "Cloud compliance tests are automated checks that verify your cloud environment against security best practices and compliance standards.",
+              'Cloud compliance tests are automated checks that verify your cloud environment against security best practices and compliance standards.',
           },
           {
-            questionKey: "Why are they important?",
+            questionKey: 'Why are they important?',
             answerKey:
-              "They help ensure your cloud infrastructure is secure, identify misconfigurations, and provide evidence for audits like SOC 2 and ISO 27001.",
+              'They help ensure your cloud infrastructure is secure, identify misconfigurations, and provide evidence for audits like SOC 2 and ISO 27001.',
           },
           {
-            questionKey: "How do I get started?",
+            questionKey: 'How do I get started?',
             answerKey:
               "Connect your cloud provider (AWS, GCP, Azure) in the Integrations page, and we'll automatically start running tests and generating reports.",
           },
@@ -71,7 +67,7 @@ const getCloudProviders = async () => {
     where: {
       organizationId: orgId,
       integrationId: {
-        in: ["aws", "gcp", "azure"],
+        in: ['aws', 'gcp', 'azure'],
       },
     },
   });

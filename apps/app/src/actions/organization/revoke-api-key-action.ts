@@ -1,21 +1,21 @@
-"use server";
+'use server';
 
-import { authActionClient } from "@/actions/safe-action";
-import { db } from "@comp/db";
-import { revalidatePath } from "next/cache";
-import { z } from "zod";
+import { authActionClient } from '@/actions/safe-action';
+import { db } from '@comp/db';
+import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
 
 const revokeApiKeySchema = z.object({
   id: z.string().min(1),
 });
 
 export const revokeApiKeyAction = authActionClient
-  .schema(revokeApiKeySchema)
+  .inputSchema(revokeApiKeySchema)
   .metadata({
-    name: "revokeApiKey",
+    name: 'revokeApiKey',
     track: {
-      event: "revokeApiKey",
-      channel: "server",
+      event: 'revokeApiKey',
+      channel: 'server',
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -35,7 +35,7 @@ export const revokeApiKeyAction = authActionClient
       if (result.count === 0) {
         return {
           success: false,
-          error: "API key not found or not authorized to revoke",
+          error: 'API key not found or not authorized to revoke',
         };
       }
 
@@ -43,13 +43,13 @@ export const revokeApiKeyAction = authActionClient
 
       return {
         success: true,
-        message: "API key revoked successfully",
+        message: 'API key revoked successfully',
       };
     } catch (error) {
-      console.error("Error revoking API key:", error);
+      console.error('Error revoking API key:', error);
       return {
         success: false,
-        error: "An error occurred while revoking the API key",
+        error: 'An error occurred while revoking the API key',
       };
     }
   });

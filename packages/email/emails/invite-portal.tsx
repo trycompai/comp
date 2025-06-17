@@ -10,9 +10,9 @@ import {
   Section,
   Tailwind,
   Text,
-} from "@react-email/components";
-import { Footer } from "../components/footer";
-import { Logo } from "../components/logo";
+} from '@react-email/components';
+import { Footer } from '../components/footer';
+import { Logo } from '../components/logo';
 
 interface Props {
   email: string;
@@ -20,11 +20,7 @@ interface Props {
   organizationName?: string;
 }
 
-export const InvitePortalEmail = ({
-  email,
-  inviteLink,
-  organizationName,
-}: Props) => {
+export const InvitePortalEmail = ({ email, inviteLink, organizationName }: Props) => {
   return (
     <Html>
       <Tailwind>
@@ -33,8 +29,8 @@ export const InvitePortalEmail = ({
             fontFamily="Geist"
             fallbackFontFamily="Helvetica"
             webFont={{
-              url: "https://cdn.jsdelivr.net/npm/@fontsource/geist-sans@5.0.1/files/geist-sans-latin-400-normal.woff2",
-              format: "woff2",
+              url: 'https://cdn.jsdelivr.net/npm/@fontsource/geist-sans@5.0.1/files/geist-sans-latin-400-normal.woff2',
+              format: 'woff2',
             }}
             fontWeight={400}
             fontStyle="normal"
@@ -44,8 +40,8 @@ export const InvitePortalEmail = ({
             fontFamily="Geist"
             fallbackFontFamily="Helvetica"
             webFont={{
-              url: "https://cdn.jsdelivr.net/npm/@fontsource/geist-sans@5.0.1/files/geist-sans-latin-500-normal.woff2",
-              format: "woff2",
+              url: 'https://cdn.jsdelivr.net/npm/@fontsource/geist-sans@5.0.1/files/geist-sans-latin-500-normal.woff2',
+              format: 'woff2',
             }}
             fontWeight={500}
             fontStyle="normal"
@@ -57,7 +53,7 @@ export const InvitePortalEmail = ({
         <Body className="mx-auto my-auto bg-[#fff] font-sans">
           <Container
             className="mx-auto my-[40px] max-w-[600px] border-transparent p-[20px] md:border-[#E8E7E1]"
-            style={{ borderStyle: "solid", borderWidth: 1 }}
+            style={{ borderStyle: 'solid', borderWidth: 1 }}
           >
             <Logo />
             <Heading className="mx-0 my-[30px] p-0 text-center text-[24px] font-normal text-[#121212]">
@@ -79,7 +75,7 @@ export const InvitePortalEmail = ({
             </Section>
 
             <Text className="text-[14px] leading-[24px] break-all text-[#707070]">
-              or copy and paste this URL into your browser{" "}
+              or copy and paste this URL into your browser{' '}
               <Link href={inviteLink} className="text-[#707070] underline">
                 {inviteLink}
               </Link>
@@ -88,8 +84,8 @@ export const InvitePortalEmail = ({
             <br />
             <Section>
               <Text className="text-[12px] leading-[24px] text-[#666666]">
-                This invitation was intended for{" "}
-                <span className="text-[#121212]">{email}</span>.{" "}
+                This invitation was intended for <span className="text-[#121212]">{email}</span>
+                .{' '}
               </Text>
             </Section>
 

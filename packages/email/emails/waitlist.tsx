@@ -11,9 +11,9 @@ import {
   Section,
   Tailwind,
   Text,
-} from "@react-email/components";
-import { Footer } from "../components/footer";
-import { Logo } from "../components/logo";
+} from '@react-email/components';
+import { Footer } from '../components/footer';
+import { Logo } from '../components/logo';
 
 interface Props {
   email?: string;
@@ -30,8 +30,8 @@ export const WaitlistEmail = ({ email }: Props) => {
             fontFamily="Geist"
             fallbackFontFamily="Helvetica"
             webFont={{
-              url: "https://cdn.jsdelivr.net/npm/@fontsource/geist-sans@5.0.1/files/geist-sans-latin-400-normal.woff2",
-              format: "woff2",
+              url: 'https://cdn.jsdelivr.net/npm/@fontsource/geist-sans@5.0.1/files/geist-sans-latin-400-normal.woff2',
+              format: 'woff2',
             }}
             fontWeight={400}
             fontStyle="normal"
@@ -40,8 +40,8 @@ export const WaitlistEmail = ({ email }: Props) => {
             fontFamily="Geist"
             fallbackFontFamily="Helvetica"
             webFont={{
-              url: "https://cdn.jsdelivr.net/npm/@fontsource/geist-sans@5.0.1/files/geist-sans-latin-500-normal.woff2",
-              format: "woff2",
+              url: 'https://cdn.jsdelivr.net/npm/@fontsource/geist-sans@5.0.1/files/geist-sans-latin-500-normal.woff2',
+              format: 'woff2',
             }}
             fontWeight={500}
             fontStyle="normal"
@@ -53,7 +53,7 @@ export const WaitlistEmail = ({ email }: Props) => {
         <Body className="mx-auto my-auto bg-[#fff] font-sans">
           <Container
             className="mx-auto my-[40px] max-w-[600px] border-transparent p-[20px] md:border-[#E8E7E1]"
-            style={{ borderStyle: "solid", borderWidth: 1 }}
+            style={{ borderStyle: 'solid', borderWidth: 1 }}
           >
             <Logo />
             <Heading className="mx-0 my-[30px] p-0 text-center text-[24px] font-normal text-[#121212]">
@@ -61,8 +61,7 @@ export const WaitlistEmail = ({ email }: Props) => {
             </Heading>
 
             <Text className="text-[14px] leading-[24px] text-[#121212]">
-              To claim your spot on the Comp AI waitlist, please confirm your
-              email.
+              To claim your spot on the Comp AI waitlist, please confirm your email.
             </Text>
             <Section className="mt-[32px] mb-[42px] text-center">
               <Button
@@ -74,7 +73,7 @@ export const WaitlistEmail = ({ email }: Props) => {
             </Section>
 
             <Text className="text-[14px] leading-[24px] break-all text-[#707070]">
-              or copy and paste this URL into your browser{" "}
+              or copy and paste this URL into your browser{' '}
               <Link href={confirmationUrl} className="text-[#707070] underline">
                 {confirmationUrl}
               </Link>
@@ -83,9 +82,9 @@ export const WaitlistEmail = ({ email }: Props) => {
             <br />
             <Section>
               <Text className="text-[12px] leading-[24px] text-[#666666]">
-                This email was intended for{" "}
-                <span className="font-medium text-[#121212]">{email}</span>. If
-                you did not request this, please ignore this email.
+                This email was intended for{' '}
+                <span className="font-medium text-[#121212]">{email}</span>. If you did not request
+                this, please ignore this email.
               </Text>
             </Section>
 

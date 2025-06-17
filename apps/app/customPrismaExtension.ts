@@ -1,13 +1,9 @@
-import { BuildManifest } from "@trigger.dev/build";
-import {
-  binaryForRuntime,
-  BuildContext,
-  BuildExtension,
-} from "@trigger.dev/build";
-import assert from "node:assert";
-import { existsSync, statSync } from "node:fs";
-import { cp, readdir } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { BuildManifest } from '@trigger.dev/build';
+import { binaryForRuntime, BuildContext, BuildExtension } from '@trigger.dev/build';
+import assert from 'node:assert';
+import { existsSync, statSync } from 'node:fs';
+import { cp, readdir } from 'node:fs/promises';
+import { dirname, join, resolve } from 'node:path';
 
 export type PrismaExtensionOptions = {
   schema: string;
@@ -48,27 +44,25 @@ export type PrismaExtensionOptions = {
   directUrlEnvVarName?: string;
   isUsingSchemaFolder?: boolean;
 };
-const BINARY_TARGET = "linux-arm64-openssl-3.0.x";
-export function prismaExtension(
-  options: PrismaExtensionOptions,
-): PrismaExtension {
+const BINARY_TARGET = 'linux-arm64-openssl-3.0.x';
+export function prismaExtension(options: PrismaExtensionOptions): PrismaExtension {
   return new PrismaExtension(options);
 }
 export class PrismaExtension implements BuildExtension {
   moduleExternals: string[];
-  public readonly name = "PrismaExtension";
+  public readonly name = 'PrismaExtension';
   private _resolvedSchemaPath?: string;
   constructor(private options: PrismaExtensionOptions) {
-    this.moduleExternals = ["@prisma/client", "@prisma/engines"];
+    this.moduleExternals = ['@prisma/client', '@prisma/engines'];
   }
   externalsForTarget(target: any) {
-    if (target === "dev") {
+    if (target === 'dev') {
       return [];
     }
     return this.moduleExternals;
   }
   async onBuildStart(context: BuildContext) {
-    if (context.target === "dev") {
+    if (context.target === 'dev') {
       return;
     }
     // Resolve the path to the prisma schema, relative to the config.directory
@@ -76,13 +70,11 @@ export class PrismaExtension implements BuildExtension {
 
     // Check if it's a directory; if so, look for schema.prisma inside
     if (statSync(resolvedPath).isDirectory()) {
-      resolvedPath = join(resolvedPath, "schema.prisma");
+      resolvedPath = join(resolvedPath, 'schema.prisma');
       this.options.isUsingSchemaFolder = true;
     }
     this._resolvedSchemaPath = resolvedPath;
-    context.logger.debug(
-      `Resolved the prisma schema to: ${this._resolvedSchemaPath}`,
-    );
+    context.logger.debug(`Resolved the prisma schema to: ${this._resolvedSchemaPath}`);
     // Check that the prisma schema exists
     if (!existsSync(this._resolvedSchemaPath)) {
       throw new Error(
@@ -91,15 +83,15 @@ export class PrismaExtension implements BuildExtension {
     }
   }
   async onBuildComplete(context: BuildContext, manifest: BuildManifest) {
-    if (context.target === "dev") {
+    if (context.target === 'dev') {
       return;
     }
-    assert(this._resolvedSchemaPath, "Resolved schema path is not set");
-    context.logger.debug("Looking for @prisma/client in the externals", {
+    assert(this._resolvedSchemaPath, 'Resolved schema path is not set');
+    context.logger.debug('Looking for @prisma/client in the externals', {
       externals: manifest.externals,
     });
     const prismaExternal = manifest.externals?.find(
-      (external) => external.name === "@prisma/client",
+      (external) => external.name === '@prisma/client',
     );
     const version = prismaExternal?.version ?? this.options.version;
     if (!version) {
@@ -107,9 +99,7 @@ export class PrismaExtension implements BuildExtension {
         `PrismaExtension could not determine the version of @prisma/client. It's possible that the @prisma/client was not used in the project. If this isn't the case, please provide a version in the PrismaExtension options.`,
       );
     }
-    context.logger.debug(
-      `PrismaExtension is generating the Prisma client for version ${version}`,
-    );
+    context.logger.debug(`PrismaExtension is generating the Prisma client for version ${version}`);
     const usingSchemaFolder = this.options.isUsingSchemaFolder;
     const commands: string[] = [];
     let prismaDir: string | undefined;
@@ -118,25 +108,23 @@ export class PrismaExtension implements BuildExtension {
       generatorFlags.push(`--generator=${this.options.clientGenerator}`);
     }
     if (this.options.typedSql) {
-      generatorFlags.push("--sql");
+      generatorFlags.push('--sql');
       const prismaDir = usingSchemaFolder
         ? dirname(dirname(this._resolvedSchemaPath))
         : dirname(this._resolvedSchemaPath);
-      context.logger.debug("Using typedSql");
+      context.logger.debug('Using typedSql');
       // Find all the files prisma/sql/*.sql
-      const sqlFiles = await readdir(join(prismaDir, "sql")).then((files) =>
-        files.filter((file) => file.endsWith(".sql")),
+      const sqlFiles = await readdir(join(prismaDir, 'sql')).then((files) =>
+        files.filter((file) => file.endsWith('.sql')),
       );
-      context.logger.debug("Found sql files", {
+      context.logger.debug('Found sql files', {
         sqlFiles,
       });
-      const sqlDestinationPath = join(manifest.outputPath, "prisma", "sql");
+      const sqlDestinationPath = join(manifest.outputPath, 'prisma', 'sql');
       for (const file of sqlFiles) {
         const destination = join(sqlDestinationPath, file);
-        const source = join(prismaDir, "sql", file);
-        context.logger.debug(
-          `Copying the sql from ${source} to ${destination}`,
-        );
+        const source = join(prismaDir, 'sql', file);
+        context.logger.debug(`Copying the sql from ${source} to ${destination}`);
         await cp(source, destination);
       }
     }
@@ -146,27 +134,21 @@ export class PrismaExtension implements BuildExtension {
       context.logger.debug(`Using the schema folder: ${schemaDir}`);
       // Find all the files in schemaDir that end with .prisma (excluding the schema.prisma file)
       const prismaFiles = await readdir(schemaDir).then((files) =>
-        files.filter((file) => file.endsWith(".prisma")),
+        files.filter((file) => file.endsWith('.prisma')),
       );
-      context.logger.debug("Found prisma files in the schema folder", {
+      context.logger.debug('Found prisma files in the schema folder', {
         prismaFiles,
       });
-      const schemaDestinationPath = join(
-        manifest.outputPath,
-        "prisma",
-        "schema",
-      );
+      const schemaDestinationPath = join(manifest.outputPath, 'prisma', 'schema');
       const allPrismaFiles = [...prismaFiles];
 
       // --- NEW: Look for a 'schema' subfolder and collect .prisma files from it ---
-      const schemaSubDir = join(schemaDir, "schema");
+      const schemaSubDir = join(schemaDir, 'schema');
       let subDirPrismaFiles: string[] = [];
       try {
         const filesInSubDir = await readdir(schemaSubDir);
-        subDirPrismaFiles = filesInSubDir.filter((file) =>
-          file.endsWith(".prisma"),
-        );
-        context.logger.debug("Found prisma files in the schema subfolder", {
+        subDirPrismaFiles = filesInSubDir.filter((file) => file.endsWith('.prisma'));
+        context.logger.debug('Found prisma files in the schema subfolder', {
           subDirPrismaFiles,
         });
       } catch (err) {
@@ -178,25 +160,21 @@ export class PrismaExtension implements BuildExtension {
       for (const file of allPrismaFiles) {
         const destination = join(schemaDestinationPath, file);
         const source = join(schemaDir, file);
-        context.logger.debug(
-          `Copying the prisma schema from ${source} to ${destination}`,
-        );
+        context.logger.debug(`Copying the prisma schema from ${source} to ${destination}`);
         await cp(source, destination);
       }
       // Copy .prisma files from schema subdirectory
       for (const file of subDirPrismaFiles) {
         const destination = join(schemaDestinationPath, file);
         const source = join(schemaSubDir, file);
-        context.logger.debug(
-          `Copying the prisma schema from ${source} to ${destination}`,
-        );
+        context.logger.debug(`Copying the prisma schema from ${source} to ${destination}`);
         await cp(source, destination);
       }
       commands.push(
         `${binaryForRuntime(
           manifest.runtime,
         )} node_modules/prisma/build/index.js generate --schema=./prisma/schema ${generatorFlags.join(
-          " ",
+          ' ',
         )}`,
       );
     } else {
@@ -205,11 +183,7 @@ export class PrismaExtension implements BuildExtension {
       // Copies the prisma schema to the build outputPath
       // Adds the `prisma` CLI dependency to the dependencies
       // Adds the `prisma generate` command, which generates the Prisma client
-      const schemaDestinationPath = join(
-        manifest.outputPath,
-        "prisma",
-        "schema.prisma",
-      );
+      const schemaDestinationPath = join(manifest.outputPath, 'prisma', 'schema.prisma');
       // Copy the prisma schema to the build output path
       context.logger.debug(
         `Copying the prisma schema from ${this._resolvedSchemaPath} to ${schemaDestinationPath}`,
@@ -219,19 +193,15 @@ export class PrismaExtension implements BuildExtension {
         `${binaryForRuntime(
           manifest.runtime,
         )} node_modules/prisma/build/index.js generate --schema=./prisma/schema ${generatorFlags.join(
-          " ",
+          ' ',
         )}`,
       );
     }
     const env: Record<string, string | undefined> = {};
     if (this.options.migrate) {
       // Copy the migrations directory to the build output path
-      const migrationsDir = join(prismaDir, "migrations");
-      const migrationsDestinationPath = join(
-        manifest.outputPath,
-        "prisma",
-        "migrations",
-      );
+      const migrationsDir = join(prismaDir, 'migrations');
+      const migrationsDestinationPath = join(manifest.outputPath, 'prisma', 'migrations');
       context.logger.debug(
         `Copying the prisma migrations from ${migrationsDir} to ${migrationsDestinationPath}`,
       );
@@ -258,21 +228,18 @@ export class PrismaExtension implements BuildExtension {
     }
     if (!env.DATABASE_URL) {
       context.logger.warn(
-        "prismaExtension could not resolve the DATABASE_URL environment variable. Make sure you add it to your environment variables. See our docs for more info: https://trigger.dev/docs/deploy-environment-variables",
+        'prismaExtension could not resolve the DATABASE_URL environment variable. Make sure you add it to your environment variables. See our docs for more info: https://trigger.dev/docs/deploy-environment-variables',
       );
     }
-    context.logger.debug(
-      "Adding the prisma layer with the following commands",
-      {
-        commands,
-        env,
-        dependencies: {
-          prisma: version,
-        },
+    context.logger.debug('Adding the prisma layer with the following commands', {
+      commands,
+      env,
+      dependencies: {
+        prisma: version,
       },
-    );
+    });
     context.addLayer({
-      id: "prisma",
+      id: 'prisma',
       commands,
       dependencies: {
         prisma: version,

@@ -1,4 +1,4 @@
-import { db } from "@comp/db";
+import { db } from '@comp/db';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -6,7 +6,7 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@comp/ui/breadcrumb";
+} from '@comp/ui/breadcrumb';
 
 export default async function Layout({
   children,
@@ -35,9 +35,7 @@ export default async function Layout({
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbLink href={`/${orgId}/people`}>
-                {"People"}
-              </BreadcrumbLink>
+              <BreadcrumbLink href={`/${orgId}/people`}>{'People'}</BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>

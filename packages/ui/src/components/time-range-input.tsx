@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { differenceInMinutes, parse } from "date-fns";
-import { useEffect, useState } from "react";
-import { Icons } from "./icons";
+import { differenceInMinutes, parse } from 'date-fns';
+import { useEffect, useState } from 'react';
+import { Icons } from './icons';
 
 export function TimeRangeInput({
   value,
@@ -13,7 +13,7 @@ export function TimeRangeInput({
 }) {
   const [startTime, setStartTime] = useState(value.start);
   const [endTime, setEndTime] = useState(value.end);
-  const [duration, setDuration] = useState("");
+  const [duration, setDuration] = useState('');
 
   useEffect(() => {
     setStartTime(value.start);
@@ -25,8 +25,8 @@ export function TimeRangeInput({
       return;
     }
 
-    const start = parse(startTime, "HH:mm", new Date());
-    const end = parse(endTime, "HH:mm", new Date());
+    const start = parse(startTime, 'HH:mm', new Date());
+    const end = parse(endTime, 'HH:mm', new Date());
     const diff = differenceInMinutes(end, start);
     const hours = Math.floor(diff / 60);
     const minutes = diff % 60;

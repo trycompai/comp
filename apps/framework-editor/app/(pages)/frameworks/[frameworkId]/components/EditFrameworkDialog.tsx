@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { Button } from "@comp/ui/button";
+import { Button } from '@comp/ui/button';
 import {
   Dialog,
   DialogClose,
@@ -9,38 +9,28 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@comp/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@comp/ui/form";
-import { Input } from "@comp/ui/input";
-import { Textarea } from "@comp/ui/textarea";
-import { Switch } from "@comp/ui/switch";
-import { zodResolver } from "@hookform/resolvers/zod";
-import type { FrameworkEditorFramework } from "@prisma/client";
-import { useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { toast } from "sonner";
-import { z } from "zod";
-import { updateFrameworkAction } from "../../actions/update-framework-action"; // Adjusted path
-import { FrameworkBaseSchema } from "../../schemas"; // Import shared schema
+} from '@comp/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
+import { Input } from '@comp/ui/input';
+import { Textarea } from '@comp/ui/textarea';
+import { Switch } from '@comp/ui/switch';
+import { zodResolver } from '@hookform/resolvers/zod';
+import type { FrameworkEditorFramework } from '@prisma/client';
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import { z } from 'zod';
+import { updateFrameworkAction } from '../../actions/update-framework-action'; // Adjusted path
+import { FrameworkBaseSchema } from '../../schemas'; // Import shared schema
 
 interface EditFrameworkDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  framework: Pick<
-    FrameworkEditorFramework,
-    "id" | "name" | "description" | "version" | "visible"
-  >;
+  framework: Pick<FrameworkEditorFramework, 'id' | 'name' | 'description' | 'version' | 'visible'>;
   onFrameworkUpdated?: (
     updatedData: Pick<
       FrameworkEditorFramework,
-      "id" | "name" | "description" | "version" | "visible"
+      'id' | 'name' | 'description' | 'version' | 'visible'
     >,
   ) => void;
 }
@@ -63,7 +53,7 @@ export function EditFrameworkDialog({
       version: framework.version,
       visible: framework.visible,
     },
-    mode: "onChange",
+    mode: 'onChange',
   });
 
   useEffect(() => {
@@ -78,16 +68,16 @@ export function EditFrameworkDialog({
 
   async function onSubmit(values: FrameworkFormValues) {
     const formData = new FormData();
-    formData.append("id", framework.id);
-    formData.append("name", values.name);
-    formData.append("description", values.description);
-    formData.append("version", values.version);
-    formData.append("visible", String(values.visible));
+    formData.append('id', framework.id);
+    formData.append('name', values.name);
+    formData.append('description', values.description);
+    formData.append('version', values.version);
+    formData.append('visible', String(values.visible));
 
     const result = await updateFrameworkAction(null, formData);
 
     if (result.success && result.data) {
-      toast.success("Framework updated successfully!");
+      toast.success('Framework updated successfully!');
       onOpenChange(false); // Close dialog on success
       if (onFrameworkUpdated) {
         onFrameworkUpdated(result.data);
@@ -98,13 +88,13 @@ export function EditFrameworkDialog({
           if (
             issue.path &&
             issue.path.length > 0 &&
-            (issue.path[0] === "name" ||
-              issue.path[0] === "description" ||
-              issue.path[0] === "version" ||
-              issue.path[0] === "visible")
+            (issue.path[0] === 'name' ||
+              issue.path[0] === 'description' ||
+              issue.path[0] === 'version' ||
+              issue.path[0] === 'visible')
           ) {
             form.setError(issue.path[0] as keyof FrameworkFormValues, {
-              type: "server",
+              type: 'server',
               message: issue.message,
             });
           } else {
@@ -115,7 +105,7 @@ export function EditFrameworkDialog({
         toast.error(result.error);
       }
     } else {
-      toast.error("An unexpected error occurred.");
+      toast.error('An unexpected error occurred.');
     }
   }
 
@@ -167,10 +157,7 @@ export function EditFrameworkDialog({
                 <FormItem className="grid grid-cols-4 items-center gap-2">
                   <FormLabel className="text-right">Description</FormLabel>
                   <FormControl className="col-span-3">
-                    <Textarea
-                      placeholder="Enter framework description"
-                      {...field}
-                    />
+                    <Textarea placeholder="Enter framework description" {...field} />
                   </FormControl>
                   <div className="col-span-3 col-start-2">
                     <FormMessage />
@@ -200,10 +187,7 @@ export function EditFrameworkDialog({
                 <FormItem className="grid grid-cols-4 items-center gap-2">
                   <FormLabel className="text-right">Visible</FormLabel>
                   <FormControl className="col-span-3">
-                    <Switch
-                      checked={Boolean(field.value)}
-                      onCheckedChange={field.onChange}
-                    />
+                    <Switch checked={Boolean(field.value)} onCheckedChange={field.onChange} />
                   </FormControl>
                   <div className="col-span-3 col-start-2">
                     <FormMessage />
@@ -219,11 +203,9 @@ export function EditFrameworkDialog({
               </DialogClose>
               <Button
                 type="submit"
-                disabled={
-                  form.formState.isSubmitting || !form.formState.isDirty
-                }
+                disabled={form.formState.isSubmitting || !form.formState.isDirty}
               >
-                {form.formState.isSubmitting ? "Saving..." : "Save Changes"}
+                {form.formState.isSubmitting ? 'Saving...' : 'Save Changes'}
               </Button>
             </DialogFooter>
           </form>

@@ -1,7 +1,7 @@
-import { createHash, randomBytes } from "node:crypto";
-import { db } from "@comp/db";
-import type { NextRequest } from "next/server";
-import { NextResponse } from "next/server";
+import { createHash, randomBytes } from 'node:crypto';
+import { db } from '@comp/db';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
 /**
  * Generate a new API key
@@ -9,7 +9,7 @@ import { NextResponse } from "next/server";
  */
 export function generateApiKey(): string {
   // Generate a random string for the API key
-  const apiKey = randomBytes(32).toString("hex");
+  const apiKey = randomBytes(32).toString('hex');
   // Add a prefix to make it easily identifiable
   return `comp_${apiKey}`;
 }
@@ -19,7 +19,7 @@ export function generateApiKey(): string {
  * @returns A random salt string
  */
 export function generateSalt(): string {
-  return randomBytes(16).toString("hex");
+  return randomBytes(16).toString('hex');
 }
 
 /**
@@ -31,12 +31,12 @@ export function generateSalt(): string {
 export function hashApiKey(apiKey: string, salt?: string): string {
   if (salt) {
     // If salt is provided, use it for hashing
-    return createHash("sha256")
+    return createHash('sha256')
       .update(apiKey + salt)
-      .digest("hex");
+      .digest('hex');
   }
   // For backward compatibility, hash without salt
-  return createHash("sha256").update(apiKey).digest("hex");
+  return createHash('sha256').update(apiKey).digest('hex');
 }
 
 /**
@@ -46,20 +46,20 @@ export function hashApiKey(apiKey: string, salt?: string): string {
  */
 export async function validateApiKey(req: NextRequest): Promise<string | null> {
   // Get the API key from the Authorization header
-  const authHeader = req.headers.get("Authorization");
+  const authHeader = req.headers.get('Authorization');
 
   if (!authHeader) {
     return null;
   }
 
   // Check if it's a Bearer token
-  if (authHeader.startsWith("Bearer ")) {
+  if (authHeader.startsWith('Bearer ')) {
     const apiKey = authHeader.substring(7);
     return await validateApiKeyValue(apiKey);
   }
 
   // Check if it's an X-API-Key header
-  const apiKey = req.headers.get("X-API-Key");
+  const apiKey = req.headers.get('X-API-Key');
   if (apiKey) {
     return await validateApiKeyValue(apiKey);
   }
@@ -79,8 +79,8 @@ async function validateApiKeyValue(apiKey: string): Promise<string | null> {
 
   try {
     // Check if the model exists in the Prisma client
-    if (typeof db.apiKey === "undefined") {
-      console.error("ApiKey model not found. Make sure to run migrations.");
+    if (typeof db.apiKey === 'undefined') {
+      console.error('ApiKey model not found. Make sure to run migrations.');
       return null;
     }
 
@@ -101,18 +101,13 @@ async function validateApiKeyValue(apiKey: string): Promise<string | null> {
     // Find the matching API key by hashing with each record's salt
     const matchingRecord = apiKeyRecords.find((record) => {
       // Hash the provided API key with the record's salt
-      const hashedKey = record.salt
-        ? hashApiKey(apiKey, record.salt)
-        : hashApiKey(apiKey); // For backward compatibility
+      const hashedKey = record.salt ? hashApiKey(apiKey, record.salt) : hashApiKey(apiKey); // For backward compatibility
 
       return hashedKey === record.key;
     });
 
     // If no matching key or the key is expired, return null
-    if (
-      !matchingRecord ||
-      (matchingRecord.expiresAt && matchingRecord.expiresAt < new Date())
-    ) {
+    if (!matchingRecord || (matchingRecord.expiresAt && matchingRecord.expiresAt < new Date())) {
       return null;
     }
 
@@ -129,7 +124,7 @@ async function validateApiKeyValue(apiKey: string): Promise<string | null> {
     // Return the organization ID
     return matchingRecord.organizationId;
   } catch (error) {
-    console.error("Error validating API key:", error);
+    console.error('Error validating API key:', error);
     return null;
   }
 }
@@ -139,16 +134,11 @@ async function validateApiKeyValue(apiKey: string): Promise<string | null> {
  * @param req The Next.js request object
  * @returns A response if the API key is invalid, or the organization ID if valid
  */
-export async function apiKeyMiddleware(
-  req: NextRequest,
-): Promise<NextResponse | string> {
+export async function apiKeyMiddleware(req: NextRequest): Promise<NextResponse | string> {
   const organizationId = await validateApiKey(req);
 
   if (!organizationId) {
-    return NextResponse.json(
-      { error: "Invalid or missing API key" },
-      { status: 401 },
-    );
+    return NextResponse.json({ error: 'Invalid or missing API key' }, { status: 401 });
   }
 
   return organizationId;

@@ -1,21 +1,19 @@
-"use server";
+'use server';
 
-import { GetObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { db } from "@comp/db";
-import { AttachmentEntityType } from "@comp/db/types";
-import { z } from "zod";
-import { s3Client, BUCKET_NAME, extractS3KeyFromUrl } from "@/app/s3";
-import { auth } from "@/utils/auth";
-import { headers } from "next/headers";
+import { GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { db } from '@comp/db';
+import { AttachmentEntityType } from '@comp/db/types';
+import { z } from 'zod';
+import { s3Client, BUCKET_NAME, extractS3KeyFromUrl } from '@/app/s3';
+import { auth } from '@/utils/auth';
+import { headers } from 'next/headers';
 
 const schema = z.object({
   attachmentId: z.string(),
 });
 
-export const getCommentAttachmentUrl = async (
-  input: z.infer<typeof schema>,
-) => {
+export const getCommentAttachmentUrl = async (input: z.infer<typeof schema>) => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -25,7 +23,7 @@ export const getCommentAttachmentUrl = async (
   if (!organizationId) {
     return {
       success: false,
-      error: "Not authorized - no organization found",
+      error: 'Not authorized - no organization found',
     } as const;
   }
 
@@ -41,19 +39,16 @@ export const getCommentAttachmentUrl = async (
     if (!attachment) {
       return {
         success: false,
-        error: "Attachment not found or access denied",
+        error: 'Attachment not found or access denied',
       } as const;
     }
 
     // 1b. Check if it's actually a comment attachment
     if (attachment.entityType !== AttachmentEntityType.comment) {
-      console.error(
-        "Attachment requested is not a comment attachment",
-        attachmentId,
-      );
+      console.error('Attachment requested is not a comment attachment', attachmentId);
       return {
         success: false,
-        error: "Invalid attachment type requested",
+        error: 'Invalid attachment type requested',
       } as const;
     }
 
@@ -67,13 +62,13 @@ export const getCommentAttachmentUrl = async (
 
     if (!comment) {
       console.error(
-        "Comment associated with attachment not found",
+        'Comment associated with attachment not found',
         attachmentId,
         attachment.entityId,
       );
       return {
         success: false,
-        error: "Attachment link error (Comment not found)",
+        error: 'Attachment link error (Comment not found)',
       } as const;
     }
 
@@ -82,14 +77,10 @@ export const getCommentAttachmentUrl = async (
     try {
       key = extractS3KeyFromUrl(attachment.url);
     } catch (extractError) {
-      console.error(
-        "Error extracting S3 key for comment attachment:",
-        attachmentId,
-        extractError,
-      );
+      console.error('Error extracting S3 key for comment attachment:', attachmentId, extractError);
       return {
         success: false,
-        error: "Could not process attachment URL",
+        error: 'Could not process attachment URL',
       } as const;
     }
 
@@ -105,26 +96,26 @@ export const getCommentAttachmentUrl = async (
       });
 
       if (!signedUrl) {
-        console.error("getSignedUrl returned undefined for key:", key);
+        console.error('getSignedUrl returned undefined for key:', key);
         return {
           success: false,
-          error: "Failed to generate signed URL",
+          error: 'Failed to generate signed URL',
         } as const;
       }
 
       return { success: true, data: { signedUrl } };
     } catch (s3Error) {
-      console.error("S3 getSignedUrl Error:", s3Error);
+      console.error('S3 getSignedUrl Error:', s3Error);
       return {
         success: false,
-        error: "Could not generate access URL for the file",
+        error: 'Could not generate access URL for the file',
       } as const;
     }
   } catch (dbError) {
-    console.error("Database Error fetching comment attachment:", dbError);
+    console.error('Database Error fetching comment attachment:', dbError);
     return {
       success: false,
-      error: "Failed to retrieve attachment details",
+      error: 'Failed to retrieve attachment details',
     } as const;
   }
 };

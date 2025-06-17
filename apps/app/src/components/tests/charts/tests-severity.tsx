@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { PieChart } from "@/components/ui/pie-chart";
-import { Card, CardContent, CardHeader, CardTitle } from "@comp/ui/card";
-import { cn } from "@comp/ui/cn";
+import { PieChart } from '@/components/ui/pie-chart';
+import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
+import { cn } from '@comp/ui/cn';
 
 interface Props {
   totalTests: number;
@@ -30,48 +30,48 @@ export function TestsSeverity({
 
   const data = [
     {
-      name: "Info",
+      name: 'Info',
       value: infoSeverityTests,
-      color: "var(--chart-closed)",
-      colorClass: "bg-[var(--chart-closed)]",
+      color: 'var(--chart-closed)',
+      colorClass: 'bg-[var(--chart-closed)]',
     },
     {
-      name: "Low",
+      name: 'Low',
       value: severityCounts.low,
-      color: "var(--chart-archived)",
-      colorClass: "bg-[var(--chart-archived)]",
+      color: 'var(--chart-archived)',
+      colorClass: 'bg-[var(--chart-archived)]',
     },
     {
-      name: "Medium",
+      name: 'Medium',
       value: severityCounts.medium,
-      color: "var(--chart-pending)",
-      colorClass: "bg-[var(--chart-pending)]",
+      color: 'var(--chart-pending)',
+      colorClass: 'bg-[var(--chart-pending)]',
     },
     {
-      name: "High",
+      name: 'High',
       value: severityCounts.high,
-      color: "var(--chart-open)",
-      colorClass: "bg-[var(--chart-open)]",
+      color: 'var(--chart-open)',
+      colorClass: 'bg-[var(--chart-open)]',
     },
     {
-      name: "Critical",
+      name: 'Critical',
       value: severityCounts.critical,
-      color: "hsl(var(--destructive))",
-      colorClass: "bg-[hsl(var(--destructive))]",
+      color: 'hsl(var(--destructive))',
+      colorClass: 'bg-[hsl(var(--destructive))]',
     },
   ];
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{"Test Severity Distribution"}</CardTitle>
+        <CardTitle>{'Test Severity Distribution'}</CardTitle>
       </CardHeader>
       <CardContent>
         <PieChart data={data} />
         <div className="mt-4 gap-2 text-sm">
           {data.map((item) => (
             <div key={item.name} className="flex items-center gap-2">
-              <div className={cn("h-3 w-3", item.colorClass)} />
+              <div className={cn('h-3 w-3', item.colorClass)} />
               <span>{item.name}</span>
               <span className="ml-auto font-medium">{item.value}</span>
             </div>

@@ -1,16 +1,16 @@
-import { Novu } from "@novu/node";
-import axios from "axios";
+import { Novu } from '@novu/node';
+import axios from 'axios';
 
 const novu = new Novu(process.env.NOVU_API_KEY!);
-const novu_api = "https://api.novu.co/v1";
+const novu_api = 'https://api.novu.co/v1';
 
 export enum TriggerEvents {
-  TaskReminderInApp = "task-reminder-inapp",
-  TaskReminderEmail = "task-reminder-email",
+  TaskReminderInApp = 'task-reminder-inapp',
+  TaskReminderEmail = 'task-reminder-email',
 }
 
 export enum NotificationTypes {
-  Task = "task",
+  Task = 'task',
 }
 
 type TriggerUser = {
@@ -52,7 +52,7 @@ export async function trigger(data: TriggerPayload) {
       payload: data.payload,
     });
   } catch (error: any) {
-    console.error("Novu trigger error:", {
+    console.error('Novu trigger error:', {
       event: data.name,
       error: error.response?.data || error.message,
       status: error.response?.status,
@@ -102,7 +102,7 @@ export async function updateSubscriberPreferences({
       {
         headers: {
           Authorization: `ApiKey ${process.env.NOVU_API_KEY!}`,
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
       },
     );

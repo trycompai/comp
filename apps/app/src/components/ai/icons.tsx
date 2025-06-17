@@ -1,6 +1,6 @@
-import Link from "next/link";
-import * as React from "react";
-import type { SVGProps } from "react";
+import Link from 'next/link';
+import * as React from 'react';
+import type { SVGProps } from 'react';
 
 export const VercelIcon = ({ size = 17 }) => {
   return (
@@ -9,14 +9,9 @@ export const VercelIcon = ({ size = 17 }) => {
       strokeLinejoin="round"
       viewBox="0 0 16 16"
       width={size}
-      style={{ color: "currentcolor" }}
+      style={{ color: 'currentcolor' }}
     >
-      <path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M8 1L16 15H0L8 1Z"
-        fill="currentColor"
-      />
+      <path fillRule="evenodd" clipRule="evenodd" d="M8 1L16 15H0L8 1Z" fill="currentColor" />
     </svg>
   );
 };
@@ -27,16 +22,11 @@ export const SpinnerIcon = ({ size = 16 }: { size?: number }) => (
     strokeLinejoin="round"
     viewBox="0 0 16 16"
     width={size}
-    style={{ color: "currentcolor" }}
+    style={{ color: 'currentcolor' }}
   >
     <g clipPath="url(#clip0_2393_1490)">
       <path d="M8 0V4" stroke="currentColor" strokeWidth="1.5" />
-      <path
-        opacity="0.5"
-        d="M8 16V12"
-        stroke="currentColor"
-        strokeWidth="1.5"
-      />
+      <path opacity="0.5" d="M8 16V12" stroke="currentColor" strokeWidth="1.5" />
       <path
         opacity="0.9"
         d="M3.29773 1.52783L5.64887 4.7639"
@@ -131,21 +121,18 @@ export const GroqIcon = ({ size = 16 }) => {
       viewBox="0 0 160 59"
       width={size * (160 / 120)}
       className="pt-1"
-      style={{ color: "currentcolor" }}
+      style={{ color: 'currentcolor' }}
     >
       <mask
         id="mask0_4345_1846"
-        style={{ maskType: "luminance" }}
+        style={{ maskType: 'luminance' }}
         maskUnits="userSpaceOnUse"
         x="0"
         y="0"
         width="160"
         height="59"
       >
-        <path
-          d="M0.273438 0.219727H159.216V58.1817H0.273438V0.219727Z"
-          fill="white"
-        />
+        <path d="M0.273438 0.219727H159.216V58.1817H0.273438V0.219727Z" fill="white" />
       </mask>
       <g mask="url(#mask0_4345_1846)">
         <path

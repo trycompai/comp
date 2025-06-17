@@ -1,14 +1,10 @@
-import { auth } from "@/utils/auth";
-import { SecondaryMenu } from "@comp/ui/secondary-menu";
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
-import { Suspense } from "react";
+import { auth } from '@/utils/auth';
+import { SecondaryMenu } from '@comp/ui/secondary-menu';
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
 
-export default async function Layout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default async function Layout({ children }: { children: React.ReactNode }) {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -17,7 +13,7 @@ export default async function Layout({
   const orgId = session?.session.activeOrganizationId;
 
   if (!session) {
-    return redirect("/");
+    return redirect('/');
   }
 
   return (
@@ -27,19 +23,19 @@ export default async function Layout({
           items={[
             {
               path: `/${orgId}/settings`,
-              label: "General",
+              label: 'General',
             },
             {
               path: `/${orgId}/settings/trust-portal`,
-              label: "Trust Portal",
+              label: 'Trust Portal',
             },
             {
               path: `/${orgId}/settings/context-hub`,
-              label: "Context",
+              label: 'Context',
             },
             {
               path: `/${orgId}/settings/api-keys`,
-              label: "API",
+              label: 'API',
             },
             // {
             // 	path: `/${orgId}/settings/billing`,

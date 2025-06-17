@@ -1,9 +1,9 @@
-import { OrganizationSwitcher } from "@/components/organization-switcher";
-import { auth } from "@/utils/auth";
-import { db } from "@comp/db";
-import { headers } from "next/headers";
-import Link from "next/link";
-import { redirect } from "next/navigation";
+import { OrganizationSwitcher } from '@/components/organization-switcher';
+import { auth } from '@/utils/auth';
+import { db } from '@comp/db';
+import { headers } from 'next/headers';
+import Link from 'next/link';
+import { redirect } from 'next/navigation';
 
 export default async function NoAccess() {
   const session = await auth.api.getSession({
@@ -11,7 +11,7 @@ export default async function NoAccess() {
   });
 
   if (!session || !session.session.activeOrganizationId) {
-    return redirect("/");
+    return redirect('/');
   }
 
   const organizations = await db.organization.findMany({
@@ -45,20 +45,13 @@ export default async function NoAccess() {
       <h1 className="text-2xl font-bold">Access Denied</h1>
       <div className="flex flex-col text-center">
         <p>
-          <b>Employees</b> don&apos;t have access to app.trycomp.ai, did you
-          mean to go to{" "}
-          <Link
-            href="https://portal.trycomp.ai"
-            className="text-primary underline"
-          >
+          <b>Employees</b> don&apos;t have access to app.trycomp.ai, did you mean to go to{' '}
+          <Link href="https://portal.trycomp.ai" className="text-primary underline">
             portal.trycomp.ai
           </Link>
           ?
         </p>
-        <p>
-          Please select another organization or contact your organization
-          administrator.
-        </p>
+        <p>Please select another organization or contact your organization administrator.</p>
       </div>
       <div>
         <OrganizationSwitcher

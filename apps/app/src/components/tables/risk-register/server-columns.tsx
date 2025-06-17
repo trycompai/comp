@@ -1,8 +1,8 @@
 export async function getServerColumnHeaders() {
   return {
-    title: "Risk",
-    status: "Status",
-    department: "Department",
-    assigneeId: "Assignee",
+    title: 'Risk',
+    status: 'Status',
+    department: 'Department',
+    assigneeId: 'Assignee',
   };
 }

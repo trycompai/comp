@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useState, useTransition } from "react";
-import { toast } from "sonner";
-import { deletePolicyTemplate } from "../../actions"; // Path to server actions
-import { Button } from "@comp/ui/button";
+import { useState, useTransition } from 'react';
+import { toast } from 'sonner';
+import { deletePolicyTemplate } from '../../actions'; // Path to server actions
+import { Button } from '@comp/ui/button';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,7 +13,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@comp/ui/alert-dialog";
+} from '@comp/ui/alert-dialog';
 
 interface DeletePolicyDialogProps {
   policyId: string;
@@ -37,15 +37,15 @@ export function DeletePolicyDialog({
       try {
         const result = await deletePolicyTemplate(policyId);
         if (result.success) {
-          toast.success(result.message || "Policy deleted successfully!");
+          toast.success(result.message || 'Policy deleted successfully!');
           onPolicyDeleted(); // Trigger navigation or refresh
           onClose(); // Close the dialog
         } else {
-          toast.error(result.message || "Failed to delete policy.");
+          toast.error(result.message || 'Failed to delete policy.');
         }
       } catch (error) {
-        toast.error("An unexpected error occurred.");
-        console.error("Delete error:", error);
+        toast.error('An unexpected error occurred.');
+        console.error('Delete error:', error);
       }
     });
   };
@@ -56,8 +56,7 @@ export function DeletePolicyDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete the
-            policy template
+            This action cannot be undone. This will permanently delete the policy template
             <span className="font-semibold">{policyName}</span>.
           </AlertDialogDescription>
         </AlertDialogHeader>
@@ -70,7 +69,7 @@ export function DeletePolicyDialog({
             disabled={isPending}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-sm"
           >
-            {isPending ? "Deleting..." : "Delete Policy"}
+            {isPending ? 'Deleting...' : 'Delete Policy'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

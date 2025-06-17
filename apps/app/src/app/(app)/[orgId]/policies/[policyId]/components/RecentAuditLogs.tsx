@@ -1,14 +1,8 @@
-import { AuditLog, AuditLogEntityType } from "@comp/db/types";
-import { AuditLogWithRelations } from "../data";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@comp/ui/card";
-import { Badge } from "@comp/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@comp/ui/avatar";
+import { AuditLog, AuditLogEntityType } from '@comp/db/types';
+import { AuditLogWithRelations } from '../data';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@comp/ui/card';
+import { Badge } from '@comp/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
 import {
   CalendarIcon,
   ClockIcon,
@@ -17,18 +11,12 @@ import {
   FileIcon,
   FileTextIcon,
   ShieldIcon,
-} from "lucide-react";
-import { cn } from "@comp/ui/cn";
-import { format } from "date-fns";
-import { ScrollArea } from "@comp/ui/scroll-area";
+} from 'lucide-react';
+import { cn } from '@comp/ui/cn';
+import { format } from 'date-fns';
+import { ScrollArea } from '@comp/ui/scroll-area';
 
-type LogActionType =
-  | "create"
-  | "update"
-  | "delete"
-  | "approve"
-  | "reject"
-  | "review";
+type LogActionType = 'create' | 'update' | 'delete' | 'approve' | 'reject' | 'review';
 
 // Using the imported AuditLogWithRelations type from data/index.ts
 
@@ -40,36 +28,34 @@ interface LogData {
 
 const getActionColor = (action: LogActionType | string) => {
   switch (action) {
-    case "create":
-      return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
-    case "update":
-      return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
-    case "delete":
-      return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
-    case "approve":
-      return "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300";
-    case "reject":
-      return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300";
-    case "review":
-      return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300";
+    case 'create':
+      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+    case 'update':
+      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
+    case 'delete':
+      return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+    case 'approve':
+      return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300';
+    case 'reject':
+      return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300';
+    case 'review':
+      return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
     default:
-      return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
+      return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
   }
 };
 
-const getInitials = (name = "") => {
-  if (!name) return "U";
+const getInitials = (name = '') => {
+  if (!name) return 'U';
   return name
-    .split(" ")
+    .split(' ')
     .map((part) => part[0])
-    .join("")
+    .join('')
     .toUpperCase()
     .slice(0, 2);
 };
 
-const getEntityTypeIcon = (
-  entityType: AuditLogEntityType | null | undefined,
-) => {
+const getEntityTypeIcon = (entityType: AuditLogEntityType | null | undefined) => {
   switch (entityType) {
     case AuditLogEntityType.policy:
       return <FileTextIcon className="h-3 w-3" />;
@@ -83,7 +69,7 @@ const getEntityTypeIcon = (
 // Parse the data field to extract relevant information
 const parseLogData = (log: AuditLog): LogData => {
   try {
-    if (typeof log.data === "object" && log.data !== null) {
+    if (typeof log.data === 'object' && log.data !== null) {
       const data = log.data as Record<string, any>;
       return {
         action: data.action as LogActionType,
@@ -92,7 +78,7 @@ const parseLogData = (log: AuditLog): LogData => {
       };
     }
   } catch (e) {
-    console.error("Error parsing audit log data", e);
+    console.error('Error parsing audit log data', e);
   }
 
   return {};
@@ -119,17 +105,14 @@ const getUserInfo = (log: AuditLogWithRelations) => {
 const LogItem = ({ log }: { log: AuditLogWithRelations }) => {
   const logData = parseLogData(log);
   const userInfo = getUserInfo(log);
-  const actionType = logData.action || "update";
+  const actionType = logData.action || 'update';
 
   return (
     <Card className="border-0 border-none">
       <CardContent>
         <div className="flex items-start gap-4">
           <Avatar className="h-10 w-10">
-            <AvatarImage
-              src={userInfo.avatarUrl || ""}
-              alt={userInfo.name || "User"}
-            />
+            <AvatarImage src={userInfo.avatarUrl || ''} alt={userInfo.name || 'User'} />
             <AvatarFallback>{getInitials(userInfo.name)}</AvatarFallback>
           </Avatar>
 
@@ -140,36 +123,29 @@ const LogItem = ({ log }: { log: AuditLogWithRelations }) => {
               </div>
               <Badge
                 variant="outline"
-                className={cn(
-                  "text-xs font-medium",
-                  getActionColor(actionType),
-                )}
+                className={cn('text-xs font-medium', getActionColor(actionType))}
               >
                 {actionType.charAt(0).toUpperCase() + actionType.slice(1)}
               </Badge>
             </div>
 
             <CardDescription className="text-sm">
-              {log.description || "No description available"}
+              {log.description || 'No description available'}
             </CardDescription>
 
             {logData.changes && Object.keys(logData.changes).length > 0 && (
               <div className="bg-muted/40 rounded-md p-2 text-xs">
                 <div className="mb-1 font-medium">Changes:</div>
                 <ul className="space-y-1">
-                  {Object.entries(logData.changes).map(
-                    ([field, { previous, current }]) => (
-                      <li key={field}>
-                        <span className="font-medium">{field}:</span>{" "}
-                        <span className="text-muted-foreground line-through">
-                          {previous?.toString() || "(empty)"}
-                        </span>{" "}
-                        <span className="text-foreground">
-                          → {current?.toString() || "(empty)"}
-                        </span>
-                      </li>
-                    ),
-                  )}
+                  {Object.entries(logData.changes).map(([field, { previous, current }]) => (
+                    <li key={field}>
+                      <span className="font-medium">{field}:</span>{' '}
+                      <span className="text-muted-foreground line-through">
+                        {previous?.toString() || '(empty)'}
+                      </span>{' '}
+                      <span className="text-foreground">→ {current?.toString() || '(empty)'}</span>
+                    </li>
+                  ))}
                 </ul>
               </div>
             )}
@@ -177,11 +153,11 @@ const LogItem = ({ log }: { log: AuditLogWithRelations }) => {
             <div className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
               <div className="flex items-center gap-1">
                 <CalendarIcon className="h-3 w-3" />
-                {format(log.timestamp, "MMM d, yyyy")}
+                {format(log.timestamp, 'MMM d, yyyy')}
               </div>
               <div className="flex items-center gap-1">
                 <ClockIcon className="h-3 w-3" />
-                {format(log.timestamp, "h:mm a")}
+                {format(log.timestamp, 'h:mm a')}
               </div>
               {log.entityType && (
                 <div className="flex items-center gap-1">
@@ -202,11 +178,7 @@ const LogItem = ({ log }: { log: AuditLogWithRelations }) => {
     </Card>
   );
 };
-export const RecentAuditLogs = ({
-  logs,
-}: {
-  logs: AuditLogWithRelations[];
-}) => {
+export const RecentAuditLogs = ({ logs }: { logs: AuditLogWithRelations[] }) => {
   return (
     <Card className="overflow-hidden">
       <CardHeader>

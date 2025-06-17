@@ -1,13 +1,13 @@
-import { readFileSync } from "node:fs";
-import path from "node:path";
-import jwt from "jsonwebtoken";
-import fetch from "node-fetch"; // Use node-fetch if you're on Node <18
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import jwt from 'jsonwebtoken';
+import fetch from 'node-fetch'; // Use node-fetch if you're on Node <18
 
-const keyPath = path.resolve(__dirname, "xxx");
-const keyData = JSON.parse(readFileSync(keyPath, "utf-8"));
+const keyPath = path.resolve(__dirname, 'xxx');
+const keyData = JSON.parse(readFileSync(keyPath, 'utf-8'));
 
-const ORG_ID = "xxx";
-const TOKEN_URI = "https://oauth2.googleapis.com/token";
+const ORG_ID = 'xxx';
+const TOKEN_URI = 'https://oauth2.googleapis.com/token';
 const filter = encodeURIComponent('state="ACTIVE" OR state="INACTIVE"');
 const BASE_FINDINGS_URL = `https://securitycenter.googleapis.com/v2/organizations/${ORG_ID}/sources/-/findings?pageSize=1000&filter=${filter}`;
 
@@ -19,18 +19,18 @@ function generateJWT(): string {
     aud: TOKEN_URI,
     iat: now,
     exp: now + 3600,
-    scope: "https://www.googleapis.com/auth/cloud-platform",
+    scope: 'https://www.googleapis.com/auth/cloud-platform',
   };
-  return jwt.sign(payload, keyData.private_key, { algorithm: "RS256" });
+  return jwt.sign(payload, keyData.private_key, { algorithm: 'RS256' });
 }
 
 async function getAccessToken(): Promise<string> {
   const jwtToken = generateJWT();
   const res = await fetch(TOKEN_URI, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
-      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
       assertion: jwtToken,
     }),
   });
@@ -53,10 +53,10 @@ async function dumpOrgFindings(token: string) {
       : BASE_FINDINGS_URL;
 
     const res = await fetch(url, {
-      method: "GET",
+      method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,
-        "X-Goog-User-Project": keyData.project_id, // REQUIRED for org-level access
+        'X-Goog-User-Project': keyData.project_id, // REQUIRED for org-level access
       },
     });
 
@@ -111,5 +111,5 @@ async function run() {
 }
 
 run().catch((err) => {
-  console.error("❌ Error:", err.message);
+  console.error('❌ Error:', err.message);
 });

@@ -1,8 +1,8 @@
-import { File, type LucideIcon } from "lucide-react";
+import { File, type LucideIcon } from 'lucide-react';
 
-import type React from "react";
-import { cn } from "../utils/cn";
-import { Card, CardDescription, CardTitle } from "./card";
+import type React from 'react';
+import { cn } from '../utils/cn';
+import { Card, CardDescription, CardTitle } from './card';
 
 interface EmptyCardProps extends React.ComponentPropsWithoutRef<typeof Card> {
   title: string;
@@ -22,7 +22,7 @@ export function EmptyCard({
   return (
     <Card
       className={cn(
-        "flex w-full flex-col items-center justify-center space-y-4 border-none bg-transparent p-6",
+        'flex w-full flex-col items-center justify-center space-y-4 border-none bg-transparent p-6',
         className,
       )}
       {...props}

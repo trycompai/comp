@@ -1,17 +1,12 @@
-"use client";
+'use client';
 
-import { Button } from "@comp/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@comp/ui/tooltip";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
-import { useEffect, useRef, useState, useMemo } from "react";
-import { cn } from "../utils";
+import { Button } from '@comp/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { ArrowLeft } from 'lucide-react';
+import { useEffect, useRef, useState, useMemo } from 'react';
+import { cn } from '../utils';
 
 interface SecondaryMenuProps {
   items: {
@@ -32,15 +27,12 @@ export function SecondaryMenu({
   items,
   isChild,
   showBackButton,
-  backButtonHref = "/",
-  backButtonLabel = "Back",
+  backButtonHref = '/',
+  backButtonLabel = 'Back',
 }: SecondaryMenuProps) {
   const pathname = usePathname();
 
-  function isActiveLink(
-    itemPath: string,
-    activeOverrideIdPrefix?: string,
-  ): boolean {
+  function isActiveLink(itemPath: string, activeOverrideIdPrefix?: string): boolean {
     // Handle override prefix first
     if (activeOverrideIdPrefix && pathname.includes(activeOverrideIdPrefix)) {
       return true;
@@ -53,7 +45,7 @@ export function SecondaryMenu({
 
     // Check if current path starts with item path followed by a slash
     // This prevents false matches like "/dashboard/org/test" matching "/dashboard/org/te"
-    if (pathname.startsWith(itemPath + "/")) {
+    if (pathname.startsWith(itemPath + '/')) {
       return true;
     }
 
@@ -61,10 +53,7 @@ export function SecondaryMenu({
   }
 
   // Memoize enabled items to prevent recreation on every render
-  const enabledItems = useMemo(
-    () => items.filter((item) => item.enabled !== false),
-    [items],
-  );
+  const enabledItems = useMemo(() => items.filter((item) => item.enabled !== false), [items]);
 
   // Calculate active index by finding the most specific (longest) matching path
   const getActiveIndex = () => {
@@ -91,7 +80,7 @@ export function SecondaryMenu({
   const [activeIndex, setActiveIndex] = useState(getActiveIndex);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [hoverStyle, setHoverStyle] = useState({});
-  const [activeStyle, setActiveStyle] = useState({ left: "0px", width: "0px" });
+  const [activeStyle, setActiveStyle] = useState({ left: '0px', width: '0px' });
   const tabRefs = useRef<(HTMLAnchorElement | null)[]>([]);
 
   // Update activeIndex when pathname changes
@@ -142,7 +131,7 @@ export function SecondaryMenu({
   }, [activeIndex]);
 
   return (
-    <nav className={cn(isChild ? "py-0" : "pt-0")} key={pathname}>
+    <nav className={'pb-4'} key={pathname}>
       <div className="flex items-center gap-2 overflow-auto p-[1px]">
         {showBackButton && (
           <Button variant="ghost" size="sm" asChild>
@@ -209,8 +198,8 @@ export function SecondaryMenu({
                       tabRefs.current[currentEnabledIndex] = el;
                     }}
                     className={cn(
-                      "rounded-xs px-3 py-2 text-sm transition-colors duration-300 select-none",
-                      isActive ? "text-foreground" : "text-muted-foreground",
+                      'rounded-xs px-3 py-2 text-sm transition-colors duration-300 select-none',
+                      isActive ? 'text-foreground' : 'text-muted-foreground',
                     )}
                     onMouseEnter={() => setHoveredIndex(currentEnabledIndex)}
                     onMouseLeave={() => setHoveredIndex(null)}

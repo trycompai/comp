@@ -1,6 +1,6 @@
-import { EmployeeDevicesList } from "./components/EmployeeDevicesList";
-import { DeviceComplianceChart } from "./components/DeviceComplianceChart";
-import { getEmployeeDevices } from "./data";
+import { EmployeeDevicesList } from './components/EmployeeDevicesList';
+import { DeviceComplianceChart } from './components/DeviceComplianceChart';
+import { getEmployeeDevices } from './data';
 
 export default async function EmployeeDevicesPage() {
   const devices = (await getEmployeeDevices()) || [];

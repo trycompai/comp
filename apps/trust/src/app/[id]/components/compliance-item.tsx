@@ -1,14 +1,11 @@
-import { CheckCircle } from "lucide-react";
+import { CheckCircle } from 'lucide-react';
 
 interface ComplianceItemProps {
   text: string;
   isCompliant: boolean;
 }
 
-export default function ComplianceItem({
-  text,
-  isCompliant,
-}: ComplianceItemProps) {
+export default function ComplianceItem({ text, isCompliant }: ComplianceItemProps) {
   return (
     <div className="flex items-center justify-between py-1">
       <span className="text-sm">{text}</span>

@@ -1,15 +1,15 @@
-import { cache } from "react";
-import PageWithBreadcrumb from "@/components/pages/PageWithBreadcrumb";
-import { auth } from "@/utils/auth";
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
-import { FrameworksOverview } from "./components/FrameworksOverview";
-import { getAllFrameworkInstancesWithControls } from "./data/getAllFrameworkInstancesWithControls";
-import { db } from "@comp/db";
+import { cache } from 'react';
+import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
+import { auth } from '@/utils/auth';
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { FrameworksOverview } from './components/FrameworksOverview';
+import { getAllFrameworkInstancesWithControls } from './data/getAllFrameworkInstancesWithControls';
+import { db } from '@comp/db';
 
 export async function generateMetadata() {
   return {
-    title: "Frameworks",
+    title: 'Frameworks',
   };
 }
 
@@ -21,7 +21,7 @@ export default async function DashboardPage() {
   const organizationId = session?.session.activeOrganizationId;
 
   if (!organizationId) {
-    redirect("/");
+    redirect('/');
   }
 
   const tasks = await getControlTasks();
@@ -36,7 +36,7 @@ export default async function DashboardPage() {
   });
 
   return (
-    <PageWithBreadcrumb breadcrumbs={[{ label: "Frameworks", current: true }]}>
+    <PageWithBreadcrumb breadcrumbs={[{ label: 'Frameworks', current: true }]}>
       <FrameworksOverview
         frameworksWithControls={frameworksWithControls}
         tasks={tasks}

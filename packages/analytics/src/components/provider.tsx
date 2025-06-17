@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import posthog from "posthog-js";
-import { PostHogProvider as PHProvider } from "posthog-js/react";
-import { useEffect } from "react";
-import { PostHogPageView } from "./page-view";
+import posthog from 'posthog-js';
+import { PostHogProvider as PHProvider } from 'posthog-js/react';
+import { useEffect } from 'react';
+import { PostHogPageView } from './page-view';
 
 interface ProviderProps {
   children: React.ReactNode;
@@ -11,16 +11,9 @@ interface ProviderProps {
   userEmail?: string | undefined;
 }
 
-export function AnalyticsProvider({
-  children,
-  userId,
-  userEmail,
-}: ProviderProps) {
+export function AnalyticsProvider({ children, userId, userEmail }: ProviderProps) {
   useEffect(() => {
-    if (
-      !process.env.NEXT_PUBLIC_POSTHOG_KEY ||
-      !process.env.NEXT_PUBLIC_POSTHOG_HOST
-    ) {
+    if (!process.env.NEXT_PUBLIC_POSTHOG_KEY || !process.env.NEXT_PUBLIC_POSTHOG_HOST) {
       return;
     }
 

@@ -1,16 +1,12 @@
-"use client";
+'use client';
 
-import type {
-  EmployeeTrainingVideoCompletion,
-  Member,
-  User,
-} from "@comp/db/types";
-import { useAction } from "next-safe-action/hooks";
-import { useEffect, useState } from "react";
-import { markVideoAsCompleted } from "../../../actions/markVideoAsCompleted";
-import { CarouselControls } from "./CarouselControls";
-import { YoutubeEmbed } from "./YoutubeEmbed";
-import { trainingVideos } from "@/lib/data/training-videos";
+import type { EmployeeTrainingVideoCompletion, Member, User } from '@comp/db/types';
+import { useAction } from 'next-safe-action/hooks';
+import { useEffect, useState } from 'react';
+import { markVideoAsCompleted } from '../../../actions/markVideoAsCompleted';
+import { CarouselControls } from './CarouselControls';
+import { YoutubeEmbed } from './YoutubeEmbed';
+import { trainingVideos } from '@/lib/data/training-videos';
 
 interface VideoCarouselProps {
   videos: EmployeeTrainingVideoCompletion[];
@@ -20,9 +16,7 @@ interface VideoCarouselProps {
 export function VideoCarousel({ videos, member }: VideoCarouselProps) {
   // Create a map of completion records by their videoId for efficient lookup
   // videoId in the DB record corresponds to the id in the metadata
-  const completionRecordsMap = new Map(
-    videos.map((record) => [record.videoId, record]),
-  );
+  const completionRecordsMap = new Map(videos.map((record) => [record.videoId, record]));
 
   // Create our merged videos array by enriching metadata with completion status
   const mergedVideos = trainingVideos.map((metadata) => {
@@ -45,9 +39,7 @@ export function VideoCarousel({ videos, member }: VideoCarouselProps) {
       .map((item) => item.index);
 
     // Default to the first video (index 0) if none are completed
-    return completedIndices.length > 0
-      ? completedIndices[completedIndices.length - 1]
-      : 0;
+    return completedIndices.length > 0 ? completedIndices[completedIndices.length - 1] : 0;
   })();
 
   const [currentIndex, setCurrentIndex] = useState(lastCompletedIndex);
@@ -57,9 +49,7 @@ export function VideoCarousel({ videos, member }: VideoCarouselProps) {
     mergedVideos.filter((video) => video.isCompleted).map((video) => video.id), // Use metadata id
   );
 
-  const [completedVideoIds, setCompletedVideoIds] = useState<Set<string>>(
-    initialCompletedVideoIds,
-  );
+  const [completedVideoIds, setCompletedVideoIds] = useState<Set<string>>(initialCompletedVideoIds);
 
   const { execute: executeMarkComplete } = useAction(markVideoAsCompleted, {
     onSuccess: (data) => {
@@ -68,21 +58,17 @@ export function VideoCarousel({ videos, member }: VideoCarouselProps) {
       setCompletedVideoIds((prev) => new Set([...prev, completedMetadataId]));
     },
     onError: (error) => {
-      console.error("Failed to mark video as completed:", error);
+      console.error('Failed to mark video as completed:', error);
       // TODO: Consider showing a user-facing toast notification
     },
   });
 
   // Effect to synchronize local UI state with changes in DB records (props)
   useEffect(() => {
-    const newCompletionRecordsMap = new Map(
-      videos.map((record) => [record.videoId, record]),
-    );
+    const newCompletionRecordsMap = new Map(videos.map((record) => [record.videoId, record]));
     const newCompletedVideoIds = new Set(
       trainingVideos
-        .filter(
-          (metadata) => !!newCompletionRecordsMap.get(metadata.id)?.completedAt,
-        )
+        .filter((metadata) => !!newCompletionRecordsMap.get(metadata.id)?.completedAt)
         .map((metadata) => metadata.id), // Use metadata id
     );
     setCompletedVideoIds(newCompletedVideoIds);
@@ -117,9 +103,9 @@ export function VideoCarousel({ videos, member }: VideoCarouselProps) {
 
     if (!originalDbRecord) {
       console.error(
-        "Original DB completion record not found for metadata ID:",
+        'Original DB completion record not found for metadata ID:',
         metadataVideoId,
-        "Cannot execute server action. Ensure the server action handles record creation (upsert).",
+        'Cannot execute server action. Ensure the server action handles record creation (upsert).',
       );
       // TODO: Notify user or handle the case where the record needs creation first.
       return;
@@ -132,22 +118,16 @@ export function VideoCarousel({ videos, member }: VideoCarouselProps) {
   };
 
   // Determine completion based on the local UI state (using metadata ID)
-  const isCurrentVideoCompleted = completedVideoIds.has(
-    mergedVideos[currentIndex].id,
-  );
+  const isCurrentVideoCompleted = completedVideoIds.has(mergedVideos[currentIndex].id);
   const hasNextVideo = currentIndex < mergedVideos.length - 1;
   // Determine if all videos are complete based on local UI state
-  const allVideosCompleted = trainingVideos.every((metadata) =>
-    completedVideoIds.has(metadata.id),
-  );
+  const allVideosCompleted = trainingVideos.every((metadata) => completedVideoIds.has(metadata.id));
 
   return (
     <div className="space-y-4">
       {allVideosCompleted && (
         <div className="flex w-full flex-col items-center justify-center space-y-2 py-8">
-          <h2 className="text-2xl font-semibold">
-            All Training Videos Completed!
-          </h2>
+          <h2 className="text-2xl font-semibold">All Training Videos Completed!</h2>
           <p className="text-muted-foreground text-center">
             You're all done, now your manager won't pester you!
           </p>
@@ -159,9 +139,7 @@ export function VideoCarousel({ videos, member }: VideoCarouselProps) {
             video={mergedVideos[currentIndex]} // Pass the merged object
             isCompleted={isCurrentVideoCompleted} // Use local state for UI
             onComplete={handleVideoComplete}
-            onNext={
-              isCurrentVideoCompleted && hasNextVideo ? goToNext : undefined
-            }
+            onNext={isCurrentVideoCompleted && hasNextVideo ? goToNext : undefined}
             allVideosCompleted={allVideosCompleted} // Use local state for UI
             onWatchAgain={() => {
               // Reset the rewatching state if needed inside YoutubeEmbed
@@ -172,9 +150,7 @@ export function VideoCarousel({ videos, member }: VideoCarouselProps) {
             currentIndex={currentIndex}
             total={mergedVideos.length}
             onPrevious={goToPrevious}
-            onNext={
-              isCurrentVideoCompleted && hasNextVideo ? goToNext : undefined
-            }
+            onNext={isCurrentVideoCompleted && hasNextVideo ? goToNext : undefined}
           />
         </>
       )}

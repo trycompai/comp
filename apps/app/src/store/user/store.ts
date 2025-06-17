@@ -1,6 +1,6 @@
-import type { Session } from "@/utils/auth";
-import { createContext } from "react";
-import { createStore } from "zustand";
+import type { Session } from '@/utils/auth';
+import { createContext } from 'react';
+import { createStore } from 'zustand';
 
 export interface UserProps {
   data: Session | null;

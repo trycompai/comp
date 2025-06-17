@@ -1,7 +1,7 @@
-import { auth } from "@/utils/auth";
-import { db } from "@comp/db";
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
+import { auth } from '@/utils/auth';
+import { db } from '@comp/db';
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
 
 export default async function RootPage() {
   const session = await auth.api.getSession({
@@ -9,13 +9,13 @@ export default async function RootPage() {
   });
 
   if (!session) {
-    return redirect("/auth");
+    return redirect('/auth');
   }
 
   const orgId = session.session.activeOrganizationId;
 
   if (!orgId) {
-    return redirect("/setup");
+    return redirect('/setup');
   }
 
   const member = await db.member.findFirst({
@@ -25,12 +25,12 @@ export default async function RootPage() {
     },
   });
 
-  if (member?.role === "employee") {
-    return redirect("/no-access");
+  if (member?.role === 'employee') {
+    return redirect('/no-access');
   }
 
   if (!member) {
-    return redirect("/setup");
+    return redirect('/setup');
   }
 
   return redirect(`/${orgId}/frameworks`);

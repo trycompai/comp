@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { PolicyEditor } from "@/app/components/editor/PolicyEditor"; // Use PolicyEditor from framework-editor
-import type { JSONContent } from "@tiptap/react"; // Or from 'novel'
-import { updatePolicyContent } from "./actions"; // Local server action
-import { toast } from "sonner";
-import { Card, CardContent, CardHeader, CardTitle } from "@comp/ui/card";
+import { PolicyEditor } from '@/app/components/editor/PolicyEditor'; // Use PolicyEditor from framework-editor
+import type { JSONContent } from '@tiptap/react'; // Or from 'novel'
+import { updatePolicyContent } from './actions'; // Local server action
+import { toast } from 'sonner';
+import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 
 interface PolicyEditorClientProps {
   policyId: string;
@@ -17,9 +17,7 @@ export function PolicyEditorClient({
   policyName,
   initialContent,
 }: PolicyEditorClientProps) {
-  const handleSavePolicy = async (
-    contentToSave: JSONContent,
-  ): Promise<void> => {
+  const handleSavePolicy = async (contentToSave: JSONContent): Promise<void> => {
     if (!policyId) return;
 
     // Ensure the content is strictly JSON-serializable before sending to server action
@@ -32,19 +30,17 @@ export function PolicyEditorClient({
         content: serializableContent,
       });
       if (result.success) {
-        toast.success("Policy content saved!");
+        toast.success('Policy content saved!');
       } else {
-        toast.error(result.message || "Failed to save policy content.");
+        toast.error(result.message || 'Failed to save policy content.');
       }
     } catch (error) {
-      console.error("Error saving policy content:", error);
-      toast.error("An unexpected error occurred while saving.");
+      console.error('Error saving policy content:', error);
+      toast.error('An unexpected error occurred while saving.');
       // Re-throw if AdvancedEditor needs to handle it for save status
       throw error;
     }
   };
 
-  return (
-    <PolicyEditor initialDbContent={initialContent} onSave={handleSavePolicy} />
-  );
+  return <PolicyEditor initialDbContent={initialContent} onSave={handleSavePolicy} />;
 }

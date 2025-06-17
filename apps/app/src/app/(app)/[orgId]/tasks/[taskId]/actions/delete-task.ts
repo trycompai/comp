@@ -1,9 +1,9 @@
-"use server";
+'use server';
 
-import { db } from "@comp/db";
-import { revalidatePath, revalidateTag } from "next/cache";
-import { z } from "zod";
-import { authActionClient } from "@/actions/safe-action";
+import { db } from '@comp/db';
+import { revalidatePath, revalidateTag } from 'next/cache';
+import { z } from 'zod';
+import { authActionClient } from '@/actions/safe-action';
 
 const deleteTaskSchema = z.object({
   id: z.string(),
@@ -11,13 +11,13 @@ const deleteTaskSchema = z.object({
 });
 
 export const deleteTaskAction = authActionClient
-  .schema(deleteTaskSchema)
+  .inputSchema(deleteTaskSchema)
   .metadata({
-    name: "delete-task",
+    name: 'delete-task',
     track: {
-      event: "delete-task",
-      description: "Delete Task",
-      channel: "server",
+      event: 'delete-task',
+      description: 'Delete Task',
+      channel: 'server',
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -27,7 +27,7 @@ export const deleteTaskAction = authActionClient
     if (!activeOrganizationId) {
       return {
         success: false,
-        error: "Not authorized",
+        error: 'Not authorized',
       };
     }
 
@@ -42,7 +42,7 @@ export const deleteTaskAction = authActionClient
       if (!task) {
         return {
           success: false,
-          error: "Task not found",
+          error: 'Task not found',
         };
       }
 
@@ -54,7 +54,7 @@ export const deleteTaskAction = authActionClient
       // Revalidate paths to update UI
       revalidatePath(`/${activeOrganizationId}/tasks`);
       revalidatePath(`/${activeOrganizationId}/tasks/all`);
-      revalidateTag("tasks");
+      revalidateTag('tasks');
 
       return {
         success: true,
@@ -63,7 +63,7 @@ export const deleteTaskAction = authActionClient
       console.error(error);
       return {
         success: false,
-        error: "Failed to delete task",
+        error: 'Failed to delete task',
       };
     }
   });

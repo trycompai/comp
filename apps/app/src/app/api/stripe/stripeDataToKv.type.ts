@@ -1,4 +1,4 @@
-import Stripe from "stripe";
+import Stripe from 'stripe';
 
 export type STRIPE_SUB_CACHE =
   | {
@@ -14,5 +14,5 @@ export type STRIPE_SUB_CACHE =
       } | null;
     }
   | {
-      status: "none";
+      status: 'none';
     };

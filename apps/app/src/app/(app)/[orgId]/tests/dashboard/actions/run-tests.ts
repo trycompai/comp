@@ -1,11 +1,11 @@
-"use server";
+'use server';
 
-import { sendIntegrationResults } from "@/jobs/tasks/integration/integration-results";
-import { auth } from "@/utils/auth";
-import { db } from "@comp/db";
-import { runs, tasks } from "@trigger.dev/sdk/v3";
-import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
+import { sendIntegrationResults } from '@/jobs/tasks/integration/integration-results';
+import { auth } from '@/utils/auth';
+import { db } from '@comp/db';
+import { runs, tasks } from '@trigger.dev/sdk/v3';
+import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
 
 export const runTests = async () => {
   const session = await auth.api.getSession({
@@ -15,7 +15,7 @@ export const runTests = async () => {
   if (!session) {
     return {
       success: false,
-      errors: ["Unauthorized"],
+      errors: ['Unauthorized'],
     };
   }
 
@@ -23,7 +23,7 @@ export const runTests = async () => {
   if (!orgId) {
     return {
       success: false,
-      errors: ["No active organization"],
+      errors: ['No active organization'],
     };
   }
 
@@ -31,7 +31,7 @@ export const runTests = async () => {
     where: {
       organizationId: orgId,
       integrationId: {
-        in: ["aws", "gcp", "azure"],
+        in: ['aws', 'gcp', 'azure'],
       },
     },
     select: {
@@ -52,12 +52,12 @@ export const runTests = async () => {
   if (!integrations) {
     return {
       success: false,
-      errors: ["No integrations found"],
+      errors: ['No integrations found'],
     };
   }
 
   const batchHandle = await tasks.batchTrigger<typeof sendIntegrationResults>(
-    "send-integration-results",
+    'send-integration-results',
     integrations.map((integration) => ({
       payload: {
         integration: {
@@ -73,17 +73,15 @@ export const runTests = async () => {
   );
 
   let existingRuns = await runs.list({
-    status: "EXECUTING",
+    status: 'EXECUTING',
     batch: batchHandle.batchId,
   });
 
   while (existingRuns.data.length > 0) {
-    console.log(
-      `Waiting for existing runs to complete: ${existingRuns.data.length}`,
-    );
+    console.log(`Waiting for existing runs to complete: ${existingRuns.data.length}`);
     await new Promise((resolve) => setTimeout(resolve, 500));
     existingRuns = await runs.list({
-      status: "EXECUTING",
+      status: 'EXECUTING',
       batch: batchHandle.batchId,
     });
   }

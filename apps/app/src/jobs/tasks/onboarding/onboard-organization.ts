@@ -1,5 +1,5 @@
-import { openai } from "@ai-sdk/openai";
-import { db } from "@comp/db";
+import { openai } from '@ai-sdk/openai';
+import { db } from '@comp/db';
 import {
   Departments,
   Impact,
@@ -7,16 +7,16 @@ import {
   RiskCategory,
   RiskTreatmentType,
   VendorCategory,
-} from "@comp/db/types";
-import { logger, task, tasks } from "@trigger.dev/sdk/v3";
-import { generateObject } from "ai";
-import axios from "axios";
-import z from "zod";
-import type { researchVendor } from "../scrape/research";
-import { updatePolicies } from "./update-policies";
+} from '@comp/db/types';
+import { logger, task, tasks } from '@trigger.dev/sdk/v3';
+import { generateObject } from 'ai';
+import axios from 'axios';
+import z from 'zod';
+import type { researchVendor } from '../scrape/research';
+import { updatePolicies } from './update-policies';
 
 export const onboardOrganization = task({
-  id: "onboard-organization",
+  id: 'onboard-organization',
   cleanup: async ({ organizationId }: { organizationId: string }) => {
     await db.onboarding.update({
       where: {
@@ -26,28 +26,24 @@ export const onboardOrganization = task({
     });
 
     try {
-      logger.info(
-        `Revalidating path ${process.env.BETTER_AUTH_URL}/${organizationId}`,
-      );
+      logger.info(`Revalidating path ${process.env.BETTER_AUTH_URL}/${organizationId}`);
       const revalidateResponse = await axios.post(
         `${process.env.BETTER_AUTH_URL}/api/revalidate/path`,
         {
           path: `${process.env.BETTER_AUTH_URL}/${organizationId}`,
           secret: process.env.REVALIDATION_SECRET,
-          type: "layout",
+          type: 'layout',
         },
       );
 
       if (!revalidateResponse.data?.revalidated) {
-        logger.error(
-          `Failed to revalidate path: ${revalidateResponse.statusText}`,
-        );
+        logger.error(`Failed to revalidate path: ${revalidateResponse.statusText}`);
         logger.error(revalidateResponse.data);
       } else {
-        logger.info("Revalidated path successfully");
+        logger.info('Revalidated path successfully');
       }
     } catch (err) {
-      logger.error("Error revalidating path", { err });
+      logger.error('Error revalidating path', { err });
     }
   },
   run: async (payload: { organizationId: string }) => {
@@ -76,36 +72,24 @@ export const onboardOrganization = task({
     }));
 
     const extractVendors = await generateObject({
-      model: openai("gpt-4.1-mini"),
+      model: openai('gpt-4.1-mini'),
       schema: z.object({
         vendors: z.array(
           z.object({
             vendor_name: z.string(),
             vendor_website: z.string(),
             vendor_description: z.string(),
-            category: z.enum(
-              Object.values(VendorCategory) as [string, ...string[]],
-            ),
-            inherent_probability: z.enum(
-              Object.values(Likelihood) as [string, ...string[]],
-            ),
-            inherent_impact: z.enum(
-              Object.values(Impact) as [string, ...string[]],
-            ),
-            residual_probability: z.enum(
-              Object.values(Likelihood) as [string, ...string[]],
-            ),
-            residual_impact: z.enum(
-              Object.values(Impact) as [string, ...string[]],
-            ),
+            category: z.enum(Object.values(VendorCategory) as [string, ...string[]]),
+            inherent_probability: z.enum(Object.values(Likelihood) as [string, ...string[]]),
+            inherent_impact: z.enum(Object.values(Impact) as [string, ...string[]]),
+            residual_probability: z.enum(Object.values(Likelihood) as [string, ...string[]]),
+            residual_impact: z.enum(Object.values(Impact) as [string, ...string[]]),
           }),
         ),
       }),
       system:
-        "Extract vendor names from the following questions and answers. Return their name (grammar-correct), website, description, category, inherent probability, inherent impact, residual probability, and residual impact.",
-      prompt: questionsAndAnswers
-        .map((q) => `${q.question}\n${q.answer}`)
-        .join("\n"),
+        'Extract vendor names from the following questions and answers. Return their name (grammar-correct), website, description, category, inherent probability, inherent impact, residual probability, and residual impact.',
+      prompt: questionsAndAnswers.map((q) => `${q.question}\n${q.answer}`).join('\n'),
     });
 
     for (const vendor of extractVendors.object.vendors) {
@@ -137,12 +121,9 @@ export const onboardOrganization = task({
         },
       });
 
-      const handle = await tasks.trigger<typeof researchVendor>(
-        "research-vendor",
-        {
-          website: createdVendor.website ?? "",
-        },
-      );
+      const handle = await tasks.trigger<typeof researchVendor>('research-vendor', {
+        website: createdVendor.website ?? '',
+      });
 
       logger.info(
         `Created vendor: ${createdVendor.id} (${createdVendor.name}) with handle ${handle.id}`,
@@ -160,7 +141,7 @@ export const onboardOrganization = task({
     });
 
     const extractRisks = await generateObject({
-      model: openai("gpt-4.1-mini"),
+      model: openai('gpt-4.1-mini'),
       schema: z.object({
         risks: z.array(
           z.object({
@@ -170,18 +151,10 @@ export const onboardOrganization = task({
               Object.values(RiskTreatmentType) as [string, ...string[]],
             ),
             risk_treatment_strategy_description: z.string(),
-            risk_residual_probability: z.enum(
-              Object.values(Likelihood) as [string, ...string[]],
-            ),
-            risk_residual_impact: z.enum(
-              Object.values(Impact) as [string, ...string[]],
-            ),
-            category: z.enum(
-              Object.values(RiskCategory) as [string, ...string[]],
-            ),
-            department: z.enum(
-              Object.values(Departments) as [string, ...string[]],
-            ),
+            risk_residual_probability: z.enum(Object.values(Likelihood) as [string, ...string[]]),
+            risk_residual_impact: z.enum(Object.values(Impact) as [string, ...string[]]),
+            category: z.enum(Object.values(RiskCategory) as [string, ...string[]]),
+            department: z.enum(Object.values(Departments) as [string, ...string[]]),
           }),
         ),
       }),
@@ -192,12 +165,10 @@ export const onboardOrganization = task({
             The organization is ${organization.name}.
 
             Do not propose risks that are already in the database:
-            ${existingRisks.map((r) => r.title).join("\n")}
+            ${existingRisks.map((r) => r.title).join('\n')}
 
             The questions and answers are:
-            ${questionsAndAnswers
-              .map((q) => `${q.question}\n${q.answer}`)
-              .join("\n")}
+            ${questionsAndAnswers.map((q) => `${q.question}\n${q.answer}`).join('\n')}
             `,
     });
 
@@ -211,8 +182,7 @@ export const onboardOrganization = task({
           likelihood: risk.risk_residual_probability as Likelihood,
           impact: risk.risk_residual_impact as Impact,
           treatmentStrategy: risk.risk_treatment_strategy as RiskTreatmentType,
-          treatmentStrategyDescription:
-            risk.risk_treatment_strategy_description,
+          treatmentStrategyDescription: risk.risk_treatment_strategy_description,
           organizationId: payload.organizationId,
         },
       });
@@ -232,12 +202,10 @@ export const onboardOrganization = task({
           payload: {
             organizationId: payload.organizationId,
             policyId: policy.id,
-            contextHub: contextHub
-              .map((c) => `${c.question}\n${c.answer}`)
-              .join("\n"),
+            contextHub: contextHub.map((c) => `${c.question}\n${c.answer}`).join('\n'),
           },
           queue: {
-            name: "update-policies",
+            name: 'update-policies',
             concurrencyLimit: 5,
           },
           concurrencyKey: payload.organizationId,

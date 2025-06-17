@@ -1,14 +1,11 @@
-import { create } from "zustand";
+import { create } from 'zustand';
 
 interface ExportState {
   exportData?: {
     runId?: string;
     accessToken?: string;
   };
-  setExportData: (exportData?: {
-    runId?: string;
-    accessToken?: string;
-  }) => void;
+  setExportData: (exportData?: { runId?: string; accessToken?: string }) => void;
 }
 
 export const useExportStore = create<ExportState>()((set) => ({

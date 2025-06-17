@@ -1,16 +1,15 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 // import { db } from "@comp/db";
-import PageLayout from "@/app/components/PageLayout";
-import { DataTable } from "@/app/components/DataTable";
-import { columns } from "./components/columns";
-import { CreateFrameworkDialog } from "./components/CreateFrameworkDialog";
-import type { FrameworkEditorFramework } from "@prisma/client";
+import PageLayout from '@/app/components/PageLayout';
+import { DataTable } from '@/app/components/DataTable';
+import { columns } from './components/columns';
+import { CreateFrameworkDialog } from './components/CreateFrameworkDialog';
+import type { FrameworkEditorFramework } from '@prisma/client';
 
-export interface FrameworkWithCounts
-  extends Omit<FrameworkEditorFramework, "requirements"> {
+export interface FrameworkWithCounts extends Omit<FrameworkEditorFramework, 'requirements'> {
   requirementsCount: number;
   controlsCount: number;
 }
@@ -19,9 +18,7 @@ interface FrameworksClientPageProps {
   initialFrameworks: FrameworkWithCounts[];
 }
 
-export function FrameworksClientPage({
-  initialFrameworks,
-}: FrameworksClientPageProps) {
+export function FrameworksClientPage({ initialFrameworks }: FrameworksClientPageProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const router = useRouter();
 
@@ -30,7 +27,7 @@ export function FrameworksClientPage({
   };
 
   return (
-    <PageLayout breadcrumbs={[{ label: "Frameworks", href: "/frameworks" }]}>
+    <PageLayout breadcrumbs={[{ label: 'Frameworks', href: '/frameworks' }]}>
       <DataTable
         data={initialFrameworks}
         columns={columns}

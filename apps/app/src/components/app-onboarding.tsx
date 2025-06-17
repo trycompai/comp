@@ -1,13 +1,8 @@
-"use client";
+'use client';
 
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@comp/ui/accordion";
-import { Badge } from "@comp/ui/badge";
-import { Button } from "@comp/ui/button";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
+import { Badge } from '@comp/ui/badge';
+import { Button } from '@comp/ui/button';
 import {
   Card,
   CardContent,
@@ -15,13 +10,13 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@comp/ui/card";
-import { PlusIcon } from "lucide-react";
-import { BookOpen, Clock, HelpCircle } from "lucide-react";
-import Image from "next/image";
-import { useTheme } from "next-themes";
-import { useQueryState } from "nuqs";
-import Link from "next/link";
+} from '@comp/ui/card';
+import { PlusIcon } from 'lucide-react';
+import { BookOpen, Clock, HelpCircle } from 'lucide-react';
+import Image from 'next/image';
+import { useTheme } from 'next-themes';
+import { useQueryState } from 'nuqs';
+import Link from 'next/link';
 
 interface FAQ {
   questionKey: string;
@@ -51,7 +46,7 @@ export function AppOnboarding({
   sheetName,
   href,
 }: Props) {
-  const [open, setOpen] = useQueryState(sheetName ?? "sheet");
+  const [open, setOpen] = useQueryState(sheetName ?? 'sheet');
   const isOpen = Boolean(open);
   const { theme } = useTheme();
 
@@ -79,10 +74,7 @@ export function AppOnboarding({
               </div>
 
               <div className="bg-secondary/50 relative mt-4 h-1 w-full overflow-hidden rounded-full">
-                <div
-                  className="bg-primary/80 h-full transition-all"
-                  style={{ width: "5%" }}
-                />
+                <div className="bg-primary/80 h-full transition-all" style={{ width: '5%' }} />
               </div>
             </CardHeader>
 
@@ -91,15 +83,11 @@ export function AppOnboarding({
                 <div className="flex flex-col">
                   <div className="mb-4 flex items-center gap-2">
                     <BookOpen className="text-primary h-4 w-4" />
-                    <p className="text-md font-medium">{"Learn More"}</p>
+                    <p className="text-md font-medium">{'Learn More'}</p>
                   </div>
 
                   {faqs && faqs.length > 0 && (
-                    <Accordion
-                      type="single"
-                      collapsible
-                      className="w-full divide-y"
-                    >
+                    <Accordion type="single" collapsible className="w-full divide-y">
                       {faqs.map((faq) => (
                         <AccordionItem
                           key={faq.questionKey}
@@ -124,10 +112,7 @@ export function AppOnboarding({
                     <div className="mt-4 flex w-full">
                       {href ? (
                         <Link href={href}>
-                          <Button
-                            variant="default"
-                            className="flex w-full items-center gap-2"
-                          >
+                          <Button variant="default" className="flex w-full items-center gap-2">
                             <PlusIcon className="h-4 w-4" />
                             {cta}
                           </Button>
@@ -136,7 +121,7 @@ export function AppOnboarding({
                         <Button
                           variant="default"
                           className="flex w-full items-center gap-2"
-                          onClick={() => setOpen("true")}
+                          onClick={() => setOpen('true')}
                         >
                           <PlusIcon className="h-4 w-4" />
                           {cta}
@@ -149,7 +134,7 @@ export function AppOnboarding({
                 <div className="relative hidden flex-col items-center justify-center lg:flex">
                   <div className="bg-gradient-radial from-accent/20 absolute inset-0 rounded-full to-transparent opacity-70" />
                   <Image
-                    src={theme === "dark" ? imageSrcDark : imageSrcLight}
+                    src={theme === 'dark' ? imageSrcDark : imageSrcLight}
                     alt={imageAlt}
                     height={400}
                     width={400}

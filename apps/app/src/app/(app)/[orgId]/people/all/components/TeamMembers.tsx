@@ -1,12 +1,12 @@
-"use server";
+'use server';
 
-import { removeMember } from "../actions/removeMember";
-import { revokeInvitation } from "../actions/revokeInvitation";
-import { auth } from "@/utils/auth";
-import { db } from "@comp/db";
-import type { Invitation, Member, User } from "@prisma/client";
-import { headers } from "next/headers";
-import { TeamMembersClient } from "./TeamMembersClient";
+import { removeMember } from '../actions/removeMember';
+import { revokeInvitation } from '../actions/revokeInvitation';
+import { auth } from '@/utils/auth';
+import { db } from '@comp/db';
+import type { Invitation, Member, User } from '@prisma/client';
+import { headers } from 'next/headers';
+import { TeamMembersClient } from './TeamMembersClient';
 
 export interface MemberWithUser extends Member {
   user: User;
@@ -36,7 +36,7 @@ export async function TeamMembers() {
       },
       orderBy: {
         user: {
-          email: "asc",
+          email: 'asc',
         },
       },
     });
@@ -46,10 +46,10 @@ export async function TeamMembers() {
     pendingInvitations = await db.invitation.findMany({
       where: {
         organizationId,
-        status: "pending",
+        status: 'pending',
       },
       orderBy: {
-        email: "asc",
+        email: 'asc',
       },
     });
   }
@@ -62,7 +62,7 @@ export async function TeamMembers() {
   return (
     <TeamMembersClient
       data={data}
-      organizationId={organizationId ?? ""}
+      organizationId={organizationId ?? ''}
       removeMemberAction={removeMember}
       revokeInvitationAction={revokeInvitation}
     />

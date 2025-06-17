@@ -1,9 +1,9 @@
-import { Button } from "@comp/ui/button";
-import { cn } from "@comp/ui/cn";
-import { Popover, PopoverContent, PopoverTrigger } from "@comp/ui/popover";
-import { Check, Trash } from "lucide-react";
-import { useEditor } from "novel";
-import { useEffect, useRef } from "react";
+import { Button } from '@comp/ui/button';
+import { cn } from '@comp/ui/cn';
+import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
+import { Check, Trash } from 'lucide-react';
+import { useEditor } from 'novel';
+import { useEffect, useRef } from 'react';
 
 export function isValidUrl(url: string) {
   try {
@@ -16,7 +16,7 @@ export function isValidUrl(url: string) {
 export function getUrlFromString(str: string) {
   if (isValidUrl(str)) return str;
   try {
-    if (str.includes(".") && !str.includes(" ")) {
+    if (str.includes('.') && !str.includes(' ')) {
       return new URL(`https://${str}`).toString();
     }
   } catch (_e) {
@@ -41,15 +41,11 @@ export const LinkSelector = ({ open, onOpenChange }: LinkSelectorProps) => {
   return (
     <Popover modal={true} open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger asChild>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="gap-2 rounded-sm border-none"
-        >
+        <Button size="sm" variant="ghost" className="gap-2 rounded-sm border-none">
           <p className="text-base">↗</p>
           <p
-            className={cn("underline decoration-stone-400 underline-offset-4", {
-              "text-blue-500": editor.isActive("link"),
+            className={cn('underline decoration-stone-400 underline-offset-4', {
+              'text-blue-500': editor.isActive('link'),
             })}
           >
             Link
@@ -74,9 +70,9 @@ export const LinkSelector = ({ open, onOpenChange }: LinkSelectorProps) => {
             type="text"
             placeholder="Paste a link"
             className="bg-background flex-1 p-1 text-sm outline-hidden"
-            defaultValue={editor.getAttributes("link").href || ""}
+            defaultValue={editor.getAttributes('link').href || ''}
           />
-          {editor.getAttributes("link").href ? (
+          {editor.getAttributes('link').href ? (
             <Button
               size="icon"
               variant="outline"
@@ -84,7 +80,7 @@ export const LinkSelector = ({ open, onOpenChange }: LinkSelectorProps) => {
               className="flex h-8 items-center rounded-sm p-1 text-red-600 transition-all hover:bg-red-100 dark:hover:bg-red-800"
               onClick={() => {
                 if (inputRef.current) {
-                  inputRef.current.value = "";
+                  inputRef.current.value = '';
                 }
 
                 onOpenChange(false);

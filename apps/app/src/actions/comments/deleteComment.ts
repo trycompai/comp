@@ -1,12 +1,12 @@
-"use server";
+'use server';
 
-import { db } from "@comp/db";
-import { revalidatePath } from "next/cache";
-import { z } from "zod";
-import { DeleteObjectCommand } from "@aws-sdk/client-s3";
-import { auth } from "@/utils/auth";
-import { headers } from "next/headers";
-import { s3Client, extractS3KeyFromUrl } from "@/app/s3";
+import { db } from '@comp/db';
+import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
+import { DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { auth } from '@/utils/auth';
+import { headers } from 'next/headers';
+import { s3Client, extractS3KeyFromUrl } from '@/app/s3';
 
 const schema = z.object({
   commentId: z.string(),
@@ -23,7 +23,7 @@ export const deleteComment = async (input: z.infer<typeof schema>) => {
   if (!organizationId) {
     return {
       success: false,
-      error: "Not authorized: No active organization",
+      error: 'Not authorized: No active organization',
     };
   }
 
@@ -45,7 +45,7 @@ export const deleteComment = async (input: z.infer<typeof schema>) => {
     if (!comment) {
       return {
         success: false,
-        error: "Comment not found or access denied",
+        error: 'Comment not found or access denied',
       };
     }
 
@@ -58,7 +58,7 @@ export const deleteComment = async (input: z.infer<typeof schema>) => {
       // TODO: Add role-based check for admins
       return {
         success: false,
-        error: "Not authorized to delete this comment",
+        error: 'Not authorized to delete this comment',
       };
     }
 
@@ -107,9 +107,8 @@ export const deleteComment = async (input: z.infer<typeof schema>) => {
 
     return { success: true, data: { deletedCommentId: commentId } };
   } catch (error: unknown) {
-    console.error("Failed to delete comment:", error);
-    const errorMessage =
-      error instanceof Error ? error.message : "Could not delete comment.";
+    console.error('Failed to delete comment:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Could not delete comment.';
     return { success: false, error: errorMessage };
   }
 };

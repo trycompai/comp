@@ -1,31 +1,17 @@
-"use client";
+'use client';
 
-import * as React from "react";
+import * as React from 'react';
 
-import { Badge } from "@comp/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@comp/ui/card";
+import { Badge } from '@comp/ui/badge';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@comp/ui/card';
 import {
   type ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from "@comp/ui/chart";
-import { BarChart as BarChartIcon, Info, Users } from "lucide-react";
-import {
-  Bar,
-  BarChart,
-  LabelList,
-  Legend,
-  ResponsiveContainer,
-  XAxis,
-  YAxis,
-} from "recharts";
+} from '@comp/ui/chart';
+import { BarChart as BarChartIcon, Info, Users } from 'lucide-react';
+import { Bar, BarChart, LabelList, Legend, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 
 interface AssigneeData {
   id: string;
@@ -42,10 +28,10 @@ interface PolicyAssigneeChartProps {
 }
 
 const CHART_COLORS = {
-  published: "hsl(var(--chart-positive))", // green
-  draft: "hsl(var(--chart-neutral))", // yellow
-  archived: "hsl(var(--chart-warning))", // gray
-  needs_review: "hsl(var(--chart-destructive))", // red
+  published: 'hsl(var(--chart-positive))', // green
+  draft: 'hsl(var(--chart-neutral))', // yellow
+  archived: 'hsl(var(--chart-warning))', // gray
+  needs_review: 'hsl(var(--chart-destructive))', // red
 };
 
 export function PolicyAssigneeChart({ data }: PolicyAssigneeChartProps) {
@@ -54,9 +40,7 @@ export function PolicyAssigneeChart({ data }: PolicyAssigneeChartProps) {
       <Card className="flex flex-col overflow-hidden border">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              {"Policies by Assignee"}
-            </CardTitle>
+            <CardTitle className="flex items-center gap-2">{'Policies by Assignee'}</CardTitle>
 
             <Badge variant="outline" className="text-xs">
               Distribution
@@ -98,19 +82,19 @@ export function PolicyAssigneeChart({ data }: PolicyAssigneeChartProps) {
 
   const chartConfig = {
     published: {
-      label: "Published",
+      label: 'Published',
       color: CHART_COLORS.published,
     },
     draft: {
-      label: "Draft",
+      label: 'Draft',
       color: CHART_COLORS.draft,
     },
     archived: {
-      label: "Archived",
+      label: 'Archived',
       color: CHART_COLORS.archived,
     },
     needs_review: {
-      label: "Needs Review",
+      label: 'Needs Review',
       color: CHART_COLORS.needs_review,
     },
   } satisfies ChartConfig;
@@ -123,18 +107,14 @@ export function PolicyAssigneeChart({ data }: PolicyAssigneeChartProps) {
 
   const topAssignee = React.useMemo(() => {
     if (!data.length) return null;
-    return data.reduce((prev, current) =>
-      prev.total > current.total ? prev : current,
-    );
+    return data.reduce((prev, current) => (prev.total > current.total ? prev : current));
   }, [data]);
 
   return (
     <Card className="flex flex-col overflow-hidden border">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            {"Policies by Assignee"}
-          </CardTitle>
+          <CardTitle className="flex items-center gap-2">{'Policies by Assignee'}</CardTitle>
           {topAssignee && (
             <Badge className="bg-blue-100 text-xs text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
               Top: {topAssignee.name}
@@ -180,14 +160,11 @@ export function PolicyAssigneeChart({ data }: PolicyAssigneeChartProps) {
                   tickLine={false}
                   tickMargin={10}
                   axisLine={false}
-                  tickFormatter={(value) => value.split(" ")[0]}
+                  tickFormatter={(value) => value.split(' ')[0]}
                   fontSize={12}
                   stroke="hsl(var(--muted-foreground))"
                 />
-                <ChartTooltip
-                  cursor={false}
-                  content={<ChartTooltipContent />}
-                />
+                <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
                 <Bar
                   dataKey="published"
                   stackId="a"
@@ -229,10 +206,7 @@ export function PolicyAssigneeChart({ data }: PolicyAssigneeChartProps) {
         <div className="flex w-full flex-wrap justify-center gap-4 py-1">
           {Object.entries(chartConfig).map(([key, config]) => (
             <div key={key} className="flex items-center gap-2">
-              <div
-                className="h-3 w-3"
-                style={{ backgroundColor: config.color }}
-              />
+              <div className="h-3 w-3" style={{ backgroundColor: config.color }} />
               <span className="text-xs font-medium">{config.label}</span>
             </div>
           ))}

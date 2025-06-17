@@ -194,7 +194,7 @@ Some environment variables may not load correctly from `.env` — in such cases,
 - Create a project and copy the Project ID
 - In `comp/apps/app/trigger.config.ts`, set:
   ```ts
-  project: "proj_****az***ywb**ob*";
+  project: 'proj_****az***ywb**ob*';
   ```
 
 #### 2. Google OAuth
@@ -388,7 +388,7 @@ Steps to deploy Comp AI on Vercel are coming soon.
 
 ## Repo Activity
 
-![Alt](https://repobeats.axiom.co/api/embed/1371c2fe20e274ff1e0e8d4ca225455dea609cb9.svg "Repobeats analytics image")
+![Alt](https://repobeats.axiom.co/api/embed/1371c2fe20e274ff1e0e8d4ca225455dea609cb9.svg 'Repobeats analytics image')
 
 <!-- LICENSE -->
 

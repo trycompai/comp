@@ -1,22 +1,16 @@
-"use client";
+'use client';
 
-import type { Column } from "@tanstack/react-table";
-import {
-  ChevronDown,
-  ChevronUp,
-  ChevronsUpDown,
-  EyeOff,
-  X,
-} from "lucide-react";
+import type { Column } from '@tanstack/react-table';
+import { ChevronDown, ChevronUp, ChevronsUpDown, EyeOff, X } from 'lucide-react';
 
-import { cn } from "@comp/ui/cn";
+import { cn } from '@comp/ui/cn';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@comp/ui/dropdown-menu";
+} from '@comp/ui/dropdown-menu';
 
 interface DataTableColumnHeaderProps<TData, TValue>
   extends React.ComponentProps<typeof DropdownMenuTrigger> {
@@ -38,7 +32,7 @@ export function DataTableColumnHeader<TData, TValue>({
     <DropdownMenu>
       <DropdownMenuTrigger
         className={cn(
-          "hover:bg-accent focus:ring-ring data-[state=open]:bg-accent [&_svg]:text-muted-foreground -ml-1.5 flex h-8 items-center gap-1.5 px-2 py-1.5 focus:ring-1 focus:outline-hidden [&_svg]:size-4 [&_svg]:shrink-0",
+          'hover:bg-accent focus:ring-ring data-[state=open]:bg-accent [&_svg]:text-muted-foreground -ml-1.5 flex h-8 items-center gap-1.5 px-2 py-1.5 focus:ring-1 focus:outline-hidden [&_svg]:size-4 [&_svg]:shrink-0',
           className,
         )}
         {...props}
@@ -48,10 +42,10 @@ export function DataTableColumnHeader<TData, TValue>({
           (() => {
             try {
               const sortDirection = column.getIsSorted();
-              if (sortDirection === "desc") {
+              if (sortDirection === 'desc') {
                 return <ChevronDown className="size-4" />;
               }
-              if (sortDirection === "asc") {
+              if (sortDirection === 'asc') {
                 return <ChevronUp className="size-4" />;
               }
               return <ChevronsUpDown className="size-4" />;
@@ -68,7 +62,7 @@ export function DataTableColumnHeader<TData, TValue>({
               className="[&_svg]:text-muted-foreground relative pr-8 pl-2 [&>span:first-child]:right-2 [&>span:first-child]:left-auto"
               checked={(() => {
                 try {
-                  return column.getIsSorted() === "asc";
+                  return column.getIsSorted() === 'asc';
                 } catch (e) {
                   return false;
                 }
@@ -77,7 +71,7 @@ export function DataTableColumnHeader<TData, TValue>({
                 try {
                   column.toggleSorting(false);
                 } catch (e) {
-                  console.error("Error toggling sort:", e);
+                  console.error('Error toggling sort:', e);
                 }
               }}
             >
@@ -90,7 +84,7 @@ export function DataTableColumnHeader<TData, TValue>({
               className="[&_svg]:text-muted-foreground relative pr-8 pl-2 [&>span:first-child]:right-2 [&>span:first-child]:left-auto"
               checked={(() => {
                 try {
-                  return column.getIsSorted() === "desc";
+                  return column.getIsSorted() === 'desc';
                 } catch (e) {
                   return false;
                 }
@@ -99,7 +93,7 @@ export function DataTableColumnHeader<TData, TValue>({
                 try {
                   column.toggleSorting(true);
                 } catch (e) {
-                  console.error("Error toggling sort:", e);
+                  console.error('Error toggling sort:', e);
                 }
               }}
             >
@@ -118,7 +112,7 @@ export function DataTableColumnHeader<TData, TValue>({
                         try {
                           column.clearSorting();
                         } catch (e) {
-                          console.error("Error clearing sort:", e);
+                          console.error('Error clearing sort:', e);
                         }
                       }}
                     >

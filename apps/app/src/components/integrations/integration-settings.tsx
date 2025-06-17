@@ -1,18 +1,18 @@
-import { updateIntegrationSettingsAction } from "@/actions/integrations/update-integration-settings-action";
-import { Button } from "@comp/ui/button";
-import { Input } from "@comp/ui/input";
-import { Label } from "@comp/ui/label";
-import { Switch } from "@comp/ui/switch";
-import { Loader2 } from "lucide-react";
-import { useAction } from "next-safe-action/hooks";
-import { useState } from "react";
-import { toast } from "sonner";
+import { updateIntegrationSettingsAction } from '@/actions/integrations/update-integration-settings-action';
+import { Button } from '@comp/ui/button';
+import { Input } from '@comp/ui/input';
+import { Label } from '@comp/ui/label';
+import { Switch } from '@comp/ui/switch';
+import { Loader2 } from 'lucide-react';
+import { useAction } from 'next-safe-action/hooks';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 export type IntegrationSettingsItem = {
   id: string;
   label: string;
   description: string;
-  type: "switch" | "text" | "select";
+  type: 'switch' | 'text' | 'select';
   required: boolean;
   value: string | boolean;
   placeholder?: string;
@@ -31,14 +31,12 @@ function IntegrationSettingsItem({
   onSettingChange: (id: string, value: string | boolean) => void;
 }) {
   switch (setting.type) {
-    case "switch":
+    case 'switch':
       return (
         <div className="flex items-center justify-between">
           <div className="space-y-1 pr-4">
             <Label className="text-muted-foreground">{setting.label}</Label>
-            <p className="text-muted-foreground text-xs">
-              {setting.description}
-            </p>
+            <p className="text-muted-foreground text-xs">{setting.description}</p>
           </div>
           <Switch
             checked={Boolean(setting.value)}
@@ -48,23 +46,17 @@ function IntegrationSettingsItem({
           />
         </div>
       );
-    case "text":
+    case 'text':
       return (
         <div className="flex flex-col justify-between gap-2">
           <div className="space-y-1 pr-4">
-            <Label className="text-muted-foreground flex items-center gap-1">
-              {setting.label}
-            </Label>
-            <p className="text-muted-foreground text-xs">
-              {setting.description}
-            </p>
+            <Label className="text-muted-foreground flex items-center gap-1">{setting.label}</Label>
+            <p className="text-muted-foreground text-xs">{setting.description}</p>
           </div>
           <Input
-            type={installedSettings[setting.id] ? "password" : "text"}
+            type={installedSettings[setting.id] ? 'password' : 'text'}
             value={setting.value as string}
-            placeholder={
-              installedSettings[setting.id] ? "••••••••" : setting.placeholder
-            }
+            placeholder={installedSettings[setting.id] ? '••••••••' : setting.placeholder}
             onChange={(e) => {
               onSettingChange(setting.id, e.target.value);
             }}
@@ -87,10 +79,10 @@ export function IntegrationSettings({
 }) {
   const updateIntegrationSettings = useAction(updateIntegrationSettingsAction, {
     onSuccess: () => {
-      toast.success("Settings updated");
+      toast.success('Settings updated');
     },
     onError: () => {
-      toast.error("Failed to update settings");
+      toast.error('Failed to update settings');
     },
   });
 
@@ -100,12 +92,12 @@ export function IntegrationSettings({
     : settings
       ? Object.entries(settings).map(([key, value]) => ({
           id: key,
-          label: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, " "),
-          description: `Enter your ${key.replace(/_/g, " ")}`,
-          type: "text",
+          label: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '),
+          description: `Enter your ${key.replace(/_/g, ' ')}`,
+          type: 'text',
           required: true,
           value: value,
-          placeholder: `Enter your ${key.replace(/_/g, " ")}`,
+          placeholder: `Enter your ${key.replace(/_/g, ' ')}`,
         }))
       : [];
 
@@ -113,9 +105,7 @@ export function IntegrationSettings({
 
   const handleSettingChange = (id: string, value: string | boolean) => {
     setLocalSettings((prevSettings) =>
-      prevSettings?.map((setting) =>
-        setting.id === id ? { ...setting, value } : setting,
-      ),
+      prevSettings?.map((setting) => (setting.id === id ? { ...setting, value } : setting)),
     );
   };
 
@@ -150,14 +140,11 @@ export function IntegrationSettings({
       )}
 
       {localSettings.length > 0 && (
-        <Button
-          onClick={handleSave}
-          disabled={updateIntegrationSettings.isPending}
-        >
+        <Button onClick={handleSave} disabled={updateIntegrationSettings.isPending}>
           {updateIntegrationSettings.isPending ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            "Save settings"
+            'Save settings'
           )}
         </Button>
       )}

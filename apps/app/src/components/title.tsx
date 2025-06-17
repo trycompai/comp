@@ -1,5 +1,5 @@
-import { ArrowLeftIcon } from "lucide-react";
-import Link from "next/link";
+import { ArrowLeftIcon } from 'lucide-react';
+import Link from 'next/link';
 export function Title({ title, href }: { title: string; href: string }) {
   return (
     <div className="mt-4 flex items-center gap-2">

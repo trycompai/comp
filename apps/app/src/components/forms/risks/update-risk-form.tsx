@@ -1,37 +1,30 @@
-"use client";
+'use client';
 
-import { updateRiskAction } from "@/actions/risk/update-risk-action";
-import { updateRiskSchema } from "@/actions/schema";
-import { Departments, type Risk } from "@comp/db/types";
-import { Button } from "@comp/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@comp/ui/form";
-import { Input } from "@comp/ui/input";
-import { Textarea } from "@comp/ui/textarea";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
-import { useAction } from "next-safe-action/hooks";
-import { useQueryState } from "nuqs";
-import { useForm } from "react-hook-form";
-import { toast } from "sonner";
-import type { z } from "zod";
+import { updateRiskAction } from '@/actions/risk/update-risk-action';
+import { updateRiskSchema } from '@/actions/schema';
+import { Departments, type Risk } from '@comp/db/types';
+import { Button } from '@comp/ui/button';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
+import { Input } from '@comp/ui/input';
+import { Textarea } from '@comp/ui/textarea';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Loader2 } from 'lucide-react';
+import { useAction } from 'next-safe-action/hooks';
+import { useQueryState } from 'nuqs';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import type { z } from 'zod';
 
 export function UpdateRiskForm({ risk }: { risk: Risk }) {
-  const [open, setOpen] = useQueryState("risk-overview-sheet");
+  const [open, setOpen] = useQueryState('risk-overview-sheet');
 
   const updateRisk = useAction(updateRiskAction, {
     onSuccess: () => {
-      toast.success("Risk updated successfully");
+      toast.success('Risk updated successfully');
       setOpen(null);
     },
     onError: () => {
-      toast.error("Failed to update risk");
+      toast.error('Failed to update risk');
     },
   });
 
@@ -69,13 +62,13 @@ export function UpdateRiskForm({ risk }: { risk: Risk }) {
             name="title"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{"Risk Title"}</FormLabel>
+                <FormLabel>{'Risk Title'}</FormLabel>
                 <FormControl>
                   <Input
                     {...field}
                     autoFocus
                     className="mt-3"
-                    placeholder={"A short, descriptive title for the risk."}
+                    placeholder={'A short, descriptive title for the risk.'}
                     autoCorrect="off"
                   />
                 </FormControl>
@@ -94,7 +87,7 @@ export function UpdateRiskForm({ risk }: { risk: Risk }) {
                     {...field}
                     className="mt-3 min-h-[80px]"
                     placeholder={
-                      "A detailed description of the risk, its potential impact, and its causes."
+                      'A detailed description of the risk, its potential impact, and its causes.'
                     }
                   />
                 </FormControl>
@@ -104,15 +97,11 @@ export function UpdateRiskForm({ risk }: { risk: Risk }) {
           />
         </div>
         <div className="mt-8 flex justify-end">
-          <Button
-            type="submit"
-            variant="default"
-            disabled={updateRisk.status === "executing"}
-          >
-            {updateRisk.status === "executing" ? (
+          <Button type="submit" variant="default" disabled={updateRisk.status === 'executing'}>
+            {updateRisk.status === 'executing' ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              "Save"
+              'Save'
             )}
           </Button>
         </div>

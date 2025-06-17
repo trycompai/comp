@@ -1,11 +1,6 @@
-"use client";
+'use client';
 
-import {
-  Cell,
-  Pie,
-  PieChart as RechartsPieChart,
-  ResponsiveContainer,
-} from "recharts";
+import { Cell, Pie, PieChart as RechartsPieChart, ResponsiveContainer } from 'recharts';
 
 interface PieChartProps {
   data: Array<{

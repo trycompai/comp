@@ -1,8 +1,8 @@
-"server only";
+'server only';
 
-import { sleep } from "@/lib/utils";
-import type { Page } from "playwright-core";
-import { viewPort } from "./session";
+import { sleep } from '@/lib/utils';
+import type { Page } from 'playwright-core';
+import { viewPort } from './session';
 
 export async function scrollDownPage(page: Page, amount?: number) {
   if (amount !== undefined) {
@@ -17,20 +17,20 @@ export async function scrollDownPage(page: Page, amount?: number) {
     await page.evaluate(() => {
       window.scrollTo(0, document.body.scrollHeight);
     });
-    return "Scrolled to bottom of page.";
+    return 'Scrolled to bottom of page.';
   }
   // No amount specified - use PageDown (original behavior)
-  await page.keyboard.press("PageDown");
-  return "Scrolled down one page.";
+  await page.keyboard.press('PageDown');
+  return 'Scrolled down one page.';
 }
 
 /**
  * 6) Go to some URL
  */
 export async function goToUrlPage(page: Page, url: string) {
-  const urlToGoTo = url.startsWith("http") ? url : `https://${url}`;
+  const urlToGoTo = url.startsWith('http') ? url : `https://${url}`;
   await page.goto(urlToGoTo, {
-    waitUntil: "commit",
+    waitUntil: 'commit',
     timeout: 25000,
   });
   return `Navigated to ${urlToGoTo}`;
@@ -40,39 +40,33 @@ export async function goToUrlPage(page: Page, url: string) {
  * 7) Example: "search on google"
  */
 export async function searchGooglePage(page: Page, query: string) {
-  const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(
-    query,
-  )}`;
+  const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
   await page.goto(googleUrl);
   return `Searched Google for "${query}".`;
 }
 
 export async function takeScreenshot(page: Page) {
   const screenshot = await page.screenshot({
-    type: "jpeg",
+    type: 'jpeg',
     quality: 80,
   });
   return {
     screenshot: {
-      type: "image",
-      data: screenshot.toString("base64"),
-      mimeType: "image/jpeg",
+      type: 'image',
+      data: screenshot.toString('base64'),
+      mimeType: 'image/jpeg',
     },
   };
 }
 
-export async function handleKeyboardAction(
-  page: Page,
-  action: "key" | "type",
-  text?: string,
-) {
-  if (!text) throw new Error("Text required for keyboard actions");
+export async function handleKeyboardAction(page: Page, action: 'key' | 'type', text?: string) {
+  if (!text) throw new Error('Text required for keyboard actions');
 
   switch (action) {
-    case "key":
+    case 'key':
       await page.keyboard.press(text);
       break;
-    case "type": {
+    case 'type': {
       // Implement typing with delay
       const TYPING_DELAY = 12;
       await page.keyboard.type(text, { delay: TYPING_DELAY });
@@ -84,8 +78,8 @@ export async function handleKeyboardAction(
 async function paintDot(page: Page, x: number, y: number) {
   await page.evaluate(
     ({ x, y }) => {
-      const dot = document.createElement("div");
-      dot.id = "ai-dot";
+      const dot = document.createElement('div');
+      dot.id = 'ai-dot';
       dot.style.cssText = `
         position: fixed;
         width: 10px;
@@ -123,8 +117,8 @@ export async function clickTargetOnPage(
     } else {
       // Add and position cursor first
       await page.evaluate(() => {
-        const cursor = document.createElement("div");
-        cursor.id = "ai-cursor";
+        const cursor = document.createElement('div');
+        cursor.id = 'ai-cursor';
         cursor.style.cssText = `
           position: fixed;
           width: 20px;
@@ -139,7 +133,7 @@ export async function clickTargetOnPage(
 
       await page.evaluate(
         ({ x, y }) => {
-          const cursor = document.getElementById("ai-cursor");
+          const cursor = document.getElementById('ai-cursor');
           if (cursor) {
             cursor.style.left = `${x}px`;
             cursor.style.top = `${y}px`;
@@ -164,7 +158,7 @@ export async function openNewTab(page: Page) {
   const context = page.context();
   const newPage = await context.newPage();
   return {
-    message: "Opened new tab",
+    message: 'Opened new tab',
     newPage,
   };
 }
@@ -177,9 +171,7 @@ export async function switchToTab(page: Page, index: number) {
   const pages = context.pages();
 
   if (index < 0 || index >= pages.length) {
-    throw new Error(
-      `Tab index ${index} is out of bounds (0-${pages.length - 1})`,
-    );
+    throw new Error(`Tab index ${index} is out of bounds (0-${pages.length - 1})`);
   }
 
   const targetPage = pages[index];
@@ -195,7 +187,7 @@ export async function switchToTab(page: Page, index: number) {
  */
 export async function goBack(page: Page) {
   await page.goBack();
-  return "Navigated back";
+  return 'Navigated back';
 }
 
 /**
@@ -203,5 +195,5 @@ export async function goBack(page: Page) {
  */
 export async function goForward(page: Page) {
   await page.goForward();
-  return "Navigated forward";
+  return 'Navigated forward';
 }

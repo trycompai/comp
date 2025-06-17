@@ -1,4 +1,4 @@
-import type { Policy, PolicyStatus } from "@comp/db/types";
+import type { Policy, PolicyStatus } from '@comp/db/types';
 
 // Define the expected structure for policies (typically with selected fields)
 export type SelectedPolicy = {
@@ -13,7 +13,7 @@ export type SelectedPolicy = {
  */
 export function isPolicyCompleted(policy: SelectedPolicy): boolean {
   if (!policy) return false;
-  return policy.status === "published";
+  return policy.status === 'published';
 }
 
 /**
@@ -39,13 +39,13 @@ export function isControlCompliant(policies: SelectedPolicy[]): boolean {
  */
 export function calculateControlStatus(
   policies: SelectedPolicy[],
-): "not_started" | "in_progress" | "completed" {
-  if (!policies || policies.length === 0) return "not_started";
+): 'not_started' | 'in_progress' | 'completed' {
+  if (!policies || policies.length === 0) return 'not_started';
 
   const totalPolicies = policies.length;
   const completedPolicies = policies.filter(isPolicyCompleted).length;
 
-  if (completedPolicies === 0) return "not_started";
-  if (completedPolicies === totalPolicies) return "completed";
-  return "in_progress";
+  if (completedPolicies === 0) return 'not_started';
+  if (completedPolicies === totalPolicies) return 'completed';
+  return 'in_progress';
 }

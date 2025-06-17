@@ -1,11 +1,11 @@
-import "server-only";
+import 'server-only';
 
-import { auth } from "@/utils/auth";
-import { db } from "@comp/db";
-import { Prisma } from "@prisma/client";
-import { headers } from "next/headers";
-import { cache } from "react";
-import type { GetPolicySchema } from "./validations";
+import { auth } from '@/utils/auth';
+import { db } from '@comp/db';
+import { Prisma } from '@prisma/client';
+import { headers } from 'next/headers';
+import { cache } from 'react';
+import type { GetPolicySchema } from './validations';
 
 export async function getPolicies(input: GetPolicySchema) {
   return await cache(async () => {
@@ -16,11 +16,11 @@ export async function getPolicies(input: GetPolicySchema) {
       const organizationId = session?.session.activeOrganizationId;
 
       if (!organizationId) {
-        throw new Error("Organization not found");
+        throw new Error('Organization not found');
       }
 
       const orderBy = input.sort.map((sort) => ({
-        [sort.id]: sort.desc ? "desc" : "asc",
+        [sort.id]: sort.desc ? 'desc' : 'asc',
       }));
 
       const where: Prisma.PolicyWhereInput = {
@@ -40,7 +40,7 @@ export async function getPolicies(input: GetPolicySchema) {
 
       const policies = await db.policy.findMany({
         where,
-        orderBy: orderBy.length > 0 ? orderBy : [{ createdAt: "desc" }],
+        orderBy: orderBy.length > 0 ? orderBy : [{ createdAt: 'desc' }],
         skip: (input.page - 1) * input.perPage,
         take: input.perPage,
       });

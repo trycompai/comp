@@ -1,8 +1,8 @@
-"use server";
+'use server';
 
-import { Card, CardContent, CardHeader, CardTitle } from "@comp/ui/card";
-import { VendorsByCategory } from "./vendors-by-category";
-import { VendorsByStatus } from "./vendors-by-status";
+import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
+import { VendorsByCategory } from './vendors-by-category';
+import { VendorsByStatus } from './vendors-by-status';
 
 interface VendorOverviewProps {
   organizationId: string;

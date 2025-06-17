@@ -1,15 +1,15 @@
-import { auth } from "@/utils/auth";
-import { Avatar, AvatarFallback, AvatarImageNext } from "@comp/ui/avatar";
+import { auth } from '@/utils/auth';
+import { Avatar, AvatarFallback, AvatarImageNext } from '@comp/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@comp/ui/dropdown-menu";
-import { headers } from "next/headers";
-import { SignOut } from "./sign-out";
-import { ThemeSwitch } from "./theme-switch";
+} from '@comp/ui/dropdown-menu';
+import { headers } from 'next/headers';
+import { SignOut } from './sign-out';
+import { ThemeSwitch } from './theme-switch';
 
 export async function UserMenu({ onlySignOut }: { onlySignOut?: boolean }) {
   const session = await auth.api.getSession({
@@ -22,7 +22,7 @@ export async function UserMenu({ onlySignOut }: { onlySignOut?: boolean }) {
           {session?.user?.image && (
             <AvatarImageNext
               src={session?.user?.image}
-              alt={session?.user?.name ?? session?.user?.email ?? ""}
+              alt={session?.user?.name ?? session?.user?.email ?? ''}
               width={32}
               height={32}
               quality={100}
@@ -49,14 +49,12 @@ export async function UserMenu({ onlySignOut }: { onlySignOut?: boolean }) {
                     {session?.user?.email}
                   </span>
                 </div>
-                <div className="rounded-full border px-3 py-0.5 text-[11px] font-normal">
-                  Beta
-                </div>
+                <div className="rounded-full border px-3 py-0.5 text-[11px] font-normal">Beta</div>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <div className="flex flex-row items-center justify-between p-2">
-              <p className="text-sm">{"Theme"}</p>
+              <p className="text-sm">{'Theme'}</p>
               <ThemeSwitch />
             </div>
             <DropdownMenuSeparator />

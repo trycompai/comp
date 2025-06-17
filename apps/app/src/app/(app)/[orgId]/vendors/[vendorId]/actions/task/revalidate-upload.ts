@@ -1,17 +1,17 @@
-"use server";
+'use server';
 
-import { authActionClient } from "@/actions/safe-action";
-import { uploadTaskFileSchema } from "@/actions/schema";
-import { revalidatePath } from "next/cache";
-import { revalidateTag } from "next/cache";
+import { authActionClient } from '@/actions/safe-action';
+import { uploadTaskFileSchema } from '@/actions/schema';
+import { revalidatePath } from 'next/cache';
+import { revalidateTag } from 'next/cache';
 
 export const revalidateUpload = authActionClient
-  .schema(uploadTaskFileSchema)
+  .inputSchema(uploadTaskFileSchema)
   .metadata({
-    name: "upload-task-file",
+    name: 'upload-task-file',
     track: {
-      event: "upload-task-file",
-      channel: "server",
+      event: 'upload-task-file',
+      channel: 'server',
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -19,14 +19,12 @@ export const revalidateUpload = authActionClient
     const { session } = ctx;
 
     if (!session.activeOrganizationId) {
-      throw new Error("Invalid user input");
+      throw new Error('Invalid user input');
     }
 
     revalidatePath(`/${session.activeOrganizationId}/risk/${riskId}`);
-    revalidatePath(
-      `/${session.activeOrganizationId}/risk/${riskId}/tasks/${taskId}`,
-    );
-    revalidateTag("risk-cache");
+    revalidatePath(`/${session.activeOrganizationId}/risk/${riskId}/tasks/${taskId}`);
+    revalidateTag('risk-cache');
 
     return {
       riskId,

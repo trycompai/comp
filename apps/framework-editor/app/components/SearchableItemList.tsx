@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useState, useMemo } from "react";
-import { Input } from "@comp/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@comp/ui/card";
+import { useState, useMemo } from 'react';
+import { Input } from '@comp/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 
 export interface SearchableItem {
   id: string;
@@ -27,15 +27,13 @@ export function SearchableItemList({
   itemTypeLabel,
   renderItem,
 }: SearchableItemListProps) {
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
 
   const filteredItems = useMemo(() => {
     if (!searchTerm) {
       return items;
     }
-    return items.filter((item) =>
-      item.name.toLowerCase().includes(searchTerm.toLowerCase()),
-    );
+    return items.filter((item) => item.name.toLowerCase().includes(searchTerm.toLowerCase()));
   }, [items, searchTerm]);
 
   const defaultRenderItem = (item: SearchableItem) => (
@@ -72,9 +70,7 @@ export function SearchableItemList({
             )}
           </>
         ) : (
-          <p className="text-muted-foreground text-sm">
-            No {itemTypeLabel}s associated.
-          </p>
+          <p className="text-muted-foreground text-sm">No {itemTypeLabel}s associated.</p>
         )}
       </CardContent>
     </Card>

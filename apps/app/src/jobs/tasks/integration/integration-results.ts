@@ -1,14 +1,11 @@
-import { decrypt } from "@comp/app/src/lib/encryption";
-import { db } from "@comp/db";
-import {
-  type DecryptFunction,
-  getIntegrationHandler,
-} from "@comp/integrations";
-import { logger, schemaTask } from "@trigger.dev/sdk/v3";
-import { z } from "zod";
+import { decrypt } from '@comp/app/src/lib/encryption';
+import { db } from '@comp/db';
+import { type DecryptFunction, getIntegrationHandler } from '@comp/integrations';
+import { logger, schemaTask } from '@trigger.dev/sdk/v3';
+import { z } from 'zod';
 
 export const sendIntegrationResults = schemaTask({
-  id: "send-integration-results",
+  id: 'send-integration-results',
   schema: z.object({
     integration: z.object({
       id: z.string(),
@@ -37,15 +34,12 @@ export const sendIntegrationResults = schemaTask({
         logger.error(`Integration handler for ${integrationId} not found`);
         return {
           success: false,
-          error: "Integration handler not found",
+          error: 'Integration handler not found',
         };
       }
 
       // Extract user settings which may contain necessary credentials
-      const userSettings = integration.user_settings as unknown as Record<
-        string,
-        unknown
-      >;
+      const userSettings = integration.user_settings as unknown as Record<string, unknown>;
 
       // Process credentials using the integration handler
       const typedCredentials = await integrationHandler.processCredentials(
@@ -120,11 +114,10 @@ export const sendIntegrationResults = schemaTask({
         await db.integrationResult.create({
           data: {
             title: `${integration.name} Security Check`,
-            description: "Integration failed to run",
-            remediation:
-              "Please check the integration configuration and try again",
-            status: "error",
-            severity: "ERROR",
+            description: 'Integration failed to run',
+            remediation: 'Please check the integration configuration and try again',
+            status: 'error',
+            severity: 'ERROR',
             resultDetails: {
               error: error instanceof Error ? error.message : String(error),
             },

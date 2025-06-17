@@ -1,21 +1,15 @@
-"use client";
+'use client';
 
-import { Impact, Likelihood } from "@comp/db/types";
-import { Button } from "@comp/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@comp/ui/card";
-import { Loader2, PencilIcon } from "lucide-react";
-import { useQueryState } from "nuqs";
-import type React from "react";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
-import { motion, AnimatePresence } from "framer-motion";
-import { Icons } from "@comp/ui/icons";
+import { Impact, Likelihood } from '@comp/db/types';
+import { Button } from '@comp/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
+import { Loader2, PencilIcon } from 'lucide-react';
+import { useQueryState } from 'nuqs';
+import type React from 'react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Icons } from '@comp/ui/icons';
 
 const LIKELIHOOD_SCORES: Record<Likelihood, number> = {
   very_unlikely: 1,
@@ -51,44 +45,38 @@ const VISUAL_IMPACT_ORDER: Impact[] = [
 interface RiskCell {
   probability: string;
   impact: string;
-  level: "very-low" | "low" | "medium" | "high" | "very-high";
+  level: 'very-low' | 'low' | 'medium' | 'high' | 'very-high';
   value?: number;
 }
 
 const getRiskColor = (level: string) => {
   switch (level) {
-    case "very-low":
-      return "bg-emerald-500/20 border-emerald-500/30 hover:bg-emerald-500/30";
-    case "low":
-      return "bg-green-500/20 border-green-500/30 hover:bg-green-500/30";
-    case "medium":
-      return "bg-yellow-500/20 border-yellow-500/30 hover:bg-yellow-500/30";
-    case "high":
-      return "bg-orange-500/20 border-orange-500/30 hover:bg-orange-500/30";
-    case "very-high":
-      return "bg-red-500/20 border-red-500/30 hover:bg-red-500/30";
+    case 'very-low':
+      return 'bg-emerald-500/20 border-emerald-500/30 hover:bg-emerald-500/30';
+    case 'low':
+      return 'bg-green-500/20 border-green-500/30 hover:bg-green-500/30';
+    case 'medium':
+      return 'bg-yellow-500/20 border-yellow-500/30 hover:bg-yellow-500/30';
+    case 'high':
+      return 'bg-orange-500/20 border-orange-500/30 hover:bg-orange-500/30';
+    case 'very-high':
+      return 'bg-red-500/20 border-red-500/30 hover:bg-red-500/30';
     default:
-      return "bg-slate-500/20 border-slate-500/30";
+      return 'bg-slate-500/20 border-slate-500/30';
   }
 };
 
-const probabilityLevels = [
-  "Very Likely",
-  "Likely",
-  "Possible",
-  "Unlikely",
-  "Very Unlikely",
-];
-const probabilityNumbers = ["5", "4", "3", "2", "1"];
+const probabilityLevels = ['Very Likely', 'Likely', 'Possible', 'Unlikely', 'Very Unlikely'];
+const probabilityNumbers = ['5', '4', '3', '2', '1'];
 const probabilityLabels = [
-  "Very Likely (5)",
-  "Likely (4)",
-  "Possible (3)",
-  "Unlikely (2)",
-  "Very Unlikely (1)",
+  'Very Likely (5)',
+  'Likely (4)',
+  'Possible (3)',
+  'Unlikely (2)',
+  'Very Unlikely (1)',
 ];
-const impactLevels = ["Insignificant", "Minor", "Moderate", "Major", "Severe"];
-const impactNumbers = ["1", "2", "3", "4", "5"];
+const impactLevels = ['Insignificant', 'Minor', 'Moderate', 'Major', 'Severe'];
+const impactNumbers = ['1', '2', '3', '4', '5'];
 
 interface RiskMatrixChartProps {
   title: string;
@@ -96,11 +84,7 @@ interface RiskMatrixChartProps {
   riskId: string;
   activeLikelihood: Likelihood;
   activeImpact: Impact;
-  saveAction: (data: {
-    id: string;
-    probability: Likelihood;
-    impact: Impact;
-  }) => Promise<any>;
+  saveAction: (data: { id: string; probability: Likelihood; impact: Impact }) => Promise<any>;
 }
 
 export function RiskMatrixChart({
@@ -111,13 +95,9 @@ export function RiskMatrixChart({
   activeImpact: initialImpactProp,
   saveAction,
 }: RiskMatrixChartProps) {
-  const [initialLikelihood, setInitialLikelihood] = useState<Likelihood>(
-    initialLikelihoodProp,
-  );
+  const [initialLikelihood, setInitialLikelihood] = useState<Likelihood>(initialLikelihoodProp);
   const [initialImpact, setInitialImpact] = useState<Impact>(initialImpactProp);
-  const [activeLikelihood, setActiveLikelihood] = useState<Likelihood>(
-    initialLikelihoodProp,
-  );
+  const [activeLikelihood, setActiveLikelihood] = useState<Likelihood>(initialLikelihoodProp);
   const [activeImpact, setActiveImpact] = useState<Impact>(initialImpactProp);
   const [loading, setLoading] = useState(false);
 
@@ -130,36 +110,28 @@ export function RiskMatrixChart({
     setActiveImpact(initialImpactProp);
   }, [initialImpactProp]);
 
-  const activeProbability =
-    probabilityLevels[VISUAL_LIKELIHOOD_ORDER.indexOf(activeLikelihood)];
-  const activeImpactLevel =
-    impactLevels[VISUAL_IMPACT_ORDER.indexOf(activeImpact)];
+  const activeProbability = probabilityLevels[VISUAL_LIKELIHOOD_ORDER.indexOf(activeLikelihood)];
+  const activeImpactLevel = impactLevels[VISUAL_IMPACT_ORDER.indexOf(activeImpact)];
 
   // Create risk data
   const riskData: RiskCell[] = probabilityLevels.flatMap((probability) =>
     impactLevels.map((impact) => {
       const likelihoodScore =
-        LIKELIHOOD_SCORES[
-          VISUAL_LIKELIHOOD_ORDER[probabilityLevels.indexOf(probability)]
-        ];
-      const impactScore =
-        IMPACT_SCORES[VISUAL_IMPACT_ORDER[impactLevels.indexOf(impact)]];
+        LIKELIHOOD_SCORES[VISUAL_LIKELIHOOD_ORDER[probabilityLevels.indexOf(probability)]];
+      const impactScore = IMPACT_SCORES[VISUAL_IMPACT_ORDER[impactLevels.indexOf(impact)]];
       const score = likelihoodScore * impactScore;
 
-      let level: RiskCell["level"] = "very-low";
-      if (score > 16) level = "very-high";
-      else if (score > 9) level = "high";
-      else if (score > 4) level = "medium";
-      else if (score > 1) level = "low";
+      let level: RiskCell['level'] = 'very-low';
+      if (score > 16) level = 'very-high';
+      else if (score > 9) level = 'high';
+      else if (score > 4) level = 'medium';
+      else if (score > 1) level = 'low';
 
       return {
         probability,
         impact,
         level,
-        value:
-          probability === activeProbability && impact === activeImpactLevel
-            ? 1
-            : undefined,
+        value: probability === activeProbability && impact === activeImpactLevel ? 1 : undefined,
       };
     }),
   );
@@ -173,8 +145,7 @@ export function RiskMatrixChart({
     setActiveImpact(newImpact);
   };
 
-  const hasChanges =
-    activeLikelihood !== initialLikelihood || activeImpact !== initialImpact;
+  const hasChanges = activeLikelihood !== initialLikelihood || activeImpact !== initialImpact;
 
   const handleSave = async () => {
     setLoading(true);
@@ -205,18 +176,10 @@ export function RiskMatrixChart({
               <motion.div
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.15, ease: "easeOut" }}
+                transition={{ duration: 0.15, ease: 'easeOut' }}
               >
-                <Button
-                  onClick={handleSave}
-                  variant="default"
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    "Save"
-                  )}
+                <Button onClick={handleSave} variant="default" disabled={loading}>
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
                 </Button>
               </motion.div>
             )}
@@ -229,13 +192,8 @@ export function RiskMatrixChart({
             <div className="grid grid-cols-6 rounded-lg">
               <div className="h-12" />
               {impactLevels.map((impact, index) => (
-                <div
-                  key={impact}
-                  className="flex flex-col items-center justify-center"
-                >
-                  <span className="text-center text-xs leading-tight">
-                    {impact}
-                  </span>
+                <div key={impact} className="flex flex-col items-center justify-center">
+                  <span className="text-center text-xs leading-tight">{impact}</span>
                 </div>
               ))}
               {probabilityLevels.map((probability, rowIdx) => (
@@ -244,32 +202,27 @@ export function RiskMatrixChart({
                     className="mr-4 flex flex-col items-center justify-center"
                     title={probabilityLabels[rowIdx]}
                   >
-                    <span className="text-xs">
-                      {probabilityNumbers[rowIdx]}
-                    </span>
+                    <span className="text-xs">{probabilityNumbers[rowIdx]}</span>
                   </div>
                   {impactLevels.map((impact, colIdx) => {
                     const cell = riskData.find(
-                      (item) =>
-                        item.probability === probability &&
-                        item.impact === impact,
+                      (item) => item.probability === probability && item.impact === impact,
                     );
-                    let rounding = "";
-                    if (rowIdx === 0 && colIdx === 0)
-                      rounding = "rounded-tl-lg";
+                    let rounding = '';
+                    if (rowIdx === 0 && colIdx === 0) rounding = 'rounded-tl-lg';
                     if (rowIdx === 0 && colIdx === impactLevels.length - 1)
-                      rounding = "rounded-tr-lg";
+                      rounding = 'rounded-tr-lg';
                     if (rowIdx === probabilityLevels.length - 1 && colIdx === 0)
-                      rounding = "rounded-bl-lg";
+                      rounding = 'rounded-bl-lg';
                     if (
                       rowIdx === probabilityLevels.length - 1 &&
                       colIdx === impactLevels.length - 1
                     )
-                      rounding = "rounded-br-lg";
+                      rounding = 'rounded-br-lg';
                     return (
                       <div
                         key={`${probability}-${impact}`}
-                        className={`relative h-12 cursor-pointer border transition-all duration-200 ${getRiskColor(cell?.level || "very-low")} flex items-center justify-center ${rounding} `}
+                        className={`relative h-12 cursor-pointer border transition-all duration-200 ${getRiskColor(cell?.level || 'very-low')} flex items-center justify-center ${rounding} `}
                         onClick={() => handleCellClick(probability, impact)}
                       >
                         {cell?.value && (
@@ -282,7 +235,7 @@ export function RiskMatrixChart({
               ))}
             </div>
             <div className="mt-2 flex justify-center">
-              <span className="text-xs">{"Impact"}</span>
+              <span className="text-xs">{'Impact'}</span>
             </div>
           </div>
         </div>

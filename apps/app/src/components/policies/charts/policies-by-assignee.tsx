@@ -1,7 +1,7 @@
-import { db } from "@comp/db";
-import { PolicyStatus } from "@comp/db/types";
-import { Card, CardContent, CardHeader, CardTitle } from "@comp/ui/card";
-import type { CSSProperties } from "react";
+import { db } from '@comp/db';
+import { PolicyStatus } from '@comp/db/types';
+import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
+import type { CSSProperties } from 'react';
 
 interface Props {
   organizationId: string;
@@ -22,10 +22,10 @@ interface UserPolicyStats {
 }
 
 const policyStatus = {
-  published: "bg-primary",
-  draft: "bg-[var(--chart-open)]",
-  archived: "bg-[var(--chart-pending)]",
-  needs_review: "bg-[hsl(var(--destructive))]",
+  published: 'bg-primary',
+  draft: 'bg-[var(--chart-open)]',
+  archived: 'bg-[var(--chart-pending)]',
+  needs_review: 'bg-[hsl(var(--destructive))]',
 } as const;
 
 export async function PoliciesByAssignee({ organizationId }: Props) {
@@ -35,9 +35,7 @@ export async function PoliciesByAssignee({ organizationId }: Props) {
   ]);
 
   const stats: UserPolicyStats[] = userStats.map((user) => {
-    const userPolicies = policies.filter(
-      (policy) => policy.assigneeId === user.id,
-    );
+    const userPolicies = policies.filter((policy) => policy.assigneeId === user.id);
 
     return {
       user: {
@@ -47,14 +45,10 @@ export async function PoliciesByAssignee({ organizationId }: Props) {
         image: user.image,
       },
       totalPolicies: userPolicies.length,
-      publishedPolicies: userPolicies.filter(
-        (policy) => policy.status === PolicyStatus.published,
-      ).length,
-      draftPolicies: userPolicies.filter(
-        (policy) => policy.status === PolicyStatus.draft,
-      ).length,
-      archivedPolicies: userPolicies.filter((policy) => policy.isArchived)
+      publishedPolicies: userPolicies.filter((policy) => policy.status === PolicyStatus.published)
         .length,
+      draftPolicies: userPolicies.filter((policy) => policy.status === PolicyStatus.draft).length,
+      archivedPolicies: userPolicies.filter((policy) => policy.isArchived).length,
       needsReviewPolicies: userPolicies.filter(
         (policy) => policy.status === PolicyStatus.needs_review,
       ).length,
@@ -66,18 +60,16 @@ export async function PoliciesByAssignee({ organizationId }: Props) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{"Policies by Assignee"}</CardTitle>
+        <CardTitle>{'Policies by Assignee'}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-8">
           {stats.map((stat) => (
             <div key={stat.user.id} className="space-y-2">
               <div className="flex items-center justify-between">
-                <p className="text-sm">
-                  {stat.user.name || stat.user.email || "Unknown User"}
-                </p>
+                <p className="text-sm">{stat.user.name || stat.user.email || 'Unknown User'}</p>
                 <span className="text-muted-foreground text-sm">
-                  {stat.totalPolicies} {"policies"}
+                  {stat.totalPolicies} {'policies'}
                 </span>
               </div>
 
@@ -87,25 +79,25 @@ export async function PoliciesByAssignee({ organizationId }: Props) {
                 <div className="flex items-center gap-1">
                   <div className="bg-primary size-2" />
                   <span>
-                    {"Published"} ({stat.publishedPolicies})
+                    {'Published'} ({stat.publishedPolicies})
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="size-2 bg-[var(--chart-open)]" />
                   <span>
-                    {"Draft"} ({stat.draftPolicies})
+                    {'Draft'} ({stat.draftPolicies})
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="size-2 bg-[var(--chart-pending)]" />
                   <span>
-                    {"Archived"} ({stat.archivedPolicies})
+                    {'Archived'} ({stat.archivedPolicies})
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="size-2 bg-[hsl(var(--destructive))]" />
                   <span>
-                    {"Needs Review"} ({stat.needsReviewPolicies})
+                    {'Needs Review'} ({stat.needsReviewPolicies})
                   </span>
                 </div>
               </div>
@@ -122,30 +114,30 @@ function RiskBarChart({ stat }: { stat: UserPolicyStats }) {
     ...(stat.publishedPolicies && stat.publishedPolicies > 0
       ? [
           {
-            key: "published",
+            key: 'published',
             value: stat.publishedPolicies,
             color: policyStatus.published,
-            label: "Published",
+            label: 'Published',
           },
         ]
       : []),
     ...(stat.draftPolicies && stat.draftPolicies > 0
       ? [
           {
-            key: "draft",
+            key: 'draft',
             value: stat.draftPolicies,
             color: policyStatus.draft,
-            label: "Draft",
+            label: 'Draft',
           },
         ]
       : []),
     ...(stat.archivedPolicies && stat.archivedPolicies > 0
       ? [
           {
-            key: "archived",
+            key: 'archived',
             value: stat.archivedPolicies,
             color: policyStatus.archived,
-            label: "Archived",
+            label: 'Archived',
           },
         ]
       : []),
@@ -167,11 +159,11 @@ function RiskBarChart({ stat }: { stat: UserPolicyStats }) {
       className="relative h-[var(--height)]"
       style={
         {
-          "--marginTop": "0px",
-          "--marginRight": "0px",
-          "--marginBottom": "0px",
-          "--marginLeft": "0px",
-          "--height": `${barHeight}px`,
+          '--marginTop': '0px',
+          '--marginRight': '0px',
+          '--marginBottom': '0px',
+          '--marginLeft': '0px',
+          '--height': `${barHeight}px`,
         } as CSSProperties
       }
     >
@@ -189,14 +181,14 @@ function RiskBarChart({ stat }: { stat: UserPolicyStats }) {
                 width: `${barWidth}%`,
                 height: `${barHeight}px`,
                 left: `${xPosition}%`,
-                position: "absolute",
+                position: 'absolute',
               }}
             >
               <div
                 className={`bg-gradient-to-b ${d.color}`}
                 style={{
-                  width: "100%",
-                  height: "100%",
+                  width: '100%',
+                  height: '100%',
                   borderRadius: `${cornerRadius}px`,
                 }}
                 title={`${d.label}: ${d.value}`}
