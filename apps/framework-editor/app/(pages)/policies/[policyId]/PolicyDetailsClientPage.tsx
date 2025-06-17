@@ -1,15 +1,15 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
-import { PencilIcon, Trash2 } from 'lucide-react';
 import type { FrameworkEditorPolicyTemplate } from '@prisma/client'; // Assuming this is the correct type
+import { PencilIcon, Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 // Import the actual dialog components
-import { EditPolicyDialog } from './components/EditPolicyDialog';
 import { DeletePolicyDialog } from './components/DeletePolicyDialog';
+import { EditPolicyDialog } from './components/EditPolicyDialog';
 
 interface PolicyDetailsClientPageProps {
   policy: FrameworkEditorPolicyTemplate; // Use the specific Prisma type

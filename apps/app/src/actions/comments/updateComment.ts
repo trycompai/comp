@@ -1,13 +1,13 @@
 'use server';
 
+import { BUCKET_NAME, extractS3KeyFromUrl, s3Client } from '@/app/s3';
+import { auth } from '@/utils/auth';
+import { DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { db } from '@comp/db';
 import { AttachmentEntityType, Comment } from '@comp/db/types';
 import { revalidatePath } from 'next/cache';
-import { z } from 'zod';
-import { auth } from '@/utils/auth';
 import { headers } from 'next/headers';
-import { BUCKET_NAME, extractS3KeyFromUrl, s3Client } from '@/app/s3';
-import { DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { z } from 'zod';
 
 const schema = z
   .object({

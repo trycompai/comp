@@ -1,6 +1,5 @@
 'server only';
 import { type Browser, type Page, chromium } from 'playwright-core';
-import { createSession } from './session';
 
 interface BrowserSession {
   browser: Browser;

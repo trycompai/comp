@@ -1,8 +1,8 @@
-import { client } from '@comp/kv';
-import { syncStripeDataToKV } from '../syncStripeDataToKv';
-import { redirect } from 'next/navigation';
 import { getServersideSession } from '@/lib/get-session';
 import { db } from '@comp/db';
+import { client } from '@comp/kv';
+import { redirect } from 'next/navigation';
+import { syncStripeDataToKV } from '../syncStripeDataToKv';
 
 export async function GET(req: Request) {
   const { user } = await getServersideSession(req);

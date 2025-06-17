@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import type { FrameworkEditorPolicyTemplate } from '@prisma/client';
-import PageLayout from '@/app/components/PageLayout';
 import { DataTable } from '@/app/components/DataTable';
+import PageLayout from '@/app/components/PageLayout';
+import type { FrameworkEditorPolicyTemplate } from '@prisma/client';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { columns } from './components/columns';
 import { CreatePolicyDialog } from './components/CreatePolicyDialog';
 

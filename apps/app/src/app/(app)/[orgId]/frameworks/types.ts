@@ -1,10 +1,9 @@
 import {
   Control,
-  FrameworkInstance,
-  Policy,
-  RequirementMap,
   FrameworkEditorFramework,
+  FrameworkInstance,
   PolicyStatus,
+  RequirementMap,
 } from '@comp/db/types';
 
 export type FrameworkInstanceWithControls = FrameworkInstance & {

@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import * as React from 'react';
 import type { SVGProps } from 'react';
 
 export const VercelIcon = ({ size = 17 }) => {

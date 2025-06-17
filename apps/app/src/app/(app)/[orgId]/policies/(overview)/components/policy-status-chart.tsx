@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Label, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
+import { Label, Pie, PieChart } from 'recharts';
 
 import { Badge } from '@comp/ui/badge';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@comp/ui/card';
@@ -11,7 +11,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@comp/ui/chart';
-import { BarChart as ChartIcon, Info, PieChart as PieChartIcon } from 'lucide-react';
+import { Info } from 'lucide-react';
 
 interface PolicyOverviewData {
   totalPolicies: number;

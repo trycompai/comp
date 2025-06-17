@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { Input } from '@comp/ui/input';
 import { Button } from '@comp/ui/button';
+import { Input } from '@comp/ui/input';
 import { ScrollArea } from '@comp/ui/scroll-area';
-import { Loader2, PlusCircleIcon, Link2OffIcon } from 'lucide-react';
 import { Separator } from '@comp/ui/separator';
-import { Badge } from '@comp/ui/badge'; // Import Badge for default display if needed
+import { Link2OffIcon, Loader2, PlusCircleIcon } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 
 // Base item structure expected by this component
 export interface SearchableItemForLinking {

@@ -1,10 +1,10 @@
 'use server';
 
-import { z } from 'zod';
 import { db } from '@comp/db';
-import { revalidatePath } from 'next/cache';
-import { RequirementBaseSchema } from '../schemas';
 import type { FrameworkEditorRequirement } from '@prisma/client';
+import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
+import { RequirementBaseSchema } from '../schemas';
 
 const UpdateRequirementSchema = RequirementBaseSchema.extend({
   id: z.string().min(1, { message: 'Requirement ID is required.' }),

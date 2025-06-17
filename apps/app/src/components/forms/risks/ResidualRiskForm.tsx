@@ -3,7 +3,7 @@
 import { updateResidualRiskEnumAction } from '@/actions/risk/update-residual-risk-enum-action';
 import { updateResidualRiskEnumSchema } from '@/actions/schema';
 import { Button } from '@comp/ui/button';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel } from '@comp/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel } from '@comp/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Impact, Likelihood } from '@prisma/client';

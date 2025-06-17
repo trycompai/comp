@@ -6,7 +6,6 @@ import * as React from 'react';
 import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
 import { Input } from '@comp/ui/input';
-import { Label } from '@comp/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
 import { Separator } from '@comp/ui/separator';
 import { Slider } from '@comp/ui/slider';

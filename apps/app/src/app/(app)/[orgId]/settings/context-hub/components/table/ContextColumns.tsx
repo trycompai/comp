@@ -1,10 +1,5 @@
+import { deleteContextEntryAction } from '@/actions/context-hub/delete-context-entry-action';
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
-import { Badge } from '@comp/ui/badge';
-import type { ColumnDef } from '@tanstack/react-table';
-import type { Context } from '@prisma/client';
-import { Trash2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
-import { useState } from 'react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,7 +12,11 @@ import {
   AlertDialogTrigger,
 } from '@comp/ui/alert-dialog';
 import { Button } from '@comp/ui/button';
-import { deleteContextEntryAction } from '@/actions/context-hub/delete-context-entry-action';
+import type { Context } from '@prisma/client';
+import type { ColumnDef } from '@tanstack/react-table';
+import { Trash2 } from 'lucide-react';
+import { useAction } from 'next-safe-action/hooks';
+import { useState } from 'react';
 
 export const columns = (): ColumnDef<Context>[] => [
   {

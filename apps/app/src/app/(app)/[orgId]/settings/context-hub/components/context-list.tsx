@@ -1,19 +1,6 @@
 'use client';
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@comp/ui/card';
-import { Badge } from '@comp/ui/badge';
-import { Button } from '@comp/ui/button';
-import { ContextForm } from './context-form';
 import { deleteContextEntryAction } from '@/actions/context-hub/delete-context-entry-action';
-import { toast } from 'sonner';
-import type { Context } from '@prisma/client';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,16 +12,28 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@comp/ui/alert-dialog';
-import { Plus, Pencil } from 'lucide-react';
-import { useState } from 'react';
+import { Button } from '@comp/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@comp/ui/card';
 import {
   Dialog,
-  DialogTrigger,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
+  DialogTrigger,
 } from '@comp/ui/dialog';
+import type { Context } from '@prisma/client';
+import { Pencil, Plus } from 'lucide-react';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { ContextForm } from './context-form';
 
 export function ContextList({ entries, locale }: { entries: Context[]; locale: string }) {
   const [addDialogOpen, setAddDialogOpen] = useState(false);

@@ -1,10 +1,10 @@
-import { Toaster } from '@comp/ui/toaster';
-import type { Metadata } from 'next';
-import { type ReactNode } from 'react';
-import '@comp/ui/globals.css';
-import localFont from 'next/font/local';
-import { GeistMono } from 'geist/font/mono';
 import { cn } from '@comp/ui/cn';
+import '@comp/ui/globals.css';
+import { Toaster } from '@comp/ui/toaster';
+import { GeistMono } from 'geist/font/mono';
+import type { Metadata } from 'next';
+import localFont from 'next/font/local';
+import { type ReactNode } from 'react';
 
 export const metadata: Metadata = {
   title: 'Comp AI - Trust Portal',

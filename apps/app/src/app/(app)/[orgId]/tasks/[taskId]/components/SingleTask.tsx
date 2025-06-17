@@ -1,13 +1,13 @@
 'use client';
 
 import type { Attachment, Member, Task, User } from '@comp/db/types';
+import { Card } from '@comp/ui/card';
 import { useMemo, useState } from 'react';
 import { CommentWithAuthor } from '../../../../../../components/comments/Comments';
 import { updateTask } from '../../actions/updateTask';
 import { TaskDeleteDialog } from './TaskDeleteDialog';
 import { TaskMainContent } from './TaskMainContent';
 import { TaskPropertiesSidebar } from './TaskPropertiesSidebar';
-import { Card, CardDescription } from '@comp/ui/card';
 
 interface SingleTaskProps {
   task: Task & { fileUrls?: string[] };

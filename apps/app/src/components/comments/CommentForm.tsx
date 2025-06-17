@@ -1,20 +1,20 @@
 'use client';
 
+import { createComment } from '@/actions/comments/createComment';
 import { uploadFile } from '@/actions/files/upload-file';
 import { authClient } from '@/utils/auth-client';
 import type { AttachmentEntityType, CommentEntityType } from '@comp/db/types';
 import { Button } from '@comp/ui/button';
+import { Input } from '@comp/ui/input';
 import { Label } from '@comp/ui/label';
 import { Textarea } from '@comp/ui/textarea';
 import clsx from 'clsx';
 import { ArrowUp, Loader2, Paperclip } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { useParams, useRouter } from 'next/navigation';
-import { createComment } from '@/actions/comments/createComment';
 import { AttachmentItem } from '../../app/(app)/[orgId]/tasks/[taskId]/components/AttachmentItem';
-import { Input } from '@comp/ui/input';
 
 interface CommentFormProps {
   entityId: string;

@@ -1,5 +1,4 @@
 import { env } from '@/env.mjs';
-import { auth } from '@/utils/auth';
 import { trainingVideos } from '@/lib/data/training-videos';
 import { db } from '@comp/db';
 import type { Departments, Member, Role } from '@comp/db/types';

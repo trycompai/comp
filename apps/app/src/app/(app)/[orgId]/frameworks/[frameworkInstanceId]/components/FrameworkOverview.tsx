@@ -1,8 +1,10 @@
 'use client';
 
+import { Control, Task } from '@comp/db/types';
 import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
+import { cn } from '@comp/ui/cn';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,10 +12,8 @@ import {
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
 import { Progress } from '@comp/ui/progress';
-import { Control, Task } from '@comp/db/types';
-import { MoreVertical, Trash2, CheckCircle2, Clock, BarChart3, Target } from 'lucide-react';
+import { BarChart3, MoreVertical, Target, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { cn } from '@comp/ui/cn';
 import { getControlStatus } from '../../lib/utils';
 import { FrameworkInstanceWithControls } from '../../types';
 import { FrameworkDeleteDialog } from './FrameworkDeleteDialog';

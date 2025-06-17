@@ -1,11 +1,11 @@
 'use client';
 
-import { ButtonIcon } from './button-icon';
 import { authClient } from '@/app/lib/auth-client';
 import { Button } from '@comp/ui/button';
 import { Icons } from '@comp/ui/icons';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
+import { ButtonIcon } from './button-icon';
 
 export function GoogleSignIn({ inviteCode }: { inviteCode?: string }) {
   const [isLoading, setLoading] = useState(false);

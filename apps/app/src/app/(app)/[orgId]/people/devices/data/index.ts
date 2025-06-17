@@ -1,10 +1,10 @@
 'use server';
 
-import type { Host } from '../types';
+import { getFleetInstance } from '@/lib/fleet';
 import { auth } from '@/utils/auth';
 import { db } from '@comp/db';
 import { headers } from 'next/headers';
-import { getFleetInstance } from '@/lib/fleet';
+import type { Host } from '../types';
 
 export const getEmployeeDevices: () => Promise<Host[] | null> = async () => {
   const session = await auth.api.getSession({

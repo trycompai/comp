@@ -1,4 +1,4 @@
-import type { Column, CellProps } from 'react-datasheet-grid';
+import type { CellProps, Column } from 'react-datasheet-grid';
 
 // Helper function to format dates in a friendly way
 export const formatFriendlyDate = (date: Date | string | number | null | undefined): string => {

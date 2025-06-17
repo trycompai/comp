@@ -1,12 +1,10 @@
+import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { auth } from '@/utils/auth';
 import { db } from '@comp/db';
 import { Role, TaskStatus } from '@comp/db/types';
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList } from '@comp/ui/breadcrumb';
+import { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { TaskList } from './components/TaskList';
-import PageCore from '@/components/pages/PageCore.tsx';
-import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
-import { Metadata } from 'next';
 
 export async function generateMetadata(): Promise<Metadata> {
   return {

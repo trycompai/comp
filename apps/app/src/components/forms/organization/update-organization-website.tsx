@@ -14,7 +14,7 @@ import {
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@comp/ui/form';
 import { Input } from '@comp/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Building, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';

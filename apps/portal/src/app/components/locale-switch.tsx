@@ -1,7 +1,6 @@
 'use client';
 
-import { useChangeLocale, useCurrentLocale, useI18n } from '@/app/locales/client';
-import { languages } from '@/app/locales/client';
+import { languages, useChangeLocale, useCurrentLocale, useI18n } from '@/app/locales/client';
 import {
   Select,
   SelectContent,

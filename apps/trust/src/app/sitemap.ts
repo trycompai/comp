@@ -1,6 +1,6 @@
-import { cache } from 'react';
 import { db } from '@comp/db';
 import type { MetadataRoute } from 'next';
+import { cache } from 'react';
 
 const baseUrl = 'https://trust.inc';
 

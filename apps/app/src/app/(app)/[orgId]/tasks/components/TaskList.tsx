@@ -7,14 +7,12 @@ import { useCallback, useMemo } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 
-import { updateTask } from '../actions/updateTask';
 // updateTaskOrder is called directly within the StatusGroup component now.
 
+import { updateTaskAction } from '@/actions/risk/task/update-task-action';
 import { StatusGroup } from './StatusGroup';
 import type { DragItem, StatusId } from './TaskCard';
 import { TaskFilterHeader } from './TaskFilterHeader';
-import { updateTaskAction } from '@/actions/risk/task/update-task-action';
-import { Card } from '@comp/ui/card';
 
 // Defines the standard task statuses and their display order.
 const statuses = [

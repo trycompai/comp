@@ -1,8 +1,8 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
-import { Check, ArrowRight } from 'lucide-react';
 import type { EmployeeTrainingVideoCompletion } from '@comp/db/types';
+import { Button } from '@comp/ui/button';
+import { ArrowRight, Check } from 'lucide-react';
 import { useState } from 'react';
 
 // Define our own TrainingVideo interface since we can't find the import

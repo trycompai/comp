@@ -1,16 +1,16 @@
 'use client';
 
-import type { Policy, EmployeeTrainingVideoCompletion, Member } from '@comp/db/types';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
-import { PolicyList } from './policy';
-import { VideoCarousel } from './video';
+import type { EmployeeTrainingVideoCompletion, Member, Policy } from '@comp/db/types';
 import { Button } from '@comp/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
+import { cn } from '@comp/ui/cn';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
+import { CheckCircle2, XCircle } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import type { FleetPolicy, Host } from '../types';
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
-import { cn } from '@comp/ui/cn';
-import { CheckCircle2, XCircle } from 'lucide-react';
+import { PolicyList } from './policy';
+import { VideoCarousel } from './video';
 
 interface EmployeeTasksListProps {
   policies: Policy[];

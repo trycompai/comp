@@ -1,10 +1,10 @@
 'use server';
 
-import { z } from 'zod';
 import { db } from '@comp/db';
-import { CreatePolicySchema } from './schemas';
+import { Departments, FrameworkEditorPolicyTemplate, Frequency } from '@prisma/client'; // Import necessary types
 import { revalidatePath } from 'next/cache';
-import { FrameworkEditorPolicyTemplate, Frequency, Departments } from '@prisma/client'; // Import necessary types
+import { z } from 'zod';
+import { CreatePolicySchema } from './schemas';
 
 export async function createPolicyAction(formData: z.infer<typeof CreatePolicySchema>) {
   const validatedFields = CreatePolicySchema.safeParse(formData);

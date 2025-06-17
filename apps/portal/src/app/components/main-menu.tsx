@@ -1,17 +1,13 @@
 'use client';
 
 import { useI18n } from '@/app/locales/client';
-import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
 import { Icons } from '@comp/ui/icons';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
-import { useClickAway } from '@uidotdev/usehooks';
-import { Reorder, motion, useMotionValue } from 'framer-motion';
-import { useAction } from 'next-safe-action/hooks';
+import { Reorder, motion } from 'framer-motion';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { useLongPress } from 'use-long-press';
 
 const icons = {
   '/': () => <Icons.Overview size={22} />,

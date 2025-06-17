@@ -11,7 +11,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRightIcon } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useQueryState } from 'nuqs';
-import React from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 

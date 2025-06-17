@@ -1,6 +1,4 @@
-import type { Extension } from '@tiptap/core';
 import {
-  CheckSquare,
   Code,
   Heading1,
   Heading2,
@@ -9,7 +7,6 @@ import {
   ListOrdered,
   Text,
   TextQuote,
-  Youtube,
 } from 'lucide-react';
 import { Command, createSuggestionItems, renderItems } from 'novel';
 

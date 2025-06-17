@@ -1,11 +1,11 @@
-import { fetch as awsFetch } from './aws/src';
 import type { AWSCredentials } from './aws/src';
+import { fetch as awsFetch } from './aws/src';
 
-import { fetch as azureFetch } from './azure/src';
 import type { AzureCredentials } from './azure/src';
+import { fetch as azureFetch } from './azure/src';
 
-import { fetch as gcpFetch } from './gcp/src';
 import type { GCPCredentials } from './gcp/src';
+import { fetch as gcpFetch } from './gcp/src';
 
 // Add Deel credentials type
 interface DeelCredentials {
@@ -144,4 +144,4 @@ export const getIntegrationHandler = <T>(
 };
 
 // Export types
-export type { AWSCredentials, AzureCredentials, GCPCredentials, DecryptFunction, EncryptedData };
+export type { AWSCredentials, AzureCredentials, DecryptFunction, EncryptedData, GCPCredentials };

@@ -1,10 +1,10 @@
 'use server';
 
-import { createSafeActionClient } from 'next-safe-action';
-import { z } from 'zod';
 import { auth } from '@/utils/auth';
 import { authClient } from '@/utils/auth-client';
+import { createSafeActionClient } from 'next-safe-action';
 import { headers } from 'next/headers';
+import { z } from 'zod';
 
 const emailSchema = z.string().email({ message: 'Invalid email format' });
 

@@ -1,13 +1,13 @@
 import { logger } from '@/utils/logger';
 import { getFleetAgent } from '@/utils/s3';
 import archiver from 'archiver';
-import { promises as fs } from 'node:fs';
-import { PassThrough } from 'node:stream';
 import { exec } from 'node:child_process';
-import { promisify } from 'node:util';
-import type { Readable } from 'node:stream';
+import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { getScriptFilename, getPackageFilename, getReadmeContent } from './scripts';
+import type { Readable } from 'node:stream';
+import { PassThrough } from 'node:stream';
+import { promisify } from 'node:util';
+import { getPackageFilename, getReadmeContent, getScriptFilename } from './scripts';
 import type { CreateArchiveParams } from './types';
 
 const execAsync = promisify(exec);

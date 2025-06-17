@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
-import { useForm, type ControllerRenderProps, FieldValues } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Departments, Frequency } from '@prisma/client'; // Assuming enums are available
+import { useRouter } from 'next/navigation';
+import { useTransition } from 'react';
+import { useForm, type ControllerRenderProps } from 'react-hook-form';
 import { toast } from 'sonner'; // Correct sonner import
 
 import { Button } from '@comp/ui/button';
@@ -19,8 +19,8 @@ import {
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Input } from '@comp/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import { CreatePolicySchema, type CreatePolicySchemaType } from '../schemas';
 import { createPolicyAction } from '../actions';
+import { CreatePolicySchema, type CreatePolicySchemaType } from '../schemas';
 
 // Define props for external control
 interface CreatePolicyDialogProps {

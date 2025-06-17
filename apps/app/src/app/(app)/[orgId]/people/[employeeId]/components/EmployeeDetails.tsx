@@ -6,16 +6,16 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@comp/ui/c
 import { Form } from '@comp/ui/form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Save } from 'lucide-react';
+import { useAction } from 'next-safe-action/hooks';
 import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { z } from 'zod';
+import { updateEmployee } from '../actions/update-employee';
 import { Department } from './Fields/Department';
 import { Email } from './Fields/Email';
 import { JoinDate } from './Fields/JoinDate';
 import { Name } from './Fields/Name';
 import { Status } from './Fields/Status';
-import { toast } from 'sonner';
-import { useAction } from 'next-safe-action/hooks';
-import { updateEmployee } from '../actions/update-employee';
 
 // Define form schema with Zod
 const employeeFormSchema = z.object({

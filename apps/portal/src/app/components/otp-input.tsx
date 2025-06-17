@@ -1,6 +1,5 @@
 import { cn } from '@comp/ui/cn';
 import { Input } from '@comp/ui/input';
-import React from 'react';
 import OtpInput, { type OTPInputProps } from 'react-otp-input';
 
 type OtpOptions = Omit<OTPInputProps, 'renderInput'>;

@@ -10,8 +10,7 @@ import { User } from 'better-auth';
 import { Plus, Search, X } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useQueryState } from 'nuqs';
-import { useTransition } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useTransition } from 'react';
 
 interface FilterToolbarProps {
   isEmpty?: boolean;

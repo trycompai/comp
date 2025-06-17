@@ -1,5 +1,4 @@
-import { ReactNode, useState } from 'react';
-import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
+import { cn } from '@comp/ui/cn';
 import {
   Command,
   CommandEmpty,
@@ -8,8 +7,9 @@ import {
   CommandItem,
   CommandList,
 } from '@comp/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
 import { Check } from 'lucide-react';
-import { cn } from '@comp/ui/cn';
+import { ReactNode, useState } from 'react';
 
 export interface PropertySelectorProps<T> {
   trigger: ReactNode;

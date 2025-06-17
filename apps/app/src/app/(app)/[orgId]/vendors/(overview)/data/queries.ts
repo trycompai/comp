@@ -1,6 +1,5 @@
 import { db } from '@comp/db';
-import type { Member, User } from '@comp/db/types';
-import type { Vendor } from '@comp/db/types'; // Import Vendor type
+import type { Member, User, Vendor } from '@comp/db/types';
 import { cache } from 'react';
 import type { GetVendorsSchema } from './validations';
 

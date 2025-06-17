@@ -1,13 +1,13 @@
 'use client';
 
+import type { Organization as DbOrganization, FrameworkEditorFramework } from '@comp/db/types';
 import { Button } from '@comp/ui/button';
 import { Icons } from '@comp/ui/icons';
 import { Sheet, SheetContent } from '@comp/ui/sheet';
+import type { Organization as AuthOrganization } from 'better-auth/plugins';
 import { useState } from 'react';
 import { MainMenu } from './main-menu';
 import { OrganizationSwitcher } from './organization-switcher';
-import type { Organization as AuthOrganization } from 'better-auth/plugins';
-import type { Organization as DbOrganization, FrameworkEditorFramework } from '@comp/db/types';
 
 interface MobileMenuProps {
   organizations: AuthOrganization[];

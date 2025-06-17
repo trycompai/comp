@@ -2,12 +2,10 @@ import { getFiltersStateParser, getSortingStateParser } from '@/lib/parsers';
 import { Departments, Vendor, VendorStatus } from '@comp/db/types';
 import {
   createSearchParamsCache,
-  parseAsArrayOf,
   parseAsInteger,
   parseAsString,
   parseAsStringEnum,
 } from 'nuqs/server';
-import * as z from 'zod';
 
 export const vendorsSearchParamsCache = createSearchParamsCache({
   page: parseAsInteger.withDefault(1),

@@ -2,9 +2,8 @@
 
 import { PolicyEditor } from '@/app/components/editor/PolicyEditor'; // Use PolicyEditor from framework-editor
 import type { JSONContent } from '@tiptap/react'; // Or from 'novel'
-import { updatePolicyContent } from './actions'; // Local server action
 import { toast } from 'sonner';
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
+import { updatePolicyContent } from './actions'; // Local server action
 
 interface PolicyEditorClientProps {
   policyId: string;

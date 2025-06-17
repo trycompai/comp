@@ -1,6 +1,5 @@
 import {
   Check,
-  CheckSquare,
   ChevronDown,
   Code,
   Heading1,

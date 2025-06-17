@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { createTextColumn, type Column } from 'react-datasheet-grid';
+import { type Column } from 'react-datasheet-grid';
 import ReactDOM from 'react-dom';
 
 interface TextAreaCellProps {

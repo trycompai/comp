@@ -1,12 +1,11 @@
 'use client';
 
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@comp/ui/card';
-import { Badge } from '@comp/ui/badge';
-import { cn } from '@comp/ui/cn';
-import { BadgeProps } from '@comp/ui/badge';
-import { useState } from 'react';
+import { Badge, BadgeProps } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@comp/ui/card';
+import { cn } from '@comp/ui/cn';
 import { ArrowRight } from 'lucide-react';
+import { useState } from 'react';
 
 const severityBadgeMap: {
   [key: string]: BadgeProps['variant'];

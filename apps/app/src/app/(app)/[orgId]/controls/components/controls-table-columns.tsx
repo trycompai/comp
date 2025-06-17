@@ -2,7 +2,6 @@
 
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
 import { StatusIndicator } from '@/components/status-indicator';
-import { Badge } from '@comp/ui/badge';
 import { ColumnDef } from '@tanstack/react-table';
 import { ControlWithRelations } from '../data/queries';
 import { getControlStatus } from '../lib/utils';

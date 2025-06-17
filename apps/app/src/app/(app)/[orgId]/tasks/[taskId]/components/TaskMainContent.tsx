@@ -4,11 +4,11 @@ import { CommentEntityType, type Attachment, type Task } from '@comp/db/types';
 import { Separator } from '@comp/ui/separator';
 import { useEffect, useState } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
-import { updateTask } from '../../actions/updateTask';
-import { TaskBody } from './TaskBody';
 import { CommentForm } from '../../../../../../components/comments/CommentForm';
 import { CommentList } from '../../../../../../components/comments/CommentList';
 import { CommentWithAuthor } from '../../../../../../components/comments/Comments';
+import { updateTask } from '../../actions/updateTask';
+import { TaskBody } from './TaskBody';
 
 interface TaskMainContentProps {
   task: Task & { fileUrls?: string[] };

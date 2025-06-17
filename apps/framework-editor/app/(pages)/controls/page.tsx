@@ -1,5 +1,5 @@
-import { db } from '@comp/db';
 import { isAuthorized } from '@/app/lib/utils';
+import { db } from '@comp/db';
 import { redirect } from 'next/navigation';
 import { ControlsClientPage } from './ControlsClientPage';
 

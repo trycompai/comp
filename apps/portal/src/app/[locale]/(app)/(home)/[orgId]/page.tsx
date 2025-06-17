@@ -1,11 +1,11 @@
-import { db } from '@comp/db';
-import { OrganizationDashboard } from './components/OrganizationDashboard';
 import { auth } from '@/app/lib/auth';
+import { getPostHogClient } from '@/app/posthog';
+import { getFleetInstance } from '@/utils/fleet';
+import { db } from '@comp/db';
+import type { Member } from '@comp/db/types';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { getFleetInstance } from '@/utils/fleet';
-import type { Member } from '@comp/db/types';
-import { getPostHogClient } from '@/app/posthog';
+import { OrganizationDashboard } from './components/OrganizationDashboard';
 
 export default async function OrganizationPage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;

@@ -1,5 +1,6 @@
 'use server';
 
+import { createFleetLabelForOrg } from '@/jobs/tasks/device/create-fleet-label-for-org';
 import { auth } from '@/utils/auth';
 import { db } from '@comp/db';
 import { revalidatePath } from 'next/cache';
@@ -8,7 +9,6 @@ import { authActionClient } from '../safe-action';
 import { organizationSchema } from '../schema';
 import { createStripeCustomer } from './lib/create-stripe-customer';
 import { initializeOrganization } from './lib/initialize-organization';
-import { createFleetLabelForOrg } from '@/jobs/tasks/device/create-fleet-label-for-org';
 
 export const createOrganizationAction = authActionClient
   .inputSchema(organizationSchema)

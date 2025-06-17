@@ -1,8 +1,5 @@
 'use client';
 
-import * as React from 'react';
-import { Check } from 'lucide-react';
-import type { Role } from '@prisma/client'; // Assuming Role is from prisma
 import {
   Command,
   CommandEmpty,
@@ -11,6 +8,8 @@ import {
   CommandItem,
   CommandList,
 } from '@comp/ui/command';
+import type { Role } from '@prisma/client'; // Assuming Role is from prisma
+import { Check } from 'lucide-react';
 
 import { cn } from '@comp/ui/cn';
 

@@ -1,8 +1,8 @@
 'use client';
 
 import { PolicyEditor } from '@/components/editor/policy-editor';
-import type { JSONContent } from '@tiptap/react';
 import '@comp/ui/editor.css';
+import type { JSONContent } from '@tiptap/react';
 import { updatePolicy } from '../actions/update-policy';
 interface PolicyDetailsProps {
   policyId: string;

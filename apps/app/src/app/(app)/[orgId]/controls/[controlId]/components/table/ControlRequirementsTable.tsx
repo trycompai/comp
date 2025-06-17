@@ -2,7 +2,7 @@
 
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 
-import type { Task, Policy, FrameworkEditorRequirement } from '@comp/db/types';
+import type { FrameworkEditorRequirement, Policy, Task } from '@comp/db/types';
 import { Table, TableBody, TableCell, TableRow } from '@comp/ui/table';
 import { useParams, useRouter } from 'next/navigation';
 import { ControlRequirementsTableColumns } from './ControlRequirementsTableColumns';

@@ -1,16 +1,15 @@
 import { AppOnboarding } from '@/components/app-onboarding';
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { CreateRiskSheet } from '@/components/sheets/create-risk-sheet';
+import { getValidFilters } from '@/lib/data-table';
 import { auth } from '@/utils/auth';
 import { db } from '@comp/db';
-import type { Departments, RiskStatus } from '@comp/db/types';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { cache } from 'react';
 import { RisksTable } from './RisksTable';
 import { getRisks } from './data/getRisks';
 import { searchParamsCache } from './data/validations';
-import { getValidFilters } from '@/lib/data-table';
 
 export default async function RiskRegisterPage(props: {
   params: Promise<{ orgId: string }>;

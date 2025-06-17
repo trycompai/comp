@@ -1,12 +1,12 @@
 'use client';
 
+import { trainingVideos } from '@/lib/data/training-videos';
 import type { EmployeeTrainingVideoCompletion, Member, User } from '@comp/db/types';
 import { useAction } from 'next-safe-action/hooks';
 import { useEffect, useState } from 'react';
 import { markVideoAsCompleted } from '../../../actions/markVideoAsCompleted';
 import { CarouselControls } from './CarouselControls';
 import { YoutubeEmbed } from './YoutubeEmbed';
-import { trainingVideos } from '@/lib/data/training-videos';
 
 interface VideoCarouselProps {
   videos: EmployeeTrainingVideoCompletion[];

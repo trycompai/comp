@@ -1,15 +1,4 @@
-import {
-  Body,
-  Button,
-  Container,
-  Font,
-  Heading,
-  Html,
-  Preview,
-  Section,
-  Tailwind,
-  Text,
-} from '@react-email/components';
+import { Body, Container, Font, Heading, Html, Preview, Tailwind } from '@react-email/components';
 import { Footer } from '../../components/footer';
 import { Logo } from '../../components/logo';
 

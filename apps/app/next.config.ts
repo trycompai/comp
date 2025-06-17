@@ -1,5 +1,5 @@
-import './src/env.mjs';
 import type { NextConfig } from 'next';
+import './src/env.mjs';
 
 const config: NextConfig = {
   poweredByHeader: false,

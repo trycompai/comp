@@ -1,5 +1,5 @@
-import posthog from 'posthog-js';
 import type { Properties } from 'posthog-js';
+import posthog from 'posthog-js';
 
 export const Analytics = {
   track: (eventName: string, properties?: Properties) => {
@@ -24,6 +24,6 @@ export const Analytics = {
 };
 
 // Export components for client usage
-export * from './components/provider';
 export * from './components/page-view';
+export * from './components/provider';
 export * from './server';

@@ -2,9 +2,9 @@
 
 'use server';
 
+import { authActionClient } from '@/actions/safe-action';
 import { db } from '@comp/db';
 import { revalidatePath, revalidateTag } from 'next/cache';
-import { authActionClient } from '@/actions/safe-action';
 import { z } from 'zod';
 
 const trustPortalSwitchSchema = z.object({

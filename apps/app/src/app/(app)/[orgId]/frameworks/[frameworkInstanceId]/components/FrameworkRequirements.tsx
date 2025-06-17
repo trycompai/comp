@@ -5,7 +5,6 @@ import { DataTableColumnHeader } from '@/components/data-table/data-table-column
 import { DataTableToolbar } from '@/components/data-table/data-table-toolbar';
 import { useDataTable } from '@/hooks/use-data-table';
 import type { FrameworkEditorRequirement } from '@comp/db/types';
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { ColumnDef } from '@tanstack/react-table';
 import { useParams } from 'next/navigation';
 import { useMemo } from 'react';

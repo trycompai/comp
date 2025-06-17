@@ -1,17 +1,17 @@
 'use client';
 
+import { authClient } from '@/app/lib/auth-client';
 import { useI18n } from '@/app/locales/client';
 import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
 import { Form, FormControl, FormField, FormItem } from '@comp/ui/form';
 import { Input } from '@comp/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowRight, Loader2, Mail } from 'lucide-react';
+import { ArrowRight, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { authClient } from '@/app/lib/auth-client';
 import { OtpForm } from './otp-form';
 
 const formSchema = z.object({

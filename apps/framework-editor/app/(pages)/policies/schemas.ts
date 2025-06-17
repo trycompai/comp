@@ -1,5 +1,5 @@
+import { Departments, Frequency } from '@prisma/client'; // Assuming enums are available here
 import { z } from 'zod';
-import { Frequency, Departments } from '@prisma/client'; // Assuming enums are available here
 
 export const CreatePolicySchema = z.object({
   name: z.string().min(1, 'Name is required'),

@@ -1,11 +1,11 @@
+import { Metadata } from 'next';
+import ComplianceReport from './components/report';
 import {
   findOrganizationByAnyId,
   getFrameworks,
   getPublishedControls,
   getPublishedPolicies,
 } from './lib/data';
-import ComplianceReport from './components/report';
-import { Metadata } from 'next';
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   const id = (await params).id;

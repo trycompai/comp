@@ -3,10 +3,10 @@
 import { useMediaQuery } from '@comp/ui/hooks';
 import { Sheet, SheetContent } from '@comp/ui/sheet';
 
+import { Drawer, DrawerContent, DrawerTitle } from '@comp/ui/drawer';
+import '@comp/ui/editor.css';
 import { useQueryState } from 'nuqs';
 import Chat from '../ai/chat';
-import '@comp/ui/editor.css';
-import { Drawer, DrawerContent, DrawerTitle } from '@comp/ui/drawer';
 
 export function AssistantSheet() {
   const isDesktop = useMediaQuery('(min-width: 768px)');

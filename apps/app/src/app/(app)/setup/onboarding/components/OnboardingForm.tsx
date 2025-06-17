@@ -5,10 +5,10 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@comp/ui/c
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@comp/ui/form';
 import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
+import { useOnboardingForm } from '../hooks/useOnboardingForm';
 import { OnboardingFormActions } from './OnboardingFormActions';
 import { OnboardingStepInput } from './OnboardingStepInput';
 import { SkipOnboardingDialog } from './SkipOnboardingDialog';
-import { useOnboardingForm } from '../hooks/useOnboardingForm';
 
 export function OnboardingForm() {
   const {

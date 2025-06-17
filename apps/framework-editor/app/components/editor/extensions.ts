@@ -1,16 +1,14 @@
-import StarterKit from '@tiptap/starter-kit';
-import { InputRule } from '@tiptap/core';
-import TiptapLink from '@tiptap/extension-link';
 import TiptapImage from '@tiptap/extension-image';
+import TiptapLink from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
-import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
-import type { EditorState, Transaction } from '@tiptap/pm/state'; // Import types for InputRule
+import TaskList from '@tiptap/extension-task-list';
+import StarterKit from '@tiptap/starter-kit';
 // Import Table extensions
 import Table from '@tiptap/extension-table';
-import TableRow from '@tiptap/extension-table-row';
-import TableHeader from '@tiptap/extension-table-header';
 import TableCell from '@tiptap/extension-table-cell';
+import TableHeader from '@tiptap/extension-table-header';
+import TableRow from '@tiptap/extension-table-row';
 import { slashCommand } from './slash-command'; // Import the configured slash command
 
 // Basic Tiptap extensions - Simplified

@@ -1,7 +1,7 @@
+import { LogoSpinner } from '@/components/logo-spinner';
 import { TriggerProvider } from '@/components/trigger-provider';
 import { cookies } from 'next/headers';
 import { OnboardingStatus } from './components/onboarding-status';
-import { LogoSpinner } from '@/components/logo-spinner';
 
 interface PageProps {
   params: Promise<{ id: string }>;

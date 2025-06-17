@@ -1,9 +1,9 @@
-import { auth } from '@/utils/auth';
 import { trainingVideos as trainingVideosData } from '@/lib/data/training-videos';
+import { auth } from '@/utils/auth';
 import { db } from '@comp/db';
+import type { Member, Policy, User } from '@prisma/client';
 import { headers } from 'next/headers';
 import { EmployeeCompletionChart } from './EmployeeCompletionChart';
-import type { Member, Policy, User } from '@prisma/client';
 
 // Define EmployeeWithUser type similar to EmployeesList
 interface EmployeeWithUser extends Member {

@@ -1,15 +1,15 @@
-import { Command, createSuggestionItems, renderItems } from 'novel';
 import {
+  CheckSquare,
+  Code,
   Heading1,
   Heading2,
   Heading3,
   List,
   ListOrdered,
-  TextQuote,
-  Code,
-  CheckSquare,
   Text,
+  TextQuote,
 } from 'lucide-react';
+import { Command, createSuggestionItems, renderItems } from 'novel';
 
 // Use createSuggestionItems helper from Novel
 export const suggestionItems = createSuggestionItems([

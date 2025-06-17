@@ -1,13 +1,5 @@
 import { getOrganizationFromApiKey } from '@/lib/api-key';
 import { db } from '@comp/db';
-import type {
-  Departments,
-  Impact,
-  Likelihood,
-  RiskCategory,
-  RiskStatus,
-  RiskTreatmentType,
-} from '@comp/db/types';
 import { type NextRequest, NextResponse } from 'next/server';
 
 // Configure this route to use Node.js runtime instead of Edge

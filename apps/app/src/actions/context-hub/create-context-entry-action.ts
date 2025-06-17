@@ -1,10 +1,10 @@
 'use server';
 
+import { db } from '@comp/db';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { authActionClient } from '../safe-action';
 import { createContextEntrySchema } from '../schema';
-import { db } from '@comp/db';
 
 export const createContextEntryAction = authActionClient
   .inputSchema(createContextEntrySchema)

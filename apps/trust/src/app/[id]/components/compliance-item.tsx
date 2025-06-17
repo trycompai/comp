@@ -1,5 +1,3 @@
-import { CheckCircle } from 'lucide-react';
-
 interface ComplianceItemProps {
   text: string;
   isCompliant: boolean;

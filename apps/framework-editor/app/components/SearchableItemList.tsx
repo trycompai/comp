@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { Input } from '@comp/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
+import { Input } from '@comp/ui/input';
+import { useMemo, useState } from 'react';
 
 export interface SearchableItem {
   id: string;

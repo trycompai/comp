@@ -1,11 +1,11 @@
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { auth } from '@/utils/auth';
+import { db } from '@comp/db';
+import type { FrameworkEditorRequirement } from '@comp/db/types';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getSingleFrameworkInstanceWithControls } from '../../../data/getSingleFrameworkInstanceWithControls';
 import { RequirementControls } from './components/RequirementControls';
-import { db } from '@comp/db';
-import type { FrameworkEditorRequirement } from '@comp/db/types';
 
 interface PageProps {
   params: Promise<{

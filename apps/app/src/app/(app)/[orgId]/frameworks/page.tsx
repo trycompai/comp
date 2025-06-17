@@ -1,11 +1,11 @@
-import { cache } from 'react';
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { auth } from '@/utils/auth';
+import { db } from '@comp/db';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { cache } from 'react';
 import { FrameworksOverview } from './components/FrameworksOverview';
 import { getAllFrameworkInstancesWithControls } from './data/getAllFrameworkInstancesWithControls';
-import { db } from '@comp/db';
 
 export async function generateMetadata() {
   return {

@@ -1,11 +1,11 @@
 'use client';
 
-import type { Policy, Member } from '@comp/db/types';
-import { useState } from 'react';
-import { PolicyGrid } from './PolicyGrid';
-import { PolicyCarousel } from './PolicyCarousel';
+import type { Member, Policy } from '@comp/db/types';
 import { Button } from '@comp/ui/button';
 import { ArrowLeft } from 'lucide-react';
+import { useState } from 'react';
+import { PolicyCarousel } from './PolicyCarousel';
+import { PolicyGrid } from './PolicyGrid';
 
 interface PolicyContainerProps {
   policies: Policy[];

@@ -1,5 +1,5 @@
 import { AttachmentType } from '@comp/db/types';
-import { FileText, FileVideo, FileAudio, FileQuestion } from 'lucide-react';
+import { FileAudio, FileQuestion, FileText, FileVideo } from 'lucide-react';
 
 // Formats a date object into relative time string (e.g., "5m ago")
 export function formatRelativeTime(date: Date): string {

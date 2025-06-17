@@ -506,11 +506,11 @@ const ItemHandle = SortableItemHandle;
 const Overlay = SortableOverlay;
 
 export {
-  Root,
   Content,
   Item,
   ItemHandle,
   Overlay,
+  Root,
   //
   Sortable,
   SortableContent,

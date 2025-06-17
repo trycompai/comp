@@ -1,5 +1,6 @@
 'use client';
 
+import { Button } from '@comp/ui/button';
 import {
   Card,
   CardContent,
@@ -9,18 +10,17 @@ import {
   CardTitle,
 } from '@comp/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
+import { Input } from '@comp/ui/input';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { AlertCircle, CheckCircle, ClipboardCopy, Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { Input } from '@comp/ui/input';
-import { Button } from '@comp/ui/button';
-import { customDomainAction } from '../actions/custom-domain';
 import { checkDnsRecordAction } from '../actions/check-dns-record';
-import { Loader2, ClipboardCopy, AlertCircle, CheckCircle } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
+import { customDomainAction } from '../actions/custom-domain';
 
 const trustPortalDomainSchema = z.object({
   domain: z

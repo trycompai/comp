@@ -1,10 +1,10 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
-import { db } from '@comp/db';
-import { z } from 'zod';
 import { logger } from '@/utils/logger';
+import { db } from '@comp/db';
 import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
 
 export const markVideoAsCompleted = authActionClient
   .inputSchema(z.object({ videoId: z.string() }))

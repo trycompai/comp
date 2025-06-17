@@ -1,5 +1,5 @@
-import { EmployeeDevicesList } from './components/EmployeeDevicesList';
 import { DeviceComplianceChart } from './components/DeviceComplianceChart';
+import { EmployeeDevicesList } from './components/EmployeeDevicesList';
 import { getEmployeeDevices } from './data';
 
 export default async function EmployeeDevicesPage() {

@@ -1,10 +1,10 @@
-import Image from 'next/image';
-import { buttonVariants } from '@comp/ui/button';
 import type { Organization } from '@comp/db/types';
+import { buttonVariants } from '@comp/ui/button';
+import { ExternalLink } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
-import { ExternalLink, Globe } from 'lucide-react';
-import Logo from './logo';
 import ComplianceSummary from './compliance-summary';
+import Logo from './logo';
 
 interface ComplianceHeaderProps {
   organization: Organization;

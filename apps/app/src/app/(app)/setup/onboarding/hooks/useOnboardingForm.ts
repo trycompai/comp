@@ -8,10 +8,10 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 import { onboardOrganization } from '../actions/onboard-organization';
 import { skipOnboarding } from '../actions/skip-onboarding';
-import { useLocalStorage } from './useLocalStorage';
+import type { OnboardingFormFields } from '../components/OnboardingStepInput';
 import { STORAGE_KEY, companyDetailsSchema, steps } from '../lib/constants';
 import type { CompanyDetails } from '../lib/types';
-import type { OnboardingFormFields } from '../components/OnboardingStepInput';
+import { useLocalStorage } from './useLocalStorage';
 
 export function useOnboardingForm() {
   const router = useRouter();

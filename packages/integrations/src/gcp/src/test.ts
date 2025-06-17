@@ -1,7 +1,7 @@
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
 import jwt from 'jsonwebtoken';
 import fetch from 'node-fetch'; // Use node-fetch if you're on Node <18
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 
 const keyPath = path.resolve(__dirname, 'xxx');
 const keyData = JSON.parse(readFileSync(keyPath, 'utf-8'));

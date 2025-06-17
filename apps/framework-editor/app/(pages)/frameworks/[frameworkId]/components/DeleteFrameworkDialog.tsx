@@ -5,7 +5,6 @@ import { useState, useTransition } from 'react';
 // import { useRouter } from 'next/navigation';
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -15,8 +14,8 @@ import {
 } from '@comp/ui/alert-dialog';
 import { Button } from '@comp/ui/button';
 import { useToast } from '@comp/ui/use-toast';
-import { deleteFrameworkAction } from '../actions/delete-framework';
 import type { DeleteFrameworkActionState } from '../actions/delete-framework';
+import { deleteFrameworkAction } from '../actions/delete-framework';
 
 interface DeleteFrameworkDialogProps {
   isOpen: boolean;

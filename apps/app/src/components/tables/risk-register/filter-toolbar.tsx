@@ -7,11 +7,9 @@ import { cn } from '@comp/ui/cn';
 import { Input } from '@comp/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Skeleton } from '@comp/ui/skeleton';
-import { Search, X } from 'lucide-react';
-import { Plus } from 'lucide-react';
+import { Plus, Search, X } from 'lucide-react';
 import { useQueryState } from 'nuqs';
-import { useTransition } from 'react';
-import { useCallback } from 'react';
+import { useCallback, useTransition } from 'react';
 
 const riskStatuses = Object.values(RiskStatus);
 const departments = Object.values(Departments).filter((d) => d !== 'none');

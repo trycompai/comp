@@ -1,14 +1,14 @@
 'use client';
 import { DataTable } from '@/components/data-table/data-table';
-import { useDataTable } from '@/hooks/use-data-table';
-import { useMemo } from 'react';
-import { columns as getColumns } from './ApiKeysColumns';
+import { DataTableToolbar } from '@/components/data-table/data-table-toolbar';
 import type { ApiKey } from '@/hooks/use-api-keys';
+import { useDataTable } from '@/hooks/use-data-table';
 import { Button } from '@comp/ui/button';
 import { Plus } from 'lucide-react';
 import { useQueryState } from 'nuqs';
+import { useMemo } from 'react';
 import { CreateApiKeyDialog } from '../CreateApiKeyDialog';
-import { DataTableToolbar } from '@/components/data-table/data-table-toolbar';
+import { columns as getColumns } from './ApiKeysColumns';
 
 export function ApiKeysTable({ apiKeys }: { apiKeys: ApiKey[] }) {
   const columns = useMemo(() => getColumns(), []);

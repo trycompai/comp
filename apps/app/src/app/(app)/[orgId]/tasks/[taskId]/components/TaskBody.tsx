@@ -4,7 +4,6 @@ import { uploadFile } from '@/actions/files/upload-file';
 import type { Attachment } from '@comp/db/types';
 import { AttachmentEntityType } from '@comp/db/types';
 import { Button } from '@comp/ui/button';
-import { Input } from '@comp/ui/input';
 import { Label } from '@comp/ui/label';
 import { Textarea } from '@comp/ui/textarea';
 import { Loader2, Paperclip, Plus } from 'lucide-react';

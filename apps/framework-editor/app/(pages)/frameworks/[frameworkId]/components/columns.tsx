@@ -1,10 +1,7 @@
 'use client';
 
-import type { ColumnDef } from '@tanstack/react-table';
-import type { FrameworkEditorControlTemplate, FrameworkEditorRequirement } from '@prisma/client';
-import { Button } from '@comp/ui/button';
-import { PencilIcon, Trash2Icon } from 'lucide-react';
 import { Badge } from '@comp/ui/badge';
+import { Button } from '@comp/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -13,6 +10,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@comp/ui/dialog';
+import type { FrameworkEditorControlTemplate, FrameworkEditorRequirement } from '@prisma/client';
+import type { ColumnDef } from '@tanstack/react-table';
+import { PencilIcon, Trash2Icon } from 'lucide-react';
 // If you need to link to individual requirement pages later, you can import Link:
 // import Link from "next/link";
 

@@ -1,11 +1,11 @@
 import { auth } from '@/utils/auth';
 import { db } from '@comp/db';
-import type { Comment, Member, User, Attachment } from '@comp/db/types';
-import { CommentEntityType, AttachmentEntityType } from '@comp/db/types';
+import type { Attachment } from '@comp/db/types';
+import { AttachmentEntityType, CommentEntityType } from '@comp/db/types';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { SingleTask } from './components/SingleTask';
 import { CommentWithAuthor } from '../../../../../components/comments/Comments';
+import { SingleTask } from './components/SingleTask';
 
 export default async function TaskPage({
   params,

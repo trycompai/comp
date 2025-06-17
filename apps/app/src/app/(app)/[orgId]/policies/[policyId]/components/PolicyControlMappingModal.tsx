@@ -1,5 +1,6 @@
 import { Control } from '@comp/db/types';
-import { useEffect, useState } from 'react';
+import { Badge } from '@comp/ui/badge';
+import { Button } from '@comp/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -9,13 +10,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@comp/ui/dialog';
-import { Badge } from '@comp/ui/badge';
-import { Button } from '@comp/ui/button';
 import MultipleSelector, { Option } from '@comp/ui/multiple-selector';
 import { PlusIcon } from 'lucide-react';
-import { mapPolicyToControls } from '../actions/mapPolicyToControls';
 import { useParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { mapPolicyToControls } from '../actions/mapPolicyToControls';
 
 export const PolicyControlMappingModal = ({
   allControls,

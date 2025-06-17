@@ -1,8 +1,8 @@
 'use client';
 
-import { type Editor } from '@tiptap/core';
-import { Bold, Italic, Strikethrough, Code } from 'lucide-react';
 import { Toggle } from '@comp/ui/toggle';
+import { type Editor } from '@tiptap/core';
+import { Bold, Code, Italic, Strikethrough } from 'lucide-react';
 
 interface TextButtonsProps {
   editor: Editor | null;

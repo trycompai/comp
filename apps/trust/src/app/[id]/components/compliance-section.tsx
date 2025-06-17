@@ -1,13 +1,5 @@
-import type { ReactNode } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@comp/ui/dialog';
+import type { ReactNode } from 'react';
 interface ComplianceSectionProps {
   title: string;
   description: string;

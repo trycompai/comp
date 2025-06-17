@@ -1,5 +1,5 @@
-import { sendEmail } from '@comp/email/lib/resend';
 import InviteEmail from '@comp/email/emails/invite';
+import { sendEmail } from '@comp/email/lib/resend';
 
 export const sendInviteMemberEmail = async (params: {
   email: string;

@@ -1,8 +1,8 @@
 'use client';
 
+import type { FrameworkEditorPolicyTemplate } from '@prisma/client';
 import type { ColumnDef } from '@tanstack/react-table';
 import Link from 'next/link';
-import type { FrameworkEditorPolicyTemplate } from '@prisma/client';
 
 // Helper to format enum values (optional, you can do this inline too)
 const formatEnumValue = (value: string) => {

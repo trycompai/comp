@@ -1,7 +1,7 @@
+import { researchJobCore } from '@/jobs/lib/research';
+import { db } from '@comp/db';
 import { schemaTask } from '@trigger.dev/sdk/v3';
 import { z } from 'zod';
-import { db } from '@comp/db';
-import { researchJobCore } from '@/jobs/lib/research';
 
 const firecrawlDataSchema = z.object({
   company_name: z.string().optional().nullable(),

@@ -3,8 +3,7 @@
 import { Button } from '@comp/ui/button';
 import { Icons } from '@comp/ui/icons';
 import { Plus } from 'lucide-react';
-import { useParams } from 'next/navigation';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useQueryState } from 'nuqs';
 
 type Props = {

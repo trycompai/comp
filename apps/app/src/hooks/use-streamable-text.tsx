@@ -1,5 +1,5 @@
 import { type StreamableValue, readStreamableValue } from 'ai/rsc';
-import { useCallback, useEffect, useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);

@@ -2,7 +2,7 @@
 
 import { ClientTooltip } from '@comp/ui/chart-tooltip';
 import { format, max, scaleBand, scaleLinear } from 'd3';
-import React, { type CSSProperties } from 'react';
+import { type CSSProperties } from 'react';
 
 const DEPARTMENT_COLORS = {
   none: 'bg-[var(--chart-open)]',

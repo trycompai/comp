@@ -1,7 +1,7 @@
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
+import { Input } from '@comp/ui/input';
 import type { Control } from 'react-hook-form';
 import type { EmployeeFormValues } from '../EmployeeDetails';
-import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@comp/ui/form';
-import { Input } from '@comp/ui/input';
 
 export const Name = ({ control }: { control: Control<EmployeeFormValues> }) => {
   return (

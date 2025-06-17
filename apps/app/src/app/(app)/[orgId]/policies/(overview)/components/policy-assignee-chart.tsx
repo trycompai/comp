@@ -10,8 +10,8 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@comp/ui/chart';
-import { BarChart as BarChartIcon, Info, Users } from 'lucide-react';
-import { Bar, BarChart, LabelList, Legend, ResponsiveContainer, XAxis, YAxis } from 'recharts';
+import { Users } from 'lucide-react';
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 
 interface AssigneeData {
   id: string;

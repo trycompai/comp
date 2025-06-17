@@ -1,5 +1,5 @@
 import type { Control } from '@comp/db/types';
-import { useState } from 'react';
+import { Button } from '@comp/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -9,11 +9,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@comp/ui/dialog';
-import { Button } from '@comp/ui/button';
 import { X } from 'lucide-react';
-import { unmapPolicyFromControl } from '../actions/unmapPolicyFromControl';
-import { toast } from 'sonner';
 import { useParams } from 'next/navigation';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { unmapPolicyFromControl } from '../actions/unmapPolicyFromControl';
 
 export const PolicyControlMappingConfirmDeleteModal = ({ control }: { control: Control }) => {
   const { policyId } = useParams<{ policyId: string }>();

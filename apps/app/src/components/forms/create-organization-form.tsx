@@ -2,11 +2,10 @@
 
 import { createOrganizationAction } from '@/actions/organization/create-organization-action';
 import { organizationSchema } from '@/actions/schema';
+import { FrameworkCard } from '@/components/framework-card';
 import { authClient } from '@/utils/auth-client';
 import type { FrameworkEditorFramework } from '@comp/db/types';
 import { Button } from '@comp/ui/button';
-import { Checkbox } from '@comp/ui/checkbox';
-import { cn } from '@comp/ui/cn';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Icons } from '@comp/ui/icons';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -40,7 +39,7 @@ export function OnboardingClient({ frameworks }: OnboardingClientProps) {
       router.push('/');
     },
     onError: () => {
-      toast.error('Error');
+      toast.error('Failed to create organization');
     },
     onExecute: () => {
       setIsCreatingOrganization(true);
@@ -71,16 +70,14 @@ export function OnboardingClient({ frameworks }: OnboardingClientProps) {
   if (isCreatingOrganization) {
     return (
       <div className="bg-background flex min-h-screen items-center justify-center p-6 md:p-8">
-        <div className="bg-card relative w-full max-w-[440px] border p-8 shadow-lg">
-          <div className="animate-in fade-in slide-in-from-bottom-4 flex flex-col justify-center space-y-4 duration-300">
-            <div className="flex flex-col justify-center gap-2">
+        <div className="bg-card relative w-full max-w-md rounded-xs border p-8 shadow-sm">
+          <div className="animate-in fade-in slide-in-from-bottom-4 flex flex-col justify-center space-y-6 duration-300">
+            <div className="flex flex-col items-center justify-center space-y-4">
               <LogoSpinner />
-              <h2 className="text-center text-xl font-semibold tracking-tight">
-                {"Hold tight, we're creating your organization"}
-              </h2>
-              <p className="text-muted-foreground text-center text-sm">
-                {'This may take a minute or two...'}
-              </p>
+              <div className="space-y-2 text-center">
+                <h2 className="text-base font-medium tracking-tight">Creating your organization</h2>
+                <p className="text-muted-foreground text-sm">This may take a minute or two...</p>
+              </div>
             </div>
           </div>
         </div>
@@ -90,79 +87,48 @@ export function OnboardingClient({ frameworks }: OnboardingClientProps) {
 
   return (
     <div className="bg-background flex min-h-screen items-center justify-center p-6 md:p-8">
-      <div className="bg-card relative w-full max-w-[440px] rounded-sm border p-8 shadow-lg">
+      <div className="bg-card relative w-full max-w-md rounded-xs border p-8 shadow-sm">
         <div className="mb-8 flex justify-between">
           <Link href="/">
             <Icons.Logo />
           </Link>
         </div>
 
-        <div className="mb-8 space-y-2">
-          <h1 className="text-2xl font-semibold tracking-tight">Welcome to Comp AI</h1>
+        <div className="mb-8 space-y-3">
+          <h1 className="text-xl font-medium tracking-tight">Welcome to Comp AI</h1>
           <p className="text-muted-foreground text-sm">
             Select the frameworks you use to get started. You can add more later.
           </p>
         </div>
 
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-6"
-            suppressHydrationWarning
-          >
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
               control={form.control}
               name="frameworkIds"
               render={({ field }) => (
-                <FormItem className="space-y-2">
-                  <FormLabel className="text-sm font-medium">{'Select Frameworks'}</FormLabel>
+                <FormItem>
+                  <FormLabel className="text-sm font-normal">Available Frameworks</FormLabel>
                   <FormControl>
-                    <fieldset className="flex flex-col gap-2 select-none">
+                    <div className="max-h-80 space-y-3 overflow-y-auto pr-1">
                       {frameworks
                         .filter((framework) => framework.visible)
-                        .map((framework) => {
-                          return (
-                            <label
-                              key={framework.id}
-                              htmlFor={`framework-${framework.id}`}
-                              className={cn(
-                                'focus-within:ring-ring relative flex w-full cursor-pointer flex-col rounded-sm border p-4 text-left transition-colors focus-within:ring-2 focus-within:ring-offset-2',
-                                field.value.includes(framework.id) && 'border-primary bg-primary/5',
-                              )}
-                            >
-                              <div className="flex items-start justify-between">
-                                <div>
-                                  <h3 className="font-semibold">{framework.name}</h3>
-                                  <p className="text-muted-foreground mt-1 text-sm">
-                                    {framework.description}
-                                  </p>
-                                  <p className="text-muted-foreground/75 mt-2 text-xs">
-                                    {`${'Version'}: ${framework.version}`}
-                                  </p>
-                                </div>
-                                <div>
-                                  <Checkbox
-                                    id={`framework-${framework.id}`}
-                                    checked={field.value.includes(framework.id)}
-                                    className="mt-1"
-                                    onCheckedChange={(checked) => {
-                                      const newValue = checked
-                                        ? [...field.value, framework.id]
-                                        : field.value.filter(
-                                            (currentFrameworkId) =>
-                                              currentFrameworkId !== framework.id,
-                                          );
-                                      field.onChange(newValue);
-                                    }}
-                                  />
-                                </div>
-                              </div>
-                            </label>
-                          );
-                        })}
-                    </fieldset>
+                        .map((framework) => (
+                          <FrameworkCard
+                            key={framework.id}
+                            framework={framework}
+                            isSelected={field.value.includes(framework.id)}
+                            onSelectionChange={(checked) => {
+                              const newValue = checked
+                                ? [...field.value, framework.id]
+                                : field.value.filter((id) => id !== framework.id);
+                              field.onChange(newValue);
+                            }}
+                          />
+                        ))}
+                    </div>
                   </FormControl>
-                  <FormMessage className="text-xs" />
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -170,13 +136,13 @@ export function OnboardingClient({ frameworks }: OnboardingClientProps) {
             <Button
               type="submit"
               className="w-full"
+              size="sm"
               disabled={createOrganization.status === 'executing'}
-              suppressHydrationWarning
             >
               {createOrganization.status === 'executing' && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 h-3 w-3 animate-spin" />
               )}
-              {'Finish setup'}
+              Get Started
             </Button>
           </form>
         </Form>

@@ -1,10 +1,10 @@
 'use server';
 
 import { db } from '@comp/db';
-import { Departments, Frequency, PolicyStatus } from '@comp/db/types';
+import { PolicyStatus } from '@comp/db/types';
 import { revalidatePath, revalidateTag } from 'next/cache';
-import { authActionClient } from '../safe-action';
 import { z } from 'zod';
+import { authActionClient } from '../safe-action';
 
 const acceptRequestedPolicyChangesSchema = z.object({
   id: z.string(),

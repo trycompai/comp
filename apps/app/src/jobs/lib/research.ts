@@ -1,5 +1,4 @@
 import { env } from '@/env.mjs';
-import { db } from '@comp/db';
 import { logger } from '@trigger.dev/sdk/v3';
 import { z, ZodSchema } from 'zod';
 

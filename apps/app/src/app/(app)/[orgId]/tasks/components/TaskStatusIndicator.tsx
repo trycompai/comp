@@ -1,7 +1,7 @@
+import { STATUS_COLORS } from '@/components/status-indicator';
 import type { TaskStatus } from '@comp/db/types';
 import { cn } from '@comp/ui/cn';
 import { Check, Circle, CircleX, Loader2 } from 'lucide-react';
-import { STATUS_COLORS } from '@/components/status-indicator';
 
 interface TaskStatusIndicatorProps {
   status: TaskStatus;

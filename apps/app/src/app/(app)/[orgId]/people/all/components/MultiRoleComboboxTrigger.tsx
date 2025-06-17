@@ -1,12 +1,11 @@
 'use client';
 
-import * as React from 'react';
-import { Lock, X, ChevronsUpDown } from 'lucide-react';
-import type { Role } from '@prisma/client'; // Assuming Role is from prisma
-import { Button } from '@comp/ui/button';
 import { Badge } from '@comp/ui/badge';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
+import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
+import type { Role } from '@prisma/client'; // Assuming Role is from prisma
+import { ChevronsUpDown, Lock, X } from 'lucide-react';
 
 interface MultiRoleComboboxTriggerProps {
   selectedRoles: Role[];

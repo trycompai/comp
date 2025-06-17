@@ -1,21 +1,14 @@
 import { db } from '@comp/db';
 // Import types directly from @prisma/client
-import type {
-  Member,
-  User,
-  Policy,
-  EmployeeTrainingVideoCompletion,
-  Organization,
-} from '@prisma/client';
+import type { Member, Organization, User } from '@prisma/client';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 // Removed EmployeeTasksList import as it's not used directly here
 import { NoAccessMessage } from './NoAccessMessage';
 // Removed OrganizationSelector import
-import { OrganizationDashboard } from '../[orgId]/components/OrganizationDashboard';
+import { auth } from '@/app/lib/auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import Link from 'next/link';
-import { auth } from '@/app/lib/auth';
 
 // Define the type for the member prop including the user and organization relations
 interface MemberWithUserOrg extends Member {

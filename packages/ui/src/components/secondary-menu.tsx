@@ -2,10 +2,10 @@
 
 import { Button } from '@comp/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
+import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { cn } from '../utils';
 
 interface SecondaryMenuProps {

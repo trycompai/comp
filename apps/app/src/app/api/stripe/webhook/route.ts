@@ -1,9 +1,8 @@
+import { stripe } from '@/actions/organization/lib/stripe';
+import { headers } from 'next/headers';
+import { after, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { syncStripeDataToKV } from '../syncStripeDataToKv';
-import { headers } from 'next/headers';
-import { NextResponse } from 'next/server';
-import { stripe } from '@/actions/organization/lib/stripe';
-import { after } from 'next/server';
 
 const allowedEvents: Stripe.Event.Type[] = [
   'checkout.session.completed',

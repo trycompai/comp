@@ -1,6 +1,6 @@
 'use server';
 
-import { encrypt, encryptObject } from '@/lib/encryption';
+import { encrypt } from '@/lib/encryption';
 import { db } from '@comp/db';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';

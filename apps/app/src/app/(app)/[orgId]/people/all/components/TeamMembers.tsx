@@ -1,11 +1,11 @@
 'use server';
 
-import { removeMember } from '../actions/removeMember';
-import { revokeInvitation } from '../actions/revokeInvitation';
 import { auth } from '@/utils/auth';
 import { db } from '@comp/db';
 import type { Invitation, Member, User } from '@prisma/client';
 import { headers } from 'next/headers';
+import { removeMember } from '../actions/removeMember';
+import { revokeInvitation } from '../actions/revokeInvitation';
 import { TeamMembersClient } from './TeamMembersClient';
 
 export interface MemberWithUser extends Member {

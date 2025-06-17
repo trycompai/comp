@@ -1,6 +1,6 @@
 import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
-import { BoldIcon, CodeIcon, ItalicIcon, StrikethroughIcon, UnderlineIcon } from 'lucide-react';
+import { CodeIcon, ItalicIcon, StrikethroughIcon } from 'lucide-react';
 import { EditorBubbleItem, useEditor } from 'novel';
 import type { SelectorItem } from './node-selector';
 

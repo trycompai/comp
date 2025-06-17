@@ -1,14 +1,14 @@
 'use client';
 
-import type { Policy, Member } from '@comp/db/types';
+import type { Member, Policy } from '@comp/db/types';
 import { Button } from '@comp/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from '@comp/ui/card';
 import type { JSONContent } from '@tiptap/react';
 import { ArrowRight, Check } from 'lucide-react';

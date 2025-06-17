@@ -1,9 +1,7 @@
 'use server';
 
 import {
-  Control,
-  // type Artifact, // Removed Artifact
-  type Policy, // Policy might still be useful if full Policy objects were ever passed, but selected fields are more common now
+  Control, // Policy might still be useful if full Policy objects were ever passed, but selected fields are more common now
   type PolicyStatus, // For the selected policy type
   type Task,
 } from '@comp/db/types';

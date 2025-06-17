@@ -3,7 +3,7 @@
 'use server';
 
 import { db } from '@comp/db';
-import { revalidatePath, revalidateTag } from 'next/cache';
+import { revalidatePath } from 'next/cache';
 import { authActionClient } from '../safe-action';
 import { deleteOrganizationSchema } from '../schema';
 

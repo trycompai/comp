@@ -1,20 +1,19 @@
 import { AuditLog, AuditLogEntityType } from '@comp/db/types';
-import { AuditLogWithRelations } from '../data';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@comp/ui/card';
-import { Badge } from '@comp/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
+import { Badge } from '@comp/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
+import { cn } from '@comp/ui/cn';
+import { ScrollArea } from '@comp/ui/scroll-area';
+import { format } from 'date-fns';
 import {
+  ActivityIcon,
   CalendarIcon,
   ClockIcon,
-  UserIcon,
-  ActivityIcon,
   FileIcon,
   FileTextIcon,
   ShieldIcon,
 } from 'lucide-react';
-import { cn } from '@comp/ui/cn';
-import { format } from 'date-fns';
-import { ScrollArea } from '@comp/ui/scroll-area';
+import { AuditLogWithRelations } from '../data';
 
 type LogActionType = 'create' | 'update' | 'delete' | 'approve' | 'reject' | 'review';
 

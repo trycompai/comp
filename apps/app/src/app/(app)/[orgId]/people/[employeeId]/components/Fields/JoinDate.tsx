@@ -1,12 +1,12 @@
-import type { Control } from 'react-hook-form';
-import type { EmployeeFormValues } from '../EmployeeDetails';
-import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@comp/ui/form';
 import { Button } from '@comp/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
-import { cn } from '@comp/ui/cn';
 import { Calendar } from '@comp/ui/calendar';
+import { cn } from '@comp/ui/cn';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
+import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
 import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
+import type { Control } from 'react-hook-form';
+import type { EmployeeFormValues } from '../EmployeeDetails';
 
 export const JoinDate = ({ control }: { control: Control<EmployeeFormValues> }) => {
   return (

@@ -1,11 +1,11 @@
 'use server';
 
-import { z } from 'zod';
 import { authActionClient } from '@/actions/safe-action';
-import { db } from '@comp/db';
-import { revalidatePath, revalidateTag } from 'next/cache';
-import { Vercel } from '@vercel/sdk';
 import { env } from '@/env.mjs';
+import { db } from '@comp/db';
+import { Vercel } from '@vercel/sdk';
+import { revalidatePath, revalidateTag } from 'next/cache';
+import { z } from 'zod';
 
 const checkDnsSchema = z.object({
   domain: z

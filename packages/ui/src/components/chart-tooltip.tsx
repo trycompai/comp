@@ -177,4 +177,4 @@ TooltipContent.displayName = CONTENT_NAME;
  * Exports
  * -----------------------------------------------------------------------------------------------*/
 
-export { Tooltip as ClientTooltip, TooltipTrigger, TooltipContent };
+export { Tooltip as ClientTooltip, TooltipContent, TooltipTrigger };

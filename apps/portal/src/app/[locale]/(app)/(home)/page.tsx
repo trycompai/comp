@@ -1,8 +1,8 @@
 import { getI18n } from '@/app/locales/server';
 import type { Metadata } from 'next';
 import { setStaticParamsLocale } from 'next-international/server';
-import { Overview } from './components/Overview';
 import { Suspense } from 'react';
+import { Overview } from './components/Overview';
 
 interface HomePageProps {
   params: Promise<{ locale: string }>;

@@ -1,9 +1,5 @@
 'use client';
 
-import * as React from 'react';
-import { Label, Pie, PieChart, Cell } from 'recharts';
-import { Info } from 'lucide-react';
-import type { Host } from '../types';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@comp/ui/card';
 import {
   type ChartConfig,
@@ -11,6 +7,9 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@comp/ui/chart';
+import * as React from 'react';
+import { Cell, Label, Pie, PieChart } from 'recharts';
+import type { Host } from '../types';
 
 interface DeviceComplianceChartProps {
   devices: Host[];

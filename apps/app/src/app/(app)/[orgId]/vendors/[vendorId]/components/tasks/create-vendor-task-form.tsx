@@ -1,8 +1,6 @@
 'use client';
 
-import { getOrganizationUsersAction } from '@/actions/organization/get-organization-users-action';
 import { SelectAssignee } from '@/components/SelectAssignee';
-import { SelectUser } from '@/components/select-user';
 import { Member, User } from '@comp/db/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
 import { Button } from '@comp/ui/button';

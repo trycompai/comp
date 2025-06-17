@@ -2,9 +2,9 @@
 
 import type { TrainingVideo } from '@/lib/data/training-videos';
 import type { EmployeeTrainingVideoCompletion, Member, Policy, User } from '@comp/db/types';
+import type { FleetPolicy, Host } from '../../devices/types';
 import { EmployeeDetails } from './EmployeeDetails';
 import { EmployeeTasks } from './EmployeeTasks';
-import type { FleetPolicy, Host } from '../../devices/types';
 
 interface EmployeeDetailsProps {
   employee: Member & {

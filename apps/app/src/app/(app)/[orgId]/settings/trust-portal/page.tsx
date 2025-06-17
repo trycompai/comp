@@ -1,10 +1,10 @@
 import { auth } from '@/utils/auth';
-import { headers } from 'next/headers';
-import { cache } from 'react';
 import { db } from '@comp/db';
 import type { Metadata } from 'next';
-import { TrustPortalSwitch } from './components/TrustPortalSwitch';
+import { headers } from 'next/headers';
+import { cache } from 'react';
 import { TrustPortalDomain } from './components/TrustPortalDomain';
+import { TrustPortalSwitch } from './components/TrustPortalSwitch';
 
 export default async function TrustPortalSettings({
   params,

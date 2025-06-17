@@ -3,7 +3,7 @@
 import { Edit, MoreHorizontal, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import React, { useState, useRef } from 'react';
+import { useRef, useState } from 'react';
 
 import {
   AlertDialog,
@@ -20,7 +20,6 @@ import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,

@@ -1,6 +1,6 @@
 import { StatusType } from '@/components/status-indicator';
 // Import base types explicitly
-import type { Control, Policy, PolicyStatus } from '@comp/db/types';
+import type { Control, PolicyStatus } from '@comp/db/types';
 import { Task } from '@comp/db/types';
 
 // Define the expected structure for policies passed to getControlStatus

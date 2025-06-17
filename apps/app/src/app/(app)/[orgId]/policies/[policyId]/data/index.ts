@@ -1,18 +1,18 @@
 'use server';
 
-import { auth } from '@/utils/auth';
-import { headers } from 'next/headers';
 import { CommentWithAuthor } from '@/components/comments/Comments';
+import { auth } from '@/utils/auth';
+import { db } from '@comp/db';
 import {
   AttachmentEntityType,
+  AuditLog,
   AuditLogEntityType,
   CommentEntityType,
-  AuditLog,
-  User,
   Member,
   Organization,
+  User,
 } from '@comp/db/types';
-import { db } from '@comp/db';
+import { headers } from 'next/headers';
 
 // Define the type for AuditLog with its relations
 export type AuditLogWithRelations = AuditLog & {

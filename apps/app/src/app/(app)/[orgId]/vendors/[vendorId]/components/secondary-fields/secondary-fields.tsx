@@ -1,12 +1,12 @@
 'use client';
 
 import type { Member, User, Vendor } from '@comp/db/types';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
-import { UpdateSecondaryFieldsForm } from './update-secondary-fields-form';
-import { UpdateTitleAndDescriptionSheet } from '../title-and-description/update-title-and-description-sheet';
 import { Button } from '@comp/ui/button';
-import { useQueryState } from 'nuqs';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import { PencilIcon } from 'lucide-react';
+import { useQueryState } from 'nuqs';
+import { UpdateTitleAndDescriptionSheet } from '../title-and-description/update-title-and-description-sheet';
+import { UpdateSecondaryFieldsForm } from './update-secondary-fields-form';
 
 export function SecondaryFields({
   vendor,

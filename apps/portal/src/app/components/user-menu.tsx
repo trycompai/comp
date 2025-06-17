@@ -1,15 +1,14 @@
+import { auth } from '@/app/lib/auth';
 import { getI18n } from '@/app/locales/server';
 import { Avatar, AvatarFallback, AvatarImageNext } from '@comp/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
 import { headers } from 'next/headers';
-import { auth } from '@/app/lib/auth';
 import { LocaleSwitch } from './locale-switch';
 import { Logout } from './logout';
 import { ThemeSwitch } from './theme-switch';

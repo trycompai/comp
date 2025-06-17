@@ -1,7 +1,7 @@
-import { createHash, randomBytes } from 'node:crypto';
 import { db } from '@comp/db';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+import { createHash, randomBytes } from 'node:crypto';
 
 /**
  * Generate a new API key

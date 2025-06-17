@@ -1,5 +1,5 @@
 import { PrismaInstrumentation } from '@prisma/instrumentation';
-import { additionalPackages, syncVercelEnvVars } from '@trigger.dev/build/extensions/core';
+import { syncVercelEnvVars } from '@trigger.dev/build/extensions/core';
 
 import { puppeteer } from '@trigger.dev/build/extensions/puppeteer';
 import { defineConfig } from '@trigger.dev/sdk/v3';

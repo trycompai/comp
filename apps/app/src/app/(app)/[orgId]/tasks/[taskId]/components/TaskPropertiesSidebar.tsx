@@ -1,10 +1,7 @@
 import type { Departments, Member, Task, TaskFrequency, TaskStatus, User } from '@comp/db/types';
-import { PropertySelector } from './PropertySelector';
-import { taskStatuses, taskFrequencies, taskDepartments, DEPARTMENT_COLORS } from './constants';
-import { TaskStatusIndicator } from '../../components/TaskStatusIndicator';
-import { Button } from '@comp/ui/button';
-import { Badge } from '@comp/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
+import { Badge } from '@comp/ui/badge';
+import { Button } from '@comp/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,6 +10,9 @@ import {
 } from '@comp/ui/dropdown-menu';
 import { MoreVertical, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { TaskStatusIndicator } from '../../components/TaskStatusIndicator';
+import { PropertySelector } from './PropertySelector';
+import { DEPARTMENT_COLORS, taskDepartments, taskFrequencies, taskStatuses } from './constants';
 
 interface TaskPropertiesSidebarProps {
   task: Task;

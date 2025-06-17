@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
+import type { ReactNode } from 'react';
 
 interface ComplianceSectionProps {
   title: string;

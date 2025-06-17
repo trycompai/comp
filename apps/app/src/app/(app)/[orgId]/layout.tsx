@@ -3,11 +3,12 @@ import { Header } from '@/components/header';
 import { AssistantSheet } from '@/components/sheets/assistant-sheet';
 import { Sidebar } from '@/components/sidebar';
 import { SidebarProvider } from '@/context/sidebar-context';
-import { getCurrentOrganization } from '@/lib/currentOrganization';
-import dynamic from 'next/dynamic';
-import { cookies } from 'next/headers';
-import { OnboardingTracker } from './components/OnboardingTracker';
+import { auth } from '@/utils/auth';
 import { db } from '@comp/db';
+import dynamic from 'next/dynamic';
+import { cookies, headers } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { OnboardingTracker } from './components/OnboardingTracker';
 
 const HotKeys = dynamic(() => import('@/components/hot-keys').then((mod) => mod.HotKeys), {
   ssr: true,
@@ -26,28 +27,54 @@ export default async function Layout({
   const isCollapsed = cookieStore.get('sidebar-collapsed')?.value === 'true';
   const publicAccessToken = cookieStore.get('publicAccessToken')?.value;
 
-  const currentOrganization = await getCurrentOrganization({
-    requestedOrgId,
+  // Check if user has access to this organization
+  const session = await auth.api.getSession({
+    headers: await headers(),
   });
+
+  if (!session) {
+    return redirect('/auth/login');
+  }
+
+  // First check if the organization exists
+  const organization = await db.organization.findUnique({
+    where: {
+      id: requestedOrgId,
+    },
+  });
+
+  if (!organization) {
+    // Organization doesn't exist
+    return redirect('/auth/not-found');
+  }
+
+  const member = await db.member.findFirst({
+    where: {
+      userId: session.user.id,
+      organizationId: requestedOrgId,
+    },
+  });
+
+  if (!member) {
+    // User doesn't have access to this organization
+    return redirect('/auth/unauthorized');
+  }
 
   const onboarding = await db.onboarding.findFirst({
     where: {
-      organizationId: currentOrganization?.id,
+      organizationId: requestedOrgId,
     },
   });
 
   const isOnboardingRunning = !!onboarding?.triggerJobId && !onboarding.completed;
-  const navbarHeight = 69 + 1; // 1 for border
+  const navbarHeight = 53 + 1; // 1 for border
   const onboardingHeight = 132 + 1; // 1 for border
 
   const pixelsOffset = isOnboardingRunning ? navbarHeight + onboardingHeight : navbarHeight;
 
   return (
     <SidebarProvider initialIsCollapsed={isCollapsed}>
-      <AnimatedLayout
-        sidebar={<Sidebar organization={currentOrganization} />}
-        isCollapsed={isCollapsed}
-      >
+      <AnimatedLayout sidebar={<Sidebar organization={organization} />} isCollapsed={isCollapsed}>
         {onboarding?.triggerJobId && (
           <OnboardingTracker onboarding={onboarding} publicAccessToken={publicAccessToken ?? ''} />
         )}

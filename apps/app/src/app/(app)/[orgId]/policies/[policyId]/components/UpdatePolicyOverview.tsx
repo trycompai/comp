@@ -14,10 +14,10 @@ import { Switch } from '@comp/ui/switch';
 import { format } from 'date-fns';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
+import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { SubmitApprovalDialog } from './SubmitApprovalDialog';
-import { useRouter } from 'next/navigation';
 
 interface UpdatePolicyOverviewProps {
   policy: Policy & {

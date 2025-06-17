@@ -3,13 +3,9 @@
 import { Impact, Likelihood } from '@comp/db/types';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
-import { Loader2, PencilIcon } from 'lucide-react';
-import { useQueryState } from 'nuqs';
-import type React from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Icons } from '@comp/ui/icons';
 
 const LIKELIHOOD_SCORES: Record<Likelihood, number> = {
   very_unlikely: 1,

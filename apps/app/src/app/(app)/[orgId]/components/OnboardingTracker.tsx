@@ -1,13 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { LogoSpinner } from '@/components/logo-spinner';
 import type { Onboarding } from '@comp/db/types';
-import { Alert, AlertDescription, AlertTitle } from '@comp/ui/alert';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
+import { AnimatePresence, motion } from 'framer-motion';
 import { AlertTriangle, Rocket, ShieldAlert, Zap } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 const PROGRESS_MESSAGES = [
   'Learning about your company...',

@@ -1,7 +1,6 @@
 import { getInitials } from '@/lib/utils';
 import { auth } from '@/utils/auth';
 import { db } from '@comp/db';
-import type { RiskStatus } from '@comp/db/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { ScrollArea } from '@comp/ui/scroll-area';

@@ -3,8 +3,8 @@
 import type { ColumnDef } from '@tanstack/react-table';
 import Link from 'next/link';
 // We will import the new type from the client page
-import type { FrameworkWithCounts } from '../FrameworksClientPage';
 import { Badge } from '@comp/ui/badge'; // Import the Badge component
+import type { FrameworkWithCounts } from '../FrameworksClientPage';
 
 // TODO: Replace 'any' with the actual Framework type from your database schema
 // e.g., import type { Framework } from "@comp/db";

@@ -1,9 +1,8 @@
 import { authClient } from '@/utils/auth-client';
-import { db } from '@comp/db';
 import { Member, User } from '@comp/db/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@comp/ui/select';
-import { Badge, UserIcon } from 'lucide-react';
+import { UserIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface SelectAssigneeProps {

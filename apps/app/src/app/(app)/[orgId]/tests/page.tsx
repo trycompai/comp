@@ -1,9 +1,9 @@
 import { AppOnboarding } from '@/components/app-onboarding';
 import { auth } from '@/utils/auth';
 import { db } from '@comp/db';
+import { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { Metadata } from 'next';
 
 export async function generateMetadata(): Promise<Metadata> {
   return {

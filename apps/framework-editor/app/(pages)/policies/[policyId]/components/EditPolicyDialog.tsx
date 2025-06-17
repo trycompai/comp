@@ -1,26 +1,26 @@
 'use client';
 
-import { useState, useTransition, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { type FrameworkEditorPolicyTemplate, Frequency, Departments } from '@prisma/client';
+import { Departments, type FrameworkEditorPolicyTemplate, Frequency } from '@prisma/client';
+import { useEffect, useTransition } from 'react';
+import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { z } from 'zod';
 
 import { Button } from '@comp/ui/button';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogClose,
+  DialogHeader,
+  DialogTitle,
 } from '@comp/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Input } from '@comp/ui/input';
-import { Textarea } from '@comp/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
+import { Textarea } from '@comp/ui/textarea';
 import { updatePolicyTemplateDetails } from '../../actions'; // Path to server actions
 
 // Schema for the form, consistent with server action

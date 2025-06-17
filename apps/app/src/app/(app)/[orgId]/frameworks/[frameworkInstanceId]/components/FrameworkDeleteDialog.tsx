@@ -1,6 +1,5 @@
 'use client';
 
-import { deleteFrameworkAction } from '../actions/delete-framework';
 import { Button } from '@comp/ui/button';
 import {
   Dialog,
@@ -20,6 +19,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { FrameworkInstanceWithControls } from '../../types';
+import { deleteFrameworkAction } from '../actions/delete-framework';
 
 const formSchema = z.object({
   comment: z.string().optional(),

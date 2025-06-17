@@ -5,11 +5,11 @@ import { type ReactNode } from 'react';
 import { MenuTabs } from './components/MenuTabs';
 
 import '@comp/ui/globals.css';
+import { headers } from 'next/headers';
 import 'react-datasheet-grid/dist/style.css';
 import '../styles/globals.css';
 import { Header } from './components/HeaderFrameworks';
 import { auth } from './lib/auth';
-import { headers } from 'next/headers';
 
 export const metadata: Metadata = {
   title: 'Comp AI - Framework Editor',

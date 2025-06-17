@@ -1,11 +1,5 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
-import { useAction } from 'next-safe-action/hooks';
-import { useState } from 'react';
-import { toast } from 'sonner';
-import { updateEmployeeDetails } from '../actions/update-employee-details';
-
 interface EditableDetailsProps {
   employeeId: string;
   currentName: string;

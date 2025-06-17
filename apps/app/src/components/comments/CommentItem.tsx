@@ -1,6 +1,12 @@
 'use client';
 
+import { deleteComment } from '@/actions/comments/deleteComment';
+import { deleteCommentAttachment } from '@/actions/comments/deleteCommentAttachment';
+import { getCommentAttachmentUrl } from '@/actions/comments/getCommentAttachmentUrl'; // Import action
+import { updateComment } from '@/actions/comments/updateComment';
 import { uploadFile } from '@/actions/files/upload-file';
+import type { AttachmentType } from '@comp/db/types';
+import { AttachmentEntityType } from '@comp/db/types'; // Import AttachmentEntityType
 import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent } from '@comp/ui/card';
@@ -23,14 +29,8 @@ import { useRouter } from 'next/navigation';
 import type React from 'react';
 import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { deleteComment } from '@/actions/comments/deleteComment';
-import { deleteCommentAttachment } from '@/actions/comments/deleteCommentAttachment';
-import { getCommentAttachmentUrl } from '@/actions/comments/getCommentAttachmentUrl'; // Import action
-import { updateComment } from '@/actions/comments/updateComment';
 import { AttachmentItem } from '../../app/(app)/[orgId]/tasks/[taskId]/components/AttachmentItem';
 import { formatRelativeTime } from '../../app/(app)/[orgId]/tasks/[taskId]/components/commentUtils'; // Revert import path
-import { AttachmentEntityType } from '@comp/db/types'; // Import AttachmentEntityType
-import type { AttachmentType } from '@comp/db/types';
 import type { CommentWithAuthor } from './Comments';
 
 // Local helper to map fileType to AttachmentType

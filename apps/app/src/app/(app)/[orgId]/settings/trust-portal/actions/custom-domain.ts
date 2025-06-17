@@ -2,12 +2,12 @@
 
 'use server';
 
-import { db } from '@comp/db';
 import { authActionClient } from '@/actions/safe-action';
-import { z } from 'zod';
+import { db } from '@comp/db';
+import { Vercel } from '@vercel/sdk';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { env } from 'node:process';
-import { Vercel } from '@vercel/sdk';
+import { z } from 'zod';
 
 const customDomainSchema = z.object({
   domain: z.string().min(1),

@@ -2,11 +2,11 @@
 
 import { AppError, appErrors } from '@/lib/errors';
 import { db } from '@comp/db';
+import { CommentEntityType } from '@comp/db/types';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { z } from 'zod';
 import { authActionClient } from './safe-action';
-import { CommentEntityType } from '@comp/db/types';
 
 export const addCommentAction = authActionClient
   .inputSchema(

@@ -8,6 +8,12 @@ import { Control } from '@comp/db/types';
 import { Alert, AlertDescription, AlertTitle } from '@comp/ui/alert';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@comp/ui/dropdown-menu';
 import { Icons } from '@comp/ui/icons';
 import { format } from 'date-fns';
 import {
@@ -19,12 +25,6 @@ import {
   ShieldX,
   Trash2,
 } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@comp/ui/dropdown-menu';
 import { useAction } from 'next-safe-action/hooks';
 import { useQueryState } from 'nuqs';
 import { useState } from 'react';
@@ -35,7 +35,6 @@ import { PolicyControlMappings } from './PolicyControlMappings';
 import { PolicyDeleteDialog } from './PolicyDeleteDialog';
 import { PolicyOverviewSheet } from './PolicyOverviewSheet';
 import { UpdatePolicyOverview } from './UpdatePolicyOverview';
-import { deletePolicyAction } from '@/actions/policies/delete-policy';
 
 export function PolicyOverview({
   policy,

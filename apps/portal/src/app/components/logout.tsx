@@ -1,10 +1,10 @@
 'use client';
 
+import { authClient } from '@/app/lib/auth-client';
 import { useI18n } from '@/app/locales/client';
 import { DropdownMenuItem } from '@comp/ui/dropdown-menu';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { authClient } from '@/app/lib/auth-client';
 
 export function Logout() {
   const t = useI18n();

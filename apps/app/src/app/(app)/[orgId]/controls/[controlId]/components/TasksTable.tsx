@@ -5,8 +5,8 @@ import { DataTableColumnHeader } from '@/components/data-table/data-table-column
 import { StatusIndicator } from '@/components/status-indicator';
 import { useDataTable } from '@/hooks/use-data-table';
 import { Task } from '@comp/db/types';
-import { Input } from '@comp/ui/input';
 import { Icons } from '@comp/ui/icons';
+import { Input } from '@comp/ui/input';
 import { ColumnDef } from '@tanstack/react-table';
 import { useMemo, useState } from 'react';
 

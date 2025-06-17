@@ -1,11 +1,7 @@
 'use client';
 
-import {
-  EMPLOYEE_STATUS_TYPES,
-  getEmployeeStatusFromBoolean,
-} from '@/components/tables/people/employee-status';
 import type { EmployeeStatusType } from '@/components/tables/people/employee-status';
-import { Button } from '@comp/ui/button';
+import { getEmployeeStatusFromBoolean } from '@/components/tables/people/employee-status';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';

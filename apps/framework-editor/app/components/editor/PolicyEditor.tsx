@@ -1,7 +1,7 @@
 'use client';
 
 import type { JSONContent } from '@tiptap/react'; // Or from 'novel'
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import AdvancedEditor from './AdvancedEditor'; // Use local AdvancedEditor
 
 interface PolicyEditorProps {

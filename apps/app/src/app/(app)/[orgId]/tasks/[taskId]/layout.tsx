@@ -1,13 +1,5 @@
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { db } from '@comp/db';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@comp/ui/breadcrumb';
 
 export default async function Layout({
   children,

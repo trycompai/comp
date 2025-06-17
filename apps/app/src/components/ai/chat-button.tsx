@@ -1,8 +1,6 @@
 'use client';
 
 import { Button } from '@comp/ui/button';
-import { useMediaQuery } from '@comp/ui/hooks';
-import { cn } from '@comp/ui/cn';
 import { useQueryState } from 'nuqs';
 
 export function AssistantButton() {

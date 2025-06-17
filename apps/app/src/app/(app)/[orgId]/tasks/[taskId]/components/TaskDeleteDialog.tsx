@@ -1,6 +1,5 @@
 'use client';
 
-import { deleteTaskAction } from '../actions/delete-task';
 import { Task } from '@comp/db/types';
 import { Button } from '@comp/ui/button';
 import {
@@ -20,6 +19,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { deleteTaskAction } from '../actions/delete-task';
 
 const formSchema = z.object({
   comment: z.string().optional(),

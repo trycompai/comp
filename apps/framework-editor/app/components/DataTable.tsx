@@ -1,21 +1,20 @@
 'use client';
 
-import { useMemo, type ElementType } from 'react';
-import { useQueryState } from 'nuqs';
-import { Input } from '@comp/ui/input';
 import { Button } from '@comp/ui/button';
+import { Input } from '@comp/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@comp/ui/table';
-import { Search, PlusCircle, TableIcon } from 'lucide-react';
 import {
-  type ColumnDef,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
-  useReactTable,
-  type SortingState,
   getSortedRowModel,
+  useReactTable,
+  type ColumnDef,
+  type SortingState,
 } from '@tanstack/react-table';
-import React from 'react';
+import { PlusCircle, Search, TableIcon } from 'lucide-react';
+import { useQueryState } from 'nuqs';
+import React, { useMemo, type ElementType } from 'react';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];

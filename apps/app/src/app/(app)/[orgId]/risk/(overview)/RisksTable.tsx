@@ -1,7 +1,6 @@
 'use client';
 
 import { DataTable } from '@/components/data-table/data-table';
-import { DataTableSortList } from '@/components/data-table/data-table-sort-list';
 import { DataTableToolbar } from '@/components/data-table/data-table-toolbar';
 import { CreateRiskSheet } from '@/components/sheets/create-risk-sheet';
 import { useDataTable } from '@/hooks/use-data-table';

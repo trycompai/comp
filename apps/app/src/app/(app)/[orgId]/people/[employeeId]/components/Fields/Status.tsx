@@ -1,9 +1,9 @@
+import type { EmployeeStatusType } from '@/components/tables/people/employee-status';
+import { cn } from '@comp/ui/cn';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import type { Control } from 'react-hook-form';
 import type { EmployeeFormValues } from '../EmployeeDetails';
-import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@comp/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import { cn } from '@comp/ui/cn';
-import type { EmployeeStatusType } from '@/components/tables/people/employee-status';
 
 const STATUS_OPTIONS: { value: EmployeeStatusType; label: string }[] = [
   { value: 'active', label: 'Active' },

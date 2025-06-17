@@ -1,11 +1,11 @@
 import type { TrainingVideo } from '@/lib/data/training-videos';
 import type { EmployeeTrainingVideoCompletion, Member, Policy, User } from '@comp/db/types';
 
-import { Card, CardHeader, CardTitle, CardContent } from '@comp/ui/card';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@comp/ui/tabs';
+import { cn } from '@/lib/utils';
+import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
 import { AlertCircle, CheckCircle2, XCircle } from 'lucide-react';
 import type { FleetPolicy, Host } from '../../devices/types';
-import { cn } from '@/lib/utils';
 
 export const EmployeeTasks = ({
   employee,

@@ -3,20 +3,12 @@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
 import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@comp/ui/card';
-import { PlusIcon } from 'lucide-react';
-import { BookOpen, Clock, HelpCircle } from 'lucide-react';
-import Image from 'next/image';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
+import { BookOpen, HelpCircle, PlusIcon } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { useQueryState } from 'nuqs';
+import Image from 'next/image';
 import Link from 'next/link';
+import { useQueryState } from 'nuqs';
 
 interface FAQ {
   questionKey: string;

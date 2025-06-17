@@ -7,7 +7,7 @@ import {
   BreadcrumbSeparator,
 } from '@comp/ui/breadcrumb';
 import { Skeleton } from '@comp/ui/skeleton';
-import React, { Suspense } from 'react';
+import React from 'react';
 
 interface PageLayoutProps {
   children: React.ReactNode;

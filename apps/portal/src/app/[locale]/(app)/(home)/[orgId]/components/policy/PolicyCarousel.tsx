@@ -1,13 +1,13 @@
 'use client';
 
+import type { Member, Policy } from '@comp/db/types';
 import { Button } from '@comp/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useRef, useState, useEffect } from 'react';
-import { PolicyCard } from './PolicyCard';
-import type { Policy, Member } from '@comp/db/types';
 import { useAction } from 'next-safe-action/hooks';
-import { markPolicyAsCompleted } from '../../../actions/markPolicyAsCompleted';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { markPolicyAsCompleted } from '../../../actions/markPolicyAsCompleted';
+import { PolicyCard } from './PolicyCard';
 
 interface PolicyCarouselProps {
   policies: Policy[];

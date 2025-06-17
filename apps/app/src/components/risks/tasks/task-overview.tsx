@@ -8,7 +8,6 @@ import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { PencilIcon, ShieldAlert } from 'lucide-react';
 import { useQueryState } from 'nuqs';
-import React from 'react';
 
 export function TaskOverview({ task, users }: { task: Task; users: User[] }) {
   const [open, setOpen] = useQueryState('task-overview-sheet');

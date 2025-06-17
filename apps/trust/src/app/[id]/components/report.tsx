@@ -1,9 +1,8 @@
+import type { FrameworkStatus, Organization, Policy, Task } from '@comp/db/types';
 import ComplianceHeader from './compliance-header';
-import ComplianceSection from './compliance-section';
 import ComplianceItem from './compliance-item';
-import type { Organization, Policy, Task, FrameworkStatus } from '@comp/db/types';
+import ComplianceSection from './compliance-section';
 import FrameworkItem from './framework-item';
-import Image from 'next/image';
 import { GDPR, ISO27001, SOC2 } from './logos';
 interface ComplianceReportProps {
   organization: Organization;

@@ -1,10 +1,10 @@
 'use server';
 
-import { db } from '@comp/db';
-import { revalidatePath } from 'next/cache';
 import { auth } from '@/utils/auth';
-import { headers } from 'next/headers';
+import { db } from '@comp/db';
 import { Task } from '@comp/db/types';
+import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
 
 export const updateTask = async (input: Partial<Task>) => {
   const session = await auth.api.getSession({

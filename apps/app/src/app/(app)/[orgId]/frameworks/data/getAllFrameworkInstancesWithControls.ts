@@ -1,9 +1,9 @@
 'use server';
 
 import { db } from '@comp/db';
-import type { FrameworkInstanceWithControls } from '../types';
 import type { Control, PolicyStatus, RequirementMap } from '@comp/db/types';
 import { cache } from 'react';
+import type { FrameworkInstanceWithControls } from '../types';
 
 export const getAllFrameworkInstancesWithControls = cache(
   async function getAllFrameworkInstancesWithControls({

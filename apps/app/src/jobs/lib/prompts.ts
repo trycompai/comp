@@ -1,4 +1,4 @@
-import { Policy, Risk } from '@comp/db/types';
+import { Policy } from '@comp/db/types';
 import { logger } from '@trigger.dev/sdk/v3';
 import { JSONContent } from 'novel';
 

@@ -2,8 +2,7 @@
 
 import { authActionClient } from '@/actions/safe-action';
 import { uploadTaskFileSchema } from '@/actions/schema';
-import { revalidatePath } from 'next/cache';
-import { revalidateTag } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 
 export const revalidateUpload = authActionClient
   .inputSchema(uploadTaskFileSchema)

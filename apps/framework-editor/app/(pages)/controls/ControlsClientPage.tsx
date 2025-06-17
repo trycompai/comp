@@ -1,8 +1,9 @@
 'use client';
 
 import PageLayout from '@/app/components/PageLayout';
-import { useMemo, useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { relationalColumn } from '../../components/grid/RelationalCell';
 import { friendlyDateColumnBase } from '../../components/gridUtils';
 import { TableToolbar } from '../../components/TableToolbar';
 import { useTableSearchSort } from '../../hooks/useTableSearchSort';
@@ -18,7 +19,6 @@ import {
   unlinkRequirementFromControl,
   unlinkTaskTemplateFromControl,
 } from './actions';
-import { relationalColumn } from '../../components/grid/RelationalCell';
 import { simpleUUID, useChangeTracking } from './hooks/useChangeTracking';
 import type {
   ControlsPageGridData,

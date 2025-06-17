@@ -1,10 +1,10 @@
-import { SecurityHubClient, GetFindingsCommand } from '@aws-sdk/client-securityhub';
 import type {
-  SecurityHubClientConfig,
   GetFindingsCommandInput,
   GetFindingsCommandOutput,
+  SecurityHubClientConfig,
 } from '@aws-sdk/client-securityhub';
-import { STSClient, GetCallerIdentityCommand } from '@aws-sdk/client-sts';
+import { GetFindingsCommand, SecurityHubClient } from '@aws-sdk/client-securityhub';
+import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
 
 interface AWSCredentials {
   region: string;

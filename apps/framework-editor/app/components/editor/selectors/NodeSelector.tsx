@@ -1,11 +1,10 @@
 'use client';
 
-import { type Editor } from '@tiptap/core';
-import { Check, ChevronDown } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
 import { Button } from '@comp/ui/button';
 import { Command, CommandGroup, CommandItem, CommandList } from '@comp/ui/command';
-import { useState } from 'react';
+import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
+import { type Editor } from '@tiptap/core';
+import { Check, ChevronDown } from 'lucide-react';
 
 interface NodeSelectorProps {
   editor: Editor | null;

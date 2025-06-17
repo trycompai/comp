@@ -1,16 +1,15 @@
 'use client';
 
-import { Control, Task } from '@comp/db/types';
-import { getFrameworkWithComplianceScores } from '../data/getFrameworkWithComplianceScores';
-import type { FrameworkInstanceWithControls } from '../types';
-import { FrameworkList } from './FrameworkList';
 import type { FrameworkEditorFramework } from '@comp/db/types';
+import { Control, Task } from '@comp/db/types';
 import { Button } from '@comp/ui/button';
-import { useState } from 'react';
-import { AddFrameworkModal } from './AddFrameworkModal';
-import { useParams } from 'next/navigation';
 import { Dialog } from '@comp/ui/dialog';
 import { PlusIcon } from 'lucide-react';
+import { useParams } from 'next/navigation';
+import { useState } from 'react';
+import type { FrameworkInstanceWithControls } from '../types';
+import { AddFrameworkModal } from './AddFrameworkModal';
+import { FrameworkList } from './FrameworkList';
 
 export interface FrameworksOverviewProps {
   frameworksWithControls: FrameworkInstanceWithControls[];

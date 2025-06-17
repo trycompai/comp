@@ -1,14 +1,14 @@
 'use client';
 
+import { Integration } from '@comp/db/types';
 import { Button } from '@comp/ui/button';
-import { runTests } from '../actions/run-tests';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
 import { RefreshCw } from 'lucide-react';
-import { TestCard } from './TestCard';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import { Integration } from '@comp/db/types';
+import { runTests } from '../actions/run-tests';
+import { TestCard } from './TestCard';
 
 // Define props for the reusable component
 interface TestProviderTabContentProps {

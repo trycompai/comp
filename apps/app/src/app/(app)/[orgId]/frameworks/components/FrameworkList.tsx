@@ -1,8 +1,8 @@
 'use client';
 
 import { Control, Task } from '@comp/db/types';
-import { FrameworkCard } from './FrameworkCard';
 import type { FrameworkInstanceWithControls } from '../types';
+import { FrameworkCard } from './FrameworkCard';
 
 export function FrameworkList({
   frameworksWithControls,

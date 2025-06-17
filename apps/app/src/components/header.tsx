@@ -1,11 +1,11 @@
 import { UserMenu } from '@/components/user-menu';
 import { getOrganizations } from '@/data/getOrganizations';
 import { auth } from '@/utils/auth';
-import { Inbox } from 'lucide-react';
 import { db } from '@comp/db';
 import { buttonVariants } from '@comp/ui/button';
 import { Icons } from '@comp/ui/icons';
 import { Skeleton } from '@comp/ui/skeleton';
+import { Inbox } from 'lucide-react';
 import { headers } from 'next/headers';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';

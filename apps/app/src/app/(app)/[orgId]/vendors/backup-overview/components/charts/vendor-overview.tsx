@@ -1,6 +1,5 @@
 'use server';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { VendorsByCategory } from './vendors-by-category';
 import { VendorsByStatus } from './vendors-by-status';
 

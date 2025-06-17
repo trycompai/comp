@@ -3,25 +3,16 @@
 import { researchVendorAction } from '@/actions/research-vendor';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
-import { type Member, type User, VendorCategory, VendorStatus } from '@comp/db/types';
 import type { GlobalVendors } from '@comp/db/types';
+import { type Member, type User, VendorCategory, VendorStatus } from '@comp/db/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
 import { Button } from '@comp/ui/button';
-import { cn } from '@comp/ui/cn';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@comp/ui/command';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Input } from '@comp/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Textarea } from '@comp/ui/textarea';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowRightIcon, ChevronsUpDown } from 'lucide-react';
+import { ArrowRightIcon } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useQueryState } from 'nuqs';
 import { useState } from 'react';

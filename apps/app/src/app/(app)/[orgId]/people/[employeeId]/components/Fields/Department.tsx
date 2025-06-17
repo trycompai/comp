@@ -1,8 +1,8 @@
+import type { Departments } from '@comp/db/types';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import type { Control } from 'react-hook-form';
 import type { EmployeeFormValues } from '../EmployeeDetails';
-import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@comp/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import type { Departments } from '@comp/db/types';
 
 const DEPARTMENTS: { value: Departments; label: string }[] = [
   { value: 'admin', label: 'Admin' },

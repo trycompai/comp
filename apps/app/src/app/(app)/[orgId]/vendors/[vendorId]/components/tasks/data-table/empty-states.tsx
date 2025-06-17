@@ -5,7 +5,6 @@ import { Icons } from '@comp/ui/icons';
 import { Plus } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQueryState } from 'nuqs';
-import { CreateVendorTaskSheet } from '../create-vendor-task-sheet';
 
 type Props = {
   hasFilters?: boolean;

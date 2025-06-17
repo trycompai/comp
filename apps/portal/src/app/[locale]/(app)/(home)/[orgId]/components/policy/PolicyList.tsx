@@ -1,6 +1,6 @@
 'use client';
 
-import type { Policy, Member } from '@comp/db/types';
+import type { Member, Policy } from '@comp/db/types';
 import { PolicyContainer } from './PolicyContainer';
 
 interface PolicyListProps {

@@ -1,6 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { Skeleton } from '@comp/ui/skeleton';
-import React from 'react';
 
 interface Props {
   amount: number;

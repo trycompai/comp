@@ -1,8 +1,8 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
-import * as React from 'react';
 import type { CSSProperties } from 'react';
+import * as React from 'react';
 
 // Use correct types from the database
 import { TrainingVideo } from '@/lib/data/training-videos';

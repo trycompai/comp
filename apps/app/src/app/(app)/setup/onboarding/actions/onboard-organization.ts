@@ -1,15 +1,13 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
+import { onboardOrganization as onboardOrganizationTask } from '@/jobs/tasks/onboarding/onboard-organization';
 import { auth } from '@/utils/auth';
 import { db } from '@comp/db';
-import { steps } from '../lib/constants';
+import { tasks } from '@trigger.dev/sdk/v3';
 import { revalidatePath } from 'next/cache';
 import { cookies, headers } from 'next/headers';
-import { z } from 'zod';
-import { tasks } from '@trigger.dev/sdk/v3';
-import { onboardOrganization as onboardOrganizationTask } from '@/jobs/tasks/onboarding/onboard-organization';
-import { companyDetailsSchema } from '../lib/constants';
+import { companyDetailsSchema, steps } from '../lib/constants';
 
 export const onboardOrganization = authActionClient
   .inputSchema(companyDetailsSchema)

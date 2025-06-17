@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useTransition } from 'react';
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -12,6 +11,7 @@ import {
 } from '@comp/ui/alert-dialog';
 import { Button } from '@comp/ui/button';
 import { useToast } from '@comp/ui/use-toast';
+import { useState, useTransition } from 'react';
 import {
   deleteRequirementAction,
   type DeleteRequirementActionState,

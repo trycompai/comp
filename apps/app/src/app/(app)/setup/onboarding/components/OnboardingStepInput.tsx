@@ -1,9 +1,9 @@
-import type { UseFormReturn } from 'react-hook-form';
 import { Input } from '@comp/ui/input';
-import { Textarea } from '@comp/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { SelectPills } from '@comp/ui/select-pills';
-import type { Step, CompanyDetails } from '../lib/types';
+import { Textarea } from '@comp/ui/textarea';
+import type { UseFormReturn } from 'react-hook-form';
+import type { CompanyDetails, Step } from '../lib/types';
 
 // It's often better to move shared types to a central location (e.g., ../lib/types.ts)
 // For now, defining it here to match OnboardingForm.tsx structure.

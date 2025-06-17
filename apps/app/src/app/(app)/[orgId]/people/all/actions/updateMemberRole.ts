@@ -1,6 +1,5 @@
 'use server';
 
-import { authClient } from '@/utils/auth-client';
 import { db } from '@comp/db';
 import { Departments, Role } from '@prisma/client';
 import { revalidatePath, revalidateTag } from 'next/cache';

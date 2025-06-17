@@ -6,7 +6,6 @@ import PageWithBreadcrumb from '../../../../../components/pages/PageWithBreadcru
 import { getSingleFrameworkInstanceWithControls } from '../data/getSingleFrameworkInstanceWithControls';
 import { FrameworkOverview } from './components/FrameworkOverview';
 import { FrameworkRequirements } from './components/FrameworkRequirements';
-import { Separator } from '@comp/ui/separator';
 
 interface PageProps {
   params: Promise<{

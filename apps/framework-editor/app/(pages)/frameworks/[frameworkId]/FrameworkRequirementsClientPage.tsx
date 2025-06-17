@@ -1,20 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import PageLayout from '@/app/components/PageLayout';
 import { DataTable } from '@/app/components/DataTable';
-import { getColumns } from './components/columns';
-import type { FrameworkEditorRequirement, FrameworkEditorFramework } from '@prisma/client';
+import PageLayout from '@/app/components/PageLayout';
+import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
-import { Badge } from '@comp/ui/badge';
-import { PencilIcon, FileText, Trash2 } from 'lucide-react';
+import type { FrameworkEditorFramework, FrameworkEditorRequirement } from '@prisma/client';
+import { FileText, PencilIcon, Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { AddRequirementDialog } from './components/AddRequirementDialog';
+import { getColumns } from './components/columns';
+import { DeleteFrameworkDialog } from './components/DeleteFrameworkDialog';
+import { DeleteRequirementDialog } from './components/DeleteRequirementDialog';
 import { EditFrameworkDialog } from './components/EditFrameworkDialog';
 import { EditRequirementDialog } from './components/EditRequirementDialog';
-import { DeleteFrameworkDialog } from './components/DeleteFrameworkDialog';
-import { AddRequirementDialog } from './components/AddRequirementDialog';
-import { DeleteRequirementDialog } from './components/DeleteRequirementDialog';
 
 interface FrameworkDetails
   extends Pick<FrameworkEditorFramework, 'id' | 'name' | 'version' | 'description' | 'visible'> {}

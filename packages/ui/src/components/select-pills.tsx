@@ -1,11 +1,11 @@
 'use client';
-import { useState, useRef, type FC } from 'react';
+import { useRef, useState, type FC } from 'react';
 
 import { cn } from '@comp/ui/cn';
 
 import { Badge } from '@comp/ui/badge';
 import { Input } from '@comp/ui/input';
-import { Popover, PopoverContent, PopoverAnchor } from '@comp/ui/popover';
+import { Popover, PopoverAnchor, PopoverContent } from '@comp/ui/popover';
 
 import { X } from 'lucide-react';
 

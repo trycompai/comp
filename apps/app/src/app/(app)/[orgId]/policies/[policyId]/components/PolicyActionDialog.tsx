@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@comp/ui/button';
+import { cn } from '@comp/ui/cn';
 import {
   Dialog,
   DialogContent,
@@ -9,14 +10,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@comp/ui/dialog';
-import { Textarea } from '@comp/ui/textarea';
-import { ShieldCheck, ShieldX } from 'lucide-react';
-import { useState } from 'react';
-import { z } from 'zod';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem } from '@comp/ui/form';
-import { cn } from '@comp/ui/cn';
+import { Textarea } from '@comp/ui/textarea';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 
 const formSchema = z.object({
   comment: z.string().optional(),

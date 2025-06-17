@@ -1,7 +1,4 @@
-import React from 'react';
-import { cn } from '@comp/ui/cn';
-import { Button } from '@comp/ui/button';
-import { Loader2, Trash2 } from 'lucide-react';
+import type { Attachment, AttachmentType } from '@comp/db/types';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,7 +10,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@comp/ui/alert-dialog';
-import type { Attachment, AttachmentType } from '@comp/db/types';
+import { Button } from '@comp/ui/button';
+import { cn } from '@comp/ui/cn';
+import { Loader2, Trash2 } from 'lucide-react';
 import { getAttachmentIconAndColor } from '../utils/attachmentUtils';
 
 interface PendingAttachment {

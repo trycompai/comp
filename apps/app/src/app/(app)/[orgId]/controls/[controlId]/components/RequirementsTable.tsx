@@ -9,8 +9,8 @@ import type {
   FrameworkInstance,
   RequirementMap,
 } from '@comp/db/types';
-import { Input } from '@comp/ui/input';
 import { Icons } from '@comp/ui/icons';
+import { Input } from '@comp/ui/input';
 import { ColumnDef } from '@tanstack/react-table';
 import { useMemo, useState } from 'react';
 

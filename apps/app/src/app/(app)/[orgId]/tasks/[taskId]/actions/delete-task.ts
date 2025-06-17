@@ -1,9 +1,9 @@
 'use server';
 
+import { authActionClient } from '@/actions/safe-action';
 import { db } from '@comp/db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
-import { authActionClient } from '@/actions/safe-action';
 
 const deleteTaskSchema = z.object({
   id: z.string(),

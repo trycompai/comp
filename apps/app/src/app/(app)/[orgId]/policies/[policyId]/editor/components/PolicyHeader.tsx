@@ -1,5 +1,3 @@
-import { Badge } from '@comp/ui/badge';
-
 interface PolicyHeaderProps {
   saveStatus: 'Saved' | 'Saving' | 'Unsaved';
 }

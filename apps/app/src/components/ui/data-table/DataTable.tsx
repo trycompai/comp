@@ -1,6 +1,5 @@
 'use client';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
 import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
@@ -15,7 +14,6 @@ import {
 import { Input } from '@comp/ui/input';
 import { Table, TableBody, TableCell, TableRow } from '@comp/ui/table';
 import {
-  type Column,
   type ColumnDef,
   type SortingState,
   flexRender,

@@ -1,10 +1,9 @@
 'use client';
 
 import { changeOrganizationAction } from '@/actions/change-organization';
-import type { Organization, FrameworkEditorFramework } from '@comp/db/types';
+import type { FrameworkEditorFramework, Organization } from '@comp/db/types';
 import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@comp/ui/dialog';
 import {
   Command,
   CommandEmpty,
@@ -14,12 +13,13 @@ import {
   CommandList,
   CommandSeparator,
 } from '@comp/ui/command';
-import { Check, ChevronsUpDown, Plus, Search, Loader2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@comp/ui/dialog';
+import { Check, ChevronsUpDown, Loader2, Plus, Search } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
+import { useQueryState } from 'nuqs';
 import { useState } from 'react';
 import { CreateOrgModal } from './modals/create-org-modal';
-import { useQueryState } from 'nuqs';
 
 interface OrganizationSwitcherProps {
   organizations: Organization[];

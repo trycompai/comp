@@ -1,6 +1,6 @@
-import type React from 'react';
 import type { AttachmentType } from '@comp/db/types';
-import { FileImage, FileVideo, FileAudio, FileText, FileIcon } from 'lucide-react';
+import { FileAudio, FileIcon, FileImage, FileText, FileVideo } from 'lucide-react';
+import type React from 'react';
 
 // Helper function to get icon and color based on file type enum
 export function getAttachmentIconAndColor(type: AttachmentType | null | undefined): {

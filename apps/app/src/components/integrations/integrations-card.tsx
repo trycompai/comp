@@ -16,19 +16,17 @@ import {
   Clock,
   ExternalLink,
   Globe,
-  HelpCircle,
   InfoIcon,
   Loader2,
   Settings,
 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import type { StaticImageData } from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { parseAsBoolean, parseAsString, useQueryStates } from 'nuqs';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { IntegrationSettings, type IntegrationSettingsItem } from './integration-settings';
-import Link from 'next/link';
 
 export function IntegrationsCard({
   id,

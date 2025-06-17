@@ -1,6 +1,6 @@
+import { logger } from '@/utils/logger';
 import { db } from '@comp/db';
 import type { SupportedOS } from './types';
-import { logger } from '@/utils/logger';
 
 /**
  * Detects the operating system from a User-Agent string

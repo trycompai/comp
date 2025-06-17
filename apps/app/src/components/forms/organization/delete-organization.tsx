@@ -23,7 +23,7 @@ import {
 } from '@comp/ui/card';
 import { Input } from '@comp/ui/input';
 import { Label } from '@comp/ui/label';
-import { AlertTriangle, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { redirect } from 'next/navigation';
 import { useState } from 'react';

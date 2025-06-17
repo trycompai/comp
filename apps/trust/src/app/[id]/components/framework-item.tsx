@@ -1,6 +1,6 @@
-import type React from 'react';
 import type { FrameworkStatus } from '@comp/db/types';
 import { Badge } from '@comp/ui/badge';
+import type React from 'react';
 
 interface FrameworkItemProps {
   text: string;

@@ -5,8 +5,8 @@ import type { Metadata } from 'next';
 import { CreateVendorSheet } from '../components/create-vendor-sheet';
 import { VendorsTable } from './components/VendorsTable';
 import { getAssignees, getVendors } from './data/queries';
-import { vendorsSearchParamsCache } from './data/validations';
 import type { GetVendorsSchema } from './data/validations';
+import { vendorsSearchParamsCache } from './data/validations';
 
 export default async function Page({
   searchParams,

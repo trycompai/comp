@@ -1,10 +1,10 @@
 'use client';
 
-import { useRun } from '@trigger.dev/react-hooks';
-import React, { useEffect } from 'react';
 import type { onboardOrganization } from '@/jobs/tasks/onboarding/onboard-organization';
-import { useRouter } from 'next/navigation';
+import { useRun } from '@trigger.dev/react-hooks';
 import { CheckCircle } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 export function OnboardingStatus({ runId }: { runId: string }) {
   const { run, error, isLoading } = useRun<typeof onboardOrganization>(runId, {

@@ -6,8 +6,8 @@ import {
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
 import { headers } from 'next/headers';
-import { SignOut } from './sign-out';
 import { auth } from '../lib/auth';
+import { SignOut } from './sign-out';
 
 export async function UserMenu({ onlySignOut }: { onlySignOut?: boolean }) {
   const session = await auth.api.getSession({

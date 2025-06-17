@@ -1,12 +1,12 @@
 import { getOrganizations } from '@/data/getOrganizations';
-import type { Organization, FrameworkEditorFramework } from '@comp/db/types';
+import { db } from '@comp/db';
+import type { Organization } from '@comp/db/types';
+import { cn } from '@comp/ui/cn';
 import { cookies } from 'next/headers';
 import { MainMenu } from './main-menu';
 import { OrganizationSwitcher } from './organization-switcher';
 import { SidebarCollapseButton } from './sidebar-collapse-button';
 import { SidebarLogo } from './sidebar-logo';
-import { db } from '@comp/db';
-import { cn } from '@comp/ui/cn';
 
 export async function Sidebar({
   organization,

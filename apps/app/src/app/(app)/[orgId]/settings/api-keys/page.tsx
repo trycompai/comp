@@ -2,10 +2,10 @@ import { auth } from '@/utils/auth';
 import { headers } from 'next/headers';
 import { cache } from 'react';
 
-import { ApiKeysTable } from './components/table/ApiKeysTable';
+import PageCore from '@/components/pages/PageCore.tsx';
 import { db } from '@comp/db';
 import type { Metadata } from 'next';
-import PageCore from '@/components/pages/PageCore.tsx';
+import { ApiKeysTable } from './components/table/ApiKeysTable';
 
 export default async function ApiKeysPage() {
   const apiKeys = await getApiKeys();

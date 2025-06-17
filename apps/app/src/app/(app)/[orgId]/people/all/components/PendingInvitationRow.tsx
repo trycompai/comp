@@ -11,7 +11,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogClose,
 } from '@comp/ui/dialog';
 import {
   DropdownMenu,
@@ -20,9 +19,8 @@ import {
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
 import type { Invitation } from '@prisma/client';
-import { formatDistanceToNowStrict } from 'date-fns';
 import { Clock, MoreHorizontal, Trash2 } from 'lucide-react';
-import { useMemo, useRef, useState, useEffect } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 interface PendingInvitationRowProps {
   invitation: Invitation & {

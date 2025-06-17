@@ -1,11 +1,11 @@
 'use server';
 
-import { db } from '@comp/db';
-import { revalidatePath } from 'next/cache';
 import type { SearchableItemForLinking } from '@/app/components/SearchAndLinkList'; // Assuming this path is correct
+import { db } from '@comp/db';
+import type { FrameworkEditorControlTemplate } from '@prisma/client';
+import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { createControlTemplateSchema } from './schemas';
-import type { FrameworkEditorControlTemplate } from '@prisma/client';
 
 /**
  * Fetches all requirements, including their framework name and identifier.

@@ -1,9 +1,7 @@
 'use server';
 
-import { auth } from '@/utils/auth';
 import { authClient } from '@/utils/auth-client';
 import { revalidatePath, revalidateTag } from 'next/cache';
-import { headers } from 'next/headers';
 import { z } from 'zod';
 import { authActionClient } from '../safe-action';
 import type { ActionResponse } from '../types';

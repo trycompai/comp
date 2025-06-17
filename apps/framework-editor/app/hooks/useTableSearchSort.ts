@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import type { SortDirection, SortConfig } from '../types/common';
+import { useMemo, useState } from 'react';
+import type { SortConfig, SortDirection } from '../types/common';
 
 export function useTableSearchSort<
   TData extends Record<string, any>,

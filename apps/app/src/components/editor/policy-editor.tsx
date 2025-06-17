@@ -3,7 +3,6 @@
 import type { JSONContent } from '@tiptap/react';
 import { useState } from 'react';
 import AdvancedEditor from './advanced-editor';
-import { GetConfigurationResponseBodyDisabledReason } from '@vercel/sdk/models/getconfigurationop.js';
 
 interface PolicyEditorProps {
   content: JSONContent[];

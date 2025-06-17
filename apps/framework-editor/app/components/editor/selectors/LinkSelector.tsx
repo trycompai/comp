@@ -1,10 +1,10 @@
 'use client';
 
-import { type Editor } from '@tiptap/core';
-import { Check, Trash } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
 import { Button } from '@comp/ui/button';
 import { Input } from '@comp/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
+import { type Editor } from '@tiptap/core';
+import { Check } from 'lucide-react';
 import { useCallback, useEffect, useRef } from 'react';
 
 interface LinkSelectorProps {

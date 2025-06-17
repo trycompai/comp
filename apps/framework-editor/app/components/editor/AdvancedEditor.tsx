@@ -1,27 +1,26 @@
 'use client';
 
+import { Separator } from '@comp/ui/separator'; // Assuming Separator exists
+import type { Editor, Extensions } from '@tiptap/core';
 import {
-  EditorContent,
-  EditorRoot,
-  type JSONContent,
   // Import Novel command components
   EditorCommand,
   EditorCommandEmpty,
   EditorCommandItem,
   EditorCommandList,
+  EditorContent,
+  EditorRoot,
   // handleCommandNavigation is needed for keyboard nav in command list
   handleCommandNavigation,
+  type JSONContent,
 } from 'novel';
 import { useEffect, useState } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 import { defaultExtensions } from './extensions'; // Correct path (same directory)
-import type { Extensions } from '@tiptap/core';
-import type { Editor } from '@tiptap/core';
-import { Separator } from '@comp/ui/separator'; // Assuming Separator exists
 
 // Import the new selector components
-import { NodeSelector } from './selectors/NodeSelector';
 import { LinkSelector } from './selectors/LinkSelector';
+import { NodeSelector } from './selectors/NodeSelector';
 import { TextButtons } from './selectors/TextButtons';
 // Import the suggestion items to render them
 import { suggestionItems } from './slash-command';

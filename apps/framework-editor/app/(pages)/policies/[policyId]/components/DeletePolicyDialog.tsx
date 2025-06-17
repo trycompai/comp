@@ -1,9 +1,5 @@
 'use client';
 
-import { useState, useTransition } from 'react';
-import { toast } from 'sonner';
-import { deletePolicyTemplate } from '../../actions'; // Path to server actions
-import { Button } from '@comp/ui/button';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,6 +10,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@comp/ui/alert-dialog';
+import { useTransition } from 'react';
+import { toast } from 'sonner';
+import { deletePolicyTemplate } from '../../actions'; // Path to server actions
 
 interface DeletePolicyDialogProps {
   policyId: string;

@@ -348,10 +348,10 @@ const renderShape = (key: string, isVertical = false) => {
 
 export {
   ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
   ChartLegend,
   ChartLegendContent,
   ChartStyle,
+  ChartTooltip,
+  ChartTooltipContent,
   renderShape,
 };

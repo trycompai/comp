@@ -11,7 +11,6 @@ import { useQueryState } from 'nuqs';
 import { DataTableDateFilter } from './data-table-date-filter';
 import { DataTableFacetedFilter } from './data-table-faceted-filter';
 import { DataTableSliderFilter } from './data-table-slider-filter';
-import { DataTableViewOptions } from './data-table-view-options';
 
 interface DataTableToolbarProps<TData> extends React.ComponentProps<'div'> {
   table: Table<TData>;

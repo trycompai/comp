@@ -2,8 +2,6 @@
 
 import { createApiKeyAction } from '@/actions/organization/create-api-key-action';
 import { Button } from '@comp/ui/button';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@comp/ui/select';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@comp/ui/sheet';
 import {
   Drawer,
   DrawerContent,
@@ -12,12 +10,14 @@ import {
   DrawerTitle,
 } from '@comp/ui/drawer';
 import { useMediaQuery } from '@comp/ui/hooks';
+import { Input } from '@comp/ui/input';
 import { ScrollArea } from '@comp/ui/scroll-area';
-import { X, Check, Copy, Loader2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@comp/ui/sheet';
+import { Check, Copy, Loader2, X } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Input } from '@comp/ui/input';
 
 interface CreateApiKeyDialogProps {
   open: boolean;

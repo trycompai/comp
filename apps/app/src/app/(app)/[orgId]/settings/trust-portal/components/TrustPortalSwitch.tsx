@@ -1,30 +1,23 @@
 'use client';
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@comp/ui/card';
+import { useDebounce } from '@/hooks/useDebounce';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@comp/ui/form';
+import { Input } from '@comp/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Switch } from '@comp/ui/switch';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { ExternalLink } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
+import Link from 'next/link';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { trustPortalSwitchAction } from '../actions/trust-portal-switch';
-import Link from 'next/link';
-import { ExternalLink } from 'lucide-react';
-import { Input } from '@comp/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import { updateTrustPortalFrameworks } from '../actions/update-trust-portal-frameworks';
-import { SOC2, ISO27001, GDPR } from './logos';
 import { isFriendlyAvailable } from '../actions/is-friendly-available';
-import { useDebounce } from '@/hooks/useDebounce';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { trustPortalSwitchAction } from '../actions/trust-portal-switch';
+import { updateTrustPortalFrameworks } from '../actions/update-trust-portal-frameworks';
+import { GDPR, ISO27001, SOC2 } from './logos';
 
 const trustPortalSwitchSchema = z.object({
   enabled: z.boolean(),

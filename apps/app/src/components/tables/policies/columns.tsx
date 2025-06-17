@@ -1,6 +1,6 @@
 'use client';
 
-import { StatusIndicator, StatusType } from '@/components/status-indicator';
+import { StatusIndicator } from '@/components/status-indicator';
 import { formatDate } from '@/utils/format';
 import { Button } from '@comp/ui/button';
 import type { ColumnDef } from '@tanstack/react-table';

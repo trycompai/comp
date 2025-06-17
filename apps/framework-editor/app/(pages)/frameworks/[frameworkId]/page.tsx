@@ -1,8 +1,7 @@
+import { isAuthorized } from '@/app/lib/utils';
 import { db } from '@comp/db';
 import { notFound, redirect } from 'next/navigation';
 import { FrameworkRequirementsClientPage } from './FrameworkRequirementsClientPage';
-import type { FrameworkEditorFramework, FrameworkEditorRequirement } from '@prisma/client';
-import { isAuthorized } from '@/app/lib/utils';
 
 interface PageProps {
   params: Promise<{

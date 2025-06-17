@@ -2,7 +2,7 @@
 
 import { db } from '@comp/db';
 import { PolicyStatus } from '@comp/db/types';
-import { revalidatePath, revalidateTag } from 'next/cache';
+import { revalidatePath } from 'next/cache';
 import { authActionClient } from '../safe-action';
 import { updatePolicyFormSchema } from '../schema';
 

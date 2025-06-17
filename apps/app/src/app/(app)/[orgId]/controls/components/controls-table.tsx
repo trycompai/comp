@@ -3,12 +3,11 @@
 import * as React from 'react';
 
 import { DataTable } from '@/components/data-table/data-table';
-import { DataTableSortList } from '@/components/data-table/data-table-sort-list';
 import { DataTableToolbar } from '@/components/data-table/data-table-toolbar';
 import { CreatePolicySheet } from '@/components/sheets/create-policy-sheet';
 import { useDataTable } from '@/hooks/use-data-table';
 import { useParams } from 'next/navigation';
-import { ControlWithRelations, getControls } from '../data/queries';
+import { ControlWithRelations } from '../data/queries';
 import { getControlColumns } from './controls-table-columns';
 
 interface ControlsTableProps {

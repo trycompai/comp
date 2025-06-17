@@ -2,10 +2,10 @@ import PageLayout from '@/app/components/PageLayout';
 import { db } from '@comp/db';
 import { notFound, redirect } from 'next/navigation';
 // import { Card, CardContent, CardHeader, CardTitle } from "@comp/ui/card"; // No longer needed here
-import { PolicyEditorClient } from './PolicyEditorClient';
-import { PolicyDetailsClientPage } from './PolicyDetailsClientPage'; // Import the new client component
-import '@comp/ui/editor.css';
 import { isAuthorized } from '@/app/lib/utils';
+import '@comp/ui/editor.css';
+import { PolicyDetailsClientPage } from './PolicyDetailsClientPage'; // Import the new client component
+import { PolicyEditorClient } from './PolicyEditorClient';
 
 interface PolicyDetailPageProps {
   params: Promise<{

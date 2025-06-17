@@ -1,8 +1,8 @@
-import 'server-only';
 import { auth } from '@/utils/auth';
 import { db } from '@comp/db';
 import { headers } from 'next/headers';
 import { cache } from 'react';
+import 'server-only';
 
 export const getContextEntries = cache(
   async ({

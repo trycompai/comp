@@ -1,8 +1,8 @@
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
-import type { Host } from '../types';
-import { ArrowLeft, CheckCircle2, XCircle } from 'lucide-react';
 import { cn } from '@comp/ui/cn';
+import { ArrowLeft, CheckCircle2, XCircle } from 'lucide-react';
+import type { Host } from '../types';
 
 export const HostDetails = ({ host, onClose }: { host: Host; onClose: () => void }) => {
   return (
