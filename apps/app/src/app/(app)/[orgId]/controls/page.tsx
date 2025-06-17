@@ -10,6 +10,12 @@ interface ControlTableProps {
   searchParams: Promise<SearchParams>;
 }
 
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: 'Controls',
+  };
+}
+
 export default async function ControlsPage({ ...props }: ControlTableProps) {
   const searchParams = await props.searchParams;
   const search = searchParamsCache.parse(searchParams);

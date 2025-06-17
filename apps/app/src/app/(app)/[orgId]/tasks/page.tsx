@@ -6,6 +6,13 @@ import { headers } from 'next/headers';
 import { TaskList } from './components/TaskList';
 import PageCore from '@/components/pages/PageCore.tsx';
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
+import { Metadata } from 'next';
+
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: 'Tasks',
+  };
+}
 
 // Force dynamic rendering to ensure searchParams are always fresh
 export const dynamic = 'force-dynamic';
