@@ -1,5 +1,4 @@
 import { auth } from '@/app/lib/auth';
-import { getI18n } from '@/app/locales/server';
 import { Avatar, AvatarFallback, AvatarImageNext } from '@comp/ui/avatar';
 import {
   DropdownMenu,
@@ -9,7 +8,6 @@ import {
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
 import { headers } from 'next/headers';
-import { LocaleSwitch } from './locale-switch';
 import { Logout } from './logout';
 import { ThemeSwitch } from './theme-switch';
 
@@ -32,8 +30,6 @@ function getInitials(name?: string | null, email?: string | null): string {
 }
 
 export async function UserMenu() {
-  const t = await getI18n();
-
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -75,13 +71,8 @@ export async function UserMenu() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <div className="flex flex-row items-center justify-between p-2">
-          <p className="text-sm">{t('user_menu.theme')}</p>
+          <p className="text-sm">Theme</p>
           <ThemeSwitch />
-        </div>{' '}
-        <DropdownMenuSeparator />{' '}
-        <div className="flex flex-row items-center justify-between p-2">
-          <p className="text-sm">{t('user_menu.language')}</p>
-          <LocaleSwitch />
         </div>{' '}
         <DropdownMenuSeparator />
         <Logout />

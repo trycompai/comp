@@ -1,11 +1,9 @@
-import { getI18n } from '@/app/locales/server';
 import type { Metadata } from 'next';
-import { setStaticParamsLocale } from 'next-international/server';
 import { Suspense } from 'react';
 import { Overview } from './components/Overview';
 
 interface HomePageProps {
-  params: Promise<{ locale: string }>;
+  params: Promise<{}>;
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
@@ -22,16 +20,8 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
   );
 }
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}): Promise<Metadata> {
-  const { locale } = await params;
-  setStaticParamsLocale(locale);
-  const t = await getI18n();
-
+export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: t('sidebar.dashboard'),
+    title: 'Employee Portal Overview',
   };
 }

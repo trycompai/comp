@@ -40,7 +40,12 @@
         "RESEND_AUDIENCE_ID",
         "FIRECRAWL_API_KEY",
         "ZAPIER_HUBSPOT_WEBHOOK_URL",
-        "TRUST_PORTAL_PROJECT_ID"
+        "TRUST_PORTAL_PROJECT_ID",
+        "FLEET_URL",
+        "FLEET_TOKEN",
+        "FLEET_DEVICE_PATH_MAC",
+        "FLEET_AGENT_BUCKET_NAME",
+        "FLEET_DEVICE_PATH_WINDOWS"
       ],
       "inputs": ["$TURBO_DEFAULT$", ".env"],
       "dependsOn": ["^build", "^db:generate", "^auth:build"],

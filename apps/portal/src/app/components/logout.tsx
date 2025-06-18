@@ -1,13 +1,11 @@
 'use client';
 
 import { authClient } from '@/app/lib/auth-client';
-import { useI18n } from '@/app/locales/client';
 import { DropdownMenuItem } from '@comp/ui/dropdown-menu';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 export function Logout() {
-  const t = useI18n();
   const [isLoading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -25,7 +23,7 @@ export function Logout() {
 
   return (
     <DropdownMenuItem onClick={handleLogout}>
-      {isLoading ? 'Loading...' : t('user_menu.sign_out')}
+      {isLoading ? 'Loading...' : 'Sign Out'}
     </DropdownMenuItem>
   );
 }

@@ -1,7 +1,6 @@
 'use client';
 
 import { authClient } from '@/app/lib/auth-client';
-import { useI18n } from '@/app/locales/client';
 import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
 import { Form, FormControl, FormField, FormItem } from '@comp/ui/form';
@@ -23,7 +22,6 @@ type Props = {
 };
 
 export function OtpSignIn({ className }: Props) {
-  const t = useI18n();
   const [isLoading, setLoading] = useState(false);
   const [isSent, setSent] = useState(false);
   const [_email, setEmail] = useState<string>();
@@ -72,7 +70,7 @@ export function OtpSignIn({ className }: Props) {
               <FormItem>
                 <FormControl>
                   <Input
-                    placeholder={t('auth.email.placeholder')}
+                    placeholder="Your work email"
                     {...field}
                     autoFocus
                     className="h-[40px]"
@@ -94,7 +92,7 @@ export function OtpSignIn({ className }: Props) {
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <>
-                <span>{t('auth.email.button')}</span>
+                <span>Continue</span>
                 <ArrowRight className="h-4 w-4" />
               </>
             )}

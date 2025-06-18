@@ -2,6 +2,7 @@
 
 import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@comp/ui/form';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@comp/ui/input-otp';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
@@ -11,7 +12,6 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { login } from '../actions/login';
-import { OtpStyledInput } from './otp-input';
 
 const INPUT_LENGTH = 6;
 
@@ -71,7 +71,17 @@ export function OtpForm({ email }: OtpFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormControl>
-                <OtpStyledInput numInputs={INPUT_LENGTH} {...field} />
+                <InputOTP
+                  maxLength={INPUT_LENGTH}
+                  {...field}
+                  render={({ slots }) => (
+                    <InputOTPGroup>
+                      {slots.map((slot, index) => (
+                        <InputOTPSlot key={index} {...slot} />
+                      ))}
+                    </InputOTPGroup>
+                  )}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

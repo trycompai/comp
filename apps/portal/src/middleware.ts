@@ -1,16 +1,7 @@
-import { createI18nMiddleware } from 'next-international/middleware';
-import { type NextRequest } from 'next/server';
-
-const I18nMiddleware = createI18nMiddleware({
-  locales: ['en'],
-  defaultLocale: 'en',
-  urlMappingStrategy: 'rewrite',
-});
+import { type NextRequest, NextResponse } from 'next/server';
 
 export async function middleware(request: NextRequest) {
-  const response = I18nMiddleware(request);
-
-  return response;
+  return NextResponse.next();
 }
 
 export const config = {

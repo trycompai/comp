@@ -1,6 +1,5 @@
 'use client';
 
-import { useI18n } from '@/app/locales/client';
 import { cn } from '@comp/ui/cn';
 import { Icons } from '@comp/ui/icons';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
@@ -92,8 +91,6 @@ type Props = {
 };
 
 export function MainMenu({ initialItems, onSelect }: Props) {
-  const t = useI18n();
-
   const defaultItems = [
     {
       path: '/',

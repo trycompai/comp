@@ -1,5 +1,4 @@
 import { OtpSignIn } from '@/app/components/otp';
-import { getI18n } from '@/app/locales/server';
 import { Button } from '@comp/ui/button';
 import { ArrowRight } from 'lucide-react';
 import type { Metadata } from 'next';
@@ -10,8 +9,6 @@ export const metadata: Metadata = {
 };
 
 export default async function Page() {
-  const t = await getI18n();
-
   const defaultSignInOptions = (
     <div className="flex flex-col space-y-2">
       <OtpSignIn />
@@ -29,9 +26,11 @@ export default async function Page() {
                   <h1 className="font-mono text-xl font-semibold">Comp AI</h1>
                 </Link>
               </div>
-              <h2 className="mt-4 text-lg font-medium">{t('auth.title')}</h2>
+              <h2 className="mt-4 text-lg font-medium">Employee Portal</h2>
               <div className="mt-2">
-                <span className="text-muted-foreground text-xs">{t('auth.description')}</span>
+                <span className="text-muted-foreground text-xs">
+                  Enter your email address to receive a one time password.
+                </span>
               </div>
             </div>
 
@@ -39,8 +38,11 @@ export default async function Page() {
           </div>
 
           <div className="from-primary/10 via-primary/5 to-primary/5 mt-8 rounded-sm bg-gradient-to-r p-4">
-            <h3 className="text-sm font-medium">{t('powered_by.title')}</h3>
-            <p className="text-muted-foreground mt-1 text-xs">{t('powered_by.description')}</p>
+            <h3 className="text-sm font-medium">Comp AI - OSS Compliance Platform</h3>
+            <p className="text-muted-foreground mt-1 text-xs">
+              Get SOC 2, ISO 27001, and GDPR compliant in weeks, not months. Open source, instant
+              sign up, free trial.
+            </p>
             <Button variant="link" className="mt-2 p-0" asChild>
               <Link
                 href="https://trycomp.ai"
@@ -48,7 +50,7 @@ export default async function Page() {
                 className="hover:underline hover:underline-offset-2"
               >
                 <span className="text-primary mt-2 inline-flex items-center gap-2 text-xs font-medium">
-                  {t('powered_by.learn_more')}
+                  Start Free Trial & Get Compliant
                   <ArrowRight className="h-3 w-3" />
                 </span>
               </Link>
