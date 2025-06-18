@@ -1,8 +1,8 @@
-import { Bold, Code, Italic, Strikethrough, Underline as UnderlineIcon } from 'lucide-react';
-
-import { Button } from '@comp/ui/button';
-import { cn } from '@comp/ui/cn';
 import type { Editor } from '@tiptap/react';
+import { Bold, Code, Italic, Strikethrough, Underline } from 'lucide-react';
+
+import { cn } from '../../../utils/cn';
+import { Button } from '../../button';
 
 interface TextButtonsProps {
   editor: Editor;
@@ -41,7 +41,7 @@ export const TextButtons = ({ editor }: TextButtonsProps) => {
           'bg-accent': editor.isActive('underline'),
         })}
       >
-        <UnderlineIcon className="h-4 w-4" />
+        <Underline className="h-4 w-4" />
       </Button>
       <Button
         size="sm"

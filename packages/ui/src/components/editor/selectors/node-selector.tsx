@@ -1,4 +1,4 @@
-import type { Editor } from '@tiptap/react';
+import { Editor } from '@tiptap/react';
 import {
   Check,
   ChevronDown,
@@ -7,17 +7,17 @@ import {
   Heading2,
   Heading3,
   ListOrdered,
-  type LucideIcon,
-  TextIcon,
   TextQuote,
+  Type,
 } from 'lucide-react';
+import React from 'react';
 
-import { Button } from '@comp/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
+import { Button } from '../../button';
+import { Popover, PopoverContent, PopoverTrigger } from '../../popover';
 
 export type SelectorItem = {
   name: string;
-  icon: LucideIcon;
+  icon: React.ComponentType<{ className?: string }>;
   command: (editor: Editor) => void;
   isActive: (editor: Editor) => boolean;
 };
@@ -25,8 +25,8 @@ export type SelectorItem = {
 const items: SelectorItem[] = [
   {
     name: 'Text',
-    icon: TextIcon,
-    command: (editor) => editor.chain().focus().clearNodes().run(),
+    icon: Type,
+    command: (editor) => editor.chain().focus().toggleNode('paragraph', 'paragraph').run(),
     isActive: (editor) =>
       editor.isActive('paragraph') &&
       !editor.isActive('bulletList') &&

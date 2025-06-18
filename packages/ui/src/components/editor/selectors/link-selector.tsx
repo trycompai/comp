@@ -2,10 +2,10 @@ import type { Editor } from '@tiptap/react';
 import { Check, Link, Trash } from 'lucide-react';
 import { useState } from 'react';
 
-import { Button } from '@comp/ui/button';
-import { cn } from '@comp/ui/cn';
-import { Input } from '@comp/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
+import { cn } from '../../../utils/cn';
+import { Button } from '../../button';
+import { Input } from '../../input';
+import { Popover, PopoverContent, PopoverTrigger } from '../../popover';
 
 export function isValidUrl(url: string) {
   try {

@@ -53,7 +53,6 @@ We transform compliance from a vendor checkbox into an engineering problem solve
 - [Tailwind CSS](https://tailwindcss.com/?ref=trycomp.ai)
 - [Upstash](https://upstash.com/?ref=trycomp.ai)
 - [Vercel](https://vercel.com/?ref=trycomp.ai)
-- [Novu](https://novu.co/?ref=trycomp.ai)
 
 ## Contact us
 

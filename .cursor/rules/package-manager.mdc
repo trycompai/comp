@@ -1,0 +1,10 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Always use bun as our package manager, example:
+bun install axios
+bun remove
+bun run dev
+bunx prisma migrate dev

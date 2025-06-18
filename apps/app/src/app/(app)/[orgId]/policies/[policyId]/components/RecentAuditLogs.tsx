@@ -197,7 +197,7 @@ export const RecentAuditLogs = ({ logs }: { logs: AuditLogWithRelations[] }) => 
               </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+            <div className="bg-background flex flex-col items-center justify-center py-12 px-6 text-center">
               <ActivityIcon className="text-muted-foreground mb-2 h-8 w-8" />
               <p className="text-sm font-medium">No recent activity</p>
               <p className="text-muted-foreground text-xs">

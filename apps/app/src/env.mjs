@@ -42,7 +42,6 @@ export const env = createEnv({
     NEXT_PUBLIC_POSTHOG_KEY: z.string().optional(),
     NEXT_PUBLIC_POSTHOG_HOST: z.string().optional(),
     NEXT_PUBLIC_VERCEL_URL: z.string().optional(),
-    NEXT_PUBLIC_NOVU_IDENTIFIER: z.string().optional(),
     NEXT_PUBLIC_STRIPE_SUBSCRIPTION_PRICE_ID: z.string().optional(),
   },
 
@@ -72,7 +71,6 @@ export const env = createEnv({
     VERCEL_PROJECT_ID: process.env.VERCEL_PROJECT_ID,
     TRUST_PORTAL_PROJECT_ID: process.env.TRUST_PORTAL_PROJECT_ID,
     NEXT_PUBLIC_VERCEL_URL: process.env.NEXT_PUBLIC_VERCEL_URL,
-    NEXT_PUBLIC_NOVU_IDENTIFIER: process.env.NEXT_PUBLIC_NOVU_IDENTIFIER,
     NODE_ENV: process.env.NODE_ENV,
     AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID,
     AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,
