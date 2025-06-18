@@ -24,7 +24,9 @@ export const auth = betterAuth({
         const isLocalhost = process.env.NODE_ENV === 'development';
         const protocol = isLocalhost ? 'http' : 'https';
         const domain = isLocalhost ? 'localhost:3000' : 'app.trycomp.ai';
-        const inviteLink = `${protocol}://${domain}/auth?inviteCode=${data.invitation.id}`;
+        const inviteLink = `${protocol}://${domain}/invite/${data.invitation.id}`;
+
+        const url = `${protocol}://${domain}/auth`;
 
         await sendInviteMemberEmail({
           email: data.email,

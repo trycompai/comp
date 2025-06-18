@@ -1,7 +1,7 @@
 'use client';
 
 import { changeOrganizationAction } from '@/actions/change-organization';
-import type { FrameworkEditorFramework, Organization } from '@comp/db/types';
+import type { Organization } from '@comp/db/types';
 import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
 import {
@@ -19,16 +19,11 @@ import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
 import { useQueryState } from 'nuqs';
 import { useState } from 'react';
-import { CreateOrgModal } from './modals/create-org-modal';
 
 interface OrganizationSwitcherProps {
   organizations: Organization[];
   organization: Organization | null;
   isCollapsed?: boolean;
-  frameworks: Pick<
-    FrameworkEditorFramework,
-    'id' | 'name' | 'description' | 'version' | 'visible'
-  >[];
 }
 
 interface OrganizationInitialsAvatarProps {
@@ -89,11 +84,9 @@ export function OrganizationSwitcher({
   organizations,
   organization,
   isCollapsed = false,
-  frameworks,
 }: OrganizationSwitcherProps) {
   const router = useRouter();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [showCreateOrg, setShowCreateOrg] = useState(false);
   const [pendingOrgId, setPendingOrgId] = useState<string | null>(null);
 
   const [showOrganizationSwitcher, setShowOrganizationSwitcher] = useQueryState(
@@ -217,7 +210,7 @@ export function OrganizationSwitcher({
               <CommandGroup>
                 <CommandItem
                   onSelect={() => {
-                    setShowCreateOrg(true);
+                    router.push('/setup?intent=create-additional');
                     setIsDialogOpen(false);
                   }}
                   disabled={status === 'executing'}
@@ -230,9 +223,6 @@ export function OrganizationSwitcher({
             </CommandList>
           </Command>
         </DialogContent>
-      </Dialog>
-      <Dialog open={showCreateOrg} onOpenChange={(open) => setShowCreateOrg(open)}>
-        <CreateOrgModal frameworks={frameworks} onOpenChange={(open) => setShowCreateOrg(open)} />
       </Dialog>
     </div>
   );

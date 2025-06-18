@@ -253,3 +253,89 @@ export const authWithOrgAccessClient = authActionClient.use(async ({ next, clien
     },
   });
 });
+
+// New action client that requires auth but not an active organization
+export const authActionClientWithoutOrg = actionClientWithMeta
+  .use(async ({ next, clientInput }) => {
+    const response = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    const { session, user } = response ?? {};
+
+    if (!session) {
+      throw new Error('Unauthorized');
+    }
+
+    const result = await next({
+      ctx: {
+        user: user,
+        session: session,
+      },
+    });
+
+    if (process.env.NODE_ENV === 'development') {
+      logger('Input ->', JSON.stringify(clientInput, null, 2));
+      logger('Result ->', JSON.stringify(result.data, null, 2));
+
+      // Also log validation errors if they exist
+      if (result.validationErrors) {
+        logger('Validation Errors ->', JSON.stringify(result.validationErrors, null, 2));
+      }
+
+      return result;
+    }
+
+    return result;
+  })
+  .use(async ({ next, metadata }) => {
+    const headersList = await headers();
+    let remaining: number | undefined;
+
+    if (ratelimit) {
+      const { success, remaining: rateLimitRemaining } = await ratelimit.limit(
+        `${headersList.get('x-forwarded-for')}-${metadata.name}`,
+      );
+
+      if (!success) {
+        throw new Error('Too many requests');
+      }
+
+      remaining = rateLimitRemaining;
+    }
+
+    return next({
+      ctx: {
+        ip: headersList.get('x-forwarded-for'),
+        userAgent: headersList.get('user-agent'),
+        ratelimit: {
+          remaining: remaining ?? 0,
+        },
+      },
+    });
+  })
+  .use(async ({ next, metadata, ctx }) => {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session) {
+      throw new Error('Unauthorized');
+    }
+
+    if (metadata.track) {
+      track(session.user.id, metadata.track.event, {
+        channel: metadata.track.channel,
+        email: session.user.email,
+        name: session.user.name,
+        // organizationId is optional here since there might not be one
+        organizationId: session.session.activeOrganizationId || undefined,
+      });
+    }
+
+    return next({
+      ctx: {
+        user: session.user,
+      },
+    });
+  });

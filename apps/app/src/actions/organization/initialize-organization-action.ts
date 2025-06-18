@@ -10,12 +10,12 @@ import { organizationSchema } from '../schema';
 import { createStripeCustomer } from './lib/create-stripe-customer';
 import { initializeOrganization } from './lib/initialize-organization';
 
-export const createOrganizationAction = authActionClient
+export const initializeOrganizationAction = authActionClient
   .inputSchema(organizationSchema)
   .metadata({
-    name: 'create-organization',
+    name: 'initialize-organization',
     track: {
-      event: 'create-organization',
+      event: 'initialize-organization',
       channel: 'server',
     },
   })

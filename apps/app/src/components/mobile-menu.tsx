@@ -1,6 +1,6 @@
 'use client';
 
-import type { Organization as DbOrganization, FrameworkEditorFramework } from '@comp/db/types';
+import type { Organization as DbOrganization } from '@comp/db/types';
 import { Button } from '@comp/ui/button';
 import { Icons } from '@comp/ui/icons';
 import { Sheet, SheetContent } from '@comp/ui/sheet';
@@ -13,13 +13,9 @@ interface MobileMenuProps {
   organizations: AuthOrganization[];
   isCollapsed?: boolean;
   organizationId: string;
-  frameworks: Pick<
-    FrameworkEditorFramework,
-    'id' | 'name' | 'description' | 'version' | 'visible'
-  >[];
 }
 
-export function MobileMenu({ organizationId, organizations, frameworks }: MobileMenuProps) {
+export function MobileMenu({ organizationId, organizations }: MobileMenuProps) {
   const [isOpen, setOpen] = useState(false);
 
   const handleCloseSheet = () => {
@@ -59,7 +55,6 @@ export function MobileMenu({ organizationId, organizations, frameworks }: Mobile
             organizations={adaptedOrganizations}
             organization={currentOrganization}
             isCollapsed={false}
-            frameworks={frameworks}
           />
           <MainMenu organizationId={organizationId} onItemClick={handleCloseSheet} />
         </div>

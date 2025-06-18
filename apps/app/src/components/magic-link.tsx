@@ -41,7 +41,7 @@ export function MagicLinkSignIn({ className, inviteCode }: Props) {
 
     const { data, error } = await authClient.signIn.magicLink({
       email: email,
-      callbackURL: `/setup?inviteCode=${inviteCode}`,
+      callbackURL: inviteCode ? `/invite/${inviteCode}` : '/',
     });
 
     if (error) {

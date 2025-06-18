@@ -1,7 +1,7 @@
 'use client';
 
 import { PolicyEditor } from '@/app/components/editor/PolicyEditor'; // Use PolicyEditor from framework-editor
-import type { JSONContent } from '@tiptap/react'; // Or from 'novel'
+import type { JSONContent } from '@tiptap/react';
 import { toast } from 'sonner';
 import { updatePolicyContent } from './actions'; // Local server action
 

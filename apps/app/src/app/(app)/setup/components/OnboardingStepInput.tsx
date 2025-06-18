@@ -4,9 +4,10 @@ import { SelectPills } from '@comp/ui/select-pills';
 import { Textarea } from '@comp/ui/textarea';
 import type { UseFormReturn } from 'react-hook-form';
 import type { CompanyDetails, Step } from '../lib/types';
+import { FrameworkSelection } from './FrameworkSelection';
 
-// It's often better to move shared types to a central location (e.g., ../lib/types.ts)
-// For now, defining it here to match OnboardingForm.tsx structure.
+// Type for form fields used in this component.
+// For now, defining it here to match OrganizationSetupForm.tsx structure.
 export type OnboardingFormFields = Partial<CompanyDetails> & {
   [K in keyof CompanyDetails as `${K}Other`]?: string;
 };
@@ -15,17 +16,33 @@ interface OnboardingStepInputProps {
   currentStep: Step;
   form: UseFormReturn<OnboardingFormFields>; // Or a more generic form type if preferred
   savedAnswers: Partial<CompanyDetails>;
+  onLoadingChange?: (loading: boolean) => void;
 }
 
-export function OnboardingStepInput({ currentStep, form, savedAnswers }: OnboardingStepInputProps) {
+export function OnboardingStepInput({
+  currentStep,
+  form,
+  savedAnswers,
+  onLoadingChange,
+}: OnboardingStepInputProps) {
+  if (currentStep.key === 'frameworkIds') {
+    return (
+      <FrameworkSelection
+        value={form.getValues(currentStep.key) || []}
+        onChange={(value) => form.setValue(currentStep.key, value)}
+        onLoadingChange={onLoadingChange}
+      />
+    );
+  }
+
   if (currentStep.key === 'describe') {
     return (
       <Textarea
         {...form.register(currentStep.key)}
-        placeholder={`${savedAnswers.legalName || ''} is a company that...`}
+        placeholder={`${savedAnswers.organizationName || ''} is a company that...`}
         rows={2}
         maxLength={300}
-        className="resize-none"
+        className="h-24 resize-none"
       />
     );
   }

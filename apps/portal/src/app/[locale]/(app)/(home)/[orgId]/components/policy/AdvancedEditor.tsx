@@ -1,6 +1,7 @@
 'use client';
 
-import { EditorContent, EditorRoot, type JSONContent, handleCommandNavigation } from 'novel';
+import type { JSONContent } from '@tiptap/react';
+import { EditorContent, useEditor } from '@tiptap/react';
 import { defaultExtensions } from './extensions';
 
 interface AdvancedEditorProps {
@@ -11,17 +12,17 @@ interface AdvancedEditorProps {
 }
 
 const AdvancedEditor = ({ initialContent }: AdvancedEditorProps) => {
-  if (!initialContent) return null;
-
   // Ensure content is properly structured with a doc type
-  const formattedContent = Array.isArray(initialContent)
-    ? { type: 'doc', content: initialContent }
-    : initialContent.type === 'doc'
-      ? initialContent
-      : { type: 'doc', content: [initialContent] };
+  const formattedContent = initialContent
+    ? Array.isArray(initialContent)
+      ? { type: 'doc', content: initialContent }
+      : initialContent.type === 'doc'
+        ? initialContent
+        : { type: 'doc', content: [initialContent] }
+    : null;
 
   // Ensure there's at least one paragraph with text content
-  if (!formattedContent.content || formattedContent.content.length === 0) {
+  if (formattedContent && (!formattedContent.content || formattedContent.content.length === 0)) {
     formattedContent.content = [
       {
         type: 'paragraph',
@@ -30,26 +31,21 @@ const AdvancedEditor = ({ initialContent }: AdvancedEditorProps) => {
     ];
   }
 
+  const editor = useEditor({
+    extensions: defaultExtensions,
+    content: formattedContent || '',
+    editable: false,
+    immediatelyRender: false,
+  });
+
+  if (!initialContent) return null;
+
   return (
     <div className="relative w-full max-w-screen-lg">
-      <EditorRoot>
-        <EditorContent
-          editable={false}
-          immediatelyRender={false}
-          initialContent={initialContent}
-          extensions={defaultExtensions}
-          className="bg-background relative min-h-[500px] w-full max-w-screen-lg p-2 sm:mb-[calc(20vh)]"
-          editorProps={{
-            handleDOMEvents: {
-              keydown: (_view, event) => handleCommandNavigation(event),
-            },
-            attributes: {
-              class:
-                'prose prose-lg dark:prose-invert prose-headings:font-title font-default focus:outline-hidden max-w-full',
-            },
-          }}
-        />
-      </EditorRoot>
+      <EditorContent
+        editor={editor}
+        className="bg-background relative min-h-[500px] w-full max-w-screen-lg p-2 sm:mb-[calc(20vh)] prose prose-lg dark:prose-invert prose-headings:font-title font-default focus:outline-hidden max-w-full"
+      />
     </div>
   );
 };

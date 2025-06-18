@@ -4,7 +4,7 @@ import { db } from '@comp/db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { Resend } from 'resend';
 import { z } from 'zod';
-import { authActionClient } from '../safe-action';
+import { authActionClientWithoutOrg } from '../safe-action';
 import type { ActionResponse } from '../types';
 
 async function validateInviteCode(inviteCode: string, invitedEmail: string) {
@@ -31,7 +31,7 @@ const completeInvitationSchema = z.object({
   inviteCode: z.string(),
 });
 
-export const completeInvitation = authActionClient
+export const completeInvitation = authActionClientWithoutOrg
   .metadata({
     name: 'complete-invitation',
     track: {

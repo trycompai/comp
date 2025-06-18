@@ -1,31 +1,16 @@
 'use client';
 
-import { Separator } from '@comp/ui/separator'; // Assuming Separator exists
-import type { Editor, Extensions } from '@tiptap/core';
-import {
-  // Import Novel command components
-  EditorCommand,
-  EditorCommandEmpty,
-  EditorCommandItem,
-  EditorCommandList,
-  EditorContent,
-  EditorRoot,
-  // handleCommandNavigation is needed for keyboard nav in command list
-  handleCommandNavigation,
-  type JSONContent,
-} from 'novel';
+import { Separator } from '@comp/ui/separator';
+import type { JSONContent } from '@tiptap/react';
+import { EditorContent, useEditor } from '@tiptap/react';
 import { useEffect, useState } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
-import { defaultExtensions } from './extensions'; // Correct path (same directory)
+import { defaultExtensions } from './extensions';
 
-// Import the new selector components
+// Import the selector components
 import { LinkSelector } from './selectors/LinkSelector';
 import { NodeSelector } from './selectors/NodeSelector';
 import { TextButtons } from './selectors/TextButtons';
-// Import the suggestion items to render them
-import { suggestionItems } from './slash-command';
-
-const extensionsList: Extensions = [...defaultExtensions]; // Renamed to avoid conflict
 
 interface AdvancedEditorProps {
   initialContent?: JSONContent | JSONContent[];
@@ -42,7 +27,6 @@ const AdvancedEditor = ({
 }: AdvancedEditorProps) => {
   const [saveStatus, setSaveStatus] = useState<'Saved' | 'Saving' | 'Unsaved'>('Saved');
   const [charsCount, setCharsCount] = useState<number>(0);
-  const [editor, setEditor] = useState<Editor | null>(null); // Store editor instance
 
   // State for popovers
   const [isNodeSelectorOpen, setIsNodeSelectorOpen] = useState(false);
@@ -56,28 +40,47 @@ const AdvancedEditor = ({
       setSaveStatus('Saved');
     } catch (err) {
       console.error('Failed to save content:', err);
-      setSaveStatus('Unsaved'); // Keep as Unsaved on error
+      setSaveStatus('Unsaved');
     }
   }, saveDebounceMs);
 
+  const editor = useEditor({
+    extensions: defaultExtensions,
+    content: initialContent,
+    editable: !readOnly,
+    immediatelyRender: false,
+    onUpdate: ({ editor }) => {
+      const content = editor.getJSON();
+      const wordCount = editor.storage.characterCount?.words() ?? 0;
+      setCharsCount(wordCount);
+
+      if (onSave) {
+        setSaveStatus('Unsaved');
+        debouncedSave(content);
+      }
+    },
+    onSelectionUpdate: ({ editor }) => {
+      const wordCount = editor.storage.characterCount?.words() ?? 0;
+      setCharsCount(wordCount);
+    },
+  });
+
   useEffect(() => {
-    // Update word count when editor instance is available
     if (editor) {
-      // Remove @ts-expect-error - Try relying on type inference or check Novel types
       const wordCount = editor.storage.characterCount?.words() ?? 0;
       setCharsCount(wordCount);
     }
-  }, [editor, editor?.storage.characterCount]); // Depend on storage for updates
+  }, [editor]);
 
   if (!initialContent) {
     console.warn('AdvancedEditor: initialContent is missing.');
-    return null; // Or return a loading state
+    return null;
   }
 
   return (
     <div className="bg-background relative flex w-full flex-col gap-2 rounded-sm border">
       {/* Toolbar Area */}
-      {!readOnly && (
+      {!readOnly && editor && (
         <div className="bg-background sticky top-0 z-10 flex flex-wrap items-center gap-1 border-b p-2">
           <NodeSelector
             editor={editor}
@@ -92,7 +95,6 @@ const AdvancedEditor = ({
           />
           <Separator orientation="vertical" className="h-6" />
           <TextButtons editor={editor} />
-          {/* Add other selectors/buttons here */}
           <div className="ml-auto flex items-center gap-2">
             <div className="bg-accent text-muted-foreground rounded-sm px-2 py-1 text-sm">
               {saveStatus}
@@ -103,65 +105,11 @@ const AdvancedEditor = ({
           </div>
         </div>
       )}
-      <EditorRoot>
-        <EditorContent
-          immediatelyRender={false}
-          initialContent={initialContent}
-          extensions={extensionsList}
-          className="bg-background prose prose-sm sm:prose-base dark:prose-invert relative min-h-[300px] w-full max-w-full overflow-y-auto p-2 p-4 focus:outline-hidden"
-          editorProps={{
-            editable: () => !readOnly,
-            // attributes class is now on className prop of EditorContent directly
-            // Add keydown handler for command navigation
-            handleKeyDown: (view, event) => handleCommandNavigation(event),
-          }}
-          onUpdate={({ editor: currentEditor }) => {
-            setEditor(currentEditor);
-            const content = currentEditor.getJSON();
-            const wordCount = currentEditor.storage.characterCount?.words() ?? 0;
-            setCharsCount(wordCount);
 
-            if (onSave) {
-              setSaveStatus('Unsaved');
-              debouncedSave(content);
-            }
-          }}
-          onSelectionUpdate={({ editor: currentEditor }) => {
-            setEditor(currentEditor);
-            const wordCount = currentEditor.storage.characterCount?.words() ?? 0;
-            setCharsCount(wordCount);
-          }}
-        >
-          {/* Add EditorCommand structure here */}
-          <EditorCommand className="border-muted bg-background z-50 h-auto max-h-[330px] overflow-y-auto rounded-md border px-1 py-2 shadow-md transition-all">
-            <EditorCommandEmpty className="text-muted-foreground px-2">
-              No results
-            </EditorCommandEmpty>
-            <EditorCommandList>
-              {suggestionItems.map((item) => (
-                <EditorCommandItem
-                  value={item.title}
-                  onCommand={(value) => {
-                    if (item.command) {
-                      item.command(value as any);
-                    }
-                  }}
-                  className="hover:bg-accent aria-selected:bg-accent flex w-full items-center space-x-2 rounded-md px-2 py-1 text-left text-sm"
-                  key={item.title}
-                >
-                  <div className="border-muted bg-background flex h-10 w-10 items-center justify-center rounded-md border">
-                    {item.icon}
-                  </div>
-                  <div>
-                    <p className="font-medium">{item.title}</p>
-                    <p className="text-muted-foreground text-xs">{item.description}</p>
-                  </div>
-                </EditorCommandItem>
-              ))}
-            </EditorCommandList>
-          </EditorCommand>
-        </EditorContent>
-      </EditorRoot>
+      <EditorContent
+        editor={editor}
+        className="bg-background prose prose-sm sm:prose-base dark:prose-invert relative min-h-[300px] w-full max-w-full overflow-y-auto p-4 focus:outline-hidden"
+      />
     </div>
   );
 };

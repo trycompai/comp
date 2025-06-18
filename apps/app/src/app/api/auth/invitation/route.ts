@@ -1,8 +1,6 @@
 import { auth } from '@/utils/auth';
-import { authClient } from '@/utils/auth-client';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -17,18 +15,10 @@ export async function GET(request: Request) {
   });
 
   if (!session?.user?.id) {
+    // If not logged in, redirect to auth with the invite code
     return redirect(`/auth?inviteCode=${encodeURIComponent(inviteCode)}`);
   }
 
-  try {
-    await authClient.organization.acceptInvitation({
-      invitationId: inviteCode,
-    });
-
-    return NextResponse.redirect(new URL('/', request.url));
-  } catch (error) {
-    console.error('Error accepting invitation:', error);
-
-    return redirect(`/auth/invite/error?message=${encodeURIComponent((error as Error).message)}`);
-  }
+  // If logged in, redirect to the invitation page, which will handle validation
+  return redirect(`/invite/${inviteCode}`);
 }

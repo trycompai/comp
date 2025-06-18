@@ -1,50 +1,68 @@
+import { Bold, Code, Italic, Strikethrough, Underline as UnderlineIcon } from 'lucide-react';
+
 import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
-import { CodeIcon, ItalicIcon, StrikethroughIcon } from 'lucide-react';
-import { EditorBubbleItem, useEditor } from 'novel';
-import type { SelectorItem } from './node-selector';
+import type { Editor } from '@tiptap/react';
 
-export const TextButtons = () => {
-  const { editor } = useEditor();
+interface TextButtonsProps {
+  editor: Editor;
+}
+
+export const TextButtons = ({ editor }: TextButtonsProps) => {
   if (!editor) return null;
-  const items: SelectorItem[] = [
-    {
-      name: 'italic',
-      isActive: (editor) => editor?.isActive('italic') ?? false,
-      command: (editor) => editor?.chain().focus().toggleItalic().run(),
-      icon: ItalicIcon,
-    },
-    {
-      name: 'strike',
-      isActive: (editor) => editor?.isActive('strike') ?? false,
-      command: (editor) => editor?.chain().focus().toggleStrike().run(),
-      icon: StrikethroughIcon,
-    },
-    {
-      name: 'code',
-      isActive: (editor) => editor?.isActive('code') ?? false,
-      command: (editor) => editor?.chain().focus().toggleCode().run(),
-      icon: CodeIcon,
-    },
-  ];
+
   return (
-    <div className="flex">
-      {items.map((item) => (
-        <EditorBubbleItem
-          key={item.name}
-          onSelect={(editor) => {
-            item.command(editor);
-          }}
-        >
-          <Button size="sm" className="rounded-sm" variant="ghost" type="button">
-            <item.icon
-              className={cn('h-4 w-4', {
-                'text-blue-500': item.isActive(editor),
-              })}
-            />
-          </Button>
-        </EditorBubbleItem>
-      ))}
+    <div className="flex space-x-1">
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => editor.chain().focus().toggleBold().run()}
+        className={cn('rounded-sm', {
+          'bg-accent': editor.isActive('bold'),
+        })}
+      >
+        <Bold className="h-4 w-4" />
+      </Button>
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => editor.chain().focus().toggleItalic().run()}
+        className={cn('rounded-sm', {
+          'bg-accent': editor.isActive('italic'),
+        })}
+      >
+        <Italic className="h-4 w-4" />
+      </Button>
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => editor.chain().focus().toggleUnderline().run()}
+        className={cn('rounded-sm', {
+          'bg-accent': editor.isActive('underline'),
+        })}
+      >
+        <UnderlineIcon className="h-4 w-4" />
+      </Button>
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => editor.chain().focus().toggleStrike().run()}
+        className={cn('rounded-sm', {
+          'bg-accent': editor.isActive('strike'),
+        })}
+      >
+        <Strikethrough className="h-4 w-4" />
+      </Button>
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => editor.chain().focus().toggleCode().run()}
+        className={cn('rounded-sm', {
+          'bg-accent': editor.isActive('code'),
+        })}
+      >
+        <Code className="h-4 w-4" />
+      </Button>
     </div>
   );
 };

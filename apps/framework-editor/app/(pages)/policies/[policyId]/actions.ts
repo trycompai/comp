@@ -1,7 +1,7 @@
 'use server';
 
 import { db } from '@comp/db';
-import type { JSONContent } from '@tiptap/react'; // Or from 'novel' if it exports it
+import type { JSONContent } from '@tiptap/react';
 import { revalidatePath } from 'next/cache';
 
 interface UpdatePolicyContentArgs {

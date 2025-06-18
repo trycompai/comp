@@ -6,4 +6,9 @@ generated
 coverage
 *.log
 .env*
-docker 
+docker
+*.prisma
+prisma/
+# Generated Prisma client files
+src/index.js
+src/types.js 

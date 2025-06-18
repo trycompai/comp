@@ -10,24 +10,22 @@ import {
 } from '@comp/ui/dialog';
 import { Loader2 } from 'lucide-react';
 
-interface SkipOnboardingDialogProps {
+interface CreateOrganizationMinimalDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  loading?: boolean;
   onConfirmSkip: () => void;
-  isSkipping: boolean;
-  triggerDisabled: boolean;
 }
 
-export function SkipOnboardingDialog({
+export function CreateOrganizationMinimalDialog({
   open,
   onOpenChange,
+  loading,
   onConfirmSkip,
-  isSkipping,
-  triggerDisabled,
-}: SkipOnboardingDialogProps) {
+}: CreateOrganizationMinimalDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogTrigger asChild disabled={triggerDisabled}>
+      <DialogTrigger asChild disabled={loading}>
         <Button variant="ghost" className="text-muted-foreground">
           Skip Onboarding
         </Button>
@@ -42,12 +40,12 @@ export function SkipOnboardingDialog({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isSkipping}>
+          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={loading}>
             Cancel
           </Button>
-          <Button variant="destructive" onClick={onConfirmSkip} disabled={isSkipping}>
+          <Button variant="destructive" onClick={onConfirmSkip} disabled={loading}>
             <div className="flex items-center gap-2">
-              {isSkipping && <Loader2 className="h-4 w-4 animate-spin" />}
+              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
               Confirm
             </div>
           </Button>

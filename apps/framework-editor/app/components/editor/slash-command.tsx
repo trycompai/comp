@@ -1,3 +1,7 @@
+import type { Editor, Range } from '@tiptap/core';
+import { Extension } from '@tiptap/core';
+import { ReactRenderer } from '@tiptap/react';
+import { Suggestion } from '@tiptap/suggestion';
 import {
   CheckSquare,
   Code,
@@ -9,11 +13,18 @@ import {
   Text,
   TextQuote,
 } from 'lucide-react';
-import { Command, createSuggestionItems, renderItems } from 'novel';
+import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
+import tippy from 'tippy.js';
 
-// Use createSuggestionItems helper from Novel
-export const suggestionItems = createSuggestionItems([
-  // Add Paragraph/Text option if needed, similar to original
+interface CommandItem {
+  title: string;
+  description: string;
+  searchTerms: string[];
+  icon: React.ReactNode;
+  command: (props: { editor: Editor; range: Range }) => void;
+}
+
+export const suggestionItems: CommandItem[] = [
   {
     title: 'Text',
     description: 'Just start typing with plain text.',
@@ -74,7 +85,6 @@ export const suggestionItems = createSuggestionItems([
     searchTerms: ['blockquote'],
     icon: <TextQuote size={18} />,
     command: ({ editor, range }) => {
-      // Ensure it toggles paragraph first if needed, like original
       editor
         .chain()
         .focus()
@@ -102,12 +112,154 @@ export const suggestionItems = createSuggestionItems([
       editor.chain().focus().deleteRange(range).toggleTaskList().run();
     },
   },
-]);
+];
 
-// Use Command.configure from Novel
-export const slashCommand = Command.configure({
-  suggestion: {
-    items: () => suggestionItems,
-    render: renderItems, // Use the renderItems helper from Novel
+// Component interface for the suggestion dropdown
+interface CommandListProps {
+  items: CommandItem[];
+  command: (item: CommandItem) => void;
+}
+
+interface CommandListRef {
+  onKeyDown: (props: { event: KeyboardEvent }) => boolean;
+}
+
+// Command list component
+const CommandList = forwardRef<CommandListRef, CommandListProps>((props, ref) => {
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  const selectItem = (index: number) => {
+    const item = props.items[index];
+    if (item) {
+      props.command(item);
+    }
+  };
+
+  useEffect(() => setSelectedIndex(0), [props.items]);
+
+  useImperativeHandle(ref, () => ({
+    onKeyDown: ({ event }: { event: KeyboardEvent }) => {
+      if (event.key === 'ArrowUp') {
+        setSelectedIndex((selectedIndex + props.items.length - 1) % props.items.length);
+        return true;
+      }
+
+      if (event.key === 'ArrowDown') {
+        setSelectedIndex((selectedIndex + 1) % props.items.length);
+        return true;
+      }
+
+      if (event.key === 'Enter') {
+        selectItem(selectedIndex);
+        return true;
+      }
+
+      return false;
+    },
+  }));
+
+  return (
+    <div className="border-muted bg-background z-50 h-auto max-h-[330px] overflow-y-auto rounded-md border px-1 py-2 shadow-md transition-all">
+      {props.items.length ? (
+        props.items.map((item, index) => (
+          <button
+            className={`hover:bg-accent flex w-full items-center space-x-2 rounded-md px-2 py-1 text-left text-sm ${
+              index === selectedIndex ? 'bg-accent' : ''
+            }`}
+            key={index}
+            onClick={() => selectItem(index)}
+          >
+            <div className="border-muted bg-background flex h-10 w-10 items-center justify-center rounded-md border">
+              {item.icon}
+            </div>
+            <div>
+              <p className="font-medium">{item.title}</p>
+              <p className="text-muted-foreground text-xs">{item.description}</p>
+            </div>
+          </button>
+        ))
+      ) : (
+        <div className="text-muted-foreground px-2">No results</div>
+      )}
+    </div>
+  );
+});
+
+CommandList.displayName = 'CommandList';
+
+// Create the slash command extension
+export const slashCommand = Extension.create({
+  name: 'slashCommand',
+
+  addProseMirrorPlugins() {
+    return [
+      Suggestion({
+        editor: this.editor,
+        char: '/',
+        command: ({ editor, range, props }) => {
+          props.command({ editor, range });
+        },
+        items: ({ query }) => {
+          return suggestionItems.filter((item) => {
+            const searchTerms = [item.title, ...item.searchTerms].map((term) => term.toLowerCase());
+            return searchTerms.some((term) => term.includes(query.toLowerCase()));
+          });
+        },
+        render: () => {
+          let component: ReactRenderer<CommandListRef> | null = null;
+          let popup: any = null;
+
+          return {
+            onStart: (props) => {
+              component = new ReactRenderer(CommandList, {
+                props,
+                editor: props.editor,
+              });
+
+              if (!props.clientRect) {
+                return;
+              }
+
+              const tippyInstance = tippy(document.body, {
+                getReferenceClientRect: props.clientRect as any,
+                appendTo: () => document.body,
+                content: component.element,
+                showOnCreate: true,
+                interactive: true,
+                trigger: 'manual',
+                placement: 'bottom-start',
+              });
+              popup = Array.isArray(tippyInstance) ? tippyInstance : [tippyInstance];
+            },
+
+            onUpdate(props) {
+              component?.updateProps(props);
+
+              if (!props.clientRect) {
+                return;
+              }
+
+              popup?.[0]?.setProps({
+                getReferenceClientRect: props.clientRect,
+              });
+            },
+
+            onKeyDown(props) {
+              if (props.event.key === 'Escape') {
+                popup?.[0]?.hide();
+                return true;
+              }
+
+              return component?.ref?.onKeyDown(props) ?? false;
+            },
+
+            onExit() {
+              popup?.[0]?.destroy();
+              component?.destroy();
+            },
+          };
+        },
+      }),
+    ];
   },
 });

@@ -1,8 +1,8 @@
 import { openai } from '@ai-sdk/openai';
 import { db } from '@comp/db';
+import type { JSONContent } from '@tiptap/react';
 import { logger, schemaTask } from '@trigger.dev/sdk/v3';
 import { generateObject, generateText, NoObjectGeneratedError } from 'ai';
-import { JSONContent } from 'novel';
 import { z } from 'zod';
 import { generatePrompt } from '../../lib/prompts';
 

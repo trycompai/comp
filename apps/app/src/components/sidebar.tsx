@@ -1,5 +1,4 @@
 import { getOrganizations } from '@/data/getOrganizations';
-import { db } from '@comp/db';
 import type { Organization } from '@comp/db/types';
 import { cn } from '@comp/ui/cn';
 import { cookies } from 'next/headers';
@@ -18,15 +17,6 @@ export async function Sidebar({
   const cookieStore = await cookies();
   const isCollapsed = collapsed || cookieStore.get('sidebar-collapsed')?.value === 'true';
   const { organizations } = await getOrganizations();
-  const frameworks = await db.frameworkEditorFramework.findMany({
-    select: {
-      id: true,
-      name: true,
-      description: true,
-      version: true,
-      visible: true,
-    },
-  });
 
   return (
     <div className="bg-card flex h-full flex-col gap-0 overflow-x-clip">
@@ -39,7 +29,6 @@ export async function Sidebar({
             organizations={organizations}
             organization={organization}
             isCollapsed={isCollapsed}
-            frameworks={frameworks}
           />
           <MainMenu organizationId={organization?.id ?? ''} isCollapsed={isCollapsed} />
         </div>

@@ -13,10 +13,11 @@ export function GithubSignIn({ inviteCode }: { inviteCode?: string }) {
   const handleSignIn = async () => {
     setLoading(true);
 
-    const redirectTo = inviteCode ? `/api/auth/invitation?code=${inviteCode}` : '/';
+    const redirectTo = inviteCode ? `/invite/${inviteCode}` : '/';
 
     await authClient.signIn.social({
       provider: 'github',
+      callbackURL: redirectTo,
     });
   };
 

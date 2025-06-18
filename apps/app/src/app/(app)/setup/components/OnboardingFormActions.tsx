@@ -51,7 +51,7 @@ export function OnboardingFormActions({
         {isLastStep ? (
           <Button
             type="submit"
-            form="onboarding-form" // Important: links to the form in OnboardingForm.tsx
+            form="onboarding-form" // Important: links to the form in OrganizationSetupForm.tsx
             className="flex items-center gap-2"
             disabled={isSubmitting}
           >
@@ -71,7 +71,7 @@ export function OnboardingFormActions({
         ) : (
           <Button
             type="submit"
-            form="onboarding-form" // Important: links to the form in OnboardingForm.tsx
+            form="onboarding-form" // Important: links to the form in OrganizationSetupForm.tsx
             className="flex items-center gap-2"
             disabled={isSubmitting}
           >

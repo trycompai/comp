@@ -1,9 +1,9 @@
 model Organization {
   id               String      @id @default(dbgenerated("generate_prefixed_cuid('org'::text)"))
   name             String
-  slug             String      @unique
+  slug             String      @unique @default(dbgenerated("generate_prefixed_cuid('slug'::text)"))
   logo             String?
-  createdAt        DateTime
+  createdAt        DateTime    @default(now())
   metadata         String?
   stripeCustomerId String?
   onboarding       Onboarding?

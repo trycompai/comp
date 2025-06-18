@@ -2,12 +2,12 @@
   "name": "@comp/db",
   "version": "1.0.0",
   "dependencies": {
-    "@prisma/client": "6.9.0",
-    "prisma": "^6.9.0",
-    "ts-node": "^10.9.2"
+    "@prisma/client": "6.9.0"
   },
   "devDependencies": {
     "@comp/tsconfig": "workspace:*",
+    "prisma": "^6.9.0",
+    "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   },
   "exports": {

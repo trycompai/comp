@@ -43,6 +43,41 @@ export const auth = betterAuth({
       generateId: false,
     },
   },
+  databaseHooks: {
+    session: {
+      create: {
+        before: async (session) => {
+          // Get the user's most recent organization
+          const userOrg = await db.organization.findFirst({
+            where: {
+              members: {
+                some: {
+                  userId: session.userId,
+                },
+              },
+            },
+            orderBy: {
+              createdAt: 'desc',
+            },
+          });
+
+          // Set the active organization if user has one
+          if (userOrg) {
+            return {
+              data: {
+                ...session,
+                activeOrganizationId: userOrg.id,
+              },
+            };
+          }
+
+          return {
+            data: session,
+          };
+        },
+      },
+    },
+  },
   secret: process.env.AUTH_SECRET!,
   plugins: [
     organization({
@@ -59,7 +94,9 @@ export const auth = betterAuth({
           : isProdEnv
             ? 'app.trycomp.ai'
             : 'localhost:3000';
-        const inviteLink = `${protocol}://${domain}/auth?inviteCode=${data.invitation.id}`;
+        const inviteLink = `${protocol}://${domain}/invite/${data.invitation.id}`;
+
+        const url = `${protocol}://${domain}/auth`;
 
         await sendInviteMemberEmail({
           email: data.email,

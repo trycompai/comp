@@ -1,3 +1,5 @@
+'use client';
+
 import { zodResolver } from '@hookform/resolvers/zod';
 import { sendGTMEvent } from '@next/third-parties/google';
 import { useAction } from 'next-safe-action/hooks';
@@ -6,8 +8,8 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { onboardOrganization } from '../actions/onboard-organization';
-import { skipOnboarding } from '../actions/skip-onboarding';
+import { createOrganization } from '../actions/create-organization';
+import { createOrganizationMinimal } from '../actions/create-organization-minimal';
 import type { OnboardingFormFields } from '../components/OnboardingStepInput';
 import { STORAGE_KEY, companyDetailsSchema, steps } from '../lib/constants';
 import type { CompanyDetails } from '../lib/types';
@@ -43,35 +45,42 @@ export function useOnboardingForm() {
     form.reset({ [step.key]: savedAnswers[step.key] || '' });
   }, [savedAnswers, step.key, form]);
 
-  const skipOnboardingAction = useAction(skipOnboarding, {
-    onSuccess: () => {
-      setIsFinalizing(true);
-      sendGTMEvent({ event: 'conversion' });
-      router.push('/');
+  const createOrganizationMinimalAction = useAction(createOrganizationMinimal, {
+    onSuccess: ({ data }) => {
+      if (data?.success) {
+        setIsFinalizing(true);
+        sendGTMEvent({ event: 'conversion' });
+        router.push('/');
+      } else {
+        toast.error(data?.error || 'Failed to create organization minimal');
+        setIsSkipping(false);
+      }
     },
-    onError: () => {
-      toast.error('Failed to skip onboarding');
+    onError: (error) => {
+      console.error('Create organization minimal error:', error);
+      toast.error('Failed to create organization minimal');
+      setIsSkipping(false);
     },
     onExecute: () => {
       setIsSkipping(true);
     },
   });
 
-  const onboardOrganizationAction = useAction(onboardOrganization, {
-    onSuccess: (result) => {
-      setIsFinalizing(true);
-      sendGTMEvent({ event: 'conversion' });
-      if (result.data?.success) {
-        router.push(`/${result.data.organizationId}/frameworks`);
+  const createOrganizationAction = useAction(createOrganization, {
+    onSuccess: async ({ data }) => {
+      if (data?.success) {
+        setIsFinalizing(true);
+        sendGTMEvent({ event: 'conversion' });
+        router.push(`/${data.organizationId}/frameworks`);
         setSavedAnswers({});
       } else {
-        toast.error('Failed to onboard organization');
+        toast.error('Failed to create organization');
         setIsFinalizing(false);
         setIsOnboarding(false);
       }
     },
     onError: () => {
-      toast.error('Failed to onboard organization');
+      toast.error('Failed to create organization');
       setIsFinalizing(false);
       setIsOnboarding(false);
     },
@@ -80,9 +89,10 @@ export function useOnboardingForm() {
     },
   });
 
-  const handleOnboardOrganizationAction = (currentAnswers: Partial<CompanyDetails>) => {
-    onboardOrganizationAction.execute({
-      legalName: currentAnswers.legalName || '',
+  const handleCreateOrganizationAction = (currentAnswers: Partial<CompanyDetails>) => {
+    createOrganizationAction.execute({
+      frameworkIds: currentAnswers.frameworkIds || [],
+      organizationName: currentAnswers.organizationName || '',
       website: currentAnswers.website || '',
       describe: currentAnswers.describe || '',
       industry: currentAnswers.industry || '',
@@ -96,10 +106,11 @@ export function useOnboardingForm() {
     });
   };
 
-  const handleSkipOnboardingAction = () => {
-    skipOnboardingAction.execute({
-      legalName: savedAnswers.legalName || 'My Organization',
+  const handleCreateOrganizationMinimalAction = () => {
+    createOrganizationMinimalAction.execute({
+      organizationName: savedAnswers.organizationName || 'My Organization',
       website: savedAnswers.website || 'https://my-organization.com',
+      frameworkIds: savedAnswers.frameworkIds || [],
     });
     setSavedAnswers({});
   };
@@ -108,7 +119,7 @@ export function useOnboardingForm() {
     const newAnswers: OnboardingFormFields = { ...savedAnswers, ...data };
 
     for (const key of Object.keys(newAnswers)) {
-      if (step.options && step.key === key) {
+      if (step.options && step.key === key && key !== 'frameworkIds') {
         const customValue = newAnswers[`${key}Other`] || '';
         const values = (newAnswers[key] || '').split(',').filter(Boolean);
 
@@ -127,7 +138,7 @@ export function useOnboardingForm() {
     if (stepIndex < steps.length - 1) {
       setStepIndex(stepIndex + 1);
     } else {
-      handleOnboardOrganizationAction(newAnswers);
+      handleCreateOrganizationAction(newAnswers);
     }
   };
 
@@ -135,7 +146,12 @@ export function useOnboardingForm() {
     if (stepIndex > 0) setStepIndex(stepIndex - 1);
   };
 
-  const canShowSkipButton = Boolean(savedAnswers.legalName && savedAnswers.website);
+  const canShowSkipButton = Boolean(
+    savedAnswers.frameworkIds &&
+      savedAnswers.frameworkIds.length > 0 &&
+      savedAnswers.organizationName &&
+      savedAnswers.website,
+  );
   const isLastStep = stepIndex === steps.length - 1;
 
   return {
@@ -152,7 +168,7 @@ export function useOnboardingForm() {
     mounted,
     onSubmit,
     handleBack,
-    handleSkipOnboardingAction,
+    handleSkipOnboardingAction: handleCreateOrganizationMinimalAction,
     canShowSkipButton,
     isLastStep,
   };

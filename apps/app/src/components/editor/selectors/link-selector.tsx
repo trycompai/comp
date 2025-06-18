@@ -1,9 +1,11 @@
+import type { Editor } from '@tiptap/react';
+import { Check, Link, Trash } from 'lucide-react';
+import { useState } from 'react';
+
 import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
+import { Input } from '@comp/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
-import { Check, Trash } from 'lucide-react';
-import { useEditor } from 'novel';
-import { useEffect, useRef } from 'react';
 
 export function isValidUrl(url: string) {
   try {
@@ -23,77 +25,77 @@ export function getUrlFromString(str: string) {
     return null;
   }
 }
+
 interface LinkSelectorProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  editor: Editor;
 }
 
-export const LinkSelector = ({ open, onOpenChange }: LinkSelectorProps) => {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const { editor } = useEditor();
+export const LinkSelector = ({ open, onOpenChange, editor }: LinkSelectorProps) => {
+  const [value, setValue] = useState('');
 
-  // Autofocus on input by default
-  useEffect(() => {
-    inputRef.current?.focus();
-  });
   if (!editor) return null;
+
+  const isActive = editor.isActive('link');
 
   return (
     <Popover modal={true} open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger asChild>
-        <Button size="sm" variant="ghost" className="gap-2 rounded-sm border-none">
-          <p className="text-base">↗</p>
-          <p
-            className={cn('underline decoration-stone-400 underline-offset-4', {
-              'text-blue-500': editor.isActive('link'),
-            })}
-          >
-            Link
-          </p>
+        <Button
+          size="sm"
+          variant="ghost"
+          className={cn('hover:bg-accent gap-2', {
+            'text-blue-500': isActive,
+          })}
+        >
+          <Link className="h-4 w-4" />
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-60 p-0" sideOffset={10}>
-        <form
-          onSubmit={(e) => {
-            const target = e.currentTarget as HTMLFormElement;
-            e.preventDefault();
-            const input = target[0] as HTMLInputElement;
-            const url = getUrlFromString(input.value);
-            if (url) {
-              onOpenChange(false);
-            }
-          }}
-          className="flex p-1"
-        >
-          <input
-            ref={inputRef}
-            type="text"
-            placeholder="Paste a link"
-            className="bg-background flex-1 p-1 text-sm outline-hidden"
-            defaultValue={editor.getAttributes('link').href || ''}
+        <div className="p-2">
+          <Input
+            placeholder="Enter link"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            className="rounded-xs"
           />
-          {editor.getAttributes('link').href ? (
+        </div>
+        {value && (
+          <div className="p-1">
             <Button
-              size="icon"
-              variant="outline"
-              type="button"
-              className="flex h-8 items-center rounded-sm p-1 text-red-600 transition-all hover:bg-red-100 dark:hover:bg-red-800"
               onClick={() => {
-                if (inputRef.current) {
-                  inputRef.current.value = '';
+                if (value) {
+                  editor.chain().focus().extendMarkRange('link').setLink({ href: value }).run();
+                  onOpenChange(false);
+                  setValue('');
                 }
-
+              }}
+              size="sm"
+              className="hover:bg-accent rounded-sm px-2 py-1 text-xs w-full justify-start"
+              variant="ghost"
+            >
+              <Check className="mr-2 h-3 w-3" />
+              Apply
+            </Button>
+          </div>
+        )}
+        {isActive && (
+          <div className="p-1">
+            <Button
+              onClick={() => {
+                editor.chain().focus().unsetLink().run();
                 onOpenChange(false);
               }}
+              size="sm"
+              className="hover:bg-accent rounded-sm px-2 py-1 text-xs w-full justify-start"
+              variant="ghost"
             >
-              <Trash className="h-4 w-4" />
+              <Trash className="mr-2 h-3 w-3" />
+              Remove link
             </Button>
-          ) : (
-            <Button size="icon" className="h-8">
-              <Check className="h-4 w-4" />
-            </Button>
-          )}
-        </form>
+          </div>
+        )}
       </PopoverContent>
     </Popover>
   );

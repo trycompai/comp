@@ -37,17 +37,6 @@
     --chart-open: #ffc007;
     --chart-archived: #64748b;
     --chart-needs_review: #ff0000;
-
-    /* Keeping the novel-highlight colors as they were */
-    --novel-highlight-default: #ffffff;
-    --novel-highlight-purple: #f6f3f8;
-    --novel-highlight-red: #fdebeb;
-    --novel-highlight-yellow: #fbf4a2;
-    --novel-highlight-blue: #c1ecf9;
-    --novel-highlight-green: #acf79f;
-    --novel-highlight-orange: #faebdd;
-    --novel-highlight-pink: #faf1f5;
-    --novel-highlight-gray: #f1f1ef;
   }
 
   .dark {
@@ -78,17 +67,6 @@
     --chart-warning: 220 14% 53%; /* Gray: deleted, archived - states that have been closed */
     --chart-destructive: 0 85% 60%; /* Red: use for needs review, something that needs action immediately */
     --chart-other: 196 80% 45%; /* Blue: use for other states */
-
-    /* Keeping the novel-highlight colors as they were */
-    --novel-highlight-default: #000000;
-    --novel-highlight-purple: #3f2c4b;
-    --novel-highlight-red: #5c1a1a;
-    --novel-highlight-yellow: #5c4b1a;
-    --novel-highlight-blue: #1a3d5c;
-    --novel-highlight-green: #1a5c20;
-    --novel-highlight-orange: #5c3a1a;
-    --novel-highlight-pink: #5c1a3a;
-    --novel-highlight-gray: #3a3a3a;
 
     --chart-closed: #00dc73;
     --chart-pending: #0ba5e9;

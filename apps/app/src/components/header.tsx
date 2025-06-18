@@ -1,7 +1,6 @@
 import { UserMenu } from '@/components/user-menu';
 import { getOrganizations } from '@/data/getOrganizations';
 import { auth } from '@/utils/auth';
-import { db } from '@comp/db';
 import { buttonVariants } from '@comp/ui/button';
 import { Icons } from '@comp/ui/icons';
 import { Skeleton } from '@comp/ui/skeleton';
@@ -26,23 +25,9 @@ export async function Header() {
 
   const { organizations } = await getOrganizations();
 
-  const frameworks = await db.frameworkEditorFramework.findMany({
-    select: {
-      id: true,
-      name: true,
-      description: true,
-      version: true,
-      visible: true,
-    },
-  });
-
   return (
     <header className="border/40 sticky top-0 z-10 flex items-center justify-between border-b px-4 py-2 backdrop-blur-sm">
-      <MobileMenu
-        organizationId={currentOrganizationId}
-        organizations={organizations}
-        frameworks={frameworks}
-      />
+      <MobileMenu organizationId={currentOrganizationId} organizations={organizations} />
 
       <AssistantButton />
 

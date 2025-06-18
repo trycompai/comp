@@ -1,79 +1,51 @@
-import { OnboardingClient } from '@/components/forms/create-organization-form';
+import { getOrganizations } from '@/data/getOrganizations';
 import { auth } from '@/utils/auth';
-import { db } from '@comp/db';
-import type { Metadata } from 'next';
+import type { Organization } from '@comp/db/types';
+import { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { AcceptInvite } from './components/accept-invite';
+import { OrganizationSetupForm } from './components/OrganizationSetupForm';
+import { SetupHeader } from './components/SetupHeader';
 
 export const metadata: Metadata = {
-  title: 'Organization Setup | Comp AI',
+  title: 'Setup Your Organization | Comp AI',
 };
 
-export default async function Page() {
-  const headersList = await headers();
+interface SetupPageProps {
+  searchParams: Promise<{ inviteCode?: string }>;
+}
 
+export default async function SetupPage({ searchParams }: SetupPageProps) {
   const session = await auth.api.getSession({
-    headers: headersList,
+    headers: await headers(),
   });
+  const user = session?.user;
 
-  if (!session || !session.session) {
-    return redirect('/');
+  if (!session || !session.session || !user) {
+    return redirect('/auth');
   }
 
-  const organization = await db.organization.findFirst({
-    where: {
-      members: {
-        some: {
-          userId: session.user.id,
-        },
-      },
-    },
-  });
-
-  const hasInvite = await db.invitation.findFirst({
-    where: {
-      email: session.user.email,
-      status: 'pending',
-      role: {
-        not: 'employee',
-      },
-    },
-  });
-
-  if (organization?.id && !hasInvite) {
-    await auth.api.setActiveOrganization({
-      headers: headersList,
-      body: {
-        organizationId: organization.id,
-      },
-    });
-
-    return redirect(`/${organization.id}/frameworks`);
+  // If there's an inviteCode in the URL, redirect to the new invitation route
+  const { inviteCode } = await searchParams;
+  if (inviteCode) {
+    return redirect(`/invite/${inviteCode}`);
   }
 
-  if (hasInvite) {
-    const organization = await db.organization.findUnique({
-      where: {
-        id: hasInvite.organizationId,
-      },
-      select: {
-        name: true,
-      },
-    });
+  // Fetch existing organizations
+  let organizations: Organization[] = [];
 
-    return <AcceptInvite inviteCode={hasInvite.id} organizationName={organization?.name || ''} />;
+  try {
+    const result = await getOrganizations();
+    organizations = result.organizations;
+  } catch (error) {
+    // If user has no organizations, continue with empty array
+    console.error('Failed to fetch organizations:', error);
   }
 
-  const frameworks = await db.frameworkEditorFramework.findMany({
-    select: {
-      id: true,
-      name: true,
-      description: true,
-      version: true,
-      visible: true,
-    },
-  });
-
-  return <OnboardingClient frameworks={frameworks} />;
+  return (
+    <>
+      <SetupHeader user={user} existingOrganizations={organizations} />
+      <OrganizationSetupForm existingOrganizations={organizations} />
+    </>
+  );
 }

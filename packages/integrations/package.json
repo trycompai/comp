@@ -13,10 +13,10 @@
     "node-fetch": "^2.6.7",
     "sharp": "^0.33.5",
     "stoppable": "^1.1.0",
-    "zod": "*"
+    "zod": "3.25.67"
   },
   "devDependencies": {
-    "@types/node": "^22.13.2",
+    "@types/node": "^24.0.3",
     "@types/node-fetch": "^2.6.2",
     "typescript": "^5.8.3"
   },

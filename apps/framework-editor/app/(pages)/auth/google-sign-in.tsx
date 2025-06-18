@@ -15,11 +15,12 @@ export function GoogleSignIn({ inviteCode }: { inviteCode?: string }) {
     let redirectTo = '/';
 
     if (inviteCode) {
-      redirectTo = `/api/auth/invitation?code=${inviteCode}`;
+      redirectTo = `/invite/${inviteCode}`;
     }
 
     await authClient.signIn.social({
       provider: 'google',
+      callbackURL: redirectTo,
     });
   };
 

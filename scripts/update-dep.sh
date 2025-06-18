@@ -1,14 +1,14 @@
 #!/bin/bash
 
 # Usage: ./scripts/update-dep.sh <package-name> <version>
-# Example: ./scripts/update-dep.sh next 15.4.0-canary.83
+# Example: ./scripts/update-dep.sh next 15.4.0-canary.85
 
 PACKAGE=$1
 VERSION=$2
 
 if [ -z "$PACKAGE" ] || [ -z "$VERSION" ]; then
     echo "Usage: $0 <package-name> <version>"
-    echo "Example: $0 next 15.4.0-canary.83"
+    echo "Example: $0 next 15.4.0-canary.85"
     exit 1
 fi
 
