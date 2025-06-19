@@ -1191,14 +1191,14 @@
     "@types/conventional-commits-parser" "^5.0.0"
     chalk "^5.3.0"
 
-"@comp/analytics@^workspace:packages/analytics":
+"@comp/analytics@packages/analytics":
   version "workspace:packages/analytics"
   resolved "workspace:packages/analytics"
   dependencies:
     posthog-js "^1.236.6"
     posthog-node "^4.14.0"
 
-"@comp/app@^workspace:apps/app", "@comp/app@workspace:*":
+"@comp/app@apps/app", "@comp/app@workspace:*":
   version "workspace:apps/app"
   resolved "workspace:apps/app"
   devDependencies:
@@ -1283,19 +1283,18 @@
     xml2js "^0.6.2"
     zustand "^5.0.3"
 
-"@comp/db@^workspace:packages/db", "@comp/db@workspace:*":
+"@comp/db@packages/db", "@comp/db@workspace:*":
   version "workspace:packages/db"
   resolved "workspace:packages/db"
   devDependencies:
     "@comp/tsconfig" "workspace:*"
-  devDependencies:
     prisma "^6.9.0"
     ts-node "^10.9.2"
     typescript "^5.8.3"
   dependencies:
     "@prisma/client" "6.9.0"
 
-"@comp/email@^workspace:packages/email":
+"@comp/email@packages/email":
   version "workspace:packages/email"
   resolved "workspace:packages/email"
   devDependencies:
@@ -1315,7 +1314,7 @@
     react-email "^4.0.15"
     responsive-react-email "^0.0.5"
 
-"@comp/framework-editor@^workspace:apps/framework-editor":
+"@comp/framework-editor@apps/framework-editor":
   version "workspace:apps/framework-editor"
   resolved "workspace:apps/framework-editor"
   devDependencies:
@@ -1336,7 +1335,7 @@
     "@tanstack/react-table" "^8.21.3"
     "@tanstack/react-virtual" "^3.13.8"
     better-auth "^1.2.8"
-    lucide-react "^0.454.0"
+    lucide-react "^0.518.0"
     next "15.4.0-canary.85"
     react-datasheet-grid "^4.11.5"
     react-hook-form "^7.58.1"
@@ -1345,7 +1344,7 @@
     tippy.js "^6.3.7"
     zod "3.25.67"
 
-"@comp/integrations@^workspace:packages/integrations":
+"@comp/integrations@packages/integrations":
   version "workspace:packages/integrations"
   resolved "workspace:packages/integrations"
   devDependencies:
@@ -1368,14 +1367,14 @@
     stoppable "^1.1.0"
     zod "3.25.67"
 
-"@comp/kv@^workspace:packages/kv":
+"@comp/kv@packages/kv":
   version "workspace:packages/kv"
   resolved "workspace:packages/kv"
   dependencies:
     "@upstash/redis" "^1.34.2"
     server-only "0.0.1"
 
-"@comp/portal@^workspace:apps/portal":
+"@comp/portal@apps/portal":
   version "workspace:apps/portal"
   resolved "workspace:apps/portal"
   devDependencies:
@@ -1392,17 +1391,16 @@
   dependencies:
     "@comp/db" "workspace:*"
     "@comp/ui" "workspace:*"
-  dependencies:
     "@react-email/components" "^0.0.41"
     "@react-email/render" "^1.1.2"
-    "@t3-oss/env-nextjs" "^0.12.0"
+    "@t3-oss/env-nextjs" "^0.13.8"
     archiver "^7.0.1"
     better-auth "^1.2.8"
     class-variance-authority "^0.7.1"
     next "15.4.0-canary.85"
     react-email "^4.0.15"
 
-"@comp/trust@^workspace:apps/trust":
+"@comp/trust@apps/trust":
   version "workspace:apps/trust"
   resolved "workspace:apps/trust"
   devDependencies:
@@ -1420,14 +1418,14 @@
     "@comp/db" "workspace:*"
     "@comp/ui" "workspace:*"
   dependencies:
-    lucide-react "^0.454.0"
+    lucide-react "^0.518.0"
     next "15.4.0-canary.85"
 
-"@comp/tsconfig@^workspace:packages/tsconfig", "@comp/tsconfig@workspace:*":
+"@comp/tsconfig@packages/tsconfig", "@comp/tsconfig@workspace:*":
   version "workspace:packages/tsconfig"
   resolved "workspace:packages/tsconfig"
 
-"@comp/ui@^workspace:packages/ui", "@comp/ui@workspace:*":
+"@comp/ui@packages/ui", "@comp/ui@workspace:*":
   version "workspace:packages/ui"
   resolved "workspace:packages/ui"
   devDependencies:
@@ -1496,7 +1494,7 @@
     embla-carousel-react "8.5.1"
     input-otp "1.4.2"
     jsonfile "^6.1.0"
-    lucide-react "^0.454.0"
+    lucide-react "^0.518.0"
     react-day-picker "8.10.1"
     react-dropzone "^14.3.5"
     react-icons "^5.3.0"
@@ -1510,7 +1508,7 @@
     use-debounce "^10.0.4"
     vaul "^0.9.6"
 
-"@comp/utils@^workspace:packages/utils", "@comp/utils@workspace:*":
+"@comp/utils@packages/utils", "@comp/utils@workspace:*":
   version "workspace:packages/utils"
   resolved "workspace:packages/utils"
   devDependencies:
@@ -3239,13 +3237,13 @@
   resolved "https://registry.npmjs.org/@popperjs/core/-/core-2.11.8.tgz"
   integrity sha512-P1st0aksCrn9sGZhp8GMYwBnQsbvAWsZAX44oXNNvLHGqAOcoVxmjZiohstwQ7SqKnbR47akdNi+uleWD8+g6A==
 
-"@prisma/adapter-pg@6.5.0":
-  version "6.5.0"
-  resolved "https://registry.npmjs.org/@prisma/adapter-pg/-/adapter-pg-6.5.0.tgz"
-  integrity sha512-ta1EhwAmIWnFjw0bTVdRe3rw5h40YDZ59i2Ko2FGVt4EDvAt4Po5aAN8eCj2Eq46wKJccEDwQ3qBXUQTKUbM8Q==
+"@prisma/adapter-pg@6.10.1":
+  version "6.10.1"
+  resolved "https://registry.npmjs.org/@prisma/adapter-pg/-/adapter-pg-6.10.1.tgz"
+  integrity sha512-4Kpz5EV1jEOsKDuKYMjfJKMiIIcsuR9Ou1B8zLzehYtB7/oi+1ooDoK1K+T7sMisHkP69aYat5j0dskxvJTgdQ==
   dependencies:
-    "@prisma/driver-adapter-utils" "6.5.0"
-    postgres-array "3.0.3"
+    postgres-array "3.0.4"
+    "@prisma/driver-adapter-utils" "6.10.1"
 
 "@prisma/client@6.9.0":
   version "6.9.0"
@@ -3259,22 +3257,17 @@
   dependencies:
     jiti "2.4.2"
 
-"@prisma/debug@6.5.0":
-  version "6.5.0"
-  resolved "https://registry.npmjs.org/@prisma/debug/-/debug-6.5.0.tgz"
-  integrity sha512-fc/nusYBlJMzDmDepdUtH9aBsJrda2JNErP9AzuHbgUEQY0/9zQYZdNlXmKoIWENtio+qarPNe/+DQtrX5kMcQ==
-
 "@prisma/debug@6.10.1":
   version "6.10.1"
   resolved "https://registry.npmjs.org/@prisma/debug/-/debug-6.10.1.tgz"
   integrity sha512-k2YT53cWxv9OLjW4zSYTZ6Z7j0gPfCzcr2Mj99qsuvlxr8WAKSZ2NcSR0zLf/mP4oxnYG842IMj3utTgcd7CaA==
 
-"@prisma/driver-adapter-utils@6.5.0":
-  version "6.5.0"
-  resolved "https://registry.npmjs.org/@prisma/driver-adapter-utils/-/driver-adapter-utils-6.5.0.tgz"
-  integrity sha512-/1gSkHSflDF+50JRZUGuhjtHu7EGhkiCh7lRcBI7S9lYyyl81TdPgCtxyeId+pDBxE2B4NtG6I4DlTqZH3f8pw==
+"@prisma/driver-adapter-utils@6.10.1":
+  version "6.10.1"
+  resolved "https://registry.npmjs.org/@prisma/driver-adapter-utils/-/driver-adapter-utils-6.10.1.tgz"
+  integrity sha512-MJ7NiiMA5YQUD1aMHiOcLmRpW0U0NTpygyeuLMxHXnKbcq+HX/cy10qilFMLVzpveuIEHuwxziR67z6i0K1MKA==
   dependencies:
-    "@prisma/debug" "6.5.0"
+    "@prisma/debug" "6.10.1"
 
 "@prisma/engines@6.10.1":
   version "6.10.1"
@@ -5075,17 +5068,17 @@
   dependencies:
     tslib "^2.8.0"
 
-"@t3-oss/env-core@0.12.0":
-  version "0.12.0"
-  resolved "https://registry.npmjs.org/@t3-oss/env-core/-/env-core-0.12.0.tgz"
-  integrity sha512-lOPj8d9nJJTt81mMuN9GMk8x5veOt7q9m11OSnCBJhwp1QrL/qR+M8Y467ULBSm9SunosryWNbmQQbgoiMgcdw==
+"@t3-oss/env-core@0.13.8":
+  version "0.13.8"
+  resolved "https://registry.npmjs.org/@t3-oss/env-core/-/env-core-0.13.8.tgz"
+  integrity sha512-L1inmpzLQyYu4+Q1DyrXsGJYCXbtXjC4cICw1uAKv0ppYPQv656lhZPU91Qd1VS6SO/bou1/q5ufVzBGbNsUpw==
 
-"@t3-oss/env-nextjs@^0.12.0":
-  version "0.12.0"
-  resolved "https://registry.npmjs.org/@t3-oss/env-nextjs/-/env-nextjs-0.12.0.tgz"
-  integrity sha512-rFnvYk1049RnNVUPvY8iQ55AuQh1Rr+qZzQBh3t++RttCGK4COpXGNxS4+45afuQq02lu+QAOy/5955aU8hRKw==
+"@t3-oss/env-nextjs@^0.13.8":
+  version "0.13.8"
+  resolved "https://registry.npmjs.org/@t3-oss/env-nextjs/-/env-nextjs-0.13.8.tgz"
+  integrity sha512-QmTLnsdQJ8BiQad2W2nvV6oUpH4oMZMqnFEjhVpzU0h3sI9hn8zb8crjWJ1Amq453mGZs6A4v4ihIeBFDOrLeQ==
   dependencies:
-    "@t3-oss/env-core" "0.12.0"
+    "@t3-oss/env-core" "0.13.8"
 
 "@tailwindcss/cli@^4.1.10":
   version "4.1.10"
@@ -11477,10 +11470,10 @@ lru-cache@^11.0.0:
   resolved "https://registry.npmjs.org/lru-cache/-/lru-cache-11.1.0.tgz"
   integrity sha512-QIXZUBJUx+2zHUdQujWejBkcD9+cs94tLn0+YL8UrCh+D5sCXZ4c7LaEH48pNwRY3MLDgqUFyhlCyjJPf1WP0A==
 
-lucide-react@^0.454.0:
-  version "0.454.0"
-  resolved "https://registry.npmjs.org/lucide-react/-/lucide-react-0.454.0.tgz"
-  integrity sha512-hw7zMDwykCLnEzgncEEjHeA6+45aeEzRYuKHuyRSOPkhko+J3ySGjGIzu+mmMfDFG1vazHepMaYFYHbTFAZAAQ==
+lucide-react@^0.518.0:
+  version "0.518.0"
+  resolved "https://registry.npmjs.org/lucide-react/-/lucide-react-0.518.0.tgz"
+  integrity sha512-kFg34uQqnVl/7HwAiigxPSpj//43VIVHQbMygQPtS1yT4btMXHCWUipHcgcXHD2pm1Z2nUBA/M+Vnh/YmWXQUw==
 
 magic-bytes.js@^1.10.0:
   version "1.12.1"
@@ -13537,10 +13530,10 @@ postgres-array@~2.0.0:
   resolved "https://registry.npmjs.org/postgres-array/-/postgres-array-2.0.0.tgz"
   integrity sha512-VpZrUqU5A69eQyW2c5CA1jtLecCsN2U/bD6VilrFDWq5+5UIEVO7nazS3TEcHf1zuPYO/sqGvUvW62g86RXZuA==
 
-postgres-array@3.0.3:
-  version "3.0.3"
-  resolved "https://registry.npmjs.org/postgres-array/-/postgres-array-3.0.3.tgz"
-  integrity sha512-u8CaN44IzisrzULVvqoJ2968j6XDsFGdc+Kw/6vHNhD6bfu2FHDOHNhgBYgsl6t7ib9KwUi8vKjTR5gowTIMbg==
+postgres-array@3.0.4:
+  version "3.0.4"
+  resolved "https://registry.npmjs.org/postgres-array/-/postgres-array-3.0.4.tgz"
+  integrity sha512-nAUSGfSDGOaOAEGwqsRY27GPOea7CNipJPOA7lPbdEpx5Kg3qzdP0AaWC5MlhTWV9s4hFX39nomVZ+C4tnGOJQ==
 
 postgres-bytea@~1.0.0:
   version "1.0.0"
@@ -14017,7 +14010,7 @@ rc@^1.2.8:
     minimist "^1.2.0"
     strip-json-comments "~2.0.1"
 
-react@*, react@18.x, "react@>= 16.14", "react@>= 16.8 || 18.0.0", "react@>= 16.8.0 || 17.x.x || ^18.0.0-0 || ^19.0.0-0", "react@>= 18.2.0", react@>=16, react@>=16.6.0, react@>=16.8, "react@>=16.8.0 || ^17.0.0 || ^18", react@>=16.8.1, react@>=18, "react@>=18.2.0 || ^19.0.0-0", "react@^0.14 || ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0", "react@^16.0.0 || ^17.0.0 || ^18.0.0", "react@^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^16.11.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^16.14.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react@^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0-rc", "react@^16.8 || ^17 || ^18 || ^19 || ^19.0.0-rc", "react@^16.8 || ^17.0 || ^18.0", "react@^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react@^16.8.0 || ^17 || ^18 || ^19", "react@^16.8.0 || ^17.0.0 || ^18.0.0", "react@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react@^16.8.0 || ^17.0.1 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react@^16.x || ^17.x || ^18.x || ^19.0.0 || ^19.0.0-rc", "react@^17.0.0 || ^18.0.0 || ^19.0.0", "react@^17.0.2 || ^18.0.0 || ^19.0.0", "react@^18 || ^19", "react@^18 || ^19 || ^19.0.0-rc", "react@^18.0 || ^19.0", "react@^18.0 || ^19.0 || ^19.0.0-rc", "react@^18.0.0 || ^19.0.0", "react@^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react@^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0", "react@^18.2.0 || ^19.0.0", react@^19.1.0:
+react@*, react@18.x, "react@>= 16.14", "react@>= 16.8 || 18.0.0", "react@>= 16.8.0 || 17.x.x || ^18.0.0-0 || ^19.0.0-0", "react@>= 18.2.0", react@>=16, react@>=16.6.0, react@>=16.8, "react@>=16.8.0 || ^17.0.0 || ^18", react@>=16.8.1, react@>=18, "react@>=18.2.0 || ^19.0.0-0", "react@^0.14 || ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0", "react@^16.0.0 || ^17.0.0 || ^18.0.0", "react@^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^16.11.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^16.14.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react@^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^16.8 || ^17 || ^18 || ^19 || ^19.0.0-rc", "react@^16.8 || ^17.0 || ^18.0", "react@^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react@^16.8.0 || ^17 || ^18 || ^19", "react@^16.8.0 || ^17.0.0 || ^18.0.0", "react@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react@^16.8.0 || ^17.0.1 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react@^16.x || ^17.x || ^18.x || ^19.0.0 || ^19.0.0-rc", "react@^17.0.0 || ^18.0.0 || ^19.0.0", "react@^17.0.2 || ^18.0.0 || ^19.0.0", "react@^18 || ^19", "react@^18 || ^19 || ^19.0.0-rc", "react@^18.0 || ^19.0", "react@^18.0 || ^19.0 || ^19.0.0-rc", "react@^18.0.0 || ^19.0.0", "react@^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react@^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0", "react@^18.2.0 || ^19.0.0", react@^19.1.0:
   version "19.1.0"
   resolved "https://registry.npmjs.org/react/-/react-19.1.0.tgz"
   integrity sha512-FS+XFBNvn3GTAWq26joslQgWNoFu08F4kl0J4CgdNKADkdSGXQyTCnKteIAJy96Br6YbpEU1LSzV5dYtjMkMDg==
@@ -16950,7 +16943,7 @@ zod@3.23.8:
   resolved "https://registry.npmjs.org/zod/-/zod-3.23.8.tgz"
   integrity sha512-XBx9AXhXktjUqnepgTiE5flcKIYWi/rme0Eaj+5Y0lftuGBq+jyRu/md4WnuxqgP1ubdpNCsYEYPxrzVHD8d6g==
 
-zod@3.25.67, "zod@>= 3", zod@^3.0.0, zod@^3.18.0, zod@^3.20.2, zod@^3.23.8, zod@^3.24.0, zod@^3.24.1:
+zod@3.25.67, "zod@>= 3", zod@^3.0.0, zod@^3.18.0, zod@^3.20.2, zod@^3.23.8, zod@^3.24.1:
   version "3.25.67"
   resolved "https://registry.npmjs.org/zod/-/zod-3.25.67.tgz"
   integrity sha512-idA2YXwpCdqUSKRCACDE6ItZD9TZzy3OZMtpfLoh6oPR47lipysRrJfjzMqFxQ3uJuUPyUeWe1r9vLH33xO/Qw==
