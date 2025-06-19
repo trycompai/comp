@@ -1,8 +1,9 @@
 'use client';
 
 import { trainingVideos } from '@/lib/data/training-videos';
-import type { EmployeeTrainingVideoCompletion, Member, User } from '@comp/db/types';
+import type { EmployeeTrainingVideoCompletion } from '@comp/db/types';
 import { useAction } from 'next-safe-action/hooks';
+import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { markVideoAsCompleted } from '../../../actions/markVideoAsCompleted';
 import { CarouselControls } from './CarouselControls';
@@ -10,13 +11,13 @@ import { YoutubeEmbed } from './YoutubeEmbed';
 
 interface VideoCarouselProps {
   videos: EmployeeTrainingVideoCompletion[];
-  member: Member & { user?: User };
 }
 
-export function VideoCarousel({ videos, member }: VideoCarouselProps) {
+export function VideoCarousel({ videos }: VideoCarouselProps) {
   // Create a map of completion records by their videoId for efficient lookup
   // videoId in the DB record corresponds to the id in the metadata
   const completionRecordsMap = new Map(videos.map((record) => [record.videoId, record]));
+  const { orgId } = useParams<{ orgId: string }>();
 
   // Create our merged videos array by enriching metadata with completion status
   const mergedVideos = trainingVideos.map((metadata) => {
@@ -56,6 +57,14 @@ export function VideoCarousel({ videos, member }: VideoCarouselProps) {
       // Update local UI state immediately upon successful action
       const completedMetadataId = mergedVideos[currentIndex].id;
       setCompletedVideoIds((prev) => new Set([...prev, completedMetadataId]));
+
+      // If a new record was created, update our completion records map
+      if (data.data && !completionRecordsMap.get(completedMetadataId)) {
+        const newMap = new Map(completionRecordsMap);
+        newMap.set(completedMetadataId, data.data);
+        // Note: We're not updating the map state because it's not stateful
+        // The next page refresh will have the updated records
+      }
     },
     onError: (error) => {
       console.error('Failed to mark video as completed:', error);
@@ -98,23 +107,9 @@ export function VideoCarousel({ videos, member }: VideoCarouselProps) {
       return;
     }
 
-    // Find the corresponding original DB record using the metadata ID
-    const originalDbRecord = completionRecordsMap.get(metadataVideoId);
-
-    if (!originalDbRecord) {
-      console.error(
-        'Original DB completion record not found for metadata ID:',
-        metadataVideoId,
-        'Cannot execute server action. Ensure the server action handles record creation (upsert).',
-      );
-      // TODO: Notify user or handle the case where the record needs creation first.
-      return;
-    }
-
-    const dbRecordId = originalDbRecord.id; // The actual primary key ID from the database
-
-    // Execute the action with the correct Database Record ID
-    executeMarkComplete({ videoId: dbRecordId });
+    // Execute the action with the metadata video ID (like 'sat-1')
+    // The action will create the record if it doesn't exist
+    executeMarkComplete({ videoId: metadataVideoId, organizationId: orgId });
   };
 
   // Determine completion based on the local UI state (using metadata ID)

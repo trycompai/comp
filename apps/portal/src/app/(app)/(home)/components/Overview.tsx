@@ -60,6 +60,10 @@ export async function Overview() {
     return <NoAccessMessage message="You don't seem to belong to any organizations currently." />;
   }
 
+  if (validMemberships.length === 1) {
+    return redirect(`/${validMemberships[0].organization.id}`);
+  }
+
   // Render a dashboard for each valid membership
   return (
     <div className="space-y-8">

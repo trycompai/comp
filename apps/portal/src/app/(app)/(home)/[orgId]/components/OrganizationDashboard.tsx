@@ -46,6 +46,15 @@ export async function OrganizationDashboard({
     // include: { trainingVideo: true }
   });
 
+  console.log('[OrganizationDashboard] Training videos fetched:', {
+    memberId: member.id,
+    count: trainingVideos.length,
+    videos: trainingVideos.map((v) => ({
+      videoId: v.videoId,
+      completedAt: v.completedAt,
+    })),
+  });
+
   // Get Org first to get the label id.
   const org = await db.organization.findUnique({
     where: {
@@ -57,25 +66,15 @@ export async function OrganizationDashboard({
     return <NoAccessMessage />;
   }
 
-  // Display welcome message and tasks
+  // Display tasks without welcome message for cleaner UI
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-1">
-        {/* Use organization name if available and needed */}
-        <p className="text-muted-foreground text-sm">Organization: {member.organization.name}</p>
-        <h1 className="text-2xl font-bold">Welcome back, {member.user.name}</h1>
-        <p className="text-sm">
-          Please complete the following tasks for {member.organization.name}:
-        </p>
-      </div>
-      <EmployeeTasksList
-        policies={policies}
-        trainingVideos={trainingVideos}
-        member={member} // Pass the member object down
-        fleetPolicies={fleetPolicies}
-        host={host}
-        isFleetEnabled={isFleetEnabled ?? false}
-      />
-    </div>
+    <EmployeeTasksList
+      policies={policies}
+      trainingVideos={trainingVideos}
+      member={member} // Pass the member object down
+      fleetPolicies={fleetPolicies}
+      host={host}
+      isFleetEnabled={isFleetEnabled ?? false}
+    />
   );
 }

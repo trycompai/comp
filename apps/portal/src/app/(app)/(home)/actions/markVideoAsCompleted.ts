@@ -4,10 +4,11 @@ import { authActionClient } from '@/actions/safe-action';
 import { logger } from '@/utils/logger';
 import { db } from '@comp/db';
 import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
 import { z } from 'zod';
 
 export const markVideoAsCompleted = authActionClient
-  .inputSchema(z.object({ videoId: z.string() }))
+  .inputSchema(z.object({ videoId: z.string(), organizationId: z.string() }))
   .metadata({
     name: 'markVideoAsCompleted',
     track: {
@@ -16,7 +17,7 @@ export const markVideoAsCompleted = authActionClient
     },
   })
   .action(async ({ parsedInput, ctx }) => {
-    const { videoId } = parsedInput;
+    const { videoId, organizationId } = parsedInput;
     const { user } = ctx;
 
     logger('markVideoAsCompleted action started', {
@@ -29,10 +30,21 @@ export const markVideoAsCompleted = authActionClient
       throw new Error('Unauthorized');
     }
 
+    if (!organizationId) {
+      logger('Organization ID not found', { userId: user.id });
+      throw new Error('Organization ID not found');
+    }
+
     const member = await db.member.findFirstOrThrow({
       where: {
         userId: user.id,
+        organizationId: organizationId,
       },
+    });
+
+    logger('Found member for marking video complete', {
+      memberId: member.id,
+      userId: user.id,
     });
 
     if (!member) {
@@ -45,41 +57,71 @@ export const markVideoAsCompleted = authActionClient
       throw new Error('User does not have an organization');
     }
 
-    const organizationTrainingVideo = await db.employeeTrainingVideoCompletion.findUnique({
+    // Try to find existing record
+    let organizationTrainingVideo = await db.employeeTrainingVideoCompletion.findFirst({
       where: {
-        id: videoId,
+        videoId: videoId, // This is the metadata ID like 'sat-1'
         memberId: member.id,
       },
     });
 
-    if (!organizationTrainingVideo) {
-      logger('Training video not found', { videoId });
-      throw new Error('Training video not found');
-    }
+    logger('Searched for existing video completion', {
+      videoId,
+      memberId: member.id,
+      found: !!organizationTrainingVideo,
+      existingId: organizationTrainingVideo?.id,
+    });
 
-    // Check if user has already signed this policy
-    if (organizationTrainingVideo.completedAt) {
-      logger('User has already signed this video', {
+    // If no record exists, create it
+    if (!organizationTrainingVideo) {
+      logger('Creating new video completion record', {
+        videoId,
+        memberId: member.id,
+      });
+
+      organizationTrainingVideo = await db.employeeTrainingVideoCompletion.create({
+        data: {
+          videoId,
+          memberId: member.id,
+          completedAt: new Date(), // Mark as completed immediately
+        },
+      });
+
+      logger('Video completion record created and marked as completed', {
         videoId,
         userId: user.id,
       });
-      return organizationTrainingVideo;
+    } else {
+      // Check if user has already completed this video
+      if (organizationTrainingVideo.completedAt) {
+        logger('User has already completed this video', {
+          videoId,
+          userId: user.id,
+        });
+        return organizationTrainingVideo;
+      }
+
+      logger('Updating video completion', { videoId, userId: user.id });
+      organizationTrainingVideo = await db.employeeTrainingVideoCompletion.update({
+        where: {
+          id: organizationTrainingVideo.id,
+        },
+        data: {
+          completedAt: new Date(),
+        },
+      });
+
+      logger('Video successfully marked as completed', {
+        videoId,
+        userId: user.id,
+      });
     }
 
-    logger('Updating video completion', { videoId, userId: user.id });
-    const completedVideo = await db.employeeTrainingVideoCompletion.update({
-      where: { id: videoId, memberId: member.id },
-      data: {
-        completedAt: new Date(),
-      },
-    });
+    // Revalidate path following cursor rules
+    const headersList = await headers();
+    let path = headersList.get('x-pathname') || headersList.get('referer') || '';
+    path = path.replace(/\/[a-z]{2}\//, '/');
+    revalidatePath(path);
 
-    logger('Video successfully marked as completed', {
-      videoId,
-      userId: user.id,
-    });
-
-    revalidatePath('/');
-
-    return completedVideo;
+    return organizationTrainingVideo;
   });

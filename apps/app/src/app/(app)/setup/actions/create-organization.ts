@@ -3,6 +3,7 @@
 import { createStripeCustomer } from '@/actions/organization/lib/create-stripe-customer';
 import { initializeOrganization } from '@/actions/organization/lib/initialize-organization';
 import { authActionClientWithoutOrg } from '@/actions/safe-action';
+import { createFleetLabelForOrg } from '@/jobs/tasks/device/create-fleet-label-for-org';
 import { onboardOrganization as onboardOrganizationTask } from '@/jobs/tasks/onboarding/onboard-organization';
 import { auth } from '@/utils/auth';
 import { db } from '@comp/db';
@@ -141,6 +142,11 @@ export const createOrganization = authActionClientWithoutOrg
       revalidatePath('/setup');
 
       (await cookies()).set('publicAccessToken', handle.publicAccessToken);
+
+      // Create Fleet Label.
+      await tasks.trigger<typeof createFleetLabelForOrg>('create-fleet-label-for-org', {
+        organizationId: orgId,
+      });
 
       return {
         success: true,

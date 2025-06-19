@@ -1,16 +1,13 @@
 'use client';
 
+import { trainingVideos } from '@/lib/data/training-videos';
 import type { EmployeeTrainingVideoCompletion, Member, Policy } from '@comp/db/types';
-import { Button } from '@comp/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
-import { cn } from '@comp/ui/cn';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
-import { CheckCircle2, XCircle } from 'lucide-react';
-import { useState } from 'react';
-import { toast } from 'sonner';
+import { Accordion } from '@comp/ui/accordion';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import type { FleetPolicy, Host } from '../types';
-import { PolicyList } from './policy';
-import { VideoCarousel } from './video';
+import { DeviceAgentAccordionItem } from './tasks/DeviceAgentAccordionItem';
+import { GeneralTrainingAccordionItem } from './tasks/GeneralTrainingAccordionItem';
+import { PoliciesAccordionItem } from './tasks/PoliciesAccordionItem';
 
 interface EmployeeTasksListProps {
   policies: Policy[];
@@ -23,100 +20,90 @@ interface EmployeeTasksListProps {
 
 export const EmployeeTasksList = ({
   policies,
-  trainingVideos,
+  trainingVideos: trainingVideoCompletions,
   member,
   fleetPolicies,
   host,
   isFleetEnabled,
 }: EmployeeTasksListProps) => {
-  const [isDownloading, setIsDownloading] = useState(false);
+  // Check completion status
+  const hasAcceptedPolicies =
+    policies.length === 0 || policies.every((p) => p.signedBy.includes(member.id));
+  const hasInstalledAgent = host !== null;
+  const allFleetPoliciesPass =
+    fleetPolicies.length === 0 || fleetPolicies.every((policy) => policy.response === 'pass');
+  const hasCompletedDeviceSetup = hasInstalledAgent && allFleetPoliciesPass;
 
-  const handleDownload = async () => {
-    setIsDownloading(true);
-    try {
-      const response = await fetch('/api/download-agent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          orgId: member.organizationId,
-          employeeId: member.id,
-        }),
-      });
+  // Calculate general training completion (matching logic from GeneralTrainingAccordionItem)
+  const generalTrainingVideoIds = trainingVideos
+    .filter((video) => video.id.startsWith('sat-'))
+    .map((video) => video.id);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'Failed to download agent.');
-      }
+  const completedGeneralTrainingCount = trainingVideoCompletions.filter(
+    (completion) =>
+      generalTrainingVideoIds.includes(completion.videoId) && completion.completedAt !== null,
+  ).length;
 
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'compai-device-agent.zip';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error(error);
-      toast.error(error instanceof Error ? error.message : 'An unknown error occurred.');
-    } finally {
-      setIsDownloading(false);
-    }
-  };
+  const hasCompletedGeneralTraining =
+    completedGeneralTrainingCount === generalTrainingVideoIds.length;
 
-  const hasPolicies = fleetPolicies.length > 0;
+  const completedCount = [
+    hasAcceptedPolicies,
+    hasCompletedDeviceSetup,
+    hasCompletedGeneralTraining,
+  ].filter(Boolean).length;
+
+  const accordionItems = [
+    {
+      title: 'Accept security policies',
+      content: <PoliciesAccordionItem policies={policies} member={member} />,
+    },
+    ...(isFleetEnabled
+      ? [
+          {
+            title: 'Download and install Comp AI Device Agent',
+            content: (
+              <DeviceAgentAccordionItem member={member} host={host} fleetPolicies={fleetPolicies} />
+            ),
+          },
+        ]
+      : []),
+    {
+      title: 'Complete general security awareness training',
+      content: <GeneralTrainingAccordionItem trainingVideoCompletions={trainingVideoCompletions} />,
+    },
+  ];
 
   return (
-    <Tabs defaultValue="policies">
-      <TabsList className="mb-1 h-auto w-full justify-start rounded-sm border-b-[1px] bg-transparent p-0 pb-4">
-        <TabsTrigger value="policies">Policies</TabsTrigger>
-        <TabsTrigger value="training">Training</TabsTrigger>
-        {isFleetEnabled && <TabsTrigger value="device">Device</TabsTrigger>}
-      </TabsList>
-      <TabsContent value="policies" className="py-2">
-        <PolicyList policies={policies} member={member} />
-      </TabsContent>
-      <TabsContent value="training" className="py-2">
-        <VideoCarousel videos={trainingVideos} member={member} />
-      </TabsContent>
-      <TabsContent value="device" className="py-2">
-        {isFleetEnabled && hasPolicies && host ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>{host.computer_name}'s Policies</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {fleetPolicies.map((policy) => (
-                <div
-                  key={policy.id}
-                  className={cn(
-                    'hover:bg-muted/50 flex items-center justify-between rounded-md border border-l-4 p-3 shadow-sm transition-colors',
-                    policy.response === 'pass' ? 'border-l-green-500' : 'border-l-red-500',
-                  )}
-                >
-                  <p className="font-medium">{policy.name}</p>
-                  {policy.response === 'pass' ? (
-                    <div className="flex items-center gap-1 text-green-600">
-                      <CheckCircle2 size={16} />
-                      <span>Pass</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1 text-red-600">
-                      <XCircle size={16} />
-                      <span>Fail</span>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        ) : (
-          <Button disabled={isDownloading} onClick={handleDownload}>
-            {isDownloading ? 'Downloading...' : 'Download Agent'}
-          </Button>
-        )}
-      </TabsContent>
-    </Tabs>
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Overview</CardTitle>
+          <CardDescription>
+            Please complete the following tasks to stay compliant and secure.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Progress indicator */}
+          <div>
+            <div className="text-muted-foreground text-sm">
+              {completedCount} of {accordionItems.length} tasks completed
+            </div>
+            <div className="w-full bg-muted rounded-full h-2.5">
+              <div
+                className="bg-primary h-full rounded-full"
+                style={{ width: `${(completedCount / accordionItems.length) * 100}%` }}
+              ></div>
+            </div>
+          </div>
+
+          <Accordion type="single" collapsible className="space-y-3">
+            {accordionItems.map((item, idx) => (
+              <div key={item.title ?? idx}>{item.content}</div>
+            ))}
+          </Accordion>
+        </CardContent>
+      </Card>
+    </div>
   );
 };

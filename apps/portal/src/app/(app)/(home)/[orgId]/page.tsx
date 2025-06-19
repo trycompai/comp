@@ -43,8 +43,7 @@ export default async function OrganizationPage({ params }: { params: Promise<{ o
       redirect('/'); // Or appropriate login/auth route
     }
 
-    const { fleetPolicies, device } = await getFleetPolicies(member);
-
+    // Check fleet feature flag first
     let isFleetEnabled = false;
     try {
       const postHogClient = await getPostHogClient();
@@ -53,6 +52,16 @@ export default async function OrganizationPage({ params }: { params: Promise<{ o
     } catch (error) {
       console.error('Error checking fleet feature flag:', error);
       // Default to false if there's an error
+    }
+
+    // Only fetch fleet policies if fleet is enabled
+    let fleetPolicies: FleetPolicy[] = [];
+    let device: Host | null = null;
+
+    if (isFleetEnabled) {
+      const fleetData = await getFleetPolicies(member);
+      fleetPolicies = fleetData.fleetPolicies;
+      device = fleetData.device;
     }
 
     return (
@@ -76,9 +85,16 @@ const getFleetPolicies = async (
   member: Member,
 ): Promise<{ fleetPolicies: FleetPolicy[]; device: Host | null }> => {
   const deviceLabelId = member.fleetDmLabelId;
-  const fleet = await getFleetInstance();
+
+  // Return early if no deviceLabelId
+  if (!deviceLabelId) {
+    console.log('No fleet device label ID found for member');
+    return { fleetPolicies: [], device: null };
+  }
 
   try {
+    const fleet = await getFleetInstance();
+
     const deviceResponse = await fleet.get(`/labels/${deviceLabelId}/hosts`);
     const device: Host | undefined = deviceResponse.data.hosts[0]; // There should only be one device per label.
 
@@ -87,10 +103,15 @@ const getFleetPolicies = async (
     }
 
     const deviceWithPolicies = await fleet.get(`/hosts/${device.id}`);
-    const fleetPolicies: FleetPolicy[] = deviceWithPolicies.data.host.policies;
+    const fleetPolicies: FleetPolicy[] = deviceWithPolicies.data.host.policies || [];
     return { fleetPolicies, device };
-  } catch (error) {
-    console.error(error);
+  } catch (error: any) {
+    // Log more details about the error
+    if (error.response?.status === 404) {
+      console.log(`Fleet endpoint not found for label ID: ${deviceLabelId}`);
+    } else {
+      console.error('Error fetching fleet policies:', error.message || error);
+    }
     return { fleetPolicies: [], device: null };
   }
 };

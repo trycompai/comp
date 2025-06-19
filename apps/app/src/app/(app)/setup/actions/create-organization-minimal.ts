@@ -3,8 +3,10 @@
 import { createStripeCustomer } from '@/actions/organization/lib/create-stripe-customer';
 import { initializeOrganization } from '@/actions/organization/lib/initialize-organization';
 import { authActionClientWithoutOrg } from '@/actions/safe-action';
+import { createFleetLabelForOrg } from '@/jobs/tasks/device/create-fleet-label-for-org';
 import { auth } from '@/utils/auth';
 import { db } from '@comp/db';
+import { tasks } from '@trigger.dev/sdk/v3';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { z } from 'zod';
@@ -109,6 +111,11 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
       revalidatePath('/');
       revalidatePath(`/${orgId}`);
       revalidatePath('/setup');
+
+      // Create Fleet Label.
+      await tasks.trigger<typeof createFleetLabelForOrg>('create-fleet-label-for-org', {
+        organizationId: orgId,
+      });
 
       return {
         success: true,
