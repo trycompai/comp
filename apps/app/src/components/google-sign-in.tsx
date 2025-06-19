@@ -1,6 +1,5 @@
 'use client';
 
-import { ButtonIcon } from '@/components/ui/button-icon';
 import { authClient } from '@/utils/auth-client';
 import { Button } from '@comp/ui/button';
 import { Icons } from '@comp/ui/icons';
@@ -27,16 +26,16 @@ export function GoogleSignIn({ inviteCode }: { inviteCode?: string }) {
   return (
     <Button
       onClick={handleSignIn}
-      className="flex h-[40px] w-full space-x-2 px-6 py-4 font-medium active:scale-[0.98]"
+      className="w-full h-11 font-medium"
+      variant="outline"
+      disabled={isLoading}
     >
       {isLoading ? (
         <Loader2 className="h-4 w-4 animate-spin" />
       ) : (
         <>
-          <ButtonIcon isLoading={isLoading}>
-            <Icons.Google />
-          </ButtonIcon>
-          <span>{'Continue with Google'}</span>
+          <Icons.Google className="h-4 w-4" />
+          Continue with Google
         </>
       )}
     </Button>

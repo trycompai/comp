@@ -207,7 +207,7 @@ export const Icons = {
     </svg>
   ),
   Google: (props: any) => (
-    <svg width="20" height="20" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+    <svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" {...props}>
       <g clipPath="url(#a)" fill="currentColor">
         <path d="M10 3.958c1.475 0 2.796.509 3.838 1.5l2.854-2.854C14.959.992 12.696 0 10 0a9.995 9.995 0 0 0-8.933 5.508l3.325 2.58c.787-2.371 3-4.13 5.608-4.13Z" />
         <path d="M19.575 10.23c0-.655-.063-1.288-.158-1.897H10v3.759h5.392a4.648 4.648 0 0 1-1.992 2.991l3.22 2.5c1.88-1.741 2.955-4.316 2.955-7.354Z" />
@@ -222,7 +222,7 @@ export const Icons = {
     </svg>
   ),
   EmailIcon: (props: any) => (
-    <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width={20} height={20} {...props}>
+    <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" {...props}>
       <g strokeWidth={0} />
       <g strokeLinecap="round" strokeLinejoin="round" />
       <path
@@ -358,7 +358,7 @@ export const Icons = {
     </svg>
   ),
   Github: (props: any) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width={22} height={22} fill="none" {...props}>
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 22 22" {...props}>
       <path
         fill="currentColor"
         fillRule="evenodd"
