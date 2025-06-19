@@ -1,5 +1,6 @@
 import { stripe } from '@/actions/organization/lib/stripe';
 import { client } from '@comp/kv';
+import { STRIPE_SUB_CACHE } from './stripeDataToKv.type';
 
 // The contents of this function should probably be wrapped in a try/catch
 export async function syncStripeDataToKV(customerId: string) {
@@ -12,7 +13,7 @@ export async function syncStripeDataToKV(customerId: string) {
   });
 
   if (subscriptions.data.length === 0) {
-    const subData = { status: 'none' };
+    const subData: STRIPE_SUB_CACHE = { status: 'none' };
     await client.set(`stripe:customer:${customerId}`, subData);
     return subData;
   }
@@ -21,7 +22,7 @@ export async function syncStripeDataToKV(customerId: string) {
   const subscription = subscriptions.data[0];
 
   // Store complete subscription state
-  const subData = {
+  const subData: STRIPE_SUB_CACHE = {
     subscriptionId: subscription.id,
     status: subscription.status,
     priceId: subscription.items.data[0].price.id,
