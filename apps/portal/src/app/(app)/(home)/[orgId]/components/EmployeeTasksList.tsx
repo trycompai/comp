@@ -17,7 +17,7 @@ interface EmployeeTasksListProps {
   trainingVideos: EmployeeTrainingVideoCompletion[];
   member: Member;
   fleetPolicies: FleetPolicy[];
-  host: Host;
+  host: Host | null;
   isFleetEnabled: boolean;
 }
 
@@ -65,7 +65,7 @@ export const EmployeeTasksList = ({
     }
   };
 
-  const hasPolicies = fleetPolicies.length;
+  const hasPolicies = fleetPolicies.length > 0;
 
   return (
     <Tabs defaultValue="policies">
@@ -81,7 +81,7 @@ export const EmployeeTasksList = ({
         <VideoCarousel videos={trainingVideos} member={member} />
       </TabsContent>
       <TabsContent value="device" className="py-2">
-        {isFleetEnabled && hasPolicies ? (
+        {isFleetEnabled && hasPolicies && host ? (
           <Card>
             <CardHeader>
               <CardTitle>{host.computer_name}'s Policies</CardTitle>

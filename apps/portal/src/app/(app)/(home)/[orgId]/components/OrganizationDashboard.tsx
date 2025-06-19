@@ -14,7 +14,7 @@ interface OrganizationDashboardProps {
   organizationId: string;
   member: MemberWithUserOrg; // Pass the full member object for user info etc.
   fleetPolicies: FleetPolicy[];
-  host: Host;
+  host: Host | null;
   isFleetEnabled: boolean;
 }
 
