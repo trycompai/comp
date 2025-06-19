@@ -3,7 +3,7 @@
   "dependencies": {
     "@comp/db": "workspace:*",
     "@comp/ui": "workspace:*",
-    "lucide-react": "^0.454.0",
+    "lucide-react": "^0.518.0",
     "next": "15.4.0-canary.85"
   },
   "devDependencies": {
