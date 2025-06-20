@@ -2,13 +2,16 @@
 
 import { auth } from '@/utils/auth';
 import { db } from '@comp/db';
+import type { Role } from '@comp/db/types';
 
 export const addEmployeeWithoutInvite = async ({
   email,
   organizationId,
+  roles,
 }: {
   email: string;
   organizationId: string;
+  roles: Role[];
 }) => {
   try {
     let userId = '';
@@ -34,7 +37,7 @@ export const addEmployeeWithoutInvite = async ({
       body: {
         userId: existingUser?.id ?? userId,
         organizationId,
-        role: 'employee',
+        role: roles, // Auth API expects role or role array
       },
     });
 

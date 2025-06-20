@@ -35,9 +35,16 @@ import { addEmployeeWithoutInvite } from '../actions/addEmployeeWithoutInvite';
 import { MultiRoleCombobox } from './MultiRoleCombobox';
 
 // --- Constants for Roles ---
-const selectableRoles = ['admin', 'auditor', 'employee'] as const satisfies Readonly<Role[]>;
+const selectableRoles = ['admin', 'auditor', 'employee'] as const satisfies Readonly<
+  [Role, ...Role[]]
+>;
 type InviteRole = (typeof selectableRoles)[number];
 const DEFAULT_ROLES: InviteRole[] = [];
+
+// Type guard to check if a string is a valid InviteRole
+const isInviteRole = (role: string): role is InviteRole => {
+  return role === 'admin' || role === 'auditor' || role === 'employee';
+};
 
 // --- Schemas ---
 const manualInviteSchema = z.object({
@@ -151,12 +158,13 @@ export function InviteMembersModal({
 
         // Process each invitation sequentially
         for (const invite of values.manualInvites) {
-          const isEmployeeOnly = invite.roles.length === 1 && invite.roles[0] === 'employee';
+          const hasEmployeeRole = invite.roles.includes('employee');
           try {
-            if (isEmployeeOnly) {
+            if (hasEmployeeRole) {
               await addEmployeeWithoutInvite({
                 organizationId,
                 email: invite.email,
+                roles: invite.roles,
               });
             } else {
               // Use authClient to send the invitation
@@ -276,6 +284,7 @@ export function InviteMembersModal({
           // Process each row
           for (const row of dataRows) {
             const columns = row.split(',').map((col) => col.trim());
+
             if (columns.length <= Math.max(emailIndex, roleIndex)) {
               failedInvites.push({
                 email: columns[emailIndex] || 'Invalid row',
@@ -296,9 +305,9 @@ export function InviteMembersModal({
               continue;
             }
 
-            // Validate role(s)
-            const roles = roleValue.split(',').map((r) => r.trim()) as Role[];
-            const validRoles = roles.filter((role) => selectableRoles.includes(role as any));
+            // Validate role(s) - split by pipe for multiple roles
+            const roles = roleValue.split('|').map((r) => r.trim());
+            const validRoles = roles.filter(isInviteRole);
 
             if (validRoles.length === 0) {
               failedInvites.push({
@@ -309,11 +318,20 @@ export function InviteMembersModal({
             }
 
             // Attempt to invite
+            const hasEmployeeRole = validRoles.includes('employee');
             try {
-              await authClient.organization.inviteMember({
-                email,
-                role: validRoles.length === 1 ? validRoles[0] : validRoles,
-              });
+              if (hasEmployeeRole) {
+                await addEmployeeWithoutInvite({
+                  organizationId,
+                  email,
+                  roles: validRoles,
+                });
+              } else {
+                await authClient.organization.inviteMember({
+                  email,
+                  role: validRoles,
+                });
+              }
               successCount++;
             } catch (error) {
               console.error(`Failed to invite ${email}:`, error);
@@ -374,7 +392,12 @@ export function InviteMembersModal({
     }
   };
 
-  const csvTemplate = 'email,role\nexample@domain.com,employee\nuser2@example.com,admin';
+  const csvTemplate = `email,role
+john@company.com,employee
+jane@company.com,employee|admin
+bob@company.com,auditor
+sarah@company.com,employee|auditor
+mike@company.com,admin`;
   const csvTemplateDataUri = `data:text/csv;charset=utf-8,${encodeURIComponent(csvTemplate)}`;
 
   return (
@@ -499,7 +522,9 @@ export function InviteMembersModal({
                         />
                       </FormControl>
                       <FormDescription>
-                        {"Upload a CSV file with columns for 'email' and 'role'."}
+                        {
+                          "Upload a CSV file with 'email' and 'role' columns. Use pipe (|) to separate multiple roles (e.g., employee|admin)."
+                        }
                       </FormDescription>
                       <a
                         href={csvTemplateDataUri}
