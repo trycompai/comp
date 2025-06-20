@@ -151,9 +151,9 @@ export function InviteMembersModal({
 
         // Process each invitation sequentially
         for (const invite of values.manualInvites) {
-          const isEmployeeOnly = invite.roles.length === 1 && invite.roles[0] === 'employee';
+          const hasEmployeeRole = invite.roles.includes('employee');
           try {
-            if (isEmployeeOnly) {
+            if (hasEmployeeRole) {
               await addEmployeeWithoutInvite({
                 organizationId,
                 email: invite.email,
@@ -309,11 +309,19 @@ export function InviteMembersModal({
             }
 
             // Attempt to invite
+            const hasEmployeeRole = validRoles.includes('employee');
             try {
-              await authClient.organization.inviteMember({
-                email,
-                role: validRoles.length === 1 ? validRoles[0] : validRoles,
-              });
+              if (hasEmployeeRole) {
+                await addEmployeeWithoutInvite({
+                  organizationId,
+                  email,
+                });
+              } else {
+                await authClient.organization.inviteMember({
+                  email,
+                  role: validRoles.length === 1 ? validRoles[0] : validRoles,
+                });
+              }
               successCount++;
             } catch (error) {
               console.error(`Failed to invite ${email}:`, error);

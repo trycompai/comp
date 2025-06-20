@@ -2,6 +2,7 @@
 
 import { auth } from '@/utils/auth';
 import { db } from '@comp/db';
+import { InvitePortalEmail, sendEmail } from '@comp/email';
 
 export const addEmployeeWithoutInvite = async ({
   email,
@@ -36,6 +37,23 @@ export const addEmployeeWithoutInvite = async ({
         organizationId,
         role: 'employee',
       },
+    });
+
+    const organization = await db.organization.findUnique({
+      where: {
+        id: organizationId,
+      },
+    });
+
+    // Send email to employee.
+    await sendEmail({
+      to: email,
+      subject: `You've been invited to join ${organization?.name || 'an organization'} on Comp AI`,
+      react: InvitePortalEmail({
+        email,
+        organizationName: organization?.name || 'an organization',
+        inviteLink: `${process.env.NEXT_PUBLIC_PORTAL_URL}`,
+      }),
     });
 
     return { success: true, data: member };
