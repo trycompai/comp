@@ -89,7 +89,11 @@ export function FrameworkCard({
   const statusBadge = getStatusBadge(complianceScore);
 
   // Calculate last activity date - use current date as fallback
-  const lastActivityDate = new Date().toLocaleDateString();
+  const lastActivityDate = new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit',
+  });
 
   return (
     <Link href={`/${orgId}/frameworks/${frameworkInstance.id}`} className="group block">

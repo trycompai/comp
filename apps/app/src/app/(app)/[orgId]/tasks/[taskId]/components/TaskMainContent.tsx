@@ -45,7 +45,7 @@ export function TaskMainContent({ task, comments, attachments }: TaskMainContent
   };
 
   return (
-    <div className="flex flex-1 flex-col gap-4 lg:mx-auto lg:max-w-3xl lg:py-8">
+    <div className="flex flex-1 flex-col gap-4 lg:mx-auto lg:max-w-3xl">
       <TaskBody
         taskId={task.id}
         title={title}

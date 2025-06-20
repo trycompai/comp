@@ -252,25 +252,27 @@ export function CreateVendorForm({ assignees }: { assignees: (Member & { user: U
                         <FormItem>
                           <FormLabel>{'Category'}</FormLabel>
                           <FormControl>
-                            <Select {...field} value={field.value} onValueChange={field.onChange}>
-                              <SelectTrigger>
-                                <SelectValue placeholder={'Select a category...'} />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {Object.values(VendorCategory).map((category) => {
-                                  const formattedCategory = category
-                                    .toLowerCase()
-                                    .split('_')
-                                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                                    .join(' ');
-                                  return (
-                                    <SelectItem key={category} value={category}>
-                                      {formattedCategory}
-                                    </SelectItem>
-                                  );
-                                })}
-                              </SelectContent>
-                            </Select>
+                            <div className="mt-3">
+                              <Select {...field} value={field.value} onValueChange={field.onChange}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder={'Select a category...'} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {Object.values(VendorCategory).map((category) => {
+                                    const formattedCategory = category
+                                      .toLowerCase()
+                                      .split('_')
+                                      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                                      .join(' ');
+                                    return (
+                                      <SelectItem key={category} value={category}>
+                                        {formattedCategory}
+                                      </SelectItem>
+                                    );
+                                  })}
+                                </SelectContent>
+                              </Select>
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -283,25 +285,27 @@ export function CreateVendorForm({ assignees }: { assignees: (Member & { user: U
                         <FormItem>
                           <FormLabel>{'Status'}</FormLabel>
                           <FormControl>
-                            <Select {...field} value={field.value} onValueChange={field.onChange}>
-                              <SelectTrigger>
-                                <SelectValue placeholder={'Select a status...'} />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {Object.values(VendorStatus).map((status) => {
-                                  const formattedStatus = status
-                                    .toLowerCase()
-                                    .split('_')
-                                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                                    .join(' ');
-                                  return (
-                                    <SelectItem key={status} value={status}>
-                                      {formattedStatus}
-                                    </SelectItem>
-                                  );
-                                })}
-                              </SelectContent>
-                            </Select>
+                            <div className="mt-3">
+                              <Select {...field} value={field.value} onValueChange={field.onChange}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder={'Select a status...'} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {Object.values(VendorStatus).map((status) => {
+                                    const formattedStatus = status
+                                      .toLowerCase()
+                                      .split('_')
+                                      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                                      .join(' ');
+                                    return (
+                                      <SelectItem key={status} value={status}>
+                                        {formattedStatus}
+                                      </SelectItem>
+                                    );
+                                  })}
+                                </SelectContent>
+                              </Select>
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -314,12 +318,14 @@ export function CreateVendorForm({ assignees }: { assignees: (Member & { user: U
                         <FormItem>
                           <FormLabel>{'Assignee'}</FormLabel>
                           <FormControl>
-                            <SelectAssignee
-                              assignees={assignees}
-                              assigneeId={field.value ?? null}
-                              withTitle={false}
-                              onAssigneeChange={field.onChange}
-                            />
+                            <div className="mt-3">
+                              <SelectAssignee
+                                assignees={assignees}
+                                assigneeId={field.value ?? null}
+                                withTitle={false}
+                                onAssigneeChange={field.onChange}
+                              />
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>

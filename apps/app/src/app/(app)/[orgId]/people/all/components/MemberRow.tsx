@@ -155,7 +155,7 @@ export function MemberRow({ member, onRemove, onUpdateRole }: MemberRowProps) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex max-w-[150px] flex-wrap justify-end gap-1">
+          <div className="flex max-w-[150px] flex-wrap justify-end gap-1 hidden md:block">
             {currentRoles.map((role) => (
               <Badge key={role} variant="secondary" className="text-xs">
                 {(() => {

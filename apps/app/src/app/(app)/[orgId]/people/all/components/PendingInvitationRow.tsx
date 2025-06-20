@@ -83,7 +83,7 @@ export function PendingInvitationRow({ invitation, onCancel }: PendingInvitation
           <div>
             <div className="flex items-center gap-2 font-medium">
               <span>{invitation.email}</span>
-              <Badge variant="outline" className="flex items-center gap-1 text-xs">
+              <Badge variant="outline" className="hidden md:flex items-center gap-1 text-xs">
                 <Clock className="mr-1 h-3 w-3" />
                 Pending
               </Badge>
@@ -92,7 +92,7 @@ export function PendingInvitationRow({ invitation, onCancel }: PendingInvitation
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex max-w-[150px] flex-wrap justify-end gap-1">
+          <div className="max-w-[150px] flex-wrap justify-end gap-1 hidden md:flex">
             {(Array.isArray(invitation.role)
               ? invitation.role
               : typeof invitation.role === 'string' && invitation.role.includes(',')

@@ -1,6 +1,7 @@
 'use client';
 
 import { createApiKeyAction } from '@/actions/organization/create-api-key-action';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
 import { Button } from '@comp/ui/button';
 import {
   Drawer,
@@ -14,7 +15,7 @@ import { Input } from '@comp/ui/input';
 import { ScrollArea } from '@comp/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@comp/ui/sheet';
-import { Check, Copy, Loader2, X } from 'lucide-react';
+import { Check, Copy, X } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -82,49 +83,58 @@ export function CreateApiKeyDialog({ open, onOpenChange, onSuccess }: CreateApiK
 
   // Form content for reuse in both Dialog and Sheet/Drawer
   const renderFormContent = () => (
-    <form onSubmit={handleSubmit} className="space-y-4 p-1">
-      <div className="space-y-2">
-        <label htmlFor="name" className="text-sm leading-none font-medium">
-          {'Name'}
-        </label>
-        <Input
-          id="name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder={'Enter a name for this API key'}
-          required
-          className="w-full"
-        />
-      </div>
-      <div className="space-y-2">
-        <label htmlFor="expiration" className="text-sm leading-none font-medium">
-          {'Expiration'}
-        </label>
-        <Select
-          value={expiration}
-          onValueChange={(value) => setExpiration(value as 'never' | '30days' | '90days' | '1year')}
-        >
-          <SelectTrigger id="expiration" className="w-full">
-            <SelectValue placeholder={'Select expiration'} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="never">{'Never'}</SelectItem>
-            <SelectItem value="30days">{'30 days'}</SelectItem>
-            <SelectItem value="90days">{'90 days'}</SelectItem>
-            <SelectItem value="1year">{'1 year'}</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="flex flex-col justify-end gap-2 pt-2 sm:flex-row">
-        <Button type="button" variant="outline" onClick={handleClose}>
-          {'Cancel'}
-        </Button>
-        <Button type="submit" disabled={isCreating === 'executing'} className="w-full sm:w-auto">
-          {isCreating === 'executing' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {'New API Key'}
-        </Button>
-      </div>
-    </form>
+    <div className="scrollbar-hide h-[calc(100vh-250px)] overflow-auto">
+      <Accordion type="multiple" defaultValue={['api-key']}>
+        <AccordionItem value="api-key">
+          <AccordionTrigger>{'API Key'}</AccordionTrigger>
+          <AccordionContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="name" className="text-sm leading-none font-medium">
+                  {'Name'}
+                </label>
+                <div className="mt-3">
+                  <Input
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder={'Enter a name for this API key'}
+                    required
+                    className="w-full"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="expiration" className="text-sm leading-none font-medium">
+                  {'Expiration'}
+                </label>
+                <div className="mt-3">
+                  <Select
+                    value={expiration}
+                    onValueChange={(value) =>
+                      setExpiration(value as 'never' | '30days' | '90days' | '1year')
+                    }
+                  >
+                    <SelectTrigger id="expiration" className="w-full">
+                      <SelectValue placeholder={'Select expiration'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="never">{'Never'}</SelectItem>
+                      <SelectItem value="30days">{'30 days'}</SelectItem>
+                      <SelectItem value="90days">{'90 days'}</SelectItem>
+                      <SelectItem value="1year">{'1 year'}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <Button type="submit" className="justify-self-end w-full">
+                {'Create'}
+              </Button>
+            </form>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+    </div>
   );
 
   // Created key content for reuse in both Dialog and Sheet/Drawer

@@ -3,6 +3,7 @@
 import { updateRiskAction } from '@/actions/risk/update-risk-action';
 import { updateRiskSchema } from '@/actions/schema';
 import { Departments, type Risk } from '@comp/db/types';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
 import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Input } from '@comp/ui/input';
@@ -55,57 +56,70 @@ export function UpdateRiskForm({ risk }: { risk: Risk }) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)}>
-        <div className="space-y-4">
-          <FormField
-            control={form.control}
-            name="title"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{'Risk Title'}</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    autoFocus
-                    className="mt-3"
-                    placeholder={'A short, descriptive title for the risk.'}
-                    autoCorrect="off"
+      <div className="scrollbar-hide h-[calc(100vh-250px)] overflow-auto">
+        <Accordion type="multiple" defaultValue={['risk']}>
+          <AccordionItem value="risk">
+            <AccordionTrigger>{'Risk'}</AccordionTrigger>
+            <AccordionContent>
+              <form onSubmit={form.handleSubmit(onSubmit)}>
+                <div className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{'Risk Title'}</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            autoFocus
+                            className="mt-3"
+                            placeholder={'A short, descriptive title for the risk.'}
+                            autoCorrect="off"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="description"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Description</FormLabel>
-                <FormControl>
-                  <Textarea
-                    {...field}
-                    className="mt-3 min-h-[80px]"
-                    placeholder={
-                      'A detailed description of the risk, its potential impact, and its causes.'
-                    }
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            {...field}
+                            className="mt-3 min-h-[80px]"
+                            placeholder={
+                              'A detailed description of the risk, its potential impact, and its causes.'
+                            }
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        <div className="mt-8 flex justify-end">
-          <Button type="submit" variant="default" disabled={updateRisk.status === 'executing'}>
-            {updateRisk.status === 'executing' ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              'Save'
-            )}
-          </Button>
-        </div>
-      </form>
+                </div>
+                <div className="mt-8 flex justify-end">
+                  <Button
+                    type="submit"
+                    variant="default"
+                    disabled={updateRisk.status === 'executing'}
+                  >
+                    {updateRisk.status === 'executing' ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      'Save'
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </div>
     </Form>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import type { Member, User, Vendor } from '@comp/db/types';
+import type { GlobalVendors, Member, User, Vendor } from '@comp/db/types';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import { PencilIcon } from 'lucide-react';
@@ -11,9 +11,11 @@ import { UpdateSecondaryFieldsForm } from './update-secondary-fields-form';
 export function SecondaryFields({
   vendor,
   assignees,
+  globalVendor,
 }: {
   vendor: Vendor & { assignee: { user: User | null } | null };
   assignees: (Member & { user: User })[];
+  globalVendor: GlobalVendors | null;
 }) {
   const [_, setOpen] = useQueryState('vendor-overview-sheet');
 
@@ -36,7 +38,7 @@ export function SecondaryFields({
             <CardDescription>{vendor.description}</CardDescription>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <UpdateSecondaryFieldsForm vendor={vendor} assignees={assignees} />
         </CardContent>
       </Card>

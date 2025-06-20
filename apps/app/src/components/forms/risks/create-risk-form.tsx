@@ -125,25 +125,27 @@ export function CreateRisk({ assignees }: { assignees: (Member & { user: User })
                         <FormItem>
                           <FormLabel>{'Category'}</FormLabel>
                           <FormControl>
-                            <Select {...field} value={field.value} onValueChange={field.onChange}>
-                              <SelectTrigger>
-                                <SelectValue placeholder={'Select a category'} />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {Object.values(RiskCategory).map((category) => {
-                                  const formattedCategory = category
-                                    .toLowerCase()
-                                    .split('_')
-                                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                                    .join(' ');
-                                  return (
-                                    <SelectItem key={category} value={category}>
-                                      {formattedCategory}
-                                    </SelectItem>
-                                  );
-                                })}
-                              </SelectContent>
-                            </Select>
+                            <div className="mt-3">
+                              <Select {...field} value={field.value} onValueChange={field.onChange}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder={'Select a category'} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {Object.values(RiskCategory).map((category) => {
+                                    const formattedCategory = category
+                                      .toLowerCase()
+                                      .split('_')
+                                      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                                      .join(' ');
+                                    return (
+                                      <SelectItem key={category} value={category}>
+                                        {formattedCategory}
+                                      </SelectItem>
+                                    );
+                                  })}
+                                </SelectContent>
+                              </Select>
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -156,22 +158,24 @@ export function CreateRisk({ assignees }: { assignees: (Member & { user: User })
                         <FormItem>
                           <FormLabel>{'Department'}</FormLabel>
                           <FormControl>
-                            <Select {...field} value={field.value} onValueChange={field.onChange}>
-                              <SelectTrigger>
-                                <SelectValue placeholder={'Select a department'} />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {Object.values(Departments).map((department) => {
-                                  const formattedDepartment = department.toUpperCase();
+                            <div className="mt-3">
+                              <Select {...field} value={field.value} onValueChange={field.onChange}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder={'Select a department'} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {Object.values(Departments).map((department) => {
+                                    const formattedDepartment = department.toUpperCase();
 
-                                  return (
-                                    <SelectItem key={department} value={department}>
-                                      {formattedDepartment}
-                                    </SelectItem>
-                                  );
-                                })}
-                              </SelectContent>
-                            </Select>
+                                    return (
+                                      <SelectItem key={department} value={department}>
+                                        {formattedDepartment}
+                                      </SelectItem>
+                                    );
+                                  })}
+                                </SelectContent>
+                              </Select>
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -184,13 +188,15 @@ export function CreateRisk({ assignees }: { assignees: (Member & { user: User })
                         <FormItem>
                           <FormLabel>{'Assignee'}</FormLabel>
                           <FormControl>
-                            <SelectAssignee
-                              assigneeId={field.value ?? null}
-                              assignees={assignees}
-                              onAssigneeChange={field.onChange}
-                              disabled={createRisk.status === 'executing'}
-                              withTitle={false}
-                            />
+                            <div className="mt-3">
+                              <SelectAssignee
+                                assigneeId={field.value ?? null}
+                                assignees={assignees}
+                                onAssigneeChange={field.onChange}
+                                disabled={createRisk.status === 'executing'}
+                                withTitle={false}
+                              />
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>

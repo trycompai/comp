@@ -35,6 +35,7 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
   const [newComment, setNewComment] = useState('');
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [hasMounted, setHasMounted] = useState(false);
 
@@ -65,6 +66,7 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
       if (!files || files.length === 0) return;
 
       setIsUploading(true);
+      setIsLoading(true);
 
       // Helper to process a single file
       const processFile = (file: File) => {
@@ -114,10 +116,12 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
               console.error('Upload succeeded but missing data:', data);
               toast.error(`Failed to process "${file.name}" after upload.`);
             }
+            setIsLoading(false);
             resolve();
           };
           reader.onerror = () => {
             toast.error(`Error reading file: ${file.name}`);
+            setIsLoading(false);
             resolve();
           };
           reader.readAsDataURL(file);
@@ -171,6 +175,7 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
   };
 
   const handleCommentSubmit = async () => {
+    setIsLoading(true);
     if (!newComment.trim() && pendingAttachments.length === 0) return;
 
     const { success, data, error } = await createComment({
@@ -190,9 +195,8 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
     if (error) {
       toast.error(error);
     }
+    setIsLoading(false);
   };
-
-  const isLoading = isUploading || session.isPending;
 
   if (!hasMounted || session.isPending) {
     return (
@@ -305,7 +309,11 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
               disabled={isLoading || (!newComment.trim() && pendingAttachments.length === 0)}
               aria-label="Submit comment"
             >
-              <ArrowUp className="h-4 w-4" />
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <ArrowUp className="h-4 w-4" />
+              )}
             </Button>
           </div>
         </div>

@@ -23,7 +23,7 @@ export default async function VendorPage({ params }: PageProps) {
   const assignees = await getAssignees();
   const comments = await getComments(vendorId);
 
-  if (!vendor) {
+  if (!vendor || !vendor.vendor) {
     redirect('/');
   }
 
@@ -31,14 +31,18 @@ export default async function VendorPage({ params }: PageProps) {
     <PageWithBreadcrumb
       breadcrumbs={[
         { label: 'Vendors', href: `/${orgId}/vendors` },
-        { label: vendor.name, current: true },
+        { label: vendor.vendor?.name ?? '', current: true },
       ]}
     >
       <div className="flex flex-col gap-4">
-        <SecondaryFields vendor={vendor} assignees={assignees} />
+        <SecondaryFields
+          vendor={vendor.vendor}
+          assignees={assignees}
+          globalVendor={vendor.globalVendor}
+        />
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <VendorInherentRiskChart vendor={vendor} />
-          <VendorResidualRiskChart vendor={vendor} />
+          <VendorInherentRiskChart vendor={vendor.vendor} />
+          <VendorResidualRiskChart vendor={vendor.vendor} />
         </div>
         <Comments entityId={vendorId} comments={comments} entityType={CommentEntityType.vendor} />
       </div>
@@ -69,7 +73,23 @@ const getVendor = cache(async (vendorId: string) => {
     },
   });
 
-  return vendor;
+  if (vendor?.website) {
+    const globalVendor = await db.globalVendors.findFirst({
+      where: {
+        website: vendor.website,
+      },
+    });
+
+    return {
+      vendor: vendor,
+      globalVendor,
+    };
+  }
+
+  return {
+    vendor: vendor,
+    globalVendor: null,
+  };
 });
 
 const getComments = async (vendorId: string): Promise<CommentWithAuthor[]> => {
