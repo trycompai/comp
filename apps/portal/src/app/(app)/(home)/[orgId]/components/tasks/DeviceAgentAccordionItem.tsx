@@ -5,7 +5,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@c
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { cn } from '@comp/ui/cn';
-import { CheckCircle2, Circle, Download, XCircle } from 'lucide-react';
+import { CheckCircle2, Circle, Download, Loader2, XCircle } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -31,8 +31,10 @@ export function DeviceAgentAccordionItem({
 
   const handleDownload = async () => {
     setIsDownloading(true);
+
     try {
-      const response = await fetch('/api/download-agent', {
+      // First, we need to get a download token/session from the API
+      const tokenResponse = await fetch('/api/download-agent/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -41,25 +43,52 @@ export function DeviceAgentAccordionItem({
         }),
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'Failed to download agent.');
+      if (!tokenResponse.ok) {
+        const errorText = await tokenResponse.text();
+        throw new Error(errorText || 'Failed to prepare download.');
       }
 
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      const { token } = await tokenResponse.json();
+
+      // Now trigger the actual download using the browser's native download mechanism
+      // This will show in the browser's download UI immediately
+      const downloadUrl = `/api/download-agent?token=${encodeURIComponent(token)}`;
+
+      // Method 1: Using a temporary link (most reliable)
       const a = document.createElement('a');
-      a.href = url;
+      a.href = downloadUrl;
       a.download = 'compai-device-agent.zip';
       document.body.appendChild(a);
       a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast.success('Download started! Check your downloads folder.');
     } catch (error) {
       console.error(error);
-      toast.error(error instanceof Error ? error.message : 'An unknown error occurred.');
+      toast.error(error instanceof Error ? error.message : 'Failed to download agent.');
     } finally {
-      setIsDownloading(false);
+      // Reset after a short delay to allow download to start
+      setTimeout(() => {
+        setIsDownloading(false);
+      }, 1000);
+    }
+  };
+
+  const getButtonContent = () => {
+    if (isDownloading) {
+      return (
+        <>
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Downloading...
+        </>
+      );
+    } else {
+      return (
+        <>
+          <Download className="h-4 w-4" />
+          Download Agent
+        </>
+      );
     }
   };
 
@@ -104,8 +133,7 @@ export function DeviceAgentAccordionItem({
                     disabled={isDownloading || hasInstalledAgent}
                     className="gap-2 mt-2"
                   >
-                    <Download className="h-4 w-4" />
-                    {isDownloading ? 'Downloading...' : 'Download Agent'}
+                    {getButtonContent()}
                   </Button>
                 </li>
                 <li>

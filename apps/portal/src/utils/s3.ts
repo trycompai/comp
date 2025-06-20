@@ -1,4 +1,5 @@
-import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 const AWS_REGION = process.env.AWS_REGION;
 const AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID;
@@ -137,4 +138,47 @@ export async function getFleetAgent({ os }: { os: 'macos' | 'windows' }) {
 
   const response = await s3Client.send(getFleetAgentCommand);
   return response.Body;
+}
+
+/**
+ * Generates a presigned URL for downloading a file from S3
+ */
+export async function getPresignedDownloadUrl({
+  bucketName,
+  key,
+  expiresIn = 3600, // 1 hour default
+}: {
+  bucketName: string;
+  key: string;
+  expiresIn?: number;
+}): Promise<string> {
+  const command = new GetObjectCommand({
+    Bucket: bucketName,
+    Key: key,
+  });
+
+  return await getSignedUrl(s3Client, command, { expiresIn });
+}
+
+/**
+ * Generates a presigned URL for uploading a file to S3
+ */
+export async function getPresignedUploadUrl({
+  bucketName,
+  key,
+  contentType,
+  expiresIn = 3600, // 1 hour default
+}: {
+  bucketName: string;
+  key: string;
+  contentType?: string;
+  expiresIn?: number;
+}): Promise<string> {
+  const command = new PutObjectCommand({
+    Bucket: bucketName,
+    Key: key,
+    ContentType: contentType,
+  });
+
+  return await getSignedUrl(s3Client, command, { expiresIn });
 }

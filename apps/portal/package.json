@@ -2,14 +2,17 @@
   "name": "@comp/portal",
   "version": "0.1.0",
   "dependencies": {
+    "@aws-sdk/s3-request-presigner": "^3.832.0",
     "@comp/db": "workspace:*",
     "@comp/ui": "workspace:*",
     "@react-email/components": "^0.0.41",
     "@react-email/render": "^1.1.2",
     "@t3-oss/env-nextjs": "^0.13.8",
+    "@types/jszip": "^3.4.1",
     "archiver": "^7.0.1",
     "better-auth": "^1.2.8",
     "class-variance-authority": "^0.7.1",
+    "jszip": "^3.10.1",
     "next": "15.4.0-canary.85",
     "react-email": "^4.0.15"
   },
