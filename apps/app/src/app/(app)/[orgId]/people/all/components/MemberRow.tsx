@@ -74,7 +74,7 @@ export function MemberRow({ member, onRemove, onUpdateRole }: MemberRowProps) {
   const [isRemoving, setIsRemoving] = useState(false);
   const dropdownTriggerRef = useRef<HTMLButtonElement>(null);
   const focusRef = useRef<HTMLButtonElement | null>(null);
-  const currentUserIsOwner = member.role === 'owner';
+  const currentUserIsOwner = member.role.includes('owner');
 
   const memberName = member.user.name || member.user.email || 'Member';
   const memberEmail = member.user.email || '';

@@ -39,9 +39,11 @@ export const removeMember = authActionClient
         },
       });
 
+      console.log('currentUserMember', currentUserMember);
+
       if (
         !currentUserMember ||
-        (currentUserMember.role !== 'admin' && currentUserMember.role !== 'owner')
+        (!currentUserMember.role.includes('admin') && !currentUserMember.role.includes('owner'))
       ) {
         return {
           success: false,
@@ -65,7 +67,7 @@ export const removeMember = authActionClient
       }
 
       // Prevent removing the owner
-      if (targetMember.role === 'owner') {
+      if (targetMember.role.includes('owner')) {
         return {
           success: false,
           error: 'Cannot remove the organization owner',
