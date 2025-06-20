@@ -39,8 +39,6 @@ export const removeMember = authActionClient
         },
       });
 
-      console.log('currentUserMember', currentUserMember);
-
       if (
         !currentUserMember ||
         (!currentUserMember.role.includes('admin') && !currentUserMember.role.includes('owner'))
