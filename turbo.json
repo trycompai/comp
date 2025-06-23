@@ -1,6 +1,8 @@
 {
   "$schema": "https://turborepo.org/schema.json",
-  "globalDependencies": ["**/.env"],
+  "globalDependencies": [
+    "**/.env"
+  ],
   "ui": "stream",
   "tasks": {
     "build": {
@@ -45,25 +47,52 @@
         "FLEET_TOKEN",
         "FLEET_DEVICE_PATH_MAC",
         "FLEET_AGENT_BUCKET_NAME",
-        "FLEET_DEVICE_PATH_WINDOWS"
+        "FLEET_DEVICE_PATH_WINDOWS",
+        "LOGO_DEV"
       ],
-      "inputs": ["$TURBO_DEFAULT$", ".env"],
-      "dependsOn": ["^build", "^db:generate", "^auth:build"],
-      "outputs": [".next/**", "!.next/cache/**", "next-env.d.ts", "data:build"]
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        ".env"
+      ],
+      "dependsOn": [
+        "^build",
+        "^db:generate",
+        "^auth:build"
+      ],
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**",
+        "next-env.d.ts",
+        "data:build"
+      ]
     },
     "db:generate": {
       "cache": false
     },
     "auth:build": {
       "cache": false,
-      "env": ["BETTER_AUTH_SECRET", "BETTER_AUTH_URL", "AUTH_GOOGLE_ID", "AUTH_GOOGLE_SECRET"]
+      "env": [
+        "BETTER_AUTH_SECRET",
+        "BETTER_AUTH_URL",
+        "AUTH_GOOGLE_ID",
+        "AUTH_GOOGLE_SECRET"
+      ]
     },
     "data:build": {
       "cache": false,
-      "env": ["DATABASE_URL"],
-      "inputs": ["$TURBO_DEFAULT$", ".env"],
-      "dependsOn": ["^db:generate"],
-      "outputs": ["data:build"]
+      "env": [
+        "DATABASE_URL"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        ".env"
+      ],
+      "dependsOn": [
+        "^db:generate"
+      ],
+      "outputs": [
+        "data:build"
+      ]
     },
     "db:push": {
       "cache": false
@@ -75,8 +104,13 @@
       "cache": false
     },
     "dev": {
-      "inputs": ["$TURBO_DEFAULT$", ".env"],
-      "dependsOn": ["^db:generate"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        ".env"
+      ],
+      "dependsOn": [
+        "^db:generate"
+      ],
       "persistent": true,
       "cache": false
     },
@@ -84,7 +118,9 @@
       "dependsOn": []
     },
     "typecheck": {
-      "outputs": ["node_modules/.cache/tsbuildinfo.json"]
+      "outputs": [
+        "node_modules/.cache/tsbuildinfo.json"
+      ]
     },
     "deps:check": {
       "cache": false

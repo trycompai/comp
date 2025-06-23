@@ -5,7 +5,6 @@ import type { Organization } from '@comp/db/types';
 import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 import { AcceptInvite } from '../../setup/components/accept-invite';
-import { SetupHeader } from '../../setup/components/SetupHeader';
 
 interface InvitePageProps {
   params: Promise<{ code: string }>;
@@ -54,14 +53,11 @@ export default async function InvitePage({ params }: InvitePageProps) {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <SetupHeader user={session.user} existingOrganizations={organizations} />
-      <div className="flex flex-1 items-center justify-center p-4">
-        <AcceptInvite
-          inviteCode={invitation.id}
-          organizationName={invitation.organization.name || ''}
-        />
-      </div>
+    <div className="flex flex-1 items-center justify-center p-4">
+      <AcceptInvite
+        inviteCode={invitation.id}
+        organizationName={invitation.organization.name || ''}
+      />
     </div>
   );
 }

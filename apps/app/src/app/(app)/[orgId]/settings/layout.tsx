@@ -37,11 +37,10 @@ export default async function Layout({ children }: { children: React.ReactNode }
               path: `/${orgId}/settings/api-keys`,
               label: 'API',
             },
-            // {
-            // 	path: `/${orgId}/settings/billing`,
-            // 	label: "Billing",
-            // 	enabled: false,
-            // },
+            {
+              path: `/${orgId}/settings/billing`,
+              label: 'Billing',
+            },
           ]}
         />
       </Suspense>

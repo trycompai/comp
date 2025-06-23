@@ -24,6 +24,12 @@ export function FrameworkSelection({ value, onChange, onLoadingChange }: Framewo
         if (!response.ok) throw new Error('Failed to fetch frameworks');
         const data = await response.json();
         setFrameworks(data.frameworks);
+
+        // Auto-select the first visible framework if none selected
+        const visibleFrameworks = data.frameworks.filter((f: any) => f.visible);
+        if (visibleFrameworks.length > 0 && (!value || value.length === 0)) {
+          onChange([visibleFrameworks[0].id]);
+        }
       } catch (error) {
         console.error('Error fetching frameworks:', error);
       } finally {
@@ -33,7 +39,7 @@ export function FrameworkSelection({ value, onChange, onLoadingChange }: Framewo
     }
 
     fetchFrameworks();
-  }, [onLoadingChange]);
+  }, [onLoadingChange]); // Removed onChange and value from dependencies to prevent infinite loop
 
   if (isLoading) {
     return null;

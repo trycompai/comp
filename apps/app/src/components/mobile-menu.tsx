@@ -30,6 +30,8 @@ export function MobileMenu({ organizationId, organizations }: MobileMenuProps) {
     website: null,
     fleetDmLabelId: null,
     isFleetSetupCompleted: false,
+    subscriptionType: 'NONE' as const,
+    stripeSubscriptionData: null,
   }));
 
   const currentOrganization = adaptedOrganizations.find((org) => org.id === organizationId) || null;

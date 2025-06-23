@@ -4,18 +4,20 @@ import type { Organization } from '@comp/db/types';
 import { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { OrganizationSetupForm } from './components/OrganizationSetupForm';
-import { SetupHeader } from './components/SetupHeader';
+import { OrganizationSetupForm } from '../components/OrganizationSetupForm';
+import { getSetupSession } from '../lib/setup-session';
 
 export const metadata: Metadata = {
   title: 'Setup Your Organization | Comp AI',
 };
 
 interface SetupPageProps {
+  params: Promise<{ setupId: string }>;
   searchParams: Promise<{ inviteCode?: string }>;
 }
 
-export default async function SetupPage({ searchParams }: SetupPageProps) {
+export default async function SetupWithIdPage({ params, searchParams }: SetupPageProps) {
+  const { setupId } = await params;
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -23,6 +25,14 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
 
   if (!session || !session.session || !user) {
     return redirect('/auth');
+  }
+
+  // Verify the setup session exists and belongs to this user
+  const setupSession = await getSetupSession(setupId);
+
+  if (!setupSession || setupSession.userId !== user.id) {
+    // Invalid or expired session, redirect to regular setup
+    return redirect('/setup');
   }
 
   // If there's an inviteCode in the URL, redirect to the new invitation route
@@ -43,9 +53,11 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
   }
 
   return (
-    <>
-      <SetupHeader user={user} existingOrganizations={organizations} />
-      <OrganizationSetupForm existingOrganizations={organizations} />
-    </>
+    <OrganizationSetupForm
+      existingOrganizations={organizations}
+      setupId={setupId}
+      initialData={setupSession.formData}
+      currentStep={setupSession.currentStep}
+    />
   );
 }

@@ -9,6 +9,10 @@ model Organization {
   onboarding       Onboarding?
   website          String?
 
+  // Subscription tracking
+  subscriptionType       SubscriptionType @default(NONE)
+  stripeSubscriptionData Json?
+
   // FleetDM
   fleetDmLabelId        Int?
   isFleetSetupCompleted Boolean @default(false)
@@ -30,4 +34,12 @@ model Organization {
   context            Context[]
 
   @@index([slug])
+  @@index([subscriptionType])
+  @@index([stripeCustomerId])
+}
+
+enum SubscriptionType {
+  NONE
+  SELF_SERVE
+  STRIPE
 }

@@ -1,8 +1,10 @@
+import { getSubscriptionData } from '@/app/api/stripe/getSubscriptionData';
 import { AnimatedLayout } from '@/components/animated-layout';
 import { Header } from '@/components/header';
 import { AssistantSheet } from '@/components/sheets/assistant-sheet';
 import { Sidebar } from '@/components/sidebar';
 import { SidebarProvider } from '@/context/sidebar-context';
+import { SubscriptionProvider } from '@/context/subscription-context';
 import { auth } from '@/utils/auth';
 import { db } from '@comp/db';
 import dynamic from 'next/dynamic';
@@ -60,6 +62,18 @@ export default async function Layout({
     return redirect('/auth/unauthorized');
   }
 
+  // Fetch subscription data for the organization
+  const subscriptionData = await getSubscriptionData(requestedOrgId);
+
+  // Log subscription status for monitoring
+  if (subscriptionData.status === 'none') {
+    console.log(`[SUBSCRIPTION] No subscription for org ${requestedOrgId}`);
+  } else if (subscriptionData.status === 'self-serve') {
+    console.log(`[SUBSCRIPTION] Org ${requestedOrgId} is on self-serve (free) plan`);
+  } else {
+    console.log(`[SUBSCRIPTION] Org ${requestedOrgId} status: ${subscriptionData.status}`);
+  }
+
   const onboarding = await db.onboarding.findFirst({
     where: {
       organizationId: requestedOrgId,
@@ -83,7 +97,7 @@ export default async function Layout({
           className="textured-background mx-auto px-4 py-4"
           style={{ minHeight: `calc(100vh - ${pixelsOffset}px)` }}
         >
-          {children}
+          <SubscriptionProvider subscription={subscriptionData}>{children}</SubscriptionProvider>
         </div>
         <AssistantSheet />
       </AnimatedLayout>

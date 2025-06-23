@@ -12,13 +12,33 @@ import { createOrganization } from '../actions/create-organization';
 import { createOrganizationMinimal } from '../actions/create-organization-minimal';
 import type { OnboardingFormFields } from '../components/OnboardingStepInput';
 import { STORAGE_KEY, companyDetailsSchema, steps } from '../lib/constants';
+import { updateSetupSession } from '../lib/setup-session';
 import type { CompanyDetails } from '../lib/types';
 import { useLocalStorage } from './useLocalStorage';
 
-export function useOnboardingForm() {
+interface UseOnboardingFormProps {
+  setupId?: string;
+  initialData?: Record<string, any>;
+  currentStep?: string;
+}
+
+export function useOnboardingForm({
+  setupId,
+  initialData,
+  currentStep,
+}: UseOnboardingFormProps = {}) {
   const router = useRouter();
-  const [stepIndex, setStepIndex] = useState(0);
-  const [savedAnswers, setSavedAnswers] = useLocalStorage<Partial<CompanyDetails>>(STORAGE_KEY, {});
+
+  // If we have a setupId, use the initialData from KV, otherwise use localStorage
+  const [savedAnswers, setSavedAnswers] = useLocalStorage<Partial<CompanyDetails>>(
+    STORAGE_KEY,
+    setupId && initialData ? initialData : {},
+  );
+
+  // Determine the initial step index based on currentStep
+  const initialStepIndex = currentStep ? steps.findIndex((s) => s.key === currentStep) : 0;
+
+  const [stepIndex, setStepIndex] = useState(Math.max(0, initialStepIndex));
   const [showSkipDialog, setShowSkipDialog] = useState(false);
   const [isSkipping, setIsSkipping] = useState(false);
   const [isOnboarding, setIsOnboarding] = useState(false);
@@ -28,6 +48,17 @@ export function useOnboardingForm() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Save progress to KV if we have a setupId
+  useEffect(() => {
+    if (setupId && mounted) {
+      const currentStepKey = steps[stepIndex]?.key;
+      updateSetupSession(setupId, {
+        currentStep: currentStepKey,
+        formData: savedAnswers as Record<string, any>,
+      });
+    }
+  }, [setupId, stepIndex, savedAnswers, mounted]);
 
   const step = steps[stepIndex];
   const stepSchema = z.object({
@@ -47,10 +78,12 @@ export function useOnboardingForm() {
 
   const createOrganizationMinimalAction = useAction(createOrganizationMinimal, {
     onSuccess: ({ data }) => {
-      if (data?.success) {
+      if (data?.success && data?.organizationId) {
         setIsFinalizing(true);
         sendGTMEvent({ event: 'conversion' });
-        router.push('/');
+
+        // Organization created, now redirect to loading step
+        router.push(`/setup/loading/${data.organizationId}`);
       } else {
         toast.error(data?.error || 'Failed to create organization minimal');
         setIsSkipping(false);
@@ -68,10 +101,13 @@ export function useOnboardingForm() {
 
   const createOrganizationAction = useAction(createOrganization, {
     onSuccess: async ({ data }) => {
-      if (data?.success) {
+      if (data?.success && data?.organizationId) {
         setIsFinalizing(true);
         sendGTMEvent({ event: 'conversion' });
-        router.push(`/${data.organizationId}/frameworks`);
+
+        // Organization created, now redirect to loading step
+        router.push(`/setup/loading/${data.organizationId}`);
+
         setSavedAnswers({});
       } else {
         toast.error('Failed to create organization');
@@ -143,7 +179,19 @@ export function useOnboardingForm() {
   };
 
   const handleBack = () => {
-    if (stepIndex > 0) setStepIndex(stepIndex - 1);
+    if (stepIndex > 0) {
+      // Save current form values before going back
+      const currentValues = form.getValues();
+      if (currentValues[step.key]) {
+        setSavedAnswers({ ...savedAnswers, [step.key]: currentValues[step.key] });
+      }
+
+      // Clear form errors
+      form.clearErrors();
+
+      // Go to previous step
+      setStepIndex(stepIndex - 1);
+    }
   };
 
   const canShowSkipButton = Boolean(

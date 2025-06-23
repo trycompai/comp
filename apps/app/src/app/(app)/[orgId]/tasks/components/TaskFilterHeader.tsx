@@ -3,6 +3,7 @@
 import { Button } from '@comp/ui/button';
 import { Check, Circle, List, Loader2 } from 'lucide-react';
 import { useQueryState } from 'nuqs';
+import React from 'react';
 
 // Configuration for task statuses and their display order.
 const statuses = [
@@ -69,7 +70,7 @@ export function TaskFilterHeader() {
               className={getButtonClasses(isActive)}
               onClick={() => setStatusFilter(status.id)}
             >
-              <Icon className="h-3.5 w-3.5" />
+              {React.createElement(Icon, { className: 'h-3.5 w-3.5' })}
               <span>{status.title}</span>
             </Button>
           );

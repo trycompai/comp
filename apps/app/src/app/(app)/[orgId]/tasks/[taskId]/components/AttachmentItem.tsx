@@ -13,6 +13,7 @@ import {
 import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
 import { Loader2, Trash2 } from 'lucide-react';
+import React from 'react';
 import { getAttachmentIconAndColor } from '../utils/attachmentUtils';
 
 interface PendingAttachment {
@@ -96,7 +97,7 @@ export function AttachmentItem({
         {isBusy ? (
           <Loader2 className={cn('h-4 w-4 shrink-0 animate-spin', colorClass)} />
         ) : (
-          <Icon className={cn('h-4 w-4 shrink-0', colorClass)} />
+          React.createElement(Icon, { className: cn('h-4 w-4 shrink-0', colorClass) })
         )}
 
         {onClickFilename ? (

@@ -76,14 +76,14 @@ export default function ComplianceReport({
             )}
           </div>
 
-          <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="mt-4 grid grid-cols-1 gap-4">
             {policies.length > 0 && (
               <ComplianceSection
                 title="Policies"
-                description={`A list of all the policies that ${organization.name} has published.`}
+                description={`An up to date list of policies published internally by ${organization.name}.`}
                 isLive
               >
-                <div className="space-y-2">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   {policies.map((policy) => (
                     <ComplianceItem
                       key={policy.id}
@@ -98,10 +98,10 @@ export default function ComplianceReport({
             {controls.length > 0 && (
               <ComplianceSection
                 title="Controls"
-                description={`A list of all the controls that ${organization.name} has published.`}
+                description={`An up to date list of controls published internally by ${organization.name}.`}
                 isLive
               >
-                <div className="space-y-2">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   {controls.map((control) => (
                     <ComplianceItem
                       key={control.id}

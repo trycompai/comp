@@ -139,8 +139,8 @@ export const generateCheckoutSessionAction = authWithOrgAccessClient
     // ALWAYS create a checkout with a stripeCustomerId. They should enforce this.
     const checkout = await stripe.checkout.sessions.create({
       customer: stripeCustomerId as string,
-      success_url: successUrl || `${appUrl}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: cancelUrl || `${appUrl}/billing`,
+      success_url: successUrl || `${appUrl}/api/stripe/success?organizationId=${organizationId}`,
+      cancel_url: cancelUrl || `${appUrl}/${organizationId}/settings/billing`,
       mode,
       line_items: lineItems,
       allow_promotion_codes: allowPromotionCodes,

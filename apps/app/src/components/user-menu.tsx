@@ -49,7 +49,6 @@ export async function UserMenu({ onlySignOut }: { onlySignOut?: boolean }) {
                     {session?.user?.email}
                   </span>
                 </div>
-                <div className="rounded-full border px-3 py-0.5 text-[11px] font-normal">Beta</div>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />

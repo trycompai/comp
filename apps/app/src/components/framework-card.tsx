@@ -22,8 +22,8 @@ export function FrameworkCard({
       className={cn(
         'relative rounded-md border transition-all',
         isSelected
-          ? 'border-primary bg-primary/5 dark:bg-primary/10 shadow-sm'
-          : 'border-border bg-card hover:bg-muted/30 hover:border-muted-foreground/20',
+          ? 'border-primary bg-primary/10 dark:bg-primary/15 shadow-sm backdrop-blur-sm'
+          : 'border-border bg-card/60 dark:bg-card/50 hover:bg-card/80 dark:hover:bg-card/70 hover:border-muted-foreground/20 backdrop-blur-sm',
         className,
       )}
     >

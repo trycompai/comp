@@ -41,7 +41,12 @@ export const OnboardingTracker = ({
 }) => {
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
   const triggerJobId = onboarding.triggerJobId;
-  const { run, error } = useRealtimeRun(triggerJobId ?? undefined, {
+
+  if (!triggerJobId || !publicAccessToken) {
+    return <div className="text-muted-foreground text-sm">Unable to load onboarding tracker.</div>;
+  }
+
+  const { run, error } = useRealtimeRun(triggerJobId, {
     accessToken: publicAccessToken,
   });
 
