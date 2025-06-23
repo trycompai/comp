@@ -340,28 +340,37 @@ function AnimatedOrb({ scale = 1 }: AnimatedOrbProps) {
     let scrollTimeout: NodeJS.Timeout;
 
     const handleScroll = (e: WheelEvent) => {
-      e.preventDefault(); // Prevent page scroll when over the orb
+      // Check if the user is interacting with an interactive element
+      const target = e.target as HTMLElement;
+      const isInteractiveElement = target.closest(
+        'input, textarea, select, button, [role="combobox"], [role="listbox"], ' +
+          '[data-radix-collection-item], [data-state], .overflow-auto, .overflow-y-auto, ' +
+          '.overflow-x-auto, .overflow-scroll, .overflow-y-scroll, .overflow-x-scroll',
+      );
 
-      // Calculate scroll velocity
-      const scrollDelta = e.deltaY * 0.001;
-      scrollVelocity.current += scrollDelta;
+      // Only apply the orb effect if not scrolling on an interactive element
+      if (!isInteractiveElement) {
+        // Calculate scroll velocity for orb rotation
+        const scrollDelta = e.deltaY * 0.001;
+        scrollVelocity.current += scrollDelta;
 
-      // Add to target rotation
-      targetScrollRotation.current += scrollDelta * 2;
+        // Add to target rotation
+        targetScrollRotation.current += scrollDelta * 2;
 
-      // Clear existing timeout
-      if (scrollTimeout) {
-        clearTimeout(scrollTimeout);
+        // Clear existing timeout
+        if (scrollTimeout) {
+          clearTimeout(scrollTimeout);
+        }
+
+        // Start decay after scrolling stops
+        scrollTimeout = setTimeout(() => {
+          scrollVelocity.current = 0;
+        }, 150);
       }
-
-      // Start decay after scrolling stops
-      scrollTimeout = setTimeout(() => {
-        scrollVelocity.current = 0;
-      }, 150);
     };
 
     // Use wheel event for better scroll detection
-    window.addEventListener('wheel', handleScroll, { passive: false });
+    window.addEventListener('wheel', handleScroll, { passive: true });
 
     return () => {
       window.removeEventListener('wheel', handleScroll);
