@@ -1191,14 +1191,14 @@
     "@types/conventional-commits-parser" "^5.0.0"
     chalk "^5.3.0"
 
-"@comp/analytics@^workspace:packages/analytics":
+"@comp/analytics@packages/analytics":
   version "workspace:packages/analytics"
   resolved "workspace:packages/analytics"
   dependencies:
     posthog-js "^1.236.6"
     posthog-node "^4.14.0"
 
-"@comp/app@^workspace:apps/app", "@comp/app@workspace:*":
+"@comp/app@apps/app", "@comp/app@workspace:*":
   version "workspace:apps/app"
   resolved "workspace:apps/app"
   devDependencies:
@@ -1226,9 +1226,7 @@
     "@browserbasehq/sdk" "^2.5.0"
     "@calcom/atoms" "^1.0.102-framer"
     "@calcom/embed-react" "^1.5.3"
-  dependencies:
     "@comp/db" "workspace:*"
-  dependencies:
     "@date-fns/tz" "^1.2.0"
     "@dnd-kit/core" "^6.3.1"
     "@dnd-kit/modifiers" "^9.0.0"
@@ -1247,6 +1245,10 @@
     "@react-three/postprocessing" "^3.0.4"
     "@tanstack/react-query" "^5.74.4"
     "@tanstack/react-table" "^8.21.3"
+    "@tiptap/extension-table" "^2.22.3"
+    "@tiptap/extension-table-cell" "^2.22.3"
+    "@tiptap/extension-table-header" "^2.22.3"
+    "@tiptap/extension-table-row" "^2.22.3"
     "@trigger.dev/react-hooks" "3.3.17"
     "@trigger.dev/sdk" "3.3.17"
     "@types/three" "^0.177.0"
@@ -1288,19 +1290,18 @@
     xml2js "^0.6.2"
     zustand "^5.0.3"
 
-"@comp/db@^workspace:packages/db", "@comp/db@workspace:*":
+"@comp/db@packages/db", "@comp/db@workspace:*":
   version "workspace:packages/db"
   resolved "workspace:packages/db"
   devDependencies:
     "@comp/tsconfig" "workspace:*"
-  devDependencies:
     prisma "^6.9.0"
     ts-node "^10.9.2"
     typescript "^5.8.3"
   dependencies:
     "@prisma/client" "6.9.0"
 
-"@comp/email@^workspace:packages/email":
+"@comp/email@packages/email":
   version "workspace:packages/email"
   resolved "workspace:packages/email"
   devDependencies:
@@ -1320,7 +1321,7 @@
     react-email "^4.0.15"
     responsive-react-email "^0.0.5"
 
-"@comp/framework-editor@^workspace:apps/framework-editor":
+"@comp/framework-editor@apps/framework-editor":
   version "workspace:apps/framework-editor"
   resolved "workspace:apps/framework-editor"
   devDependencies:
@@ -1350,7 +1351,7 @@
     tippy.js "^6.3.7"
     zod "3.25.67"
 
-"@comp/integrations@^workspace:packages/integrations":
+"@comp/integrations@packages/integrations":
   version "workspace:packages/integrations"
   resolved "workspace:packages/integrations"
   devDependencies:
@@ -1373,14 +1374,14 @@
     stoppable "^1.1.0"
     zod "3.25.67"
 
-"@comp/kv@^workspace:packages/kv":
+"@comp/kv@packages/kv":
   version "workspace:packages/kv"
   resolved "workspace:packages/kv"
   dependencies:
     "@upstash/redis" "^1.34.2"
     server-only "0.0.1"
 
-"@comp/portal@^workspace:apps/portal":
+"@comp/portal@apps/portal":
   version "workspace:apps/portal"
   resolved "workspace:apps/portal"
   devDependencies:
@@ -1411,7 +1412,7 @@
     next "15.4.0-canary.85"
     react-email "^4.0.15"
 
-"@comp/trust@^workspace:apps/trust":
+"@comp/trust@apps/trust":
   version "workspace:apps/trust"
   resolved "workspace:apps/trust"
   devDependencies:
@@ -1432,11 +1433,11 @@
     lucide-react "^0.518.0"
     next "15.4.0-canary.85"
 
-"@comp/tsconfig@^workspace:packages/tsconfig", "@comp/tsconfig@workspace:*":
+"@comp/tsconfig@packages/tsconfig", "@comp/tsconfig@workspace:*":
   version "workspace:packages/tsconfig"
   resolved "workspace:packages/tsconfig"
 
-"@comp/ui@^workspace:packages/ui", "@comp/ui@workspace:*":
+"@comp/ui@packages/ui", "@comp/ui@workspace:*":
   version "workspace:packages/ui"
   resolved "workspace:packages/ui"
   devDependencies:
@@ -1519,7 +1520,7 @@
     use-debounce "^10.0.4"
     vaul "^0.9.6"
 
-"@comp/utils@^workspace:packages/utils", "@comp/utils@workspace:*":
+"@comp/utils@packages/utils", "@comp/utils@workspace:*":
   version "workspace:packages/utils"
   resolved "workspace:packages/utils"
   devDependencies:
@@ -5474,20 +5475,40 @@
   resolved "https://registry.npmjs.org/@tiptap/extension-table/-/extension-table-2.14.0.tgz"
   integrity sha512-X/wH3XKxi5+G7cB+lHt3fPMWIJ30IBkzrJZYapJ8d4p2JxMNIU1Nyu+8K6204d0hF6SVWY8hvb/Jq/WgHtoCFA==
 
+"@tiptap/extension-table@^2.22.3":
+  version "2.22.3"
+  resolved "https://registry.npmjs.org/@tiptap/extension-table/-/extension-table-2.22.3.tgz"
+  integrity sha512-lYTuDo/3lJsC6g85b5OCfrKi8yID82PnZlngZo4quVHusE/YuXOwXYD4qt3xEOoqdgFoPQl0b7Ck9C5Qyb8AUg==
+
 "@tiptap/extension-table-cell@2.14.0":
   version "2.14.0"
   resolved "https://registry.npmjs.org/@tiptap/extension-table-cell/-/extension-table-cell-2.14.0.tgz"
   integrity sha512-DkSNAAkMI/ymPgO8y8Gv0MDVcbd2gk7xrSyicIDNoDFFXp15VasInGW8mvyM+CgvlurGB2N+PkYncPtfb4XNuQ==
+
+"@tiptap/extension-table-cell@^2.22.3":
+  version "2.22.3"
+  resolved "https://registry.npmjs.org/@tiptap/extension-table-cell/-/extension-table-cell-2.22.3.tgz"
+  integrity sha512-Yj6/bd4QpKoQpNTi/eNnWpT+VMfTBB7SfCPjlMvTK1MFVr60fmbUjJHrjt2WAfTW2JmkQlLsP8UXjR+Bda+uTA==
 
 "@tiptap/extension-table-header@2.14.0":
   version "2.14.0"
   resolved "https://registry.npmjs.org/@tiptap/extension-table-header/-/extension-table-header-2.14.0.tgz"
   integrity sha512-wX6/+t0iCo3KrqK2OjK0vbFeL76Pq+VpobGt+oM8lcxsENnsa6a0s3wdd1QEVLVPlj+WMFQggAG80Rf17+iDxA==
 
+"@tiptap/extension-table-header@^2.22.3":
+  version "2.22.3"
+  resolved "https://registry.npmjs.org/@tiptap/extension-table-header/-/extension-table-header-2.22.3.tgz"
+  integrity sha512-bLq/lufV95fp9gXMjOKMuuhpAa2+t0vi8dz4Zxwnrr1dsvkk4TyiKWRyuI3OV+TCNzZ3hZqOlEStS+Ie6lB/Lg==
+
 "@tiptap/extension-table-row@2.14.0":
   version "2.14.0"
   resolved "https://registry.npmjs.org/@tiptap/extension-table-row/-/extension-table-row-2.14.0.tgz"
   integrity sha512-a1GvCIju9xETIQu664lVQNftHqpPdRmwYp+1QzY82v3zHClso+tTLPeBSlbDdUscSmv3yZXgGML20IiOoR2l2Q==
+
+"@tiptap/extension-table-row@^2.22.3":
+  version "2.22.3"
+  resolved "https://registry.npmjs.org/@tiptap/extension-table-row/-/extension-table-row-2.22.3.tgz"
+  integrity sha512-PQbrDIyGOHrsN3RmB+J75UJ10lGW7I4PqY+E2HUtx5HvFOEVPlBbcFELMfjy7dOPbKiM+v6KUSbybXW8h745mg==
 
 "@tiptap/extension-task-item@2.14.0":
   version "2.14.0"
