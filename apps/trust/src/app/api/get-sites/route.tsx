@@ -23,14 +23,20 @@ const getCachedSites = cache(async () => {
     },
   });
 
-  return websites.map((website) => website.website);
+  const logoUrls = websites
+    .map((website) => website.website)
+    .filter((website): website is string => Boolean(website))
+    .map((website) => {
+      const domain = website.replace(/^https?:\/\//, '').replace(/^www\./, '');
+      return `https://img.logo.dev/${domain}?token=pk_QtKMUKc7QOKZmbzLG3Q8NQ&retina=true`;
+    });
+
+  return logoUrls;
 });
 
 export async function GET(request: NextRequest) {
   try {
     const websites = await getCachedSites();
-
-    console.log(websites);
 
     const response = NextResponse.json(websites);
 
