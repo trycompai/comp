@@ -37,7 +37,7 @@ export default async function Page() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center overflow-hidden p-6 md:p-0">
+    <div className="flex min-h-dvh items-center justify-center overflow-hidden p-6 md:p-0">
       <div className="relative z-20 m-auto flex w-full max-w-[380px] flex-col py-8">
         <div className="relative flex w-full flex-col">
           <Balancer>

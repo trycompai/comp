@@ -18,7 +18,7 @@ export default async function SetupLayout({ children }: { children: React.ReactN
   const currentOrganization = null; // No current org in setup
 
   return (
-    <main className="flex min-h-screen flex-col">
+    <main className="flex min-h-dvh flex-col">
       <AnimatedGradientBackgroundWrapper />
       <MinimalHeader
         user={session.user}

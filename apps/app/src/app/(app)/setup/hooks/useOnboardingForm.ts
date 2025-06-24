@@ -82,8 +82,8 @@ export function useOnboardingForm({
         setIsFinalizing(true);
         sendGTMEvent({ event: 'conversion' });
 
-        // Organization created, now redirect to loading step
-        router.push(`/setup/loading/${data.organizationId}`);
+        // Organization created, now redirect to plans page
+        router.push(`/upgrade/${data.organizationId}`);
       } else {
         toast.error(data?.error || 'Failed to create organization minimal');
         setIsSkipping(false);
@@ -105,8 +105,8 @@ export function useOnboardingForm({
         setIsFinalizing(true);
         sendGTMEvent({ event: 'conversion' });
 
-        // Organization created, now redirect to loading step
-        router.push(`/setup/loading/${data.organizationId}`);
+        // Organization created, now redirect to plans page
+        router.push(`/upgrade/${data.organizationId}`);
 
         setSavedAnswers({});
       } else {

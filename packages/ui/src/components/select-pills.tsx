@@ -50,14 +50,14 @@ export const SelectPills: FC<SelectPillsProps> = ({
     setInputValue(newValue);
     setHighlightedIndex(-1);
 
-    // Only show options when typing
-    const hasUnselectedMatches = data.some(
-      (item) =>
-        item.name.toLowerCase().includes(newValue.toLowerCase()) &&
-        !(value || selectedPills).includes(item.name),
-    );
-
-    setIsOpen(hasUnselectedMatches);
+    // Keep dropdown open whenever there's input or potential items to show
+    if (newValue.trim()) {
+      setIsOpen(true);
+    } else {
+      // Only show dropdown if there are unselected items when input is empty
+      const hasUnselectedItems = data.some((item) => !(value || selectedPills).includes(item.name));
+      setIsOpen(hasUnselectedItems);
+    }
 
     // Maintain focus after state updates
     requestAnimationFrame(() => {
@@ -153,6 +153,11 @@ export const SelectPills: FC<SelectPillsProps> = ({
     if (onValueChange) {
       onValueChange(newSelectedPills);
     }
+
+    // Maintain focus on input after selection
+    requestAnimationFrame(() => {
+      inputRef.current?.focus();
+    });
   };
 
   const handlePillRemove = (pillToRemove: string) => {
@@ -205,9 +210,17 @@ export const SelectPills: FC<SelectPillsProps> = ({
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             onFocus={() => {
-              if (!isOpen) setIsOpen(true);
+              // Show dropdown if there are unselected items or if typing
+              const hasUnselectedItems = data.some(
+                (item) => !(value || selectedPills).includes(item.name),
+              );
+              if (hasUnselectedItems || inputValue.trim()) {
+                setIsOpen(true);
+              }
             }}
-            placeholder={placeholder}
+            placeholder={
+              isOpen && !inputValue ? 'Type to search or press Enter to add custom...' : placeholder
+            }
             disabled={disabled}
           />
         </PopoverAnchor>
@@ -218,38 +231,83 @@ export const SelectPills: FC<SelectPillsProps> = ({
         onOpenAutoFocus={(e) => e.preventDefault()}
         className="w-(--radix-popover-trigger-width) p-0"
       >
-        <div
-          ref={radioGroupRef}
-          role="radiogroup"
-          aria-label="Pill options"
-          onKeyDown={(e) => handleRadioKeyDown(e, highlightedIndex)}
-          className="max-h-[200px] overflow-y-auto"
-        >
-          {filteredItems.map((item, index) => (
+        <div className="max-h-[200px] overflow-y-auto">
+          {/* Show filtered items */}
+          {filteredItems.length > 0 && (
             <div
-              key={item.id || item.value || item.name}
-              className={cn(
-                'hover:bg-accent/70 focus:bg-accent focus:text-accent-foreground relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden transition-colors select-none data-disabled:pointer-events-none data-disabled:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0',
-                highlightedIndex === index && 'bg-accent',
-              )}
+              ref={radioGroupRef}
+              role="radiogroup"
+              aria-label="Pill options"
+              onKeyDown={(e) => handleRadioKeyDown(e, highlightedIndex)}
             >
-              <input
-                type="radio"
-                id={`pill-${item.name}`}
-                name="pill-selection"
-                value={item.name}
-                className="sr-only"
-                checked={highlightedIndex === index}
-                onChange={() => handleItemSelect(item)}
-              />
-              <label
-                htmlFor={`pill-${item.name}`}
-                className="flex w-full cursor-pointer items-center"
-              >
-                {item.name}
-              </label>
+              {filteredItems.map((item, index) => (
+                <div
+                  key={item.id || item.value || item.name}
+                  className={cn(
+                    'hover:bg-accent/70 focus:bg-accent focus:text-accent-foreground relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden transition-colors select-none data-disabled:pointer-events-none data-disabled:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0',
+                    highlightedIndex === index && 'bg-accent',
+                  )}
+                  onClick={() => handleItemSelect(item)}
+                >
+                  <input
+                    type="radio"
+                    id={`pill-${item.name}`}
+                    name="pill-selection"
+                    value={item.name}
+                    className="sr-only"
+                    checked={highlightedIndex === index}
+                    onChange={() => handleItemSelect(item)}
+                  />
+                  <label
+                    htmlFor={`pill-${item.name}`}
+                    className="flex w-full cursor-pointer items-center"
+                  >
+                    {item.name}
+                  </label>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
+
+          {/* Show custom value hint when typing with no matches */}
+          {inputValue.trim() && filteredItems.length === 0 && (
+            <div
+              className="border-t px-3 py-2 cursor-pointer hover:bg-accent/50 transition-colors"
+              onClick={() => {
+                if (inputValue.trim()) {
+                  handleItemSelect({ name: inputValue.trim() });
+                }
+              }}
+            >
+              <p className="text-xs text-muted-foreground">
+                Press{' '}
+                <kbd className="inline-flex h-4 select-none items-center rounded border bg-muted px-1 font-mono text-[10px] font-medium">
+                  Enter
+                </kbd>{' '}
+                to add "{inputValue.trim()}"
+              </p>
+            </div>
+          )}
+
+          {/* Show hint at bottom when there are matches */}
+          {inputValue.trim() && filteredItems.length > 0 && (
+            <div className="border-t px-3 py-2">
+              <p className="text-xs text-muted-foreground">
+                Press{' '}
+                <kbd className="inline-flex h-4 select-none items-center rounded border bg-muted px-1 font-mono text-[10px] font-medium">
+                  Enter
+                </kbd>{' '}
+                to add "{inputValue.trim()}"
+              </p>
+            </div>
+          )}
+
+          {/* Show empty state */}
+          {!inputValue.trim() && filteredItems.length === 0 && (
+            <div className="p-3 text-center text-sm text-muted-foreground">
+              Type to search or add custom values
+            </div>
+          )}
         </div>
       </PopoverContent>
     </Popover>

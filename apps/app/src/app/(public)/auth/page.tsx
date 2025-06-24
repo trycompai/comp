@@ -43,7 +43,7 @@ export default async function Page({
   const showGithub = !!(env.AUTH_GITHUB_ID && env.AUTH_GITHUB_SECRET);
 
   return (
-    <div className="flex min-h-screen flex-col text-foreground">
+    <div className="flex min-h-dvh flex-col text-foreground">
       <main className="flex flex-1 items-center justify-center p-6">
         <Card className="w-full max-w-lg">
           <CardHeader className="text-center space-y-3 pt-10">

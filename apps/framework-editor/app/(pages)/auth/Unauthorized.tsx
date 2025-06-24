@@ -21,7 +21,7 @@ export const Unauthorized = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
+    <div className="flex min-h-dvh items-center justify-center">
       <div className="flex w-full max-w-md flex-col gap-4">
         <h1 className="text-center text-3xl font-bold">Oops, you don't belong here</h1>
         <p className="text-center">

@@ -26,7 +26,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           'overscroll-none whitespace-pre-line antialiased',
         )}
       >
-        <div className="container mx-auto flex min-h-screen flex-col">{children}</div>
+        <div className="container mx-auto flex min-h-dvh flex-col">{children}</div>
         <Toaster />
       </body>
     </html>

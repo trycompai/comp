@@ -41,7 +41,14 @@ export function FrameworkCard({
           <div className="flex items-center justify-between gap-3">
             <h4 className="text-sm leading-tight font-medium">{framework.name}</h4>
             <div className="flex-shrink-0">
-              <span className="bg-muted text-muted-foreground inline-flex items-center rounded-xs px-2 py-1 text-xs">
+              <span
+                className={cn(
+                  'inline-flex items-center rounded-xs px-2 py-1 text-xs transition-colors',
+                  isSelected
+                    ? 'bg-primary/20 text-primary dark:bg-primary/25 dark:text-primary-foreground font-medium'
+                    : 'bg-muted text-muted-foreground',
+                )}
+              >
                 v{framework.version}
               </span>
             </div>

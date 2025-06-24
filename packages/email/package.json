@@ -6,7 +6,7 @@
     "@comp/utils": "workspace:*",
     "@react-email/components": "^0.0.41",
     "@react-email/render": "^1.1.2",
-    "@react-email/tailwind": "1.0.4",
+    "@react-email/tailwind": "1.0.5",
     "date-fns": "^4.1.0",
     "next": "15.4.0-canary.85",
     "react-email": "^4.0.15",

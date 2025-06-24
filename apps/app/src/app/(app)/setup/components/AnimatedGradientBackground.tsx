@@ -300,6 +300,14 @@ function AnimatedOrb({ scale = 1 }: AnimatedOrbProps) {
   // Handle ESC key for rage mode easter egg
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't process keyboard events if user is typing in an input
+      const target = e.target as HTMLElement;
+      const isInputElement = target.matches('input, textarea, select, [contenteditable="true"]');
+
+      if (isInputElement) {
+        return; // Skip processing for form inputs
+      }
+
       if (e.key === 'Escape') {
         e.preventDefault();
         rageMode.current = !rageMode.current;

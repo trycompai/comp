@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 export default async function UnauthorizedPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center">
+    <div className="flex min-h-dvh items-center justify-center">
       <Card className="w-full max-w-lg space-y-6 p-8">
         <div className="space-y-2 text-center">
           <h1 className="text-2xl font-semibold tracking-tight">{'Unauthorized Access'}</h1>

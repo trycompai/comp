@@ -4,18 +4,19 @@ import { cn } from '../utils';
 
 interface InputProps extends React.ComponentProps<'input'> {
   leftIcon?: React.ReactNode;
+  prefix?: string;
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, leftIcon, ...props }, ref) => {
+  ({ className, type, leftIcon, prefix, ...props }, ref) => {
     const isUrl = type === 'url';
-    const isPrefix = props.prefix;
+    const isPrefix = !!prefix;
 
     const adornmentWidth = 82; // px, matches pl-[82px]
 
     return (
       <div className={cn('relative w-full', className)}>
-        {isPrefix && props.prefix && (
+        {isPrefix && prefix && (
           <span
             className="text-muted-foreground border-input bg-foreground/5 absolute top-0 left-0 flex h-full cursor-default items-center border-r px-4 text-sm font-medium select-none"
             style={{
@@ -25,7 +26,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
               borderBottomLeftRadius: '0.125rem',
             }}
           >
-            {props.prefix}
+            {prefix}
           </span>
         )}
         {leftIcon && !isUrl && !isPrefix && (

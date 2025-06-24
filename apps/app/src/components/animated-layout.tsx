@@ -9,7 +9,7 @@ interface AnimatedLayoutProps {
 
 export function AnimatedLayout({ children, sidebar, isCollapsed, blurred }: AnimatedLayoutProps) {
   return (
-    <div className="flex h-screen w-full overflow-hidden">
+    <div className="flex h-dvh w-full overflow-hidden">
       <div
         className={cn(
           'bg-background hidden h-full shrink-0 overflow-y-auto border-r duration-300 ease-in-out md:block',

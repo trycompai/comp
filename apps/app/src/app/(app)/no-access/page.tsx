@@ -31,7 +31,7 @@ export default async function NoAccess() {
   });
 
   return (
-    <div className="bg-foreground/05 flex h-screen flex-col items-center justify-center gap-4">
+    <div className="bg-foreground/05 flex h-dvh flex-col items-center justify-center gap-4">
       <h1 className="text-2xl font-bold">Access Denied</h1>
       <div className="flex flex-col text-center">
         <p>

@@ -13,7 +13,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-dvh">
       <div className="flex flex-1 flex-col">
         <div className="w-full px-4 sm:px-6 lg:px-8">
           <Header />

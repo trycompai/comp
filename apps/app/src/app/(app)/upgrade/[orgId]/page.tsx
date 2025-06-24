@@ -3,9 +3,13 @@ import { getSubscriptionData } from '@/app/api/stripe/getSubscriptionData';
 import { auth } from '@/utils/auth';
 import { db } from '@comp/db';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
+import { Separator } from '@comp/ui/separator';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { AnimatedPricingBanner } from './components/AnimatedPricingBanner';
+import LogoMarquee from './components/logos/logo-marquee';
 import { PricingCards } from './pricing-cards';
+import './styles/marquee.css';
 
 interface PageProps {
   params: Promise<{
@@ -100,39 +104,54 @@ export default async function UpgradePage({ params }: PageProps) {
   const priceDetails = await fetchStripePriceDetails();
 
   return (
-    <div className="mx-auto px-4 py-8 max-w-7xl">
-      <div className="relative">
-        <div className="relative bg-transparent p-8">
-          <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold mb-2">Choose Your Plan</h1>
-            <p className="text-xl text-muted-foreground">
-              Get compliant fast with our DIY or Done-For-You solutions
-            </p>
-          </div>
-          <PricingCards organizationId={orgId} priceDetails={priceDetails} />
-
-          {/* FAQ Section */}
-          <div className="mt-16 max-w-3xl mx-auto">
-            <div className="text-center mb-8">
-              <h2 className="text-xl font-bold mb-2">Frequently Asked Questions</h2>
-              <p className="text-sm text-muted-foreground">
-                Everything you need to know about our pricing and plans
-              </p>
+    <>
+      <AnimatedPricingBanner />
+      <div className="mx-auto px-4 py-8 max-w-7xl">
+        <div className="relative">
+          <div className="relative bg-transparent p-8 flex flex-col gap-12">
+            <div className="flex flex-col gap-4">
+              <div className="text-center">
+                <h1 className="text-2xl font-bold mb-2">Choose Your Plan</h1>
+                <p className="text-xl text-muted-foreground">
+                  Get compliant fast with our DIY or Done-For-You solutions
+                </p>
+              </div>
+              <PricingCards organizationId={orgId} priceDetails={priceDetails} />
             </div>
+            <Separator />
 
-            <Accordion type="single" collapsible className="w-full">
-              {pricingFaqData.map((faq) => (
-                <AccordionItem key={faq.id} value={faq.id}>
-                  <AccordionTrigger className="text-left">{faq.question}</AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground">
-                    {faq.answer}
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
+            {/* Social proof - companies using Comp AI */}
+            <div>
+              <p className="text-center text-sm text-muted-foreground mb-6">
+                Trusted by leading companies to achieve compliance
+              </p>
+              <LogoMarquee className="opacity-60 hover:opacity-100 transition-opacity duration-300" />
+            </div>
+            <Separator />
+
+            {/* FAQ Section */}
+            <div className="max-w-3xl mx-auto">
+              <div className="text-center mb-8">
+                <h2 className="text-xl font-bold mb-2">Frequently Asked Questions</h2>
+                <p className="text-sm text-muted-foreground">
+                  Everything you need to know about our pricing and plans
+                </p>
+              </div>
+
+              <Accordion type="single" collapsible className="w-full">
+                {pricingFaqData.map((faq) => (
+                  <AccordionItem key={faq.id} value={faq.id}>
+                    <AccordionTrigger className="text-left">{faq.question}</AccordionTrigger>
+                    <AccordionContent className="text-muted-foreground">
+                      {faq.answer}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

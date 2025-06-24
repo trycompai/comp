@@ -16,7 +16,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     return (
       <div>
         <div className="p-6 pb-6">
-          <div className="flex h-screen flex-col items-center justify-center">
+          <div className="flex h-dvh flex-col items-center justify-center">
             <h1 className="text-2xl font-bold">Trust Portal Not Published</h1>
             <p className="text-muted-foreground text-sm">
               Please publish your trust portal and try again.

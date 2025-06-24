@@ -14,7 +14,7 @@ export default async function RunPage({ params }: PageProps) {
 
   return (
     <TriggerProvider accessToken={publicAccessToken?.value ?? ''}>
-      <div className="bg-background flex min-h-screen items-center justify-center p-6 md:p-8">
+      <div className="bg-background flex min-h-dvh items-center justify-center p-6 md:p-8">
         <div className="bg-card relative w-full max-w-[440px] border p-8 shadow-lg">
           <div className="animate-in fade-in slide-in-from-bottom-4 flex flex-col justify-center space-y-4 duration-300">
             <div className="flex flex-col justify-center gap-2">

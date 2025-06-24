@@ -26,7 +26,7 @@ export default async function UpgradeLayout({ children }: { children: React.Reac
   const user = session.user;
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-dvh">
       <MinimalHeader
         user={user}
         organizations={organizations}

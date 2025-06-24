@@ -3,8 +3,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { SelectPills } from '@comp/ui/select-pills';
 import { Textarea } from '@comp/ui/textarea';
 import type { UseFormReturn } from 'react-hook-form';
+import { Controller } from 'react-hook-form';
 import type { CompanyDetails, Step } from '../lib/types';
 import { FrameworkSelection } from './FrameworkSelection';
+import { WebsiteInput } from './WebsiteInput';
 
 // Type for form fields used in this component.
 // For now, defining it here to match OrganizationSetupForm.tsx structure.
@@ -31,6 +33,16 @@ export function OnboardingStepInput({
         value={form.getValues(currentStep.key) || []}
         onChange={(value) => form.setValue(currentStep.key, value)}
         onLoadingChange={onLoadingChange}
+      />
+    );
+  }
+
+  if (currentStep.key === 'website') {
+    return (
+      <Controller
+        name={currentStep.key}
+        control={form.control}
+        render={({ field }) => <WebsiteInput {...field} placeholder="example.com" autoFocus />}
       />
     );
   }
@@ -81,7 +93,7 @@ export function OnboardingStepInput({
         onValueChange={(values: string[]) => {
           form.setValue(currentStep.key, values.join(','));
         }}
-        placeholder={`Type anything and press enter to add it, ${currentStep.placeholder}`}
+        placeholder={`Search or add custom (press Enter) • ${currentStep.placeholder}`}
       />
     );
   }

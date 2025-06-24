@@ -1272,7 +1272,7 @@
     puppeteer-core "^24.7.2"
     react-email "^4.0.15"
     react-hook-form "^7.58.1"
-    react-hotkeys-hook "^4.6.2"
+    react-hotkeys-hook "^5.1.0"
     react-intersection-observer "^9.16.0"
     react-markdown "^9.1.0"
     react-textarea-autosize "^8.5.9"
@@ -1312,10 +1312,9 @@
   dependencies:
     "@comp/ui" "workspace:*"
     "@comp/utils" "workspace:*"
-  dependencies:
     "@react-email/components" "^0.0.41"
     "@react-email/render" "^1.1.2"
-    "@react-email/tailwind" "1.0.4"
+    "@react-email/tailwind" "1.0.5"
     date-fns "^4.1.0"
     next "15.4.0-canary.85"
     react-email "^4.0.15"
@@ -1485,13 +1484,13 @@
     "@tiptap/extension-image" "2.14.0"
     "@tiptap/extension-link" "2.14.0"
     "@tiptap/extension-placeholder" "2.14.0"
-    "@tiptap/extension-table" "2.14.0"
-    "@tiptap/extension-table-cell" "2.14.0"
-    "@tiptap/extension-table-header" "2.14.0"
-    "@tiptap/extension-table-row" "2.14.0"
+    "@tiptap/extension-table" "^2.22.3"
+    "@tiptap/extension-table-cell" "^2.22.3"
+    "@tiptap/extension-table-header" "^2.22.3"
+    "@tiptap/extension-table-row" "^2.22.3"
     "@tiptap/extension-task-item" "2.14.0"
     "@tiptap/extension-task-list" "2.14.0"
-    "@tiptap/extension-text-align" "2.14.0"
+    "@tiptap/extension-text-align" "2.22.3"
     "@tiptap/extension-typography" "2.14.0"
     "@tiptap/extension-underline" "2.14.0"
     "@tiptap/pm" "2.14.0"
@@ -4124,11 +4123,6 @@
   resolved "https://registry.npmjs.org/@react-email/section/-/section-0.0.16.tgz"
   integrity sha512-FjqF9xQ8FoeUZYKSdt8sMIKvoT9XF8BrzhT3xiFKdEMwYNbsDflcjfErJe3jb7Wj/es/lKTbV5QR1dnLzGpL3w==
 
-"@react-email/tailwind@1.0.4":
-  version "1.0.4"
-  resolved "https://registry.npmjs.org/@react-email/tailwind/-/tailwind-1.0.4.tgz"
-  integrity sha512-tJdcusncdqgvTUYZIuhNC6LYTfL9vNTSQpwWdTCQhQ1lsrNCEE4OKCSdzSV3S9F32pi0i0xQ+YPJHKIzGjdTSA==
-
 "@react-email/tailwind@1.0.5":
   version "1.0.5"
   resolved "https://registry.npmjs.org/@react-email/tailwind/-/tailwind-1.0.5.tgz"
@@ -5470,40 +5464,20 @@
   resolved "https://registry.npmjs.org/@tiptap/extension-strike/-/extension-strike-2.14.0.tgz"
   integrity sha512-rD5d/IL3XPfBOrHRHxt+b+0X1jbIbWONGiad/3sX0ZYQD3PandtCWboH40r/J5tFksebuY12dVYyYQKgLpDBOQ==
 
-"@tiptap/extension-table@2.14.0":
-  version "2.14.0"
-  resolved "https://registry.npmjs.org/@tiptap/extension-table/-/extension-table-2.14.0.tgz"
-  integrity sha512-X/wH3XKxi5+G7cB+lHt3fPMWIJ30IBkzrJZYapJ8d4p2JxMNIU1Nyu+8K6204d0hF6SVWY8hvb/Jq/WgHtoCFA==
-
 "@tiptap/extension-table@^2.22.3":
   version "2.22.3"
   resolved "https://registry.npmjs.org/@tiptap/extension-table/-/extension-table-2.22.3.tgz"
   integrity sha512-lYTuDo/3lJsC6g85b5OCfrKi8yID82PnZlngZo4quVHusE/YuXOwXYD4qt3xEOoqdgFoPQl0b7Ck9C5Qyb8AUg==
-
-"@tiptap/extension-table-cell@2.14.0":
-  version "2.14.0"
-  resolved "https://registry.npmjs.org/@tiptap/extension-table-cell/-/extension-table-cell-2.14.0.tgz"
-  integrity sha512-DkSNAAkMI/ymPgO8y8Gv0MDVcbd2gk7xrSyicIDNoDFFXp15VasInGW8mvyM+CgvlurGB2N+PkYncPtfb4XNuQ==
 
 "@tiptap/extension-table-cell@^2.22.3":
   version "2.22.3"
   resolved "https://registry.npmjs.org/@tiptap/extension-table-cell/-/extension-table-cell-2.22.3.tgz"
   integrity sha512-Yj6/bd4QpKoQpNTi/eNnWpT+VMfTBB7SfCPjlMvTK1MFVr60fmbUjJHrjt2WAfTW2JmkQlLsP8UXjR+Bda+uTA==
 
-"@tiptap/extension-table-header@2.14.0":
-  version "2.14.0"
-  resolved "https://registry.npmjs.org/@tiptap/extension-table-header/-/extension-table-header-2.14.0.tgz"
-  integrity sha512-wX6/+t0iCo3KrqK2OjK0vbFeL76Pq+VpobGt+oM8lcxsENnsa6a0s3wdd1QEVLVPlj+WMFQggAG80Rf17+iDxA==
-
 "@tiptap/extension-table-header@^2.22.3":
   version "2.22.3"
   resolved "https://registry.npmjs.org/@tiptap/extension-table-header/-/extension-table-header-2.22.3.tgz"
   integrity sha512-bLq/lufV95fp9gXMjOKMuuhpAa2+t0vi8dz4Zxwnrr1dsvkk4TyiKWRyuI3OV+TCNzZ3hZqOlEStS+Ie6lB/Lg==
-
-"@tiptap/extension-table-row@2.14.0":
-  version "2.14.0"
-  resolved "https://registry.npmjs.org/@tiptap/extension-table-row/-/extension-table-row-2.14.0.tgz"
-  integrity sha512-a1GvCIju9xETIQu664lVQNftHqpPdRmwYp+1QzY82v3zHClso+tTLPeBSlbDdUscSmv3yZXgGML20IiOoR2l2Q==
 
 "@tiptap/extension-table-row@^2.22.3":
   version "2.22.3"
@@ -5525,10 +5499,10 @@
   resolved "https://registry.npmjs.org/@tiptap/extension-text/-/extension-text-2.14.0.tgz"
   integrity sha512-rHny566nGZHq61zRLwQ9BPG55W/O+eDKwUJl+LhrLiVWwzpvAl9QQYixtoxJKOY48VK41PKwxe3bgDYgNs/Fhg==
 
-"@tiptap/extension-text-align@2.14.0":
-  version "2.14.0"
-  resolved "https://registry.npmjs.org/@tiptap/extension-text-align/-/extension-text-align-2.14.0.tgz"
-  integrity sha512-9Wth4sAq2lYVWvQA0Qy095fsnPEavBv1FKWzVEyurwEQB7ZQsf/MRGmCNFnUXXy12w1G9UOanS4KkJ4C64+Ccw==
+"@tiptap/extension-text-align@2.22.3":
+  version "2.22.3"
+  resolved "https://registry.npmjs.org/@tiptap/extension-text-align/-/extension-text-align-2.22.3.tgz"
+  integrity sha512-UZ8803BOrHLHSNFfooqgkm2AQsaK/7eE1deQGSazxft89KksAv1kZkEKFypOE8yw85Bg2NHH2Lp6n4tyz2n6/g==
 
 "@tiptap/extension-text-style@^2.14.0":
   version "2.14.0"
@@ -14313,7 +14287,7 @@ rc@^1.2.8:
     minimist "^1.2.0"
     strip-json-comments "~2.0.1"
 
-react@*, react@18.x, "react@>= 16.14", "react@>= 16.8 || 18.0.0", "react@>= 16.8.0", "react@>= 16.8.0 || 17.x.x || ^18.0.0-0 || ^19.0.0-0", "react@>= 18.2.0", react@>=16, react@>=16.13, react@>=16.6.0, react@>=16.8, "react@>=16.8.0 || ^17.0.0 || ^18", react@>=16.8.1, react@>=17.0, react@>=18, "react@>=18.2.0 || ^19.0.0-0", "react@^0.14 || ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0", "react@^16.0.0 || ^17.0.0 || ^18.0.0", "react@^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^16.11.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^16.14.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react@^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^16.8 || ^17 || ^18 || ^19 || ^19.0.0-rc", "react@^16.8 || ^17.0 || ^18.0", "react@^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react@^16.8.0 || ^17 || ^18 || ^19", "react@^16.8.0 || ^17.0.0 || ^18.0.0", "react@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react@^16.8.0 || ^17.0.1 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react@^16.x || ^17.x || ^18.x || ^19.0.0 || ^19.0.0-rc", "react@^17.0.0 || ^18.0.0 || ^19.0.0", "react@^17.0.2 || ^18.0.0 || ^19.0.0", "react@^18 || ^19", "react@^18 || ^19 || ^19.0.0-rc", "react@^18.0 || ^19.0", "react@^18.0 || ^19.0 || ^19.0.0-rc", "react@^18.0.0 || ^19.0.0", "react@^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react@^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0", "react@^18.2.0 || ^19.0.0", react@^19, react@^19.1.0:
+react@*, react@18.x, "react@>= 16.14", "react@>= 16.8 || 18.0.0", "react@>= 16.8.0", "react@>= 16.8.0 || 17.x.x || ^18.0.0-0 || ^19.0.0-0", "react@>= 18.2.0", react@>=16, react@>=16.13, react@>=16.6.0, react@>=16.8, "react@>=16.8.0 || ^17.0.0 || ^18", react@>=17.0, react@>=18, "react@>=18.2.0 || ^19.0.0-0", "react@^0.14 || ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0", "react@^16.0.0 || ^17.0.0 || ^18.0.0", "react@^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^16.11.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^16.14.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react@^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^16.8 || ^17 || ^18 || ^19 || ^19.0.0-rc", "react@^16.8 || ^17.0 || ^18.0", "react@^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react@^16.8.0 || ^17 || ^18 || ^19", "react@^16.8.0 || ^17.0.0 || ^18.0.0", "react@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react@^16.8.0 || ^17.0.1 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react@^16.x || ^17.x || ^18.x || ^19.0.0 || ^19.0.0-rc", "react@^17.0.0 || ^18.0.0 || ^19.0.0", "react@^17.0.2 || ^18.0.0 || ^19.0.0", "react@^18 || ^19", "react@^18 || ^19 || ^19.0.0-rc", "react@^18.0 || ^19.0", "react@^18.0 || ^19.0 || ^19.0.0-rc", "react@^18.0.0 || ^19.0.0", "react@^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react@^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0", "react@^18.2.0 || ^19.0.0", react@^19, react@^19.1.0:
   version "19.1.0"
   resolved "https://registry.npmjs.org/react/-/react-19.1.0.tgz"
   integrity sha512-FS+XFBNvn3GTAWq26joslQgWNoFu08F4kl0J4CgdNKADkdSGXQyTCnKteIAJy96Br6YbpEU1LSzV5dYtjMkMDg==
@@ -14352,7 +14326,7 @@ react-dnd-html5-backend@^16.0.1:
   dependencies:
     dnd-core "^16.0.1"
 
-react-dom@*, "react-dom@>= 18.2.0", react-dom@>=16.13, react-dom@>=16.6.0, react-dom@>=16.8, react-dom@>=16.8.1, react-dom@>=18.0.0, "react-dom@^0.14 || ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom@^16.0.0 || ^17.0.0 || ^18.0.0", "react-dom@^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom@^16.14.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react-dom@^16.8 || ^17 || ^18 || ^19 || ^19.0.0-rc", "react-dom@^16.8 || ^17.0 || ^18.0", "react-dom@^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom@^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom@^18 || ^19", "react-dom@^18 || ^19 || ^19.0.0-rc", "react-dom@^18.0.0 || ^19.0.0", "react-dom@^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react-dom@^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0", "react-dom@^18.2.0 || ^19.0.0", react-dom@^19, react-dom@^19.1.0:
+react-dom@*, "react-dom@>= 18.2.0", react-dom@>=16.13, react-dom@>=16.6.0, react-dom@>=16.8, react-dom@>=18.0.0, "react-dom@^0.14 || ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom@^16.0.0 || ^17.0.0 || ^18.0.0", "react-dom@^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom@^16.14.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react-dom@^16.8 || ^17 || ^18 || ^19 || ^19.0.0-rc", "react-dom@^16.8 || ^17.0 || ^18.0", "react-dom@^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom@^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom@^18 || ^19", "react-dom@^18 || ^19 || ^19.0.0-rc", "react-dom@^18.0.0 || ^19.0.0", "react-dom@^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react-dom@^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0", "react-dom@^18.2.0 || ^19.0.0", react-dom@^19, react-dom@^19.1.0:
   version "19.1.0"
   resolved "https://registry.npmjs.org/react-dom/-/react-dom-19.1.0.tgz"
   integrity sha512-Xs1hdnE+DyKgeHJeJznQmYMIBG3TKIHJJT95Q58nHLSrElKlGQqDTR2HQ9fx5CN/Gk6Vh/kupBTDLU11/nDk/g==
@@ -14393,10 +14367,10 @@ react-hook-form@^7.55.0, react-hook-form@^7.58.1:
   resolved "https://registry.npmjs.org/react-hook-form/-/react-hook-form-7.58.1.tgz"
   integrity sha512-Lml/KZYEEFfPhUVgE0RdCVpnC4yhW+PndRhbiTtdvSlQTL8IfVR+iQkBjLIvmmc6+GGoVeM11z37ktKFPAb0FA==
 
-react-hotkeys-hook@^4.6.2:
-  version "4.6.2"
-  resolved "https://registry.npmjs.org/react-hotkeys-hook/-/react-hotkeys-hook-4.6.2.tgz"
-  integrity sha512-FmP+ZriY3EG59Ug/lxNfrObCnW9xQShgk7Nb83+CkpfkcCpfS95ydv+E9JuXA5cp8KtskU7LGlIARpkc92X22Q==
+react-hotkeys-hook@^5.1.0:
+  version "5.1.0"
+  resolved "https://registry.npmjs.org/react-hotkeys-hook/-/react-hotkeys-hook-5.1.0.tgz"
+  integrity sha512-GCNGXjBzV9buOS3REoQFmSmE4WTvBhYQ0YrAeeMZI83bhXg3dRWsLHXDutcVDdEjwJqJCxk5iewWYX5LtFUd7g==
 
 react-icons@^5.3.0:
   version "5.5.0"

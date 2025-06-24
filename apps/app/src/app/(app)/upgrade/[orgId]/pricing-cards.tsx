@@ -3,6 +3,7 @@
 import { chooseSelfServeAction } from '@/actions/organization/choose-self-serve';
 import { generateCheckoutSessionAction } from '@/app/api/stripe/generate-checkout-session/generate-checkout-session';
 import { SelectionIndicator } from '@/components/layout/SelectionIndicator';
+import { ReviewSection } from '@/components/ReviewSection';
 import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
 import {
@@ -351,12 +352,12 @@ export function PricingCards({ organizationId, priceDetails }: PricingCardsProps
         {/* Right Column - Checkout */}
         <div className="space-y-3">
           {/* Checkout Summary */}
-          <Card className="bg-card/90 dark:bg-card/80 backdrop-blur-lg border-2 border-white/20 dark:border-white/10 shadow-xl">
-            <CardHeader className="pb-3 pt-4 bg-muted/50 dark:bg-muted/40 backdrop-blur-sm rounded-t-lg">
+          <Card className="bg-card border border-border">
+            <CardHeader className="pb-3 pt-4 bg-muted/50 dark:bg-muted/40 backdrop-blur-sm rounded-t-lg border-b border-muted/50">
               <CardTitle className="text-lg font-semibold text-center">Checkout</CardTitle>
             </CardHeader>
-            <CardContent className="pt-2 pb-2">
-              <div className="space-y-2">
+            <CardContent className="p-6">
+              <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">
                     {selectedPlan === 'free' ? 'Starter' : 'Done For You'} Plan
@@ -391,7 +392,7 @@ export function PricingCards({ organizationId, priceDetails }: PricingCardsProps
                     </div>
                   </>
                 )}
-                <div className="border-t-2 pt-3 mt-2">
+                <div className="border-t-2 pt-4 mt-4">
                   <div className="flex justify-between items-baseline">
                     <span className="text-base font-semibold">Due today</span>
                     <div className="text-right">
@@ -418,7 +419,7 @@ export function PricingCards({ organizationId, priceDetails }: PricingCardsProps
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="pt-0 pb-3 flex flex-col gap-3">
+            <CardFooter className="px-6 pb-6">
               <Button
                 onClick={handleSubscribe}
                 disabled={isExecuting || isChoosingFree}
@@ -439,14 +440,12 @@ export function PricingCards({ organizationId, priceDetails }: PricingCardsProps
                 )}
               </Button>
             </CardFooter>
-          </Card>
 
-          {/* Trust Signals */}
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground px-2">
-              SSL encrypted • SOC 2 certified • Cancel anytime
-            </p>
-          </div>
+            {/* Review Section Footer */}
+            <div className="px-6 py-4 bg-muted/50 dark:bg-muted/40 backdrop-blur-sm rounded-b-lg border-t border-muted/50">
+              <ReviewSection rating={4.7} reviewCount={100} />
+            </div>
+          </Card>
         </div>
       </div>
     </div>
