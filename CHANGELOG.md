@@ -1,3 +1,15 @@
+# [1.43.0](https://github.com/trycompai/comp/compare/v1.42.0...v1.43.0) (2025-06-24)
+
+
+### Bug Fixes
+
+* correct URL formatting for logo retrieval in getCachedSites function ([87bd99f](https://github.com/trycompai/comp/commit/87bd99fe0426233ff2b8356b05a44e80c4becd79))
+
+
+### Features
+
+* add logo existence check to API endpoint for cached websites ([60d8c95](https://github.com/trycompai/comp/commit/60d8c95318197f17996fca6cf2d1a470373f275f))
+
 # [1.42.0](https://github.com/trycompai/comp/compare/v1.41.1...v1.42.0) (2025-06-24)
 
 
