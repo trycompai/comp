@@ -1191,14 +1191,14 @@
     "@types/conventional-commits-parser" "^5.0.0"
     chalk "^5.3.0"
 
-"@comp/analytics@^workspace:packages/analytics":
+"@comp/analytics@packages/analytics":
   version "workspace:packages/analytics"
   resolved "workspace:packages/analytics"
   dependencies:
     posthog-js "^1.236.6"
     posthog-node "^4.14.0"
 
-"@comp/app@^workspace:apps/app", "@comp/app@workspace:*":
+"@comp/app@apps/app", "@comp/app@workspace:*":
   version "workspace:apps/app"
   resolved "workspace:apps/app"
   devDependencies:
@@ -1226,15 +1226,13 @@
     "@browserbasehq/sdk" "^2.5.0"
     "@calcom/atoms" "^1.0.102-framer"
     "@calcom/embed-react" "^1.5.3"
-  dependencies:
     "@comp/db" "workspace:*"
-  dependencies:
     "@date-fns/tz" "^1.2.0"
     "@dnd-kit/core" "^6.3.1"
     "@dnd-kit/modifiers" "^9.0.0"
     "@dnd-kit/sortable" "^10.0.0"
     "@dnd-kit/utilities" "^3.2.2"
-    "@dub/embed-react" "^0.0.14"
+    "@dub/embed-react" "^0.0.15"
     "@hookform/resolvers" "^5.1.1"
     "@mendable/firecrawl-js" "^1.24.0"
     "@nangohq/frontend" "^0.53.2"
@@ -1262,7 +1260,7 @@
     axios "^1.9.0"
     better-auth "^1.2.8"
     d3 "^7.9.0"
-    dub "^0.63.5"
+    dub "^0.63.6"
     framer-motion "^12.18.1"
     geist "^1.3.1"
     motion "^12.9.2"
@@ -1294,19 +1292,18 @@
     xml2js "^0.6.2"
     zustand "^5.0.3"
 
-"@comp/db@^workspace:packages/db", "@comp/db@workspace:*":
+"@comp/db@packages/db", "@comp/db@workspace:*":
   version "workspace:packages/db"
   resolved "workspace:packages/db"
   devDependencies:
     "@comp/tsconfig" "workspace:*"
-  devDependencies:
     prisma "^6.9.0"
     ts-node "^10.9.2"
     typescript "^5.8.3"
   dependencies:
     "@prisma/client" "6.9.0"
 
-"@comp/email@^workspace:packages/email":
+"@comp/email@packages/email":
   version "workspace:packages/email"
   resolved "workspace:packages/email"
   devDependencies:
@@ -1326,7 +1323,7 @@
     react-email "^4.0.15"
     responsive-react-email "^0.0.5"
 
-"@comp/framework-editor@^workspace:apps/framework-editor":
+"@comp/framework-editor@apps/framework-editor":
   version "workspace:apps/framework-editor"
   resolved "workspace:apps/framework-editor"
   devDependencies:
@@ -1356,7 +1353,7 @@
     tippy.js "^6.3.7"
     zod "3.25.67"
 
-"@comp/integrations@^workspace:packages/integrations":
+"@comp/integrations@packages/integrations":
   version "workspace:packages/integrations"
   resolved "workspace:packages/integrations"
   devDependencies:
@@ -1379,14 +1376,14 @@
     stoppable "^1.1.0"
     zod "3.25.67"
 
-"@comp/kv@^workspace:packages/kv":
+"@comp/kv@packages/kv":
   version "workspace:packages/kv"
   resolved "workspace:packages/kv"
   dependencies:
     "@upstash/redis" "^1.34.2"
     server-only "0.0.1"
 
-"@comp/portal@^workspace:apps/portal":
+"@comp/portal@apps/portal":
   version "workspace:apps/portal"
   resolved "workspace:apps/portal"
   devDependencies:
@@ -1417,7 +1414,7 @@
     next "15.4.0-canary.85"
     react-email "^4.0.15"
 
-"@comp/trust@^workspace:apps/trust":
+"@comp/trust@apps/trust":
   version "workspace:apps/trust"
   resolved "workspace:apps/trust"
   devDependencies:
@@ -1438,11 +1435,11 @@
     lucide-react "^0.518.0"
     next "15.4.0-canary.85"
 
-"@comp/tsconfig@^workspace:packages/tsconfig", "@comp/tsconfig@workspace:*":
+"@comp/tsconfig@packages/tsconfig", "@comp/tsconfig@workspace:*":
   version "workspace:packages/tsconfig"
   resolved "workspace:packages/tsconfig"
 
-"@comp/ui@^workspace:packages/ui", "@comp/ui@workspace:*":
+"@comp/ui@packages/ui", "@comp/ui@workspace:*":
   version "workspace:packages/ui"
   resolved "workspace:packages/ui"
   devDependencies:
@@ -1525,7 +1522,7 @@
     use-debounce "^10.0.4"
     vaul "^0.9.6"
 
-"@comp/utils@^workspace:packages/utils", "@comp/utils@workspace:*":
+"@comp/utils@packages/utils", "@comp/utils@workspace:*":
   version "workspace:packages/utils"
   resolved "workspace:packages/utils"
   devDependencies:
@@ -1652,19 +1649,19 @@
   dependencies:
     tslib "^2.0.0"
 
-"@dub/embed-core@^0.0.14":
-  version "0.0.14"
-  resolved "https://registry.npmjs.org/@dub/embed-core/-/embed-core-0.0.14.tgz"
-  integrity sha512-2oD8NOlpysa4XgF70+gvJbHyysm+QboujTmD93tvQ2Dt+br7lUV+3cx51+Ho0WTZ06+DnFYQJ5fG/dtXSmyHrg==
+"@dub/embed-core@^0.0.15":
+  version "0.0.15"
+  resolved "https://registry.npmjs.org/@dub/embed-core/-/embed-core-0.0.15.tgz"
+  integrity sha512-0hfWesBfUBpzw29FbCEUSxakNCCebTcyoVXHanE45HSj0Atmx3ANpilpa25lR5g62MwLg9kcX4dR6jpTfLeQ8g==
   dependencies:
     "@floating-ui/dom" "^1.6.12"
 
-"@dub/embed-react@^0.0.14":
-  version "0.0.14"
-  resolved "https://registry.npmjs.org/@dub/embed-react/-/embed-react-0.0.14.tgz"
-  integrity sha512-qJg08k8GE5ElduCpWxKHlpPsDQYfWu4n+n1p+bChdTNxX2BvFnyqQl3LTxBYKqJ7RwXxSSW7GARpFgajvXVJCA==
+"@dub/embed-react@^0.0.15":
+  version "0.0.15"
+  resolved "https://registry.npmjs.org/@dub/embed-react/-/embed-react-0.0.15.tgz"
+  integrity sha512-GLLAMGpn6WLXbM8q4n0lPOrjsYkmI0W3LvAAMFbb+FeQ6OwFvz390xwWW2ygfUo74wvWLSYVEOoHymiuoSrb7Q==
   dependencies:
-    "@dub/embed-core" "^0.0.14"
+    "@dub/embed-core" "^0.0.15"
     class-variance-authority "^0.7.0"
     vite "5.2.9"
 
@@ -8745,10 +8742,10 @@ draco3d@^1.4.1:
   resolved "https://registry.npmjs.org/draco3d/-/draco3d-1.5.7.tgz"
   integrity sha512-m6WCKt/erDXcw+70IJXnG7M3awwQPAsZvJGX5zY7beBqpELw6RDGkYVU0W43AFxye4pDZ5i2Lbyc/NNGqwjUVQ==
 
-dub@^0.63.5:
-  version "0.63.5"
-  resolved "https://registry.npmjs.org/dub/-/dub-0.63.5.tgz"
-  integrity sha512-p9ygOnYpZ89jV/rXJrG4yTa9E0VE8itwV/EmnydO27hFhRa9Hj3m6Ue0PLEIykYEGaROPjGIYKjXPOysShEhKQ==
+dub@^0.63.6:
+  version "0.63.6"
+  resolved "https://registry.npmjs.org/dub/-/dub-0.63.6.tgz"
+  integrity sha512-4iAJvOtj5MegRqsSpUc2H9Prvgh95vidGGEHXYrJO6bLUQ4TSfQwoRei+WdKJohV0t4klhEj4ruQx2olefMzuA==
 
 dunder-proto@^1.0.0, dunder-proto@^1.0.1:
   version "1.0.1"
