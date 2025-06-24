@@ -1,3 +1,10 @@
+## [1.43.1](https://github.com/trycompai/comp/compare/v1.43.0...v1.43.1) (2025-06-24)
+
+
+### Bug Fixes
+
+* update formatting and structure in various files ([939bf07](https://github.com/trycompai/comp/commit/939bf07521131891e9acb731a1d5c15aff56fc78))
+
 # [1.43.0](https://github.com/trycompai/comp/compare/v1.42.0...v1.43.0) (2025-06-24)
 
 
