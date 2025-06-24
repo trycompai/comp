@@ -126,6 +126,14 @@ export function MainMenu({ organizationId, isCollapsed = false, onItemClick }: P
         variant: 'secondary',
       },
     },
+    // {
+    //   id: 'referrals',
+    //   path: '/:organizationId/referrals',
+    //   name: 'Referrals',
+    //   disabled: false,
+    //   icon: Gift,
+    //   protected: false,
+    // },
     {
       id: 'settings',
       path: '/:organizationId/settings',

@@ -19,6 +19,7 @@ import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { BookingDialog } from './components/BookingDialog';
 
 interface PricingCardsProps {
   organizationId: string;
@@ -196,6 +197,7 @@ const paidFeatures = [
   'Dedicated Success Team',
   '24x7x365 Support & SLA',
   'Slack Channel with Comp AI',
+  '12-month minimum term',
 ];
 
 export function PricingCards({ organizationId, priceDetails }: PricingCardsProps) {
@@ -218,7 +220,7 @@ export function PricingCards({ organizationId, priceDetails }: PricingCardsProps
     chooseSelfServeAction,
     {
       onSuccess: () => {
-        router.push(`/${organizationId}`);
+        router.push(`/${organizationId}?checkoutComplete=starter`);
       },
       onError: ({ error }) => {
         toast.error(error.serverError || 'Failed to set up free plan');
@@ -250,7 +252,7 @@ export function PricingCards({ organizationId, priceDetails }: PricingCardsProps
       organizationId,
       mode: 'subscription',
       priceId,
-      successUrl: `${baseUrl}/${organizationId}/settings/billing?success=true`,
+      successUrl: `${baseUrl}/api/stripe/success?organizationId=${organizationId}&planType=done-for-you`,
       cancelUrl: `${baseUrl}/upgrade/${organizationId}`,
       allowPromotionCodes: true,
       metadata: {
@@ -445,6 +447,16 @@ export function PricingCards({ organizationId, priceDetails }: PricingCardsProps
             <div className="px-6 py-4 bg-muted/50 dark:bg-muted/40 backdrop-blur-sm rounded-b-lg border-t border-muted/50">
               <ReviewSection rating={4.7} reviewCount={100} />
             </div>
+          </Card>
+
+          {/* Help Section */}
+          <Card className="bg-muted/30 border-dashed">
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground text-center mb-3">
+                Have questions? We're here to help
+              </p>
+              <BookingDialog />
+            </CardContent>
           </Card>
         </div>
       </div>

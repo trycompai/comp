@@ -62,12 +62,11 @@ export function OrganizationSetupForm({
 
   const hasExistingOrgs = existingOrganizations.length > 0;
 
-  // Save step progress to localStorage
+  // Dispatch custom event for background animation when step changes
   useEffect(() => {
     if (typeof window !== 'undefined') {
       if (isFinalizing) {
         // Set to max scale when finalizing
-        localStorage.setItem('onboarding-progress', '1');
         window.dispatchEvent(
           new CustomEvent('onboarding-step-change', {
             detail: { stepIndex: steps.length - 1, totalSteps: steps.length, progress: 1 },
@@ -75,10 +74,6 @@ export function OrganizationSetupForm({
         );
       } else {
         const progress = stepIndex / (steps.length - 1);
-        localStorage.setItem('onboarding-step-index', stepIndex.toString());
-        localStorage.setItem('onboarding-total-steps', steps.length.toString());
-        localStorage.setItem('onboarding-progress', progress.toString());
-
         // Dispatch custom event to notify the background wrapper
         window.dispatchEvent(
           new CustomEvent('onboarding-step-change', {

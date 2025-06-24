@@ -46,7 +46,9 @@
         "FLEET_DEVICE_PATH_MAC",
         "FLEET_AGENT_BUCKET_NAME",
         "FLEET_DEVICE_PATH_WINDOWS",
-        "LOGO_DEV"
+        "LOGO_DEV",
+        "DUB_API_KEY",
+        "DUB_PROGRAM_ID"
       ],
       "inputs": ["$TURBO_DEFAULT$", ".env"],
       "dependsOn": ["^build", "^db:generate", "^auth:build"],

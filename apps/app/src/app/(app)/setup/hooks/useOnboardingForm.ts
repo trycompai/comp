@@ -11,10 +11,9 @@ import { z } from 'zod';
 import { createOrganization } from '../actions/create-organization';
 import { createOrganizationMinimal } from '../actions/create-organization-minimal';
 import type { OnboardingFormFields } from '../components/OnboardingStepInput';
-import { STORAGE_KEY, companyDetailsSchema, steps } from '../lib/constants';
+import { companyDetailsSchema, steps } from '../lib/constants';
 import { updateSetupSession } from '../lib/setup-session';
 import type { CompanyDetails } from '../lib/types';
-import { useLocalStorage } from './useLocalStorage';
 
 interface UseOnboardingFormProps {
   setupId?: string;
@@ -29,9 +28,8 @@ export function useOnboardingForm({
 }: UseOnboardingFormProps = {}) {
   const router = useRouter();
 
-  // If we have a setupId, use the initialData from KV, otherwise use localStorage
-  const [savedAnswers, setSavedAnswers] = useLocalStorage<Partial<CompanyDetails>>(
-    STORAGE_KEY,
+  // Use state instead of localStorage - initialized from KV data if setupId exists
+  const [savedAnswers, setSavedAnswers] = useState<Partial<CompanyDetails>>(
     setupId && initialData ? initialData : {},
   );
 
@@ -108,6 +106,7 @@ export function useOnboardingForm({
         // Organization created, now redirect to plans page
         router.push(`/upgrade/${data.organizationId}`);
 
+        // Clear answers after successful creation
         setSavedAnswers({});
       } else {
         toast.error('Failed to create organization');

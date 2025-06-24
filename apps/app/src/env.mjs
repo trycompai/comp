@@ -36,6 +36,8 @@ export const env = createEnv({
     ZAPIER_HUBSPOT_WEBHOOK_URL: z.string().optional(),
     FLEET_URL: z.string().optional(),
     FLEET_TOKEN: z.string().optional(),
+    DUB_API_KEY: z.string().optional(),
+    DUB_PROGRAM_ID: z.string().optional(),
   },
 
   client: {
@@ -87,6 +89,8 @@ export const env = createEnv({
       process.env.NEXT_PUBLIC_STRIPE_SUBSCRIPTION_MANAGED_MONTHLY_PRICE_ID,
     NEXT_PUBLIC_STRIPE_SUBSCRIPTION_MANAGED_YEARLY_PRICE_ID:
       process.env.NEXT_PUBLIC_STRIPE_SUBSCRIPTION_MANAGED_YEARLY_PRICE_ID,
+    DUB_API_KEY: process.env.DUB_API_KEY,
+    DUB_PROGRAM_ID: process.env.DUB_PROGRAM_ID,
   },
 
   skipValidation: !!process.env.CI || !!process.env.SKIP_ENV_VALIDATION,

@@ -12,11 +12,6 @@ export default function CalendarEmbed() {
   }, []);
 
   return (
-    <Cal
-      namespace="meet-us"
-      calLink="team/compai/meet-us"
-      style={{ width: '100%', height: '100%', overflow: 'scroll' }}
-      config={{ layout: 'month_view' }}
-    />
+    <Cal namespace="meet-us" calLink="team/compai/meet-us" config={{ layout: 'month_view' }} />
   );
 }

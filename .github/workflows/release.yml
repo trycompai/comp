@@ -43,4 +43,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
           # NPM_TOKEN: ${{ secrets.NPM_TOKEN }} # Uncomment if publishing to npm
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          HUSKY: 0 # Skip husky hooks in CI
         run: npx semantic-release

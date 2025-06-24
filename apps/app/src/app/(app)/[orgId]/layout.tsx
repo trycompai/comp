@@ -1,5 +1,6 @@
 import { getSubscriptionData } from '@/app/api/stripe/getSubscriptionData';
 import { AnimatedLayout } from '@/components/animated-layout';
+import { CheckoutCompleteDialog } from '@/components/dialogs/checkout-complete-dialog';
 import { Header } from '@/components/header';
 import { AssistantSheet } from '@/components/sheets/assistant-sheet';
 import { Sidebar } from '@/components/sidebar';
@@ -10,6 +11,7 @@ import { db } from '@comp/db';
 import dynamic from 'next/dynamic';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
 import { OnboardingTracker } from './components/OnboardingTracker';
 
 const HotKeys = dynamic(() => import('@/components/hot-keys').then((mod) => mod.HotKeys), {
@@ -100,6 +102,9 @@ export default async function Layout({
           <SubscriptionProvider subscription={subscriptionData}>{children}</SubscriptionProvider>
         </div>
         <AssistantSheet />
+        <Suspense fallback={null}>
+          <CheckoutCompleteDialog />
+        </Suspense>
       </AnimatedLayout>
       <HotKeys />
     </SidebarProvider>
