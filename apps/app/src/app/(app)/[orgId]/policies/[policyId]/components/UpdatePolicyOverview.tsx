@@ -180,7 +180,7 @@ export function UpdatePolicyOverview({
   // Determine button text based on status and form interaction
   let buttonText = 'Save';
   if (
-    (policy.status === 'draft' && selectedStatus !== 'draft') ||
+    (policy.status === 'draft' && selectedStatus === 'published') ||
     (policy.status === 'published' && hasFormChanges)
   ) {
     buttonText = 'Submit for Approval';
