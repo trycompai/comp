@@ -1,0 +1,68 @@
+name: Quick Tests
+
+on:
+  pull_request: # Runs BEFORE merge during PR review
+    branches:
+      - main # Feature branches -> main
+      - release # main -> release (production)
+    types: [opened, synchronize]
+  workflow_dispatch:
+
+jobs:
+  quick-checks:
+    name: Quick Checks
+    runs-on: ubuntu-latest-custom
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+          key: ${{ runner.os }}-bun-quick-${{ hashFiles('**/bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-quick-
+            ${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Type check
+        run: |
+          cd apps/app
+          bun run typecheck || true # Don't fail on type errors yet
+
+      - name: Lint
+        run: |
+          cd apps/app
+          bun run lint || true # Don't fail on lint errors yet
+
+      - name: Run middleware tests (smoke test)
+        run: |
+          cd apps/app
+          bunx vitest middleware.test.ts --run
+        env:
+          CI: true
+
+      - name: Check build
+        run: |
+          cd apps/app
+          # Quick build check without full optimization
+          bunx next build --experimental-build-mode=compile
+        env:
+          SKIP_ENV_VALIDATION: true
+          DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy

@@ -1,0 +1,131 @@
+name: E2E Tests
+
+on:
+  pull_request: # Runs BEFORE merge during PR review
+    branches:
+      - main # Feature branches -> main
+      - release # main -> release (production)
+    paths:
+      - 'apps/**'
+      - 'packages/**'
+      - '!**/*.md'
+      - '.github/workflows/e2e-tests.yml'
+  push: # Also runs AFTER merge to main/release
+    branches:
+      - main
+      - release
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  e2e-tests:
+    name: E2E Tests - ${{ matrix.project }}
+    runs-on: ubuntu-latest-custom
+    timeout-minutes: 20
+
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [chromium, firefox, webkit]
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Setup database
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+        run: |
+          cd packages/db
+          bunx prisma migrate deploy
+          bunx prisma db seed || true # Allow seed to fail
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/playwright.config.ts') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install Playwright browsers
+        run: |
+          cd apps/app
+          bunx playwright install --with-deps ${{ matrix.project }}
+
+      - name: Build application
+        run: |
+          cd apps/app
+          bun run build
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          NEXTAUTH_URL: http://localhost:3000
+          NEXTAUTH_SECRET: test-secret-for-ci
+          SKIP_ENV_VALIDATION: true
+
+      - name: Run E2E tests
+        run: |
+          cd apps/app
+          bunx playwright test --project=${{ matrix.project }}
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          NEXTAUTH_URL: http://localhost:3000
+          NEXTAUTH_SECRET: test-secret-for-ci
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+          E2E_TEST_MODE: true
+          E2E_USE_REAL_AUTH: false
+          CI: true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results-${{ matrix.project }}
+          path: |
+            apps/app/test-results/
+            apps/app/playwright-report/
+          retention-days: 7
+
+      - name: Upload screenshots & videos
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts-${{ matrix.project }}
+          path: |
+            apps/app/test-results/**/*.png
+            apps/app/test-results/**/*.webm
+          retention-days: 7

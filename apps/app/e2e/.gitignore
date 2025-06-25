@@ -1,0 +1,15 @@
+# Test artifacts
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Auth state
+auth/
+
+# Videos and screenshots
+*.webm
+*.png
+
+# Env files
+.env.local
+.env.test.local

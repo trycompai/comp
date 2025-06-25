@@ -1285,14 +1285,14 @@
     "@types/conventional-commits-parser" "^5.0.0"
     chalk "^5.3.0"
 
-"@comp/analytics@packages/analytics":
+"@comp/analytics@^workspace:packages/analytics":
   version "workspace:packages/analytics"
   resolved "workspace:packages/analytics"
   dependencies:
     posthog-js "^1.236.6"
     posthog-node "^4.14.0"
 
-"@comp/app@apps/app", "@comp/app@workspace:*":
+"@comp/app@^workspace:apps/app", "@comp/app@workspace:*":
   version "workspace:apps/app"
   resolved "workspace:apps/app"
   devDependencies:
@@ -1330,7 +1330,9 @@
     "@browserbasehq/sdk" "^2.5.0"
     "@calcom/atoms" "^1.0.102-framer"
     "@calcom/embed-react" "^1.5.3"
+  dependencies:
     "@comp/db" "workspace:*"
+  dependencies:
     "@date-fns/tz" "^1.2.0"
     "@dnd-kit/core" "^6.3.1"
     "@dnd-kit/modifiers" "^9.0.0"
@@ -1398,18 +1400,19 @@
     xml2js "^0.6.2"
     zustand "^5.0.3"
 
-"@comp/db@packages/db", "@comp/db@workspace:*":
+"@comp/db@^workspace:packages/db", "@comp/db@workspace:*":
   version "workspace:packages/db"
   resolved "workspace:packages/db"
   devDependencies:
     "@comp/tsconfig" "workspace:*"
+  devDependencies:
     prisma "^6.9.0"
     ts-node "^10.9.2"
     typescript "^5.8.3"
   dependencies:
     "@prisma/client" "6.9.0"
 
-"@comp/email@packages/email":
+"@comp/email@^workspace:packages/email":
   version "workspace:packages/email"
   resolved "workspace:packages/email"
   devDependencies:
@@ -1429,7 +1432,7 @@
     react-email "^4.0.15"
     responsive-react-email "^0.0.5"
 
-"@comp/framework-editor@apps/framework-editor":
+"@comp/framework-editor@^workspace:apps/framework-editor":
   version "workspace:apps/framework-editor"
   resolved "workspace:apps/framework-editor"
   devDependencies:
@@ -1459,7 +1462,7 @@
     tippy.js "^6.3.7"
     zod "3.25.67"
 
-"@comp/integrations@packages/integrations":
+"@comp/integrations@^workspace:packages/integrations":
   version "workspace:packages/integrations"
   resolved "workspace:packages/integrations"
   devDependencies:
@@ -1482,14 +1485,14 @@
     stoppable "^1.1.0"
     zod "3.25.67"
 
-"@comp/kv@packages/kv":
+"@comp/kv@^workspace:packages/kv":
   version "workspace:packages/kv"
   resolved "workspace:packages/kv"
   dependencies:
     "@upstash/redis" "^1.34.2"
     server-only "0.0.1"
 
-"@comp/portal@apps/portal":
+"@comp/portal@^workspace:apps/portal":
   version "workspace:apps/portal"
   resolved "workspace:apps/portal"
   devDependencies:
@@ -1520,7 +1523,7 @@
     next "15.4.0-canary.85"
     react-email "^4.0.15"
 
-"@comp/trust@apps/trust":
+"@comp/trust@^workspace:apps/trust":
   version "workspace:apps/trust"
   resolved "workspace:apps/trust"
   devDependencies:
@@ -1541,11 +1544,11 @@
     lucide-react "^0.518.0"
     next "15.4.0-canary.85"
 
-"@comp/tsconfig@packages/tsconfig", "@comp/tsconfig@workspace:*":
+"@comp/tsconfig@^workspace:packages/tsconfig", "@comp/tsconfig@workspace:*":
   version "workspace:packages/tsconfig"
   resolved "workspace:packages/tsconfig"
 
-"@comp/ui@packages/ui", "@comp/ui@workspace:*":
+"@comp/ui@^workspace:packages/ui", "@comp/ui@workspace:*":
   version "workspace:packages/ui"
   resolved "workspace:packages/ui"
   devDependencies:
@@ -1628,7 +1631,7 @@
     use-debounce "^10.0.4"
     vaul "^0.9.6"
 
-"@comp/utils@packages/utils", "@comp/utils@workspace:*":
+"@comp/utils@^workspace:packages/utils", "@comp/utils@workspace:*":
   version "workspace:packages/utils"
   resolved "workspace:packages/utils"
   devDependencies:
@@ -3512,19 +3515,19 @@
   resolved "https://registry.npmjs.org/@playwright/experimental-ct-core/-/experimental-ct-core-1.53.1.tgz"
   integrity sha512-3edf/JF1Fnziq+++XJpH20nbU26yQfGBDT2KfTlYoPdEcVWBf3JIHfRNKsF9KXIFmrzYsBtFnJ/Tkzm7dWLzeA==
   dependencies:
-    vite "^6.3.4"
     playwright "1.53.1"
     playwright-core "1.53.1"
+    vite "^6.3.4"
 
 "@playwright/experimental-ct-react@^1.53.1":
   version "1.53.1"
   resolved "https://registry.npmjs.org/@playwright/experimental-ct-react/-/experimental-ct-react-1.53.1.tgz"
   integrity sha512-4u0JLdIVDRIynkhP1KkfqTAjG5FoQ/w7s1KqgViuVoWzlCqYVtwBchxl6Le9g3T25a+vXWgFhWO35ddL3BeVLQ==
   dependencies:
-    "@vitejs/plugin-react" "^4.2.1"
     "@playwright/experimental-ct-core" "1.53.1"
+    "@vitejs/plugin-react" "^4.2.1"
 
-"@playwright/test@^1.53.1":
+"@playwright/test@^1.41.2", "@playwright/test@^1.51.1", "@playwright/test@^1.53.1":
   version "1.53.1"
   resolved "https://registry.npmjs.org/@playwright/test/-/test-1.53.1.tgz"
   integrity sha512-Z4c23LHV0muZ8hfv4jw6HngPJkbbtZxTkxPNIg7cJcTc9C28N/p2q7g3JZS2SiKBBHJ3uM1dgDye66bB7LEk5w==
@@ -14425,10 +14428,10 @@ playwright@1.53.1:
   version "1.53.1"
   resolved "https://registry.npmjs.org/playwright/-/playwright-1.53.1.tgz"
   integrity sha512-LJ13YLr/ocweuwxyGf1XNFWIU4M2zUSo149Qbp+A4cpwDjsxRPj7k6H25LBrEHiEwxvRbD8HdwvQmRMSvquhYw==
-  dependencies:
-    playwright-core "1.53.1"
   optionalDependencies:
     fsevents "2.3.2"
+  dependencies:
+    playwright-core "1.53.1"
 
 playwright-core@1.53.1, playwright-core@^1.52.0:
   version "1.53.1"
@@ -17885,15 +17888,15 @@ vite@^6.3.4:
   version "6.3.5"
   resolved "https://registry.npmjs.org/vite/-/vite-6.3.5.tgz"
   integrity sha512-cZn6NDFE7wdTpINgs++ZJ4N49W2vRp8LCKrn3Ob1kYNtOo21vfDoaV5GzBfLU4MovSAB8uNRm4jgzVQZ+mBzPQ==
-  dependencies:
-    fdir "^6.4.4"
-    rollup "^4.34.9"
-    esbuild "^0.25.0"
-    postcss "^8.5.3"
-    picomatch "^4.0.2"
-    tinyglobby "^0.2.13"
   optionalDependencies:
     fsevents "~2.3.3"
+  dependencies:
+    esbuild "^0.25.0"
+    fdir "^6.4.4"
+    picomatch "^4.0.2"
+    postcss "^8.5.3"
+    rollup "^4.34.9"
+    tinyglobby "^0.2.13"
 
 vite-node@3.2.4:
   version "3.2.4"

@@ -1,0 +1,200 @@
+name: Release Tests
+
+on:
+  pull_request: # Runs BEFORE merge to release (extra validation for production)
+    branches:
+      - release
+    types: [opened, synchronize]
+  workflow_dispatch:
+
+jobs:
+  release-readiness:
+    name: Release Readiness Checks
+    runs-on: ubuntu-latest-custom
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Production Build Check
+        run: |
+          cd apps/app
+          NODE_ENV=production bun run build
+        env:
+          SKIP_ENV_VALIDATION: true
+          DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
+
+      - name: Bundle Size Check
+        run: |
+          cd apps/app
+          # Check if build outputs are reasonable size
+          echo "Checking bundle sizes..."
+          find .next -name "*.js" -size +5M -exec ls -lh {} \; | tee large-files.txt
+          if [ -s large-files.txt ]; then
+            echo "⚠️  Warning: Large bundle files detected:"
+            cat large-files.txt
+          fi
+
+      - name: Type Safety Check (strict mode)
+        run: |
+          cd apps/app
+          echo "Running strict type check..."
+          bunx tsc --noEmit --strict
+
+      - name: Security Audit
+        run: |
+          echo "Checking for known vulnerabilities..."
+          bunx audit-ci --moderate || echo "⚠️  Security audit found issues"
+
+      - name: License Check
+        run: |
+          echo "Checking licenses..."
+          bunx license-checker --production --summary || true
+
+  comprehensive-e2e:
+    name: Comprehensive E2E - All Browsers
+    runs-on: ubuntu-latest-custom
+    timeout-minutes: 45
+    if: github.base_ref == 'release' # Only for main->release PRs
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Setup database
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+        run: |
+          cd packages/db
+          bunx prisma migrate deploy
+          bunx prisma db seed || true
+
+      - name: Install ALL Playwright browsers
+        run: |
+          cd apps/app
+          bunx playwright install --with-deps
+
+      - name: Build application
+        run: |
+          cd apps/app
+          NODE_ENV=production bun run build
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          NEXTAUTH_URL: http://localhost:3000
+          NEXTAUTH_SECRET: test-secret-for-ci
+          SKIP_ENV_VALIDATION: true
+
+      - name: Run ALL E2E tests
+        run: |
+          cd apps/app
+          bunx playwright test
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          NEXTAUTH_URL: http://localhost:3000
+          NEXTAUTH_SECRET: test-secret-for-ci
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+          E2E_TEST_MODE: true
+          E2E_USE_REAL_AUTH: false
+          CI: true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-e2e-results
+          path: |
+            apps/app/test-results/
+            apps/app/playwright-report/
+          retention-days: 30
+
+  migration-check:
+    name: Database Migration Safety
+    runs-on: ubuntu-latest-custom
+    if: github.base_ref == 'release'
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: main
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          path: pr
+
+      - name: Check for breaking migrations
+        run: |
+          echo "Checking for potentially breaking database changes..."
+
+          # Compare schema files
+          if ! diff -q main/packages/db/prisma/schema.prisma pr/packages/db/prisma/schema.prisma > /dev/null; then
+            echo "⚠️  Database schema has changed. Please review carefully:"
+            diff -u main/packages/db/prisma/schema.prisma pr/packages/db/prisma/schema.prisma || true
+          else
+            echo "✅ No database schema changes detected"
+          fi
+
+          # Check for new migrations
+          NEW_MIGRATIONS=$(find pr/packages/db/migrations -type d -name "2*" | xargs -I {} basename {} | sort)
+          OLD_MIGRATIONS=$(find main/packages/db/migrations -type d -name "2*" | xargs -I {} basename {} | sort 2>/dev/null || echo "")
+
+          NEW_ONLY=$(comm -13 <(echo "$OLD_MIGRATIONS") <(echo "$NEW_MIGRATIONS"))
+          if [ -n "$NEW_ONLY" ]; then
+            echo "⚠️  New migrations detected:"
+            echo "$NEW_ONLY"
+            echo ""
+            echo "Please ensure these migrations:"
+            echo "- Are backwards compatible"
+            echo "- Have been tested on a production-like dataset"
+            echo "- Include rollback procedures if needed"
+          else
+            echo "✅ No new migrations"
+          fi
