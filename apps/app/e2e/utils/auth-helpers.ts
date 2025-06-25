@@ -20,11 +20,9 @@ export async function authenticateTestUser(
     throw new Error(`Authentication failed: ${response.statusText()}`);
   }
 
-  // Navigate to a page to ensure cookies are applied
-  await page.goto('/');
-
-  // Give the browser a moment to process the cookies and any redirects
-  await page.waitForTimeout(500);
+  // Don't navigate anywhere - let the test handle navigation
+  // The session cookie is now set and will be used on subsequent navigations
+  await page.waitForTimeout(100);
 }
 
 /**

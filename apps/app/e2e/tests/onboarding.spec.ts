@@ -17,43 +17,28 @@ test.describe('Onboarding Flow', () => {
   test('new user can complete full onboarding flow', async ({ page }) => {
     const testData = generateTestData();
 
-    // 1. Start at home page
+    // 1. Navigate to auth page
+    await page.goto('/auth');
+
+    // 2. Authenticate the test user (this will set the session cookie)
+    await authenticateTestUser(page, {
+      email: testData.email,
+      name: testData.userName,
+    });
+
+    // 3. Navigate to root which should redirect to setup (since user has no org)
     await page.goto('/');
 
-    // 2. Should redirect to auth page for unauthenticated users
-    await waitForURL(page, '/auth');
+    // 4. Should be redirected to setup page
+    await waitForURL(page, '/setup');
 
-    // 3. Complete authentication using mock auth
-    if (process.env.E2E_USE_REAL_AUTH === 'true') {
-      // Real Google OAuth flow
-      await page.click('button:has-text("Continue with Google")');
-      // Handle OAuth in popup...
-    } else {
-      // Use mock auth endpoint for faster tests
-      await authenticateTestUser(page, {
-        email: testData.email,
-        name: testData.userName,
-      });
-
-      // After authentication, explicitly navigate to setup
-      await page.goto('/setup');
-
-      // Wait for the page to fully load
-      await page.waitForLoadState('domcontentloaded');
-    }
-
-    // 4. Should be on organization setup page
-    await expect(page).toHaveURL('/setup');
+    // 5. Verify we're on the organization setup page
     await expect(page.locator('h1, h2').first()).toContainText(
       /create.*organization|setup.*organization/i,
     );
 
-    // 5. Fill organization details
-    await fillFormField(
-      page,
-      '[name="organizationName"], [name="name"], #organizationName',
-      testData.organizationName,
-    );
+    // 6. Fill organization details
+    await fillFormField(page, 'input[name="organizationName"]', testData.organizationName);
 
     // Look for optional fields
     const hasIndustry = (await page.locator('[name="industry"]').count()) > 0;
@@ -61,17 +46,17 @@ test.describe('Onboarding Flow', () => {
       await page.locator('[name="industry"]').selectOption({ index: 1 });
     }
 
-    // 6. Submit organization creation
+    // 7. Submit organization creation
     await clickAndWait(
       page,
       'button[type="submit"]:has-text("Create"), button:has-text("Continue")',
       { waitForNavigation: true },
     );
 
-    // 7. Should redirect to organization dashboard/frameworks
+    // 8. Should redirect to organization dashboard/frameworks
     await waitForURL(page, /\/org_.*\/(dashboard|frameworks)/);
 
-    // 8. Verify organization was created
+    // 9. Verify organization was created
     await expect(page.locator('text=' + testData.organizationName)).toBeVisible({ timeout: 10000 });
   });
 
@@ -84,21 +69,17 @@ test.describe('Onboarding Flow', () => {
       name: 'Existing User',
     });
 
-    // 1. Navigate to setup with intent
+    // Navigate to setup with intent
     await page.goto('/setup?intent=create-additional');
 
-    // 2. Should be allowed to access setup page
+    // Should be allowed to access setup page
     await expect(page).toHaveURL('/setup?intent=create-additional');
 
-    // 3. Create new organization
-    await fillFormField(
-      page,
-      '[name="organizationName"], [name="name"]',
-      testData.organizationName,
-    );
+    // Create new organization
+    await fillFormField(page, 'input[name="organizationName"]', testData.organizationName);
     await clickAndWait(page, 'button[type="submit"]', { waitForNavigation: true });
 
-    // 4. Should redirect to new organization
+    // Should redirect to new organization
     await waitForURL(page, /\/org_.*\/(dashboard|frameworks)/);
   });
 
@@ -109,6 +90,7 @@ test.describe('Onboarding Flow', () => {
       name: 'No Org User',
     });
 
+    // Navigate to root
     await page.goto('/');
 
     // Should be redirected to setup
@@ -133,7 +115,7 @@ test.describe('Onboarding Flow', () => {
     await expect(page.locator('text=/required|enter.*name/i')).toBeVisible();
 
     // Fill organization name
-    await fillFormField(page, '[name="organizationName"], [name="name"]', 'Test Organization');
+    await fillFormField(page, 'input[name="organizationName"]', 'Test Organization');
 
     // Errors should disappear
     await expect(page.locator('text=/required|enter.*name/i')).not.toBeVisible();
@@ -158,7 +140,7 @@ test.describe('Onboarding Flow', () => {
     await page.goto('/setup');
 
     // Fill and submit form
-    await fillFormField(page, '[name="organizationName"], [name="name"]', 'Existing Org');
+    await fillFormField(page, 'input[name="organizationName"]', 'Existing Org');
     await clickAndWait(page, 'button[type="submit"]');
 
     // Should show error message
@@ -199,7 +181,7 @@ test.describe('Setup Page Components', () => {
   test('organization name input has proper constraints', async ({ page }) => {
     await page.goto('/setup');
 
-    const orgNameInput = page.locator('[name="organizationName"], [name="name"]');
+    const orgNameInput = page.locator('input[name="organizationName"]');
 
     // Check max length
     const maxLength = await orgNameInput.getAttribute('maxlength');
@@ -219,7 +201,7 @@ test.describe('Setup Page Components', () => {
     await page.goto('/setup');
 
     // Check that form is still accessible
-    const orgNameInput = page.locator('[name="organizationName"], [name="name"]');
+    const orgNameInput = page.locator('input[name="organizationName"]');
     await expect(orgNameInput).toBeVisible();
 
     const submitButton = page.locator('button[type="submit"]');
