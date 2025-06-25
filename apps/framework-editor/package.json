@@ -12,7 +12,7 @@
     "react-datasheet-grid": "^4.11.5",
     "react-hook-form": "^7.58.1",
     "react-select": "^5.10.1",
-    "sonner": "^1.7.1",
+    "sonner": "^2.0.5",
     "tippy.js": "^6.3.7",
     "zod": "3.25.67"
   },
