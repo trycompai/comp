@@ -60,8 +60,10 @@ jobs:
       - name: Run quick tests
         run: |
           cd apps/app
-          bun test --run src/middleware.test.ts src/lib/__tests__/
+          bunx vitest run src/middleware.test.ts src/lib/__tests__/
         env:
+          CI: true
+          MOCK_REDIS: true
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
           NEXTAUTH_URL: http://localhost:3000
           NEXTAUTH_SECRET: test-secret-for-ci

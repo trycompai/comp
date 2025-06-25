@@ -1,7 +1,21 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+// Mock auth module first
+vi.mock('@/utils/auth', async () => {
+  const { mockAuth } = await import('@/test-utils/mocks/auth');
+  return { auth: mockAuth };
+});
+
+// Mock db module
+vi.mock('@comp/db', async () => {
+  const { mockDb } = await import('@/test-utils/mocks/db');
+  return { db: mockDb };
+});
+
+// Then import other test utilities
 import { createMockRequest } from '@/test-utils/helpers/middleware';
 import { createMockSession, mockAuth, setupAuthMocks } from '@/test-utils/mocks/auth';
 import { mockDb } from '@/test-utils/mocks/db';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock getSubscriptionData
 const mockGetSubscriptionData = vi.fn();

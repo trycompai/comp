@@ -49,7 +49,15 @@ export const mockDb = {
   },
 };
 
-// Mock the db module
-vi.mock('@comp/db', () => ({
-  db: mockDb,
-}));
+// Note: To use this mock in your test files, add this at the top of your test file:
+//
+// import { vi } from 'vitest';
+//
+// // Mock db module before any other imports
+// vi.mock('@comp/db', async () => {
+//   const { mockDb } = await import('@/test-utils/mocks/db');
+//   return { db: mockDb };
+// });
+//
+// // Then import the mock for use in tests
+// import { mockDb } from '@/test-utils/mocks/db';

@@ -69,8 +69,9 @@ jobs:
             node_modules
             apps/*/node_modules
             packages/*/node_modules
-          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+          key: ${{ runner.os }}-bun-${{ matrix.project }}-${{ hashFiles('**/bun.lock') }}
           restore-keys: |
+            ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
             ${{ runner.os }}-bun-
 
       - name: Cache Next.js build
@@ -78,8 +79,9 @@ jobs:
         with:
           path: |
             apps/app/.next/cache
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/bun.lock') }}-${{ hashFiles('apps/app/**/*.js', 'apps/app/**/*.jsx', 'apps/app/**/*.ts', 'apps/app/**/*.tsx') }}
+          key: ${{ runner.os }}-nextjs-${{ matrix.project }}-${{ hashFiles('**/bun.lock') }}-${{ hashFiles('apps/app/**/*.js', 'apps/app/**/*.jsx', 'apps/app/**/*.ts', 'apps/app/**/*.tsx') }}
           restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/bun.lock') }}-${{ hashFiles('apps/app/**/*.js', 'apps/app/**/*.jsx', 'apps/app/**/*.ts', 'apps/app/**/*.tsx') }}
             ${{ runner.os }}-nextjs-${{ hashFiles('**/bun.lock') }}-
             ${{ runner.os }}-nextjs-
 
@@ -120,10 +122,10 @@ jobs:
           path: |
             ~/.cache/ms-playwright
             ~/Library/Caches/ms-playwright
-          key: ${{ runner.os }}-playwright-browsers-${{ steps.playwright-version.outputs.version }}-${{ steps.playwright-version.outputs.browser_versions }}
+          key: ${{ runner.os }}-playwright-browsers-${{ matrix.project }}-${{ steps.playwright-version.outputs.version }}-${{ steps.playwright-version.outputs.browser_versions }}
           restore-keys: |
+            ${{ runner.os }}-playwright-browsers-${{ steps.playwright-version.outputs.version }}-${{ steps.playwright-version.outputs.browser_versions }}
             ${{ runner.os }}-playwright-browsers-${{ steps.playwright-version.outputs.version }}-
-            ${{ runner.os }}-playwright-browsers-
 
       - name: Install Playwright browsers
         run: |
