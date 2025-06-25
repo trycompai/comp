@@ -1,3 +1,23 @@
+# [1.44.0](https://github.com/trycompai/comp/compare/v1.43.3...v1.44.0) (2025-06-25)
+
+
+### Bug Fixes
+
+* clarify subscription type comments in test-login route ([6d0ebf3](https://github.com/trycompai/comp/commit/6d0ebf3b0cf7a27fe8c230c8acbe7cd1bb00af90))
+* enhance E2E test for simple authentication flow ([7a00333](https://github.com/trycompai/comp/commit/7a00333dff8098dbd2c2a6f7acab36182c527980))
+* improve E2E test for simple authentication flow ([341df0a](https://github.com/trycompai/comp/commit/341df0a3d1ff61676ce2be9c4c743cc9ed8a98eb))
+
+
+### Features
+
+* add GitHub Actions workflow for deploying test results ([7d5fb40](https://github.com/trycompai/comp/commit/7d5fb40924dd1c7e00f9fe6d02a7e2dc34248a9e))
+* add testing framework and middleware tests ([1d022c6](https://github.com/trycompai/comp/commit/1d022c640f92fe45214d92bf073c21d6e4a94259))
+* disable Next button on setup form until current step has valid input ([cffae61](https://github.com/trycompai/comp/commit/cffae6140ed0c28ccd360b9199adc7a177bcd40a))
+* enhance testing infrastructure and add Playwright support ([12509ff](https://github.com/trycompai/comp/commit/12509ff1a2e09911f3b138c4ec8c4ee47b7e27a4))
+* implement E2E test for simple authentication flow ([a68f93f](https://github.com/trycompai/comp/commit/a68f93f1fcaed233b59d737f9331a23a6fe9fcb8))
+* implement MockRedis client for E2E testing in CI ([ed3ed8f](https://github.com/trycompai/comp/commit/ed3ed8f0a729c53f105ff0c96bf6e295165439a1))
+* integrate DotLottie animations into compliance components ([3f8bbed](https://github.com/trycompai/comp/commit/3f8bbedcef3a513b93d8ea8d45770cbfb0df548d))
+
 ## [1.43.3](https://github.com/trycompai/comp/compare/v1.43.2...v1.43.3) (2025-06-25)
 
 
