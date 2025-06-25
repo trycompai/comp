@@ -54,6 +54,8 @@ jobs:
         env:
           SKIP_ENV_VALIDATION: true
           DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
+          AUTH_SECRET: test-secret-for-ci
+          BETTER_AUTH_URL: http://localhost:3000
 
       - name: Bundle Size Check
         run: |
@@ -146,6 +148,8 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
           NEXTAUTH_URL: http://localhost:3000
           NEXTAUTH_SECRET: test-secret-for-ci
+          AUTH_SECRET: test-secret-for-ci
+          BETTER_AUTH_URL: http://localhost:3000
           SKIP_ENV_VALIDATION: true
 
       - name: Run ALL E2E tests
