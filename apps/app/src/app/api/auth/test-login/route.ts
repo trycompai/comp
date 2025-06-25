@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
 
   // Add a timeout wrapper
   const timeoutPromise = new Promise((_, reject) => {
-    setTimeout(() => reject(new Error('Operation timed out after 8 seconds')), 8000);
+    setTimeout(() => reject(new Error('Operation timed out after 30 seconds')), 30000);
   });
 
   try {
