@@ -21,7 +21,7 @@ export type RiskTaskType = {
   };
 };
 
-export function columns(): ColumnDef<RiskTaskType>[] {
+export function useColumns(): ColumnDef<RiskTaskType>[] {
   const { orgId } = useParams<{ orgId: string }>();
 
   return [

@@ -20,7 +20,7 @@ export type PolicyType = {
   updatedAt: string;
 };
 
-export function columns(): ColumnDef<PolicyType>[] {
+export function useColumns(): ColumnDef<PolicyType>[] {
   const { orgId } = useParams<{ orgId: string }>();
 
   return [
