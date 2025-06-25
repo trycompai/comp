@@ -1,3 +1,116 @@
+## [1.43.2](https://github.com/trycompai/comp/compare/v1.43.1...v1.43.2) (2025-06-25)
+
+
+### Bug Fixes
+
+* fix bug with undefined theme ([901fa0c](https://github.com/trycompai/comp/commit/901fa0cff57dce3cb08924dd4efbe9b5e87831eb))
+* fix dark mode rendering for dub referral embed ([f1088d1](https://github.com/trycompai/comp/commit/f1088d1907cca32ececd7e09bb2cbbe52e52945b))
+* use email as fallback for name ([7ba3016](https://github.com/trycompai/comp/commit/7ba3016ab4605d5992849567540d62e17b9b50ea))
+* use taildwind theme instead of hardcoding system ([97d257e](https://github.com/trycompai/comp/commit/97d257e54bb31b8549a0e34afe9715b395c64b36))
+
+## [1.43.1](https://github.com/trycompai/comp/compare/v1.43.0...v1.43.1) (2025-06-24)
+
+
+### Bug Fixes
+
+* update formatting and structure in various files ([939bf07](https://github.com/trycompai/comp/commit/939bf07521131891e9acb731a1d5c15aff56fc78))
+
+# [1.43.0](https://github.com/trycompai/comp/compare/v1.42.0...v1.43.0) (2025-06-24)
+
+
+### Bug Fixes
+
+* correct URL formatting for logo retrieval in getCachedSites function ([87bd99f](https://github.com/trycompai/comp/commit/87bd99fe0426233ff2b8356b05a44e80c4becd79))
+
+
+### Features
+
+* add logo existence check to API endpoint for cached websites ([60d8c95](https://github.com/trycompai/comp/commit/60d8c95318197f17996fca6cf2d1a470373f275f))
+
+# [1.42.0](https://github.com/trycompai/comp/compare/v1.41.1...v1.42.0) (2025-06-24)
+
+
+### Bug Fixes
+
+* add back create fleet lable to create org function ([2f1ca1f](https://github.com/trycompai/comp/commit/2f1ca1f7a6685d56afd72e664cf89e9512eb5aa9))
+* add error handling for null hosts ([c76c0bb](https://github.com/trycompai/comp/commit/c76c0bb3591395def2b05689216e080eb1ef5998))
+* add mdm step to agent instructions ([24b0e83](https://github.com/trycompai/comp/commit/24b0e83b4b577b1025247be94c44c7aa9a20ca21))
+* adjust scale of AnimatedGradientBackground in upgrade page for improved visual consistency ([6f8821e](https://github.com/trycompai/comp/commit/6f8821e7442147722a732bd545d3c290c61c3d35))
+* **booking:** remove unnecessary margin from Phone icon in BookingDialog component ([b39c654](https://github.com/trycompai/comp/commit/b39c6543e283ca9d0b9974ad17c90551bc9f9500))
+* cast stripeCustomerId to string before syncing data ([3887f71](https://github.com/trycompai/comp/commit/3887f71a0cb6c2e1b213b1cc88fb70b32656ebc3))
+* **checkout:** refactor CheckoutCompleteDialog to improve plan type handling ([e91f1f0](https://github.com/trycompai/comp/commit/e91f1f045d8e02fdc6f02b7cf95441b4753e3867))
+* fix issue with s3 url sanitization ([9ab26a0](https://github.com/trycompai/comp/commit/9ab26a0022f213fbd1e796c66ed511d4c3ed75b0))
+* fix issue with sanitizing html ([1acccc6](https://github.com/trycompai/comp/commit/1acccc6ad771c5c067e7449a4efa1023e50e6d00))
+* fix issues with roles while inviting users ([a1e7a7d](https://github.com/trycompai/comp/commit/a1e7a7dba83a0cf513391867549b4ebd2b4ae809))
+* **layout:** adjust navbar height for improved layout consistency ([a61b794](https://github.com/trycompai/comp/commit/a61b794a961425ba1ca9cc557275d4e9357aa7a0))
+* move agent logic to client side instead of server side ([3ac4874](https://github.com/trycompai/comp/commit/3ac48744657717f4b5a9f3b3b395090f1b00d9e9))
+* **RecentAuditLogs:** adjust padding for no activity message display ([98c278a](https://github.com/trycompai/comp/commit/98c278acaf7355dacc8262576de66f71bafb57d4))
+* roadmap link on readme ([66afcbd](https://github.com/trycompai/comp/commit/66afcbde132ddadfdf3e6710463c168912877e6a))
+* start download of installer from the browser ([dde4546](https://github.com/trycompai/comp/commit/dde45460db81e02fe6f610fc93858d7ba6adea6e))
+* try catch fetching the device so there's no error ([20b7f14](https://github.com/trycompai/comp/commit/20b7f14720f2039d9ce8981086b216fe0e16e2df))
+* update Stripe customer ID retrieval to use organization ID instead of user ID ([ce4ef80](https://github.com/trycompai/comp/commit/ce4ef80a0503c55877f3d7374d690ef4a9317bec))
+* update subscription data handling and remove unused checkout components ([3a50c55](https://github.com/trycompai/comp/commit/3a50c559b65bdbfed90294233ca711081dae7e58))
+* validate S3 URL host ([d744f74](https://github.com/trycompai/comp/commit/d744f742d4679c7ea5c8e8649c9ec2d0354cb4b6))
+
+
+### Features
+
+* add animated pricing banner to upgrade page ([0599fcc](https://github.com/trycompai/comp/commit/0599fccc1668feb8407c435da01f6b2bbb0531d8))
+* add API endpoint to fetch cached published websites from the database ([4792901](https://github.com/trycompai/comp/commit/479290160e1ed059afb696d1f3194d496cce472d))
+* add dub referral tab and embed ([7a5e166](https://github.com/trycompai/comp/commit/7a5e166d31d96de227b2300a1c068ba35c0a174d))
+* add rage mode and scroll rotation effects to AnimatedGradientBackground ([bd516f7](https://github.com/trycompai/comp/commit/bd516f7975ae5db7915dc75ea0ff26e13360c247))
+* add SelectionIndicator component and enhance pricing card interactions ([04835c6](https://github.com/trycompai/comp/commit/04835c69ed99b1e9cf112ac886585a5afe0c2058))
+* add support for windows agent ([f18e8a2](https://github.com/trycompai/comp/commit/f18e8a263bf213f23d12eaa324e03d407b7bf5d7))
+* add tables support in policy editor ([9afd1ed](https://github.com/trycompai/comp/commit/9afd1edde0c803d0247ee43250e42f9d35e165c5))
+* add tables support in policy editor ([9822d95](https://github.com/trycompai/comp/commit/9822d952b7164cecc3d0065dbdd6691ae26b4b58))
+* **api:** add server directive to stripe session generation ([1c9f957](https://github.com/trycompai/comp/commit/1c9f957c9245ee2a3f06788d2d5fd1e22f5a4f28))
+* **api:** enhance Stripe checkout session handling and logging ([3eff9b4](https://github.com/trycompai/comp/commit/3eff9b480a0ae150758adff131b177a0b43de940))
+* **auth:** add session hook to set active organization ([6de3ded](https://github.com/trycompai/comp/commit/6de3ded2322efa912b2972003b5dbe5c14887e95))
+* **auth:** implement organization access checks in layout components ([a1d3ad7](https://github.com/trycompai/comp/commit/a1d3ad7f787ff9165d948f9cc4e36ed99e012cc9))
+* **auth:** refactor authentication page and components for improved user experience ([fb4fa7d](https://github.com/trycompai/comp/commit/fb4fa7d2e9c1b6dd96862eeb724a297a8a9d713c))
+* **billing:** enhance subscription management and UI components ([1cf32c2](https://github.com/trycompai/comp/commit/1cf32c29f9105fa1eb51f3288f680629468f4bab))
+* **checkout:** add CheckoutCompleteDialog component and integrate confetti animation ([4bd6018](https://github.com/trycompai/comp/commit/4bd6018e3e5b18ecd4fa2aac32775f5cf04c0a6a))
+* **checkout:** enhance CheckoutCompleteDialog with updated features and descriptions ([2182c9e](https://github.com/trycompai/comp/commit/2182c9e1e44df54fbf951fb00d7db546aa0f7ebf))
+* **database:** add nanoid function for generating URL-safe unique IDs ([c3608e1](https://github.com/trycompai/comp/commit/c3608e184c15ccf2222d6ab1557b26de589749fa))
+* enhance AnimatedGradientBackground with pulse and glow effects ([7bd80c0](https://github.com/trycompai/comp/commit/7bd80c06406bed1d58ae8121c3c67a7340da9855))
+* enhance onboarding step input with website field ([7062eb3](https://github.com/trycompai/comp/commit/7062eb3c35a7cf5b28afcc9784d60183fa7e9b08))
+* enhance OnboardingStepInput and SelectPills components ([0079556](https://github.com/trycompai/comp/commit/0079556862b948c364e379381c3b61bee735e1b1))
+* enhance Stripe checkout session handling by validating organization membership and managing customer records ([3901d8d](https://github.com/trycompai/comp/commit/3901d8d59b78c57d0ccedde74ad8ceebb2edd5dd))
+* enhance upgrade page with logo marquee and review widget ([a8c6ff1](https://github.com/trycompai/comp/commit/a8c6ff1702bf86f63e18167bc1bf9efee69ad447))
+* **env:** add new Fleet-related environment variables to configuration ([99eb8b1](https://github.com/trycompai/comp/commit/99eb8b1c6be16607872184320ec61cd7e7c1d565))
+* **env:** add optional Stripe subscription price ID to environment variables ([27a2d3d](https://github.com/trycompai/comp/commit/27a2d3d6a75dfffd2c870887d16159ea35acca61))
+* **env:** add Stripe subscription price ID to environment configuration ([f3da9b6](https://github.com/trycompai/comp/commit/f3da9b69a38207ecf314bdd44531b6714119f929))
+* implement middleware for domain-based routing and organization handling ([7be7b9f](https://github.com/trycompai/comp/commit/7be7b9f395c89a7a680ded944373f5157bbb7cf0))
+* implement self-serve subscription option and update pricing details ([69bd082](https://github.com/trycompai/comp/commit/69bd0820204b0c68a2adf0ddbec5c858f5954cb0))
+* improve scroll handling in AnimatedGradientBackground ([cf98196](https://github.com/trycompai/comp/commit/cf98196b57a1c1c88bf2e1b8aeee187e26a7e9eb))
+* integrate Senja Review Widget into pricing cards ([24ecd81](https://github.com/trycompai/comp/commit/24ecd8188bca7c3d509de12dcb29c7662dff63c1))
+* **invite:** implement invitation handling and redirection ([4dccbbc](https://github.com/trycompai/comp/commit/4dccbbcef21eabde1183917d25ab9d40f442c92f))
+* **layout:** wrap main content in Suspense for improved loading handling ([29c7cf2](https://github.com/trycompai/comp/commit/29c7cf27c5dc29c50541efeba40dc67a70993a89))
+* **login:** add option to use another sign-in method after sending magic link ([957c25f](https://github.com/trycompai/comp/commit/957c25f5244bc1bb9d44ea3581b57496b06431cb))
+* **metadata:** add generateMetadata function for Controls, Tasks, and Cloud Tests pages ([221106c](https://github.com/trycompai/comp/commit/221106c388dfad98bf16f79ed339f14fd6640c1f))
+* **middleware:** allow unauthenticated access to invite routes ([04c64d8](https://github.com/trycompai/comp/commit/04c64d86e2d14e60d1e03f6ffbe413f3d88ebc9d))
+* **middleware:** handle old invite route format for direct visits ([8a47db0](https://github.com/trycompai/comp/commit/8a47db04fcdd628cffc856167df1fdff40ac62dd))
+* **middleware:** implement authentication middleware for route protection ([514e007](https://github.com/trycompai/comp/commit/514e00700d674fdc0b0be2300c7c156cd824392e))
+* **middleware:** implement organization session handling in middleware ([5bd53b9](https://github.com/trycompai/comp/commit/5bd53b9d4732ef4171b9baf244655df7fccb8c4e))
+* **policy:** implement content sanitization to remove unsupported marks ([61bdce4](https://github.com/trycompai/comp/commit/61bdce476a69e9fdbc78d3ed33a5ffc0554a2907))
+* **pricing:** add '12-month minimum term' to paid features list in PricingCards component ([1a45ac4](https://github.com/trycompai/comp/commit/1a45ac46c2c48bed96a3571a41cb68f738c0c728))
+* **pricing:** add BookingDialog component to PricingCards for scheduling calls ([63a68b3](https://github.com/trycompai/comp/commit/63a68b35ef4fac2d4db71be7260633f7f521efef))
+* redo portal tasks to be cleaner ([806f07f](https://github.com/trycompai/comp/commit/806f07fe1c5a01b4aa33addc07e03e3ed5a04ad4))
+* refactor subscription handling and introduce self-serve plan ([9b6adfc](https://github.com/trycompai/comp/commit/9b6adfc0cc525d4b642df3dbc6808d8463ce33f9))
+* **setup:** add SetupHeader component to enhance user experience ([3cadc5b](https://github.com/trycompai/comp/commit/3cadc5ba5fa02648cd5122e4e3a64fd341b29ff2))
+* **setup:** enhance framework selection loading state management ([6106974](https://github.com/trycompai/comp/commit/6106974c259150055bcee7f855cd84f56dae3b42))
+* **setup:** enhance onboarding process and organization setup ([b1fdabf](https://github.com/trycompai/comp/commit/b1fdabfe02fda140455b275d3e3afca9b538754f))
+* **setup:** enhance organization setup and upgrade flow ([e1d57d4](https://github.com/trycompai/comp/commit/e1d57d42dfa7e66e439328f5c26bacd26d1968bb))
+* **setup:** implement organization creation and onboarding enhancements ([229744b](https://github.com/trycompai/comp/commit/229744bbaa9c1757102ea48882c5cba51e7aa7c2))
+* **setup:** implement organization setup flow and subscription checks ([b94e7f3](https://github.com/trycompai/comp/commit/b94e7f348035aacdc6a1df613fb31d018ab474f6))
+* **stripe:** add new Stripe integration features ([3749e78](https://github.com/trycompai/comp/commit/3749e7872c6b455d617b7a3c9c80760fce953823))
+* **stripe:** define subscription data type for Stripe synchronization ([5da6c67](https://github.com/trycompai/comp/commit/5da6c670492de5145957fb08d2f932096c6701df))
+* **stripe:** implement subscription data retrieval and cache management ([47815bc](https://github.com/trycompai/comp/commit/47815bc598eeed24bf68e7cf8b16227b5c76a080))
+* **tests:** add layout, loading, and page components for cloud compliance tests ([9c14c28](https://github.com/trycompai/comp/commit/9c14c28ffa1eef9b27fa99f9c381112f1f08600c))
+* update environment variables for Stripe pricing plans ([c61922f](https://github.com/trycompai/comp/commit/c61922fd1d5393116a7ffef4507809accde07e7f))
+* update OrganizationSetupForm and routing logic ([f0c14b9](https://github.com/trycompai/comp/commit/f0c14b9e11a1d55dc949f4ec2932f0de0cce2ff0))
+* update pricing cards with new features and subscription handling ([3753cc5](https://github.com/trycompai/comp/commit/3753cc5510938558b7177cb05c729f2a1195fd45))
+
 ## [1.41.1](https://github.com/trycompai/comp/compare/v1.41.0...v1.41.1) (2025-06-12)
 
 ### Bug Fixes
