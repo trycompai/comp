@@ -12,3 +12,5 @@ prisma/
 # Generated Prisma client files
 src/index.js
 src/types.js 
+packages/db/src/**
+packages/db/prisma/**

@@ -1,6 +1,7 @@
 'use client';
 
 import type { Vendor } from '@comp/db/types';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
 import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Input } from '@comp/ui/input';
@@ -54,53 +55,66 @@ export function UpdateTitleAndDescriptionForm({ vendor }: { vendor: Vendor }) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{'Name'}</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  autoFocus
-                  className="mt-3"
-                  placeholder={'A short, descriptive name for the vendor.'}
-                  autoCorrect="off"
+      <div className="scrollbar-hide h-[calc(100vh-250px)] overflow-auto">
+        <Accordion type="multiple" defaultValue={['vendor']}>
+          <AccordionItem value="vendor">
+            <AccordionTrigger>{'Vendor'}</AccordionTrigger>
+            <AccordionContent>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{'Name'}</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          autoFocus
+                          className="mt-3"
+                          placeholder={'A short, descriptive name for the vendor.'}
+                          autoCorrect="off"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{'Description'}</FormLabel>
-              <FormControl>
-                <Textarea
-                  {...field}
-                  className="mt-3 min-h-[80px]"
-                  placeholder={'A detailed description of the vendor and its services.'}
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{'Description'}</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          {...field}
+                          className="mt-3 min-h-[80px]"
+                          placeholder={'A detailed description of the vendor and its services.'}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <div className="mt-8 flex justify-end">
-          <Button type="submit" variant="default" disabled={updateVendor.status === 'executing'}>
-            {updateVendor.status === 'executing' ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              'Save'
-            )}
-          </Button>
-        </div>
-      </form>
+                <div className="mt-8 flex justify-end">
+                  <Button
+                    type="submit"
+                    variant="default"
+                    disabled={updateVendor.status === 'executing'}
+                  >
+                    {updateVendor.status === 'executing' ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      'Save'
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </div>
     </Form>
   );
 }
