@@ -104,29 +104,37 @@ jobs:
           echo "Playwright version: $PLAYWRIGHT_VERSION"
           echo "version=$PLAYWRIGHT_VERSION" >> $GITHUB_OUTPUT
 
+          # Also get Playwright's internal browser versions for better cache key
+          BROWSER_VERSIONS=$(bunx playwright --version | head -1 || echo "unknown")
+          echo "Browser versions: $BROWSER_VERSIONS"
+          echo "browser_versions=$BROWSER_VERSIONS" >> $GITHUB_OUTPUT
+
       - name: Cache Playwright browsers
         uses: actions/cache@v4
         id: playwright-cache
         with:
           path: |
             ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
+            ~/Library/Caches/ms-playwright
+          key: ${{ runner.os }}-playwright-browsers-${{ steps.playwright-version.outputs.version }}-${{ steps.playwright-version.outputs.browser_versions }}
           restore-keys: |
-            ${{ runner.os }}-playwright-
+            ${{ runner.os }}-playwright-browsers-${{ steps.playwright-version.outputs.version }}-
+            ${{ runner.os }}-playwright-browsers-
 
       - name: Install Playwright browsers
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: |
           cd apps/app
-          # Install all browsers if cache miss
-          bunx playwright install --with-deps
+          # Always run install - Playwright will skip downloading browsers that already exist
+          # This is the safest approach to ensure browsers are properly installed
+          echo "Installing Playwright browsers (will skip if already cached)..."
+          bunx playwright install chromium firefox webkit
 
       - name: Install Playwright system dependencies
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: |
           cd apps/app
-          # Only install system dependencies if cache hit (browsers already cached)
-          bunx playwright install-deps
+          # Install system dependencies separately - this is always needed on Ubuntu runners
+          echo "Installing system dependencies..."
+          bunx playwright install-deps chromium firefox webkit
 
       - name: Verify Playwright installation
         run: |
@@ -333,6 +341,9 @@ jobs:
             ls -la ~/.cache/ms-playwright
             echo "Total size: $(du -sh ~/.cache/ms-playwright | cut -f1)"
             echo "Number of files: $(find ~/.cache/ms-playwright -type f | wc -l)"
+            # List browser directories to ensure they're cached
+            echo "Browser directories:"
+            ls -la ~/.cache/ms-playwright/*/
           else
             echo "Cache directory not found!"
           fi

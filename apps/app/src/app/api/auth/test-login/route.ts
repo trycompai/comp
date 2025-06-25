@@ -92,6 +92,7 @@ async function handleLogin(request: NextRequest) {
       await db.organization.create({
         data: {
           name: `Test Org ${Date.now()}`,
+          subscriptionType: 'NONE',
           members: {
             create: {
               userId: user.id,
@@ -139,7 +140,7 @@ async function handleLogin(request: NextRequest) {
       data: {
         id: `org_${Date.now()}`,
         name: `Test Org ${Date.now()}`,
-        subscriptionType: 'SELF_SERVE', // Set self-serve subscription to avoid upgrade redirect
+        subscriptionType: 'NONE', // Set self-serve subscription to avoid upgrade redirect
         members: {
           create: {
             id: `mem_${Date.now()}`,
