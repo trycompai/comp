@@ -95,30 +95,38 @@ jobs:
           cd packages/db
           bunx prisma generate
 
+      - name: Get Playwright version
+        id: playwright-version
+        run: |
+          cd apps/app
+          # Get the exact version from package.json
+          PLAYWRIGHT_VERSION=$(node -e "console.log(require('./package.json').devDependencies['@playwright/test'] || require('./package.json').dependencies['@playwright/test'])")
+          echo "Playwright version: $PLAYWRIGHT_VERSION"
+          echo "version=$PLAYWRIGHT_VERSION" >> $GITHUB_OUTPUT
+
       - name: Cache Playwright browsers
         uses: actions/cache@v4
         id: playwright-cache
         with:
           path: |
             ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ matrix.project }}-${{ hashFiles('**/package-lock.json', '**/bun.lockb') }}
+          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
           restore-keys: |
-            ${{ runner.os }}-playwright-${{ matrix.project }}-
             ${{ runner.os }}-playwright-
 
       - name: Install Playwright browsers
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: |
           cd apps/app
-          # Use --with-deps to install both browser and system dependencies
-          bunx playwright install --with-deps ${{ matrix.project }}
+          # Install all browsers if cache miss
+          bunx playwright install --with-deps
 
-      - name: Install Playwright dependencies
+      - name: Install Playwright system dependencies
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: |
           cd apps/app
-          # Still need to install system dependencies even if browsers are cached
-          bunx playwright install-deps ${{ matrix.project }}
+          # Only install system dependencies if cache hit (browsers already cached)
+          bunx playwright install-deps
 
       - name: Verify Playwright installation
         run: |
@@ -316,114 +324,6 @@ jobs:
             apps/app/test-results/**/*.webm
           retention-days: 7
 
-      - name: Post test results to PR
-        if: failure() && github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const path = require('path');
-
-            // Read test results if available
-            let testSummary = '## ❌ E2E Tests Failed\n\n';
-            testSummary += `**Project:** ${{ matrix.project }}\n\n`;
-
-            // Add server logs snippet
-            const serverLogPath = 'apps/app/server.log';
-            if (fs.existsSync(serverLogPath)) {
-              const logs = fs.readFileSync(serverLogPath, 'utf8');
-              const lines = logs.split('\n');
-              const relevantLogs = lines.slice(-50).join('\n');
-              
-              // Extract key errors
-              const errors = lines.filter(line => 
-                line.includes('Error:') || 
-                line.includes('TEST-LOGIN') ||
-                line.includes('MIDDLEWARE') ||
-                line.includes('SUBSCRIPTION')
-              ).slice(-10);
-              
-              if (errors.length > 0) {
-                testSummary += '### Key Errors:\n```\n' + errors.join('\n') + '\n```\n\n';
-              }
-              
-              testSummary += '<details>\n<summary>📋 Server Logs (last 50 lines)</summary>\n\n```\n';
-              testSummary += relevantLogs;
-              testSummary += '\n```\n</details>\n\n';
-            }
-
-            // Add test output summary
-            testSummary += `### Test Results\n`;
-            testSummary += `- **Status**: Failed\n`;
-            testSummary += `- **Browser**: ${{ matrix.project }}\n`;
-            testSummary += `- **Run ID**: ${{ github.run_id }}\n\n`;
-
-            // Add direct links to artifacts
-            testSummary += `### 📦 Test Artifacts\n`;
-            testSummary += `- [View Test Results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\n`;
-            testSummary += `- [Download Screenshots & Videos](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts)\n\n`;
-
-            testSummary += `💡 **Tip**: Click the artifacts links above to download screenshots and videos of the test failures.\n`;
-
-            // Create or update comment
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-
-            const botComment = comments.find(comment => 
-              comment.user.type === 'Bot' && 
-              comment.body.includes('E2E Tests Failed') &&
-              comment.body.includes(`Project:** ${{ matrix.project }}`)
-            );
-
-            if (botComment) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: botComment.id,
-                body: testSummary
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body: testSummary
-              });
-            }
-
-      - name: Post success comment to PR
-        if: success() && github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            // Check if there was a previous failure comment
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-
-            const botComment = comments.find(comment => 
-              comment.user.type === 'Bot' && 
-              comment.body.includes('E2E Tests Failed') &&
-              comment.body.includes(`Project:** ${{ matrix.project }}`)
-            );
-
-            if (botComment) {
-              // Update the comment to show success
-              const successMessage = `## ✅ E2E Tests Passed\n\n**Project:** ${{ matrix.project }}\n\nAll E2E tests are now passing! 🎉`;
-              
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: botComment.id,
-                body: successMessage
-              });
-            }
-
       - name: Verify cache before save
         if: always()
         run: |
@@ -437,3 +337,122 @@ jobs:
             echo "Cache directory not found!"
           fi
           echo "=== End cache verification ==="
+
+  # Job to post consolidated test results
+  post-results:
+    name: Post Test Results to PR
+    runs-on: ubuntu-latest
+    needs: e2e-tests
+    if: always() && github.event_name == 'pull_request'
+
+    steps:
+      - name: Post consolidated results
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Get all job results
+            const jobs = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId,
+            });
+
+            // Filter for e2e-test jobs
+            const testJobs = jobs.data.jobs.filter(job => 
+              job.name.startsWith('E2E Tests -')
+            );
+
+            // Get commit info
+            const commitSha = context.sha.substring(0, 7);
+            const commitMessage = context.payload.head_commit?.message?.split('\n')[0] || 'No message';
+            const runNumber = context.runNumber;
+            const runId = context.runId;
+            const timestamp = new Date().toISOString();
+
+            // Determine overall status
+            const allPassed = testJobs.every(job => job.conclusion === 'success');
+            const someFailed = testJobs.some(job => job.conclusion === 'failure');
+            const status = allPassed ? '✅' : '🔴';
+            const statusText = allPassed ? 'All Passed' : 'Failed';
+
+            // Build summary
+            let testSummary = `## ${status} E2E Test Results\n\n`;
+
+            // Add current run info
+            testSummary += `### Latest Run\n`;
+            testSummary += `- **Status:** ${status} ${statusText}\n`;
+            testSummary += `- **Commit:** \`${commitSha}\` - ${commitMessage}\n`;
+            testSummary += `- **Run:** [#${runNumber}](https://github.com/${{ github.repository }}/actions/runs/${runId})\n`;
+            testSummary += `- **Time:** ${timestamp}\n\n`;
+
+            // Add browser results
+            testSummary += `### Browser Results\n`;
+            for (const job of testJobs) {
+              const browser = job.name.split(' - ')[1];
+              const jobStatus = job.conclusion === 'success' ? '✅' : job.conclusion === 'failure' ? '❌' : '⏭️';
+              const jobUrl = job.html_url;
+              testSummary += `- **${browser}:** ${jobStatus} - [View logs](${jobUrl})\n`;
+            }
+            testSummary += '\n';
+
+            // Add artifacts links if tests failed
+            if (someFailed) {
+              testSummary += `### 📦 Test Artifacts\n`;
+              testSummary += `- [View All Results](https://github.com/${{ github.repository }}/actions/runs/${runId})\n`;
+              testSummary += `- [Download Screenshots & Videos](https://github.com/${{ github.repository }}/actions/runs/${runId}#artifacts)\n\n`;
+              
+              testSummary += `💡 **Tip**: Download artifacts to see screenshots and videos of failures.\n\n`;
+            } else {
+              testSummary += `All E2E tests are passing! 🎉\n\n`;
+            }
+
+            // Find existing E2E comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment => 
+              comment.user?.type === 'Bot' && 
+              comment.body?.includes('E2E Test Results')
+            );
+
+            // Build history entry
+            const historyEntry = `- \`${commitSha}\` ${status} - Chromium: ${testJobs.find(j => j.name.includes('chromium'))?.conclusion === 'success' ? '✅' : '❌'} | Firefox: ${testJobs.find(j => j.name.includes('firefox'))?.conclusion === 'success' ? '✅' : '❌'} | WebKit: ${testJobs.find(j => j.name.includes('webkit'))?.conclusion === 'success' ? '✅' : '❌'} - [Run #${runNumber}](https://github.com/${{ github.repository }}/actions/runs/${runId})`;
+
+            if (botComment) {
+              // Extract and update history
+              const historyMatch = botComment.body.match(/<details>[\s\S]*?<summary>📜 Test History[\s\S]*?<\/details>/);
+              let history = historyEntry;
+              
+              if (historyMatch) {
+                const historyContent = historyMatch[0].match(/<details>[\s\S]*?<summary>📜 Test History[\s\S]*?\n\n([\s\S]*?)\n\n<\/details>/);
+                if (historyContent && historyContent[1]) {
+                  const entries = historyContent[1].split('\n').filter(line => line.trim());
+                  entries.unshift(historyEntry);
+                  history = entries.slice(0, 10).join('\n');
+                }
+              }
+              
+              // Add history section
+              testSummary += `<details>\n<summary>📜 Test History (last 10 runs)</summary>\n\n${history}\n\n</details>`;
+              
+              // Update comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: testSummary
+              });
+            } else {
+              // Create new comment with history
+              testSummary += `<details>\n<summary>📜 Test History (last 10 runs)</summary>\n\n${historyEntry}\n\n</details>`;
+              
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: testSummary
+              });
+            }
