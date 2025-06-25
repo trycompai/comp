@@ -25,9 +25,9 @@ async function createPublicToken() {
   const { publicToken } = await dub.embedTokens.referrals({
     partner: {
       tenantId: session.user.id,
-      name: session.user.name || '',
-      email: session.user.email || '',
-      image: session.user.image || '',
+      name: session.user.name || session.user.email.split('@')[0],
+      email: session.user.email,
+      image: session.user.image,
     },
   });
 
