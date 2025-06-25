@@ -43,7 +43,7 @@ jobs:
             node_modules
             apps/*/node_modules
             packages/*/node_modules
-          key: ${{ runner.os }}-bun-release-${{ hashFiles('**/bun.lockb') }}
+          key: ${{ runner.os }}-bun-release-${{ hashFiles('**/bun.lock') }}
           restore-keys: |
             ${{ runner.os }}-bun-release-
             ${{ runner.os }}-bun-

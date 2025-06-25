@@ -36,7 +36,7 @@ jobs:
             node_modules
             apps/*/node_modules
             packages/*/node_modules
-          key: ${{ runner.os }}-bun-quick-${{ hashFiles('**/bun.lockb') }}
+          key: ${{ runner.os }}-bun-quick-${{ hashFiles('**/bun.lock') }}
           restore-keys: |
             ${{ runner.os }}-bun-quick-
             ${{ runner.os }}-bun-
@@ -46,9 +46,9 @@ jobs:
         with:
           path: |
             apps/app/.next/cache
-          key: ${{ runner.os }}-nextjs-quick-${{ hashFiles('**/bun.lockb') }}-${{ hashFiles('apps/app/**/*.js', 'apps/app/**/*.jsx', 'apps/app/**/*.ts', 'apps/app/**/*.tsx') }}
+          key: ${{ runner.os }}-nextjs-quick-${{ hashFiles('**/bun.lock') }}-${{ hashFiles('apps/app/**/*.js', 'apps/app/**/*.jsx', 'apps/app/**/*.ts', 'apps/app/**/*.tsx') }}
           restore-keys: |
-            ${{ runner.os }}-nextjs-quick-${{ hashFiles('**/bun.lockb') }}-
+            ${{ runner.os }}-nextjs-quick-${{ hashFiles('**/bun.lock') }}-
             ${{ runner.os }}-nextjs-quick-
             ${{ runner.os }}-nextjs-
 
