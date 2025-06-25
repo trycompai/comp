@@ -20,6 +20,24 @@ function isSubscriptionExempt(pathname: string): boolean {
 }
 
 export async function middleware(request: NextRequest) {
+  // E2E Test Mode: Check for test auth header
+  if (process.env.E2E_TEST_MODE === 'true') {
+    const testAuthHeader = request.headers.get('x-e2e-test-auth');
+    if (testAuthHeader) {
+      try {
+        const testAuth = JSON.parse(testAuthHeader);
+        if (testAuth.bypass) {
+          // Allow the request to proceed without auth checks
+          const response = NextResponse.next();
+          response.headers.set('x-pathname', request.nextUrl.pathname);
+          return response;
+        }
+      } catch (e) {
+        // Invalid test auth header, continue with normal auth flow
+      }
+    }
+  }
+
   const session = await auth.api.getSession({
     headers: await headers(),
   });

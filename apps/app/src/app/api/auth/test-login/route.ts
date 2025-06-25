@@ -1,65 +1,119 @@
+import { auth } from '@/utils/auth';
 import { db } from '@comp/db';
+import { Departments } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
 
 // This endpoint is ONLY for E2E tests - never enable in production!
 export async function POST(request: NextRequest) {
-  // Only allow in test environment
-  if (process.env.NODE_ENV === 'production' || !process.env.E2E_TEST_MODE) {
+  // Only allow in E2E test mode
+  if (process.env.E2E_TEST_MODE !== 'true') {
     return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
   }
 
   try {
     const { email, name } = await request.json();
+    const testPassword = 'Test123456!'; // Use a stronger test password
 
-    if (!email) {
-      return NextResponse.json({ error: 'Email required' }, { status: 400 });
-    }
-
-    // Find or create test user
-    let user = await db.user.findUnique({
+    // Check if user already exists
+    const existingUser = await db.user.findUnique({
       where: { email },
     });
 
-    if (!user) {
-      user = await db.user.create({
-        data: {
+    let signInResponse;
+
+    if (!existingUser) {
+      // First, sign up the user using Better Auth's signUpEmail method
+      const signUpResponse = await auth.api.signUpEmail({
+        body: {
           email,
-          name: name || 'Test User',
-          emailVerified: true,
+          password: testPassword,
+          name: name || `Test User ${Date.now()}`,
         },
+        headers: request.headers, // Pass the request headers
+        asResponse: true,
       });
+
+      if (!signUpResponse.ok) {
+        const errorData = await signUpResponse.json();
+        return NextResponse.json(
+          { error: 'Failed to sign up', details: errorData },
+          { status: 400 },
+        );
+      }
+
+      // Mark the user as verified (for test purposes)
+      await db.user.update({
+        where: { email },
+        data: { emailVerified: true },
+      });
+
+      // Get the user to create organization
+      const user = await db.user.findUnique({
+        where: { email },
+      });
+
+      if (user) {
+        // Create a test organization for the user
+        await db.organization.create({
+          data: {
+            name: `Test Org ${Date.now()}`,
+            members: {
+              create: {
+                userId: user.id,
+                role: 'owner',
+                department: Departments.hr,
+                isActive: true,
+                fleetDmLabelId: Math.floor(Math.random() * 10000),
+              },
+            },
+          },
+        });
+      }
+
+      // Sign in response is already in signUpResponse if autoSignIn is true
+      signInResponse = signUpResponse;
+    } else {
+      // User exists, just sign them in
+      signInResponse = await auth.api.signInEmail({
+        body: {
+          email,
+          password: testPassword,
+        },
+        headers: request.headers, // Pass the request headers
+        asResponse: true,
+      });
+
+      if (!signInResponse.ok) {
+        const errorData = await signInResponse.json();
+        return NextResponse.json(
+          { error: 'Failed to sign in', details: errorData },
+          { status: 400 },
+        );
+      }
     }
 
-    // Create a session directly using better-auth's internal session management
-    // This is only for testing - in production you'd use proper auth methods
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
+    // Get the response data
+    const responseData = await signInResponse.json();
 
-    const session = await db.session.create({
-      data: {
-        userId: user.id,
-        expiresAt,
-        token: crypto.randomUUID(),
-        userAgent: request.headers.get('user-agent') || 'test-agent',
-        ipAddress: request.headers.get('x-forwarded-for') || '127.0.0.1',
-      },
+    // Create a new response with the data
+    const response = NextResponse.json({
+      success: true,
+      user: responseData.user,
+      session: responseData.session,
     });
 
-    // Set the session cookie using better-auth's cookie configuration
-    const response = NextResponse.json({ success: true, user, session });
-
-    // Use better-auth's default cookie name
-    response.cookies.set('better-auth.session_token', session.token, {
-      httpOnly: true,
-      secure: false, // Test environment
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-      path: '/',
+    // Copy all cookies from Better Auth's response to our response
+    const cookies = signInResponse.headers.getSetCookie();
+    cookies.forEach((cookie) => {
+      response.headers.append('Set-Cookie', cookie);
     });
 
     return response;
   } catch (error) {
     console.error('Test login error:', error);
-    return NextResponse.json({ error: 'Failed to create test session' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to create test session', details: error },
+      { status: 500 },
+    );
   }
 }

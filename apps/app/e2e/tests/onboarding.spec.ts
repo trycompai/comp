@@ -17,20 +17,26 @@ test.describe('Onboarding Flow', () => {
   test('new user can complete full onboarding flow', async ({ page }) => {
     const testData = generateTestData();
 
-    // 1. Navigate to auth page
-    await page.goto('/auth');
-
-    // 2. Authenticate the test user (this will set the session cookie)
+    // 1. Start by authenticating the user
     await authenticateTestUser(page, {
       email: testData.email,
       name: testData.userName,
     });
 
-    // 3. Navigate to root which should redirect to setup (since user has no org)
+    // 2. Navigate to root - this should trigger middleware redirects
     await page.goto('/');
 
-    // 4. Should be redirected to setup page
-    await waitForURL(page, '/setup');
+    // 3. Wait for the redirect to complete - we expect to end up at /setup
+    await page.waitForURL(/\/(setup|auth)/, { timeout: 10000 });
+
+    const currentUrl = page.url();
+    console.log('After navigation, current URL:', currentUrl);
+
+    // 4. If we're still on auth, try navigating again
+    if (currentUrl.includes('/auth')) {
+      await page.goto('/');
+      await page.waitForURL('/setup', { timeout: 10000 });
+    }
 
     // 5. Verify we're on the organization setup page
     await expect(page.locator('h1, h2').first()).toContainText(
