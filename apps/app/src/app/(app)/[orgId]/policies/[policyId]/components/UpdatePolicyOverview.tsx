@@ -40,6 +40,9 @@ export function UpdatePolicyOverview({
   // Track selected status
   const [selectedStatus, setSelectedStatus] = useState<PolicyStatus>(policy.status);
 
+  // Track selected assignee
+  const [selectedAssigneeId, setSelectedAssigneeId] = useState<string | null>(policy.assigneeId);
+
   // Date picker state - UI only
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [tempDate, setTempDate] = useState<Date | undefined>(undefined);
@@ -99,7 +102,7 @@ export function UpdatePolicyOverview({
     // Get form data directly from the form element
     const formData = new FormData(e.currentTarget);
     const status = formData.get('status') as PolicyStatus;
-    const assigneeId = (formData.get('assigneeId') as string) || null;
+    const assigneeId = selectedAssigneeId; // Use state instead of form data
     const department = formData.get('department') as Departments;
     const reviewFrequency = formData.get('review_frequency') as Frequency;
     const isRequiredToSign =
@@ -147,7 +150,7 @@ export function UpdatePolicyOverview({
     // Get form data directly from the DOM
     const form = document.getElementById('policy-form') as HTMLFormElement;
     const formData = new FormData(form);
-    const assigneeId = (formData.get('assigneeId') as string) || null;
+    const assigneeId = selectedAssigneeId; // Use state instead of form data
     const department = formData.get('department') as Departments;
     const reviewFrequency = formData.get('review_frequency') as Frequency;
     const isRequiredToSign =
@@ -176,7 +179,10 @@ export function UpdatePolicyOverview({
 
   // Determine button text based on status and form interaction
   let buttonText = 'Save';
-  if (policy.status === 'draft' || (policy.status === 'published' && hasFormChanges)) {
+  if (
+    (policy.status === 'draft' && selectedStatus !== 'draft') ||
+    (policy.status === 'published' && hasFormChanges)
+  ) {
     buttonText = 'Submit for Approval';
   }
 
@@ -270,22 +276,13 @@ export function UpdatePolicyOverview({
             <label htmlFor="assigneeId" className="text-sm font-medium">
               Assignee
             </label>
-            {/* Hidden input for form submission */}
-            <input
-              type="hidden"
-              name="assigneeId"
-              id="assigneeId"
-              value={policy.assigneeId || ''}
-            />
             <SelectAssignee
               assignees={assignees}
               onAssigneeChange={(id) => {
-                // Update the hidden input value
-                const input = document.getElementById('assigneeId') as HTMLInputElement;
-                if (input) input.value = id || '';
+                setSelectedAssigneeId(id);
                 handleFormChange();
               }}
-              assigneeId={policy.assigneeId || ''}
+              assigneeId={selectedAssigneeId || ''}
               disabled={fieldsDisabled}
               withTitle={false}
             />
