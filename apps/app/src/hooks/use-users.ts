@@ -3,7 +3,7 @@ import { db } from '@comp/db';
 import { headers } from 'next/headers';
 import { cache } from 'react';
 
-export const useUsers = cache(async () => {
+export const getUsers = cache(async () => {
   const session = await getServersideSession({
     headers: await headers(),
   });

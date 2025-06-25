@@ -1,0 +1,553 @@
+name: E2E Tests
+
+on:
+  pull_request: # Runs BEFORE merge during PR review
+    branches:
+      - main # Feature branches -> main
+      - release # main -> release (production)
+    paths:
+      - 'apps/**'
+      - 'packages/**'
+      - '!**/*.md'
+      - '.github/workflows/e2e-tests.yml'
+  push: # Also runs AFTER merge to main/release
+    branches:
+      - main
+      - release
+  workflow_dispatch: # Allow manual triggering
+
+permissions:
+  contents: read
+  actions: write # Needed for uploading artifacts
+  issues: write # Needed for PR comments
+  pull-requests: write # Needed for PR comments
+
+env:
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+  TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+
+jobs:
+  e2e-tests:
+    name: E2E Tests - ${{ matrix.project }}
+    runs-on: ubuntu-latest-custom
+    timeout-minutes: 20
+
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [chromium, firefox, webkit]
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+          key: ${{ runner.os }}-bun-${{ matrix.project }}-${{ hashFiles('**/bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+            ${{ runner.os }}-bun-
+
+      - name: Cache Next.js build
+        uses: actions/cache@v4
+        with:
+          path: |
+            apps/app/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ matrix.project }}-${{ hashFiles('**/bun.lock') }}-${{ hashFiles('apps/app/**/*.js', 'apps/app/**/*.jsx', 'apps/app/**/*.ts', 'apps/app/**/*.tsx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/bun.lock') }}-${{ hashFiles('apps/app/**/*.js', 'apps/app/**/*.jsx', 'apps/app/**/*.ts', 'apps/app/**/*.tsx') }}
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/bun.lock') }}-
+            ${{ runner.os }}-nextjs-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Setup database
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+        run: |
+          cd packages/db
+          bunx prisma migrate deploy
+          bunx prisma db seed || true # Allow seed to fail
+
+      - name: Generate Prisma client
+        run: |
+          cd packages/db
+          bunx prisma generate
+
+      - name: Get Playwright version
+        id: playwright-version
+        run: |
+          cd apps/app
+          # Get the exact version from package.json
+          PLAYWRIGHT_VERSION=$(node -e "console.log(require('./package.json').devDependencies['@playwright/test'] || require('./package.json').dependencies['@playwright/test'])")
+          echo "Playwright version: $PLAYWRIGHT_VERSION"
+          echo "version=$PLAYWRIGHT_VERSION" >> $GITHUB_OUTPUT
+
+          # Also get Playwright's internal browser versions for better cache key
+          BROWSER_VERSIONS=$(bunx playwright --version | head -1 || echo "unknown")
+          echo "Browser versions: $BROWSER_VERSIONS"
+          echo "browser_versions=$BROWSER_VERSIONS" >> $GITHUB_OUTPUT
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: |
+            ~/.cache/ms-playwright
+            ~/Library/Caches/ms-playwright
+          key: ${{ runner.os }}-playwright-browsers-${{ matrix.project }}-${{ steps.playwright-version.outputs.version }}-${{ steps.playwright-version.outputs.browser_versions }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-browsers-${{ steps.playwright-version.outputs.version }}-${{ steps.playwright-version.outputs.browser_versions }}
+            ${{ runner.os }}-playwright-browsers-${{ steps.playwright-version.outputs.version }}-
+
+      - name: Install Playwright browsers
+        run: |
+          cd apps/app
+          # Always run install - Playwright will skip downloading browsers that already exist
+          # This is the safest approach to ensure browsers are properly installed
+          echo "Installing Playwright browsers (will skip if already cached)..."
+          bunx playwright install chromium firefox webkit
+
+      - name: Install Playwright system dependencies
+        run: |
+          cd apps/app
+          # Install system dependencies separately - this is always needed on Ubuntu runners
+          echo "Installing system dependencies..."
+          bunx playwright install-deps chromium firefox webkit
+
+      - name: Verify Playwright installation
+        run: |
+          echo "=== Verifying Playwright installation ==="
+          echo "Cache hit: ${{ steps.playwright-cache.outputs.cache-hit }}"
+
+          # Check all possible Playwright cache locations
+          echo "Checking ~/.cache/ms-playwright:"
+          ls -la ~/.cache/ms-playwright 2>/dev/null || echo "  Directory not found"
+
+          echo "Checking ~/Library/Caches/ms-playwright:"
+          ls -la ~/Library/Caches/ms-playwright 2>/dev/null || echo "  Directory not found"
+
+          echo "Checking ~/.local-chromium:"
+          ls -la ~/.local-chromium 2>/dev/null || echo "  Directory not found"
+
+          # Find where Playwright actually installed browsers
+          echo "Finding all ms-playwright directories:"
+          find ~ -name "ms-playwright" -type d 2>/dev/null | head -20
+
+          # Check Playwright's own cache directory
+          echo "Playwright cache home:"
+          cd apps/app && bunx playwright install --help | grep -i cache || true
+
+          # Show disk usage
+          echo "Disk usage of cache directories:"
+          du -sh ~/.cache/ms-playwright 2>/dev/null || true
+          du -sh ~/Library/Caches/ms-playwright 2>/dev/null || true
+
+          echo "=== End verification ==="
+
+      - name: Debug Playwright cache
+        run: |
+          echo "Cache hit: ${{ steps.playwright-cache.outputs.cache-hit }}"
+          echo "Checking Playwright directories:"
+          ls -la ~/.cache/ms-playwright 2>/dev/null || echo "~/.cache/ms-playwright not found"
+          du -sh ~/.cache/ms-playwright 2>/dev/null || echo "Cannot check size"
+          echo "Playwright browsers installed:"
+          cd apps/app && bunx playwright --version
+
+      - name: Build app
+        run: |
+          cd apps/app
+          export E2E_TEST_MODE=true
+          bunx next build
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          NEXTAUTH_URL: http://localhost:3000
+          NEXTAUTH_SECRET: test-secret-for-ci
+          AUTH_SECRET: test-secret-for-ci
+          BETTER_AUTH_URL: http://localhost:3000
+          E2E_TEST_MODE: true
+          # Additional env vars that might be needed
+          UPSTASH_REDIS_REST_URL: https://dummy.upstash.io
+          UPSTASH_REDIS_REST_TOKEN: dummy-token
+          RESEND_API_KEY: dummy-resend-key
+          TRIGGER_SECRET_KEY: dummy-trigger-key
+          STRIPE_SECRET_KEY: sk_test_dummy_key_for_ci_builds
+          STRIPE_WEBHOOK_SECRET: whsec_test_dummy_webhook_secret
+
+      - name: Start server
+        run: |
+          cd apps/app
+          # Start server with explicit port and capture output
+          PORT=3000 bun run start > server.log 2>&1 &
+          SERVER_PID=$!
+
+          # Wait for server to be ready
+          echo "Waiting for server to start (PID: $SERVER_PID)..."
+          for i in {1..30}; do
+            # Show server logs for debugging
+            if [ -f server.log ]; then
+              echo "=== Server logs (last 20 lines) ==="
+              tail -20 server.log
+              echo "=== End server logs ==="
+            fi
+            
+            # Check if server is responding
+            if curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 2>&1 | grep -q "200\|302\|303\|307"; then
+              echo "Server is responding! Testing health endpoint..."
+              
+              # Test health endpoint first
+              HEALTH_RESPONSE=$(curl -s http://localhost:3000/api/health 2>&1)
+              echo "Health endpoint response: $HEALTH_RESPONSE"
+              
+              # Test DB endpoint
+              echo "Testing database connection..."
+              DB_RESPONSE=$(curl -s http://localhost:3000/api/auth/test-db 2>&1)
+              echo "DB test response: $DB_RESPONSE"
+              
+              # Test auth endpoint
+              echo "Testing auth endpoint..."
+              RESPONSE=$(curl -s -w "\n%{http_code}" http://localhost:3000/api/auth/test-login -X POST -H "Content-Type: application/json" -d '{"email":"test@example.com"}' --max-time 10 2>&1)
+              HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+              BODY=$(echo "$RESPONSE" | head -n -1)
+              echo "Auth endpoint response code: $HTTP_CODE"
+              echo "Auth endpoint response body: $BODY"
+              
+              if [ "$HTTP_CODE" = "403" ] || [ "$HTTP_CODE" = "400" ] || [ "$HTTP_CODE" = "500" ] || [ "$HTTP_CODE" = "200" ]; then
+                echo "Auth endpoint is responding!"
+                break
+              elif [ "$HTTP_CODE" = "000" ]; then
+                echo "Auth endpoint timed out after 10 seconds"
+              fi
+            else
+              echo "Server not ready yet... (attempt $i/30)"
+            fi
+            
+            # Check if process is still alive
+            if ! kill -0 $SERVER_PID 2>/dev/null; then
+              echo "ERROR: Server process died! Last logs:"
+              tail -50 server.log
+              exit 1
+            fi
+            
+            sleep 2
+          done
+
+          # Final check
+          if ! curl -s http://localhost:3000 > /dev/null 2>&1; then
+            echo "ERROR: Server never became ready! Final logs:"
+            tail -100 server.log
+            exit 1
+          fi
+
+          echo "Server successfully started and ready for E2E tests!"
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          NEXTAUTH_URL: http://localhost:3000
+          NEXTAUTH_SECRET: test-secret-for-ci
+          AUTH_SECRET: test-secret-for-ci
+          BETTER_AUTH_URL: http://localhost:3000
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+          E2E_TEST_MODE: true
+          E2E_USE_REAL_AUTH: false
+          CI: true
+          # Additional env vars that might be needed
+          UPSTASH_REDIS_REST_URL: https://dummy.upstash.io
+          UPSTASH_REDIS_REST_TOKEN: dummy-token
+          RESEND_API_KEY: dummy-resend-key
+          TRIGGER_SECRET_KEY: dummy-trigger-key
+          STRIPE_SECRET_KEY: sk_test_dummy_key_for_ci_builds
+          STRIPE_WEBHOOK_SECRET: whsec_test_dummy_webhook_secret
+
+      - name: Run E2E tests
+        run: |
+          cd apps/app
+          echo "Starting E2E tests for ${{ matrix.project }} with 2 workers..."
+          bunx playwright test --project=${{ matrix.project }} --reporter=list
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          NEXTAUTH_URL: http://localhost:3000
+          NEXTAUTH_SECRET: test-secret-for-ci
+          AUTH_SECRET: test-secret-for-ci
+          BETTER_AUTH_URL: http://localhost:3000
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+          E2E_TEST_MODE: true
+          E2E_USE_REAL_AUTH: false
+          CI: true
+          # Additional env vars that might be needed
+          UPSTASH_REDIS_REST_URL: https://dummy.upstash.io
+          UPSTASH_REDIS_REST_TOKEN: dummy-token
+          RESEND_API_KEY: dummy-resend-key
+          TRIGGER_SECRET_KEY: dummy-trigger-key
+          STRIPE_SECRET_KEY: sk_test_dummy_key_for_ci_builds
+          STRIPE_WEBHOOK_SECRET: whsec_test_dummy_webhook_secret
+
+      - name: Generate test summary
+        if: always()
+        run: |
+          cd apps/app
+
+          # Generate job summary
+          echo "## 🎭 Playwright Test Results - ${{ matrix.project }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Check if test results exist
+          if [ -f "test-results/.last-run.json" ]; then
+            # Parse test results
+            TOTAL=$(jq '.suites | map(.specs | length) | add' test-results/.last-run.json 2>/dev/null || echo "0")
+            PASSED=$(jq '.suites | map(.specs | map(select(.ok == true)) | length) | add' test-results/.last-run.json 2>/dev/null || echo "0")
+            FAILED=$(jq '.suites | map(.specs | map(select(.ok == false)) | length) | add' test-results/.last-run.json 2>/dev/null || echo "0")
+            
+            # Add summary stats
+            echo "### 📊 Summary" >> $GITHUB_STEP_SUMMARY
+            echo "- **Total Tests:** $TOTAL" >> $GITHUB_STEP_SUMMARY
+            echo "- **✅ Passed:** $PASSED" >> $GITHUB_STEP_SUMMARY
+            echo "- **❌ Failed:** $FAILED" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            # Add failed test details if any
+            if [ "$FAILED" -gt 0 ]; then
+              echo "### ❌ Failed Tests" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              
+              # List failed tests
+              jq -r '.suites[] | .specs[] | select(.ok == false) | "- **\(.title)** in `\(.file)`"' test-results/.last-run.json 2>/dev/null >> $GITHUB_STEP_SUMMARY || true
+              echo "" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "⚠️ No test results found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Add screenshots/videos info if failures exist
+          if [ -d "test-results" ] && [ "$(find test-results -name "*.png" -o -name "*.webm" | wc -l)" -gt 0 ]; then
+            echo "### 📸 Test Artifacts" >> $GITHUB_STEP_SUMMARY
+            echo "Screenshots and videos have been captured for failed tests." >> $GITHUB_STEP_SUMMARY
+            echo "Download artifacts from the workflow run to view them." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            # List artifacts
+            echo "<details><summary>Click to see artifact files</summary>" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            find test-results -name "*.png" -o -name "*.webm" | sort >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "</details>" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Add trace viewer instructions
+          if [ -d "test-results" ] && [ "$(find test-results -name "*.zip" | wc -l)" -gt 0 ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 🔍 Debug with Trace Viewer" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "To debug failed tests:" >> $GITHUB_STEP_SUMMARY
+            echo "1. Download the trace files from artifacts" >> $GITHUB_STEP_SUMMARY
+            echo "2. Visit [trace.playwright.dev](https://trace.playwright.dev)" >> $GITHUB_STEP_SUMMARY
+            echo "3. Upload the trace.zip file" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Or run locally:" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+            echo "bunx playwright show-trace path/to/trace.zip" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Show server logs on failure
+        if: failure()
+        run: |
+          echo "=== Server logs after test failure ==="
+          if [ -f apps/app/server.log ]; then
+            tail -200 apps/app/server.log
+          else
+            echo "No server.log file found"
+          fi
+          echo "=== End server logs ==="
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results-${{ matrix.project }}
+          path: |
+            apps/app/test-results/
+            apps/app/playwright-report/
+          retention-days: 7
+
+      - name: Upload HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.project }}
+          path: apps/app/playwright-report/
+          retention-days: 7
+
+      - name: Upload test artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts-${{ matrix.project }}
+          path: |
+            apps/app/playwright-report/
+            apps/app/test-results/**/*.png
+            apps/app/test-results/**/*.webm
+          retention-days: 7
+
+      - name: Verify cache before save
+        if: always()
+        run: |
+          echo "=== Verifying cache contents before workflow ends ==="
+          echo "Contents of ~/.cache/ms-playwright:"
+          if [ -d ~/.cache/ms-playwright ]; then
+            ls -la ~/.cache/ms-playwright
+            echo "Total size: $(du -sh ~/.cache/ms-playwright | cut -f1)"
+            echo "Number of files: $(find ~/.cache/ms-playwright -type f | wc -l)"
+            # List browser directories to ensure they're cached
+            echo "Browser directories:"
+            ls -la ~/.cache/ms-playwright/*/
+          else
+            echo "Cache directory not found!"
+          fi
+          echo "=== End cache verification ==="
+
+  # Job to post consolidated test results
+  post-results:
+    name: Post Test Results to PR
+    runs-on: ubuntu-latest
+    needs: e2e-tests
+    if: always() && github.event_name == 'pull_request'
+
+    steps:
+      - name: Post consolidated results
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Get all job results
+            const jobs = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId,
+            });
+
+            // Filter for e2e-test jobs
+            const testJobs = jobs.data.jobs.filter(job => 
+              job.name.startsWith('E2E Tests -')
+            );
+
+            // Get commit info
+            const commitSha = context.sha.substring(0, 7);
+            const commitMessage = context.payload.head_commit?.message?.split('\n')[0] || 'No message';
+            const runNumber = context.runNumber;
+            const runId = context.runId;
+            const timestamp = new Date().toISOString();
+
+            // Determine overall status
+            const allPassed = testJobs.every(job => job.conclusion === 'success');
+            const someFailed = testJobs.some(job => job.conclusion === 'failure');
+            const status = allPassed ? '✅' : '🔴';
+            const statusText = allPassed ? 'All Passed' : 'Failed';
+
+            // Build summary
+            let testSummary = `## ${status} E2E Test Results\n\n`;
+
+            // Add current run info
+            testSummary += `### Latest Run\n`;
+            testSummary += `- **Status:** ${status} ${statusText}\n`;
+            testSummary += `- **Commit:** \`${commitSha}\` - ${commitMessage}\n`;
+            testSummary += `- **Run:** [#${runNumber}](https://github.com/${{ github.repository }}/actions/runs/${runId})\n`;
+            testSummary += `- **Time:** ${timestamp}\n\n`;
+
+            // Add browser results
+            testSummary += `### Browser Results\n`;
+            for (const job of testJobs) {
+              const browser = job.name.split(' - ')[1];
+              const jobStatus = job.conclusion === 'success' ? '✅' : job.conclusion === 'failure' ? '❌' : '⏭️';
+              const jobUrl = job.html_url;
+              testSummary += `- **${browser}:** ${jobStatus} - [View logs](${jobUrl})\n`;
+            }
+            testSummary += '\n';
+
+            // Add artifacts links if tests failed
+            if (someFailed) {
+              testSummary += `### 📦 Test Artifacts\n`;
+              testSummary += `- [View All Results](https://github.com/${{ github.repository }}/actions/runs/${runId})\n`;
+              testSummary += `- [Download Screenshots & Videos](https://github.com/${{ github.repository }}/actions/runs/${runId}#artifacts)\n\n`;
+              
+              testSummary += `💡 **Tip**: Download artifacts to see screenshots and videos of failures.\n\n`;
+            } else {
+              testSummary += `All E2E tests are passing! 🎉\n\n`;
+            }
+
+            // Find existing E2E comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment => 
+              comment.user?.type === 'Bot' && 
+              comment.body?.includes('E2E Test Results')
+            );
+
+            // Build history entry
+            const historyEntry = `- \`${commitSha}\` ${status} - Chromium: ${testJobs.find(j => j.name.includes('chromium'))?.conclusion === 'success' ? '✅' : '❌'} | Firefox: ${testJobs.find(j => j.name.includes('firefox'))?.conclusion === 'success' ? '✅' : '❌'} | WebKit: ${testJobs.find(j => j.name.includes('webkit'))?.conclusion === 'success' ? '✅' : '❌'} - [Run #${runNumber}](https://github.com/${{ github.repository }}/actions/runs/${runId})`;
+
+            if (botComment) {
+              // Extract and update history
+              const historyMatch = botComment.body.match(/<details>[\s\S]*?<summary>📜 Test History[\s\S]*?<\/details>/);
+              let history = historyEntry;
+              
+              if (historyMatch) {
+                const historyContent = historyMatch[0].match(/<details>[\s\S]*?<summary>📜 Test History[\s\S]*?\n\n([\s\S]*?)\n\n<\/details>/);
+                if (historyContent && historyContent[1]) {
+                  const entries = historyContent[1].split('\n').filter(line => line.trim());
+                  entries.unshift(historyEntry);
+                  history = entries.slice(0, 10).join('\n');
+                }
+              }
+              
+              // Add history section
+              testSummary += `<details>\n<summary>📜 Test History (last 10 runs)</summary>\n\n${history}\n\n</details>`;
+              
+              // Update comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: testSummary
+              });
+            } else {
+              // Create new comment with history
+              testSummary += `<details>\n<summary>📜 Test History (last 10 runs)</summary>\n\n${historyEntry}\n\n</details>`;
+              
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: testSummary
+              });
+            }

@@ -8,6 +8,7 @@ interface OnboardingFormActionsProps {
   stepIndex: number;
   isLastStep: boolean;
   isOnboarding: boolean; // For the loader in the Finish button
+  isCurrentStepValid: boolean;
 }
 
 export function OnboardingFormActions({
@@ -16,6 +17,7 @@ export function OnboardingFormActions({
   stepIndex,
   isLastStep,
   isOnboarding,
+  isCurrentStepValid,
 }: OnboardingFormActionsProps) {
   return (
     <div className="flex items-center gap-2">
@@ -53,7 +55,7 @@ export function OnboardingFormActions({
             type="submit"
             form="onboarding-form" // Important: links to the form in OrganizationSetupForm.tsx
             className="flex items-center gap-2"
-            disabled={isSubmitting}
+            disabled={isSubmitting || !isCurrentStepValid}
           >
             <motion.span
               key="finish-label"
@@ -73,7 +75,7 @@ export function OnboardingFormActions({
             type="submit"
             form="onboarding-form" // Important: links to the form in OrganizationSetupForm.tsx
             className="flex items-center gap-2"
-            disabled={isSubmitting}
+            disabled={isSubmitting || !isCurrentStepValid}
           >
             <motion.span
               key="next-label"

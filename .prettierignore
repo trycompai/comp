@@ -21,4 +21,10 @@ packages/db/src/types.js
 
 # Other generated files
 coverage/
-.DS_Store 
+.DS_Store
+
+# Test results and reports
+**/playwright-report/
+**/test-results/
+**/playwright/.cache/
+**/.playwright/ 

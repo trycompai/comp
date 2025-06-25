@@ -82,6 +82,7 @@ export default function ComplianceReport({
                 title="Policies"
                 description={`An up to date list of policies published internally by ${organization.name}.`}
                 isLive
+                amount={policies.length}
               >
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   {policies.map((policy) => (
@@ -100,6 +101,7 @@ export default function ComplianceReport({
                 title="Controls"
                 description={`An up to date list of controls published internally by ${organization.name}.`}
                 isLive
+                amount={controls.length}
               >
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   {controls.map((control) => (

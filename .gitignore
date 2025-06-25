@@ -63,3 +63,15 @@ tailwind.css
 # Ignore lock files to prevent conflicts between different package managers
 bun.lock
 yarn.lock
+
+# Playwright test results and reports
+**/playwright-report/
+**/test-results/
+**/playwright/.cache/
+**/.playwright/
+
+# Playwright test artifacts
+test-results/
+playwright-report/
+playwright/.cache/
+debug-setup-page.png

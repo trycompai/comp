@@ -17,6 +17,50 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { Trash2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
+
+// Extract the cell content into a separate component
+function ApiKeyActionsCell({ apiKey }: { apiKey: ApiKey }) {
+  const [open, setOpen] = useState(false);
+  const { execute, status } = useAction(revokeApiKeyAction, {
+    onSuccess: () => {
+      setOpen(false);
+    },
+  });
+
+  return (
+    <AlertDialog open={open ?? false} onOpenChange={setOpen}>
+      <AlertDialogTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-destructive hover:bg-destructive/10"
+          onClick={() => setOpen(true)}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{'Revoke API Key'}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {'Are you sure you want to revoke this API key? This action cannot be undone.'}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{'Cancel'}</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => execute({ id: apiKey.id })}
+            disabled={status === 'executing'}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            {status === 'executing' ? 'Revoking...' : 'Revoke'}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
 export const columns = (): ColumnDef<ApiKey>[] => [
   {
     id: 'name',
@@ -81,46 +125,7 @@ export const columns = (): ColumnDef<ApiKey>[] => [
   {
     id: 'actions',
     header: () => <span>Actions</span>,
-    cell: ({ row }) => {
-      const [open, setOpen] = useState(false);
-      const { execute, status } = useAction(revokeApiKeyAction, {
-        onSuccess: () => {
-          setOpen(false);
-        },
-      });
-      return (
-        <AlertDialog open={open ?? false} onOpenChange={setOpen}>
-          <AlertDialogTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-destructive hover:bg-destructive/10"
-              onClick={() => setOpen(true)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>{'Revoke API Key'}</AlertDialogTitle>
-              <AlertDialogDescription>
-                {'Are you sure you want to revoke this API key? This action cannot be undone.'}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>{'Cancel'}</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => execute({ id: row.original.id })}
-                disabled={status === 'executing'}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              >
-                {status === 'executing' ? 'Revoking...' : 'Revoke'}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      );
-    },
+    cell: ({ row }) => <ApiKeyActionsCell apiKey={row.original} />,
     meta: { label: 'Actions' },
     enableColumnFilter: false,
     enableSorting: false,

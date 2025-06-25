@@ -32,7 +32,7 @@ export default function FrameworkItem({ text, status, icon }: FrameworkItemProps
         )}
         <div className="flex flex-col">
           <span className="font-medium">{text}</span>
-          <Badge variant="marketing" className="text-foreground font-bold">
+          <Badge className="font-bold" variant="outline">
             {getStatusText(status)}
           </Badge>
         </div>

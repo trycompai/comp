@@ -1,7 +1,7 @@
 name: Release
 
 on:
-  push:
+  push: # Runs AFTER merge to release branch
     branches:
       - release
 
@@ -34,6 +34,19 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest # Optional: specify a bun version
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+          key: ${{ runner.os }}-bun-release-${{ hashFiles('**/bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-release-
+            ${{ runner.os }}-bun-
 
       - name: Install dependencies
         run: bun install --frozen-lockfile # Use --frozen-lockfile in CI

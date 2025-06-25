@@ -1,6 +1,6 @@
 name: Database Migrations Dev
 on:
-  push:
+  push: # Runs AFTER merge to main (never during PR review!)
     branches:
       - main
   workflow_dispatch: # Allows manual triggering

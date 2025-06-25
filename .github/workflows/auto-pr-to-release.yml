@@ -1,4 +1,4 @@
-name: Create Candidate -> Production Pull Request
+name: Create Main -> Release Pull Request
 on:
   push:
     branches:
