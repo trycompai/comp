@@ -1,3 +1,10 @@
+## [1.43.3](https://github.com/trycompai/comp/compare/v1.43.2...v1.43.3) (2025-06-25)
+
+
+### Bug Fixes
+
+* fix issue with not being able to select assignee in policy and fix button text ([2dd6d93](https://github.com/trycompai/comp/commit/2dd6d930695523e65a36cee9bc273ef52c0d08ac))
+
 ## [1.43.2](https://github.com/trycompai/comp/compare/v1.43.1...v1.43.2) (2025-06-25)
 
 
