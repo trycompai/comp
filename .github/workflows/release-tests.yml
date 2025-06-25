@@ -247,7 +247,8 @@ jobs:
       - name: Run ALL E2E tests
         run: |
           cd apps/app
-          bunx playwright test
+          echo "Starting E2E tests with 4 workers..."
+          bunx playwright test --reporter=list
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
           NEXTAUTH_URL: http://localhost:3000

@@ -149,17 +149,30 @@ jobs:
       - name: Start server
         run: |
           cd apps/app
+          # Start server and capture PID
           bun run start &
+          SERVER_PID=$!
+
           # Wait for server to be ready
-          echo "Waiting for server to start..."
+          echo "Waiting for server to start (PID: $SERVER_PID)..."
           for i in {1..30}; do
-            if curl -s http://localhost:3000 > /dev/null; then
-              echo "Server is ready!"
-              break
+            if curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 | grep -q "200\|302\|303\|307"; then
+              echo "Server is ready! Testing auth endpoint..."
+              # Test that the auth endpoint is also ready
+              if curl -s http://localhost:3000/api/auth/test-login -X POST -H "Content-Type: application/json" -d '{}' | grep -q "error\|success"; then
+                echo "Auth endpoint is responding!"
+                break
+              fi
             fi
             echo "Waiting... ($i/30)"
             sleep 2
           done
+
+          # Verify server is still running
+          if ! kill -0 $SERVER_PID 2>/dev/null; then
+            echo "ERROR: Server process died!"
+            exit 1
+          fi
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
           NEXTAUTH_URL: http://localhost:3000
