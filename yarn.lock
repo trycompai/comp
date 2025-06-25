@@ -1336,7 +1336,7 @@
     "@dnd-kit/modifiers" "^9.0.0"
     "@dnd-kit/sortable" "^10.0.0"
     "@dnd-kit/utilities" "^3.2.2"
-    "@dub/embed-react" "^0.0.14"
+    "@dub/embed-react" "^0.0.15"
     "@hookform/resolvers" "^5.1.1"
     "@mendable/firecrawl-js" "^1.24.0"
     "@nangohq/frontend" "^0.53.2"
@@ -1366,7 +1366,7 @@
     better-auth "^1.2.8"
     canvas-confetti "^1.9.3"
     d3 "^7.9.0"
-    dub "^0.63.5"
+    dub "^0.63.6"
     framer-motion "^12.18.1"
     geist "^1.3.1"
     motion "^12.9.2"
@@ -1782,19 +1782,19 @@
   dependencies:
     tslib "^2.0.0"
 
-"@dub/embed-core@^0.0.14":
-  version "0.0.14"
-  resolved "https://registry.npmjs.org/@dub/embed-core/-/embed-core-0.0.14.tgz"
-  integrity sha512-2oD8NOlpysa4XgF70+gvJbHyysm+QboujTmD93tvQ2Dt+br7lUV+3cx51+Ho0WTZ06+DnFYQJ5fG/dtXSmyHrg==
+"@dub/embed-core@^0.0.15":
+  version "0.0.15"
+  resolved "https://registry.npmjs.org/@dub/embed-core/-/embed-core-0.0.15.tgz"
+  integrity sha512-0hfWesBfUBpzw29FbCEUSxakNCCebTcyoVXHanE45HSj0Atmx3ANpilpa25lR5g62MwLg9kcX4dR6jpTfLeQ8g==
   dependencies:
     "@floating-ui/dom" "^1.6.12"
 
-"@dub/embed-react@^0.0.14":
-  version "0.0.14"
-  resolved "https://registry.npmjs.org/@dub/embed-react/-/embed-react-0.0.14.tgz"
-  integrity sha512-qJg08k8GE5ElduCpWxKHlpPsDQYfWu4n+n1p+bChdTNxX2BvFnyqQl3LTxBYKqJ7RwXxSSW7GARpFgajvXVJCA==
+"@dub/embed-react@^0.0.15":
+  version "0.0.15"
+  resolved "https://registry.npmjs.org/@dub/embed-react/-/embed-react-0.0.15.tgz"
+  integrity sha512-GLLAMGpn6WLXbM8q4n0lPOrjsYkmI0W3LvAAMFbb+FeQ6OwFvz390xwWW2ygfUo74wvWLSYVEOoHymiuoSrb7Q==
   dependencies:
-    "@dub/embed-core" "^0.0.14"
+    "@dub/embed-core" "^0.0.15"
     class-variance-authority "^0.7.0"
     vite "5.2.9"
 
@@ -9176,10 +9176,10 @@ draco3d@^1.4.1:
   resolved "https://registry.npmjs.org/draco3d/-/draco3d-1.5.7.tgz"
   integrity sha512-m6WCKt/erDXcw+70IJXnG7M3awwQPAsZvJGX5zY7beBqpELw6RDGkYVU0W43AFxye4pDZ5i2Lbyc/NNGqwjUVQ==
 
-dub@^0.63.5:
-  version "0.63.5"
-  resolved "https://registry.npmjs.org/dub/-/dub-0.63.5.tgz"
-  integrity sha512-p9ygOnYpZ89jV/rXJrG4yTa9E0VE8itwV/EmnydO27hFhRa9Hj3m6Ue0PLEIykYEGaROPjGIYKjXPOysShEhKQ==
+dub@^0.63.6:
+  version "0.63.6"
+  resolved "https://registry.npmjs.org/dub/-/dub-0.63.6.tgz"
+  integrity sha512-4iAJvOtj5MegRqsSpUc2H9Prvgh95vidGGEHXYrJO6bLUQ4TSfQwoRei+WdKJohV0t4klhEj4ruQx2olefMzuA==
 
 dunder-proto@^1.0.0, dunder-proto@^1.0.1:
   version "1.0.1"
