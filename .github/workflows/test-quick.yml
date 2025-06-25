@@ -41,6 +41,17 @@ jobs:
             ${{ runner.os }}-bun-quick-
             ${{ runner.os }}-bun-
 
+      - name: Cache Next.js build
+        uses: actions/cache@v4
+        with:
+          path: |
+            apps/app/.next/cache
+          key: ${{ runner.os }}-nextjs-quick-${{ hashFiles('**/bun.lockb') }}-${{ hashFiles('apps/app/**/*.js', 'apps/app/**/*.jsx', 'apps/app/**/*.ts', 'apps/app/**/*.tsx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-quick-${{ hashFiles('**/bun.lockb') }}-
+            ${{ runner.os }}-nextjs-quick-
+            ${{ runner.os }}-nextjs-
+
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
@@ -76,3 +87,12 @@ jobs:
         env:
           SKIP_ENV_VALIDATION: true
           DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
+          AUTH_SECRET: test-secret-for-ci
+          BETTER_AUTH_URL: http://localhost:3000
+          # Dummy values for build to succeed
+          UPSTASH_REDIS_REST_URL: https://dummy.upstash.io
+          UPSTASH_REDIS_REST_TOKEN: dummy-token
+          RESEND_API_KEY: dummy-resend-key
+          TRIGGER_SECRET_KEY: dummy-trigger-key
+          STRIPE_SECRET_KEY: sk_test_dummy_key_for_ci_builds
+          STRIPE_WEBHOOK_SECRET: whsec_test_dummy_webhook_secret
