@@ -126,19 +126,19 @@
     "dev": "bun i && bun run apply-migrations && bunx concurrently --kill-others --names \"next,trigger\" --prefix-colors \"yellow,blue\" \"next dev --turbo -p 3000\" \"bun run trigger:dev\"",
     "lint": "next lint && prettier --check .",
     "start": "next start",
-    "trigger:dev": "npx trigger.dev@latest dev",
-    "typecheck": "tsc --noEmit",
     "test": "vitest",
-    "test:watch": "vitest --watch",
+    "test:all": "./scripts/test-all.sh",
     "test:coverage": "vitest run --coverage",
-    "test:ui": "vitest --ui",
     "test:e2e": "playwright test",
-    "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
-    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
     "test:e2e:install": "playwright install --with-deps",
     "test:e2e:report": "playwright show-report",
     "test:e2e:setup": "./scripts/setup-e2e.sh",
-    "test:all": "./scripts/test-all.sh"
+    "test:e2e:ui": "playwright test --ui",
+    "test:ui": "vitest --ui",
+    "test:watch": "vitest --watch",
+    "trigger:dev": "npx trigger.dev@latest dev",
+    "typecheck": "tsc --noEmit"
   }
 }
