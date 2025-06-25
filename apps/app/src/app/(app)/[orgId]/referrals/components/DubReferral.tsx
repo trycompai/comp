@@ -19,6 +19,9 @@ export const DubReferral = ({ publicToken }: { publicToken: string | null }) => 
       token={publicToken}
       options={{
         theme: 'system',
+        containerStyles: {
+          colorScheme: 'auto',
+        },
       }}
     />
   );
