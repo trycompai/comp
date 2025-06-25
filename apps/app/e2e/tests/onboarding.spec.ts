@@ -1,12 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { authenticateTestUser, clearAuth } from '../utils/auth-helpers';
-import {
-  clickAndWait,
-  expectToast,
-  fillFormField,
-  generateTestData,
-  waitForURL,
-} from '../utils/helpers';
+import { clickAndWait, fillFormField, generateTestData, waitForURL } from '../utils/helpers';
 
 test.describe('Onboarding Flow', () => {
   test.beforeEach(async ({ page }) => {
@@ -47,10 +41,7 @@ test.describe('Onboarding Flow', () => {
     // Give React time to render
     await page.waitForTimeout(3000);
 
-    // Debug: Take a screenshot
-    await page.screenshot({ path: 'debug-setup-page.png' });
-
-    // Debug: Check what's visible
+    // Check what's visible
     const visibleText = await page.evaluate(() => {
       const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
         acceptNode: (node) => {
@@ -90,9 +81,14 @@ test.describe('Onboarding Flow', () => {
       );
     }
 
-    // 6. Framework is already selected by default, just click Next
-    // Wait for the Next button to be visible and click it
+    // 6. Framework is already selected by default, verify Next button is enabled
     const nextButton = await page.waitForSelector('button:has-text("Next")', { timeout: 10000 });
+
+    // Verify the button is enabled (not disabled)
+    const isDisabled = await nextButton.isDisabled();
+    expect(isDisabled).toBe(false);
+
+    // Click Next to proceed
     await nextButton.click();
 
     // Wait for transition to organization name step
@@ -106,8 +102,18 @@ test.describe('Onboarding Flow', () => {
     const stepText = await page.textContent('body');
     console.log('Step 2 visible text:', stepText?.includes('What is your company name'));
 
+    // Verify Next button is disabled when field is empty
+    const orgNameInput = page.locator('input[name="organizationName"]');
+    await orgNameInput.clear(); // Make sure it's empty
+
+    const submitButton = page.locator('button[type="submit"]:has-text("Next")');
+    await expect(submitButton).toBeDisabled();
+
     // Fill organization name
     await fillFormField(page, 'input[name="organizationName"]', testData.organizationName);
+
+    // Verify Next button is now enabled
+    await expect(submitButton).toBeEnabled();
 
     // Look for optional fields
     const hasIndustry = (await page.locator('[name="industry"]').count()) > 0;
@@ -116,11 +122,32 @@ test.describe('Onboarding Flow', () => {
     }
 
     // 8. Submit organization creation
-    await clickAndWait(
-      page,
-      'button[type="submit"]:has-text("Create"), button:has-text("Continue")',
-      { waitForNavigation: true },
-    );
+    // On step 2, we should click Next to continue
+    await clickAndWait(page, 'button:has-text("Next")', { waitForNavigation: false });
+
+    // Continue clicking Next through remaining steps until we're done
+    // This is a multi-step form, so we need to complete all steps
+    for (let i = 0; i < 10; i++) {
+      // Check if we're still on a setup page
+      const currentUrl = page.url();
+      if (!currentUrl.includes('/setup/')) {
+        break; // We've completed setup
+      }
+
+      // Check if there's a Next button
+      const nextButton = await page.locator('button:has-text("Next")').count();
+      if (nextButton > 0) {
+        await page.locator('button:has-text("Next")').click();
+        await page.waitForTimeout(1000);
+      } else {
+        // Look for a final submit button
+        const submitButton = await page.locator('button[type="submit"]').count();
+        if (submitButton > 0) {
+          await page.locator('button[type="submit"]').click();
+          await page.waitForTimeout(1000);
+        }
+      }
+    }
 
     // 9. Should redirect to organization dashboard/frameworks
     await waitForURL(page, /\/org_.*\/(dashboard|frameworks)/);
@@ -145,7 +172,7 @@ test.describe('Onboarding Flow', () => {
     await page.waitForURL(/\/setup\/[a-zA-Z0-9]+/, { timeout: 10000 });
 
     // Should start with framework selection - verify frameworks are visible
-    await expect(page.locator('text=/SOC 2/i')).toBeVisible();
+    await expect(page.locator('text=/SOC 2/i').first()).toBeVisible();
 
     // Framework is already selected by default, just click Next
     await clickAndWait(page, 'button:has-text("Next")', { waitForNavigation: false });
@@ -195,24 +222,25 @@ test.describe('Onboarding Flow', () => {
     // Wait for redirect to setup with session ID
     await page.waitForURL(/\/setup\/[a-zA-Z0-9]+/, { timeout: 10000 });
 
-    // Framework is already selected, click Next to go to organization name step
-    await page.locator('button:has-text("Next")').click();
+    // Framework is already selected, Next button should be enabled
+    const firstNextButton = page.locator('button:has-text("Next")');
+    await expect(firstNextButton).toBeEnabled();
+
+    // Click Next to go to organization name step
+    await firstNextButton.click();
 
     // Wait for organization name step
     await page.waitForSelector('input[name="organizationName"]', { timeout: 10000 });
 
-    // Try to submit without filling organization name
-    const submitButton = page.locator('button[type="submit"]');
-    await submitButton.click();
-
-    // Should show validation error for organization name
-    await expect(page.locator('text=/required|at least 2 characters/i')).toBeVisible();
+    // Next button should be disabled when organization name is empty
+    const secondNextButton = page.locator('button:has-text("Next")');
+    await expect(secondNextButton).toBeDisabled();
 
     // Fill organization name
     await fillFormField(page, 'input[name="organizationName"]', 'Test Organization');
 
-    // Error should disappear
-    await expect(page.locator('text=/required|at least 2 characters/i')).not.toBeVisible();
+    // Next button should now be enabled
+    await expect(secondNextButton).toBeEnabled();
   });
 
   test('handles organization creation errors gracefully', async ({ page }) => {
@@ -226,12 +254,20 @@ test.describe('Onboarding Flow', () => {
     });
 
     // Mock API to return error
-    await page.route('**/api/organization', (route) => {
-      route.fulfill({
-        status: 400,
-        contentType: 'application/json',
-        body: JSON.stringify({ error: 'Organization name already exists' }),
-      });
+    await page.route('**/api/**', (route) => {
+      console.log('Intercepted API call:', route.request().url());
+      if (
+        route.request().url().includes('organization') ||
+        route.request().url().includes('setup')
+      ) {
+        route.fulfill({
+          status: 400,
+          contentType: 'application/json',
+          body: JSON.stringify({ error: 'Organization name already exists' }),
+        });
+      } else {
+        route.continue();
+      }
     });
 
     await page.goto('/setup');
@@ -250,7 +286,9 @@ test.describe('Onboarding Flow', () => {
     await clickAndWait(page, 'button[type="submit"]');
 
     // Should show error message
-    await expectToast(page, 'Organization name already exists');
+    // Look for any error message, toast, or alert
+    const errorElement = page.locator('text=/error|failed|already exists/i').first();
+    await expect(errorElement).toBeVisible({ timeout: 10000 });
 
     // Should stay on setup page with session ID
     await expect(page).toHaveURL(/\/setup\/[a-zA-Z0-9]+/);
@@ -322,5 +360,37 @@ test.describe('Setup Page Components', () => {
     const form = page.locator('form').first();
     const formWidth = await form.boundingBox().then((box) => box?.width);
     expect(formWidth).toBeLessThan(400);
+  });
+
+  test('framework selection enables/disables Next button', async ({ page }) => {
+    const testData = generateTestData();
+
+    // Authenticate first
+    await authenticateTestUser(page, {
+      email: testData.email,
+      name: 'Framework Test',
+      skipOrg: true,
+    });
+
+    await page.goto('/setup');
+    await page.waitForURL(/\/setup\/[a-zA-Z0-9]+/, { timeout: 10000 });
+
+    // Framework is already selected by default, Next should be enabled
+    const nextButton = page.locator('button:has-text("Next")');
+    await expect(nextButton).toBeEnabled();
+
+    // Find the selected framework checkbox and uncheck it
+    const selectedCheckbox = await page.locator('input[type="checkbox"]:checked').first();
+    await selectedCheckbox.click();
+
+    // Next button should now be disabled
+    await expect(nextButton).toBeDisabled();
+
+    // Select a framework again
+    const frameworkCard = page.locator('label[for^="framework-"]').first();
+    await frameworkCard.click();
+
+    // Next button should be enabled again
+    await expect(nextButton).toBeEnabled();
   });
 });

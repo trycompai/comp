@@ -69,3 +69,9 @@ yarn.lock
 **/test-results/
 **/playwright/.cache/
 **/.playwright/
+
+# Playwright test artifacts
+test-results/
+playwright-report/
+playwright/.cache/
+debug-setup-page.png
