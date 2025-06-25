@@ -220,7 +220,7 @@ export function PricingCards({ organizationId, priceDetails }: PricingCardsProps
     chooseSelfServeAction,
     {
       onSuccess: () => {
-        router.push(`/${organizationId}`);
+        router.push(`/${organizationId}?checkoutComplete=starter`);
       },
       onError: ({ error }) => {
         toast.error(error.serverError || 'Failed to set up free plan');
@@ -252,7 +252,7 @@ export function PricingCards({ organizationId, priceDetails }: PricingCardsProps
       organizationId,
       mode: 'subscription',
       priceId,
-      successUrl: `${baseUrl}/${organizationId}/settings/billing?success=true`,
+      successUrl: `${baseUrl}/api/stripe/success?organizationId=${organizationId}&planType=done-for-you`,
       cancelUrl: `${baseUrl}/upgrade/${organizationId}`,
       allowPromotionCodes: true,
       metadata: {

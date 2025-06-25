@@ -151,7 +151,7 @@ export function TaskBody({
       <input
         value={title}
         onChange={onTitleChange}
-        className="h-auto shrink-0 border-none bg-transparent p-0 text-2xl font-semibold tracking-tight shadow-none focus-visible:ring-0"
+        className="h-auto shrink-0 border-none bg-transparent p-0 md:text-lg font-semibold tracking-tight shadow-none focus-visible:ring-0"
         placeholder="Task Title"
         disabled={disabled || isUploadingFile || !!busyAttachmentId}
       />
