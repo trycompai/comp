@@ -82,18 +82,28 @@
     "zustand": "^5.0.3"
   },
   "devDependencies": {
+    "@playwright/experimental-ct-react": "^1.53.1",
+    "@playwright/test": "^1.53.1",
     "@tailwindcss/postcss": "^4.1.10",
+    "@testing-library/dom": "^10.4.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
     "@trigger.dev/build": "3.3.17",
     "@types/d3": "^7.4.3",
     "@types/node": "^24.0.3",
+    "@vitejs/plugin-react": "^4.6.0",
+    "@vitest/ui": "^3.2.4",
     "eslint": "^9",
     "eslint-config-next": "15.4.0-canary.85",
     "fleetctl": "^4.68.1",
+    "jsdom": "^26.1.0",
     "postcss": "^8.5.4",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "tailwindcss": "^4.1.8",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.2.4"
   },
   "exports": {
     "./src/lib/encryption": "./src/lib/encryption.ts"
@@ -117,6 +127,10 @@
     "lint": "next lint && prettier --check .",
     "start": "next start",
     "trigger:dev": "npx trigger.dev@latest dev",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui"
   }
 }
