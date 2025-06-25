@@ -128,7 +128,42 @@ async function handleLogin(request: NextRequest) {
 
   // Get the response data
   const responseData = await signInResponse.json();
-  console.log('[TEST-LOGIN] Sign in successful, preparing response');
+  console.log('[TEST-LOGIN] Sign in successful, user:', responseData.user.id);
+
+  // Create an organization for the user if skipOrg is not true
+  if (!body.skipOrg) {
+    console.log('[TEST-LOGIN] Creating test organization');
+
+    const org = await db.organization.create({
+      data: {
+        id: `org_${Date.now()}`,
+        name: `Test Org ${Date.now()}`,
+        subscriptionType: 'SELF_SERVE', // Set self-serve subscription to avoid upgrade redirect
+        members: {
+          create: {
+            id: `mem_${Date.now()}`,
+            userId: responseData.user.id,
+            role: 'owner',
+            department: Departments.it,
+            isActive: true,
+            fleetDmLabelId: 0,
+          },
+        },
+      },
+    });
+
+    console.log('[TEST-LOGIN] Created organization:', org.id);
+
+    // Set the active organization
+    await auth.api.setActiveOrganization({
+      headers: request.headers,
+      body: {
+        organizationId: org.id,
+      },
+    });
+
+    console.log('[TEST-LOGIN] Set active organization');
+  }
 
   // Create a new response with the data
   const response = NextResponse.json({

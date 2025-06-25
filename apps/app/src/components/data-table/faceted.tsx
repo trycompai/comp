@@ -216,7 +216,7 @@ function FacetedItem(props: FacetedItemProps) {
         context.onItemSelect(currentValue);
       }
     },
-    [onSelect, context.onItemSelect],
+    [onSelect, context],
   );
 
   return (

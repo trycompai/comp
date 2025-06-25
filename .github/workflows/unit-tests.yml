@@ -80,3 +80,59 @@ jobs:
           name: test-results-${{ matrix.app }}
           path: apps/${{ matrix.app }}/test-results.json
           if-no-files-found: ignore
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vitest-results
+          path: apps/app/coverage/
+          retention-days: 7
+
+      - name: Post test results to PR
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            let testSummary = '## ❌ Unit Tests Failed\n\n';
+
+            // Try to read test output from previous step
+            testSummary += '### Test Output\n';
+            testSummary += 'Unit tests failed. Please check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.\n\n';
+
+            testSummary += '### Common Issues\n';
+            testSummary += '- **Import errors**: Check that all imports are correct\n';
+            testSummary += '- **Type errors**: Ensure TypeScript types are properly defined\n';
+            testSummary += '- **Missing mocks**: Verify that external dependencies are properly mocked\n\n';
+
+            testSummary += '💡 **Tip**: Run `bun test` locally to debug the failing tests.\n';
+
+            // Create or update comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('Unit Tests Failed')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: testSummary
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: testSummary
+              });
+            }

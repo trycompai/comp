@@ -270,17 +270,119 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-results-${{ matrix.project }}
-          path: |
-            apps/app/test-results/
-            apps/app/playwright-report/
+          path: apps/app/test-results/
           retention-days: 7
 
-      - name: Upload screenshots & videos
+      - name: Upload test artifacts
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-artifacts-${{ matrix.project }}
           path: |
+            apps/app/playwright-report/
             apps/app/test-results/**/*.png
             apps/app/test-results/**/*.webm
           retention-days: 7
+
+      - name: Post test results to PR
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            // Read test results if available
+            let testSummary = '## ❌ E2E Tests Failed\n\n';
+            testSummary += `**Project:** ${{ matrix.project }}\n\n`;
+
+            // Add server logs snippet
+            const serverLogPath = 'apps/app/server.log';
+            if (fs.existsSync(serverLogPath)) {
+              const logs = fs.readFileSync(serverLogPath, 'utf8');
+              const lines = logs.split('\n');
+              const relevantLogs = lines.slice(-50).join('\n');
+              
+              // Extract key errors
+              const errors = lines.filter(line => 
+                line.includes('Error:') || 
+                line.includes('TEST-LOGIN') ||
+                line.includes('MIDDLEWARE') ||
+                line.includes('SUBSCRIPTION')
+              ).slice(-10);
+              
+              if (errors.length > 0) {
+                testSummary += '### Key Errors:\n```\n' + errors.join('\n') + '\n```\n\n';
+              }
+              
+              testSummary += '<details>\n<summary>📋 Server Logs (last 50 lines)</summary>\n\n```\n';
+              testSummary += relevantLogs;
+              testSummary += '\n```\n</details>\n\n';
+            }
+
+            // Add test output summary
+            testSummary += `### Test Results\n`;
+            testSummary += `- **Status**: Failed\n`;
+            testSummary += `- **Browser**: ${{ matrix.project }}\n`;
+            testSummary += `- **Artifacts**: Check the [Actions tab](${context.payload.pull_request.html_url.replace('/pull/', '/actions/runs/')}) for screenshots and videos\n\n`;
+
+            testSummary += `💡 **Tip**: Download the test artifacts from the workflow run to see screenshots and videos of the failures.\n`;
+
+            // Create or update comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('E2E Tests Failed') &&
+              comment.body.includes(`Project:** ${{ matrix.project }}`)
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: testSummary
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: testSummary
+              });
+            }
+
+      - name: Post success comment to PR
+        if: success() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Check if there was a previous failure comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('E2E Tests Failed') &&
+              comment.body.includes(`Project:** ${{ matrix.project }}`)
+            );
+
+            if (botComment) {
+              // Update the comment to show success
+              const successMessage = `## ✅ E2E Tests Passed\n\n**Project:** ${{ matrix.project }}\n\nAll E2E tests are now passing! 🎉`;
+              
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: successMessage
+              });
+            }
