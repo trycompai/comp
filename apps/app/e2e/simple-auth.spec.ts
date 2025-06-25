@@ -4,14 +4,17 @@ test('simple auth flow', async ({ page, context, browserName }) => {
   // Create a test user and authenticate
   const testEmail = `test-${Date.now()}@example.com`;
 
+  console.log(`[${browserName}] Starting test with email: ${testEmail}`);
+
   const response = await context.request.post('http://localhost:3000/api/auth/test-login', {
     data: {
       email: testEmail,
       name: 'Test User',
     },
+    timeout: 30000, // 30 second timeout
   });
 
-  // Add debugging for Mobile Safari
+  // Add debugging for all browsers
   if (!response.ok()) {
     console.error(`[${browserName}] Test login failed:`, {
       status: response.status(),

@@ -127,18 +127,19 @@ jobs:
           echo "Cache hit - installing system dependencies only"
           bunx playwright install-deps ${{ matrix.project }}
 
-      - name: Build application
+      - name: Build app
         run: |
           cd apps/app
-          bun run build
+          export E2E_TEST_MODE=true
+          bunx next build
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
           NEXTAUTH_URL: http://localhost:3000
           NEXTAUTH_SECRET: test-secret-for-ci
           AUTH_SECRET: test-secret-for-ci
           BETTER_AUTH_URL: http://localhost:3000
-          SKIP_ENV_VALIDATION: true
-          # Dummy values for build to succeed - not used in tests
+          E2E_TEST_MODE: true
+          # Additional env vars that might be needed
           UPSTASH_REDIS_REST_URL: https://dummy.upstash.io
           UPSTASH_REDIS_REST_TOKEN: dummy-token
           RESEND_API_KEY: dummy-resend-key
@@ -165,9 +166,20 @@ jobs:
             
             # Check if server is responding
             if curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 2>&1 | grep -q "200\|302\|303\|307"; then
-              echo "Server is responding! Testing auth endpoint..."
-              # Test that the auth endpoint is also ready
-              RESPONSE=$(curl -s -w "\n%{http_code}" http://localhost:3000/api/auth/test-login -X POST -H "Content-Type: application/json" -d '{"email":"test@example.com"}' 2>&1)
+              echo "Server is responding! Testing health endpoint..."
+              
+              # Test health endpoint first
+              HEALTH_RESPONSE=$(curl -s http://localhost:3000/api/health 2>&1)
+              echo "Health endpoint response: $HEALTH_RESPONSE"
+              
+              # Test DB endpoint
+              echo "Testing database connection..."
+              DB_RESPONSE=$(curl -s http://localhost:3000/api/auth/test-db 2>&1)
+              echo "DB test response: $DB_RESPONSE"
+              
+              # Test auth endpoint
+              echo "Testing auth endpoint..."
+              RESPONSE=$(curl -s -w "\n%{http_code}" http://localhost:3000/api/auth/test-login -X POST -H "Content-Type: application/json" -d '{"email":"test@example.com"}' --max-time 10 2>&1)
               HTTP_CODE=$(echo "$RESPONSE" | tail -1)
               BODY=$(echo "$RESPONSE" | head -n -1)
               echo "Auth endpoint response code: $HTTP_CODE"
@@ -176,6 +188,8 @@ jobs:
               if [ "$HTTP_CODE" = "403" ] || [ "$HTTP_CODE" = "400" ] || [ "$HTTP_CODE" = "500" ] || [ "$HTTP_CODE" = "200" ]; then
                 echo "Auth endpoint is responding!"
                 break
+              elif [ "$HTTP_CODE" = "000" ]; then
+                echo "Auth endpoint timed out after 10 seconds"
               fi
             else
               echo "Server not ready yet... (attempt $i/30)"
@@ -220,7 +234,7 @@ jobs:
       - name: Run E2E tests
         run: |
           cd apps/app
-          echo "Starting E2E tests for ${{ matrix.project }} with 4 workers..."
+          echo "Starting E2E tests for ${{ matrix.project }} with 2 workers..."
           bunx playwright test --project=${{ matrix.project }} --reporter=list
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
@@ -239,6 +253,17 @@ jobs:
           TRIGGER_SECRET_KEY: dummy-trigger-key
           STRIPE_SECRET_KEY: sk_test_dummy_key_for_ci_builds
           STRIPE_WEBHOOK_SECRET: whsec_test_dummy_webhook_secret
+
+      - name: Show server logs on failure
+        if: failure()
+        run: |
+          echo "=== Server logs after test failure ==="
+          if [ -f apps/app/server.log ]; then
+            tail -200 apps/app/server.log
+          else
+            echo "No server.log file found"
+          fi
+          echo "=== End server logs ==="
 
       - name: Upload test results
         if: always()
