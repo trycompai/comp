@@ -21,7 +21,7 @@ export const DubReferral = ({ publicToken }: { publicToken: string | null }) => 
       data="referrals"
       token={publicToken}
       options={{
-        theme: theme.theme as 'light' | 'dark' | 'system',
+        theme: (theme.theme ?? 'system') as 'light' | 'dark' | 'system',
         containerStyles: {
           colorScheme: 'auto',
         },

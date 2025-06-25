@@ -1285,7 +1285,7 @@
     remark-gfm "^4.0.1"
     remark-parse "^11.0.0"
     resend "^4.4.1"
-    sonner "^1.7.1"
+    sonner "^2.0.5"
     stripe "^18.1.0"
     three "^0.177.0"
     ts-pattern "^5.7.0"
@@ -1341,7 +1341,6 @@
   dependencies:
     "@comp/db" "workspace:*"
     "@comp/ui" "workspace:*"
-  dependencies:
     "@hookform/resolvers" "^5.1.1"
     "@tanstack/react-table" "^8.21.3"
     "@tanstack/react-virtual" "^3.13.8"
@@ -1351,7 +1350,7 @@
     react-datasheet-grid "^4.11.5"
     react-hook-form "^7.58.1"
     react-select "^5.10.1"
-    sonner "^1.7.1"
+    sonner "^2.0.5"
     tippy.js "^6.3.7"
     zod "3.25.67"
 
@@ -1485,7 +1484,7 @@
     "@tiptap/extension-bold" "2.14.0"
     "@tiptap/extension-character-count" "2.14.0"
     "@tiptap/extension-code-block-lowlight" "2.14.0"
-    "@tiptap/extension-highlight" "2.14.0"
+    "@tiptap/extension-highlight" "2.22.3"
     "@tiptap/extension-image" "2.14.0"
     "@tiptap/extension-link" "2.14.0"
     "@tiptap/extension-placeholder" "2.14.0"
@@ -1493,7 +1492,7 @@
     "@tiptap/extension-table-cell" "^2.22.3"
     "@tiptap/extension-table-header" "^2.22.3"
     "@tiptap/extension-table-row" "^2.22.3"
-    "@tiptap/extension-task-item" "2.14.0"
+    "@tiptap/extension-task-item" "2.22.3"
     "@tiptap/extension-task-list" "2.14.0"
     "@tiptap/extension-text-align" "2.22.3"
     "@tiptap/extension-typography" "2.14.0"
@@ -5543,10 +5542,10 @@
   resolved "https://registry.npmjs.org/@tiptap/extension-heading/-/extension-heading-2.14.0.tgz"
   integrity sha512-vM//6G3Ox3mxPv9eilhrDqylELCc8kEP1aQ4xUuOw7vCidjNtGggOa1ERnnpV2dCa2A9E8y4FHtN4Xh29stXQg==
 
-"@tiptap/extension-highlight@2.14.0":
-  version "2.14.0"
-  resolved "https://registry.npmjs.org/@tiptap/extension-highlight/-/extension-highlight-2.14.0.tgz"
-  integrity sha512-21eouZEuCBFrpGeefnnU9yJ1SH32L9gSlT9MOJXBSXCX5HFskNLdN8Q4cQSyRXSt6r5kEz1GG5a4I805/U2TMQ==
+"@tiptap/extension-highlight@2.22.3":
+  version "2.22.3"
+  resolved "https://registry.npmjs.org/@tiptap/extension-highlight/-/extension-highlight-2.22.3.tgz"
+  integrity sha512-cdPSeQ3QcThhJdzkjK9a1871uPQjwmOf0WzTGW33lJyJDQHypWIRNUus56c3pGA7BgV9P59QW7Fm8rDnM8XkbA==
 
 "@tiptap/extension-history@^2.14.0":
   version "2.14.0"
@@ -5620,10 +5619,10 @@
   resolved "https://registry.npmjs.org/@tiptap/extension-table-row/-/extension-table-row-2.22.3.tgz"
   integrity sha512-PQbrDIyGOHrsN3RmB+J75UJ10lGW7I4PqY+E2HUtx5HvFOEVPlBbcFELMfjy7dOPbKiM+v6KUSbybXW8h745mg==
 
-"@tiptap/extension-task-item@2.14.0":
-  version "2.14.0"
-  resolved "https://registry.npmjs.org/@tiptap/extension-task-item/-/extension-task-item-2.14.0.tgz"
-  integrity sha512-MFE928s1J2ACyjOlkx52D/+r6aqz6c516C0tvnP2vzrkijFaSMNY4Xg7L1wTinzIdijh184AYQpyw7LezJa1ug==
+"@tiptap/extension-task-item@2.22.3":
+  version "2.22.3"
+  resolved "https://registry.npmjs.org/@tiptap/extension-task-item/-/extension-task-item-2.22.3.tgz"
+  integrity sha512-aVfSa2dLF77bfXpAlrsfPUNdhiHJhw3VJ/pnCTxrEnBXYilDuH59AhtU6DygSNhMZWUgzI4OPqf3crF+yzrHag==
 
 "@tiptap/extension-task-list@2.14.0":
   version "2.14.0"
@@ -15639,10 +15638,10 @@ socks-proxy-agent@^8.0.3, socks-proxy-agent@^8.0.5:
     debug "^4.3.4"
     socks "^2.8.3"
 
-sonner@^1.7.1:
-  version "1.7.4"
-  resolved "https://registry.npmjs.org/sonner/-/sonner-1.7.4.tgz"
-  integrity sha512-DIS8z4PfJRbIyfVFDVnK9rO3eYDtse4Omcm6bt0oEr5/jtLgysmjuBl1frJ9E/EQZrFmKx2A8m/s5s9CRXIzhw==
+sonner@^2.0.5:
+  version "2.0.5"
+  resolved "https://registry.npmjs.org/sonner/-/sonner-2.0.5.tgz"
+  integrity sha512-YwbHQO6cSso3HBXlbCkgrgzDNIhws14r4MO87Ofy+cV2X7ES4pOoAK3+veSmVTvqNx1BWUxlhPmZzP00Crk2aQ==
 
 source-map@0.5.6:
   version "0.5.6"
