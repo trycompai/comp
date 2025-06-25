@@ -1,11 +1,5 @@
 name: E2E Tests
 
-permissions:
-  contents: read
-  actions: write # Needed for uploading artifacts
-  issues: write # Needed for PR comments
-  pull-requests: write # Needed for PR comments
-
 on:
   pull_request: # Runs BEFORE merge during PR review
     branches:
@@ -21,6 +15,16 @@ on:
       - main
       - release
   workflow_dispatch: # Allow manual triggering
+
+permissions:
+  contents: read
+  actions: write # Needed for uploading artifacts
+  issues: write # Needed for PR comments
+  pull-requests: write # Needed for PR comments
+
+env:
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+  TURBO_TEAM: ${{ vars.TURBO_TEAM }}
 
 jobs:
   e2e-tests:
@@ -302,6 +306,74 @@ jobs:
           STRIPE_SECRET_KEY: sk_test_dummy_key_for_ci_builds
           STRIPE_WEBHOOK_SECRET: whsec_test_dummy_webhook_secret
 
+      - name: Generate test summary
+        if: always()
+        run: |
+          cd apps/app
+
+          # Generate job summary
+          echo "## 🎭 Playwright Test Results - ${{ matrix.project }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Check if test results exist
+          if [ -f "test-results/.last-run.json" ]; then
+            # Parse test results
+            TOTAL=$(jq '.suites | map(.specs | length) | add' test-results/.last-run.json 2>/dev/null || echo "0")
+            PASSED=$(jq '.suites | map(.specs | map(select(.ok == true)) | length) | add' test-results/.last-run.json 2>/dev/null || echo "0")
+            FAILED=$(jq '.suites | map(.specs | map(select(.ok == false)) | length) | add' test-results/.last-run.json 2>/dev/null || echo "0")
+            
+            # Add summary stats
+            echo "### 📊 Summary" >> $GITHUB_STEP_SUMMARY
+            echo "- **Total Tests:** $TOTAL" >> $GITHUB_STEP_SUMMARY
+            echo "- **✅ Passed:** $PASSED" >> $GITHUB_STEP_SUMMARY
+            echo "- **❌ Failed:** $FAILED" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            # Add failed test details if any
+            if [ "$FAILED" -gt 0 ]; then
+              echo "### ❌ Failed Tests" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              
+              # List failed tests
+              jq -r '.suites[] | .specs[] | select(.ok == false) | "- **\(.title)** in `\(.file)`"' test-results/.last-run.json 2>/dev/null >> $GITHUB_STEP_SUMMARY || true
+              echo "" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "⚠️ No test results found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Add screenshots/videos info if failures exist
+          if [ -d "test-results" ] && [ "$(find test-results -name "*.png" -o -name "*.webm" | wc -l)" -gt 0 ]; then
+            echo "### 📸 Test Artifacts" >> $GITHUB_STEP_SUMMARY
+            echo "Screenshots and videos have been captured for failed tests." >> $GITHUB_STEP_SUMMARY
+            echo "Download artifacts from the workflow run to view them." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            # List artifacts
+            echo "<details><summary>Click to see artifact files</summary>" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            find test-results -name "*.png" -o -name "*.webm" | sort >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "</details>" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Add trace viewer instructions
+          if [ -d "test-results" ] && [ "$(find test-results -name "*.zip" | wc -l)" -gt 0 ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 🔍 Debug with Trace Viewer" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "To debug failed tests:" >> $GITHUB_STEP_SUMMARY
+            echo "1. Download the trace files from artifacts" >> $GITHUB_STEP_SUMMARY
+            echo "2. Visit [trace.playwright.dev](https://trace.playwright.dev)" >> $GITHUB_STEP_SUMMARY
+            echo "3. Upload the trace.zip file" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Or run locally:" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+            echo "bunx playwright show-trace path/to/trace.zip" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          fi
+
       - name: Show server logs on failure
         if: failure()
         run: |
@@ -318,7 +390,17 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-results-${{ matrix.project }}
-          path: apps/app/test-results/
+          path: |
+            apps/app/test-results/
+            apps/app/playwright-report/
+          retention-days: 7
+
+      - name: Upload HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.project }}
+          path: apps/app/playwright-report/
           retention-days: 7
 
       - name: Upload test artifacts

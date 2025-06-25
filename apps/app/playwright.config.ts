@@ -17,19 +17,27 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* Use multiple workers for faster test execution */
+  /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 2 : undefined,
   /* Global timeout for each test */
   timeout: 30 * 1000, // 30 seconds per test
   /* Global timeout for each test file */
   globalTimeout: 10 * 60 * 1000, // 10 minutes total
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: [
-    ['html', { outputFolder: 'playwright-report' }],
-    ['json', { outputFile: 'test-results/results.json' }],
-    ['junit', { outputFile: 'test-results/junit.xml' }],
-    process.env.CI ? ['github'] : ['list'],
-  ],
+  reporter: process.env.CI
+    ? [
+        ['list'],
+        [
+          'html',
+          {
+            open: 'never',
+            outputFolder: 'playwright-report',
+          },
+        ],
+        ['json', { outputFile: 'test-results/results.json' }],
+        ['junit', { outputFile: 'test-results/junit.xml' }],
+      ]
+    : [['list'], ['html', { open: 'on-failure' }]],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */

@@ -231,3 +231,17 @@ The E2E workflow:
 
 - Run `bun run test:e2e:install`
 - Or install specific browser: `bunx playwright install chromium`
+
+## 📊 Viewing Test Results
+
+Test results can be viewed in multiple ways:
+
+1. **GitHub Actions Summary** - Quick overview directly in the Actions tab
+2. **GitHub Pages Dashboard** - Full HTML reports at https://trycompai.github.io/comp/
+3. **Playwright Trace Viewer** - Debug failures at https://trace.playwright.dev
+
+See [TEST_RESULTS_VIEWING.md](./TEST_RESULTS_VIEWING.md) for detailed instructions.
+
+## 🔧 Debugging Tests
+
+bunx playwright test --ui
