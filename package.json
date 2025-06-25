@@ -1,6 +1,9 @@
 {
   "name": "comp",
   "version": "1.43.2",
+  "dependencies": {
+    "@lottiefiles/dotlottie-react": "^0.14.2"
+  },
   "devDependencies": {
     "@azure/core-http": "^3.0.5",
     "@azure/core-rest-pipeline": "^1.21.0",
@@ -90,8 +93,5 @@
   "workspaces": [
     "apps/*",
     "packages/*"
-  ],
-  "dependencies": {
-    "@lottiefiles/dotlottie-react": "^0.14.2"
-  }
+  ]
 }
