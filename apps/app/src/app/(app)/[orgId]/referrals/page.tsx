@@ -18,17 +18,16 @@ async function createPublicToken() {
     redirect('/');
   }
 
-  if (!env.DUB_PROGRAM_ID || !env.DUB_API_KEY) {
+  if (!env.DUB_API_KEY) {
     return null;
   }
 
   const { publicToken } = await dub.embedTokens.referrals({
-    programId: env.DUB_PROGRAM_ID,
     partner: {
       tenantId: session.user.id,
-      name: session.user.name || '',
-      email: session.user.email || '',
-      image: session.user.image || '',
+      name: session.user.name || session.user.email.split('@')[0],
+      email: session.user.email,
+      image: session.user.image,
     },
   });
 

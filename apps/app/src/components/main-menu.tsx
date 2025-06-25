@@ -1,5 +1,6 @@
 'use client';
 
+// import { env } from '@/env.mjs';
 import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
@@ -48,6 +49,7 @@ export function MainMenu({ organizationId, isCollapsed = false, onItemClick }: P
   const pathname = usePathname();
   const [activeStyle, setActiveStyle] = useState({ top: '0px', height: '0px' });
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
+  // const hasDubEnabled = !!env.DUB_API_KEY;
 
   const items: MenuItem[] = [
     {
@@ -126,14 +128,14 @@ export function MainMenu({ organizationId, isCollapsed = false, onItemClick }: P
         variant: 'secondary',
       },
     },
-    // {
+    // ...(hasDubEnabled ? [{
     //   id: 'referrals',
     //   path: '/:organizationId/referrals',
     //   name: 'Referrals',
     //   disabled: false,
     //   icon: Gift,
     //   protected: false,
-    // },
+    // }] : []),
     {
       id: 'settings',
       path: '/:organizationId/settings',
