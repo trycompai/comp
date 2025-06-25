@@ -78,6 +78,13 @@ jobs:
           bunx prisma migrate deploy
           bunx prisma db seed || true # Allow seed to fail
 
+      - name: Generate Prisma Client
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+        run: |
+          cd packages/db
+          bunx prisma generate
+
       - name: Cache Playwright browsers
         uses: actions/cache@v4
         with:
