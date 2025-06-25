@@ -1,5 +1,9 @@
 name: Quick Tests
 
+permissions:
+  contents: read
+  issues: write
+
 on:
   pull_request:
     branches: [main, release]
