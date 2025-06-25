@@ -123,10 +123,17 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
           NEXTAUTH_URL: http://localhost:3000
           NEXTAUTH_SECRET: test-secret-for-ci
+          AUTH_SECRET: test-secret-for-ci
+          BETTER_AUTH_URL: http://localhost:3000
           PLAYWRIGHT_BASE_URL: http://localhost:3000
           E2E_TEST_MODE: true
           E2E_USE_REAL_AUTH: false
           CI: true
+          # Additional env vars that might be needed
+          UPSTASH_REDIS_REST_URL: https://dummy.upstash.io
+          UPSTASH_REDIS_REST_TOKEN: dummy-token
+          RESEND_API_KEY: dummy-resend-key
+          TRIGGER_SECRET_KEY: dummy-trigger-key
 
       - name: Upload test results
         if: always()
