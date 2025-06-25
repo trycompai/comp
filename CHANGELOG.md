@@ -1,3 +1,13 @@
+## [1.43.2](https://github.com/trycompai/comp/compare/v1.43.1...v1.43.2) (2025-06-25)
+
+
+### Bug Fixes
+
+* fix bug with undefined theme ([901fa0c](https://github.com/trycompai/comp/commit/901fa0cff57dce3cb08924dd4efbe9b5e87831eb))
+* fix dark mode rendering for dub referral embed ([f1088d1](https://github.com/trycompai/comp/commit/f1088d1907cca32ececd7e09bb2cbbe52e52945b))
+* use email as fallback for name ([7ba3016](https://github.com/trycompai/comp/commit/7ba3016ab4605d5992849567540d62e17b9b50ea))
+* use taildwind theme instead of hardcoding system ([97d257e](https://github.com/trycompai/comp/commit/97d257e54bb31b8549a0e34afe9715b395c64b36))
+
 ## [1.43.1](https://github.com/trycompai/comp/compare/v1.43.0...v1.43.1) (2025-06-24)
 
 
