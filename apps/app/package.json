@@ -72,7 +72,7 @@
     "remark-gfm": "^4.0.1",
     "remark-parse": "^11.0.0",
     "resend": "^4.4.1",
-    "sonner": "^1.7.1",
+    "sonner": "^2.0.5",
     "stripe": "^18.1.0",
     "three": "^0.177.0",
     "ts-pattern": "^5.7.0",
