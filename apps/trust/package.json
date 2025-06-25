@@ -3,6 +3,7 @@
   "dependencies": {
     "@comp/db": "workspace:*",
     "@comp/ui": "workspace:*",
+    "@lottiefiles/dotlottie-react": "^0.14.2",
     "lucide-react": "^0.518.0",
     "next": "15.4.0-canary.85"
   },
