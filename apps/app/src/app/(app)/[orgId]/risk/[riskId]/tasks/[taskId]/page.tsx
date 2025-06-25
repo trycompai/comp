@@ -1,5 +1,5 @@
 import { TaskOverview } from '@/components/risks/tasks/task-overview';
-import { useUsers } from '@/hooks/use-users';
+import { getUsers } from '@/hooks/use-users';
 import { auth } from '@/utils/auth';
 import { db } from '@comp/db';
 import type { Metadata } from 'next';
@@ -13,7 +13,7 @@ interface PageProps {
 export default async function RiskPage({ params }: PageProps) {
   const { riskId, taskId } = await params;
   const task = await getTask(riskId, taskId);
-  const users = await useUsers();
+  const users = await getUsers();
 
   if (!task) {
     redirect('/');

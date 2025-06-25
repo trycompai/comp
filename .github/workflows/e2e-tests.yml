@@ -1,5 +1,9 @@
 name: E2E Tests
 
+permissions:
+  contents: read
+  actions: write # Needed for uploading artifacts
+
 on:
   pull_request: # Runs BEFORE merge during PR review
     branches:

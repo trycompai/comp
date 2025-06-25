@@ -1,11 +1,14 @@
 name: Quick Tests
 
+permissions:
+  contents: read
+
 on:
   pull_request: # Runs BEFORE merge during PR review
     branches:
       - main # Feature branches -> main
       - release # main -> release (production)
-    types: [opened, synchronize]
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
 
 jobs:

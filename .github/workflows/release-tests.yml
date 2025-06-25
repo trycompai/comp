@@ -1,5 +1,8 @@
 name: Release Tests
 
+permissions:
+  contents: read
+
 on:
   pull_request: # Runs BEFORE merge to release (extra validation for production)
     branches:
@@ -77,6 +80,9 @@ jobs:
   comprehensive-e2e:
     name: Comprehensive E2E - All Browsers
     runs-on: ubuntu-latest-custom
+    permissions:
+      contents: read
+      actions: write # Needed for uploading artifacts
     timeout-minutes: 45
     if: github.base_ref == 'release' # Only for main->release PRs
 
