@@ -55,6 +55,11 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Generate Prisma Client
+        run: |
+          cd packages/db
+          bunx prisma generate
+
       - name: Run unit tests for ${{ matrix.app }}
         run: |
           cd apps/${{ matrix.app }}
@@ -65,6 +70,8 @@ jobs:
           fi
         env:
           CI: true
+          AUTH_SECRET: test-auth-secret-for-ci
+          BETTER_AUTH_URL: http://localhost:3000
 
       - name: Upload test results
         if: always()
