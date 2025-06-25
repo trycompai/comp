@@ -19,8 +19,6 @@ export async function POST(request: NextRequest) {
       where: { email },
     });
 
-    let signInResponse;
-
     if (!existingUser) {
       // First, sign up the user using Better Auth's signUpEmail method
       const signUpResponse = await auth.api.signUpEmail({
@@ -69,27 +67,21 @@ export async function POST(request: NextRequest) {
           },
         });
       }
+    }
 
-      // Sign in response is already in signUpResponse if autoSignIn is true
-      signInResponse = signUpResponse;
-    } else {
-      // User exists, just sign them in
-      signInResponse = await auth.api.signInEmail({
-        body: {
-          email,
-          password: testPassword,
-        },
-        headers: request.headers, // Pass the request headers
-        asResponse: true,
-      });
+    // Always sign in to get a fresh session with updated user state
+    const signInResponse = await auth.api.signInEmail({
+      body: {
+        email,
+        password: testPassword,
+      },
+      headers: request.headers, // Pass the request headers
+      asResponse: true,
+    });
 
-      if (!signInResponse.ok) {
-        const errorData = await signInResponse.json();
-        return NextResponse.json(
-          { error: 'Failed to sign in', details: errorData },
-          { status: 400 },
-        );
-      }
+    if (!signInResponse.ok) {
+      const errorData = await signInResponse.json();
+      return NextResponse.json({ error: 'Failed to sign in', details: errorData }, { status: 400 });
     }
 
     // Get the response data

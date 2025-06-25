@@ -2,9 +2,11 @@ import { expect, test } from '@playwright/test';
 
 test('simple auth flow', async ({ page, context }) => {
   // Create a test user and authenticate
+  const testEmail = `test-${Date.now()}@example.com`;
+
   const response = await context.request.post('http://localhost:3000/api/auth/test-login', {
     data: {
-      email: `test-${Date.now()}@example.com`, // Use unique email to avoid conflicts
+      email: testEmail,
       name: 'Test User',
     },
   });
@@ -13,7 +15,8 @@ test('simple auth flow', async ({ page, context }) => {
   const data = await response.json();
   expect(data.success).toBe(true);
   expect(data.user).toBeDefined();
-  expect(data.user.email).toContain('test-');
+  expect(data.user.email).toBe(testEmail);
+  expect(data.user.emailVerified).toBe(true);
 
   // Verify session cookie was set
   const cookies = await context.cookies();
@@ -24,8 +27,8 @@ test('simple auth flow', async ({ page, context }) => {
   // Navigate to auth page - should be redirected since we're authenticated
   await page.goto('http://localhost:3000/auth');
 
-  // Wait for redirect to complete
-  await page.waitForURL((url) => !url.pathname.includes('/auth'), { timeout: 10000 });
+  // Wait for redirect to complete - wait for any URL that's not the auth page
+  await page.waitForURL('**/!(auth)', { timeout: 10000 });
 
   const currentUrl = page.url();
 
@@ -37,7 +40,7 @@ test('simple auth flow', async ({ page, context }) => {
     currentUrl.includes('/setup') ||
     currentUrl.includes('/dashboard') ||
     currentUrl.includes('/upgrade') ||
-    currentUrl.includes('/org_'); // Organization-specific routes
+    currentUrl.includes('/org_');
 
   expect(isAuthenticatedRoute).toBeTruthy();
 });
