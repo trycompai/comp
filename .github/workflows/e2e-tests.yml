@@ -88,44 +88,82 @@ jobs:
           bunx prisma migrate deploy
           bunx prisma db seed || true # Allow seed to fail
 
-      - name: Generate Prisma Client
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+      - name: Generate Prisma client
         run: |
           cd packages/db
           bunx prisma generate
 
-      - name: Get Playwright version
-        id: playwright-version
-        run: |
-          cd apps/app
-          PLAYWRIGHT_VERSION=$(bunx playwright --version | sed 's/Version //')
-          echo "Playwright version: $PLAYWRIGHT_VERSION"
-          echo "version=$PLAYWRIGHT_VERSION" >> $GITHUB_OUTPUT
-          echo "Cache key will be: ${{ runner.os }}-playwright-${PLAYWRIGHT_VERSION}-${{ matrix.project }}"
-
       - name: Cache Playwright browsers
-        id: playwright-cache
         uses: actions/cache@v4
+        id: playwright-cache
         with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}-${{ matrix.project }}
+          path: |
+            ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ matrix.project }}-${{ hashFiles('**/package-lock.json', '**/bun.lockb') }}
           restore-keys: |
-            ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}-
+            ${{ runner.os }}-playwright-${{ matrix.project }}-
+            ${{ runner.os }}-playwright-
 
       - name: Install Playwright browsers
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: |
           cd apps/app
-          echo "Cache miss - installing Playwright browsers"
-          bunx playwright install --with-deps ${{ matrix.project }}
+          # Use --with-deps to install both browser and system dependencies
+          PLAYWRIGHT_BROWSERS_PATH=$HOME/.cache/ms-playwright bunx playwright install --with-deps ${{ matrix.project }}
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: $HOME/.cache/ms-playwright
 
-      - name: Install system dependencies only
+      - name: Install Playwright dependencies
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: |
           cd apps/app
-          echo "Cache hit - installing system dependencies only"
-          bunx playwright install-deps ${{ matrix.project }}
+          # Still need to install system dependencies even if browsers are cached
+          PLAYWRIGHT_BROWSERS_PATH=$HOME/.cache/ms-playwright bunx playwright install-deps ${{ matrix.project }}
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: $HOME/.cache/ms-playwright
+
+      - name: Verify Playwright installation
+        run: |
+          echo "=== Verifying Playwright installation ==="
+          echo "Cache hit: ${{ steps.playwright-cache.outputs.cache-hit }}"
+
+          # Check all possible Playwright cache locations
+          echo "Checking ~/.cache/ms-playwright:"
+          ls -la ~/.cache/ms-playwright 2>/dev/null || echo "  Directory not found"
+
+          echo "Checking ~/Library/Caches/ms-playwright:"
+          ls -la ~/Library/Caches/ms-playwright 2>/dev/null || echo "  Directory not found"
+
+          echo "Checking ~/.local-chromium:"
+          ls -la ~/.local-chromium 2>/dev/null || echo "  Directory not found"
+
+          # Find where Playwright actually installed browsers
+          echo "Finding all ms-playwright directories:"
+          find ~ -name "ms-playwright" -type d 2>/dev/null | head -20
+
+          # Check Playwright's own cache directory
+          echo "Playwright cache home:"
+          cd apps/app && bunx playwright install --help | grep -i cache || true
+
+          # Show disk usage
+          echo "Disk usage of cache directories:"
+          du -sh ~/.cache/ms-playwright 2>/dev/null || true
+          du -sh ~/Library/Caches/ms-playwright 2>/dev/null || true
+
+          echo "=== End verification ==="
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: $HOME/.cache/ms-playwright
+
+      - name: Debug Playwright cache
+        run: |
+          echo "Cache hit: ${{ steps.playwright-cache.outputs.cache-hit }}"
+          echo "Checking Playwright directories:"
+          ls -la ~/.cache/ms-playwright 2>/dev/null || echo "~/.cache/ms-playwright not found"
+          du -sh ~/.cache/ms-playwright 2>/dev/null || echo "Cannot check size"
+          echo "Playwright browsers installed:"
+          cd apps/app && bunx playwright --version
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: $HOME/.cache/ms-playwright
 
       - name: Build app
         run: |
@@ -243,6 +281,7 @@ jobs:
           AUTH_SECRET: test-secret-for-ci
           BETTER_AUTH_URL: http://localhost:3000
           PLAYWRIGHT_BASE_URL: http://localhost:3000
+          PLAYWRIGHT_BROWSERS_PATH: $HOME/.cache/ms-playwright
           E2E_TEST_MODE: true
           E2E_USE_REAL_AUTH: false
           CI: true
@@ -324,9 +363,14 @@ jobs:
             testSummary += `### Test Results\n`;
             testSummary += `- **Status**: Failed\n`;
             testSummary += `- **Browser**: ${{ matrix.project }}\n`;
-            testSummary += `- **Artifacts**: Check the [Actions tab](${context.payload.pull_request.html_url.replace('/pull/', '/actions/runs/')}) for screenshots and videos\n\n`;
+            testSummary += `- **Run ID**: ${{ github.run_id }}\n\n`;
 
-            testSummary += `💡 **Tip**: Download the test artifacts from the workflow run to see screenshots and videos of the failures.\n`;
+            // Add direct links to artifacts
+            testSummary += `### 📦 Test Artifacts\n`;
+            testSummary += `- [View Test Results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\n`;
+            testSummary += `- [Download Screenshots & Videos](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts)\n\n`;
+
+            testSummary += `💡 **Tip**: Click the artifacts links above to download screenshots and videos of the test failures.\n`;
 
             // Create or update comment
             const { data: comments } = await github.rest.issues.listComments({
@@ -386,3 +430,17 @@ jobs:
                 body: successMessage
               });
             }
+
+      - name: Verify cache before save
+        if: always()
+        run: |
+          echo "=== Verifying cache contents before workflow ends ==="
+          echo "Contents of ~/.cache/ms-playwright:"
+          if [ -d ~/.cache/ms-playwright ]; then
+            ls -la ~/.cache/ms-playwright
+            echo "Total size: $(du -sh ~/.cache/ms-playwright | cut -f1)"
+            echo "Number of files: $(find ~/.cache/ms-playwright -type f | wc -l)"
+          else
+            echo "Cache directory not found!"
+          fi
+          echo "=== End cache verification ==="
