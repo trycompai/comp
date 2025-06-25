@@ -1,8 +1,11 @@
 'use client';
 
 import { DubEmbed } from '@dub/embed-react';
+import { useTheme } from 'next-themes';
 
 export const DubReferral = ({ publicToken }: { publicToken: string | null }) => {
+  const theme = useTheme();
+
   if (!publicToken) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
@@ -18,7 +21,7 @@ export const DubReferral = ({ publicToken }: { publicToken: string | null }) => 
       data="referrals"
       token={publicToken}
       options={{
-        theme: 'system',
+        theme: theme.theme as 'light' | 'dark' | 'system',
         containerStyles: {
           colorScheme: 'auto',
         },
