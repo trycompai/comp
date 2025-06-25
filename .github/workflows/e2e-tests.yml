@@ -109,6 +109,11 @@ jobs:
           AUTH_SECRET: test-secret-for-ci
           BETTER_AUTH_URL: http://localhost:3000
           SKIP_ENV_VALIDATION: true
+          # Dummy values for build to succeed - not used in tests
+          UPSTASH_REDIS_REST_URL: https://dummy.upstash.io
+          UPSTASH_REDIS_REST_TOKEN: dummy-token
+          RESEND_API_KEY: dummy-resend-key
+          TRIGGER_SECRET_KEY: dummy-trigger-key
 
       - name: Run E2E tests
         run: |
