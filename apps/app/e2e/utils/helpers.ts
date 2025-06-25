@@ -42,9 +42,10 @@ export async function waitForNetworkIdle(page: Page) {
 // Generate unique test data
 export function generateTestData() {
   const timestamp = Date.now();
+  const random = Math.floor(Math.random() * 10000);
   return {
-    organizationName: `Test Org ${timestamp}`,
-    email: `test+${timestamp}@example.com`,
+    organizationName: `Test Org ${timestamp}-${random}`,
+    email: `test+${timestamp}${random}@example.com`,
     userName: `Test User ${timestamp}`,
   };
 }

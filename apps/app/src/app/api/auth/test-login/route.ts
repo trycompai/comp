@@ -87,8 +87,8 @@ async function handleLogin(request: NextRequest) {
       where: { email },
     });
 
-    if (user) {
-      // Create a test organization for the user
+    if (user && !body.skipOrg) {
+      // Create a test organization for the user only if skipOrg is not true
       await db.organization.create({
         data: {
           name: `Test Org ${Date.now()}`,

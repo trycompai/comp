@@ -17,17 +17,18 @@ test.describe('Onboarding Flow', () => {
   test('new user can complete full onboarding flow', async ({ page }) => {
     const testData = generateTestData();
 
-    // 1. Start by authenticating the user
+    // 1. Start by authenticating the user WITHOUT creating an organization
     await authenticateTestUser(page, {
       email: testData.email,
       name: testData.userName,
+      skipOrg: true, // Don't create an org - user should go through setup
     });
 
     // 2. Navigate to root - this should trigger middleware redirects
     await page.goto('/');
 
     // 3. Wait for the redirect to complete - we expect to end up at /setup
-    await page.waitForURL(/\/(setup|auth)/, { timeout: 10000 });
+    await page.waitForURL(/\/(setup\/[a-zA-Z0-9]+|auth)/, { timeout: 10000 });
 
     const currentUrl = page.url();
     console.log('After navigation, current URL:', currentUrl);
@@ -35,15 +36,77 @@ test.describe('Onboarding Flow', () => {
     // 4. If we're still on auth, try navigating again
     if (currentUrl.includes('/auth')) {
       await page.goto('/');
-      await page.waitForURL('/setup', { timeout: 10000 });
+      await page.waitForURL(/\/setup\/[a-zA-Z0-9]+/, { timeout: 10000 });
     }
 
     // 5. Verify we're on the organization setup page
-    await expect(page.locator('h1, h2').first()).toContainText(
-      /create.*organization|setup.*organization/i,
-    );
+    // Wait for the page to be fully loaded
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForLoadState('networkidle');
 
-    // 6. Fill organization details
+    // Give React time to render
+    await page.waitForTimeout(3000);
+
+    // Debug: Take a screenshot
+    await page.screenshot({ path: 'debug-setup-page.png' });
+
+    // Debug: Check what's visible
+    const visibleText = await page.evaluate(() => {
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+        acceptNode: (node) => {
+          const parent = node.parentElement;
+          if (!parent) return NodeFilter.FILTER_REJECT;
+          const style = window.getComputedStyle(parent);
+          if (style.display === 'none' || style.visibility === 'hidden') {
+            return NodeFilter.FILTER_REJECT;
+          }
+          return NodeFilter.FILTER_ACCEPT;
+        },
+      });
+
+      const texts = [];
+      let node;
+      while ((node = walker.nextNode())) {
+        const text = node.textContent?.trim();
+        if (text && text.length > 2) {
+          texts.push(text);
+        }
+      }
+      return texts.join(' ');
+    });
+
+    console.log('Visible text on page:', visibleText.substring(0, 500));
+
+    // Try to find framework cards or any framework-related content
+    const hasFrameworkContent =
+      visibleText.toLowerCase().includes('framework') ||
+      visibleText.toLowerCase().includes('soc') ||
+      visibleText.toLowerCase().includes('compliance');
+
+    if (!hasFrameworkContent) {
+      throw new Error(
+        'Setup page does not seem to have loaded correctly. Visible text: ' +
+          visibleText.substring(0, 200),
+      );
+    }
+
+    // 6. Framework is already selected by default, just click Next
+    // Wait for the Next button to be visible and click it
+    const nextButton = await page.waitForSelector('button:has-text("Next")', { timeout: 10000 });
+    await nextButton.click();
+
+    // Wait for transition to organization name step
+    await page.waitForTimeout(1000);
+
+    // 7. Now we should be on organization name step
+    // Wait for the organization name input to be visible
+    await page.waitForSelector('input[name="organizationName"]', { timeout: 10000 });
+
+    // Verify we're on the right step
+    const stepText = await page.textContent('body');
+    console.log('Step 2 visible text:', stepText?.includes('What is your company name'));
+
+    // Fill organization name
     await fillFormField(page, 'input[name="organizationName"]', testData.organizationName);
 
     // Look for optional fields
@@ -52,17 +115,17 @@ test.describe('Onboarding Flow', () => {
       await page.locator('[name="industry"]').selectOption({ index: 1 });
     }
 
-    // 7. Submit organization creation
+    // 8. Submit organization creation
     await clickAndWait(
       page,
       'button[type="submit"]:has-text("Create"), button:has-text("Continue")',
       { waitForNavigation: true },
     );
 
-    // 8. Should redirect to organization dashboard/frameworks
+    // 9. Should redirect to organization dashboard/frameworks
     await waitForURL(page, /\/org_.*\/(dashboard|frameworks)/);
 
-    // 9. Verify organization was created
+    // 10. Verify organization was created
     await expect(page.locator('text=' + testData.organizationName)).toBeVisible({ timeout: 10000 });
   });
 
@@ -78,8 +141,17 @@ test.describe('Onboarding Flow', () => {
     // Navigate to setup with intent
     await page.goto('/setup?intent=create-additional');
 
-    // Should be allowed to access setup page
-    await expect(page).toHaveURL('/setup?intent=create-additional');
+    // Should be redirected to setup page with session ID
+    await page.waitForURL(/\/setup\/[a-zA-Z0-9]+/, { timeout: 10000 });
+
+    // Should start with framework selection - verify frameworks are visible
+    await expect(page.locator('text=/SOC 2/i')).toBeVisible();
+
+    // Framework is already selected by default, just click Next
+    await clickAndWait(page, 'button:has-text("Next")', { waitForNavigation: false });
+
+    // Wait for organization name step
+    await page.waitForTimeout(500);
 
     // Create new organization
     await fillFormField(page, 'input[name="organizationName"]', testData.organizationName);
@@ -90,48 +162,67 @@ test.describe('Onboarding Flow', () => {
   });
 
   test('user without org is redirected to setup from dashboard', async ({ page }) => {
+    const testData = generateTestData();
+
     // Authenticate user without organization
     await authenticateTestUser(page, {
-      email: 'no-org-user@example.com',
+      email: testData.email, // Use unique email
       name: 'No Org User',
+      skipOrg: true, // User should not have an organization
     });
 
     // Navigate to root
     await page.goto('/');
 
-    // Should be redirected to setup
-    await waitForURL(page, '/setup');
-    await expect(page.locator('h1, h2').first()).toContainText(/create.*organization|setup/i);
+    // Should be redirected to setup with session ID
+    await waitForURL(page, /\/setup\/[a-zA-Z0-9]+/);
+    // Verify we're on the setup page with frameworks
+    await expect(page.locator('text=/compliance frameworks/i')).toBeVisible();
   });
 
   test('setup page validates required fields', async ({ page }) => {
+    const testData = generateTestData();
+
     // Authenticate first
     await authenticateTestUser(page, {
-      email: 'validation-test@example.com',
+      email: testData.email, // Use unique email
       name: 'Validation Test',
+      skipOrg: true, // User needs to go through setup
     });
 
     await page.goto('/setup');
 
-    // Try to submit without filling required fields
+    // Wait for redirect to setup with session ID
+    await page.waitForURL(/\/setup\/[a-zA-Z0-9]+/, { timeout: 10000 });
+
+    // Framework is already selected, click Next to go to organization name step
+    await page.locator('button:has-text("Next")').click();
+
+    // Wait for organization name step
+    await page.waitForSelector('input[name="organizationName"]', { timeout: 10000 });
+
+    // Try to submit without filling organization name
     const submitButton = page.locator('button[type="submit"]');
     await submitButton.click();
 
-    // Should show validation errors
-    await expect(page.locator('text=/required|enter.*name/i')).toBeVisible();
+    // Should show validation error for organization name
+    await expect(page.locator('text=/required|at least 2 characters/i')).toBeVisible();
 
     // Fill organization name
     await fillFormField(page, 'input[name="organizationName"]', 'Test Organization');
 
-    // Errors should disappear
-    await expect(page.locator('text=/required|enter.*name/i')).not.toBeVisible();
+    // Error should disappear
+    await expect(page.locator('text=/required|at least 2 characters/i')).not.toBeVisible();
   });
 
   test('handles organization creation errors gracefully', async ({ page }) => {
+    const testData = generateTestData();
+
     // Authenticate first
     await authenticateTestUser(page, {
-      email: 'error-test@example.com',
+      email: testData.email, // Use unique email
       name: 'Error Test',
+      skipOrg: true, // User needs to go through setup
     });
 
     // Mock API to return error
@@ -145,6 +236,15 @@ test.describe('Onboarding Flow', () => {
 
     await page.goto('/setup');
 
+    // Wait for redirect to setup with session ID
+    await page.waitForURL(/\/setup\/[a-zA-Z0-9]+/, { timeout: 10000 });
+
+    // Framework is already selected, click Next
+    await page.locator('button:has-text("Next")').click();
+
+    // Wait for organization name step
+    await page.waitForSelector('input[name="organizationName"]', { timeout: 10000 });
+
     // Fill and submit form
     await fillFormField(page, 'input[name="organizationName"]', 'Existing Org');
     await clickAndWait(page, 'button[type="submit"]');
@@ -152,52 +252,55 @@ test.describe('Onboarding Flow', () => {
     // Should show error message
     await expectToast(page, 'Organization name already exists');
 
-    // Should stay on setup page
-    await expect(page).toHaveURL('/setup');
+    // Should stay on setup page with session ID
+    await expect(page).toHaveURL(/\/setup\/[a-zA-Z0-9]+/);
   });
 });
 
 test.describe('Setup Page Components', () => {
   test.beforeEach(async ({ page }) => {
+    const testData = generateTestData();
+
     // Authenticate before each test
     await authenticateTestUser(page, {
-      email: 'component-test@example.com',
+      email: testData.email, // Use unique email for each test
       name: 'Component Test',
+      skipOrg: true, // Need to test setup page components
     });
   });
 
   test('displays progress indicator during setup', async ({ page }) => {
     await page.goto('/setup');
 
-    // Check for progress indicators
-    const progressIndicators = [
-      'step.*1.*create.*organization',
-      'step.*2.*invite.*team',
-      'step.*3.*configure.*settings',
-    ];
+    // Wait for redirect to setup with session ID
+    await page.waitForURL(/\/setup\/[a-zA-Z0-9]+/, { timeout: 10000 });
 
-    for (const indicator of progressIndicators) {
-      const element = page.locator(`text=/${indicator}/i`);
-      if ((await element.count()) > 0) {
-        await expect(element).toBeVisible();
-      }
-    }
+    // Check for step indicator
+    await expect(page.locator('text=/Step 1 of/i')).toBeVisible();
+
+    // Check that we're on the setup page (framework step)
+    await expect(page.locator('text=/compliance frameworks/i')).toBeVisible();
   });
 
-  test('organization name input has proper constraints', async ({ page }) => {
+  test('multi-step navigation works correctly', async ({ page }) => {
     await page.goto('/setup');
 
+    // Wait for redirect to setup with session ID
+    await page.waitForURL(/\/setup\/[a-zA-Z0-9]+/, { timeout: 10000 });
+
+    // Step 1: Framework is already selected, just click Next
+    await page.locator('button:has-text("Next")').click();
+
+    // Step 2: Organization name
+    await page.waitForTimeout(500);
+    await expect(page.locator('text=/Step 2 of/i')).toBeVisible();
     const orgNameInput = page.locator('input[name="organizationName"]');
+    await expect(orgNameInput).toBeVisible();
 
-    // Check max length
-    const maxLength = await orgNameInput.getAttribute('maxlength');
-    if (maxLength) {
-      expect(parseInt(maxLength)).toBeGreaterThanOrEqual(50);
-    }
-
-    // Check placeholder
-    const placeholder = await orgNameInput.getAttribute('placeholder');
-    expect(placeholder).toBeTruthy();
+    // Check back button works
+    await page.locator('button:has-text("Back")').click();
+    await page.waitForTimeout(500);
+    await expect(page.locator('text=/Step 1 of/i')).toBeVisible();
   });
 
   test('responsive design works on mobile', async ({ page }) => {
@@ -206,9 +309,11 @@ test.describe('Setup Page Components', () => {
 
     await page.goto('/setup');
 
-    // Check that form is still accessible
-    const orgNameInput = page.locator('input[name="organizationName"]');
-    await expect(orgNameInput).toBeVisible();
+    // Wait for redirect to setup with session ID
+    await page.waitForURL(/\/setup\/[a-zA-Z0-9]+/, { timeout: 10000 });
+
+    // Check that framework selection is accessible on mobile
+    await expect(page.locator('text=/compliance frameworks/i')).toBeVisible();
 
     const submitButton = page.locator('button[type="submit"]');
     await expect(submitButton).toBeVisible();
