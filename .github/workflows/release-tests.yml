@@ -1,0 +1,366 @@
+name: Release Tests
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+  actions: write
+
+on:
+  pull_request: # Runs BEFORE merge to release (extra validation for production)
+    branches:
+      - release
+    types: [opened, synchronize]
+  workflow_dispatch:
+
+jobs:
+  release-readiness:
+    name: Release Readiness Checks
+    runs-on: ubuntu-latest-custom
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Cache Next.js build
+        uses: actions/cache@v4
+        with:
+          path: |
+            apps/app/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/bun.lock') }}-${{ hashFiles('apps/app/**/*.js', 'apps/app/**/*.jsx', 'apps/app/**/*.ts', 'apps/app/**/*.tsx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/bun.lock') }}-
+            ${{ runner.os }}-nextjs-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: |
+          cd packages/db
+          bunx prisma generate
+
+      - name: Production Build Check
+        run: |
+          cd apps/app
+          NODE_ENV=production bun run build
+        env:
+          SKIP_ENV_VALIDATION: true
+          DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
+          AUTH_SECRET: test-secret-for-ci
+          BETTER_AUTH_URL: http://localhost:3000
+          # Dummy values for build to succeed
+          UPSTASH_REDIS_REST_URL: https://dummy.upstash.io
+          UPSTASH_REDIS_REST_TOKEN: dummy-token
+          RESEND_API_KEY: dummy-resend-key
+          TRIGGER_SECRET_KEY: dummy-trigger-key
+          STRIPE_SECRET_KEY: sk_test_dummy_key_for_ci_builds
+          STRIPE_WEBHOOK_SECRET: whsec_test_dummy_webhook_secret
+
+      - name: Bundle Size Check
+        run: |
+          cd apps/app
+          # Check if build outputs are reasonable size
+          echo "Checking bundle sizes..."
+          find .next -name "*.js" -size +5M -exec ls -lh {} \; | tee large-files.txt
+          if [ -s large-files.txt ]; then
+            echo "⚠️  Warning: Large bundle files detected:"
+            cat large-files.txt
+          fi
+
+      - name: Type Safety Check (strict mode)
+        run: |
+          cd apps/app
+          echo "Running strict type check..."
+          bunx tsc --noEmit --strict
+
+      - name: Security Audit
+        run: |
+          echo "Checking for known vulnerabilities..."
+          bunx audit-ci --moderate || echo "⚠️  Security audit found issues"
+
+      - name: License Check
+        run: |
+          echo "Checking licenses..."
+          bunx license-checker --production --summary || true
+
+  comprehensive-e2e:
+    name: Comprehensive E2E - All Browsers
+    runs-on: ubuntu-latest-custom
+    permissions:
+      contents: read
+      actions: write # Needed for uploading artifacts
+    timeout-minutes: 45
+    if: github.base_ref == 'release' # Only for main->release PRs
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Cache Next.js build
+        uses: actions/cache@v4
+        with:
+          path: |
+            apps/app/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/bun.lock') }}-${{ hashFiles('apps/app/**/*.js', 'apps/app/**/*.jsx', 'apps/app/**/*.ts', 'apps/app/**/*.tsx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/bun.lock') }}-
+            ${{ runner.os }}-nextjs-
+
+      - name: Generate Prisma Client
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+        run: |
+          cd packages/db
+          bunx prisma generate
+
+      - name: Setup database
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+        run: |
+          cd packages/db
+          bunx prisma migrate deploy
+          bunx prisma db seed || true
+
+      - name: Get Playwright version
+        id: playwright-version
+        run: |
+          cd apps/app
+          PLAYWRIGHT_VERSION=$(bunx playwright --version | sed 's/Version //')
+          echo "Playwright version: $PLAYWRIGHT_VERSION"
+          echo "version=$PLAYWRIGHT_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}-all
+          restore-keys: |
+            ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}-
+
+      - name: Install ALL Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: |
+          cd apps/app
+          echo "Cache miss - installing all Playwright browsers"
+          bunx playwright install --with-deps
+
+      - name: Install system dependencies only
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: |
+          cd apps/app
+          echo "Cache hit - installing system dependencies only"
+          bunx playwright install-deps
+
+      - name: Build application
+        run: |
+          cd apps/app
+          NODE_ENV=production bun run build
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          NEXTAUTH_URL: http://localhost:3000
+          NEXTAUTH_SECRET: test-secret-for-ci
+          AUTH_SECRET: test-secret-for-ci
+          BETTER_AUTH_URL: http://localhost:3000
+          SKIP_ENV_VALIDATION: true
+          # Dummy values for build to succeed - not used in tests
+          UPSTASH_REDIS_REST_URL: https://dummy.upstash.io
+          UPSTASH_REDIS_REST_TOKEN: dummy-token
+          RESEND_API_KEY: dummy-resend-key
+          TRIGGER_SECRET_KEY: dummy-trigger-key
+          STRIPE_SECRET_KEY: sk_test_dummy_key_for_ci_builds
+          STRIPE_WEBHOOK_SECRET: whsec_test_dummy_webhook_secret
+
+      - name: Start server
+        run: |
+          cd apps/app
+          # Start server with explicit port and capture output
+          PORT=3000 bun run start > server.log 2>&1 &
+          SERVER_PID=$!
+
+          # Wait for server to be ready
+          echo "Waiting for server to start (PID: $SERVER_PID)..."
+          for i in {1..30}; do
+            # Show server logs for debugging
+            if [ -f server.log ]; then
+              echo "=== Server logs (last 20 lines) ==="
+              tail -20 server.log
+              echo "=== End server logs ==="
+            fi
+            
+            # Check if server is responding
+            if curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 2>&1 | grep -q "200\|302\|303\|307"; then
+              echo "Server is responding! Testing auth endpoint..."
+              # Test that the auth endpoint is also ready
+              RESPONSE=$(curl -s -w "\n%{http_code}" http://localhost:3000/api/auth/test-login -X POST -H "Content-Type: application/json" -d '{"email":"test@example.com"}' 2>&1)
+              HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+              BODY=$(echo "$RESPONSE" | head -n -1)
+              echo "Auth endpoint response code: $HTTP_CODE"
+              echo "Auth endpoint response body: $BODY"
+              
+              if [ "$HTTP_CODE" = "403" ] || [ "$HTTP_CODE" = "400" ] || [ "$HTTP_CODE" = "500" ] || [ "$HTTP_CODE" = "200" ]; then
+                echo "Auth endpoint is responding!"
+                break
+              fi
+            else
+              echo "Server not ready yet... (attempt $i/30)"
+            fi
+            
+            # Check if process is still alive
+            if ! kill -0 $SERVER_PID 2>/dev/null; then
+              echo "ERROR: Server process died! Last logs:"
+              tail -50 server.log
+              exit 1
+            fi
+            
+            sleep 2
+          done
+
+          # Final check
+          if ! curl -s http://localhost:3000 > /dev/null 2>&1; then
+            echo "ERROR: Server never became ready! Final logs:"
+            tail -100 server.log
+            exit 1
+          fi
+
+          echo "Server successfully started and ready for E2E tests!"
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          NEXTAUTH_URL: http://localhost:3000
+          NEXTAUTH_SECRET: test-secret-for-ci
+          AUTH_SECRET: test-secret-for-ci
+          BETTER_AUTH_URL: http://localhost:3000
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+          E2E_TEST_MODE: true
+          E2E_USE_REAL_AUTH: false
+          CI: true
+          # Additional env vars that might be needed
+          UPSTASH_REDIS_REST_URL: https://dummy.upstash.io
+          UPSTASH_REDIS_REST_TOKEN: dummy-token
+          RESEND_API_KEY: dummy-resend-key
+          TRIGGER_SECRET_KEY: dummy-trigger-key
+          STRIPE_SECRET_KEY: sk_test_dummy_key_for_ci_builds
+          STRIPE_WEBHOOK_SECRET: whsec_test_dummy_webhook_secret
+
+      - name: Run ALL E2E tests
+        run: |
+          cd apps/app
+          echo "Starting E2E tests with 4 workers..."
+          bunx playwright test --reporter=list
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          NEXTAUTH_URL: http://localhost:3000
+          NEXTAUTH_SECRET: test-secret-for-ci
+          AUTH_SECRET: test-secret-for-ci
+          BETTER_AUTH_URL: http://localhost:3000
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+          E2E_TEST_MODE: true
+          E2E_USE_REAL_AUTH: false
+          CI: true
+          # Additional env vars that might be needed
+          UPSTASH_REDIS_REST_URL: https://dummy.upstash.io
+          UPSTASH_REDIS_REST_TOKEN: dummy-token
+          RESEND_API_KEY: dummy-resend-key
+          TRIGGER_SECRET_KEY: dummy-trigger-key
+          STRIPE_SECRET_KEY: sk_test_dummy_key_for_ci_builds
+          STRIPE_WEBHOOK_SECRET: whsec_test_dummy_webhook_secret
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-e2e-results
+          path: |
+            apps/app/test-results/
+            apps/app/playwright-report/
+          retention-days: 30
+
+  migration-check:
+    name: Database Migration Safety
+    runs-on: ubuntu-latest-custom
+    if: github.base_ref == 'release'
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: main
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          path: pr
+
+      - name: Check for breaking migrations
+        run: |
+          echo "Checking for potentially breaking database changes..."
+
+          # Compare schema files
+          if ! diff -q main/packages/db/prisma/schema.prisma pr/packages/db/prisma/schema.prisma > /dev/null; then
+            echo "⚠️  Database schema has changed. Please review carefully:"
+            diff -u main/packages/db/prisma/schema.prisma pr/packages/db/prisma/schema.prisma || true
+          else
+            echo "✅ No database schema changes detected"
+          fi
+
+          # Check for new migrations
+          NEW_MIGRATIONS=$(find pr/packages/db/migrations -type d -name "2*" | xargs -I {} basename {} | sort)
+          OLD_MIGRATIONS=$(find main/packages/db/migrations -type d -name "2*" | xargs -I {} basename {} | sort 2>/dev/null || echo "")
+
+          NEW_ONLY=$(comm -13 <(echo "$OLD_MIGRATIONS") <(echo "$NEW_MIGRATIONS"))
+          if [ -n "$NEW_ONLY" ]; then
+            echo "⚠️  New migrations detected:"
+            echo "$NEW_ONLY"
+            echo ""
+            echo "Please ensure these migrations:"
+            echo "- Are backwards compatible"
+            echo "- Have been tested on a production-like dataset"
+            echo "- Include rollback procedures if needed"
+          else
+            echo "✅ No new migrations"
+          fi

@@ -180,7 +180,7 @@ export function FileUploader(props: FileUploaderProps) {
         }
       }
     };
-  }, []);
+  }, [files]);
 
   const isDisabled = disabled || (files?.length ?? 0) >= maxFileCount;
 

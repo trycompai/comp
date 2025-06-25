@@ -22,7 +22,7 @@ export type RiskRegisterType = {
   };
 };
 
-export function columns(): ColumnDef<RiskRegisterType>[] {
+export function useColumns(): ColumnDef<RiskRegisterType>[] {
   const { orgId } = useParams<{ orgId: string }>();
 
   return [

@@ -62,6 +62,16 @@ export function OrganizationSetupForm({
 
   const hasExistingOrgs = existingOrganizations.length > 0;
 
+  // Check if current step has valid input
+  const currentStepValue = form.watch(step.key);
+  const isCurrentStepValid = (() => {
+    if (step.key === 'frameworkIds') {
+      return Array.isArray(currentStepValue) && currentStepValue.length > 0;
+    }
+    // For other fields, check if they have a value
+    return Boolean(currentStepValue) && String(currentStepValue).trim().length > 0;
+  })();
+
   // Dispatch custom event for background animation when step changes
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -148,6 +158,7 @@ export function OrganizationSetupForm({
                 stepIndex={stepIndex}
                 isLastStep={isLastStep}
                 isOnboarding={isOnboarding}
+                isCurrentStepValid={isCurrentStepValid}
               />
             </div>
             <div className="w-full border-t border-border/30 pt-3">

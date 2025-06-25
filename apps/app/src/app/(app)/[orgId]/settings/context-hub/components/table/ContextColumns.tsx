@@ -18,6 +18,49 @@ import { Trash2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
 
+// Extract the cell content into a separate component
+function ContextDeleteCell({ context }: { context: Context }) {
+  const [open, setOpen] = useState(false);
+  const { execute, status } = useAction(deleteContextEntryAction, {
+    onSuccess: () => {
+      setOpen(false);
+    },
+  });
+
+  return (
+    <AlertDialog open={open} onOpenChange={setOpen}>
+      <AlertDialogTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-destructive hover:bg-destructive/10"
+          onClick={() => setOpen(true)}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Entry</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to delete this entry? This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => execute({ id: context.id })}
+            disabled={status === 'executing'}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            {status === 'executing' ? 'Deleting...' : 'Delete'}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
 export const columns = (): ColumnDef<Context>[] => [
   {
     id: 'question',
@@ -46,46 +89,7 @@ export const columns = (): ColumnDef<Context>[] => [
   {
     id: 'delete',
     header: () => <span>Delete</span>,
-    cell: ({ row }) => {
-      const [open, setOpen] = useState(false);
-      const { execute, status } = useAction(deleteContextEntryAction, {
-        onSuccess: () => {
-          setOpen(false);
-        },
-      });
-      return (
-        <AlertDialog open={open} onOpenChange={setOpen}>
-          <AlertDialogTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-destructive hover:bg-destructive/10"
-              onClick={() => setOpen(true)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete Entry</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to delete this entry? This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => execute({ id: row.original.id })}
-                disabled={status === 'executing'}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              >
-                {status === 'executing' ? 'Deleting...' : 'Delete'}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      );
-    },
+    cell: ({ row }) => <ContextDeleteCell context={row.original} />,
     meta: { label: 'Delete' },
     enableColumnFilter: false,
     enableSorting: false,

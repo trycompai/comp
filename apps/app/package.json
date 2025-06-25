@@ -82,18 +82,28 @@
     "zustand": "^5.0.3"
   },
   "devDependencies": {
+    "@playwright/experimental-ct-react": "^1.53.1",
+    "@playwright/test": "^1.53.1",
     "@tailwindcss/postcss": "^4.1.10",
+    "@testing-library/dom": "^10.4.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
     "@trigger.dev/build": "3.3.17",
     "@types/d3": "^7.4.3",
     "@types/node": "^24.0.3",
+    "@vitejs/plugin-react": "^4.6.0",
+    "@vitest/ui": "^3.2.4",
     "eslint": "^9",
     "eslint-config-next": "15.4.0-canary.85",
     "fleetctl": "^4.68.1",
+    "jsdom": "^26.1.0",
     "postcss": "^8.5.4",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "tailwindcss": "^4.1.8",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.2.4"
   },
   "exports": {
     "./src/lib/encryption": "./src/lib/encryption.ts"
@@ -116,6 +126,18 @@
     "dev": "bun i && bun run apply-migrations && bunx concurrently --kill-others --names \"next,trigger\" --prefix-colors \"yellow,blue\" \"next dev --turbo -p 3000\" \"bun run trigger:dev\"",
     "lint": "next lint && prettier --check .",
     "start": "next start",
+    "test": "vitest",
+    "test:all": "./scripts/test-all.sh",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:install": "playwright install --with-deps",
+    "test:e2e:report": "playwright show-report",
+    "test:e2e:setup": "./scripts/setup-e2e.sh",
+    "test:e2e:ui": "playwright test --ui",
+    "test:ui": "vitest --ui",
+    "test:watch": "vitest --watch",
     "trigger:dev": "npx trigger.dev@latest dev",
     "typecheck": "tsc --noEmit"
   }
