@@ -111,18 +111,14 @@ jobs:
         run: |
           cd apps/app
           # Use --with-deps to install both browser and system dependencies
-          PLAYWRIGHT_BROWSERS_PATH=$HOME/.cache/ms-playwright bunx playwright install --with-deps ${{ matrix.project }}
-        env:
-          PLAYWRIGHT_BROWSERS_PATH: $HOME/.cache/ms-playwright
+          bunx playwright install --with-deps ${{ matrix.project }}
 
       - name: Install Playwright dependencies
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: |
           cd apps/app
           # Still need to install system dependencies even if browsers are cached
-          PLAYWRIGHT_BROWSERS_PATH=$HOME/.cache/ms-playwright bunx playwright install-deps ${{ matrix.project }}
-        env:
-          PLAYWRIGHT_BROWSERS_PATH: $HOME/.cache/ms-playwright
+          bunx playwright install-deps ${{ matrix.project }}
 
       - name: Verify Playwright installation
         run: |
@@ -153,8 +149,6 @@ jobs:
           du -sh ~/Library/Caches/ms-playwright 2>/dev/null || true
 
           echo "=== End verification ==="
-        env:
-          PLAYWRIGHT_BROWSERS_PATH: $HOME/.cache/ms-playwright
 
       - name: Debug Playwright cache
         run: |
@@ -164,8 +158,6 @@ jobs:
           du -sh ~/.cache/ms-playwright 2>/dev/null || echo "Cannot check size"
           echo "Playwright browsers installed:"
           cd apps/app && bunx playwright --version
-        env:
-          PLAYWRIGHT_BROWSERS_PATH: $HOME/.cache/ms-playwright
 
       - name: Build app
         run: |
@@ -283,7 +275,6 @@ jobs:
           AUTH_SECRET: test-secret-for-ci
           BETTER_AUTH_URL: http://localhost:3000
           PLAYWRIGHT_BASE_URL: http://localhost:3000
-          PLAYWRIGHT_BROWSERS_PATH: $HOME/.cache/ms-playwright
           E2E_TEST_MODE: true
           E2E_USE_REAL_AUTH: false
           CI: true

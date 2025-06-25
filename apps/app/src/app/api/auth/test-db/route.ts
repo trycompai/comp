@@ -16,6 +16,17 @@ export async function GET() {
     const userCount = await db.user.count();
     console.log('[TEST-DB] User count:', userCount);
 
+    // Create a test organization first
+    const testOrg = await db.organization.create({
+      data: {
+        id: `org_test_${Date.now()}`,
+        name: 'Test DB Org',
+        subscriptionType: 'SELF_SERVE',
+      },
+    });
+
+    console.log('[TEST-DB] Created test organization:', testOrg.id);
+
     // Test creating a simple user
     const testUser = await db.user.create({
       data: {
@@ -26,7 +37,7 @@ export async function GET() {
         members: {
           create: {
             id: `test_member_${Date.now()}`,
-            organizationId: 'org_test_placeholder',
+            organizationId: testOrg.id,
             department: Departments.it,
             isActive: false,
             fleetDmLabelId: 0,
@@ -43,7 +54,11 @@ export async function GET() {
       where: { id: testUser.id },
     });
 
-    console.log('[TEST-DB] Cleaned up test user');
+    await db.organization.delete({
+      where: { id: testOrg.id },
+    });
+
+    console.log('[TEST-DB] Cleaned up test data');
 
     return NextResponse.json({
       success: true,

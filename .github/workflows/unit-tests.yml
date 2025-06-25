@@ -2,6 +2,8 @@ name: Unit Tests
 
 permissions:
   contents: read
+  issues: write
+  pull-requests: write
   actions: write # Needed for uploading test results
 
 on:

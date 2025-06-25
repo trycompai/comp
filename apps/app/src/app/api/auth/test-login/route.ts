@@ -131,10 +131,11 @@ async function handleLogin(request: NextRequest) {
   console.log('[TEST-LOGIN] Sign in successful, user:', responseData.user.id);
 
   // Create an organization for the user if skipOrg is not true
+  let org = null;
   if (!body.skipOrg) {
     console.log('[TEST-LOGIN] Creating test organization');
 
-    const org = await db.organization.create({
+    org = await db.organization.create({
       data: {
         id: `org_${Date.now()}`,
         name: `Test Org ${Date.now()}`,
@@ -154,15 +155,10 @@ async function handleLogin(request: NextRequest) {
 
     console.log('[TEST-LOGIN] Created organization:', org.id);
 
-    // Set the active organization
-    await auth.api.setActiveOrganization({
-      headers: request.headers,
-      body: {
-        organizationId: org.id,
-      },
-    });
+    // Don't set active organization here - let the client handle it
+    // The session will have the organization available
 
-    console.log('[TEST-LOGIN] Set active organization');
+    console.log('[TEST-LOGIN] Organization created successfully');
   }
 
   // Create a new response with the data
@@ -170,6 +166,7 @@ async function handleLogin(request: NextRequest) {
     success: true,
     user: responseData.user,
     session: responseData.session,
+    organizationId: body.skipOrg ? null : org?.id,
   });
 
   // Copy all cookies from Better Auth's response to our response

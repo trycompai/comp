@@ -2,6 +2,9 @@ name: Release Tests
 
 permissions:
   contents: read
+  issues: write
+  pull-requests: write
+  actions: write
 
 on:
   pull_request: # Runs BEFORE merge to release (extra validation for production)
