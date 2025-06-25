@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('simple auth flow', async ({ page, context }) => {
+test('simple auth flow', async ({ page, context, browserName }) => {
   // Create a test user and authenticate
   const testEmail = `test-${Date.now()}@example.com`;
 
@@ -10,6 +10,20 @@ test('simple auth flow', async ({ page, context }) => {
       name: 'Test User',
     },
   });
+
+  // Add debugging for Mobile Safari
+  if (!response.ok()) {
+    console.error(`[${browserName}] Test login failed:`, {
+      status: response.status(),
+      statusText: response.statusText(),
+    });
+    try {
+      const body = await response.text();
+      console.error(`[${browserName}] Response body:`, body);
+    } catch (e) {
+      console.error(`[${browserName}] Could not read response body`);
+    }
+  }
 
   expect(response.ok()).toBeTruthy();
   const data = await response.json();
@@ -25,10 +39,17 @@ test('simple auth flow', async ({ page, context }) => {
   expect(sessionCookie?.httpOnly).toBe(true);
 
   // Navigate to auth page - should be redirected since we're authenticated
-  await page.goto('http://localhost:3000/auth');
+  await page.goto('http://localhost:3000/auth', { waitUntil: 'domcontentloaded' });
 
-  // Wait for redirect to complete - wait for any URL that's not the auth page
-  await page.waitForURL('**/!(auth)', { timeout: 10000 });
+  // Wait for the redirect to happen
+  // Since we know we should be redirected, wait for URL change
+  let retries = 0;
+  const maxRetries = 10;
+
+  while (page.url().includes('/auth') && retries < maxRetries) {
+    await page.waitForTimeout(500);
+    retries++;
+  }
 
   const currentUrl = page.url();
 
