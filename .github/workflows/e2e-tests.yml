@@ -3,6 +3,8 @@ name: E2E Tests
 permissions:
   contents: read
   actions: write # Needed for uploading artifacts
+  issues: write # Needed for PR comments
+  pull-requests: write # Needed for PR comments
 
 on:
   pull_request: # Runs BEFORE merge during PR review
