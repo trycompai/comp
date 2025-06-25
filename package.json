@@ -90,5 +90,8 @@
   "workspaces": [
     "apps/*",
     "packages/*"
-  ]
+  ],
+  "dependencies": {
+    "@lottiefiles/dotlottie-react": "^0.14.2"
+  }
 }
