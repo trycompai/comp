@@ -7,6 +7,7 @@ import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardDescription, CardTitle } from '@comp/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@comp/ui/collapsible';
 import { CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 
 interface LoginFormProps {
@@ -18,6 +19,7 @@ interface LoginFormProps {
 export function LoginForm({ inviteCode, showGoogle, showGithub }: LoginFormProps) {
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
   const [magicLinkState, setMagicLinkState] = useState({ sent: false, email: '' });
+  const searchParams = useSearchParams();
 
   const handleMagicLinkSent = (email: string) => {
     setMagicLinkState({ sent: true, email });
@@ -47,11 +49,12 @@ export function LoginForm({ inviteCode, showGoogle, showGithub }: LoginFormProps
   }
 
   const preferredSignInOption = showGoogle ? (
-    <GoogleSignIn inviteCode={inviteCode} />
+    <GoogleSignIn inviteCode={inviteCode} searchParams={searchParams as URLSearchParams} />
   ) : (
     <MagicLinkSignIn
       key="preferred-magic"
       inviteCode={inviteCode}
+      searchParams={searchParams as URLSearchParams}
       onMagicLinkSubmit={handleMagicLinkSent}
     />
   );
@@ -62,12 +65,19 @@ export function LoginForm({ inviteCode, showGoogle, showGithub }: LoginFormProps
       <MagicLinkSignIn
         key="secondary-magic"
         inviteCode={inviteCode}
+        searchParams={searchParams as URLSearchParams}
         onMagicLinkSubmit={handleMagicLinkSent}
       />,
     );
   }
   if (showGithub) {
-    moreOptionsList.push(<GithubSignIn key="github" inviteCode={inviteCode} />);
+    moreOptionsList.push(
+      <GithubSignIn
+        key="github"
+        inviteCode={inviteCode}
+        searchParams={searchParams as URLSearchParams}
+      />,
+    );
   }
 
   return (

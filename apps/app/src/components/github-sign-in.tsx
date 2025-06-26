@@ -6,17 +6,33 @@ import { Icons } from '@comp/ui/icons';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 
-export function GithubSignIn({ inviteCode }: { inviteCode?: string }) {
+export function GithubSignIn({
+  inviteCode,
+  searchParams,
+}: {
+  inviteCode?: string;
+  searchParams?: URLSearchParams;
+}) {
   const [isLoading, setLoading] = useState(false);
 
   const handleSignIn = async () => {
     setLoading(true);
 
-    const redirectTo = inviteCode ? `/invite/${inviteCode}` : '/';
+    // Build the callback URL with search params
+    const baseURL = window.location.origin;
+    const path = inviteCode ? `/invite/${inviteCode}` : '/';
+    const redirectTo = new URL(path, baseURL);
+
+    // Append all search params if they exist
+    if (searchParams) {
+      searchParams.forEach((value, key) => {
+        redirectTo.searchParams.append(key, value);
+      });
+    }
 
     await authClient.signIn.social({
       provider: 'github',
-      callbackURL: redirectTo,
+      callbackURL: redirectTo.toString(),
     });
   };
 

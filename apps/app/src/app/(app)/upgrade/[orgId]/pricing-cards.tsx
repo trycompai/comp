@@ -1,8 +1,6 @@
 'use client';
 
 import { generateCheckoutSessionAction } from '@/app/api/stripe/generate-checkout-session/generate-checkout-session';
-import { SelectionIndicator } from '@/components/layout/SelectionIndicator';
-import { ReviewSection } from '@/components/ReviewSection';
 import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
 import {
@@ -13,7 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@comp/ui/card';
-import { CheckIcon, Loader2 } from 'lucide-react';
+import { ArrowRight, CheckIcon, Loader2, Quote, Star } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -56,8 +54,7 @@ interface PricingCardsProps {
 
 interface PricingCardProps {
   planType: 'starter' | 'managed';
-  isSelected: boolean;
-  onClick: () => void;
+  onCheckout: () => void;
   title: string;
   description: string;
   price: number;
@@ -65,15 +62,16 @@ interface PricingCardProps {
   subtitle?: string;
   features: string[];
   badge?: string;
-  footerText: string;
+  footerText?: string;
   yearlyPrice?: number;
   isYearly?: boolean;
+  isExecuting?: boolean;
+  buttonText?: string;
 }
 
 const PricingCard = ({
   planType,
-  isSelected,
-  onClick,
+  onCheckout,
   title,
   description,
   price,
@@ -84,68 +82,61 @@ const PricingCard = ({
   footerText,
   yearlyPrice,
   isYearly,
+  isExecuting,
+  buttonText,
 }: PricingCardProps) => {
+  const isPopular = planType === 'managed';
+
   return (
     <Card
-      className={`relative cursor-pointer transition-all h-full flex flex-col ${
-        isSelected
-          ? 'ring-2 ring-green-500 shadow-lg bg-green-50/50 dark:bg-primary/15 backdrop-blur-lg'
-          : 'hover:shadow-md bg-card'
-      } border border-border`}
-      onClick={onClick}
+      className={`relative transition-all h-full flex flex-col border ${
+        isPopular
+          ? 'ring-2 ring-green-500 shadow-lg bg-green-50/30 dark:bg-green-950/20 border-green-500/50 scale-105 hover:shadow-xl'
+          : 'hover:shadow-md bg-card border-border'
+      }`}
     >
+      {isPopular && (
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+          <Badge className="bg-green-600 text-white dark:bg-green-500 dark:text-white px-3 py-1">
+            MOST POPULAR
+          </Badge>
+        </div>
+      )}
       <CardHeader className="p-6 pb-4">
-        <div className="flex items-start gap-3">
-          <SelectionIndicator isSelected={isSelected} variant="radio" />
-          <div className="flex-1 -mt-0.5">
-            <div className="flex items-center gap-2">
-              <CardTitle className="text-lg font-semibold">{title}</CardTitle>
-              {badge && (
-                <Badge
-                  className={
-                    badge === '14-day trial'
-                      ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 text-xs px-1.5 py-0'
-                      : 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 text-xs px-1.5 py-0'
-                  }
-                >
-                  {badge}
-                </Badge>
-              )}
-            </div>
-            <CardDescription className="text-sm mt-0.5">{description}</CardDescription>
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-lg font-semibold">{title}</CardTitle>
+            {badge && !isPopular && (
+              <Badge
+                className={
+                  badge === '14-day trial'
+                    ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 text-xs px-1.5 py-0'
+                    : 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 text-xs px-1.5 py-0'
+                }
+              >
+                {badge}
+              </Badge>
+            )}
           </div>
+          <CardDescription className="text-sm mt-1">{description}</CardDescription>
         </div>
         <div className="mt-4">
-          {isYearly && yearlyPrice ? (
-            <>
-              <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-bold">${price.toLocaleString()}</span>
-                <span className="text-sm text-muted-foreground">/{priceLabel}</span>
-              </div>
-              <div className="space-y-1 mt-1">
-                <p className="text-sm text-muted-foreground">
-                  Billed as a single yearly payment of ${yearlyPrice.toLocaleString()}
-                </p>
-                <p className="text-sm font-medium text-green-600 dark:text-green-400">
-                  Save 20% vs monthly billing
-                </p>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-bold">${price.toLocaleString()}</span>
-                <span className="text-sm text-muted-foreground">/{priceLabel}</span>
-              </div>
-              {subtitle && (
-                <p className="text-sm text-green-600 dark:text-green-400 mt-1">{subtitle}</p>
-              )}
-            </>
+          <div className="flex items-baseline gap-1">
+            <span className="text-3xl font-bold">${price.toLocaleString()}</span>
+            <span className="text-sm text-muted-foreground">/{priceLabel}</span>
+          </div>
+          {isYearly && yearlyPrice && (
+            <p className="text-sm text-muted-foreground mt-1">
+              Billed as ${yearlyPrice.toLocaleString()} yearly
+            </p>
+          )}
+          {subtitle && (
+            <p className="text-sm text-green-600 dark:text-green-400 mt-1">{subtitle}</p>
           )}
         </div>
       </CardHeader>
 
-      <div className={`border-t ${isSelected ? 'border-green-500/30' : 'border-border'} mx-6`} />
+      <div className={`border-t ${isPopular ? 'border-green-500/30' : 'border-border'} mx-6`} />
 
       <CardContent className="px-6 flex flex-col h-full">
         <ul className="space-y-2 flex-1 py-3">
@@ -182,20 +173,34 @@ const PricingCard = ({
             );
           })}
         </ul>
-        <div
-          className={`border-t ${
-            isSelected ? 'border-green-500/30' : 'border-border'
-          } mt-auto pt-4`}
-        >
+        <div className={`border-t ${isPopular ? 'border-green-500/30' : 'border-border'}`}>
           <p className="text-xs text-center text-muted-foreground">{footerText}</p>
         </div>
       </CardContent>
+
+      <CardFooter className="px-6 pt-0 pb-6">
+        <Button
+          onClick={onCheckout}
+          className="w-full"
+          variant={isPopular ? 'default' : 'outline'}
+          size={isPopular ? 'lg' : 'default'}
+          disabled={isExecuting}
+        >
+          {isExecuting ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <>
+              {buttonText || 'Go to Checkout'}
+              <ArrowRight className={`ml-2 ${isPopular ? 'h-5 w-5' : 'h-4 w-4'}`} />
+            </>
+          )}
+        </Button>
+      </CardFooter>
     </Card>
   );
 };
 
 const starterFeatures = [
-  '14-day free trial',
   'Access to all frameworks',
   'Trust & Security Portal',
   'AI Vendor Management',
@@ -203,7 +208,6 @@ const starterFeatures = [
   'Unlimited team members',
   'API access',
   'Community Support',
-  'Pay for your audit or bring your own 3rd party auditor when ready',
 ];
 
 const managedFeatures = [
@@ -220,8 +224,7 @@ const managedFeatures = [
 
 export function PricingCards({ organizationId, priceDetails }: PricingCardsProps) {
   const router = useRouter();
-  const [isYearly, setIsYearly] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<'starter' | 'managed'>('managed');
+  const [isYearly, setIsYearly] = useState(true);
 
   const { execute, isExecuting } = useAction(generateCheckoutSessionAction, {
     onSuccess: ({ data }) => {
@@ -239,12 +242,12 @@ export function PricingCards({ organizationId, priceDetails }: PricingCardsProps
       ? `${window.location.protocol}//${window.location.host}`
       : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-  const handleSubscribe = () => {
+  const handleSubscribe = (plan: 'starter' | 'managed') => {
     let priceId: string | undefined;
     let planType: string;
     let trialPeriodDays: number | undefined;
 
-    if (selectedPlan === 'starter') {
+    if (plan === 'starter') {
       // Use starter prices with 14-day trial
       priceId = isYearly
         ? priceDetails.starterYearlyPrice?.id
@@ -275,7 +278,7 @@ export function PricingCards({ organizationId, priceDetails }: PricingCardsProps
       trialPeriodDays,
       metadata: {
         organizationId,
-        plan: selectedPlan,
+        plan,
         billingPeriod: isYearly ? 'yearly' : 'monthly',
       },
     });
@@ -301,21 +304,6 @@ export function PricingCards({ organizationId, priceDetails }: PricingCardsProps
   // Calculate monthly equivalent for yearly pricing display
   const starterYearlyPriceMonthly = Math.round(starterYearlyPriceTotal / 12);
   const managedYearlyPriceMonthly = Math.round(managedYearlyPriceTotal / 12);
-
-  const currentPrice =
-    selectedPlan === 'starter'
-      ? isYearly
-        ? starterYearlyPriceMonthly
-        : starterMonthlyPrice
-      : isYearly
-        ? managedYearlyPriceMonthly
-        : managedMonthlyPrice;
-
-  const currentYearlyTotal =
-    selectedPlan === 'starter' ? starterYearlyPriceTotal : managedYearlyPriceTotal;
-  const currentMonthlyPrice =
-    selectedPlan === 'starter' ? starterMonthlyPrice : managedMonthlyPrice;
-  const yearlySavings = currentMonthlyPrice * 12 - currentYearlyTotal;
 
   return (
     <div className="space-y-4 max-w-7xl mx-auto">
@@ -346,154 +334,126 @@ export function PricingCards({ organizationId, priceDetails }: PricingCardsProps
             </Badge>
           </button>
         </div>
-        <p className="text-xs text-muted-foreground text-center">
-          {isYearly
-            ? `Billed yearly as $${currentYearlyTotal.toLocaleString()} • Save $${yearlySavings.toLocaleString()} per year`
-            : `Switch to yearly billing to save $${yearlySavings.toLocaleString()} per year`}
-        </p>
       </div>
 
       {/* Main Grid */}
-      <div className="grid lg:grid-cols-3 gap-4">
+      <div className="grid lg:grid-cols-3 gap-6">
         {/* Plan Selection */}
-        <div className="lg:col-span-2 grid md:grid-cols-2 gap-3">
+        <div className="lg:col-span-2 grid md:grid-cols-2 gap-6 mt-6">
           <PricingCard
             planType="starter"
-            isSelected={selectedPlan === 'starter'}
-            onClick={() => setSelectedPlan('starter')}
+            onCheckout={() => handleSubscribe('starter')}
             title="Starter"
             description="Everything you need to get compliant, fast."
             price={isYearly ? starterYearlyPriceMonthly : starterMonthlyPrice}
             priceLabel="month"
-            subtitle={isYearly ? undefined : 'DIY (Do It Yourself) Compliance'}
+            subtitle="DIY (Do It Yourself) Compliance"
             features={starterFeatures}
-            footerText="DIY Compliance Solution"
+            badge="14-day trial"
             yearlyPrice={isYearly ? starterYearlyPriceTotal : undefined}
             isYearly={isYearly}
-            badge="14-day trial"
+            isExecuting={isExecuting}
+            buttonText="Start 14-Day Free Trial"
           />
 
           <PricingCard
             planType="managed"
-            isSelected={selectedPlan === 'managed'}
-            onClick={() => setSelectedPlan('managed')}
+            onCheckout={() => handleSubscribe('managed')}
             title="Done For You"
             description="For companies up to 25 people."
             price={isYearly ? managedYearlyPriceMonthly : managedMonthlyPrice}
             priceLabel="month"
-            subtitle={isYearly ? undefined : 'White-glove compliance service'}
+            subtitle="White-glove compliance service"
             features={managedFeatures}
             badge="Popular"
-            footerText="Done-for-you compliance"
             yearlyPrice={isYearly ? managedYearlyPriceTotal : undefined}
             isYearly={isYearly}
+            isExecuting={isExecuting}
+            buttonText="Continue"
           />
         </div>
 
-        {/* Right Column - Checkout */}
-        <div className="space-y-3">
-          {/* Checkout Summary */}
-          <Card className="bg-card border border-border">
-            <CardHeader className="pb-3 pt-4 bg-muted/50 dark:bg-muted/40 backdrop-blur-sm rounded-t-lg border-b border-muted/50">
-              <CardTitle className="text-lg font-semibold text-center">Checkout</CardTitle>
+        {/* Testimonial/Trust Column */}
+        <div className="space-y-6 mt-6">
+          <Card className="h-fit">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between mb-2">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Quote className="h-4 w-4 text-green-600 dark:text-green-500" />
+                  Customer Review
+                </CardTitle>
+                <a
+                  href="https://www.g2.com/products/comp-ai/reviews/comp-ai-review-11318067"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 1000 1000"
+                    className="h-5 w-5 fill-current"
+                    aria-label="G2"
+                  >
+                    <circle
+                      cx="500"
+                      cy="500"
+                      r="500"
+                      className="fill-orange-500 dark:fill-orange-400"
+                    ></circle>
+                    <path
+                      d="M716.4 383H631c2.3-13.4 10.6-20.9 27.4-29.4l15.7-8c28.1-14.4 43.1-30.7 43.1-57.3 0-16.7-6.5-29.9-19.4-39.4s-28.1-14.2-45.9-14.2a70.8 70.8 0 00-38.9 11.1c-11.7 7.2-20.4 16.5-25.8 28.1l24.7 24.8c9.6-19.4 23.5-28.9 41.8-28.9 15.5 0 25 8 25 19.1 0 9.3-4.6 17-22.4 26l-10.1 4.9c-21.9 11.1-37.1 23.8-45.9 38.2s-13.1 32.5-13.1 54.4v6h129.2zM705 459.2H563.6l-70.7 122.4h141.4L705 704.1l70.7-122.5L705 459.2z"
+                      className="fill-white"
+                    ></path>
+                    <path
+                      d="M505.1 663.3c-90 0-163.3-73.3-163.3-163.3s73.3-163.3 163.3-163.3L561 219.8a286.4 286.4 0 00-55.9-5.5c-157.8 0-285.7 127.9-285.7 285.7s127.9 285.7 285.7 285.7a283.9 283.9 0 00168.2-54.8l-61.8-107.2a162.8 162.8 0 01-106.4 39.6z"
+                      className="fill-white"
+                    ></path>
+                  </svg>
+                  <span className="group-hover:underline">Verified Review</span>
+                </a>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="h-4 w-4 fill-yellow-500 text-yellow-500" />
+                  ))}
+                  <span className="text-sm font-medium ml-1">5.0</span>
+                </div>
+                <a
+                  href="https://www.g2.com/products/comp-ai/reviews"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors hover:underline"
+                >
+                  from 100+ reviews
+                </a>
+              </div>
             </CardHeader>
-            <CardContent className="p-6">
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">
-                    {selectedPlan === 'starter' ? 'Starter' : 'Done For You'} Plan
-                  </span>
-                  <span className="text-sm font-semibold">
-                    ${currentPrice.toLocaleString()}/month
-                  </span>
-                </div>
-                {isYearly && (
-                  <>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Billing frequency</span>
-                      <span className="text-sm text-muted-foreground">Yearly</span>
-                    </div>
-                    <div className="flex justify-between items-center text-green-600 dark:text-green-400">
-                      <span className="text-sm font-medium">You save</span>
-                      <span className="text-sm font-medium">
-                        ${yearlySavings.toLocaleString()} (20%)
-                      </span>
-                    </div>
-                  </>
-                )}
-                {selectedPlan === 'starter' && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Trial period</span>
-                    <span className="text-sm font-medium text-green-600 dark:text-green-400">
-                      14 days free
-                    </span>
-                  </div>
-                )}
-                <div className="border-t-2 pt-4 mt-4">
-                  <div className="flex justify-between items-baseline">
-                    <span className="text-base font-semibold">Due today</span>
-                    <div className="text-right">
-                      <span className="text-2xl font-bold">
-                        $
-                        {selectedPlan === 'starter'
-                          ? 0
-                          : isYearly
-                            ? currentYearlyTotal.toLocaleString()
-                            : currentPrice.toLocaleString()}
-                      </span>
-                      {selectedPlan === 'starter' ? (
-                        <span className="text-sm text-muted-foreground block">
-                          then $
-                          {isYearly
-                            ? currentYearlyTotal.toLocaleString()
-                            : currentPrice.toLocaleString()}
-                          /{isYearly ? 'year' : 'month'} after trial
-                        </span>
-                      ) : (
-                        <>
-                          {!isYearly && (
-                            <span className="text-sm text-muted-foreground block">
-                              then ${currentPrice.toLocaleString()}/month
-                            </span>
-                          )}
-                          {isYearly && (
-                            <span className="text-sm font-medium text-green-600 dark:text-green-400 block">
-                              One-time payment
-                            </span>
-                          )}
-                        </>
-                      )}
-                    </div>
+            <CardContent className="px-6 pb-6">
+              <p className="text-sm leading-relaxed mb-4">
+                "Comp AI helped us get audit ready for SOC 2 Type 2 in only 2 weeks. When talking to
+                one of their competitors, they wanted us to go with 3 different services - platform,
+                technical support, and auditors. With Comp, we paid the equivalent to only the
+                platform fee and got all 3! The team was incredibly responsive and made the process
+                easier than expected."
+              </p>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <img
+                    src="/testimonials/jeffrey_l.jpeg"
+                    alt="Jeffrey L."
+                    className="h-10 w-10 rounded-full object-cover"
+                  />
+                  <div>
+                    <p className="text-sm font-medium">Jeffrey L.</p>
+                    <p className="text-xs text-muted-foreground">CEO, OpenRep</p>
                   </div>
                 </div>
+                <Badge variant="secondary" className="text-xs">
+                  June 2025
+                </Badge>
               </div>
             </CardContent>
-            <CardFooter className="px-6 pb-6">
-              <Button
-                onClick={handleSubscribe}
-                disabled={isExecuting}
-                size="default"
-                className="w-full"
-              >
-                {isExecuting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing...
-                  </>
-                ) : selectedPlan === 'starter' ? (
-                  'Start 14-Day Free Trial'
-                ) : isYearly ? (
-                  'Start Annual Plan'
-                ) : (
-                  'Start Monthly Plan'
-                )}
-              </Button>
-            </CardFooter>
-
-            {/* Review Section Footer */}
-            <div className="px-6 py-4 bg-muted/50 dark:bg-muted/40 backdrop-blur-sm rounded-b-lg border-t border-muted/50">
-              <ReviewSection rating={4.7} reviewCount={100} />
-            </div>
           </Card>
 
           {/* Help Section */}
