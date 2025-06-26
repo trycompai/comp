@@ -22,19 +22,22 @@ export async function getSubscriptionData(organizationId: string): Promise<STRIP
 
     // Return based on subscription type
     switch (organization.subscriptionType) {
-      case 'SELF_SERVE':
-        console.log(`[SUBSCRIPTION] Org ${organizationId} is on self-serve plan`);
+      case 'FREE':
+        console.log(`[SUBSCRIPTION] Org ${organizationId} is on free plan`);
         return { status: 'self-serve' };
 
-      case 'STRIPE':
+      case 'STARTER':
+      case 'MANAGED':
         if (organization.stripeSubscriptionData) {
           const data = organization.stripeSubscriptionData as STRIPE_SUB_CACHE;
           console.log(
-            `[SUBSCRIPTION] Org ${organizationId} has Stripe subscription with status: ${data.status}`,
+            `[SUBSCRIPTION] Org ${organizationId} has ${organization.subscriptionType} subscription with status: ${data.status}`,
           );
           return data;
         }
-        console.log(`[SUBSCRIPTION] Org ${organizationId} has STRIPE type but no data`);
+        console.log(
+          `[SUBSCRIPTION] Org ${organizationId} has ${organization.subscriptionType} type but no data`,
+        );
         return { status: 'none' };
 
       case 'NONE':

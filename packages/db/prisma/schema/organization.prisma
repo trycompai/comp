@@ -40,6 +40,7 @@ model Organization {
 
 enum SubscriptionType {
   NONE
-  SELF_SERVE
-  STRIPE
+  FREE
+  STARTER
+  MANAGED
 }

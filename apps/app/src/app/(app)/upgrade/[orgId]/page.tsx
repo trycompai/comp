@@ -116,7 +116,15 @@ export default async function UpgradePage({ params }: PageProps) {
                   Get compliant fast with our DIY or Done-For-You solutions
                 </p>
               </div>
-              <PricingCards organizationId={orgId} priceDetails={priceDetails} />
+              <PricingCards
+                organizationId={orgId}
+                priceDetails={{
+                  managedMonthlyPrice: priceDetails.managedMonthlyPrice,
+                  managedYearlyPrice: priceDetails.managedYearlyPrice,
+                  starterMonthlyPrice: priceDetails.starterMonthlyPrice,
+                  starterYearlyPrice: priceDetails.starterYearlyPrice,
+                }}
+              />
             </div>
             <Separator />
 

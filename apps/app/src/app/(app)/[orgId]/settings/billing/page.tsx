@@ -2,20 +2,33 @@
 
 import { cancelSubscriptionAction } from '@/app/api/stripe/cancel-subscription/cancel-subscription';
 import { createPortalSessionAction } from '@/app/api/stripe/create-portal-session/create-portal-session';
-import { generateCheckoutSessionAction } from '@/app/api/stripe/generate-checkout-session/generate-checkout-session';
 import { resumeSubscriptionAction } from '@/app/api/stripe/resume-subscription/resume-subscription';
 import { useSubscription } from '@/context/subscription-context';
+import { env } from '@/env.mjs';
 import { Alert, AlertDescription } from '@comp/ui/alert';
 import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import { Separator } from '@comp/ui/separator';
-import { AlertCircle, Calendar, Check, Clock, CreditCard, Loader2, Sparkles } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
+import {
+  AlertCircle,
+  Calendar,
+  Check,
+  Clock,
+  CreditCard,
+  Loader2,
+  Lock,
+  RefreshCw,
+  Sparkles,
+} from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { CancelSubscriptionDialog } from './cancel-subscription-dialog';
+
+type PlanType = 'free' | 'starter' | 'managed';
 
 export default function BillingPage() {
   const { subscription, hasActiveSubscription, isTrialing, isSelfServe } = useSubscription();
@@ -23,6 +36,115 @@ export default function BillingPage() {
   const params = useParams();
   const organizationId = params.orgId as string;
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Determine plan type based on price ID
+  const getPlanType = (): PlanType => {
+    if (isSelfServe) return 'free';
+    if ('priceId' in subscription && subscription.priceId) {
+      const starterPriceIds = [
+        env.NEXT_PUBLIC_STRIPE_SUBSCRIPTION_STARTER_MONTHLY_PRICE_ID,
+        env.NEXT_PUBLIC_STRIPE_SUBSCRIPTION_STARTER_YEARLY_PRICE_ID,
+      ].filter(Boolean);
+
+      if (starterPriceIds.includes(subscription.priceId)) {
+        return 'starter';
+      }
+    }
+    return 'managed';
+  };
+
+  const planType = getPlanType();
+
+  // Get plan configuration
+  const planConfig = {
+    free: {
+      displayName: 'Free Plan',
+      description: 'DIY compliance for small teams',
+      features: [
+        'Complete access to manage your compliance program',
+        'Generate policies and documentation',
+        'Basic integrations',
+        'Community support',
+      ],
+    },
+    starter: {
+      displayName: 'Starter Plan',
+      description: 'Everything you need to get compliant',
+      features: [
+        'All frameworks (SOC 2, ISO 27001, etc.)',
+        'Trust & Security Portal',
+        'AI Vendor & Risk Management',
+        'Unlimited team members',
+        'API access',
+        'Community Support',
+      ],
+      trialDays: 14,
+    },
+    managed: {
+      displayName: 'Done For You',
+      description: 'White-glove compliance service',
+      features: [
+        'Everything in Starter',
+        'Dedicated compliance team',
+        '3rd party audit included',
+        'Compliant in 14 days',
+        '24x7x365 Support & SLA',
+        'Private Slack channel',
+      ],
+      minimumTermMonths: 12,
+    },
+  };
+
+  const currentPlanConfig = planConfig[planType];
+
+  // Calculate if minimum term has been met for managed plans
+  const hasMetMinimumTerm = () => {
+    if (
+      planType !== 'managed' ||
+      !('currentPeriodStart' in subscription) ||
+      subscription.currentPeriodStart == null
+    ) {
+      return true;
+    }
+
+    const startDate = new Date(subscription.currentPeriodStart * 1000);
+    const now = new Date();
+    const monthsElapsed =
+      (now.getFullYear() - startDate.getFullYear()) * 12 + (now.getMonth() - startDate.getMonth());
+
+    return monthsElapsed >= (planConfig.managed.minimumTermMonths || 12);
+  };
+
+  const canCancelSubscription = hasMetMinimumTerm();
+
+  // Calculate when cancellation will be available
+  const getCancellationAvailableDate = () => {
+    if (
+      planType !== 'managed' ||
+      !('currentPeriodStart' in subscription) ||
+      subscription.currentPeriodStart == null
+    ) {
+      return null;
+    }
+
+    const startDate = new Date(subscription.currentPeriodStart * 1000);
+    const cancellationDate = new Date(startDate);
+    cancellationDate.setMonth(
+      cancellationDate.getMonth() + (planConfig.managed.minimumTermMonths || 12),
+    );
+
+    return cancellationDate;
+  };
+
+  const formatDate = (timestamp: number | Date) => {
+    const date = typeof timestamp === 'number' ? new Date(timestamp * 1000) : timestamp;
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
 
   // Action for canceling subscription
   const { execute: cancelSubscription, isExecuting: isCanceling } = useAction(
@@ -70,21 +192,6 @@ export default function BillingPage() {
     },
   );
 
-  // Action for creating checkout session
-  const { execute: createCheckout, isExecuting: isCreatingCheckout } = useAction(
-    generateCheckoutSessionAction,
-    {
-      onSuccess: ({ data }) => {
-        if (data?.checkoutUrl) {
-          router.push(data.checkoutUrl);
-        }
-      },
-      onError: ({ error }) => {
-        toast.error(error.serverError || 'Failed to create checkout session');
-      },
-    },
-  );
-
   const getStatusBadge = () => {
     if (subscription.status === 'none') {
       return <Badge variant="secondary">No subscription</Badge>;
@@ -113,46 +220,54 @@ export default function BillingPage() {
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
-  const formatDate = (timestamp: number) => {
-    return new Date(timestamp * 1000).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+  // Function to refresh subscription data
+  const refreshSubscriptionData = async () => {
+    setIsRefreshing(true);
+    try {
+      const response = await fetch('/api/stripe/sync-subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ organizationId }),
+      });
+
+      if (response.ok) {
+        toast.success('Subscription data refreshed');
+        // Reload the page to get updated data
+        router.refresh();
+      } else {
+        toast.error('Failed to refresh subscription data');
+      }
+    } catch (error) {
+      toast.error('Error refreshing subscription data');
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
-  // Handle self-serve (free plan) users
-  if (isSelfServe) {
+  // Render different states based on plan and subscription status
+
+  // 1. Free Plan View
+  if (planType === 'free') {
     return (
       <div className="space-y-4">
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>Free Plan (Starter)</CardTitle>
+              <CardTitle>{currentPlanConfig.displayName}</CardTitle>
               {getStatusBadge()}
             </div>
-            <CardDescription>You're currently on our free self-serve plan</CardDescription>
+            <CardDescription>{currentPlanConfig.description}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">Your plan includes:</p>
               <ul className="space-y-2">
-                <li className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
-                  <span className="text-sm">Complete access to manage your compliance program</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
-                  <span className="text-sm">Generate policies and documentation</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
-                  <span className="text-sm">Basic integrations</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
-                  <span className="text-sm">Community support</span>
-                </li>
+                {currentPlanConfig.features.map((feature, idx) => (
+                  <li key={idx} className="flex items-start gap-2">
+                    <Check className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
+                    <span className="text-sm">{feature}</span>
+                  </li>
+                ))}
               </ul>
             </div>
 
@@ -163,8 +278,7 @@ export default function BillingPage() {
               <Alert>
                 <Sparkles className="h-4 w-4" />
                 <AlertDescription>
-                  Upgrade to our Done For You plan for expert assistance, priority support, and
-                  advanced features.
+                  Upgrade to Starter or Done For You plans for advanced features and support.
                 </AlertDescription>
               </Alert>
               <Button
@@ -181,7 +295,7 @@ export default function BillingPage() {
     );
   }
 
-  // Show upgrade prompt if no active subscription
+  // 2. No Active Subscription View
   if (!hasActiveSubscription && subscription.status !== 'canceled') {
     return (
       <div className="space-y-4">
@@ -210,168 +324,241 @@ export default function BillingPage() {
     );
   }
 
-  // Show trial warning
+  // 3. Active Subscription View (Starter or Managed)
   const renderTrialWarning = () => {
-    if (isTrialing && 'currentPeriodEnd' in subscription && subscription.currentPeriodEnd) {
-      const daysLeft = Math.ceil(
-        (subscription.currentPeriodEnd * 1000 - Date.now()) / (1000 * 60 * 60 * 24),
-      );
+    if (
+      !isTrialing ||
+      !('currentPeriodEnd' in subscription) ||
+      subscription.currentPeriodEnd == null
+    )
+      return null;
 
-      return (
-        <Alert>
-          <Clock className="h-4 w-4" />
-          <AlertDescription>
-            Your trial expires in {daysLeft} days. Subscribe now to continue using all features.
-          </AlertDescription>
-        </Alert>
-      );
-    }
-    return null;
+    const daysLeft = Math.ceil(
+      (subscription.currentPeriodEnd * 1000 - Date.now()) / (1000 * 60 * 60 * 24),
+    );
+    const trialEndDate = formatDate(subscription.currentPeriodEnd);
+
+    return (
+      <Alert>
+        <Clock className="h-4 w-4" />
+        <AlertDescription>
+          <div className="space-y-1">
+            <p>
+              Your {currentPlanConfig.displayName} trial expires in {daysLeft} days ({trialEndDate}
+              ).
+            </p>
+            {planType === 'starter' && (
+              <p className="text-sm">
+                Add a payment method now to continue after your 14-day trial. You won't be charged
+                until the trial ends.
+              </p>
+            )}
+            {planType === 'managed' && (
+              <p className="text-sm">
+                Your compliance team is ready to help! Note: This plan requires a 12-month minimum
+                commitment.
+              </p>
+            )}
+          </div>
+        </AlertDescription>
+      </Alert>
+    );
   };
 
-  // Show cancellation warning
   const renderCancellationWarning = () => {
-    if ('cancelAtPeriodEnd' in subscription && subscription.cancelAtPeriodEnd) {
-      return (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Your subscription will be canceled at the end of the current billing period.
-          </AlertDescription>
-        </Alert>
-      );
-    }
-    return null;
+    if (!('cancelAtPeriodEnd' in subscription) || !subscription.cancelAtPeriodEnd) return null;
+
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          Your subscription will be canceled at the end of the current billing period.
+        </AlertDescription>
+      </Alert>
+    );
   };
 
   return (
-    <div className="space-y-4">
-      {renderTrialWarning()}
-      {renderCancellationWarning()}
+    <TooltipProvider>
+      <div className="space-y-4">
+        {renderTrialWarning()}
+        {renderCancellationWarning()}
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Subscription Details</CardTitle>
-            {getStatusBadge()}
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4">
-            {'price' in subscription && subscription.price && (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <CreditCard className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Plan</span>
-                </div>
-                <span className="text-sm text-muted-foreground">
-                  {subscription.product?.name} (
-                  {subscription.price.unit_amount
-                    ? new Intl.NumberFormat('en-US', {
-                        style: 'currency',
-                        currency: subscription.price.currency,
-                      }).format(subscription.price.unit_amount / 100)
-                    : 'Free'}
-                  {subscription.price.interval ? `/${subscription.price.interval}` : ''})
-                </span>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CardTitle>{currentPlanConfig.displayName}</CardTitle>
+                {getStatusBadge()}
               </div>
-            )}
-
-            {'currentPeriodStart' in subscription && subscription.currentPeriodStart && (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Current Period</span>
-                </div>
-                <span className="text-sm text-muted-foreground">
-                  {formatDate(subscription.currentPeriodStart)}
-                </span>
-              </div>
-            )}
-
-            {'currentPeriodEnd' in subscription && subscription.currentPeriodEnd && (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">
-                    {'cancelAtPeriodEnd' in subscription && subscription.cancelAtPeriodEnd
-                      ? 'Expires'
-                      : 'Renews'}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={refreshSubscriptionData}
+                disabled={isRefreshing}
+                title="Refresh subscription data"
+              >
+                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              </Button>
+            </div>
+            <CardDescription>{currentPlanConfig.description}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4">
+              {'price' in subscription && subscription.price && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Billing</span>
+                  </div>
+                  <span className="text-sm text-muted-foreground">
+                    {subscription.price.unit_amount
+                      ? new Intl.NumberFormat('en-US', {
+                          style: 'currency',
+                          currency: subscription.price.currency,
+                        }).format(subscription.price.unit_amount / 100)
+                      : 'Free'}
+                    {subscription.price.interval ? `/${subscription.price.interval}` : ''}
                   </span>
                 </div>
-                <span className="text-sm text-muted-foreground">
-                  {formatDate(subscription.currentPeriodEnd)}
-                </span>
-              </div>
-            )}
-          </div>
+              )}
 
-          <Separator />
+              {isTrialing &&
+                'currentPeriodEnd' in subscription &&
+                subscription.currentPeriodEnd && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">Trial Ends</span>
+                    </div>
+                    <span className="text-sm text-muted-foreground">
+                      {formatDate(subscription.currentPeriodEnd)}
+                    </span>
+                  </div>
+                )}
 
-          <div className="space-y-3">
-            {'paymentMethod' in subscription && subscription.paymentMethod && (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <CreditCard className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Payment Method</span>
-                </div>
-                <span className="text-sm text-muted-foreground">
-                  {subscription.paymentMethod.brand} •••• {subscription.paymentMethod.last4}
-                </span>
-              </div>
-            )}
-          </div>
+              {!isTrialing &&
+                'currentPeriodStart' in subscription &&
+                subscription.currentPeriodStart && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">Started</span>
+                    </div>
+                    <span className="text-sm text-muted-foreground">
+                      {formatDate(subscription.currentPeriodStart)}
+                    </span>
+                  </div>
+                )}
 
-          <Separator />
+              {'currentPeriodEnd' in subscription &&
+                subscription.currentPeriodEnd &&
+                !isTrialing && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">
+                        {'cancelAtPeriodEnd' in subscription && subscription.cancelAtPeriodEnd
+                          ? 'Expires'
+                          : 'Renews'}
+                      </span>
+                    </div>
+                    <span className="text-sm text-muted-foreground">
+                      {formatDate(subscription.currentPeriodEnd)}
+                    </span>
+                  </div>
+                )}
 
-          <div className="flex gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => openPortal({ organizationId })}
-              disabled={isOpeningPortal}
-            >
-              {isOpeningPortal && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Update Payment Method
-            </Button>
+              {planType === 'managed' &&
+                !canCancelSubscription &&
+                getCancellationAvailableDate() && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Lock className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">Minimum Term</span>
+                    </div>
+                    <span className="text-sm text-muted-foreground">
+                      12 months (ends {formatDate(getCancellationAvailableDate()!)})
+                    </span>
+                  </div>
+                )}
+            </div>
 
-            {'cancelAtPeriodEnd' in subscription && subscription.cancelAtPeriodEnd ? (
+            <Separator />
+
+            <div className="flex gap-3">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => resumeSubscription({ organizationId })}
-                disabled={isResuming}
+                onClick={() => openPortal({ organizationId })}
+                disabled={isOpeningPortal}
               >
-                {isResuming && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Resume Subscription
+                {isOpeningPortal && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Update Payment Method
               </Button>
-            ) : (
-              subscription.status !== 'canceled' && (
+
+              {'cancelAtPeriodEnd' in subscription && subscription.cancelAtPeriodEnd ? (
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setShowCancelDialog(true)}
-                  disabled={isCanceling}
+                  onClick={() => resumeSubscription({ organizationId })}
+                  disabled={isResuming}
                 >
-                  Cancel Subscription
+                  {isResuming && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Resume Subscription
                 </Button>
-              )
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              ) : (
+                subscription.status !== 'canceled' &&
+                (canCancelSubscription ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowCancelDialog(true)}
+                    disabled={isCanceling}
+                  >
+                    Cancel Subscription
+                  </Button>
+                ) : (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span tabIndex={0}>
+                        <Button variant="outline" size="sm" disabled>
+                          <Lock className="mr-2 h-4 w-4" />
+                          Cancel Subscription
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>This plan requires a 12-month minimum commitment.</p>
+                      {getCancellationAvailableDate() && (
+                        <p>You can cancel after {formatDate(getCancellationAvailableDate()!)}.</p>
+                      )}
+                    </TooltipContent>
+                  </Tooltip>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
-      <CancelSubscriptionDialog
-        open={showCancelDialog}
-        onOpenChange={setShowCancelDialog}
-        onConfirm={() => cancelSubscription({ organizationId, immediate: false })}
-        isLoading={isCanceling}
-        currentPeriodEnd={
-          'currentPeriodEnd' in subscription && subscription.currentPeriodEnd !== null
-            ? subscription.currentPeriodEnd
-            : undefined
-        }
-      />
-    </div>
+        <CancelSubscriptionDialog
+          open={showCancelDialog}
+          onOpenChange={setShowCancelDialog}
+          onConfirm={() =>
+            cancelSubscription({
+              organizationId,
+              immediate: isTrialing, // Cancel immediately for trials
+            })
+          }
+          isLoading={isCanceling}
+          isTrialing={isTrialing}
+          currentPeriodEnd={
+            'currentPeriodEnd' in subscription && subscription.currentPeriodEnd !== null
+              ? subscription.currentPeriodEnd
+              : undefined
+          }
+        />
+      </div>
+    </TooltipProvider>
   );
 }
