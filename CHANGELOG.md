@@ -1,3 +1,18 @@
+# [1.45.0](https://github.com/trycompai/comp/compare/v1.44.0...v1.45.0) (2025-06-26)
+
+
+### Bug Fixes
+
+* correct team size placeholder ([f84e79f](https://github.com/trycompai/comp/commit/f84e79fc6bb66a5180a88861be13253d3b3b39c9))
+* enhance billing page subscription checks and display ([9576af2](https://github.com/trycompai/comp/commit/9576af2099c4d24ac4d6e3250b443f9587dc2c1e))
+* update E2E test command in GitHub Actions workflow ([46597c3](https://github.com/trycompai/comp/commit/46597c3873ab32faf6b0200db4759a89977fcf07))
+
+
+### Features
+
+* add STARTER subscription type to Organization model and migration ([3f9c373](https://github.com/trycompai/comp/commit/3f9c373c5a8dd9d858dc50aa1e5c585b57cbb4ab))
+* update subscription handling and pricing structure ([b566650](https://github.com/trycompai/comp/commit/b566650656d19bdd9818e05c3159774371276024))
+
 # [1.44.0](https://github.com/trycompai/comp/compare/v1.43.3...v1.44.0) (2025-06-25)
 
 
