@@ -6,7 +6,7 @@ import { Button } from '@comp/ui/button';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 export function UpgradeBanner() {
   const { subscription, isSelfServe } = useSubscription();
@@ -32,19 +32,8 @@ export function UpgradeBanner() {
     return false;
   };
 
-  // Load dismissed state from localStorage
-  useEffect(() => {
-    const dismissedKey = `upgrade-banner-dismissed-${orgId}`;
-    const dismissed = localStorage.getItem(dismissedKey);
-    if (dismissed === 'true') {
-      setIsDismissed(true);
-    }
-  }, [orgId]);
-
   // Handle dismiss
   const handleDismiss = () => {
-    const dismissedKey = `upgrade-banner-dismissed-${orgId}`;
-    localStorage.setItem(dismissedKey, 'true');
     setIsDismissed(true);
   };
 
@@ -55,27 +44,48 @@ export function UpgradeBanner() {
 
   const isFreePlan = isSelfServe;
   const bannerMessage = isFreePlan
-    ? 'Unlock advanced features and premium support. Upgrade to a paid plan today!'
-    : 'Get white-glove compliance service with our Done For You plan. We handle everything!';
+    ? "Too busy to deal with compliance? We've got you. 14 days, done-for-you."
+    : 'Compliance taking too much time? Let us handle it. 14 days to audit-ready.';
 
   return (
-    <div className="relative bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-      <div className="px-4 py-3">
+    <div className="relative mb-4 overflow-hidden rounded-lg">
+      {/* Background with gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 backdrop-blur-lg" />
+
+      {/* Animated gradient background layer */}
+      <div className="absolute inset-0 opacity-30">
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-transparent to-primary/20 animate-pulse" />
+      </div>
+
+      {/* Shimmer effect overlay */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute inset-0 -translate-x-full animate-[shimmer_3s_ease-in-out_infinite] bg-gradient-to-r from-transparent via-primary/10 to-transparent" />
+      </div>
+
+      {/* Border glow */}
+      <div className="absolute inset-0 rounded-lg ring-1 ring-primary/20" />
+
+      {/* Content */}
+      <div className="relative px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Sparkles className="h-5 w-5 flex-shrink-0" />
-            <p className="text-sm font-medium">{bannerMessage}</p>
+            <Sparkles className="h-5 w-5 text-primary flex-shrink-0" />
+            <p className="text-sm font-medium text-foreground/90">{bannerMessage}</p>
           </div>
           <div className="flex items-center gap-2">
             <Link href={`/upgrade/${orgId}`}>
-              <Button size="sm" variant="secondary" className="text-xs">
+              <Button
+                size="sm"
+                variant="default"
+                className="text-xs bg-primary hover:bg-primary/90"
+              >
                 Upgrade Now
                 <ArrowRight className="ml-1 h-3 w-3" />
               </Button>
             </Link>
             <button
               onClick={handleDismiss}
-              className="ml-2 text-white/80 hover:text-white transition-colors"
+              className="ml-2 text-muted-foreground hover:text-foreground transition-colors"
               aria-label="Dismiss banner"
             >
               <svg
@@ -93,6 +103,17 @@ export function UpgradeBanner() {
           </div>
         </div>
       </div>
+
+      <style jsx>{`
+        @keyframes shimmer {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(200%);
+          }
+        }
+      `}</style>
     </div>
   );
 }
