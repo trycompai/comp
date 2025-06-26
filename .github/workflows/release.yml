@@ -14,7 +14,7 @@ permissions:
 jobs:
   release:
     name: Release
-    runs-on: ubuntu-latest-custom
+    runs-on: self-hosted
     steps:
       - name: Checkout
         uses: actions/checkout@v4

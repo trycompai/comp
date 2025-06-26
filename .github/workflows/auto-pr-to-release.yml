@@ -5,7 +5,7 @@ on:
       - main
 jobs:
   create-pull-request:
-    runs-on: ubuntu-latest-custom
+    runs-on: self-hosted
     permissions:
       pull-requests: write
       contents: write

@@ -14,7 +14,7 @@ on:
 jobs:
   quick-checks:
     name: Quick Checks
-    runs-on: ubuntu-latest-custom
+    runs-on: self-hosted
     timeout-minutes: 5
 
     steps:

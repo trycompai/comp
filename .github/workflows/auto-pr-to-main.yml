@@ -16,7 +16,7 @@ on:
       - COMP-*
 jobs:
   create-pull-request:
-    runs-on: ubuntu-latest-custom
+    runs-on: self-hosted
     continue-on-error: true
     permissions:
       pull-requests: write

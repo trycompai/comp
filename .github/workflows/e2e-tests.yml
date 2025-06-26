@@ -29,7 +29,7 @@ env:
 jobs:
   e2e-tests:
     name: E2E Tests - ${{ matrix.project }}
-    runs-on: ubuntu-latest-custom
+    runs-on: self-hosted
     timeout-minutes: 20
 
     strategy:
@@ -436,7 +436,7 @@ jobs:
   # Job to post consolidated test results
   post-results:
     name: Post Test Results to PR
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: e2e-tests
     if: always() && github.event_name == 'pull_request'
 

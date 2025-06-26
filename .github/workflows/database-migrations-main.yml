@@ -7,7 +7,7 @@ on:
 jobs:
   migrate:
     name: Run Database Migrations
-    runs-on: ubuntu-latest-custom
+    runs-on: self-hosted
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

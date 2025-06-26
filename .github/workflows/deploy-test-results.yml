@@ -21,7 +21,7 @@ permissions:
 
 jobs:
   deploy-results:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - name: Checkout

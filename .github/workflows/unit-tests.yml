@@ -24,7 +24,7 @@ on:
 jobs:
   unit-tests:
     name: Unit Tests
-    runs-on: ubuntu-latest-custom
+    runs-on: self-hosted
     timeout-minutes: 10
 
     strategy:
