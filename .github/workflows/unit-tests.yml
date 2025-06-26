@@ -24,7 +24,7 @@ on:
 jobs:
   unit-tests:
     name: Unit Tests
-    runs-on: ubuntu-latest-custom
+    runs-on: warp-ubuntu-latest-arm64-4x
     timeout-minutes: 10
 
     strategy:
@@ -43,7 +43,7 @@ jobs:
           bun-version: latest
 
       - name: Cache dependencies
-        uses: actions/cache@v4
+        uses: WarpBuilds/cache@v1
         with:
           path: |
             ~/.bun/install/cache

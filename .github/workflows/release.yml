@@ -14,7 +14,7 @@ permissions:
 jobs:
   release:
     name: Release
-    runs-on: ubuntu-latest-custom
+    runs-on: warp-ubuntu-latest-arm64-4x
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,7 +36,7 @@ jobs:
           bun-version: latest # Optional: specify a bun version
 
       - name: Cache dependencies
-        uses: actions/cache@v4
+        uses: WarpBuilds/cache@v1
         with:
           path: |
             ~/.bun/install/cache
