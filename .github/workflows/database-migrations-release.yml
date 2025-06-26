@@ -7,7 +7,7 @@ on:
 jobs:
   migrate:
     name: Run Database Migrations
-    runs-on: buildjet-32vcpu-ubuntu-2204-arm
+    runs-on: warp-ubuntu-latest-arm64-4x
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

@@ -24,7 +24,7 @@ on:
 jobs:
   unit-tests:
     name: Unit Tests
-    runs-on: buildjet-32vcpu-ubuntu-2204-arm
+    runs-on: warp-ubuntu-latest-arm64-4x
     timeout-minutes: 10
 
     strategy:
@@ -43,7 +43,7 @@ jobs:
           bun-version: latest
 
       - name: Cache dependencies
-        uses: buildjet/cache@v3
+        uses: WarpBuilds/cache@v1
         with:
           path: |
             ~/.bun/install/cache

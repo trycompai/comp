@@ -5,7 +5,7 @@ on:
       - main
 jobs:
   create-pull-request:
-    runs-on: buildjet-32vcpu-ubuntu-2204-arm
+    runs-on: warp-ubuntu-latest-arm64-4x
     permissions:
       pull-requests: write
       contents: write

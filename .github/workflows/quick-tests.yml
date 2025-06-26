@@ -14,7 +14,7 @@ env:
 
 jobs:
   quick-test:
-    runs-on: buildjet-32vcpu-ubuntu-2204-arm
+    runs-on: warp-ubuntu-latest-arm64-4x
     strategy:
       matrix:
         app: [app]
