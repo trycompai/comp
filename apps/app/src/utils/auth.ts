@@ -3,11 +3,15 @@ import { db } from '@comp/db';
 import { MagicLinkEmail, OTPVerificationEmail } from '@comp/email';
 import { sendInviteMemberEmail } from '@comp/email/lib/invite-member';
 import { sendEmail } from '@comp/email/lib/resend';
+import { dubAnalytics } from '@dub/better-auth';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { nextCookies } from 'better-auth/next-js';
 import { emailOTP, magicLink, organization } from 'better-auth/plugins';
+import { Dub } from 'dub';
 import { ac, allRoles } from './permissions';
+
+const dub = new Dub();
 
 let socialProviders = {};
 
@@ -140,6 +144,7 @@ export const auth = betterAuth({
       },
     }),
     nextCookies(),
+    ...(env.DUB_API_KEY ? [dubAnalytics({ dubClient: dub })] : []),
   ],
   socialProviders,
   user: {

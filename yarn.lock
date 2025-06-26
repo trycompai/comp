@@ -1339,6 +1339,7 @@
     "@dnd-kit/sortable" "^10.0.0"
     "@dnd-kit/utilities" "^3.2.2"
     "@dub/analytics" "^0.0.27"
+    "@dub/better-auth" "^0.0.2"
     "@dub/embed-react" "^0.0.15"
     "@hookform/resolvers" "^5.1.1"
     "@mendable/firecrawl-js" "^1.24.0"
@@ -1794,6 +1795,13 @@
   integrity sha512-TbLr+sKWiBsMw1GOLpduZI7skXmrLwZlEoVoHyxq66RvMk/5Fl84QoenlhjdxaX1rlHAkWCcjcbAYcCN7skoKw==
   dependencies:
     server-only "^0.0.1"
+
+"@dub/better-auth@^0.0.2":
+  version "0.0.2"
+  resolved "https://registry.npmjs.org/@dub/better-auth/-/better-auth-0.0.2.tgz"
+  integrity sha512-gTaqwVXnf4DtbOncOf/+85FOOQ61ZHszl/GX7veW9jnVaSqqX7kU1eSpHG8H9TIPubScpnEbcRtrUTTbJgj7QQ==
+  dependencies:
+    zod "^3.24.4"
 
 "@dub/embed-core@^0.0.15":
   version "0.0.15"
@@ -18238,7 +18246,7 @@ zod@3.23.8:
   resolved "https://registry.npmjs.org/zod/-/zod-3.23.8.tgz"
   integrity sha512-XBx9AXhXktjUqnepgTiE5flcKIYWi/rme0Eaj+5Y0lftuGBq+jyRu/md4WnuxqgP1ubdpNCsYEYPxrzVHD8d6g==
 
-zod@3.25.67, "zod@>= 3", zod@^3.0.0, zod@^3.18.0, zod@^3.20.2, zod@^3.23.8, "zod@^3.24.0 || ^4.0.0-beta.0", zod@^3.24.1:
+zod@3.25.67, "zod@>= 3", zod@^3.0.0, zod@^3.18.0, zod@^3.20.2, zod@^3.23.8, "zod@^3.24.0 || ^4.0.0-beta.0", zod@^3.24.1, zod@^3.24.4:
   version "3.25.67"
   resolved "https://registry.npmjs.org/zod/-/zod-3.25.67.tgz"
   integrity sha512-idA2YXwpCdqUSKRCACDE6ItZD9TZzy3OZMtpfLoh6oPR47lipysRrJfjzMqFxQ3uJuUPyUeWe1r9vLH33xO/Qw==
