@@ -2,6 +2,8 @@
 
 import * as React from 'react';
 import { Label, Pie, PieChart } from 'recharts';
+import { useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 
 import { Badge } from '@comp/ui/badge';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@comp/ui/card';
@@ -49,9 +51,21 @@ const StatusTooltip = ({ active, payload }: any) => {
 };
 
 export function PolicyStatusChart({ data }: PolicyStatusChartProps) {
+  const router = useRouter();
+  const params = useParams();
+  const orgId = params.orgId as string;
+
+  const handleChartClick = () => {
+    router.push(`/${orgId}/policies/all`);
+  };
+
   if (!data) {
     return (
-      <Card className="flex flex-col overflow-hidden border">
+      <Card 
+        className="flex flex-col overflow-hidden border cursor-pointer transition-all hover:shadow-md"
+        onClick={handleChartClick}
+        title="Click to view all policies"
+      >
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">{'Policy by Status'}</CardTitle>
@@ -115,7 +129,11 @@ export function PolicyStatusChart({ data }: PolicyStatusChartProps) {
   }, [chartData]);
 
   return (
-    <Card className="flex flex-col overflow-hidden border">
+    <Card 
+      className="flex flex-col overflow-hidden border cursor-pointer transition-all hover:shadow-md"
+      onClick={handleChartClick}
+      title="Click to view all policies"
+    >
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">{'Policy by Status'}</CardTitle>
@@ -167,6 +185,7 @@ export function PolicyStatusChart({ data }: PolicyStatusChartProps) {
               cursor="pointer"
               animationDuration={500}
               animationBegin={100}
+              onClick={handleChartClick}
             >
               <Label
                 content={({ viewBox }) => {
