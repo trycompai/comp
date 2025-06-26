@@ -141,12 +141,8 @@ export async function handleStripeEventNotification(
         const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
         const isTrialing = subscription.status === 'trialing';
 
-        const planName =
-          subscriptionData.status !== 'none' && 'product' in subscriptionData
-            ? subscriptionData.product?.name || 'Unknown'
-            : 'Unknown';
-
-        // Determine billing interval from subscription data
+        // Get amount and interval
+        const amount = formatCurrency(session.amount_total, session.currency || 'usd');
         const interval =
           subscriptionData.status !== 'none' &&
           'price' in subscriptionData &&
@@ -156,15 +152,13 @@ export async function handleStripeEventNotification(
               : 'Monthly'
             : '';
 
-        const planWithInterval = interval ? `${planName} (${interval})` : planName;
-
         const config: NotificationConfig = isTrialing
           ? {
               title: `🎉 New Trial Started`,
               color: '#0084FF',
               fields: [
                 { label: customerDetails.organizationName, value: clickableEmail },
-                { label: 'Plan', value: planWithInterval },
+                { label: amount, value: interval },
               ],
             }
           : {
@@ -172,10 +166,7 @@ export async function handleStripeEventNotification(
               color: '#36C537',
               fields: [
                 { label: customerDetails.organizationName, value: clickableEmail },
-                {
-                  label: formatCurrency(session.amount_total, session.currency || 'usd'),
-                  value: planWithInterval,
-                },
+                { label: amount, value: interval },
               ],
             };
 
@@ -193,18 +184,13 @@ export async function handleStripeEventNotification(
         const price = subscription.items.data[0]?.price;
         const amount = formatCurrency(price?.unit_amount, price?.currency || 'usd');
         const billingInterval = price?.recurring?.interval === 'year' ? 'Yearly' : 'Monthly';
-        const amountWithInterval = `${amount} (${billingInterval})`;
-        const planName =
-          subscriptionData.status !== 'none' && 'product' in subscriptionData
-            ? subscriptionData.product?.name || 'Unknown'
-            : 'Unknown';
 
         const config: NotificationConfig = {
           title: '🚀 Trial Converted to Paid',
           color: '#9F40E6',
           fields: [
             { label: customerDetails.organizationName, value: clickableEmail },
-            { label: amountWithInterval, value: planName },
+            { label: amount, value: billingInterval },
           ],
         };
 
