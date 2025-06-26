@@ -41,5 +41,6 @@ model Organization {
 enum SubscriptionType {
   NONE
   SELF_SERVE
+  STARTER
   STRIPE
 }
