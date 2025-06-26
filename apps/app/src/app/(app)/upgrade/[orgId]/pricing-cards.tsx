@@ -419,7 +419,14 @@ export function PricingCards({ organizationId, priceDetails }: PricingCardsProps
                   ))}
                   <span className="text-sm font-medium ml-1">5.0</span>
                 </div>
-                <p className="text-xs text-muted-foreground">from 100+ reviews</p>
+                <a
+                  href="https://www.g2.com/products/comp-ai/reviews"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors hover:underline"
+                >
+                  from 100+ reviews
+                </a>
               </div>
             </CardHeader>
             <CardContent className="px-6 pb-6">
