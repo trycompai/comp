@@ -13,6 +13,7 @@ import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { OnboardingTracker } from './components/OnboardingTracker';
+import { UpgradeBanner } from './components/UpgradeBanner';
 
 const HotKeys = dynamic(() => import('@/components/hot-keys').then((mod) => mod.HotKeys), {
   ssr: true,
@@ -88,6 +89,10 @@ export default async function Layout({
 
   const pixelsOffset = isOnboardingRunning ? navbarHeight + onboardingHeight : navbarHeight;
 
+  console.log('[LAYOUT] Organization object:', organization);
+  console.log('[LAYOUT] Organization id:', organization.id);
+  console.log('[LAYOUT] Organization subscriptionType:', organization.subscriptionType);
+
   return (
     <SidebarProvider initialIsCollapsed={isCollapsed}>
       <AnimatedLayout sidebar={<Sidebar organization={organization} />} isCollapsed={isCollapsed}>
@@ -99,7 +104,13 @@ export default async function Layout({
           className="textured-background mx-auto px-4 py-4"
           style={{ minHeight: `calc(100vh - ${pixelsOffset}px)` }}
         >
-          <SubscriptionProvider subscription={subscriptionData}>{children}</SubscriptionProvider>
+          <SubscriptionProvider subscription={subscriptionData}>
+            <UpgradeBanner
+              subscriptionType={organization.subscriptionType}
+              organizationId={organization.id}
+            />
+            {children}
+          </SubscriptionProvider>
         </div>
         <AssistantSheet />
         <Suspense fallback={null}>
