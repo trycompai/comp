@@ -350,6 +350,7 @@ export function PricingCards({ organizationId, priceDetails }: PricingCardsProps
             priceLabel="month"
             subtitle="DIY (Do It Yourself) Compliance"
             features={starterFeatures}
+            badge="14-day trial"
             yearlyPrice={isYearly ? starterYearlyPriceTotal : undefined}
             isYearly={isYearly}
             isExecuting={isExecuting}
