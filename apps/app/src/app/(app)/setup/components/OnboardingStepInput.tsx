@@ -6,6 +6,7 @@ import type { UseFormReturn } from 'react-hook-form';
 import { Controller } from 'react-hook-form';
 import type { CompanyDetails, Step } from '../lib/types';
 import { FrameworkSelection } from './FrameworkSelection';
+import { SoftwareSelection } from './SoftwareSelection';
 import { WebsiteInput } from './WebsiteInput';
 
 // Type for form fields used in this component.
@@ -55,6 +56,18 @@ export function OnboardingStepInput({
         rows={2}
         maxLength={300}
         className="h-24 resize-none"
+      />
+    );
+  }
+
+  if (currentStep.key === 'software') {
+    const selected = (form.watch(currentStep.key) || '').split(',').filter(Boolean);
+    return (
+      <SoftwareSelection
+        value={selected}
+        onChange={(values: string[]) => {
+          form.setValue(currentStep.key, values.join(','));
+        }}
       />
     );
   }
