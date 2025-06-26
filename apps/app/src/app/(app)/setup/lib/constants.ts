@@ -52,7 +52,7 @@ export const steps: Step[] = [
   {
     key: 'teamSize',
     question: 'How many employees do you have?',
-    placeholder: 'e.g., 10-50',
+    placeholder: 'e.g., 11-50',
     options: ['1-10', '11-50', '51-200', '201-500', '500+'],
   },
   {
