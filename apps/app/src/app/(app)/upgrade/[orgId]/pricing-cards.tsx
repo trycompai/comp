@@ -201,7 +201,6 @@ const PricingCard = ({
 };
 
 const starterFeatures = [
-  '14-day free trial',
   'Access to all frameworks',
   'Trust & Security Portal',
   'AI Vendor Management',
