@@ -1,4 +1,5 @@
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
+import { CheckoutCompleteTracking } from '@/components/tracking/CheckoutCompleteTracking';
 import { auth } from '@/utils/auth';
 import { db } from '@comp/db';
 import { headers } from 'next/headers';
@@ -37,6 +38,7 @@ export default async function DashboardPage() {
 
   return (
     <PageWithBreadcrumb breadcrumbs={[{ label: 'Frameworks', current: true }]}>
+      <CheckoutCompleteTracking />
       <FrameworksOverview
         frameworksWithControls={frameworksWithControls}
         tasks={tasks}
