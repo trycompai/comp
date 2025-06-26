@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import { after, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { syncStripeDataToKV } from '../syncStripeDataToKv';
+import { handleStripeEventNotification } from './slack-notifications';
 
 const allowedEvents: Stripe.Event.Type[] = [
   'checkout.session.completed',
@@ -26,12 +27,12 @@ const allowedEvents: Stripe.Event.Type[] = [
 ];
 
 async function processEvent(event: Stripe.Event) {
-  // Skip processing if the event isn't one I'm tracking (list of all events below)
+  // Skip processing if the event isn't one I'm tracking
   if (!allowedEvents.includes(event.type)) return;
 
   // All the events I track have a customerId
   const { customer: customerId } = event?.data?.object as {
-    customer: string; // Sadly TypeScript does not know this
+    customer: string;
   };
 
   // This helps make it typesafe and also lets me know if my assumption is wrong
@@ -39,7 +40,21 @@ async function processEvent(event: Stripe.Event) {
     throw new Error(`[STRIPE HOOK][CANCER] ID isn't string.\nEvent type: ${event.type}`);
   }
 
-  return await syncStripeDataToKV(customerId);
+  // Sync data to KV first
+  const subscriptionData = await syncStripeDataToKV(customerId);
+
+  // Send Slack notifications for relevant events
+  const notificationEvents = [
+    'checkout.session.completed',
+    'customer.subscription.updated',
+    'customer.subscription.deleted',
+  ];
+
+  if (notificationEvents.includes(event.type)) {
+    await handleStripeEventNotification(event, subscriptionData, customerId);
+  }
+
+  return subscriptionData;
 }
 
 export async function POST(req: Request) {
