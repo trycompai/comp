@@ -1,3 +1,12 @@
+# [1.46.0](https://github.com/trycompai/comp/compare/v1.45.1...v1.46.0) (2025-06-26)
+
+
+### Features
+
+* add testimonial section and update pricing card layout ([63f3898](https://github.com/trycompai/comp/commit/63f38982bf0b3a2a6e3b3864652b334a1c539c84))
+* add trial badge to pricing card component ([0e4d92b](https://github.com/trycompai/comp/commit/0e4d92bd7a8cf251b64968e89ffd35425f3725fd))
+* update pricing card component with review link ([2164e5f](https://github.com/trycompai/comp/commit/2164e5f3e432327d41f77d9d80b7d7604969cdd3))
+
 ## [1.45.1](https://github.com/trycompai/comp/compare/v1.45.0...v1.45.1) (2025-06-26)
 
 
