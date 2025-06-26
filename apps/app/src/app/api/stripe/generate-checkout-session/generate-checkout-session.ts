@@ -149,6 +149,7 @@ export const generateCheckoutSessionAction = authWithOrgAccessClient
         organizationId,
         userId: user.id,
         memberId: member.id,
+        dubCustomerId: user.id,
         ...metadata,
       },
       customer_update: {
