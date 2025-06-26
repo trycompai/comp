@@ -203,20 +203,10 @@ export async function handleStripeEventNotification(
           (subscription as any).current_period_end * 1000,
         ).toLocaleDateString();
 
-        // Get plan name and interval
-        const planName =
-          subscriptionData.status !== 'none' && 'product' in subscriptionData
-            ? subscriptionData.product?.name || 'Unknown'
-            : 'Unknown';
-        const interval =
-          subscriptionData.status !== 'none' &&
-          'price' in subscriptionData &&
-          subscriptionData.price?.interval
-            ? subscriptionData.price.interval === 'year'
-              ? 'Yearly'
-              : 'Monthly'
-            : '';
-        const planWithInterval = interval ? `${planName} (${interval})` : planName;
+        // Get amount and interval
+        const price = subscription.items.data[0]?.price;
+        const amount = formatCurrency(price?.unit_amount, price?.currency || 'usd');
+        const interval = price?.recurring?.interval === 'year' ? 'Yearly' : 'Monthly';
 
         const config: NotificationConfig = {
           title:
@@ -224,7 +214,7 @@ export async function handleStripeEventNotification(
           color: '#DC3545',
           fields: [
             { label: customerDetails.organizationName, value: clickableEmail },
-            { label: planWithInterval, value: `Ends ${cancelDate}` },
+            { label: `${amount} ${interval}`, value: `Ends ${cancelDate}` },
           ],
         };
 

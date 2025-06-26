@@ -7,19 +7,19 @@ This webhook sends sales notifications to Slack when important Stripe events occ
 Each notification is compact and displays on a single line with color coding:
 
 1. **New Subscription** (💰 Green #36C537)
-   - Format: `💰 New Subscription | OrgName: email@example.com • $99.00: Starter Plan (Monthly)`
-   - Triggered when a customer starts a paid subscription
+   - Format: `💰 New Subscription | OrgName: email@example.com • $99.00: Monthly`
+   - Triggered when a customer starts a paid subscription directly
 
 2. **New Trial Started** (🎉 Blue #0084FF)
-   - Format: `🎉 New Trial Started | OrgName: email@example.com • Plan: Starter (Yearly)`
+   - Format: `🎉 New Trial Started | OrgName: email@example.com • $990.00: Yearly`
    - Triggered when a customer starts a trial subscription
 
 3. **Trial Converted to Paid** (🚀 Purple #9F40E6)
-   - Format: `🚀 Trial Converted to Paid | OrgName: email@example.com • $99.00 (Monthly): Starter Plan`
+   - Format: `🚀 Trial Converted to Paid | OrgName: email@example.com • $99.00: Monthly`
    - Triggered when a trial subscription converts to an active paid subscription
 
 4. **Trial/Subscription Cancelled** (❌ Red #DC3545)
-   - Format: `❌ Subscription Cancelled | OrgName: email@example.com • Starter Plan (Monthly): Ends 12/31/2024`
+   - Format: `❌ Subscription Cancelled | OrgName: email@example.com • $99.00 Monthly: Ends 12/31/2024`
    - Triggered when a customer cancels their trial or subscription
 
 5. **Subscription Ended** (🚫 Dark Red #8B0000)
