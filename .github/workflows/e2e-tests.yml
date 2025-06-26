@@ -289,7 +289,7 @@ jobs:
         run: |
           cd apps/app
           echo "Starting E2E tests for ${{ matrix.project }} with 2 workers..."
-          bunx playwright test --project=${{ matrix.project }} --reporter=list
+          bunx playwright test --project=${{ matrix.project }}
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
           NEXTAUTH_URL: http://localhost:3000
@@ -318,11 +318,11 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
 
           # Check if test results exist
-          if [ -f "test-results/.last-run.json" ]; then
+          if [ -f "test-results/results.json" ]; then
             # Parse test results
-            TOTAL=$(jq '.suites | map(.specs | length) | add' test-results/.last-run.json 2>/dev/null || echo "0")
-            PASSED=$(jq '.suites | map(.specs | map(select(.ok == true)) | length) | add' test-results/.last-run.json 2>/dev/null || echo "0")
-            FAILED=$(jq '.suites | map(.specs | map(select(.ok == false)) | length) | add' test-results/.last-run.json 2>/dev/null || echo "0")
+            TOTAL=$(jq '.suites | map(.specs | length) | add' test-results/results.json 2>/dev/null || echo "0")
+            PASSED=$(jq '.suites | map(.specs | map(select(.ok == true)) | length) | add' test-results/results.json 2>/dev/null || echo "0")
+            FAILED=$(jq '.suites | map(.specs | map(select(.ok == false)) | length) | add' test-results/results.json 2>/dev/null || echo "0")
             
             # Add summary stats
             echo "### 📊 Summary" >> $GITHUB_STEP_SUMMARY
@@ -337,7 +337,7 @@ jobs:
               echo "" >> $GITHUB_STEP_SUMMARY
               
               # List failed tests
-              jq -r '.suites[] | .specs[] | select(.ok == false) | "- **\(.title)** in `\(.file)`"' test-results/.last-run.json 2>/dev/null >> $GITHUB_STEP_SUMMARY || true
+              jq -r '.suites[] | .specs[] | select(.ok == false) | "- **\(.title)** in `\(.file)`"' test-results/results.json 2>/dev/null >> $GITHUB_STEP_SUMMARY || true
               echo "" >> $GITHUB_STEP_SUMMARY
             fi
           else
