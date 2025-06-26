@@ -1,6 +1,7 @@
 'use client';
 
 import { generateCheckoutSessionAction } from '@/app/api/stripe/generate-checkout-session/generate-checkout-session';
+import { trackEvent, trackPurchaseEvent } from '@/utils/tracking';
 import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
 import {
@@ -267,6 +268,26 @@ export function PricingCards({ organizationId, priceDetails }: PricingCardsProps
       toast.error('Price information not available');
       return;
     }
+
+    // Track checkout started event
+    const value =
+      plan === 'starter'
+        ? isYearly
+          ? starterYearlyPriceTotal
+          : starterMonthlyPrice
+        : isYearly
+          ? managedYearlyPriceTotal
+          : managedMonthlyPrice;
+
+    trackPurchaseEvent('checkout_started', value);
+    trackEvent('checkout_started', {
+      event_category: 'ecommerce',
+      event_label: `${plan}_${isYearly ? 'yearly' : 'monthly'}`,
+      plan_type: plan,
+      billing_period: isYearly ? 'yearly' : 'monthly',
+      value,
+      currency: 'USD',
+    });
 
     execute({
       organizationId,

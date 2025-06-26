@@ -10,6 +10,7 @@ import { AnimatedPricingBanner } from './components/AnimatedPricingBanner';
 import LogoMarquee from './components/logos/logo-marquee';
 import { PricingCards } from './pricing-cards';
 import './styles/marquee.css';
+import { UpgradePageTracking } from './UpgradePageTracking';
 
 interface PageProps {
   params: Promise<{
@@ -105,6 +106,7 @@ export default async function UpgradePage({ params }: PageProps) {
 
   return (
     <>
+      <UpgradePageTracking />
       <AnimatedPricingBanner />
       <div className="mx-auto px-4 py-8 max-w-7xl">
         <div className="relative">

@@ -1,5 +1,6 @@
 'use client';
 
+import { env } from '@/env.mjs';
 import { AnalyticsProvider } from '@comp/analytics';
 import { GoogleTagManager } from '@next/third-parties/google';
 import { Session, User } from 'better-auth';
@@ -22,20 +23,15 @@ export function Providers({ children, session }: ProviderProps) {
       disableTransitionOnChange
       scriptProps={{ 'data-cfasync': 'false' }}
     >
-      <GoogleTagManager
-        gtmId="GTM-56GW3TVW"
-        dataLayer={{
-          user_id: session?.user?.id ?? '',
-          user_email: session?.user?.email ?? '',
-        }}
-      />
-      <GoogleTagManager
-        gtmId="AW-16886441131"
-        dataLayer={{
-          user_id: session?.user?.id ?? '',
-          user_email: session?.user?.email ?? '',
-        }}
-      />
+      {env.NEXT_PUBLIC_GTM_ID && (
+        <GoogleTagManager
+          gtmId={env.NEXT_PUBLIC_GTM_ID}
+          dataLayer={{
+            user_id: session?.user?.id ?? '',
+            user_email: session?.user?.email ?? '',
+          }}
+        />
+      )}
       <AnalyticsProvider
         userId={session?.user?.id ?? undefined}
         userEmail={session?.user?.email ?? undefined}

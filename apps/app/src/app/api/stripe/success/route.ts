@@ -1,4 +1,5 @@
 import { getServersideSession } from '@/lib/get-session';
+import { trackPurchaseCompletionServer } from '@/utils/server-tracking';
 import { db } from '@comp/db';
 import { client } from '@comp/kv';
 import { redirect } from 'next/navigation';
@@ -34,6 +35,19 @@ export async function GET(req: Request) {
   }
 
   await syncStripeDataToKV(stripeCustomerId as string);
-  // Redirect with the plan type from query parameters
-  return redirect(`/${organizationId}/frameworks?checkoutComplete=${planType}`);
+
+  // Get subscription value for tracking (you may need to fetch this from Stripe or your DB)
+  // For now, using default values based on plan type
+  const value = planType === 'starter' ? 99 : 997;
+
+  // Track the successful purchase with user ID
+  await trackPurchaseCompletionServer(organizationId, planType, value, user.id);
+
+  // Redirect with enhanced parameters for client-side tracking
+  const redirectUrl = new URL(`/${organizationId}/frameworks`, url.origin);
+  redirectUrl.searchParams.set('checkoutComplete', planType);
+  redirectUrl.searchParams.set('organizationId', organizationId);
+  redirectUrl.searchParams.set('value', value.toString());
+
+  return redirect(redirectUrl.toString());
 }
