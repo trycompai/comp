@@ -7,7 +7,7 @@ on:
 jobs:
   migrate:
     name: Run Database Migrations
-    runs-on: self-hosted
+    runs-on: buildjet-32vcpu-ubuntu-2204-arm
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

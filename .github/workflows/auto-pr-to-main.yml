@@ -16,7 +16,7 @@ on:
       - COMP-*
 jobs:
   create-pull-request:
-    runs-on: self-hosted
+    runs-on: buildjet-32vcpu-ubuntu-2204-arm
     continue-on-error: true
     permissions:
       pull-requests: write

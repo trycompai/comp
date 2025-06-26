@@ -14,7 +14,7 @@ permissions:
 jobs:
   release:
     name: Release
-    runs-on: self-hosted
+    runs-on: buildjet-32vcpu-ubuntu-2204-arm
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,7 +36,7 @@ jobs:
           bun-version: latest # Optional: specify a bun version
 
       - name: Cache dependencies
-        uses: actions/cache@v4
+        uses: buildjet/cache@v3
         with:
           path: |
             ~/.bun/install/cache

@@ -5,7 +5,7 @@ on:
       - main
 jobs:
   create-pull-request:
-    runs-on: self-hosted
+    runs-on: buildjet-32vcpu-ubuntu-2204-arm
     permissions:
       pull-requests: write
       contents: write

@@ -24,7 +24,7 @@ on:
 jobs:
   unit-tests:
     name: Unit Tests
-    runs-on: self-hosted
+    runs-on: buildjet-32vcpu-ubuntu-2204-arm
     timeout-minutes: 10
 
     strategy:
@@ -43,7 +43,7 @@ jobs:
           bun-version: latest
 
       - name: Cache dependencies
-        uses: actions/cache@v4
+        uses: buildjet/cache@v3
         with:
           path: |
             ~/.bun/install/cache

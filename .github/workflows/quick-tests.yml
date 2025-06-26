@@ -14,7 +14,7 @@ env:
 
 jobs:
   quick-test:
-    runs-on: self-hosted
+    runs-on: buildjet-32vcpu-ubuntu-2204-arm
     strategy:
       matrix:
         app: [app]

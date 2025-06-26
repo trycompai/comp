@@ -21,7 +21,7 @@ permissions:
 
 jobs:
   deploy-results:
-    runs-on: self-hosted
+    runs-on: buildjet-32vcpu-ubuntu-2204-arm
 
     steps:
       - name: Checkout
