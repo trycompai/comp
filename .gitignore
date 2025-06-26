@@ -75,3 +75,5 @@ test-results/
 playwright-report/
 playwright/.cache/
 debug-setup-page.png
+
+.playground/

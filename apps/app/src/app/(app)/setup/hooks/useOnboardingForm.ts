@@ -1,5 +1,6 @@
 'use client';
 
+import { trackEvent, trackOnboardingEvent } from '@/utils/tracking';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { sendGTMEvent } from '@next/third-parties/google';
 import { useAction } from 'next-safe-action/hooks';
@@ -9,7 +10,6 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { createOrganization } from '../actions/create-organization';
-import { createOrganizationMinimal } from '../actions/create-organization-minimal';
 import type { OnboardingFormFields } from '../components/OnboardingStepInput';
 import { companyDetailsSchema, steps } from '../lib/constants';
 import { updateSetupSession } from '../lib/setup-session';
@@ -58,8 +58,6 @@ export function useOnboardingForm({
   const initialStepIndex = currentStep ? steps.findIndex((s) => s.key === currentStep) : 0;
 
   const [stepIndex, setStepIndex] = useState(Math.max(0, initialStepIndex));
-  const [showSkipDialog, setShowSkipDialog] = useState(false);
-  const [isSkipping, setIsSkipping] = useState(false);
   const [isOnboarding, setIsOnboarding] = useState(false);
   const [isFinalizing, setIsFinalizing] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -67,6 +65,16 @@ export function useOnboardingForm({
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Track when user starts onboarding
+  useEffect(() => {
+    if (mounted && stepIndex === 0 && !savedAnswers.frameworkIds) {
+      trackEvent('onboarding_started', {
+        event_category: 'onboarding',
+        setup_id: setupId,
+      });
+    }
+  }, [mounted, stepIndex, savedAnswers.frameworkIds, setupId]);
 
   // Save progress to KV if we have a setupId
   useEffect(() => {
@@ -95,34 +103,23 @@ export function useOnboardingForm({
     form.reset({ [step.key]: savedAnswers[step.key] || '' });
   }, [savedAnswers, step.key, form]);
 
-  const createOrganizationMinimalAction = useAction(createOrganizationMinimal, {
-    onSuccess: ({ data }) => {
-      if (data?.success && data?.organizationId) {
-        setIsFinalizing(true);
-        sendGTMEvent({ event: 'conversion' });
-
-        // Organization created, now redirect to plans page with search params
-        router.push(buildUrlWithParams(`/upgrade/${data.organizationId}`));
-      } else {
-        toast.error(data?.error || 'Failed to create organization minimal');
-        setIsSkipping(false);
-      }
-    },
-    onError: (error) => {
-      console.error('Create organization minimal error:', error);
-      toast.error('Failed to create organization minimal');
-      setIsSkipping(false);
-    },
-    onExecute: () => {
-      setIsSkipping(true);
-    },
-  });
-
   const createOrganizationAction = useAction(createOrganization, {
     onSuccess: async ({ data }) => {
       if (data?.success && data?.organizationId) {
         setIsFinalizing(true);
         sendGTMEvent({ event: 'conversion' });
+
+        // Track organization created
+        trackEvent('organization_created', {
+          event_category: 'onboarding',
+          organization_id: data.organizationId,
+          flow_type: 'complete',
+        });
+        trackEvent('onboarding_completed', {
+          event_category: 'onboarding',
+          flow_type: 'complete',
+          total_steps: steps.length,
+        });
 
         // Organization created, now redirect to plans page with search params
         router.push(buildUrlWithParams(`/upgrade/${data.organizationId}`));
@@ -162,15 +159,6 @@ export function useOnboardingForm({
     });
   };
 
-  const handleCreateOrganizationMinimalAction = () => {
-    createOrganizationMinimalAction.execute({
-      organizationName: savedAnswers.organizationName || 'My Organization',
-      website: savedAnswers.website || 'https://my-organization.com',
-      frameworkIds: savedAnswers.frameworkIds || [],
-    });
-    setSavedAnswers({});
-  };
-
   const onSubmit = (data: OnboardingFormFields) => {
     const newAnswers: OnboardingFormFields = { ...savedAnswers, ...data };
 
@@ -191,6 +179,21 @@ export function useOnboardingForm({
     }
 
     setSavedAnswers(newAnswers as Partial<CompanyDetails>);
+
+    // Track step completion
+    trackOnboardingEvent(step.key, stepIndex + 1, {
+      step_value: data[step.key],
+    });
+
+    // Track framework selection specifically
+    if (step.key === 'frameworkIds' && data.frameworkIds) {
+      trackEvent('framework_selected', {
+        event_category: 'onboarding',
+        frameworks: data.frameworkIds,
+        framework_count: data.frameworkIds.length,
+      });
+    }
+
     if (stepIndex < steps.length - 1) {
       setStepIndex(stepIndex + 1);
     } else {
@@ -214,12 +217,6 @@ export function useOnboardingForm({
     }
   };
 
-  const canShowSkipButton = Boolean(
-    savedAnswers.frameworkIds &&
-      savedAnswers.frameworkIds.length > 0 &&
-      savedAnswers.organizationName &&
-      savedAnswers.website,
-  );
   const isLastStep = stepIndex === steps.length - 1;
 
   return {
@@ -228,16 +225,11 @@ export function useOnboardingForm({
     step,
     form,
     savedAnswers,
-    showSkipDialog,
-    setShowSkipDialog,
-    isSkipping,
     isOnboarding,
     isFinalizing,
     mounted,
     onSubmit,
     handleBack,
-    handleSkipOnboardingAction: handleCreateOrganizationMinimalAction,
-    canShowSkipButton,
     isLastStep,
   };
 }

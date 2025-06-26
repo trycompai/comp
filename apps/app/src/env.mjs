@@ -38,6 +38,10 @@ export const env = createEnv({
     FLEET_TOKEN: z.string().optional(),
     DUB_API_KEY: z.string().optional(),
     DUB_REFER_URL: z.string().optional(),
+    GA4_API_SECRET: z.string().optional(),
+    GA4_MEASUREMENT_ID: z.string().optional(),
+    LINKEDIN_CONVERSIONS_ACCESS_TOKEN: z.string().optional(),
+    SLACK_SALES_WEBHOOK: z.string().optional(),
   },
 
   client: {
@@ -48,6 +52,11 @@ export const env = createEnv({
     NEXT_PUBLIC_STRIPE_SUBSCRIPTION_MANAGED_YEARLY_PRICE_ID: z.string().optional(),
     NEXT_PUBLIC_STRIPE_SUBSCRIPTION_STARTER_MONTHLY_PRICE_ID: z.string().optional(),
     NEXT_PUBLIC_STRIPE_SUBSCRIPTION_STARTER_YEARLY_PRICE_ID: z.string().optional(),
+    NEXT_PUBLIC_IS_DUB_ENABLED: z.string().optional(),
+    NEXT_PUBLIC_GTM_ID: z.string().optional(),
+    NEXT_PUBLIC_LINKEDIN_PARTNER_ID: z.string().optional(),
+    NEXT_PUBLIC_LINKEDIN_CONVERSION_ID: z.string().optional(),
+    NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL: z.string().optional(),
   },
 
   runtimeEnv: {
@@ -97,6 +106,15 @@ export const env = createEnv({
       process.env.NEXT_PUBLIC_STRIPE_SUBSCRIPTION_STARTER_YEARLY_PRICE_ID,
     DUB_API_KEY: process.env.DUB_API_KEY,
     DUB_REFER_URL: process.env.DUB_REFER_URL,
+    NEXT_PUBLIC_IS_DUB_ENABLED: process.env.NEXT_PUBLIC_IS_DUB_ENABLED,
+    NEXT_PUBLIC_GTM_ID: process.env.NEXT_PUBLIC_GTM_ID,
+    NEXT_PUBLIC_LINKEDIN_PARTNER_ID: process.env.NEXT_PUBLIC_LINKEDIN_PARTNER_ID,
+    NEXT_PUBLIC_LINKEDIN_CONVERSION_ID: process.env.NEXT_PUBLIC_LINKEDIN_CONVERSION_ID,
+    GA4_API_SECRET: process.env.GA4_API_SECRET,
+    GA4_MEASUREMENT_ID: process.env.GA4_MEASUREMENT_ID,
+    LINKEDIN_CONVERSIONS_ACCESS_TOKEN: process.env.LINKEDIN_CONVERSIONS_ACCESS_TOKEN,
+    NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL: process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL,
+    SLACK_SALES_WEBHOOK: process.env.SLACK_SALES_WEBHOOK,
   },
 
   skipValidation: !!process.env.CI || !!process.env.SKIP_ENV_VALIDATION,

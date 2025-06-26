@@ -29,7 +29,7 @@ env:
 jobs:
   e2e-tests:
     name: E2E Tests - ${{ matrix.project }}
-    runs-on: ubuntu-latest-custom
+    runs-on: warp-ubuntu-latest-arm64-4x
     timeout-minutes: 20
 
     strategy:
@@ -62,7 +62,7 @@ jobs:
           bun-version: latest
 
       - name: Cache dependencies
-        uses: actions/cache@v4
+        uses: WarpBuilds/cache@v1
         with:
           path: |
             ~/.bun/install/cache
@@ -75,7 +75,7 @@ jobs:
             ${{ runner.os }}-bun-
 
       - name: Cache Next.js build
-        uses: actions/cache@v4
+        uses: WarpBuilds/cache@v1
         with:
           path: |
             apps/app/.next/cache
@@ -116,7 +116,7 @@ jobs:
           echo "browser_versions=$BROWSER_VERSIONS" >> $GITHUB_OUTPUT
 
       - name: Cache Playwright browsers
-        uses: actions/cache@v4
+        uses: WarpBuilds/cache@v1
         id: playwright-cache
         with:
           path: |
@@ -436,7 +436,7 @@ jobs:
   # Job to post consolidated test results
   post-results:
     name: Post Test Results to PR
-    runs-on: ubuntu-latest
+    runs-on: warp-ubuntu-latest-arm64-4x
     needs: e2e-tests
     if: always() && github.event_name == 'pull_request'
 
