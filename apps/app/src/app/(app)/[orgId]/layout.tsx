@@ -94,7 +94,7 @@ export default async function Layout({
         {onboarding?.triggerJobId && (
           <OnboardingTracker onboarding={onboarding} publicAccessToken={publicAccessToken ?? ''} />
         )}
-        <Header />
+        <Header subscription={subscriptionData} />
         <div
           className="textured-background mx-auto px-4 py-4"
           style={{ minHeight: `calc(100vh - ${pixelsOffset}px)` }}

@@ -1,18 +1,16 @@
+import { BookingDialog } from '@/app/(app)/upgrade/[orgId]/components/BookingDialog';
+import { STRIPE_SUB_CACHE } from '@/app/api/stripe/stripeDataToKv.type';
 import { UserMenu } from '@/components/user-menu';
 import { getOrganizations } from '@/data/getOrganizations';
 import { auth } from '@/utils/auth';
-import { buttonVariants } from '@comp/ui/button';
-import { Icons } from '@comp/ui/icons';
 import { Skeleton } from '@comp/ui/skeleton';
-import { Inbox } from 'lucide-react';
 import { headers } from 'next/headers';
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { AssistantButton } from './ai/chat-button';
 import { MobileMenu } from './mobile-menu';
 
-export async function Header() {
+export async function Header({ subscription }: { subscription: STRIPE_SUB_CACHE }) {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -33,28 +31,7 @@ export async function Header() {
 
       <div className="ml-auto flex space-x-2">
         <div className="hidden gap-2 md:flex">
-          <Link
-            className={buttonVariants({
-              variant: 'ghost',
-              size: 'sm',
-            })}
-            href="https://roadmap.trycomp.ai"
-            target="_blank"
-          >
-            <Inbox className="h-4 w-4" />
-            Feedback
-          </Link>
-          <Link
-            className={buttonVariants({
-              variant: 'ghost',
-              size: 'sm',
-            })}
-            href="https://discord.gg/compai"
-            target="_blank"
-          >
-            <Icons.Discord className="h-4 w-4" />
-            {'Ask in our Discord'}
-          </Link>
+          <BookingDialog subscription={subscription} />
         </div>
 
         <Suspense fallback={<Skeleton className="h-8 w-8 rounded-full" />}>
