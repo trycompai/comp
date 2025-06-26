@@ -1,36 +1,21 @@
 'use client';
 
-import { useSubscription } from '@/context/subscription-context';
-import { env } from '@/env.mjs';
 import { Button } from '@comp/ui/button';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
 import { useState } from 'react';
 
-export function UpgradeBanner() {
-  const { subscription, isSelfServe } = useSubscription();
-  const params = useParams();
-  const orgId = params.orgId as string;
+interface UpgradeBannerProps {
+  subscriptionType: 'NONE' | 'FREE' | 'STARTER' | 'MANAGED';
+  organizationId: string;
+}
+
+export function UpgradeBanner({ subscriptionType, organizationId }: UpgradeBannerProps) {
+  console.log('[UpgradeBanner] Props:', { subscriptionType, organizationId });
   const [isDismissed, setIsDismissed] = useState(false);
 
-  // Check if we should show the banner
-  const shouldShowBanner = () => {
-    // Show for FREE plan (self-serve)
-    if (isSelfServe) return true;
-
-    // Show for STARTER plan - check if it's a starter subscription via price ID
-    if ('priceId' in subscription && subscription.priceId) {
-      const starterPriceIds = [
-        env.NEXT_PUBLIC_STRIPE_SUBSCRIPTION_STARTER_MONTHLY_PRICE_ID,
-        env.NEXT_PUBLIC_STRIPE_SUBSCRIPTION_STARTER_YEARLY_PRICE_ID,
-      ].filter(Boolean);
-
-      return starterPriceIds.includes(subscription.priceId);
-    }
-
-    return false;
-  };
+  // Check if we should show the banner based on subscription type
+  const shouldShowBanner = subscriptionType === 'FREE' || subscriptionType === 'STARTER';
 
   // Handle dismiss
   const handleDismiss = () => {
@@ -38,14 +23,13 @@ export function UpgradeBanner() {
   };
 
   // Don't show if dismissed or not eligible
-  if (isDismissed || !shouldShowBanner()) {
+  if (isDismissed || !shouldShowBanner) {
     return null;
   }
 
-  const isFreePlan = isSelfServe;
-  const bannerMessage = isFreePlan
-    ? "Too busy to deal with compliance? We've got you. 14 days, done-for-you."
-    : 'Compliance taking too much time? Let us handle it. 14 days to audit-ready.';
+  // Use consistent message for all users who see the banner
+  const bannerMessage =
+    'Compliance taking too much time? Let us handle it. 14 days to audit-ready.';
 
   return (
     <div className="relative mb-4 overflow-hidden rounded-lg">
@@ -73,7 +57,7 @@ export function UpgradeBanner() {
             <p className="text-sm font-medium text-foreground/90">{bannerMessage}</p>
           </div>
           <div className="flex items-center gap-2">
-            <Link href={`/upgrade/${orgId}`}>
+            <Link href={`/upgrade/${organizationId}`}>
               <Button
                 size="sm"
                 variant="default"
@@ -103,17 +87,6 @@ export function UpgradeBanner() {
           </div>
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes shimmer {
-          0% {
-            transform: translateX(-100%);
-          }
-          100% {
-            transform: translateX(200%);
-          }
-        }
-      `}</style>
     </div>
   );
 }

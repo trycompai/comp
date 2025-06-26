@@ -1,6 +1,8 @@
 'use client';
 
 import { generateCheckoutSessionAction } from '@/app/api/stripe/generate-checkout-session/generate-checkout-session';
+import { STRIPE_SUB_CACHE } from '@/app/api/stripe/stripeDataToKv.type';
+import { Alert, AlertDescription } from '@comp/ui/alert';
 import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
 import {
@@ -11,7 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@comp/ui/card';
-import { ArrowRight, CheckIcon, Loader2, Quote, Star } from 'lucide-react';
+import { AlertCircle, ArrowRight, CheckIcon, Loader2, Quote, Star } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -50,6 +52,8 @@ interface PricingCardsProps {
       productName: string | null;
     } | null;
   };
+  currentSubscription?: STRIPE_SUB_CACHE;
+  subscriptionType?: 'NONE' | 'FREE' | 'STARTER' | 'MANAGED';
 }
 
 interface PricingCardProps {
@@ -67,6 +71,7 @@ interface PricingCardProps {
   isYearly?: boolean;
   isExecuting?: boolean;
   buttonText?: string;
+  isCurrentPlan?: boolean;
 }
 
 const PricingCard = ({
@@ -84,6 +89,7 @@ const PricingCard = ({
   isYearly,
   isExecuting,
   buttonText,
+  isCurrentPlan,
 }: PricingCardProps) => {
   const isPopular = planType === 'managed';
 
@@ -92,7 +98,9 @@ const PricingCard = ({
       className={`relative transition-all h-full flex flex-col border ${
         isPopular
           ? 'ring-2 ring-green-500 shadow-lg bg-green-50/30 dark:bg-green-950/20 border-green-500/50 scale-105 hover:shadow-xl'
-          : 'hover:shadow-md bg-card border-border'
+          : isCurrentPlan
+            ? 'opacity-75'
+            : 'hover:shadow-md bg-card border-border'
       }`}
     >
       {isPopular && (
@@ -111,7 +119,9 @@ const PricingCard = ({
                 className={
                   badge === '14-day trial'
                     ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 text-xs px-1.5 py-0'
-                    : 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 text-xs px-1.5 py-0'
+                    : badge === 'Current Plan'
+                      ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 text-xs px-1.5 py-0'
+                      : 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 text-xs px-1.5 py-0'
                 }
               >
                 {badge}
@@ -184,14 +194,16 @@ const PricingCard = ({
           className="w-full"
           variant={isPopular ? 'default' : 'outline'}
           size={isPopular ? 'lg' : 'default'}
-          disabled={isExecuting}
+          disabled={isExecuting || isCurrentPlan}
         >
           {isExecuting ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
             <>
               {buttonText || 'Go to Checkout'}
-              <ArrowRight className={`ml-2 ${isPopular ? 'h-5 w-5' : 'h-4 w-4'}`} />
+              {!isCurrentPlan && (
+                <ArrowRight className={`ml-2 ${isPopular ? 'h-5 w-5' : 'h-4 w-4'}`} />
+              )}
             </>
           )}
         </Button>
@@ -222,9 +234,50 @@ const managedFeatures = [
   '12-month minimum term',
 ];
 
-export function PricingCards({ organizationId, priceDetails }: PricingCardsProps) {
+export function PricingCards({
+  organizationId,
+  priceDetails,
+  currentSubscription,
+  subscriptionType,
+}: PricingCardsProps) {
   const router = useRouter();
   const [isYearly, setIsYearly] = useState(true);
+
+  // Check if user has an active starter subscription
+  const hasStarterSubscription = (() => {
+    // If we have the subscription type from the database, use that
+    if (subscriptionType === 'STARTER') {
+      // Also check if the subscription is still valid
+      if (!currentSubscription) return false;
+
+      // Check if the subscription is completely dead
+      if (
+        currentSubscription.status === 'incomplete_expired' ||
+        currentSubscription.status === 'unpaid'
+      ) {
+        return false;
+      }
+
+      return true;
+    }
+
+    return false;
+  })();
+
+  // Check if subscription is in a canceling state
+  const isSubscriptionCanceling =
+    currentSubscription &&
+    'cancelAtPeriodEnd' in currentSubscription &&
+    currentSubscription.cancelAtPeriodEnd;
+
+  // Check if we're still loading subscription data
+  const isLoadingSubscription = currentSubscription === undefined;
+
+  // Check if subscription has payment issues
+  const hasPaymentIssue =
+    currentSubscription &&
+    'status' in currentSubscription &&
+    currentSubscription.status === 'past_due';
 
   const { execute, isExecuting } = useAction(generateCheckoutSessionAction, {
     onSuccess: ({ data }) => {
@@ -243,6 +296,11 @@ export function PricingCards({ organizationId, priceDetails }: PricingCardsProps
       : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
   const handleSubscribe = (plan: 'starter' | 'managed') => {
+    // Don't allow subscribing to starter if already on starter
+    if (plan === 'starter' && hasStarterSubscription) {
+      return;
+    }
+
     let priceId: string | undefined;
     let planType: string;
     let trialPeriodDays: number | undefined;
@@ -307,6 +365,20 @@ export function PricingCards({ organizationId, priceDetails }: PricingCardsProps
 
   return (
     <div className="space-y-4 max-w-7xl mx-auto">
+      {/* Payment Issue Alert */}
+      {hasPaymentIssue && (
+        <Alert className="border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20">
+          <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-500" />
+          <AlertDescription className="text-yellow-800 dark:text-yellow-200">
+            Your current subscription has a payment issue. Please update your payment method in{' '}
+            <a href={`/${organizationId}/settings/billing`} className="underline font-medium">
+              billing settings
+            </a>{' '}
+            before upgrading to a new plan.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Pricing Toggle */}
       <div className="flex flex-col items-center gap-2">
         <div className="bg-muted/50 p-1 rounded-lg flex items-center justify-center gap-1">
@@ -349,11 +421,26 @@ export function PricingCards({ organizationId, priceDetails }: PricingCardsProps
             priceLabel="month"
             subtitle="DIY (Do It Yourself) Compliance"
             features={starterFeatures}
-            badge="14-day trial"
+            badge={
+              hasStarterSubscription
+                ? isSubscriptionCanceling
+                  ? 'Canceling'
+                  : 'Current Plan'
+                : '14-day trial'
+            }
             yearlyPrice={isYearly ? starterYearlyPriceTotal : undefined}
             isYearly={isYearly}
-            isExecuting={isExecuting}
-            buttonText="Start 14-Day Free Trial"
+            isExecuting={(isExecuting && !hasStarterSubscription) || isLoadingSubscription}
+            buttonText={
+              isLoadingSubscription
+                ? 'Loading...'
+                : hasStarterSubscription
+                  ? isSubscriptionCanceling
+                    ? 'Plan Canceling'
+                    : 'Your Current Plan'
+                  : 'Start 14-Day Free Trial'
+            }
+            isCurrentPlan={hasStarterSubscription}
           />
 
           <PricingCard
@@ -368,8 +455,17 @@ export function PricingCards({ organizationId, priceDetails }: PricingCardsProps
             badge="Popular"
             yearlyPrice={isYearly ? managedYearlyPriceTotal : undefined}
             isYearly={isYearly}
-            isExecuting={isExecuting}
-            buttonText="Continue"
+            isExecuting={isExecuting || isLoadingSubscription}
+            buttonText={
+              isLoadingSubscription
+                ? 'Loading...'
+                : hasStarterSubscription
+                  ? isSubscriptionCanceling
+                    ? 'Upgrade Instead of Canceling'
+                    : 'Upgrade to Done For You'
+                  : 'Continue'
+            }
+            isCurrentPlan={false}
           />
         </div>
 

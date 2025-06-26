@@ -89,6 +89,10 @@ export default async function Layout({
 
   const pixelsOffset = isOnboardingRunning ? navbarHeight + onboardingHeight : navbarHeight;
 
+  console.log('[LAYOUT] Organization object:', organization);
+  console.log('[LAYOUT] Organization id:', organization.id);
+  console.log('[LAYOUT] Organization subscriptionType:', organization.subscriptionType);
+
   return (
     <SidebarProvider initialIsCollapsed={isCollapsed}>
       <AnimatedLayout sidebar={<Sidebar organization={organization} />} isCollapsed={isCollapsed}>
@@ -101,7 +105,10 @@ export default async function Layout({
           style={{ minHeight: `calc(100vh - ${pixelsOffset}px)` }}
         >
           <SubscriptionProvider subscription={subscriptionData}>
-            <UpgradeBanner />
+            <UpgradeBanner
+              subscriptionType={organization.subscriptionType}
+              organizationId={organization.id}
+            />
             {children}
           </SubscriptionProvider>
         </div>
