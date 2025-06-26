@@ -173,7 +173,7 @@ async function handleLogin(request: NextRequest) {
   // Copy all cookies from Better Auth's response to our response
   const cookies = signInResponse.headers.getSetCookie();
   console.log('[TEST-LOGIN] Setting cookies count:', cookies.length);
-  cookies.forEach((cookie) => {
+  cookies.forEach((cookie: string) => {
     response.headers.append('Set-Cookie', cookie);
   });
 
