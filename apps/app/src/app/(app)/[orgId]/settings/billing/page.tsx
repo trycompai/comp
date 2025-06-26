@@ -100,11 +100,15 @@ export default function BillingPage() {
 
   // Calculate if minimum term has been met for managed plans
   const hasMetMinimumTerm = () => {
-    if (planType !== 'managed' || !('currentPeriodStart' in subscription)) {
+    if (
+      planType !== 'managed' ||
+      !('currentPeriodStart' in subscription) ||
+      subscription.currentPeriodStart == null
+    ) {
       return true;
     }
 
-    const startDate = new Date(subscription.currentPeriodStart! * 1000);
+    const startDate = new Date(subscription.currentPeriodStart * 1000);
     const now = new Date();
     const monthsElapsed =
       (now.getFullYear() - startDate.getFullYear()) * 12 + (now.getMonth() - startDate.getMonth());
@@ -116,11 +120,15 @@ export default function BillingPage() {
 
   // Calculate when cancellation will be available
   const getCancellationAvailableDate = () => {
-    if (planType !== 'managed' || !('currentPeriodStart' in subscription)) {
+    if (
+      planType !== 'managed' ||
+      !('currentPeriodStart' in subscription) ||
+      subscription.currentPeriodStart == null
+    ) {
       return null;
     }
 
-    const startDate = new Date(subscription.currentPeriodStart! * 1000);
+    const startDate = new Date(subscription.currentPeriodStart * 1000);
     const cancellationDate = new Date(startDate);
     cancellationDate.setMonth(
       cancellationDate.getMonth() + (planConfig.managed.minimumTermMonths || 12),
@@ -318,12 +326,17 @@ export default function BillingPage() {
 
   // 3. Active Subscription View (Starter or Managed)
   const renderTrialWarning = () => {
-    if (!isTrialing || !('currentPeriodEnd' in subscription)) return null;
+    if (
+      !isTrialing ||
+      !('currentPeriodEnd' in subscription) ||
+      subscription.currentPeriodEnd == null
+    )
+      return null;
 
     const daysLeft = Math.ceil(
-      (subscription.currentPeriodEnd! * 1000 - Date.now()) / (1000 * 60 * 60 * 24),
+      (subscription.currentPeriodEnd * 1000 - Date.now()) / (1000 * 60 * 60 * 24),
     );
-    const trialEndDate = formatDate(subscription.currentPeriodEnd!);
+    const trialEndDate = formatDate(subscription.currentPeriodEnd);
 
     return (
       <Alert>
@@ -456,17 +469,19 @@ export default function BillingPage() {
                   </div>
                 )}
 
-              {planType === 'managed' && !canCancelSubscription && (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Lock className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">Minimum Term</span>
+              {planType === 'managed' &&
+                !canCancelSubscription &&
+                getCancellationAvailableDate() && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Lock className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">Minimum Term</span>
+                    </div>
+                    <span className="text-sm text-muted-foreground">
+                      12 months (ends {formatDate(getCancellationAvailableDate()!)})
+                    </span>
                   </div>
-                  <span className="text-sm text-muted-foreground">
-                    12 months (ends {formatDate(getCancellationAvailableDate()!)})
-                  </span>
-                </div>
-              )}
+                )}
             </div>
 
             <Separator />
@@ -515,7 +530,9 @@ export default function BillingPage() {
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>This plan requires a 12-month minimum commitment.</p>
-                      <p>You can cancel after {formatDate(getCancellationAvailableDate()!)}.</p>
+                      {getCancellationAvailableDate() && (
+                        <p>You can cancel after {formatDate(getCancellationAvailableDate()!)}.</p>
+                      )}
                     </TooltipContent>
                   </Tooltip>
                 ))
