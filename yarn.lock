@@ -1285,14 +1285,14 @@
     "@types/conventional-commits-parser" "^5.0.0"
     chalk "^5.3.0"
 
-"@comp/analytics@packages/analytics":
+"@comp/analytics@^workspace:packages/analytics":
   version "workspace:packages/analytics"
   resolved "workspace:packages/analytics"
   dependencies:
     posthog-js "^1.236.6"
     posthog-node "^4.14.0"
 
-"@comp/app@apps/app", "@comp/app@workspace:*":
+"@comp/app@^workspace:apps/app", "@comp/app@workspace:*":
   version "workspace:apps/app"
   resolved "workspace:apps/app"
   devDependencies:
@@ -1330,7 +1330,9 @@
     "@browserbasehq/sdk" "^2.5.0"
     "@calcom/atoms" "^1.0.102-framer"
     "@calcom/embed-react" "^1.5.3"
+  dependencies:
     "@comp/db" "workspace:*"
+  dependencies:
     "@date-fns/tz" "^1.2.0"
     "@dnd-kit/core" "^6.3.1"
     "@dnd-kit/modifiers" "^9.0.0"
@@ -1399,18 +1401,19 @@
     xml2js "^0.6.2"
     zustand "^5.0.3"
 
-"@comp/db@packages/db", "@comp/db@workspace:*":
+"@comp/db@^workspace:packages/db", "@comp/db@workspace:*":
   version "workspace:packages/db"
   resolved "workspace:packages/db"
   devDependencies:
     "@comp/tsconfig" "workspace:*"
+  devDependencies:
     prisma "^6.9.0"
     ts-node "^10.9.2"
     typescript "^5.8.3"
   dependencies:
     "@prisma/client" "6.9.0"
 
-"@comp/email@packages/email":
+"@comp/email@^workspace:packages/email":
   version "workspace:packages/email"
   resolved "workspace:packages/email"
   devDependencies:
@@ -1430,7 +1433,7 @@
     react-email "^4.0.15"
     responsive-react-email "^0.0.5"
 
-"@comp/framework-editor@apps/framework-editor":
+"@comp/framework-editor@^workspace:apps/framework-editor":
   version "workspace:apps/framework-editor"
   resolved "workspace:apps/framework-editor"
   devDependencies:
@@ -1460,7 +1463,7 @@
     tippy.js "^6.3.7"
     zod "3.25.67"
 
-"@comp/integrations@packages/integrations":
+"@comp/integrations@^workspace:packages/integrations":
   version "workspace:packages/integrations"
   resolved "workspace:packages/integrations"
   devDependencies:
@@ -1471,7 +1474,9 @@
     "@ai-sdk/openai" "^1.3.19"
     "@aws-sdk/client-securityhub" "^3.0.0"
     "@azure/identity" "^4.10.0"
+  dependencies:
     "@comp/app" "workspace:*"
+  dependencies:
     "@slack/bolt" "^3.22.0"
     "@slack/web-api" "^7.8.0"
     ai "^4.3.16"
@@ -1481,14 +1486,14 @@
     stoppable "^1.1.0"
     zod "3.25.67"
 
-"@comp/kv@packages/kv":
+"@comp/kv@^workspace:packages/kv":
   version "workspace:packages/kv"
   resolved "workspace:packages/kv"
   dependencies:
     "@upstash/redis" "^1.34.2"
     server-only "0.0.1"
 
-"@comp/portal@apps/portal":
+"@comp/portal@^workspace:apps/portal":
   version "workspace:apps/portal"
   resolved "workspace:apps/portal"
   devDependencies:
@@ -1519,7 +1524,7 @@
     next "15.4.0-canary.85"
     react-email "^4.0.15"
 
-"@comp/trust@apps/trust":
+"@comp/trust@^workspace:apps/trust":
   version "workspace:apps/trust"
   resolved "workspace:apps/trust"
   devDependencies:
@@ -1541,11 +1546,11 @@
     lucide-react "^0.518.0"
     next "15.4.0-canary.85"
 
-"@comp/tsconfig@packages/tsconfig", "@comp/tsconfig@workspace:*":
+"@comp/tsconfig@^workspace:packages/tsconfig", "@comp/tsconfig@workspace:*":
   version "workspace:packages/tsconfig"
   resolved "workspace:packages/tsconfig"
 
-"@comp/ui@packages/ui", "@comp/ui@workspace:*":
+"@comp/ui@^workspace:packages/ui", "@comp/ui@workspace:*":
   version "workspace:packages/ui"
   resolved "workspace:packages/ui"
   devDependencies:
@@ -1628,7 +1633,7 @@
     use-debounce "^10.0.4"
     vaul "^0.9.6"
 
-"@comp/utils@packages/utils", "@comp/utils@workspace:*":
+"@comp/utils@^workspace:packages/utils", "@comp/utils@workspace:*":
   version "workspace:packages/utils"
   resolved "workspace:packages/utils"
   devDependencies:
@@ -5761,7 +5766,7 @@
   resolved "https://registry.npmjs.org/@tiptap/extension-underline/-/extension-underline-2.14.0.tgz"
   integrity sha512-rlBasbwElFikaL5qPyp3OeoEBH2p9Dve0K6liqIWF4i9cECH2Bm53y2S0enVEe01hmgQEWmoYK+fq67rxr3XsQ==
 
-"@tiptap/pm@^2.14.0", "@tiptap/pm@^2.7.0":
+"@tiptap/pm@^2.14.0":
   version "2.14.0"
   resolved "https://registry.npmjs.org/@tiptap/pm/-/pm-2.14.0.tgz"
   integrity sha512-cnsfaIlvTFCDtLP/A2Fd3LmpttgY0O/tuTM2fC71vetONz83wUTYT+aD9uvxdX0GkSocoh840b0TsEazbBxhpA==
@@ -5785,29 +5790,29 @@
     prosemirror-transform "^1.10.2"
     prosemirror-view "^1.37.0"
 
-"@tiptap/pm@2.22.3":
+"@tiptap/pm@2.22.3", "@tiptap/pm@^2.7.0":
   version "2.22.3"
   resolved "https://registry.npmjs.org/@tiptap/pm/-/pm-2.22.3.tgz"
   integrity sha512-uWPeIScnpQVCYdTnL140XgcvbT1qH288CstMJ6S0Y11lC5PclPK9CxfAipsqgWWrIK7yatxKUVCg6TzfG9zpmA==
   dependencies:
-    prosemirror-menu "^1.2.4"
-    prosemirror-view "^1.37.0"
-    prosemirror-model "^1.23.0"
-    prosemirror-state "^1.4.3"
-    prosemirror-collab "^1.3.1"
-    prosemirror-keymap "^1.2.2"
-    prosemirror-tables "^1.6.4"
-    prosemirror-history "^1.4.1"
-    prosemirror-commands "^1.6.2"
-    prosemirror-markdown "^1.13.1"
     prosemirror-changeset "^2.3.0"
-    prosemirror-gapcursor "^1.3.2"
-    prosemirror-transform "^1.10.2"
+    prosemirror-collab "^1.3.1"
+    prosemirror-commands "^1.6.2"
     prosemirror-dropcursor "^1.8.1"
+    prosemirror-gapcursor "^1.3.2"
+    prosemirror-history "^1.4.1"
     prosemirror-inputrules "^1.4.0"
-    prosemirror-schema-list "^1.4.1"
+    prosemirror-keymap "^1.2.2"
+    prosemirror-markdown "^1.13.1"
+    prosemirror-menu "^1.2.4"
+    prosemirror-model "^1.23.0"
     prosemirror-schema-basic "^1.2.3"
+    prosemirror-schema-list "^1.4.1"
+    prosemirror-state "^1.4.3"
+    prosemirror-tables "^1.6.4"
     prosemirror-trailing-node "^3.0.0"
+    prosemirror-transform "^1.10.2"
+    prosemirror-view "^1.37.0"
 
 "@tiptap/react@2.14.0":
   version "2.14.0"
