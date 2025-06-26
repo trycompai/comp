@@ -17,6 +17,7 @@ interface CancelSubscriptionDialogProps {
   onConfirm: () => void;
   isLoading?: boolean;
   currentPeriodEnd?: number;
+  isTrialing?: boolean;
 }
 
 export function CancelSubscriptionDialog({
@@ -25,6 +26,7 @@ export function CancelSubscriptionDialog({
   onConfirm,
   isLoading = false,
   currentPeriodEnd,
+  isTrialing = false,
 }: CancelSubscriptionDialogProps) {
   const formattedDate = currentPeriodEnd
     ? new Date(currentPeriodEnd * 1000).toLocaleDateString('en-US', {
@@ -38,24 +40,32 @@ export function CancelSubscriptionDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Cancel Subscription</DialogTitle>
+          <DialogTitle>Cancel {isTrialing ? 'Trial' : 'Subscription'}</DialogTitle>
           <DialogDescription className="space-y-3 pt-3">
-            <p>Are you sure you want to cancel your subscription?</p>
-            {formattedDate && (
+            <p>Are you sure you want to cancel your {isTrialing ? 'trial' : 'subscription'}?</p>
+            {isTrialing ? (
               <p className="text-sm">
-                Your subscription will remain active until{' '}
-                <span className="font-medium">{formattedDate}</span>. You can resume your
-                subscription at any time before this date.
+                If you cancel now, you'll lose access immediately. You can always start a new
+                subscription later, but you won't get another free trial.
               </p>
+            ) : (
+              formattedDate && (
+                <p className="text-sm">
+                  Your subscription will remain active until{' '}
+                  <span className="font-medium">{formattedDate}</span>. You can resume your
+                  subscription at any time before this date.
+                </p>
+              )
             )}
             <p className="text-sm text-muted-foreground">
-              You'll lose access to all premium features after your current billing period ends.
+              You'll lose access to all premium features{' '}
+              {isTrialing ? 'immediately' : 'after your current billing period ends'}.
             </p>
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="gap-2">
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isLoading}>
-            Keep Subscription
+            Keep {isTrialing ? 'Trial' : 'Subscription'}
           </Button>
           <Button
             variant="destructive"
@@ -65,7 +75,7 @@ export function CancelSubscriptionDialog({
             disabled={isLoading}
           >
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Cancel Subscription
+            Cancel {isTrialing ? 'Trial' : 'Subscription'}
           </Button>
         </DialogFooter>
       </DialogContent>

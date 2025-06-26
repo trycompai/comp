@@ -1,6 +1,5 @@
 'use client';
 
-import { chooseSelfServeAction } from '@/actions/organization/choose-self-serve';
 import { generateCheckoutSessionAction } from '@/app/api/stripe/generate-checkout-session/generate-checkout-session';
 import { SelectionIndicator } from '@/components/layout/SelectionIndicator';
 import { ReviewSection } from '@/components/ReviewSection';
@@ -24,14 +23,28 @@ import { BookingDialog } from './components/BookingDialog';
 interface PricingCardsProps {
   organizationId: string;
   priceDetails: {
-    monthlyPrice: {
+    managedMonthlyPrice: {
       id: string;
       unitAmount: number | null;
       currency: string;
       interval: string | null;
       productName: string | null;
     } | null;
-    yearlyPrice: {
+    managedYearlyPrice: {
+      id: string;
+      unitAmount: number | null;
+      currency: string;
+      interval: string | null;
+      productName: string | null;
+    } | null;
+    starterMonthlyPrice: {
+      id: string;
+      unitAmount: number | null;
+      currency: string;
+      interval: string | null;
+      productName: string | null;
+    } | null;
+    starterYearlyPrice: {
       id: string;
       unitAmount: number | null;
       currency: string;
@@ -42,7 +55,7 @@ interface PricingCardsProps {
 }
 
 interface PricingCardProps {
-  planType: 'free' | 'paid';
+  planType: 'starter' | 'managed';
   isSelected: boolean;
   onClick: () => void;
   title: string;
@@ -88,7 +101,13 @@ const PricingCard = ({
             <div className="flex items-center gap-2">
               <CardTitle className="text-lg font-semibold">{title}</CardTitle>
               {badge && (
-                <Badge className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 text-xs px-1.5 py-0">
+                <Badge
+                  className={
+                    badge === '14-day trial'
+                      ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 text-xs px-1.5 py-0'
+                      : 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 text-xs px-1.5 py-0'
+                  }
+                >
                   {badge}
                 </Badge>
               )}
@@ -100,18 +119,16 @@ const PricingCard = ({
           {isYearly && yearlyPrice ? (
             <>
               <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-bold">${yearlyPrice.toLocaleString()}</span>
-                <span className="text-sm text-muted-foreground">/year</span>
+                <span className="text-3xl font-bold">${price.toLocaleString()}</span>
+                <span className="text-sm text-muted-foreground">/{priceLabel}</span>
               </div>
               <div className="space-y-1 mt-1">
                 <p className="text-sm text-muted-foreground">
-                  ${price.toLocaleString()}/mo when paid annually
+                  Billed as a single yearly payment of ${yearlyPrice.toLocaleString()}
                 </p>
-                {planType === 'paid' && (
-                  <p className="text-sm font-medium text-green-600 dark:text-green-400">
-                    Save 20% vs monthly billing
-                  </p>
-                )}
+                <p className="text-sm font-medium text-green-600 dark:text-green-400">
+                  Save 20% vs monthly billing
+                </p>
               </div>
             </>
           ) : (
@@ -177,7 +194,8 @@ const PricingCard = ({
   );
 };
 
-const freeFeatures = [
+const starterFeatures = [
+  '14-day free trial',
   'Access to all frameworks',
   'Trust & Security Portal',
   'AI Vendor Management',
@@ -188,7 +206,7 @@ const freeFeatures = [
   'Pay for your audit or bring your own 3rd party auditor when ready',
 ];
 
-const paidFeatures = [
+const managedFeatures = [
   'Everything in Starter plus:',
   'SOC 2 or ISO 27001 Done For You',
   '3rd Party Audit Included',
@@ -203,7 +221,7 @@ const paidFeatures = [
 export function PricingCards({ organizationId, priceDetails }: PricingCardsProps) {
   const router = useRouter();
   const [isYearly, setIsYearly] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<'free' | 'paid'>('paid');
+  const [selectedPlan, setSelectedPlan] = useState<'starter' | 'managed'>('managed');
 
   const { execute, isExecuting } = useAction(generateCheckoutSessionAction, {
     onSuccess: ({ data }) => {
@@ -216,32 +234,31 @@ export function PricingCards({ organizationId, priceDetails }: PricingCardsProps
     },
   });
 
-  const { execute: executeChooseSelfServe, isExecuting: isChoosingFree } = useAction(
-    chooseSelfServeAction,
-    {
-      onSuccess: () => {
-        router.push(`/${organizationId}?checkoutComplete=starter`);
-      },
-      onError: ({ error }) => {
-        toast.error(error.serverError || 'Failed to set up free plan');
-      },
-    },
-  );
-
   const baseUrl =
     typeof window !== 'undefined'
       ? `${window.location.protocol}//${window.location.host}`
       : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
   const handleSubscribe = () => {
-    if (selectedPlan === 'free') {
-      // For free plan, update the database and redirect
-      executeChooseSelfServe({ organizationId });
-      return;
-    }
+    let priceId: string | undefined;
+    let planType: string;
+    let trialPeriodDays: number | undefined;
 
-    // Determine which price ID to use based on yearly/monthly selection
-    const priceId = isYearly ? priceDetails.yearlyPrice?.id : priceDetails.monthlyPrice?.id;
+    if (selectedPlan === 'starter') {
+      // Use starter prices with 14-day trial
+      priceId = isYearly
+        ? priceDetails.starterYearlyPrice?.id
+        : priceDetails.starterMonthlyPrice?.id;
+      planType = 'starter';
+      trialPeriodDays = 14;
+    } else {
+      // Use managed (Done For You) prices
+      priceId = isYearly
+        ? priceDetails.managedYearlyPrice?.id
+        : priceDetails.managedMonthlyPrice?.id;
+      planType = 'done-for-you';
+      trialPeriodDays = undefined;
+    }
 
     if (!priceId) {
       toast.error('Price information not available');
@@ -252,32 +269,53 @@ export function PricingCards({ organizationId, priceDetails }: PricingCardsProps
       organizationId,
       mode: 'subscription',
       priceId,
-      successUrl: `${baseUrl}/api/stripe/success?organizationId=${organizationId}&planType=done-for-you`,
+      successUrl: `${baseUrl}/api/stripe/success?organizationId=${organizationId}&planType=${planType}`,
       cancelUrl: `${baseUrl}/upgrade/${organizationId}`,
       allowPromotionCodes: true,
+      trialPeriodDays,
       metadata: {
         organizationId,
-        plan: 'paid',
+        plan: selectedPlan,
         billingPeriod: isYearly ? 'yearly' : 'monthly',
       },
     });
   };
 
   // Calculate prices from Stripe data
-  const monthlyPrice = priceDetails.monthlyPrice?.unitAmount
-    ? Math.round(priceDetails.monthlyPrice.unitAmount / 100)
+  const starterMonthlyPrice = priceDetails.starterMonthlyPrice?.unitAmount
+    ? Math.round(priceDetails.starterMonthlyPrice.unitAmount / 100)
+    : 99; // fallback to $99
+
+  const starterYearlyPriceTotal = priceDetails.starterYearlyPrice?.unitAmount
+    ? Math.round(priceDetails.starterYearlyPrice.unitAmount / 100)
+    : 948; // fallback with 20% discount (99 * 12 * 0.8)
+
+  const managedMonthlyPrice = priceDetails.managedMonthlyPrice?.unitAmount
+    ? Math.round(priceDetails.managedMonthlyPrice.unitAmount / 100)
     : 997; // fallback to $997
 
-  // Yearly price from Stripe is the total yearly amount
-  const yearlyPriceTotal = priceDetails.yearlyPrice?.unitAmount
-    ? Math.round(priceDetails.yearlyPrice.unitAmount / 100)
+  const managedYearlyPriceTotal = priceDetails.managedYearlyPrice?.unitAmount
+    ? Math.round(priceDetails.managedYearlyPrice.unitAmount / 100)
     : 9564; // fallback with 20% discount (997 * 12 * 0.8)
 
   // Calculate monthly equivalent for yearly pricing display
-  const yearlyPriceMonthly = Math.round(yearlyPriceTotal / 12);
+  const starterYearlyPriceMonthly = Math.round(starterYearlyPriceTotal / 12);
+  const managedYearlyPriceMonthly = Math.round(managedYearlyPriceTotal / 12);
 
-  const currentPrice = selectedPlan === 'free' ? 0 : isYearly ? yearlyPriceMonthly : monthlyPrice;
-  const yearlySavings = monthlyPrice * 12 - yearlyPriceTotal;
+  const currentPrice =
+    selectedPlan === 'starter'
+      ? isYearly
+        ? starterYearlyPriceMonthly
+        : starterMonthlyPrice
+      : isYearly
+        ? managedYearlyPriceMonthly
+        : managedMonthlyPrice;
+
+  const currentYearlyTotal =
+    selectedPlan === 'starter' ? starterYearlyPriceTotal : managedYearlyPriceTotal;
+  const currentMonthlyPrice =
+    selectedPlan === 'starter' ? starterMonthlyPrice : managedMonthlyPrice;
+  const yearlySavings = currentMonthlyPrice * 12 - currentYearlyTotal;
 
   return (
     <div className="space-y-4 max-w-7xl mx-auto">
@@ -309,11 +347,9 @@ export function PricingCards({ organizationId, priceDetails }: PricingCardsProps
           </button>
         </div>
         <p className="text-xs text-muted-foreground text-center">
-          {selectedPlan === 'paid'
-            ? isYearly
-              ? `Pay $${yearlyPriceTotal.toLocaleString()} once • Save $${yearlySavings.toLocaleString()} per year`
-              : `Switch to yearly billing to save $${yearlySavings.toLocaleString()} per year`
-            : 'Start free • No credit card required'}
+          {isYearly
+            ? `Billed yearly as $${currentYearlyTotal.toLocaleString()} • Save $${yearlySavings.toLocaleString()} per year`
+            : `Switch to yearly billing to save $${yearlySavings.toLocaleString()} per year`}
         </p>
       </div>
 
@@ -322,32 +358,35 @@ export function PricingCards({ organizationId, priceDetails }: PricingCardsProps
         {/* Plan Selection */}
         <div className="lg:col-span-2 grid md:grid-cols-2 gap-3">
           <PricingCard
-            planType="free"
-            isSelected={selectedPlan === 'free'}
-            onClick={() => setSelectedPlan('free')}
+            planType="starter"
+            isSelected={selectedPlan === 'starter'}
+            onClick={() => setSelectedPlan('starter')}
             title="Starter"
             description="Everything you need to get compliant, fast."
-            price={0}
+            price={isYearly ? starterYearlyPriceMonthly : starterMonthlyPrice}
             priceLabel="month"
-            subtitle="DIY (Do It Yourself) Compliance"
-            features={freeFeatures}
+            subtitle={isYearly ? undefined : 'DIY (Do It Yourself) Compliance'}
+            features={starterFeatures}
             footerText="DIY Compliance Solution"
+            yearlyPrice={isYearly ? starterYearlyPriceTotal : undefined}
+            isYearly={isYearly}
+            badge="14-day trial"
           />
 
           <PricingCard
-            planType="paid"
-            isSelected={selectedPlan === 'paid'}
-            onClick={() => setSelectedPlan('paid')}
+            planType="managed"
+            isSelected={selectedPlan === 'managed'}
+            onClick={() => setSelectedPlan('managed')}
             title="Done For You"
             description="For companies up to 25 people."
-            price={isYearly ? yearlyPriceMonthly : monthlyPrice}
+            price={isYearly ? managedYearlyPriceMonthly : managedMonthlyPrice}
             priceLabel="month"
-            subtitle={undefined}
-            features={paidFeatures}
+            subtitle={isYearly ? undefined : 'White-glove compliance service'}
+            features={managedFeatures}
             badge="Popular"
             footerText="Done-for-you compliance"
-            yearlyPrice={isYearly ? yearlyPriceTotal : undefined}
-            isYearly={isYearly && selectedPlan === 'paid'}
+            yearlyPrice={isYearly ? managedYearlyPriceTotal : undefined}
+            isYearly={isYearly}
           />
         </div>
 
@@ -362,29 +401,17 @@ export function PricingCards({ organizationId, priceDetails }: PricingCardsProps
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">
-                    {selectedPlan === 'free' ? 'Starter' : 'Done For You'} Plan
+                    {selectedPlan === 'starter' ? 'Starter' : 'Done For You'} Plan
                   </span>
-                  {selectedPlan === 'paid' && isYearly ? (
-                    <span className="text-sm font-semibold">
-                      ${yearlyPriceTotal.toLocaleString()}/year
-                    </span>
-                  ) : (
-                    <span className="text-sm font-semibold">
-                      ${currentPrice.toLocaleString()}/month
-                    </span>
-                  )}
+                  <span className="text-sm font-semibold">
+                    ${currentPrice.toLocaleString()}/month
+                  </span>
                 </div>
-                {selectedPlan === 'paid' && isYearly && (
+                {isYearly && (
                   <>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Billing period</span>
-                      <span className="text-sm text-muted-foreground">12 months</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Monthly equivalent</span>
-                      <span className="text-sm text-muted-foreground">
-                        ${yearlyPriceMonthly.toLocaleString()}/mo
-                      </span>
+                      <span className="text-sm text-muted-foreground">Billing frequency</span>
+                      <span className="text-sm text-muted-foreground">Yearly</span>
                     </div>
                     <div className="flex justify-between items-center text-green-600 dark:text-green-400">
                       <span className="text-sm font-medium">You save</span>
@@ -394,27 +421,47 @@ export function PricingCards({ organizationId, priceDetails }: PricingCardsProps
                     </div>
                   </>
                 )}
+                {selectedPlan === 'starter' && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Trial period</span>
+                    <span className="text-sm font-medium text-green-600 dark:text-green-400">
+                      14 days free
+                    </span>
+                  </div>
+                )}
                 <div className="border-t-2 pt-4 mt-4">
                   <div className="flex justify-between items-baseline">
                     <span className="text-base font-semibold">Due today</span>
                     <div className="text-right">
                       <span className="text-2xl font-bold">
                         $
-                        {selectedPlan === 'free'
+                        {selectedPlan === 'starter'
                           ? 0
                           : isYearly
-                            ? yearlyPriceTotal.toLocaleString()
+                            ? currentYearlyTotal.toLocaleString()
                             : currentPrice.toLocaleString()}
                       </span>
-                      {selectedPlan === 'paid' && !isYearly && (
+                      {selectedPlan === 'starter' ? (
                         <span className="text-sm text-muted-foreground block">
-                          then ${currentPrice.toLocaleString()}/month
+                          then $
+                          {isYearly
+                            ? currentYearlyTotal.toLocaleString()
+                            : currentPrice.toLocaleString()}
+                          /{isYearly ? 'year' : 'month'} after trial
                         </span>
-                      )}
-                      {selectedPlan === 'paid' && isYearly && (
-                        <span className="text-sm font-medium text-green-600 dark:text-green-400 block">
-                          One-time payment
-                        </span>
+                      ) : (
+                        <>
+                          {!isYearly && (
+                            <span className="text-sm text-muted-foreground block">
+                              then ${currentPrice.toLocaleString()}/month
+                            </span>
+                          )}
+                          {isYearly && (
+                            <span className="text-sm font-medium text-green-600 dark:text-green-400 block">
+                              One-time payment
+                            </span>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>
@@ -424,17 +471,17 @@ export function PricingCards({ organizationId, priceDetails }: PricingCardsProps
             <CardFooter className="px-6 pb-6">
               <Button
                 onClick={handleSubscribe}
-                disabled={isExecuting || isChoosingFree}
+                disabled={isExecuting}
                 size="default"
                 className="w-full"
               >
-                {isExecuting || isChoosingFree ? (
+                {isExecuting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Processing...
                   </>
-                ) : selectedPlan === 'free' ? (
-                  'Start Free'
+                ) : selectedPlan === 'starter' ? (
+                  'Start 14-Day Free Trial'
                 ) : isYearly ? (
                   'Start Annual Plan'
                 ) : (

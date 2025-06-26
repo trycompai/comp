@@ -1,4 +1,5 @@
 import { stripe } from '@/actions/organization/lib/stripe';
+import { env } from '@/env.mjs';
 import { db } from '@comp/db';
 import { Prisma } from '@comp/db/types';
 import { STRIPE_SUB_CACHE } from './stripeDataToKv.type';
@@ -83,6 +84,86 @@ export async function syncStripeDataToKV(customerId: string): Promise<STRIPE_SUB
     }
 
     // Build subscription data
+    let paymentMethodData = null;
+
+    // First try to get payment method from subscription
+    if (
+      subscription.default_payment_method &&
+      typeof subscription.default_payment_method !== 'string'
+    ) {
+      paymentMethodData = {
+        brand: subscription.default_payment_method.card?.brand ?? null,
+        last4: subscription.default_payment_method.card?.last4 ?? null,
+      };
+    }
+
+    // If no payment method on subscription and it's a trial, check customer's payment methods
+    if (!paymentMethodData && subscription.status === 'trialing') {
+      try {
+        const customer = await stripe.customers.retrieve(customerId, {
+          expand: ['default_source', 'invoice_settings.default_payment_method'],
+        });
+
+        if (typeof customer !== 'string' && !customer.deleted) {
+          // Check for default payment method on customer
+          if (customer.invoice_settings?.default_payment_method) {
+            const pmId =
+              typeof customer.invoice_settings.default_payment_method === 'string'
+                ? customer.invoice_settings.default_payment_method
+                : customer.invoice_settings.default_payment_method.id;
+
+            const paymentMethod = await stripe.paymentMethods.retrieve(pmId);
+            paymentMethodData = {
+              brand: paymentMethod.card?.brand ?? null,
+              last4: paymentMethod.card?.last4 ?? null,
+            };
+          } else {
+            // If no default payment method, get the first card from the customer
+            const paymentMethods = await stripe.paymentMethods.list({
+              customer: customerId,
+              type: 'card',
+              limit: 1,
+            });
+
+            if (paymentMethods.data.length > 0) {
+              const pm = paymentMethods.data[0];
+              paymentMethodData = {
+                brand: pm.card?.brand ?? null,
+                last4: pm.card?.last4 ?? null,
+              };
+              console.log(
+                `[STRIPE] Found payment method for trial: ${pm.card?.brand} •••• ${pm.card?.last4}`,
+              );
+            }
+          }
+        }
+      } catch (error) {
+        console.error('[STRIPE] Error fetching customer payment method:', error);
+      }
+    }
+
+    // If still no payment method found for any subscription status, try listing payment methods
+    if (!paymentMethodData) {
+      try {
+        const paymentMethods = await stripe.paymentMethods.list({
+          customer: customerId,
+          type: 'card',
+          limit: 1,
+        });
+
+        if (paymentMethods.data.length > 0) {
+          const pm = paymentMethods.data[0];
+          paymentMethodData = {
+            brand: pm.card?.brand ?? null,
+            last4: pm.card?.last4 ?? null,
+          };
+          console.log(`[STRIPE] Found payment method: ${pm.card?.brand} •••• ${pm.card?.last4}`);
+        }
+      } catch (error) {
+        console.error('[STRIPE] Error listing payment methods:', error);
+      }
+    }
+
     const subData: STRIPE_SUB_CACHE = {
       subscriptionId: subscription.id,
       status: subscription.status,
@@ -92,27 +173,30 @@ export async function syncStripeDataToKV(customerId: string): Promise<STRIPE_SUB
       cancelAtPeriodEnd: subscription.cancel_at_period_end,
       price: priceDetails,
       product: productDetails,
-      paymentMethod:
-        subscription.default_payment_method &&
-        typeof subscription.default_payment_method !== 'string'
-          ? {
-              brand: subscription.default_payment_method.card?.brand ?? null,
-              last4: subscription.default_payment_method.card?.last4 ?? null,
-            }
-          : null,
+      paymentMethod: paymentMethodData,
     };
+
+    // Determine subscription type based on price ID
+    const starterPriceIds = [
+      env.NEXT_PUBLIC_STRIPE_SUBSCRIPTION_STARTER_MONTHLY_PRICE_ID,
+      env.NEXT_PUBLIC_STRIPE_SUBSCRIPTION_STARTER_YEARLY_PRICE_ID,
+    ].filter(Boolean);
+
+    const subscriptionType = starterPriceIds.includes(firstItem.price?.id ?? '')
+      ? 'STARTER'
+      : 'MANAGED';
 
     // Update organization with subscription data
     await db.organization.update({
       where: { id: organization.id },
       data: {
-        subscriptionType: 'STRIPE',
+        subscriptionType,
         stripeSubscriptionData: subData as any, // Cast for Prisma Json type
       },
     });
 
     console.log(
-      `[STRIPE] Updated org ${organization.id} with subscription status: ${subscription.status}`,
+      `[STRIPE] Updated org ${organization.id} with ${subscriptionType} subscription status: ${subscription.status}`,
     );
     return subData;
   } catch (error) {

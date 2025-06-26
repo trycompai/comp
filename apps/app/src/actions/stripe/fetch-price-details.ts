@@ -14,8 +14,10 @@ type PriceDetails = {
 };
 
 export type CachedPrices = {
-  monthlyPrice: PriceDetails | null;
-  yearlyPrice: PriceDetails | null;
+  managedMonthlyPrice: PriceDetails | null;
+  managedYearlyPrice: PriceDetails | null;
+  starterMonthlyPrice: PriceDetails | null;
+  starterYearlyPrice: PriceDetails | null;
   fetchedAt: number;
 };
 
@@ -23,11 +25,13 @@ const CACHE_DURATION = 30 * 60; // 30 minutes in seconds
 
 export async function fetchStripePriceDetails(): Promise<CachedPrices> {
   // Fetch from Stripe
-  const monthlyPriceId = env.NEXT_PUBLIC_STRIPE_SUBSCRIPTION_MANAGED_MONTHLY_PRICE_ID;
-  const yearlyPriceId = env.NEXT_PUBLIC_STRIPE_SUBSCRIPTION_MANAGED_YEARLY_PRICE_ID;
+  const managedMonthlyPriceId = env.NEXT_PUBLIC_STRIPE_SUBSCRIPTION_MANAGED_MONTHLY_PRICE_ID;
+  const managedYearlyPriceId = env.NEXT_PUBLIC_STRIPE_SUBSCRIPTION_MANAGED_YEARLY_PRICE_ID;
+  const starterMonthlyPriceId = env.NEXT_PUBLIC_STRIPE_SUBSCRIPTION_STARTER_MONTHLY_PRICE_ID;
+  const starterYearlyPriceId = env.NEXT_PUBLIC_STRIPE_SUBSCRIPTION_STARTER_YEARLY_PRICE_ID;
 
   // Create a unique cache key that includes the price IDs
-  const cacheKey = `stripe:managed-prices:${monthlyPriceId || 'none'}:${yearlyPriceId || 'none'}`;
+  const cacheKey = `stripe:all-prices:${managedMonthlyPriceId || 'none'}:${managedYearlyPriceId || 'none'}:${starterMonthlyPriceId || 'none'}:${starterYearlyPriceId || 'none'}`;
 
   try {
     // Check cache first
@@ -39,17 +43,19 @@ export async function fetchStripePriceDetails(): Promise<CachedPrices> {
     console.error('[STRIPE] Error reading from cache:', error);
   }
 
-  let monthlyPrice: PriceDetails | null = null;
-  let yearlyPrice: PriceDetails | null = null;
+  let managedMonthlyPrice: PriceDetails | null = null;
+  let managedYearlyPrice: PriceDetails | null = null;
+  let starterMonthlyPrice: PriceDetails | null = null;
+  let starterYearlyPrice: PriceDetails | null = null;
 
   try {
-    // Fetch monthly price if ID exists
-    if (monthlyPriceId) {
-      const price = await stripe.prices.retrieve(monthlyPriceId, {
+    // Fetch managed monthly price if ID exists
+    if (managedMonthlyPriceId) {
+      const price = await stripe.prices.retrieve(managedMonthlyPriceId, {
         expand: ['product'],
       });
 
-      monthlyPrice = {
+      managedMonthlyPrice = {
         id: price.id,
         unitAmount: price.unit_amount,
         currency: price.currency,
@@ -61,13 +67,49 @@ export async function fetchStripePriceDetails(): Promise<CachedPrices> {
       };
     }
 
-    // Fetch yearly price if ID exists
-    if (yearlyPriceId) {
-      const price = await stripe.prices.retrieve(yearlyPriceId, {
+    // Fetch managed yearly price if ID exists
+    if (managedYearlyPriceId) {
+      const price = await stripe.prices.retrieve(managedYearlyPriceId, {
         expand: ['product'],
       });
 
-      yearlyPrice = {
+      managedYearlyPrice = {
+        id: price.id,
+        unitAmount: price.unit_amount,
+        currency: price.currency,
+        interval: price.recurring?.interval ?? null,
+        productName:
+          price.product && typeof price.product === 'object' && !price.product.deleted
+            ? price.product.name
+            : null,
+      };
+    }
+
+    // Fetch starter monthly price if ID exists
+    if (starterMonthlyPriceId) {
+      const price = await stripe.prices.retrieve(starterMonthlyPriceId, {
+        expand: ['product'],
+      });
+
+      starterMonthlyPrice = {
+        id: price.id,
+        unitAmount: price.unit_amount,
+        currency: price.currency,
+        interval: price.recurring?.interval ?? null,
+        productName:
+          price.product && typeof price.product === 'object' && !price.product.deleted
+            ? price.product.name
+            : null,
+      };
+    }
+
+    // Fetch starter yearly price if ID exists
+    if (starterYearlyPriceId) {
+      const price = await stripe.prices.retrieve(starterYearlyPriceId, {
+        expand: ['product'],
+      });
+
+      starterYearlyPrice = {
         id: price.id,
         unitAmount: price.unit_amount,
         currency: price.currency,
@@ -83,8 +125,10 @@ export async function fetchStripePriceDetails(): Promise<CachedPrices> {
   }
 
   const priceData: CachedPrices = {
-    monthlyPrice,
-    yearlyPrice,
+    managedMonthlyPrice,
+    managedYearlyPrice,
+    starterMonthlyPrice,
+    starterYearlyPrice,
     fetchedAt: Date.now(),
   };
 
