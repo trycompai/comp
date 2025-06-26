@@ -13,7 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@comp/ui/card';
-import { CheckIcon, Loader2 } from 'lucide-react';
+import { ArrowRight, CheckIcon, Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -122,14 +122,9 @@ const PricingCard = ({
                 <span className="text-3xl font-bold">${price.toLocaleString()}</span>
                 <span className="text-sm text-muted-foreground">/{priceLabel}</span>
               </div>
-              <div className="space-y-1 mt-1">
-                <p className="text-sm text-muted-foreground">
-                  Billed as a single yearly payment of ${yearlyPrice.toLocaleString()}
-                </p>
-                <p className="text-sm font-medium text-green-600 dark:text-green-400">
-                  Save 20% vs monthly billing
-                </p>
-              </div>
+              {subtitle && (
+                <p className="text-sm text-green-600 dark:text-green-400 mt-1">{subtitle}</p>
+              )}
             </>
           ) : (
             <>
@@ -203,7 +198,6 @@ const starterFeatures = [
   'Unlimited team members',
   'API access',
   'Community Support',
-  'Pay for your audit or bring your own 3rd party auditor when ready',
 ];
 
 const managedFeatures = [
@@ -220,7 +214,7 @@ const managedFeatures = [
 
 export function PricingCards({ organizationId, priceDetails }: PricingCardsProps) {
   const router = useRouter();
-  const [isYearly, setIsYearly] = useState(false);
+  const [isYearly, setIsYearly] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<'starter' | 'managed'>('managed');
 
   const { execute, isExecuting } = useAction(generateCheckoutSessionAction, {
@@ -346,11 +340,6 @@ export function PricingCards({ organizationId, priceDetails }: PricingCardsProps
             </Badge>
           </button>
         </div>
-        <p className="text-xs text-muted-foreground text-center">
-          {isYearly
-            ? `Billed yearly as $${currentYearlyTotal.toLocaleString()} • Save $${yearlySavings.toLocaleString()} per year`
-            : `Switch to yearly billing to save $${yearlySavings.toLocaleString()} per year`}
-        </p>
       </div>
 
       {/* Main Grid */}
@@ -365,7 +354,7 @@ export function PricingCards({ organizationId, priceDetails }: PricingCardsProps
             description="Everything you need to get compliant, fast."
             price={isYearly ? starterYearlyPriceMonthly : starterMonthlyPrice}
             priceLabel="month"
-            subtitle={isYearly ? undefined : 'DIY (Do It Yourself) Compliance'}
+            subtitle="DIY (Do It Yourself) Compliance"
             features={starterFeatures}
             footerText="DIY Compliance Solution"
             yearlyPrice={isYearly ? starterYearlyPriceTotal : undefined}
@@ -381,7 +370,7 @@ export function PricingCards({ organizationId, priceDetails }: PricingCardsProps
             description="For companies up to 25 people."
             price={isYearly ? managedYearlyPriceMonthly : managedMonthlyPrice}
             priceLabel="month"
-            subtitle={isYearly ? undefined : 'White-glove compliance service'}
+            subtitle="White-glove compliance service"
             features={managedFeatures}
             badge="Popular"
             footerText="Done-for-you compliance"
@@ -414,7 +403,7 @@ export function PricingCards({ organizationId, priceDetails }: PricingCardsProps
                       <span className="text-sm text-muted-foreground">Yearly</span>
                     </div>
                     <div className="flex justify-between items-center text-green-600 dark:text-green-400">
-                      <span className="text-sm font-medium">You save</span>
+                      <span className="text-sm font-medium text-muted-foreground">Discount</span>
                       <span className="text-sm font-medium">
                         ${yearlySavings.toLocaleString()} (20%)
                       </span>
@@ -456,11 +445,6 @@ export function PricingCards({ organizationId, priceDetails }: PricingCardsProps
                               then ${currentPrice.toLocaleString()}/month
                             </span>
                           )}
-                          {isYearly && (
-                            <span className="text-sm font-medium text-green-600 dark:text-green-400 block">
-                              One-time payment
-                            </span>
-                          )}
                         </>
                       )}
                     </div>
@@ -483,10 +467,11 @@ export function PricingCards({ organizationId, priceDetails }: PricingCardsProps
                 ) : selectedPlan === 'starter' ? (
                   'Start 14-Day Free Trial'
                 ) : isYearly ? (
-                  'Start Annual Plan'
+                  'Go to Checkout'
                 ) : (
-                  'Start Monthly Plan'
+                  'Go to Checkout'
                 )}
+                <ArrowRight className="h-3 w-3" />
               </Button>
             </CardFooter>
 
