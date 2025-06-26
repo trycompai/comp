@@ -5,7 +5,7 @@ import { Suspense } from 'react';
 
 import { cn } from '@comp/ui/cn';
 import { Table, TableBody, TableCell, TableRow } from '@comp/ui/table';
-import { type PolicyType, columns as getColumns } from './columns';
+import { type PolicyType, useColumns as getColumns } from './columns';
 import { DataTableHeader } from './data-table-header';
 import { DataTablePagination } from './data-table-pagination';
 import { Loading } from './loading';

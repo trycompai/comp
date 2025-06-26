@@ -1,6 +1,6 @@
-name: Database Migrations
+name: Database Migrations Prod
 on:
-  push:
+  push: # Runs AFTER merge to release (never during PR review!)
     branches:
       - release
   workflow_dispatch: # Allows manual triggering

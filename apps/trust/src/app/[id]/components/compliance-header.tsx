@@ -1,10 +1,12 @@
+'use client';
+
 import type { Organization } from '@comp/db/types';
 import { buttonVariants } from '@comp/ui/button';
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import { ExternalLink } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import ComplianceSummary from './compliance-summary';
-import Logo from './logo';
 
 interface ComplianceHeaderProps {
   organization: Organization;
@@ -61,8 +63,17 @@ export default function ComplianceHeader({ organization, title }: ComplianceHead
             })}
             href="https://trycomp.ai"
           >
-            <div className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
-            <Logo className="hidden h-4 w-4 sm:block" /> Monitored by Comp AI
+            <span className="inline-flex items-center">
+              <span className="w-6 h-6 flex items-center justify-center">
+                <DotLottieReact
+                  src="https://lottie.host/e65f14d8-96e8-4ce2-9ad8-5468693a540c/1V8SWnGsv8.lottie"
+                  loop
+                  autoplay
+                  style={{ width: '100%', height: '100%' }}
+                />
+              </span>
+              <span className="ml-2">Monitored by Comp AI</span>
+            </span>
           </Link>
         </div>
       </div>

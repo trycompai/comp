@@ -1,0 +1,332 @@
+name: Deploy Test Results
+
+on:
+  workflow_run:
+    workflows: ['E2E Tests', 'Unit Tests', 'Quick Tests']
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'Run ID to deploy results from'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+  actions: read
+  pull-requests: write
+
+jobs:
+  deploy-results:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+        continue-on-error: true
+
+      - name: Create gh-pages branch if needed
+        run: |
+          git checkout --orphan gh-pages 2>/dev/null || git checkout gh-pages
+          git rm -rf . 2>/dev/null || true
+          echo "# Test Results" > README.md
+          git add README.md
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git commit -m "Initialize gh-pages" || true
+
+      - name: Download artifacts from triggering workflow
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            // Get run ID
+            let runId;
+            if (context.eventName === 'workflow_dispatch' && context.payload.inputs?.run_id) {
+              runId = context.payload.inputs.run_id;
+            } else if (context.eventName === 'workflow_run') {
+              runId = context.payload.workflow_run.id;
+            } else {
+              console.log('No run ID found');
+              return;
+            }
+
+            console.log(`Downloading artifacts from run ${runId}`);
+
+            // List artifacts
+            const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: runId,
+            });
+
+            // Download playwright reports
+            for (const artifact of artifacts.data.artifacts) {
+              if (artifact.name.includes('playwright-report') || artifact.name.includes('playwright-results')) {
+                console.log(`Downloading ${artifact.name}`);
+                
+                const download = await github.rest.actions.downloadArtifact({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  artifact_id: artifact.id,
+                  archive_format: 'zip',
+                });
+                
+                // Save artifact
+                const artifactPath = path.join(process.env.GITHUB_WORKSPACE, `${artifact.name}.zip`);
+                fs.writeFileSync(artifactPath, Buffer.from(download.data));
+                
+                // Extract
+                await exec.exec('unzip', ['-o', artifactPath, '-d', artifact.name]);
+                
+                // Clean up zip
+                fs.unlinkSync(artifactPath);
+              }
+            }
+
+      - name: Setup test results structure
+        run: |
+          # Create directory structure
+          mkdir -p test-results/{e2e,unit}
+          mkdir -p _site
+
+          # Move reports to appropriate directories
+          for report_dir in playwright-report-* playwright-results-*; do
+            if [ -d "$report_dir" ]; then
+              if [[ "$report_dir" == *"chromium"* ]]; then
+                cp -r "$report_dir"/* test-results/e2e/chromium/ 2>/dev/null || mkdir -p test-results/e2e/chromium && cp -r "$report_dir"/* test-results/e2e/chromium/
+              elif [[ "$report_dir" == *"firefox"* ]]; then
+                cp -r "$report_dir"/* test-results/e2e/firefox/ 2>/dev/null || mkdir -p test-results/e2e/firefox && cp -r "$report_dir"/* test-results/e2e/firefox/
+              elif [[ "$report_dir" == *"webkit"* ]]; then
+                cp -r "$report_dir"/* test-results/e2e/webkit/ 2>/dev/null || mkdir -p test-results/e2e/webkit && cp -r "$report_dir"/* test-results/e2e/webkit/
+              else
+                cp -r "$report_dir"/* test-results/e2e/ 2>/dev/null || true
+              fi
+            fi
+          done
+
+      - name: Generate index page
+        run: |
+          cat > _site/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Test Results - Comp AI</title>
+            <style>
+              * { margin: 0; padding: 0; box-sizing: border-box; }
+              body { 
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                background: #0d1117;
+                color: #c9d1d9;
+                line-height: 1.6;
+              }
+              .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+              h1 { color: #58a6ff; margin-bottom: 2rem; }
+              h2 { color: #f0f6fc; margin: 2rem 0 1rem; }
+              .grid { 
+                display: grid; 
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+                gap: 1.5rem; 
+                margin-bottom: 2rem;
+              }
+              .card {
+                background: #161b22;
+                border: 1px solid #30363d;
+                border-radius: 8px;
+                padding: 1.5rem;
+                transition: transform 0.2s, box-shadow 0.2s;
+              }
+              .card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                border-color: #58a6ff;
+              }
+              .card h3 { color: #58a6ff; margin-bottom: 0.5rem; }
+              .card a {
+                color: #58a6ff;
+                text-decoration: none;
+                display: inline-block;
+                margin-top: 1rem;
+                padding: 0.5rem 1rem;
+                background: #21262d;
+                border-radius: 6px;
+                border: 1px solid #30363d;
+                transition: background 0.2s;
+              }
+              .card a:hover {
+                background: #30363d;
+                border-color: #58a6ff;
+              }
+              .timestamp { 
+                color: #8b949e; 
+                font-size: 0.875rem; 
+                margin-top: 2rem;
+                text-align: center;
+              }
+              .status { 
+                display: inline-block; 
+                padding: 0.25rem 0.5rem; 
+                border-radius: 4px; 
+                font-size: 0.875rem;
+                font-weight: 500;
+              }
+              .status.pass { background: #1f6feb; color: white; }
+              .status.fail { background: #da3633; color: white; }
+              .browser-icon {
+                width: 24px;
+                height: 24px;
+                display: inline-block;
+                vertical-align: middle;
+                margin-right: 0.5rem;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <h1>📊 Test Results Dashboard</h1>
+              
+              <h2>🎭 E2E Test Reports</h2>
+              <div class="grid">
+                <div class="card">
+                  <h3>
+                    <span class="browser-icon">🌐</span>
+                    Chromium
+                  </h3>
+                  <p>Cross-browser testing on Chromium-based browsers</p>
+                  <a href="test-results/e2e/chromium/index.html">View Report →</a>
+                </div>
+                
+                <div class="card">
+                  <h3>
+                    <span class="browser-icon">🦊</span>
+                    Firefox
+                  </h3>
+                  <p>Cross-browser testing on Firefox</p>
+                  <a href="test-results/e2e/firefox/index.html">View Report →</a>
+                </div>
+                
+                <div class="card">
+                  <h3>
+                    <span class="browser-icon">🧭</span>
+                    WebKit
+                  </h3>
+                  <p>Cross-browser testing on Safari/WebKit</p>
+                  <a href="test-results/e2e/webkit/index.html">View Report →</a>
+                </div>
+              </div>
+              
+              <h2>🧪 Unit Test Reports</h2>
+              <div class="grid">
+                <div class="card">
+                  <h3>Coverage Report</h3>
+                  <p>Code coverage analysis from unit tests</p>
+                  <a href="test-results/unit/coverage/index.html">View Coverage →</a>
+                </div>
+              </div>
+              
+              <h2>📱 Mobile Test Reports</h2>
+              <div class="grid">
+                <div class="card">
+                  <h3>Mobile Chrome</h3>
+                  <p>Testing on mobile Chrome browsers</p>
+                  <a href="test-results/e2e/mobile-chrome/index.html">View Report →</a>
+                </div>
+                
+                <div class="card">
+                  <h3>Mobile Safari</h3>
+                  <p>Testing on mobile Safari browsers</p>
+                  <a href="test-results/e2e/mobile-safari/index.html">View Report →</a>
+                </div>
+              </div>
+              
+              <div class="timestamp">
+                Last updated: <span id="timestamp"></span>
+              </div>
+            </div>
+            
+            <script>
+              document.getElementById('timestamp').textContent = new Date().toLocaleString();
+              
+              // Check which reports actually exist
+              const links = document.querySelectorAll('a[href^="test-results"]');
+              links.forEach(link => {
+                fetch(link.href, { method: 'HEAD' })
+                  .then(response => {
+                    if (!response.ok) {
+                      link.style.opacity = '0.5';
+                      link.style.cursor = 'not-allowed';
+                      link.textContent = 'Not Available';
+                      link.onclick = (e) => e.preventDefault();
+                    }
+                  })
+                  .catch(() => {
+                    link.style.opacity = '0.5';
+                    link.style.cursor = 'not-allowed';
+                    link.textContent = 'Not Available';
+                    link.onclick = (e) => e.preventDefault();
+                  });
+              });
+            </script>
+          </body>
+          </html>
+          EOF
+
+          # Copy test results
+          cp -r test-results _site/ 2>/dev/null || true
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '_site'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Comment on PR with results link
+        if: github.event.workflow_run.event == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              // Get PR details from the workflow run
+              const workflowRun = context.payload.workflow_run;
+              console.log('Workflow run event:', workflowRun.event);
+              console.log('Pull requests:', workflowRun.pull_requests);
+              
+              // Check if there are associated pull requests
+              if (!workflowRun.pull_requests || workflowRun.pull_requests.length === 0) {
+                console.log('No pull requests associated with this workflow run');
+                return;
+              }
+              
+              const pr_number = workflowRun.pull_requests[0].number;
+              console.log('PR number:', pr_number);
+              
+              if (pr_number) {
+                const url = 'https://trycompai.github.io/comp/';
+                const comment = await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr_number,
+                  body: `🎭 **Test Results Available!**\n\nView the detailed test reports online: ${url}\n\n- [Chromium Report](${url}test-results/e2e/chromium/)\n- [Firefox Report](${url}test-results/e2e/firefox/)\n- [WebKit Report](${url}test-results/e2e/webkit/)`
+                });
+                console.log('Comment created successfully:', comment.data.html_url);
+              }
+            } catch (error) {
+              console.error('Error creating PR comment:', error);
+              console.error('Error details:', error.message);
+              // Don't fail the workflow if commenting fails
+            }

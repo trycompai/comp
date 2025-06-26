@@ -46,7 +46,7 @@
     "@tiptap/extension-text-align": "2.22.3",
     "@tiptap/extension-typography": "2.14.0",
     "@tiptap/extension-underline": "2.14.0",
-    "@tiptap/pm": "2.14.0",
+    "@tiptap/pm": "2.22.3",
     "@tiptap/react": "2.14.0",
     "@tiptap/starter-kit": "2.14.0",
     "@tiptap/suggestion": "2.14.0",
