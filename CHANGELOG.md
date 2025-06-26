@@ -1,3 +1,10 @@
+## [1.45.1](https://github.com/trycompai/comp/compare/v1.45.0...v1.45.1) (2025-06-26)
+
+
+### Bug Fixes
+
+* improve error handling and logging in deploy-test-results workflow ([62f7696](https://github.com/trycompai/comp/commit/62f7696b5108d780f4bfe3dbddc5956d9057f5f4))
+
 # [1.45.0](https://github.com/trycompai/comp/compare/v1.44.0...v1.45.0) (2025-06-26)
 
 
