@@ -37,6 +37,7 @@ export const env = createEnv({
     FLEET_URL: z.string().optional(),
     FLEET_TOKEN: z.string().optional(),
     DUB_API_KEY: z.string().optional(),
+    DUB_REFER_URL: z.string().optional(),
   },
 
   client: {
@@ -89,6 +90,7 @@ export const env = createEnv({
     NEXT_PUBLIC_STRIPE_SUBSCRIPTION_MANAGED_YEARLY_PRICE_ID:
       process.env.NEXT_PUBLIC_STRIPE_SUBSCRIPTION_MANAGED_YEARLY_PRICE_ID,
     DUB_API_KEY: process.env.DUB_API_KEY,
+    DUB_REFER_URL: process.env.DUB_REFER_URL,
   },
 
   skipValidation: !!process.env.CI || !!process.env.SKIP_ENV_VALIDATION,

@@ -6,20 +6,33 @@ import { Icons } from '@comp/ui/icons';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 
-export function GoogleSignIn({ inviteCode }: { inviteCode?: string }) {
+export function GoogleSignIn({
+  inviteCode,
+  searchParams,
+}: {
+  inviteCode?: string;
+  searchParams?: URLSearchParams;
+}) {
   const [isLoading, setLoading] = useState(false);
 
   const handleSignIn = async () => {
     setLoading(true);
-    let redirectTo = '/';
 
-    if (inviteCode) {
-      redirectTo = `/invite/${inviteCode}`;
+    // Build the callback URL with search params
+    const baseURL = window.location.origin;
+    const path = inviteCode ? `/invite/${inviteCode}` : '/';
+    const redirectTo = new URL(path, baseURL);
+
+    // Append all search params if they exist
+    if (searchParams) {
+      searchParams.forEach((value, key) => {
+        redirectTo.searchParams.append(key, value);
+      });
     }
 
     await authClient.signIn.social({
       provider: 'google',
-      callbackURL: redirectTo,
+      callbackURL: redirectTo.toString(),
     });
   };
 

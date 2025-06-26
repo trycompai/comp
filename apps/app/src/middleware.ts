@@ -38,6 +38,10 @@ export async function middleware(request: NextRequest) {
   // 1. Not authenticated
   if (!session && nextUrl.pathname !== '/auth') {
     const url = new URL('/auth', request.url);
+    // Preserve existing search params
+    nextUrl.searchParams.forEach((value, key) => {
+      url.searchParams.set(key, value);
+    });
     return NextResponse.redirect(url);
   }
 
@@ -69,7 +73,12 @@ export async function middleware(request: NextRequest) {
 
       // If user has org and not intentionally creating new one, redirect to their org
       if (hasOrg && !isIntentionalSetup && !isSetupSession) {
-        return NextResponse.redirect(new URL(`/${hasOrg.id}/frameworks`, request.url));
+        const url = new URL(`/${hasOrg.id}/frameworks`, request.url);
+        // Preserve existing search params
+        nextUrl.searchParams.forEach((value, key) => {
+          url.searchParams.set(key, value);
+        });
+        return NextResponse.redirect(url);
       }
     }
 
@@ -92,7 +101,12 @@ export async function middleware(request: NextRequest) {
         console.log(
           `[MIDDLEWARE] Redirecting org ${orgId} to upgrade. Status: ${subscription?.status}`,
         );
-        return NextResponse.redirect(new URL(`/upgrade/${orgId}`, request.url));
+        const url = new URL(`/upgrade/${orgId}`, request.url);
+        // Preserve existing search params
+        nextUrl.searchParams.forEach((value, key) => {
+          url.searchParams.set(key, value);
+        });
+        return NextResponse.redirect(url);
       }
     }
 
@@ -125,7 +139,12 @@ export async function middleware(request: NextRequest) {
         });
 
         // Refresh to get the updated session
-        return NextResponse.redirect(new URL(nextUrl.pathname, request.url));
+        const url = new URL(nextUrl.pathname, request.url);
+        // Preserve existing search params
+        nextUrl.searchParams.forEach((value, key) => {
+          url.searchParams.set(key, value);
+        });
+        return NextResponse.redirect(url);
       }
     }
   }
