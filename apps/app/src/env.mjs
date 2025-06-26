@@ -48,6 +48,7 @@ export const env = createEnv({
     NEXT_PUBLIC_STRIPE_SUBSCRIPTION_MANAGED_YEARLY_PRICE_ID: z.string().optional(),
     NEXT_PUBLIC_STRIPE_SUBSCRIPTION_STARTER_MONTHLY_PRICE_ID: z.string().optional(),
     NEXT_PUBLIC_STRIPE_SUBSCRIPTION_STARTER_YEARLY_PRICE_ID: z.string().optional(),
+    NEXT_PUBLIC_IS_DUB_ENABLED: z.string().optional(),
   },
 
   runtimeEnv: {
@@ -97,6 +98,7 @@ export const env = createEnv({
       process.env.NEXT_PUBLIC_STRIPE_SUBSCRIPTION_STARTER_YEARLY_PRICE_ID,
     DUB_API_KEY: process.env.DUB_API_KEY,
     DUB_REFER_URL: process.env.DUB_REFER_URL,
+    NEXT_PUBLIC_IS_DUB_ENABLED: process.env.NEXT_PUBLIC_IS_DUB_ENABLED,
   },
 
   skipValidation: !!process.env.CI || !!process.env.SKIP_ENV_VALIDATION,
