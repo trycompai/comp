@@ -11,7 +11,11 @@ import { emailOTP, magicLink, organization } from 'better-auth/plugins';
 import { Dub } from 'dub';
 import { ac, allRoles } from './permissions';
 
-const dub = new Dub();
+const dub = env.DUB_API_KEY
+  ? new Dub({
+      token: env.DUB_API_KEY,
+    })
+  : undefined;
 
 let socialProviders = {};
 
@@ -144,7 +148,7 @@ export const auth = betterAuth({
       },
     }),
     nextCookies(),
-    ...(env.DUB_API_KEY ? [dubAnalytics({ dubClient: dub })] : []),
+    ...(dub ? [dubAnalytics({ dubClient: dub })] : []),
   ],
   socialProviders,
   user: {
