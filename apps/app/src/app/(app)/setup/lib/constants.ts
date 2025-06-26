@@ -80,8 +80,8 @@ export const steps: Step[] = [
     placeholder: 'e.g., Microsoft Office 365, Slack',
     options: [
       // Productivity & Office Suites
-      'Microsoft Office 365',
-      'Google Workspace',
+      'Microsoft Office 365 (Word, Excel, Outlook, etc.)',
+      'Google Workspace (Docs, Sheets, Gmail, etc.)',
       'LibreOffice',
       'Notion',
       'Evernote',
@@ -116,8 +116,7 @@ export const steps: Step[] = [
       // Accounting & Finance
       'QuickBooks',
       'Xero',
-      'Sage 50',
-      'Sage Business Cloud',
+      'Sage 50 / Sage Business Cloud',
       'MYOB',
       'FreshBooks',
       'Wave Accounting',
@@ -129,29 +128,6 @@ export const steps: Step[] = [
       'Pipedrive',
       'Zoho CRM',
       'Monday.com',
-      // Development & Project Management
-      'GitHub',
-      'GitLab',
-      'Bitbucket',
-      'Jira',
-      'Confluence',
-      'Linear',
-      'Asana',
-      'Trello',
-      'Basecamp',
-      // Design
-      'Figma',
-      'Adobe Creative Cloud',
-      'Sketch',
-      'Canva',
-      // HR & Payroll
-      'Rippling',
-      'Gusto',
-      'BambooHR',
-      'Workday',
-      'ADP',
-      // Other tools
-      'Stripe',
       'Other',
     ],
   },

@@ -16,8 +16,8 @@ const softwareCategories: SoftwareCategory[] = [
   {
     name: 'Productivity & Office Suites',
     options: [
-      'Microsoft Office 365',
-      'Google Workspace',
+      'Microsoft Office 365 (Word, Excel, Outlook, etc.)',
+      'Google Workspace (Docs, Sheets, Gmail, etc.)',
       'LibreOffice',
       'Notion',
       'Evernote',
@@ -40,7 +40,13 @@ const softwareCategories: SoftwareCategory[] = [
   },
   {
     name: 'File Storage & Collaboration',
-    options: ['Google Drive', 'Dropbox', 'Microsoft OneDrive', 'Box', 'SharePoint'],
+    options: [
+      'Google Drive',
+      'Dropbox',
+      'Microsoft OneDrive',
+      'Box',
+      'SharePoint',
+    ],
   },
   {
     name: 'Security & Antivirus',
@@ -62,8 +68,7 @@ const softwareCategories: SoftwareCategory[] = [
     options: [
       'QuickBooks',
       'Xero',
-      'Sage 50',
-      'Sage Business Cloud',
+      'Sage 50 / Sage Business Cloud',
       'MYOB',
       'FreshBooks',
       'Wave Accounting',
@@ -72,34 +77,14 @@ const softwareCategories: SoftwareCategory[] = [
     ],
   },
   {
-    name: 'CRM',
-    options: ['Salesforce', 'HubSpot', 'Pipedrive', 'Zoho CRM', 'Monday.com'],
-  },
-  {
-    name: 'Development & Project Management',
+    name: 'CRM (Customer Relationship Management)',
     options: [
-      'GitHub',
-      'GitLab',
-      'Bitbucket',
-      'Jira',
-      'Confluence',
-      'Linear',
-      'Asana',
-      'Trello',
-      'Basecamp',
+      'Salesforce',
+      'HubSpot',
+      'Pipedrive',
+      'Zoho CRM',
+      'Monday.com',
     ],
-  },
-  {
-    name: 'Design',
-    options: ['Figma', 'Adobe Creative Cloud', 'Sketch', 'Canva'],
-  },
-  {
-    name: 'HR & Payroll',
-    options: ['Rippling', 'Gusto', 'BambooHR', 'Workday', 'ADP'],
-  },
-  {
-    name: 'Other',
-    options: ['Stripe'],
   },
 ];
 
