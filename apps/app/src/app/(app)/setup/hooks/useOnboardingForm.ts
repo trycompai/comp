@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { sendGTMEvent } from '@next/third-parties/google';
 import { useAction } from 'next-safe-action/hooks';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -27,6 +27,27 @@ export function useOnboardingForm({
   currentStep,
 }: UseOnboardingFormProps = {}) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Helper to build URL with search params
+  const buildUrlWithParams = (path: string, params?: Record<string, string>) => {
+    const urlParams = new URLSearchParams();
+
+    // First add the params from the response if any
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        urlParams.append(key, value);
+      });
+    } else {
+      // Otherwise use current search params
+      searchParams.forEach((value, key) => {
+        urlParams.append(key, value);
+      });
+    }
+
+    const queryString = urlParams.toString();
+    return queryString ? `${path}?${queryString}` : path;
+  };
 
   // Use state instead of localStorage - initialized from KV data if setupId exists
   const [savedAnswers, setSavedAnswers] = useState<Partial<CompanyDetails>>(
@@ -80,8 +101,8 @@ export function useOnboardingForm({
         setIsFinalizing(true);
         sendGTMEvent({ event: 'conversion' });
 
-        // Organization created, now redirect to plans page
-        router.push(`/upgrade/${data.organizationId}`);
+        // Organization created, now redirect to plans page with search params
+        router.push(buildUrlWithParams(`/upgrade/${data.organizationId}`));
       } else {
         toast.error(data?.error || 'Failed to create organization minimal');
         setIsSkipping(false);
@@ -103,8 +124,8 @@ export function useOnboardingForm({
         setIsFinalizing(true);
         sendGTMEvent({ event: 'conversion' });
 
-        // Organization created, now redirect to plans page
-        router.push(`/upgrade/${data.organizationId}`);
+        // Organization created, now redirect to plans page with search params
+        router.push(buildUrlWithParams(`/upgrade/${data.organizationId}`));
 
         // Clear answers after successful creation
         setSavedAnswers({});

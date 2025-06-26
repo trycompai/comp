@@ -1,8 +1,10 @@
 import '@/styles/globals.css';
 import '@comp/ui/globals.css';
 
+import { env } from '@/env.mjs';
 import { auth } from '@/utils/auth';
 import { cn } from '@comp/ui/cn';
+import { Analytics as DubAnalytics } from '@dub/analytics/react';
 import { GeistMono } from 'geist/font/mono';
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
@@ -77,8 +79,20 @@ export default async function Layout({ children }: { children: React.ReactNode }
     headers: await headers(),
   });
 
+  const dubIsEnabled = env.DUB_API_KEY !== undefined;
+  const dubReferUrl = env.DUB_REFER_URL;
+
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {dubIsEnabled && dubReferUrl && (
+          <DubAnalytics
+            domainsConfig={{
+              refer: dubReferUrl,
+            }}
+          />
+        )}
+      </head>
       <body
         className={cn(
           `${GeistMono.variable} ${font.variable}`,
