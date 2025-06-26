@@ -138,7 +138,7 @@ export default async function UpgradePage({ params }: PageProps) {
             <Separator />
 
             {/* FAQ Section */}
-            <div className="max-w-3xl mx-auto">
+            <div className="w-full max-w-3xl mx-auto">
               <div className="text-center mb-8">
                 <h2 className="text-xl font-bold mb-2">Frequently Asked Questions</h2>
                 <p className="text-sm text-muted-foreground">
@@ -148,9 +148,9 @@ export default async function UpgradePage({ params }: PageProps) {
 
               <Accordion type="single" collapsible className="w-full">
                 {pricingFaqData.map((faq) => (
-                  <AccordionItem key={faq.id} value={faq.id}>
-                    <AccordionTrigger className="text-left">{faq.question}</AccordionTrigger>
-                    <AccordionContent className="text-muted-foreground">
+                  <AccordionItem key={faq.id} value={faq.id} className="w-full">
+                    <AccordionTrigger className="text-left w-full">{faq.question}</AccordionTrigger>
+                    <AccordionContent className="text-muted-foreground w-full">
                       {faq.answer}
                     </AccordionContent>
                   </AccordionItem>
