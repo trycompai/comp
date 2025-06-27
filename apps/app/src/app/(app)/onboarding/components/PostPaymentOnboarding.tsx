@@ -7,6 +7,7 @@ import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@comp/ui/card';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@comp/ui/form';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { useEffect } from 'react';
 import { usePostPaymentOnboarding } from '../hooks/usePostPaymentOnboarding';
 
 interface PostPaymentOnboardingProps {
@@ -26,6 +27,7 @@ export function PostPaymentOnboarding({
     savedAnswers,
     isOnboarding,
     isFinalizing,
+    isLoading,
     onSubmit,
     handleBack,
     isLastStep,
@@ -37,52 +39,77 @@ export function PostPaymentOnboarding({
     initialData,
   });
 
-  return isFinalizing ? (
-    <div className="flex min-h-dvh items-center justify-center">
-      <LogoSpinner />
-    </div>
-  ) : (
+  // Dispatch custom event for background animation when step changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (isFinalizing) {
+        // Set to max scale when finalizing
+        window.dispatchEvent(
+          new CustomEvent('onboarding-step-change', {
+            detail: { stepIndex: 8, totalSteps: 9, progress: 1 },
+          }),
+        );
+      } else {
+        const progress = stepIndex / 8; // 8 because we have 9 steps (0-8)
+        // Dispatch custom event to notify the background wrapper
+        window.dispatchEvent(
+          new CustomEvent('onboarding-step-change', {
+            detail: { stepIndex, totalSteps: 9, progress },
+          }),
+        );
+      }
+    }
+  }, [stepIndex, isFinalizing]);
+
+  return (
     <div className="scrollbar-hide flex min-h-[calc(100vh-50px)] flex-col items-center justify-center p-4">
       <div className="relative w-full max-w-2xl">
         <Card className="scrollbar-hide relative flex w-full flex-col bg-card/80 dark:bg-card/70 backdrop-blur-xl border border-border/50 shadow-2xl">
+          {(isLoading || isFinalizing) && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center rounded-lg bg-background/80 backdrop-blur-sm">
+              <LogoSpinner />
+            </div>
+          )}
           <CardHeader className="flex min-h-[140px] flex-col items-center justify-center pb-0">
             <div className="flex flex-col items-center gap-2">
               <LogoSpinner />
               <div className="text-muted-foreground text-sm">
-                Step {currentStepNumber} of {totalSteps}
+                Step {stepIndex + 1} of {totalSteps}
               </div>
               <CardTitle className="flex min-h-[56px] items-center justify-center text-center">
-                {step.question}
+                {step?.question || ''}
               </CardTitle>
             </div>
           </CardHeader>
           <CardContent className="flex min-h-[150px] flex-1 flex-col overflow-y-auto">
-            <Form {...form} key={step.key}>
-              <form
-                id="onboarding-form"
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="mt-4 w-full"
-                autoComplete="off"
-              >
-                <FormField
-                  name={step.key}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <OnboardingStepInput
-                          currentStep={step}
-                          form={form}
-                          savedAnswers={savedAnswers}
-                        />
-                      </FormControl>
-                      <div className="min-h-[20px]">
-                        <FormMessage />
-                      </div>
-                    </FormItem>
-                  )}
-                />
-              </form>
-            </Form>
+            {!isLoading && step && (
+              <Form {...form} key={step.key}>
+                <form
+                  id="onboarding-form"
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="mt-4 w-full"
+                  autoComplete="off"
+                >
+                  <FormField
+                    name={step.key}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <OnboardingStepInput
+                            currentStep={step}
+                            form={form}
+                            savedAnswers={savedAnswers}
+                          />
+                        </FormControl>
+                        <div className="min-h-[20px]">
+                          <FormMessage />
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                </form>
+              </Form>
+            )}
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
             <div className="flex w-full items-center justify-between">
@@ -90,7 +117,7 @@ export function PostPaymentOnboarding({
                 type="button"
                 variant="outline"
                 onClick={handleBack}
-                disabled={stepIndex === 0 || isOnboarding}
+                disabled={stepIndex === 0 || isOnboarding || isLoading}
                 className="group transition-all hover:pr-3"
               >
                 <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
@@ -100,7 +127,7 @@ export function PostPaymentOnboarding({
               <Button
                 type="submit"
                 form="onboarding-form"
-                disabled={isOnboarding || isFinalizing}
+                disabled={isOnboarding || isFinalizing || isLoading}
                 className="group transition-all hover:pl-3"
               >
                 {isFinalizing ? (

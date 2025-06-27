@@ -30,8 +30,9 @@ export function usePostPaymentOnboarding({
 }: UsePostPaymentOnboardingProps) {
   const router = useRouter();
 
-  // Create a storage key specific to this organization
+  // Create storage keys specific to this organization
   const storageKey = `onboarding-progress-${organizationId}`;
+  const stepStorageKey = `onboarding-step-${organizationId}`;
 
   // Use localStorage to persist progress
   const [savedAnswers, setSavedAnswers] = useLocalStorage<Partial<CompanyDetails>>(storageKey, {
@@ -39,13 +40,31 @@ export function usePostPaymentOnboarding({
     organizationName,
   });
 
-  const [stepIndex, setStepIndex] = useState(() => {
-    // Find the first unanswered step
-    const firstUnansweredIndex = postPaymentSteps.findIndex((step) => !savedAnswers[step.key]);
-    return firstUnansweredIndex === -1 ? 0 : firstUnansweredIndex;
-  });
+  // Use localStorage to persist current step
+  const [savedStepIndex, setSavedStepIndex] = useLocalStorage<number>(stepStorageKey, 0);
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [stepIndex, setStepIndex] = useState(0);
   const [isOnboarding, setIsOnboarding] = useState(false);
   const [isFinalizing, setIsFinalizing] = useState(false);
+
+  // Initialize step index after component mounts to prevent flicker
+  useEffect(() => {
+    // Use saved step index, but also verify it makes sense
+    // (e.g., don't jump to step 7 if steps 4-6 aren't answered)
+    const firstUnansweredIndex = postPaymentSteps.findIndex((step) => !savedAnswers[step.key]);
+
+    // Use the saved step index if it's valid, otherwise use first unanswered
+    const initialStep =
+      savedStepIndex >= 0 && savedStepIndex < postPaymentSteps.length
+        ? savedStepIndex
+        : firstUnansweredIndex === -1
+          ? 0
+          : firstUnansweredIndex;
+
+    setStepIndex(initialStep);
+    setIsLoading(false);
+  }, []);
 
   const step = postPaymentSteps[stepIndex];
   const stepSchema = z.object({
@@ -79,6 +98,7 @@ export function usePostPaymentOnboarding({
 
         // Clear the saved progress from localStorage
         localStorage.removeItem(storageKey);
+        localStorage.removeItem(stepStorageKey);
 
         // Track completion
         trackEvent('onboarding_completed', {
@@ -147,14 +167,15 @@ export function usePostPaymentOnboarding({
     setSavedAnswers(newAnswers as Partial<CompanyDetails>);
 
     // Track step completion
-    trackOnboardingEvent(step.key, stepIndex + 4, {
-      // +4 because we're starting at step 4
+    trackOnboardingEvent(step.key, stepIndex + 1, {
       step_value: data[step.key],
       phase: 'post_payment',
     });
 
     if (stepIndex < postPaymentSteps.length - 1) {
-      setStepIndex(stepIndex + 1);
+      const newStepIndex = stepIndex + 1;
+      setStepIndex(newStepIndex);
+      setSavedStepIndex(newStepIndex);
     } else {
       handleCompleteOnboarding(newAnswers);
     }
@@ -172,7 +193,9 @@ export function usePostPaymentOnboarding({
       form.clearErrors();
 
       // Go to previous step
-      setStepIndex(stepIndex - 1);
+      const newStepIndex = stepIndex - 1;
+      setStepIndex(newStepIndex);
+      setSavedStepIndex(newStepIndex);
     }
   };
 
@@ -186,10 +209,11 @@ export function usePostPaymentOnboarding({
     savedAnswers,
     isOnboarding,
     isFinalizing,
+    isLoading,
     onSubmit,
     handleBack,
     isLastStep,
-    currentStepNumber: stepIndex + 4, // Display as steps 4-12
-    totalSteps: steps.length, // Total 12 steps
+    currentStepNumber: stepIndex + 1, // Display as steps 1-9
+    totalSteps: postPaymentSteps.length, // Total 9 steps for post-payment
   };
 }
