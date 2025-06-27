@@ -80,6 +80,7 @@ export default function BillingPage() {
         'Community Support',
       ],
       trialDays: 14,
+      minimumTermMonths: 12,
     },
     managed: {
       displayName: 'Done For You',
@@ -98,10 +99,16 @@ export default function BillingPage() {
 
   const currentPlanConfig = planConfig[planType];
 
-  // Calculate if minimum term has been met for managed plans
+  // Calculate if minimum term has been met for both starter and managed plans
   const hasMetMinimumTerm = () => {
+    // Free trials can be cancelled anytime
+    if (isTrialing) {
+      return true;
+    }
+
+    // Only enforce minimum term for starter and managed plans
     if (
-      planType !== 'managed' ||
+      (planType !== 'starter' && planType !== 'managed') ||
       !('currentPeriodStart' in subscription) ||
       subscription.currentPeriodStart == null
     ) {
@@ -113,15 +120,25 @@ export default function BillingPage() {
     const monthsElapsed =
       (now.getFullYear() - startDate.getFullYear()) * 12 + (now.getMonth() - startDate.getMonth());
 
-    return monthsElapsed >= (planConfig.managed.minimumTermMonths || 12);
+    const minimumTermMonths =
+      planType === 'starter'
+        ? planConfig.starter.minimumTermMonths
+        : planConfig.managed.minimumTermMonths;
+
+    return monthsElapsed >= (minimumTermMonths || 12);
   };
 
   const canCancelSubscription = hasMetMinimumTerm();
 
   // Calculate when cancellation will be available
   const getCancellationAvailableDate = () => {
+    // Free trials don't have minimum term
+    if (isTrialing) {
+      return null;
+    }
+
     if (
-      planType !== 'managed' ||
+      (planType !== 'starter' && planType !== 'managed') ||
       !('currentPeriodStart' in subscription) ||
       subscription.currentPeriodStart == null
     ) {
@@ -130,9 +147,12 @@ export default function BillingPage() {
 
     const startDate = new Date(subscription.currentPeriodStart * 1000);
     const cancellationDate = new Date(startDate);
-    cancellationDate.setMonth(
-      cancellationDate.getMonth() + (planConfig.managed.minimumTermMonths || 12),
-    );
+    const minimumTermMonths =
+      planType === 'starter'
+        ? planConfig.starter.minimumTermMonths
+        : planConfig.managed.minimumTermMonths;
+
+    cancellationDate.setMonth(cancellationDate.getMonth() + (minimumTermMonths || 12));
 
     return cancellationDate;
   };
@@ -349,8 +369,8 @@ export default function BillingPage() {
             </p>
             {planType === 'starter' && (
               <p className="text-sm">
-                Add a payment method now to continue after your 14-day trial. You won't be charged
-                until the trial ends.
+                Add a payment method now to continue after your trial. You won't be charged until
+                the trial ends. Note: This plan requires a 12-month minimum commitment.
               </p>
             )}
             {planType === 'managed' && (
@@ -469,7 +489,7 @@ export default function BillingPage() {
                   </div>
                 )}
 
-              {planType === 'managed' &&
+              {(planType === 'starter' || planType === 'managed') &&
                 !canCancelSubscription &&
                 getCancellationAvailableDate() && (
                   <div className="flex items-center justify-between">
