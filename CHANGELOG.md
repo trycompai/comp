@@ -1,3 +1,17 @@
+# [1.48.0](https://github.com/trycompai/comp/compare/v1.47.0...v1.48.0) (2025-06-27)
+
+
+### Bug Fixes
+
+* **middleware:** refine onboarding redirect logic to check for explicit false value ([93dfa37](https://github.com/trycompai/comp/commit/93dfa379be2cce444acdd8db85e2decd28da958b))
+* **onboarding:** enhance textarea handling and improve localStorage integration ([64821a3](https://github.com/trycompai/comp/commit/64821a3b4484b613177c7887b0824277270192aa))
+
+
+### Features
+
+* **onboarding:** enhance post-payment onboarding flow with loading state and step tracking ([6b5f055](https://github.com/trycompai/comp/commit/6b5f055188d729240015e0c7e3e6a40404ec5c8a))
+* **onboarding:** implement split onboarding flow and middleware checks ([7346380](https://github.com/trycompai/comp/commit/73463801f7eff32dcf34cf475ac675ea173aedbf))
+
 # [1.47.0](https://github.com/trycompai/comp/compare/v1.46.0...v1.47.0) (2025-06-27)
 
 
