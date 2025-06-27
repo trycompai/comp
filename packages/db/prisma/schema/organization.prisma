@@ -10,6 +10,7 @@ model Organization {
   website          String?
 
   // Subscription tracking
+  onboardingCompleted    Boolean          @default(false)
   subscriptionType       SubscriptionType @default(NONE)
   stripeSubscriptionData Json?
 

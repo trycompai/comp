@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
       db.onboarding.update({
         where: { organizationId },
         data: {
-          completed: false,
+          triggerJobCompleted: false,
         },
       }),
     ]);

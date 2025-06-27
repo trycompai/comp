@@ -23,7 +23,7 @@ const pricingFaqData = [
     id: 'free-trial',
     question: 'Is there a free trial available?',
     answer:
-      'Our Starter plan is completely free. For our Done For You plan, we offer competitive pricing without free trials since our services are already affordable.',
+      "We offer a 14-day money back guarantee on all plans. This gives you the confidence to try our services risk-free, knowing you can get a full refund if you're not completely satisfied within the first 14 days.",
   },
   {
     id: 'how-it-works',

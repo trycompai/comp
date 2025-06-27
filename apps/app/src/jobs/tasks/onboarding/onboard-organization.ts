@@ -217,7 +217,7 @@ export const onboardOrganization = task({
       where: {
         organizationId: payload.organizationId,
       },
-      data: { completed: true },
+      data: { triggerJobCompleted: true },
     });
 
     logger.info(`Created ${extractRisks.object.risks.length} risks`);

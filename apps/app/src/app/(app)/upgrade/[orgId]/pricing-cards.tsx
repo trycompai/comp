@@ -59,38 +59,36 @@ interface PricingCardsProps {
 
 interface PricingCardProps {
   planType: 'starter' | 'managed';
-  onCheckout: () => void;
+  onCheckoutUpfront: () => void;
+  onCheckoutMonthly: () => void;
   title: string;
   description: string;
-  price: number;
-  priceLabel: string;
+  annualPrice: number;
+  monthlyPrice: number;
   subtitle?: string;
   features: string[];
   badge?: string;
-  footerText?: string;
-  yearlyPrice?: number;
-  isYearly?: boolean;
-  isExecuting?: boolean;
-  buttonText?: string;
+  isExecutingUpfront?: boolean;
+  isExecutingMonthly?: boolean;
   isCurrentPlan?: boolean;
+  isLoadingSubscription?: boolean;
 }
 
 const PricingCard = ({
   planType,
-  onCheckout,
+  onCheckoutUpfront,
+  onCheckoutMonthly,
   title,
   description,
-  price,
-  priceLabel,
+  annualPrice,
+  monthlyPrice,
   subtitle,
   features,
   badge,
-  footerText,
-  yearlyPrice,
-  isYearly,
-  isExecuting,
-  buttonText,
+  isExecutingUpfront,
+  isExecutingMonthly,
   isCurrentPlan,
+  isLoadingSubscription,
 }: PricingCardProps) => {
   const isPopular = planType === 'managed';
 
@@ -98,10 +96,10 @@ const PricingCard = ({
     <Card
       className={`relative transition-all h-full flex flex-col border ${
         isPopular
-          ? 'ring-2 ring-green-500 shadow-lg bg-green-50/30 dark:bg-green-950/20 border-green-500/50 scale-105 hover:shadow-xl'
+          ? 'ring-2 ring-green-500 shadow-lg bg-green-50/30 dark:bg-green-950/20 border-green-500/50 scale-105'
           : isCurrentPlan
             ? 'opacity-75'
-            : 'hover:shadow-md bg-card border-border'
+            : 'hover:border-gray-300 dark:hover:border-gray-600 bg-card border-border'
       }`}
     >
       {isPopular && (
@@ -118,11 +116,9 @@ const PricingCard = ({
             {badge && !isPopular && (
               <Badge
                 className={
-                  badge === '14-day trial'
-                    ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 text-xs px-1.5 py-0'
-                    : badge === 'Current Plan'
-                      ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 text-xs px-1.5 py-0'
-                      : 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 text-xs px-1.5 py-0'
+                  badge === 'Current Plan'
+                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 text-xs px-1.5 py-0'
+                    : 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 text-xs px-1.5 py-0'
                 }
               >
                 {badge}
@@ -133,14 +129,12 @@ const PricingCard = ({
         </div>
         <div className="mt-4">
           <div className="flex items-baseline gap-1">
-            <span className="text-3xl font-bold">${price.toLocaleString()}</span>
-            <span className="text-sm text-muted-foreground">/{priceLabel}</span>
+            <span className="text-3xl font-bold">${annualPrice.toLocaleString()}</span>
+            <span className="text-sm text-muted-foreground">/year</span>
           </div>
-          {isYearly && yearlyPrice && (
-            <p className="text-sm text-muted-foreground mt-1">
-              Billed as ${yearlyPrice.toLocaleString()} yearly
-            </p>
-          )}
+          <p className="text-sm text-muted-foreground mt-1">
+            or 12 payments of ${monthlyPrice.toLocaleString()}
+          </p>
           {subtitle && (
             <p className="text-sm text-green-600 dark:text-green-400 mt-1">{subtitle}</p>
           )}
@@ -184,30 +178,81 @@ const PricingCard = ({
             );
           })}
         </ul>
-        <div className={`border-t ${isPopular ? 'border-green-500/30' : 'border-border'}`}>
-          <p className="text-xs text-center text-muted-foreground">{footerText}</p>
+
+        {/* Money Back Guarantee Section */}
+        <div className="mt-4 p-3 bg-green-50 dark:bg-green-950/20 rounded-md border border-green-200 dark:border-green-800">
+          <div className="flex items-center gap-2">
+            <div className="flex-shrink-0">
+              <svg
+                className="h-5 w-5 text-green-600 dark:text-green-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-green-900 dark:text-green-100">
+                14-Day Money Back Guarantee
+              </p>
+              <p className="text-xs text-green-700 dark:text-green-300 mt-0.5">
+                Try risk-free. Full refund if not satisfied.
+              </p>
+            </div>
+          </div>
         </div>
       </CardContent>
 
       <CardFooter className="px-6 pt-0 pb-6">
-        <Button
-          onClick={onCheckout}
-          className="w-full"
-          variant={isPopular ? 'default' : 'outline'}
-          size={isPopular ? 'lg' : 'default'}
-          disabled={isExecuting || isCurrentPlan}
-        >
-          {isExecuting ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <>
-              {buttonText || 'Go to Checkout'}
-              {!isCurrentPlan && (
-                <ArrowRight className={`ml-2 ${isPopular ? 'h-5 w-5' : 'h-4 w-4'}`} />
+        {isCurrentPlan ? (
+          <Button className="w-full" variant="outline" disabled>
+            Your Current Plan
+          </Button>
+        ) : (
+          <div className="flex flex-col gap-2 w-full">
+            <Button
+              onClick={onCheckoutUpfront}
+              className="w-full"
+              variant={isPopular ? 'default' : 'outline'}
+              size={isPopular ? 'lg' : 'default'}
+              disabled={isExecutingUpfront || isExecutingMonthly || isLoadingSubscription}
+            >
+              {isExecutingUpfront ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  Pay in Full
+                  <span className="ml-1.5 px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 rounded-full">
+                    Save 20%
+                  </span>
+                  <ArrowRight className={`ml-1.5 ${isPopular ? 'h-5 w-5' : 'h-4 w-4'}`} />
+                </>
               )}
-            </>
-          )}
-        </Button>
+            </Button>
+            <Button
+              onClick={onCheckoutMonthly}
+              className="w-full text-muted-foreground hover:text-foreground underline-offset-4 hover:underline"
+              variant="link"
+              size="sm"
+              disabled={isExecutingMonthly || isExecutingUpfront || isLoadingSubscription}
+            >
+              {isExecutingMonthly ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  or pay in 12 installments
+                  <ArrowRight className="ml-1 h-3 w-3" />
+                </>
+              )}
+            </Button>
+          </div>
+        )}
       </CardFooter>
     </Card>
   );
@@ -228,11 +273,9 @@ const managedFeatures = [
   'SOC 2 or ISO 27001 Done For You',
   '3rd Party Audit Included',
   'Compliant in 14 Days or Less',
-  '14 Day Money Back Guarantee',
   'Dedicated Success Team',
   '24x7x365 Support & SLA',
   'Slack Channel with Comp AI',
-  '12-month minimum term',
 ];
 
 export function PricingCards({
@@ -242,7 +285,7 @@ export function PricingCards({
   subscriptionType,
 }: PricingCardsProps) {
   const router = useRouter();
-  const [isYearly, setIsYearly] = useState(true);
+  const [executingButton, setExecutingButton] = useState<string | null>(null);
 
   // Check if user has an active starter subscription
   const hasStarterSubscription = (() => {
@@ -285,9 +328,11 @@ export function PricingCards({
       if (data?.checkoutUrl) {
         router.push(data.checkoutUrl);
       }
+      setExecutingButton(null);
     },
     onError: ({ error }) => {
       toast.error(error.serverError || 'Failed to create checkout session');
+      setExecutingButton(null);
     },
   });
 
@@ -296,30 +341,31 @@ export function PricingCards({
       ? `${window.location.protocol}//${window.location.host}`
       : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-  const handleSubscribe = (plan: 'starter' | 'managed') => {
+  const handleSubscribe = (plan: 'starter' | 'managed', paymentType: 'upfront' | 'monthly') => {
     // Don't allow subscribing to starter if already on starter
     if (plan === 'starter' && hasStarterSubscription) {
       return;
     }
 
+    // Set which button is executing
+    setExecutingButton(`${plan}-${paymentType}`);
+
     let priceId: string | undefined;
     let planType: string;
-    let trialPeriodDays: number | undefined;
+    const isYearly = paymentType === 'upfront';
 
     if (plan === 'starter') {
-      // Use starter prices with 14-day trial
+      // Use starter prices
       priceId = isYearly
         ? priceDetails.starterYearlyPrice?.id
         : priceDetails.starterMonthlyPrice?.id;
       planType = 'starter';
-      trialPeriodDays = 14;
     } else {
       // Use managed (Done For You) prices
       priceId = isYearly
         ? priceDetails.managedYearlyPrice?.id
         : priceDetails.managedMonthlyPrice?.id;
       planType = 'done-for-you';
-      trialPeriodDays = undefined;
     }
 
     if (!priceId) {
@@ -354,7 +400,6 @@ export function PricingCards({
       successUrl: `${baseUrl}/api/stripe/success?organizationId=${organizationId}&planType=${planType}`,
       cancelUrl: `${baseUrl}/upgrade/${organizationId}`,
       allowPromotionCodes: true,
-      trialPeriodDays,
       metadata: {
         organizationId,
         plan,
@@ -400,46 +445,18 @@ export function PricingCards({
         </Alert>
       )}
 
-      {/* Pricing Toggle */}
-      <div className="flex flex-col items-center gap-2">
-        <div className="bg-muted/50 p-1 rounded-lg flex items-center justify-center gap-1">
-          <button
-            onClick={() => setIsYearly(false)}
-            className={`px-4 py-2 text-sm rounded-md transition-all ${
-              !isYearly
-                ? 'bg-background font-medium shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            Monthly
-          </button>
-          <button
-            onClick={() => setIsYearly(true)}
-            className={`px-4 py-2 text-sm rounded-md transition-all flex items-center gap-2 ${
-              isYearly
-                ? 'bg-background font-medium shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            Yearly
-            <Badge className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 text-xs px-1.5 py-0">
-              Save 20%
-            </Badge>
-          </button>
-        </div>
-      </div>
-
       {/* Main Grid */}
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Plan Selection */}
         <div className="lg:col-span-2 grid md:grid-cols-2 gap-6 mt-6">
           <PricingCard
             planType="starter"
-            onCheckout={() => handleSubscribe('starter')}
+            onCheckoutUpfront={() => handleSubscribe('starter', 'upfront')}
+            onCheckoutMonthly={() => handleSubscribe('starter', 'monthly')}
             title="Starter"
             description="Everything you need to get compliant, fast."
-            price={isYearly ? starterYearlyPriceMonthly : starterMonthlyPrice}
-            priceLabel="month"
+            annualPrice={starterYearlyPriceTotal}
+            monthlyPrice={starterMonthlyPrice}
             subtitle="DIY (Do It Yourself) Compliance"
             features={starterFeatures}
             badge={
@@ -447,46 +464,29 @@ export function PricingCards({
                 ? isSubscriptionCanceling
                   ? 'Canceling'
                   : 'Current Plan'
-                : '14-day trial'
+                : 'Self-Serve'
             }
-            yearlyPrice={isYearly ? starterYearlyPriceTotal : undefined}
-            isYearly={isYearly}
-            isExecuting={(isExecuting && !hasStarterSubscription) || isLoadingSubscription}
-            buttonText={
-              isLoadingSubscription
-                ? 'Loading...'
-                : hasStarterSubscription
-                  ? isSubscriptionCanceling
-                    ? 'Plan Canceling'
-                    : 'Your Current Plan'
-                  : 'Start 14-Day Free Trial'
-            }
+            isExecutingUpfront={executingButton === 'starter-upfront'}
+            isExecutingMonthly={executingButton === 'starter-monthly'}
             isCurrentPlan={hasStarterSubscription}
+            isLoadingSubscription={isLoadingSubscription}
           />
 
           <PricingCard
             planType="managed"
-            onCheckout={() => handleSubscribe('managed')}
+            onCheckoutUpfront={() => handleSubscribe('managed', 'upfront')}
+            onCheckoutMonthly={() => handleSubscribe('managed', 'monthly')}
             title="Done For You"
             description="For companies up to 25 people."
-            price={isYearly ? managedYearlyPriceMonthly : managedMonthlyPrice}
-            priceLabel="month"
+            annualPrice={managedYearlyPriceTotal}
+            monthlyPrice={managedMonthlyPrice}
             subtitle="White-glove compliance service"
             features={managedFeatures}
             badge="Popular"
-            yearlyPrice={isYearly ? managedYearlyPriceTotal : undefined}
-            isYearly={isYearly}
-            isExecuting={isExecuting || isLoadingSubscription}
-            buttonText={
-              isLoadingSubscription
-                ? 'Loading...'
-                : hasStarterSubscription
-                  ? isSubscriptionCanceling
-                    ? 'Upgrade Instead of Canceling'
-                    : 'Upgrade to Done For You'
-                  : 'Continue'
-            }
+            isExecutingUpfront={executingButton === 'managed-upfront'}
+            isExecutingMonthly={executingButton === 'managed-monthly'}
             isCurrentPlan={false}
+            isLoadingSubscription={isLoadingSubscription}
           />
         </div>
 
