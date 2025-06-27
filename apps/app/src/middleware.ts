@@ -141,7 +141,8 @@ export async function middleware(request: NextRequest) {
       });
 
       // If they have a subscription but haven't completed onboarding, redirect
-      if (org && !org.onboardingCompleted && !nextUrl.pathname.includes('/onboarding')) {
+      // Only redirect if onboardingCompleted is explicitly false (not null/undefined)
+      if (org && org.onboardingCompleted === false && !nextUrl.pathname.includes('/onboarding')) {
         console.log(`[MIDDLEWARE] Redirecting org ${orgId} to complete onboarding`);
         const url = new URL(`/onboarding/${orgId}`, request.url);
         // Preserve existing search params
