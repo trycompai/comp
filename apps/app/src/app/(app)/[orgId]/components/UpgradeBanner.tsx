@@ -11,7 +11,6 @@ interface UpgradeBannerProps {
 }
 
 export function UpgradeBanner({ subscriptionType, organizationId }: UpgradeBannerProps) {
-  console.log('[UpgradeBanner] Props:', { subscriptionType, organizationId });
   const [isDismissed, setIsDismissed] = useState(false);
 
   // Check if we should show the banner based on subscription type
