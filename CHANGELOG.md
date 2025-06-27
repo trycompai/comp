@@ -1,3 +1,11 @@
+# [1.47.0](https://github.com/trycompai/comp/compare/v1.46.0...v1.47.0) (2025-06-27)
+
+
+### Features
+
+* **slack-notifications:** add Slack integration for Stripe webhook events ([76511b7](https://github.com/trycompai/comp/commit/76511b720ebdabc1c0d5b0a40b09ec036e2c2560))
+* **tracking:** implement unified tracking for onboarding and purchase events ([29bec28](https://github.com/trycompai/comp/commit/29bec2819f7ea7d5ffb24be5476207ab944ddfc6))
+
 # [1.46.0](https://github.com/trycompai/comp/compare/v1.45.1...v1.46.0) (2025-06-26)
 
 
