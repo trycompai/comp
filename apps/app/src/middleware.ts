@@ -7,13 +7,20 @@ import { NextRequest, NextResponse } from 'next/server';
 export const config = {
   runtime: 'nodejs',
   matcher: [
-    // Skip auth-related routes
-    '/((?!api|_next/static|_next/image|favicon.ico|monitoring|ingest|onboarding|research).*)',
+    // Skip auth-related routes (removed onboarding from exclusions)
+    '/((?!api|_next/static|_next/image|favicon.ico|monitoring|ingest|research).*)',
   ],
 };
 
 // Routes that don't require subscription
-const SUBSCRIPTION_EXEMPT_ROUTES = ['/auth', '/invite', '/setup', '/upgrade', '/settings/billing'];
+const SUBSCRIPTION_EXEMPT_ROUTES = [
+  '/auth',
+  '/invite',
+  '/setup',
+  '/upgrade',
+  '/settings/billing',
+  '/onboarding',
+];
 
 function isSubscriptionExempt(pathname: string): boolean {
   return SUBSCRIPTION_EXEMPT_ROUTES.some((route) => pathname.includes(route));
@@ -120,6 +127,24 @@ export async function middleware(request: NextRequest) {
           `[MIDDLEWARE] Redirecting org ${orgId} to upgrade. Status: ${subscription?.status}`,
         );
         const url = new URL(`/upgrade/${orgId}`, request.url);
+        // Preserve existing search params
+        nextUrl.searchParams.forEach((value, key) => {
+          url.searchParams.set(key, value);
+        });
+        return NextResponse.redirect(url);
+      }
+
+      // NEW: Check onboarding status for paid users
+      const org = await db.organization.findUnique({
+        where: { id: orgId },
+        select: { onboardingCompleted: true },
+      });
+
+      // If they have a subscription but haven't completed onboarding, redirect
+      // Only redirect if onboardingCompleted is explicitly false (not null/undefined)
+      if (org && org.onboardingCompleted === false && !nextUrl.pathname.includes('/onboarding')) {
+        console.log(`[MIDDLEWARE] Redirecting org ${orgId} to complete onboarding`);
+        const url = new URL(`/onboarding/${orgId}`, request.url);
         // Preserve existing search params
         nextUrl.searchParams.forEach((value, key) => {
           url.searchParams.set(key, value);
