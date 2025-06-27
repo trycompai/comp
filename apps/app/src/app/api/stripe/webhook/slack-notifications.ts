@@ -142,15 +142,13 @@ export async function handleStripeEventNotification(
         const isTrialing = subscription.status === 'trialing';
 
         // Get amount and interval
-        const amount = formatCurrency(session.amount_total, session.currency || 'usd');
-        const interval =
-          subscriptionData.status !== 'none' &&
-          'price' in subscriptionData &&
-          subscriptionData.price?.interval
-            ? subscriptionData.price.interval === 'year'
-              ? 'Yearly'
-              : 'Monthly'
-            : '';
+        // For trials, get the price from the subscription, not the session (which would be $0)
+        const price = subscription.items.data[0]?.price;
+        const amount = isTrialing
+          ? formatCurrency(price?.unit_amount, price?.currency || 'usd')
+          : formatCurrency(session.amount_total, session.currency || 'usd');
+
+        const interval = price?.recurring?.interval === 'year' ? 'Yearly' : 'Monthly';
 
         const config: NotificationConfig = isTrialing
           ? {
