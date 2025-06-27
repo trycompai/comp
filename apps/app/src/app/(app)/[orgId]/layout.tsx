@@ -101,10 +101,12 @@ export default async function Layout({
           style={{ minHeight: `calc(100vh - ${pixelsOffset}px)` }}
         >
           <SubscriptionProvider subscription={subscriptionData}>
-            <UpgradeBanner
-              subscriptionType={organization.subscriptionType}
-              organizationId={organization.id}
-            />
+            <div className="max-w-[1200px] mx-auto">
+              <UpgradeBanner
+                subscriptionType={organization.subscriptionType}
+                organizationId={organization.id}
+              />
+            </div>
             {children}
           </SubscriptionProvider>
         </div>
