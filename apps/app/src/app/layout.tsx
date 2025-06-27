@@ -1,6 +1,7 @@
 import '@/styles/globals.css';
 import '@comp/ui/globals.css';
 
+import { LinkedInInsight } from '@/components/tracking/LinkedInInsight';
 import { env } from '@/env.mjs';
 import { auth } from '@/utils/auth';
 import { cn } from '@comp/ui/cn';
@@ -99,6 +100,9 @@ export default async function Layout({ children }: { children: React.ReactNode }
           'overscroll-none whitespace-pre-line antialiased',
         )}
       >
+        {env.NEXT_PUBLIC_LINKEDIN_PARTNER_ID && (
+          <LinkedInInsight partnerId={env.NEXT_PUBLIC_LINKEDIN_PARTNER_ID} />
+        )}
         <NuqsAdapter>
           <Providers session={session}>
             <main>{children}</main>

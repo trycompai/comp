@@ -10,6 +10,7 @@ import { AnimatedPricingBanner } from './components/AnimatedPricingBanner';
 import LogoMarquee from './components/logos/logo-marquee';
 import { PricingCards } from './pricing-cards';
 import './styles/marquee.css';
+import { UpgradePageTracking } from './UpgradePageTracking';
 
 interface PageProps {
   params: Promise<{
@@ -84,6 +85,7 @@ export default async function UpgradePage({ params }: PageProps) {
         select: {
           name: true,
           stripeCustomerId: true,
+          subscriptionType: true,
         },
       },
     },
@@ -93,10 +95,16 @@ export default async function UpgradePage({ params }: PageProps) {
     redirect('/');
   }
 
-  // Check if they already have an active subscription (excluding self-serve)
+  // Check if they already have an active subscription
   const subscription = await getSubscriptionData(orgId);
-  if (subscription && (subscription.status === 'active' || subscription.status === 'trialing')) {
-    // Already have a paid subscription, redirect to dashboard
+
+  // Only redirect if they have the managed plan
+  if (
+    member.organization.subscriptionType === 'MANAGED' &&
+    subscription &&
+    (subscription.status === 'active' || subscription.status === 'trialing')
+  ) {
+    // Already have managed plan, redirect to dashboard
     redirect(`/${orgId}`);
   }
 
@@ -105,6 +113,7 @@ export default async function UpgradePage({ params }: PageProps) {
 
   return (
     <>
+      <UpgradePageTracking />
       <AnimatedPricingBanner />
       <div className="mx-auto px-4 py-8 max-w-7xl">
         <div className="relative">
@@ -124,6 +133,8 @@ export default async function UpgradePage({ params }: PageProps) {
                   starterMonthlyPrice: priceDetails.starterMonthlyPrice,
                   starterYearlyPrice: priceDetails.starterYearlyPrice,
                 }}
+                currentSubscription={subscription}
+                subscriptionType={member.organization.subscriptionType}
               />
             </div>
             <Separator />
