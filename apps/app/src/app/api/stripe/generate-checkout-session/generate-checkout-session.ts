@@ -4,6 +4,7 @@ import { stripe } from '@/actions/organization/lib/stripe';
 import { authWithOrgAccessClient } from '@/actions/safe-action';
 import { db } from '@comp/db';
 import { client } from '@comp/kv';
+import type { Stripe } from 'stripe';
 import { z } from 'zod';
 
 /**
@@ -19,16 +20,11 @@ import { z } from 'zod';
 const generateCheckoutSessionSchema = z
   .object({
     organizationId: z.string(),
-    mode: z.enum(['payment', 'setup', 'subscription']).default('subscription'),
-    // URLs for redirect after checkout
-    successUrl: z.string().url().optional(),
-    cancelUrl: z.string().url().optional(),
-    // Price and quantity for line items
-    priceId: z.string().optional(),
-    quantity: z.number().int().positive().optional().default(1),
-    // Other optional parameters
-    allowPromotionCodes: z.boolean().optional().default(false),
-    trialPeriodDays: z.number().int().positive().optional(),
+    mode: z.enum(['payment', 'subscription']),
+    priceId: z.string(),
+    successUrl: z.string().url(),
+    cancelUrl: z.string().url(),
+    allowPromotionCodes: z.boolean().optional(),
     metadata: z.record(z.string()).optional(),
   })
   .refine(
@@ -62,9 +58,7 @@ export const generateCheckoutSessionAction = authWithOrgAccessClient
       cancelUrl,
       mode,
       priceId,
-      quantity = 1,
       allowPromotionCodes = false,
-      trialPeriodDays,
       metadata,
     } = parsedInput;
 
@@ -115,36 +109,16 @@ export const generateCheckoutSessionAction = authWithOrgAccessClient
       stripeCustomerId = newCustomer.id;
     }
 
-    // Build line items based on mode
-    const lineItems = priceId
-      ? [
-          {
-            price: priceId,
-            quantity: quantity || 1,
-          },
-        ]
-      : undefined;
-
-    // Build subscription data if applicable
-    const subscriptionData =
-      mode === 'subscription' && trialPeriodDays
-        ? {
-            trial_period_days: trialPeriodDays,
-          }
-        : undefined;
-
-    // Ensure we have a valid base URL
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-
-    // ALWAYS create a checkout with a stripeCustomerId. They should enforce this.
-    const checkout = await stripe.checkout.sessions.create({
-      customer: stripeCustomerId as string,
-      success_url: successUrl || `${appUrl}/api/stripe/success?organizationId=${organizationId}`,
-      cancel_url: cancelUrl || `${appUrl}/${organizationId}/settings/billing`,
+    const sessionData: Stripe.Checkout.SessionCreateParams = {
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
       mode,
-      line_items: lineItems,
-      allow_promotion_codes: allowPromotionCodes,
-      subscription_data: subscriptionData,
+      ...(allowPromotionCodes && { allow_promotion_codes: true }),
       metadata: {
         organizationId,
         userId: user.id,
@@ -152,10 +126,23 @@ export const generateCheckoutSessionAction = authWithOrgAccessClient
         dubCustomerId: user.id,
         ...metadata,
       },
+      success_url: successUrl,
+      cancel_url: cancelUrl,
       customer_update: {
         address: 'auto',
       },
-    });
+      ...(stripeCustomerId && { customer: stripeCustomerId as string }),
+      ...(mode === 'subscription' && {
+        subscription_data: {
+          metadata: {
+            organizationId,
+            userId: user.id,
+          },
+        },
+      }),
+    };
+
+    const checkout = await stripe.checkout.sessions.create(sessionData);
 
     return {
       success: true,
