@@ -83,7 +83,7 @@ export default async function Layout({
     },
   });
 
-  const isOnboardingRunning = !!onboarding?.triggerJobId && !onboarding.completed;
+  const isOnboardingRunning = !!onboarding?.triggerJobId && !onboarding.triggerJobCompleted;
   const navbarHeight = 53 + 1; // 1 for border
   const onboardingHeight = 132 + 1; // 1 for border
 
