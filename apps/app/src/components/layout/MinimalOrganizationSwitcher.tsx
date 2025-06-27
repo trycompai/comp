@@ -7,10 +7,12 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
-import { Check, ChevronsUpDown, Loader2 } from 'lucide-react';
+import { Check, ChevronsUpDown, Loader2, Plus } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
+import { useRouter } from 'next/navigation';
 
 interface MinimalOrganizationSwitcherProps {
   organizations: Organization[];
@@ -21,6 +23,7 @@ export function MinimalOrganizationSwitcher({
   organizations,
   currentOrganization,
 }: MinimalOrganizationSwitcherProps) {
+  const router = useRouter();
   const { execute, status } = useAction(changeOrganizationAction, {
     onSuccess: (result) => {
       const orgId = result.data?.data?.id;
@@ -62,6 +65,13 @@ export function MinimalOrganizationSwitcher({
             </div>
           </DropdownMenuItem>
         ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => router.push('/setup?intent=create-additional')}>
+          <div className="flex items-center">
+            <Plus className="mr-2 h-4 w-4" />
+            Create Organization
+          </div>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

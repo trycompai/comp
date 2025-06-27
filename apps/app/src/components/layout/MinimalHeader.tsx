@@ -15,7 +15,7 @@ interface MinimalHeaderProps {
   user: User;
   organizations: Organization[];
   currentOrganization: Organization | null;
-  variant?: 'setup' | 'upgrade';
+  variant?: 'setup' | 'upgrade' | 'onboarding';
 }
 
 export function MinimalHeader({
@@ -44,14 +44,14 @@ export function MinimalHeader({
           <Icons.Logo className="h-6 w-6" />
           <span className="hidden sm:inline text-lg font-semibold">Comp AI</span>
         </Link>
-        {variant === 'upgrade' ? (
+        {variant === 'upgrade' || variant === 'onboarding' ? (
           <div className="w-auto">
             <MinimalOrganizationSwitcher
               organizations={organizations}
               currentOrganization={currentOrganization}
             />
           </div>
-        ) : hasExistingOrgs ? (
+        ) : variant === 'setup' && hasExistingOrgs ? (
           <button
             className="flex items-center gap-1.5 text-sm text-foreground/80 hover:text-foreground transition-colors"
             onClick={() => changeOrgAction.execute({ organizationId: organizations[0].id })}
