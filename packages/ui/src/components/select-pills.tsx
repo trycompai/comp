@@ -133,7 +133,6 @@ export const SelectPills: FC<SelectPillsProps> = ({
         if (itemToSelect) {
           handleItemSelect(itemToSelect);
         }
-        inputRef.current?.focus();
         break;
       }
       case 'Escape':
@@ -154,10 +153,8 @@ export const SelectPills: FC<SelectPillsProps> = ({
       onValueChange(newSelectedPills);
     }
 
-    // Maintain focus on input after selection
-    requestAnimationFrame(() => {
-      inputRef.current?.focus();
-    });
+    // Blur the input to unfocus after selection
+    inputRef.current?.blur();
   };
 
   const handlePillRemove = (pillToRemove: string) => {
@@ -229,7 +226,7 @@ export const SelectPills: FC<SelectPillsProps> = ({
       <PopoverContent
         align="start"
         onOpenAutoFocus={(e) => e.preventDefault()}
-        className="w-(--radix-popover-trigger-width) p-0"
+        className="w-[var(--radix-popover-trigger-width)] p-0"
       >
         <div className="max-h-[200px] overflow-y-auto">
           {/* Show filtered items */}
@@ -244,7 +241,7 @@ export const SelectPills: FC<SelectPillsProps> = ({
                 <div
                   key={item.id || item.value || item.name}
                   className={cn(
-                    'hover:bg-accent/70 focus:bg-accent focus:text-accent-foreground relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden transition-colors select-none data-disabled:pointer-events-none data-disabled:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0',
+                    'hover:bg-accent/70 focus:bg-accent focus:text-accent-foreground relative flex cursor-pointer items-center gap-2 rounded-sm text-sm outline-hidden transition-colors select-none data-disabled:pointer-events-none data-disabled:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0',
                     highlightedIndex === index && 'bg-accent',
                   )}
                   onClick={() => handleItemSelect(item)}
@@ -260,7 +257,7 @@ export const SelectPills: FC<SelectPillsProps> = ({
                   />
                   <label
                     htmlFor={`pill-${item.name}`}
-                    className="flex w-full cursor-pointer items-center"
+                    className="flex w-full cursor-pointer items-center px-2 py-1.5"
                   >
                     {item.name}
                   </label>

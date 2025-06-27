@@ -9,7 +9,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { createOrganization } from '../actions/create-organization';
+import { createOrganizationMinimal } from '../actions/create-organization-minimal';
 import type { OnboardingFormFields } from '../components/OnboardingStepInput';
 import { companyDetailsSchema, steps } from '../lib/constants';
 import { updateSetupSession } from '../lib/setup-session';
@@ -20,6 +20,9 @@ interface UseOnboardingFormProps {
   initialData?: Record<string, any>;
   currentStep?: string;
 }
+
+// Only use the first 3 steps for the minimal flow
+const prePaymentSteps = steps.slice(0, 3);
 
 export function useOnboardingForm({
   setupId,
@@ -55,7 +58,9 @@ export function useOnboardingForm({
   );
 
   // Determine the initial step index based on currentStep
-  const initialStepIndex = currentStep ? steps.findIndex((s) => s.key === currentStep) : 0;
+  const initialStepIndex = currentStep
+    ? prePaymentSteps.findIndex((s) => s.key === currentStep)
+    : 0;
 
   const [stepIndex, setStepIndex] = useState(Math.max(0, initialStepIndex));
   const [isOnboarding, setIsOnboarding] = useState(false);
@@ -79,7 +84,7 @@ export function useOnboardingForm({
   // Save progress to KV if we have a setupId
   useEffect(() => {
     if (setupId && mounted) {
-      const currentStepKey = steps[stepIndex]?.key;
+      const currentStepKey = prePaymentSteps[stepIndex]?.key;
       updateSetupSession(setupId, {
         currentStep: currentStepKey,
         formData: savedAnswers as Record<string, any>,
@@ -87,7 +92,7 @@ export function useOnboardingForm({
     }
   }, [setupId, stepIndex, savedAnswers, mounted]);
 
-  const step = steps[stepIndex];
+  const step = prePaymentSteps[stepIndex];
   const stepSchema = z.object({
     [step.key]: companyDetailsSchema.shape[step.key],
   });
@@ -103,7 +108,7 @@ export function useOnboardingForm({
     form.reset({ [step.key]: savedAnswers[step.key] || '' });
   }, [savedAnswers, step.key, form]);
 
-  const createOrganizationAction = useAction(createOrganization, {
+  const createOrganizationAction = useAction(createOrganizationMinimal, {
     onSuccess: async ({ data }) => {
       if (data?.success && data?.organizationId) {
         setIsFinalizing(true);
@@ -113,12 +118,7 @@ export function useOnboardingForm({
         trackEvent('organization_created', {
           event_category: 'onboarding',
           organization_id: data.organizationId,
-          flow_type: 'complete',
-        });
-        trackEvent('onboarding_completed', {
-          event_category: 'onboarding',
-          flow_type: 'complete',
-          total_steps: steps.length,
+          flow_type: 'pre_payment',
         });
 
         // Organization created, now redirect to plans page with search params
@@ -143,19 +143,11 @@ export function useOnboardingForm({
   });
 
   const handleCreateOrganizationAction = (currentAnswers: Partial<CompanyDetails>) => {
+    // Only pass the first 3 fields to the minimal action
     createOrganizationAction.execute({
       frameworkIds: currentAnswers.frameworkIds || [],
       organizationName: currentAnswers.organizationName || '',
       website: currentAnswers.website || '',
-      describe: currentAnswers.describe || '',
-      industry: currentAnswers.industry || '',
-      teamSize: currentAnswers.teamSize || '',
-      devices: currentAnswers.devices || '',
-      authentication: currentAnswers.authentication || '',
-      workLocation: currentAnswers.workLocation || '',
-      infrastructure: currentAnswers.infrastructure || '',
-      dataTypes: currentAnswers.dataTypes || '',
-      software: currentAnswers.software || '',
     });
   };
 
@@ -194,7 +186,7 @@ export function useOnboardingForm({
       });
     }
 
-    if (stepIndex < steps.length - 1) {
+    if (stepIndex < prePaymentSteps.length - 1) {
       setStepIndex(stepIndex + 1);
     } else {
       handleCreateOrganizationAction(newAnswers);
@@ -217,11 +209,11 @@ export function useOnboardingForm({
     }
   };
 
-  const isLastStep = stepIndex === steps.length - 1;
+  const isLastStep = stepIndex === prePaymentSteps.length - 1;
 
   return {
     stepIndex,
-    steps,
+    steps: prePaymentSteps,
     step,
     form,
     savedAnswers,

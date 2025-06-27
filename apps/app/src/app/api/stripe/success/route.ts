@@ -29,6 +29,12 @@ export async function GET(req: Request) {
     return redirect('/');
   }
 
+  // Get organization to check onboarding status
+  const organization = await db.organization.findUnique({
+    where: { id: organizationId },
+    select: { onboardingCompleted: true },
+  });
+
   const stripeCustomerId = await client.get(`stripe:organization:${organizationId}`);
   if (!stripeCustomerId) {
     return redirect(`/${organizationId}`);
@@ -43,7 +49,18 @@ export async function GET(req: Request) {
   // Track the successful purchase with user ID
   await trackPurchaseCompletionServer(organizationId, planType, value, user.id);
 
-  // Redirect with enhanced parameters for client-side tracking
+  // Check if onboarding is complete
+  if (organization && !organization.onboardingCompleted) {
+    // Redirect to onboarding with parameters
+    const redirectUrl = new URL(`/onboarding/${organizationId}`, url.origin);
+    redirectUrl.searchParams.set('checkoutComplete', planType);
+    redirectUrl.searchParams.set('organizationId', organizationId);
+    redirectUrl.searchParams.set('value', value.toString());
+
+    return redirect(redirectUrl.toString());
+  }
+
+  // Redirect to frameworks (existing behavior) if onboarding is complete
   const redirectUrl = new URL(`/${organizationId}/frameworks`, url.origin);
   redirectUrl.searchParams.set('checkoutComplete', planType);
   redirectUrl.searchParams.set('organizationId', organizationId);

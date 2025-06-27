@@ -253,6 +253,128 @@ describe('Middleware', () => {
     });
   });
 
+  describe('Onboarding Completion', () => {
+    beforeEach(() => {
+      // Set up authenticated user with valid subscription for onboarding tests
+      setupAuthMocks();
+      mockGetSubscriptionData.mockResolvedValue({ status: 'active' });
+    });
+
+    it('should redirect to /onboarding when subscription is active but onboarding not completed', async () => {
+      // Arrange
+      mockDb.organization.findUnique.mockResolvedValue({
+        id: 'org_123',
+        onboardingCompleted: false,
+      });
+
+      const request = createMockRequest('/org_123/frameworks');
+
+      // Act
+      const response = await middleware(request);
+
+      // Assert
+      expect(response.status).toBe(307);
+      expect(response.headers.get('location')).toBe('http://localhost:3000/onboarding/org_123');
+    });
+
+    it('should allow access to product when onboarding is completed', async () => {
+      // Arrange
+      mockDb.organization.findUnique.mockResolvedValue({
+        id: 'org_123',
+        onboardingCompleted: true,
+      });
+
+      const request = createMockRequest('/org_123/frameworks');
+
+      // Act
+      const response = await middleware(request);
+
+      // Assert
+      expect(response.status).toBe(200); // Should pass through
+    });
+
+    it('should allow access to /onboarding route even without onboarding completed', async () => {
+      // Arrange
+      mockDb.organization.findUnique.mockResolvedValue({
+        id: 'org_123',
+        onboardingCompleted: false,
+      });
+
+      const request = createMockRequest('/onboarding/org_123');
+
+      // Act
+      const response = await middleware(request);
+
+      // Assert
+      expect(response.status).toBe(200); // Should allow access
+    });
+
+    it('should preserve query params when redirecting to onboarding', async () => {
+      // Arrange
+      mockDb.organization.findUnique.mockResolvedValue({
+        id: 'org_123',
+        onboardingCompleted: false,
+      });
+
+      const request = createMockRequest('/org_123/frameworks', {
+        searchParams: {
+          checkoutComplete: 'starter',
+          value: '99',
+        },
+      });
+
+      // Act
+      const response = await middleware(request);
+
+      // Assert
+      expect(response.status).toBe(307);
+      const location = response.headers.get('location');
+      expect(location).toBe(
+        'http://localhost:3000/onboarding/org_123?checkoutComplete=starter&value=99',
+      );
+    });
+
+    it('should not check onboarding for subscription-exempt routes', async () => {
+      // Arrange
+      mockDb.organization.findUnique.mockResolvedValue({
+        id: 'org_123',
+        onboardingCompleted: false,
+      });
+
+      const exemptRoutes = ['/upgrade/org_123', '/onboarding/org_123', '/auth', '/setup'];
+
+      for (const route of exemptRoutes) {
+        const request = createMockRequest(route);
+
+        // Act
+        const response = await middleware(request);
+
+        // Assert
+        // Should not redirect to /onboarding for these routes
+        if (response.status === 307) {
+          const location = response.headers.get('location');
+          expect(location).not.toContain('/onboarding');
+        }
+      }
+    });
+
+    it('should handle organizations without onboardingCompleted field gracefully', async () => {
+      // Arrange - org exists but onboardingCompleted is undefined/null
+      mockDb.organization.findUnique.mockResolvedValue({
+        id: 'org_123',
+        onboardingCompleted: null,
+      });
+
+      const request = createMockRequest('/org_123/frameworks');
+
+      // Act
+      const response = await middleware(request);
+
+      // Assert
+      expect(response.status).toBe(200); // Should allow access (treat null as completed)
+    });
+  });
+
   describe('Security Boundaries', () => {
     it('should validate org ID format to prevent injection', async () => {
       // Arrange
