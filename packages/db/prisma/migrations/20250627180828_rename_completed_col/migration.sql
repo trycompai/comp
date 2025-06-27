@@ -5,11 +5,11 @@
 
 */
 -- AlterTable
-ALTER TABLE "Onboarding" 
+ALTER TABLE "Onboarding" AS o
 ADD COLUMN "triggerJobCompleted" BOOLEAN NOT NULL DEFAULT false;
 
 -- Copy existing values from completed to triggerJobCompleted
-UPDATE "Onboarding" SET "triggerJobCompleted" = "completed";
+UPDATE "Onboarding" AS o SET "triggerJobCompleted" = o."completed";
 
 -- Drop the old column
-ALTER TABLE "Onboarding" DROP COLUMN "completed";
+ALTER TABLE "Onboarding" AS o DROP COLUMN "completed";
