@@ -6,7 +6,7 @@
 */
 -- AlterTable
 ALTER TABLE "Onboarding"
-ADD COLUMN "triggerJobCompleted" BOOLEAN NOT NULL DEFAULT false;
+ADD COLUMN IF NOT EXISTS "triggerJobCompleted" BOOLEAN NOT NULL DEFAULT false;
 
 -- Copy existing values from completed to triggerJobCompleted
 UPDATE "Onboarding" SET "triggerJobCompleted" = "completed";
