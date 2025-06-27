@@ -68,7 +68,7 @@ export const createOrganization = authActionClientWithoutOrg
       await db.onboarding.create({
         data: {
           organizationId: orgId,
-          completed: false,
+          triggerJobCompleted: false,
         },
       });
 
