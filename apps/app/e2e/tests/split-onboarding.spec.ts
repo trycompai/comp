@@ -58,7 +58,7 @@ test.describe('Split Onboarding Flow', () => {
     ];
 
     for (const step of remainingSteps) {
-      if (step.field === 'textarea') {
+      if (step.field === 'textarea' && step.value) {
         await page.locator('textarea').fill(step.value);
       } else if (step.field === 'select' && step.text) {
         await page.getByRole('combobox').click();

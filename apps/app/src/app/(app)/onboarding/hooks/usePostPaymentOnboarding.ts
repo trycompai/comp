@@ -1,6 +1,7 @@
 'use client';
 
 import type { OnboardingFormFields } from '@/app/(app)/setup/components/OnboardingStepInput';
+import { useLocalStorage } from '@/app/(app)/setup/hooks/useLocalStorage';
 import { companyDetailsSchema, steps } from '@/app/(app)/setup/lib/constants';
 import type { CompanyDetails } from '@/app/(app)/setup/lib/types';
 import { trackEvent, trackOnboardingEvent } from '@/utils/tracking';
@@ -29,12 +30,20 @@ export function usePostPaymentOnboarding({
 }: UsePostPaymentOnboardingProps) {
   const router = useRouter();
 
-  // Initialize with any saved data, including organization name
-  const [savedAnswers, setSavedAnswers] = useState<Partial<CompanyDetails>>({
+  // Create a storage key specific to this organization
+  const storageKey = `onboarding-progress-${organizationId}`;
+
+  // Use localStorage to persist progress
+  const [savedAnswers, setSavedAnswers] = useLocalStorage<Partial<CompanyDetails>>(storageKey, {
     ...initialData,
     organizationName,
   });
-  const [stepIndex, setStepIndex] = useState(0);
+
+  const [stepIndex, setStepIndex] = useState(() => {
+    // Find the first unanswered step
+    const firstUnansweredIndex = postPaymentSteps.findIndex((step) => !savedAnswers[step.key]);
+    return firstUnansweredIndex === -1 ? 0 : firstUnansweredIndex;
+  });
   const [isOnboarding, setIsOnboarding] = useState(false);
   const [isFinalizing, setIsFinalizing] = useState(false);
 
@@ -67,6 +76,9 @@ export function usePostPaymentOnboarding({
     onSuccess: async ({ data }) => {
       if (data?.success && data?.redirectUrl) {
         setIsFinalizing(true);
+
+        // Clear the saved progress from localStorage
+        localStorage.removeItem(storageKey);
 
         // Track completion
         trackEvent('onboarding_completed', {
@@ -129,6 +141,9 @@ export function usePostPaymentOnboarding({
       }
     }
 
+    // Always preserve organizationName
+    newAnswers.organizationName = organizationName;
+
     setSavedAnswers(newAnswers as Partial<CompanyDetails>);
 
     // Track step completion
@@ -150,7 +165,7 @@ export function usePostPaymentOnboarding({
       // Save current form values before going back
       const currentValues = form.getValues();
       if (currentValues[step.key]) {
-        setSavedAnswers({ ...savedAnswers, [step.key]: currentValues[step.key] });
+        setSavedAnswers({ ...savedAnswers, [step.key]: currentValues[step.key], organizationName });
       }
 
       // Clear form errors
