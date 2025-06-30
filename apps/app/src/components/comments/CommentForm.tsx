@@ -1,9 +1,8 @@
 'use client';
 
 import { createComment } from '@/actions/comments/createComment';
-import { uploadFile } from '@/actions/files/upload-file';
 import { authClient } from '@/utils/auth-client';
-import type { AttachmentEntityType, CommentEntityType } from '@comp/db/types';
+import type { CommentEntityType } from '@comp/db/types';
 import { Button } from '@comp/ui/button';
 import { Input } from '@comp/ui/input';
 import { Label } from '@comp/ui/label';
@@ -22,10 +21,10 @@ interface CommentFormProps {
 }
 
 interface PendingAttachment {
-  id: string;
+  id: string; // Temporary ID for UI tracking
   name: string;
   fileType: string;
-  signedUrl: string | null;
+  fileData: string; // base64 encoded file data
 }
 
 export function CommentForm({ entityId, entityType }: CommentFormProps) {
@@ -45,6 +44,9 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
 
   let pathToRevalidate = '';
   switch (entityType) {
+    case 'policy':
+      pathToRevalidate = `/${params.orgId}/policies/${entityId}`;
+      break;
     case 'task':
       pathToRevalidate = `/${params.orgId}/tasks/${entityId}`;
       break;
@@ -79,43 +81,26 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
             return resolve(); // Skip processing this file
           }
 
-          if (!file.type.startsWith('image/')) {
-            toast.info('Only image previews are shown before submitting.');
-          }
           const reader = new FileReader();
-          reader.onloadend = async () => {
+          reader.onloadend = () => {
             const dataUrlResult = reader.result as string;
             const base64Data = dataUrlResult?.split(',')[1];
             if (!base64Data) {
               toast.error(`Failed to read file data for ${file.name}`);
               return resolve();
             }
-            const { success, data, error } = await uploadFile({
-              fileName: file.name,
-              fileType: file.type,
-              fileData: base64Data,
-              entityId,
-              entityType: entityType as AttachmentEntityType,
-              pathToRevalidate,
-            });
-            if (error) {
-              console.error('Upload file action error occurred:', error);
-              toast.error(`Failed to upload "${file.name}": ${error}`);
-            } else if (success && data?.id && data.signedUrl) {
-              setPendingAttachments((prev) => [
-                ...prev,
-                {
-                  id: data?.id ?? '',
-                  name: data?.name ?? '',
-                  fileType: file.type,
-                  signedUrl: data.signedUrl,
-                },
-              ]);
-              toast.success(`File "${data?.name ?? 'unknown'}" ready for attachment.`);
-            } else {
-              console.error('Upload succeeded but missing data:', data);
-              toast.error(`Failed to process "${file.name}" after upload.`);
-            }
+
+            // Store file in memory instead of uploading
+            setPendingAttachments((prev) => [
+              ...prev,
+              {
+                id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Generate temporary ID
+                name: file.name,
+                fileType: file.type,
+                fileData: base64Data,
+              },
+            ]);
+            toast.success(`File "${file.name}" ready for attachment.`);
             setIsLoading(false);
             resolve();
           };
@@ -153,25 +138,18 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
       return;
     }
 
-    console.log(
-      'DEBUG: Opening signed URL for:',
-      pendingAttachment.name,
-      pendingAttachment.signedUrl,
+    // Convert base64 back to blob for preview
+    const blob = new Blob(
+      [Uint8Array.from(atob(pendingAttachment.fileData), (c) => c.charCodeAt(0))],
+      { type: pendingAttachment.fileType },
     );
-    const { signedUrl } = pendingAttachment;
+    const url = URL.createObjectURL(blob);
 
-    if (signedUrl) {
-      try {
-        // Directly open the signed URL
-        window.open(signedUrl, '_blank', 'noopener,noreferrer');
-      } catch (e) {
-        console.error('Error opening signed URL:', e);
-        toast.error('Could not open attachment preview.');
-      }
-    } else {
-      // Handle case where signedUrl might be missing/null (shouldn't happen if upload worked)
-      toast.error('Attachment preview URL is not available.');
-    }
+    // Open in new tab
+    window.open(url, '_blank', 'noopener,noreferrer');
+
+    // Clean up the object URL after a short delay
+    setTimeout(() => URL.revokeObjectURL(url), 100);
   };
 
   const handleCommentSubmit = async () => {
@@ -182,7 +160,7 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
       content: newComment,
       entityId,
       entityType,
-      attachmentIds: pendingAttachments.map((att) => att.id),
+      attachments: pendingAttachments,
       pathToRevalidate,
     });
 
@@ -253,7 +231,11 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
               {pendingAttachments.map((pendingAttachment) => (
                 <AttachmentItem
                   key={pendingAttachment.id}
-                  pendingAttachment={pendingAttachment}
+                  pendingAttachment={{
+                    id: pendingAttachment.id,
+                    name: pendingAttachment.name,
+                    fileType: pendingAttachment.fileType,
+                  }}
                   onClickFilename={handlePendingAttachmentClick} // Pass the correct handler
                   onDelete={handleRemovePendingAttachment}
                   isParentBusy={isLoading} // Disable if form is loading/uploading
