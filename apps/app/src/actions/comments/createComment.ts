@@ -1,11 +1,39 @@
 'use server';
 
+import { BUCKET_NAME, s3Client } from '@/app/s3';
 import { auth } from '@/utils/auth';
+import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { db } from '@comp/db';
-import { AttachmentEntityType, CommentEntityType } from '@comp/db/types'; // Import AttachmentEntityType
+import { AttachmentEntityType, CommentEntityType } from '@comp/db/types';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { z } from 'zod';
+
+// Helper to map fileType to AttachmentType
+function mapFileTypeToAttachmentType(fileType: string) {
+  const type = fileType.split('/')[0];
+  switch (type) {
+    case 'image':
+      return 'image' as const;
+    case 'video':
+      return 'video' as const;
+    case 'audio':
+      return 'audio' as const;
+    case 'application':
+      if (fileType === 'application/pdf') return 'document' as const;
+      return 'document' as const;
+    default:
+      return 'other' as const;
+  }
+}
+
+// Define schema for attachment data
+const attachmentSchema = z.object({
+  id: z.string(), // temporary ID from frontend
+  name: z.string(),
+  fileType: z.string(),
+  fileData: z.string(), // base64 encoded
+});
 
 // Define the input schema
 const createCommentSchema = z
@@ -13,14 +41,14 @@ const createCommentSchema = z
     content: z.string(),
     entityId: z.string(),
     entityType: z.nativeEnum(CommentEntityType),
-    attachmentIds: z.array(z.string()).optional(),
+    attachments: z.array(attachmentSchema).optional(),
     pathToRevalidate: z.string().optional(),
   })
   .refine(
     (data) =>
       // Check if content is non-empty after trimming OR if attachments exist
       (data.content && data.content.trim().length > 0) ||
-      (data.attachmentIds && data.attachmentIds.length > 0),
+      (data.attachments && data.attachments.length > 0),
     {
       message: 'Comment cannot be empty unless attachments are provided.',
       path: ['content'],
@@ -28,7 +56,7 @@ const createCommentSchema = z
   );
 
 export const createComment = async (input: z.infer<typeof createCommentSchema>) => {
-  const { content, entityId, entityType, attachmentIds, pathToRevalidate } = input;
+  const { content, entityId, entityType, attachments, pathToRevalidate } = input;
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -89,21 +117,41 @@ export const createComment = async (input: z.infer<typeof createCommentSchema>) 
         },
       });
 
-      // 2. Link attachments if provided (using updateMany)
-      if (attachmentIds && attachmentIds.length > 0) {
-        console.log('Linking attachments to comment:', attachmentIds);
-        await tx.attachment.updateMany({
-          where: {
-            id: { in: attachmentIds },
-            organizationId: orgId,
-            entityId,
-            entityType: entityType as AttachmentEntityType,
-          },
-          data: {
-            entityId: comment.id,
-            entityType: AttachmentEntityType.comment,
-          },
-        });
+      // 2. Upload and create attachments if provided
+      if (attachments && attachments.length > 0) {
+        console.log('Uploading and creating attachments for comment:', comment.id);
+
+        for (const attachment of attachments) {
+          // Convert base64 to buffer
+          const fileBuffer = Buffer.from(attachment.fileData, 'base64');
+
+          // Create S3 key
+          const timestamp = Date.now();
+          const sanitizedFileName = attachment.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+          const key = `${orgId}/attachments/comment/${comment.id}/${timestamp}-${sanitizedFileName}`;
+
+          // Upload to S3
+          const putCommand = new PutObjectCommand({
+            Bucket: BUCKET_NAME,
+            Key: key,
+            Body: fileBuffer,
+            ContentType: attachment.fileType,
+          });
+
+          await s3Client.send(putCommand);
+
+          // Create attachment record
+          await tx.attachment.create({
+            data: {
+              name: attachment.name,
+              url: key,
+              type: mapFileTypeToAttachmentType(attachment.fileType),
+              entityId: comment.id,
+              entityType: AttachmentEntityType.comment,
+              organizationId: orgId,
+            },
+          });
+        }
       }
 
       return comment;
