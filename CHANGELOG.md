@@ -1,3 +1,10 @@
+## [1.48.1](https://github.com/trycompai/comp/compare/v1.48.0...v1.48.1) (2025-06-30)
+
+
+### Bug Fixes
+
+* fixed an issue with uploading files to comments in a policy ([8a3903c](https://github.com/trycompai/comp/commit/8a3903c291770e4da8aa5b55ff0b973330781430))
+
 # [1.48.0](https://github.com/trycompai/comp/compare/v1.47.0...v1.48.0) (2025-06-27)
 
 
