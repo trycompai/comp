@@ -56,7 +56,17 @@ const createCommentSchema = z
   );
 
 export const createComment = async (input: z.infer<typeof createCommentSchema>) => {
-  const { content, entityId, entityType, attachments, pathToRevalidate } = input;
+  // Parse and validate the input
+  const parseResult = createCommentSchema.safeParse(input);
+  if (!parseResult.success) {
+    return {
+      success: false,
+      error: parseResult.error.errors[0]?.message || 'Invalid input',
+      data: null,
+    };
+  }
+
+  const { content, entityId, entityType, attachments, pathToRevalidate } = parseResult.data;
   const session = await auth.api.getSession({
     headers: await headers(),
   });

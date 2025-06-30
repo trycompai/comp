@@ -47,6 +47,25 @@ export const mockDb = {
   auditLog: {
     create: vi.fn(),
   },
+  comment: {
+    findFirst: vi.fn(),
+    findMany: vi.fn(),
+    findUnique: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+  },
+  attachment: {
+    findFirst: vi.fn(),
+    findMany: vi.fn(),
+    findUnique: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    updateMany: vi.fn(),
+    delete: vi.fn(),
+    deleteMany: vi.fn(),
+  },
+  $transaction: vi.fn((fn) => fn(mockDb)),
 };
 
 // Note: To use this mock in your test files, add this at the top of your test file:
