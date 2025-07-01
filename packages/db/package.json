@@ -2,7 +2,7 @@
   "name": "@comp/db",
   "version": "1.0.0",
   "dependencies": {
-    "@prisma/client": "6.9.0"
+    "@prisma/client": "6.11.0"
   },
   "devDependencies": {
     "@comp/tsconfig": "workspace:*",
