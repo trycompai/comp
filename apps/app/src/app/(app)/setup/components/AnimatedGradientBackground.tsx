@@ -159,12 +159,12 @@ void main() {
   float mouseDistance = length(mouseOffset);
   
   // Dynamic color palette that shifts based on deformation and mouse
-  vec3 color1 = mix(vec3(0.1, 0.9, 0.4), vec3(0.9, 0.1, 0.2), u_rage);    // Green to red
-  vec3 color2 = mix(vec3(0.0, 0.7, 0.5), vec3(0.7, 0.0, 0.1), u_rage);    // Teal to dark red
-  vec3 color3 = mix(vec3(0.3, 1.0, 0.3), vec3(1.0, 0.3, 0.0), u_rage);    // Electric green to orange-red
+  vec3 color1 = mix(vec3(0.024, 0.306, 0.231), vec3(0.9, 0.1, 0.2), u_rage);    // emerald-900 to red
+  vec3 color2 = mix(vec3(0.024, 0.18, 0.133), vec3(0.7, 0.0, 0.1), u_rage);    // emerald-950 to dark red
+  vec3 color3 = mix(vec3(0.024, 0.373, 0.275), vec3(1.0, 0.3, 0.0), u_rage);    // emerald-800 to orange-red
   
-  // Keyboard glow effect - more subtle cyan tint
-  vec3 glowColor = mix(vec3(0.3, 0.9, 0.8), vec3(1.0, 0.3, 0.3), u_rage);
+  // Keyboard glow effect - emerald tint
+  vec3 glowColor = mix(vec3(0.016, 0.471, 0.341), vec3(1.0, 0.3, 0.3), u_rage);  // emerald-700
   float glowIntensity = u_glow * 0.25 * (1.0 + u_rage * 0.5);
   
   // Pulse effect - very subtle white tint
@@ -176,8 +176,8 @@ void main() {
   vec3 baseColor = mix(color1, color2, sin(deformIntensity + u_time * 0.5) * 0.5 + 0.5);
   baseColor = mix(baseColor, color3, smoothstep(0.1, 0.3, abs(vNoise)));
   
-  // Boost base color saturation
-  baseColor = baseColor * 1.2;
+  // Subtle boost to maintain deep emerald richness
+  baseColor = baseColor * 1.08;
   
   // Mix in glow color based on keyboard activity - very subtle to preserve vibrancy
   baseColor = mix(baseColor, glowColor, glowIntensity * rimLight * 0.3);
@@ -187,16 +187,16 @@ void main() {
   
   // Extra glow where stretched towards mouse
   float stretchGlow = smoothstep(0.3, 0.7, dot(normalize(vPosition), normalize(vec3(mouseOffset, 0.0))));
-  baseColor += mix(vec3(0.1, 0.4, 0.2), vec3(0.4, 0.1, 0.0), u_rage) * stretchGlow * 0.4;
+  baseColor += mix(vec3(0.024, 0.373, 0.275), vec3(0.4, 0.1, 0.0), u_rage) * stretchGlow * 0.4;  // emerald-800
   
   // Holographic interference patterns enhanced by keyboard glow
   float interference = sin(vPosition.x * 15.0 + u_time) * sin(vPosition.y * 15.0 - u_time * 0.7);
   interference *= 0.1 * rimLight * (1.0 + u_glow * 1.5 + u_rage * 2.0);
-  baseColor += vec3(interference * 0.2, interference * 0.5, interference * 0.3);
+  baseColor += vec3(interference * 0.02, interference * 0.3, interference * 0.2);
   
   // Electric rim effect enhanced by mouse proximity and keyboard glow
   float electricRim = pow(rimLight, 0.5);
-  vec3 electricColor = mix(vec3(0.4, 1.0, 0.6), vec3(1.0, 0.4, 0.2), u_rage);
+  vec3 electricColor = mix(vec3(0.02, 0.588, 0.412), vec3(1.0, 0.4, 0.2), u_rage);  // emerald-600
   float electric = sin(atan(vPosition.y, vPosition.x) * 20.0 + u_time * 3.0) * electricRim;
   electric = smoothstep(0.6, 1.0, electric) * 0.3;
   electric *= 1.0 + (1.0 - mouseDistance) * 0.5 + u_glow * 0.5 + u_rage * 1.0;
@@ -204,7 +204,7 @@ void main() {
   // Core energy with color variation
   float centerDistance = length(vPosition) / 2.2;
   float coreGlow = smoothstep(1.0, 0.0, centerDistance) * 0.5;
-  vec3 coreColor = mix(vec3(0.5, 1.0, 0.7), vec3(0.3, 0.8, 1.0), sin(u_time * 1.5) * 0.5 + 0.5);
+  vec3 coreColor = mix(vec3(0.016, 0.471, 0.341), vec3(0.024, 0.306, 0.231), sin(u_time * 1.5) * 0.5 + 0.5);  // emerald-700 to emerald-900
   coreColor = mix(coreColor, vec3(1.0, 0.5, 0.3), u_rage);
   coreColor = mix(coreColor, glowColor, u_glow * 0.3);
   
@@ -212,13 +212,13 @@ void main() {
   vec3 finalColor = baseColor;
   finalColor += electricColor * electric;
   finalColor += coreColor * coreGlow * (1.0 + u_pulse * 0.3);
-  finalColor += electricColor * electricRim * 0.6;
+  finalColor += electricColor * electricRim * 0.25;
   
   // Keyboard effect - flowing energy waves instead of dots
   float flowingEnergy = sin(vPosition.x * 10.0 - u_time * 5.0 + vPosition.y * 5.0) * 
                         cos(vPosition.y * 8.0 + u_time * 4.0 - vPosition.z * 3.0);
   flowingEnergy = smoothstep(0.7, 1.0, abs(flowingEnergy)) * u_glow;
-  vec3 energyColor = mix(vec3(0.2, 1.0, 0.8), vec3(0.5, 0.8, 1.0), sin(u_time * 2.0) * 0.5 + 0.5);
+  vec3 energyColor = mix(vec3(0.02, 0.588, 0.412), vec3(0.016, 0.471, 0.341), sin(u_time * 2.0) * 0.5 + 0.5);  // emerald-600 to emerald-700
   energyColor = mix(energyColor, vec3(1.0, 0.3, 0.2), u_rage);
   finalColor += energyColor * flowingEnergy * rimLight * 0.6;
   
@@ -474,7 +474,7 @@ interface AnimatedGradientBackgroundProps {
 
 export function AnimatedGradientBackground({ scale = 1 }: AnimatedGradientBackgroundProps) {
   return (
-    <div className="fixed inset-0 -z-10 opacity-40">
+    <div className="fixed inset-0 -z-10 opacity-50">
       <Canvas
         camera={{
           position: [0, 0, 7],
