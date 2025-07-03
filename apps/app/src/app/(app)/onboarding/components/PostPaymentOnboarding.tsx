@@ -46,20 +46,20 @@ export function PostPaymentOnboarding({
         // Set to max scale when finalizing
         window.dispatchEvent(
           new CustomEvent('onboarding-step-change', {
-            detail: { stepIndex: 8, totalSteps: 9, progress: 1 },
+            detail: { stepIndex: totalSteps - 1, totalSteps, progress: 1 },
           }),
         );
       } else {
-        const progress = stepIndex / 8; // 8 because we have 9 steps (0-8)
+        const progress = stepIndex / (totalSteps - 1);
         // Dispatch custom event to notify the background wrapper
         window.dispatchEvent(
           new CustomEvent('onboarding-step-change', {
-            detail: { stepIndex, totalSteps: 9, progress },
+            detail: { stepIndex, totalSteps, progress },
           }),
         );
       }
     }
-  }, [stepIndex, isFinalizing]);
+  }, [stepIndex, isFinalizing, totalSteps]);
 
   return (
     <div className="scrollbar-hide flex min-h-[calc(100vh-50px)] flex-col items-center justify-center p-4">
