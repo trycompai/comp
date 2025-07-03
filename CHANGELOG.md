@@ -1,3 +1,15 @@
+# [1.49.0](https://github.com/trycompai/comp/compare/v1.48.1...v1.49.0) (2025-07-03)
+
+
+### Bug Fixes
+
+* **onboarding:** update step index and progress calculation in PostPaymentOnboarding component ([a7b3a13](https://github.com/trycompai/comp/commit/a7b3a1378ab45c361769a7c1dfdb3a2edc9180fc))
+
+
+### Features
+
+* **e2e:** add tests for middleware onboarding behavior and split onboarding flow ([cb31f22](https://github.com/trycompai/comp/commit/cb31f2234ea84701b6f4a670d735ecc6a0bddc03))
+
 ## [1.48.1](https://github.com/trycompai/comp/compare/v1.48.0...v1.48.1) (2025-06-30)
 
 
