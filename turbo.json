@@ -91,6 +91,11 @@
     },
     "deps:check": {
       "cache": false
+    },
+    "test": {
+      "cache": false,
+      "outputs": ["coverage/**"],
+      "inputs": ["$TURBO_DEFAULT$", ".env"]
     }
   }
 }
