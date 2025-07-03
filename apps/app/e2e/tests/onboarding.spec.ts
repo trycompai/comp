@@ -269,7 +269,8 @@ test.describe('Onboarding Flow', () => {
     await secondNextButton.click();
 
     // Next button should be disabled when website is empty
-    await expect(page.locator('button:has-text("Next")')).toBeDisabled();
+    const nextButton = page.locator('button:has-text("Next")');
+    await expect(nextButton).toBeDisabled();
 
     // Fill website with simple text (will become valid with .com added)
     await fillFormField(page, 'input[name="website"]', 'testwebsite');
