@@ -38,7 +38,7 @@ export function AnimatedPricingBanner() {
       <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 backdrop-blur-md" />
 
       {/* Clipped animated background */}
-      <div className="absolute inset-0 overflow-hidden opacity-60">
+      <div className="absolute inset-0 overflow-hidden opacity-70">
         <div className="absolute inset-0 scale-[3] translate-y-1/2">
           <AnimatedGradientBackground scale={2} />
         </div>

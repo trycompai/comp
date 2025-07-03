@@ -96,7 +96,7 @@ const PricingCard = ({
     <Card
       className={`relative transition-all h-full flex flex-col border ${
         isPopular
-          ? 'ring-2 ring-green-500 shadow-lg bg-green-50/30 dark:bg-green-950/20 border-green-500/50 scale-105'
+          ? 'ring-2 ring-emerald-500 shadow-lg bg-emerald-50/30 dark:bg-emerald-950/20 border-emerald-500/50 scale-105'
           : isCurrentPlan
             ? 'opacity-75'
             : 'hover:border-gray-300 dark:hover:border-gray-600 bg-card border-border'
@@ -104,7 +104,7 @@ const PricingCard = ({
     >
       {isPopular && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <Badge className="bg-green-600 text-white dark:bg-green-500 dark:text-white px-3 py-1">
+          <Badge className="bg-emerald-600 text-white dark:bg-emerald-500 dark:text-white px-3 py-1">
             MOST POPULAR
           </Badge>
         </div>
@@ -118,7 +118,7 @@ const PricingCard = ({
                 className={
                   badge === 'Current Plan'
                     ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 text-xs px-1.5 py-0'
-                    : 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 text-xs px-1.5 py-0'
+                    : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 text-xs px-1.5 py-0'
                 }
               >
                 {badge}
@@ -136,12 +136,12 @@ const PricingCard = ({
             or 12 payments of ${monthlyPrice.toLocaleString()}
           </p>
           {subtitle && (
-            <p className="text-sm text-green-600 dark:text-green-400 mt-1">{subtitle}</p>
+            <p className="text-sm text-emerald-600 dark:text-emerald-400 mt-1">{subtitle}</p>
           )}
         </div>
       </CardHeader>
 
-      <div className={`border-t ${isPopular ? 'border-green-500/30' : 'border-border'} mx-6`} />
+      <div className={`border-t ${isPopular ? 'border-emerald-500/30' : 'border-border'} mx-6`} />
 
       <CardContent className="px-6 flex flex-col h-full">
         <ul className="space-y-2 flex-1 py-3">
@@ -161,7 +161,7 @@ const PricingCard = ({
                 }
               >
                 {!isEverythingIn && !isAuditNote && (
-                  <CheckIcon className="h-3.5 w-3.5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+                  <CheckIcon className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 mt-0.5 flex-shrink-0" />
                 )}
                 <span
                   className={`text-sm leading-relaxed ${
@@ -180,11 +180,11 @@ const PricingCard = ({
         </ul>
 
         {/* Money Back Guarantee Section */}
-        <div className="mt-4 p-3 bg-green-50 dark:bg-green-950/20 rounded-md border border-green-200 dark:border-green-800">
+        <div className="mt-4 p-3 bg-emerald-50 dark:bg-emerald-950/20 rounded-md border border-emerald-200 dark:border-emerald-800">
           <div className="flex items-center gap-2">
             <div className="flex-shrink-0">
               <svg
-                className="h-5 w-5 text-green-600 dark:text-green-400"
+                className="h-5 w-5 text-emerald-600 dark:text-emerald-400"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -198,10 +198,10 @@ const PricingCard = ({
               </svg>
             </div>
             <div className="flex-1">
-              <p className="text-sm font-medium text-green-900 dark:text-green-100">
+              <p className="text-sm font-medium text-emerald-900 dark:text-emerald-100">
                 14-Day Money Back Guarantee
               </p>
-              <p className="text-xs text-green-700 dark:text-green-300 mt-0.5">
+              <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-0.5">
                 Try risk-free. Full refund if not satisfied.
               </p>
             </div>
@@ -228,7 +228,7 @@ const PricingCard = ({
               ) : (
                 <>
                   Pay in Full
-                  <span className="ml-1.5 px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 rounded-full">
+                  <span className="ml-1.5 px-2 py-0.5 text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 rounded-full">
                     Save 20%
                   </span>
                   <ArrowRight className={`ml-1.5 ${isPopular ? 'h-5 w-5' : 'h-4 w-4'}`} />
@@ -496,7 +496,7 @@ export function PricingCards({
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between mb-2">
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <Quote className="h-4 w-4 text-green-600 dark:text-green-500" />
+                  <Quote className="h-4 w-4 text-emerald-600 dark:text-emerald-500" />
                   Customer Review
                 </CardTitle>
                 <a

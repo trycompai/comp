@@ -9,7 +9,7 @@
     --card-foreground: 240 10% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
-    --primary: 155 100% 43%;
+    --primary: 168 84% 24%; /* emerald-700 */
     --primary-foreground: 0 0% 100%;
     --secondary: 0 0% 96%;
     --secondary-foreground: 240 5.9% 10%;
@@ -23,7 +23,7 @@
     --warning-foreground: 240 5.9% 10%;
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
-    --ring: 240 5.9% 10%;
+    --ring: 168 84% 24%; /* emerald-700 */
     --radius: 0.5rem;
 
     --chart-positive: 142 76% 45%; /* Green: use for published, or reviewed = the items are in a good state */
@@ -46,8 +46,8 @@
     --card-foreground: 0 0% 98%;
     --popover: 228 10% 10%;
     --popover-foreground: 0 0% 98%;
-    --primary: 155 100% 43%;
-    --primary-foreground: 240 3% 10%;
+    --primary: 160 84% 40%; /* emerald-500 */
+    --primary-foreground: 0 0% 98%;
     --secondary: 225 10% 20%;
     --secondary-foreground: 0 0% 98%;
     --muted: 225 10% 20%;
@@ -60,7 +60,7 @@
     --warning-foreground: 240 5.9% 10%;
     --border: 225 10% 20%;
     --input: 225 10% 20%;
-    --ring: 151 100% 43%;
+    --ring: 158 64% 52%; /* emerald-400 */
 
     --chart-positive: 142 76% 45%; /* Green: use for published, or reviewed = the items are in a good state */
     --chart-neutral: 45 89% 53%; /* Yellow: use for draft(s) and actions that need reviewing soon */

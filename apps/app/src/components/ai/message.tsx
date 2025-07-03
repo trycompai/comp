@@ -71,7 +71,7 @@ export function ReasoningMessagePart({ part, isReasoning }: ReasoningMessagePart
           <div className="ml-4 flex-1 overflow-hidden pl-2 text-xs">
             <div className="font-medium">Reasoning</div>
             <div className="mt-2 animate-spin">
-              <LogoSpinner raceColor="#00DC73" size={16} />
+              <LogoSpinner size={16} />
             </div>
           </div>
         </div>
