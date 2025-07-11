@@ -81,6 +81,7 @@
     "use-debounce": "^10.0.4",
     "use-long-press": "^3.3.0",
     "xml2js": "^0.6.2",
+    "zaraz-ts": "^1.2.0",
     "zustand": "^5.0.3"
   },
   "devDependencies": {
