@@ -272,10 +272,18 @@ export async function updateCompany({
       propertiesToUpdate.numberofemployees = companySize;
     }
 
-    // Only update compliance frameworks if it's empty
+    // Only update compliance frameworks if it's empty or if the length doesn't match
+    const existingFrameworks = existingProperties.compliance_frameworks
+      ? existingProperties.compliance_frameworks
+          .split(',')
+          .map((s: string) => s.trim())
+          .filter(Boolean)
+      : [];
+
     if (
       !existingProperties.compliance_frameworks ||
-      existingProperties.compliance_frameworks.trim() === ''
+      existingProperties.compliance_frameworks.trim() === '' ||
+      existingFrameworks.length !== complianceNeeds.length
     ) {
       propertiesToUpdate.compliance_frameworks = complianceNeeds.join(',');
     }

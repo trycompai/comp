@@ -113,7 +113,6 @@ export const createOrganization = authActionClientWithoutOrg
           // Create or update company
           const hubspotCompanyId = await createOrUpdateCompany({
             companyName: parsedInput.organizationName,
-            // Only pass companySize if we have a valid value
             ...(employeeCount > 0 && { companySize: employeeCount }),
             complianceNeeds: frameworkNames,
             existingCompanyId: companyId || undefined,
