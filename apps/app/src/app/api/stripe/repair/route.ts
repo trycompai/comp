@@ -1,6 +1,7 @@
 import { stripe } from '@/actions/organization/lib/stripe';
 import { db } from '@comp/db';
 import { SubscriptionType } from '@comp/db/types';
+import { NextResponse } from 'next/server';
 import { syncStripeDataToKV } from '../syncStripeDataToKv';
 
 // Type for request body
@@ -35,14 +36,21 @@ function successResponse(message: string, data?: any) {
  */
 export async function POST(req: Request) {
   // Validate authentication
-  const stripeRepairSecret = process.env.STRIPE_REPAIR_SECRET;
-  if (!stripeRepairSecret) {
-    return errorResponse('Server configuration error: Stripe repair secret not configured', 500);
+  const retoolCompApiSecret = process.env.RETOOL_COMP_API_SECRET;
+  if (!retoolCompApiSecret) {
+    return errorResponse('Server configuration error: retool comp api secret not configured', 500);
   }
 
-  const authHeader = req.headers.get('x-stripe-repair-secret');
-  if (authHeader !== stripeRepairSecret) {
-    return errorResponse('Unauthorized', 401);
+  const authHeader = req.headers.get('authorization');
+  const token = authHeader?.split(' ')[1];
+  if (!token || token !== retoolCompApiSecret) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Unauthorized',
+      },
+      { status: 401 },
+    );
   }
 
   // Parse and validate request body
