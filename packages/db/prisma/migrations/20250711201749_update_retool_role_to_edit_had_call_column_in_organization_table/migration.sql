@@ -1,0 +1,1 @@
+GRANT UPDATE ("hadCall") ON "Organization" TO retool_write;
