@@ -1,6 +1,6 @@
 import { env } from '@/env.mjs';
 import { isHubSpotConfigured } from '@/hubspot/api-client';
-import { createContact, findContactByEmail, updateContactDetails } from '@/hubspot/contacts';
+import { createContact, findContactByEmail } from '@/hubspot/contacts';
 import { db } from '@comp/db';
 import { MagicLinkEmail, OTPVerificationEmail } from '@comp/email';
 import { sendInviteMemberEmail } from '@comp/email/lib/invite-member';
@@ -71,13 +71,6 @@ export const auth = betterAuth({
               if (!existingContact.contactId) {
                 // Create new contact
                 await createContact(user.email);
-              } else if (user.name) {
-                // Update existing contact with name if available
-                await updateContactDetails({
-                  contactId: existingContact.contactId,
-                  name: user.name,
-                  // Don't pass phone - we don't have it at signup
-                });
               }
             } catch (error) {
               console.error('[HubSpot] Error creating contact on signup:', error);
