@@ -106,7 +106,7 @@ export async function POST(req: Request) {
   });
 
   // Sync updated data to KV store
-  await syncStripeDataToKV(updatedOrganization.id);
+  await syncStripeDataToKV(customer.id);
 
   return successResponse('Stripe data successfully repaired', {
     organizationId: updatedOrganization.id,
