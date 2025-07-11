@@ -157,6 +157,7 @@ export async function handleStripeEventNotification(
               fields: [
                 { label: customerDetails.organizationName, value: clickableEmail },
                 { label: amount, value: interval },
+                { label: 'Subscription ID', value: subscription.id },
               ],
             }
           : {
@@ -165,6 +166,7 @@ export async function handleStripeEventNotification(
               fields: [
                 { label: customerDetails.organizationName, value: clickableEmail },
                 { label: amount, value: interval },
+                { label: 'Subscription ID', value: subscription.id },
               ],
             };
 
@@ -189,6 +191,7 @@ export async function handleStripeEventNotification(
           fields: [
             { label: customerDetails.organizationName, value: clickableEmail },
             { label: amount, value: billingInterval },
+            { label: 'Subscription ID', value: subscription.id },
           ],
         };
 
@@ -213,6 +216,7 @@ export async function handleStripeEventNotification(
           fields: [
             { label: customerDetails.organizationName, value: clickableEmail },
             { label: `${amount} ${interval}`, value: `Ends ${cancelDate}` },
+            { label: 'Subscription ID', value: subscription.id },
           ],
         };
 
@@ -231,6 +235,7 @@ export async function handleStripeEventNotification(
         fields: [
           { label: customerDetails.organizationName, value: clickableEmail },
           { label: 'Reason', value: reason },
+          { label: 'Subscription ID', value: subscription.id },
         ],
       };
 
