@@ -44,7 +44,7 @@ export default async function OnboardingRouteLayout({
   return (
     <OnboardingLayout variant="onboarding" currentOrganization={organization}>
       {children}
-      <CheckoutCompleteDialog />
+      <CheckoutCompleteDialog orgId={organization.id} />
     </OnboardingLayout>
   );
 }

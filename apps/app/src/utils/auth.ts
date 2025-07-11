@@ -1,4 +1,6 @@
 import { env } from '@/env.mjs';
+import { isHubSpotConfigured } from '@/hubspot/api-client';
+import { createContact, findContactByEmail } from '@/hubspot/contacts';
 import { db } from '@comp/db';
 import { MagicLinkEmail, OTPVerificationEmail } from '@comp/email';
 import { sendInviteMemberEmail } from '@comp/email/lib/invite-member';
@@ -55,6 +57,29 @@ export const auth = betterAuth({
     },
   },
   databaseHooks: {
+    user: {
+      create: {
+        after: async (user) => {
+          // Create HubSpot contact when new user signs up
+          if (isHubSpotConfigured()) {
+            try {
+              console.log('[HubSpot] Creating contact for new user:', user.email);
+
+              // Check if contact already exists
+              const existingContact = await findContactByEmail(user.email);
+
+              if (!existingContact.contactId) {
+                // Create new contact
+                await createContact(user.email);
+              }
+            } catch (error) {
+              console.error('[HubSpot] Error creating contact on signup:', error);
+              // Don't throw - we don't want to block signup if HubSpot fails
+            }
+          }
+        },
+      },
+    },
     session: {
       create: {
         before: async (session) => {

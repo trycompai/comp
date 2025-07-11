@@ -42,6 +42,7 @@ export const env = createEnv({
     GA4_MEASUREMENT_ID: z.string().optional(),
     LINKEDIN_CONVERSIONS_ACCESS_TOKEN: z.string().optional(),
     SLACK_SALES_WEBHOOK: z.string().optional(),
+    HUBSPOT_ACCESS_TOKEN: z.string().optional(),
   },
 
   client: {
@@ -115,6 +116,7 @@ export const env = createEnv({
     LINKEDIN_CONVERSIONS_ACCESS_TOKEN: process.env.LINKEDIN_CONVERSIONS_ACCESS_TOKEN,
     NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL: process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL,
     SLACK_SALES_WEBHOOK: process.env.SLACK_SALES_WEBHOOK,
+    HUBSPOT_ACCESS_TOKEN: process.env.HUBSPOT_ACCESS_TOKEN,
   },
 
   skipValidation: !!process.env.CI || !!process.env.SKIP_ENV_VALIDATION,
