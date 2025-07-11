@@ -1,0 +1,26 @@
+model PaymentLink {
+    id String @id @default(dbgenerated("generate_prefixed_cuid('pyl'::text)"))
+
+    // Organization (optional - can be linked after checkout)
+    organizationId String?
+    organization   Organization? @relation(fields: [organizationId], references: [id])
+
+    // Customer info
+    customerEmail String
+
+    // Link management
+    status    PaymentLinkStatus @default(PENDING)
+    expiresAt DateTime
+
+    // Timestamp
+    createdAt DateTime @default(now())
+
+    @@index([status])
+    @@index([expiresAt])
+}
+
+enum PaymentLinkStatus {
+    PENDING // Link created, not used yet
+    COMPLETED // Payment successful
+    EXPIRED // Link expired
+}

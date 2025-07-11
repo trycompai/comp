@@ -34,6 +34,7 @@ model Organization {
   attachments        Attachment[]
   trust              Trust[]
   context            Context[]
+  paymentLinks       PaymentLink[]
 
   @@index([slug])
   @@index([subscriptionType])
