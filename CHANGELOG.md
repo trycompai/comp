@@ -1,3 +1,53 @@
+# [1.49.0](https://github.com/trycompai/comp/compare/v1.48.1...v1.49.0) (2025-07-03)
+
+
+### Bug Fixes
+
+* **onboarding:** update step index and progress calculation in PostPaymentOnboarding component ([a7b3a13](https://github.com/trycompai/comp/commit/a7b3a1378ab45c361769a7c1dfdb3a2edc9180fc))
+
+
+### Features
+
+* **e2e:** add tests for middleware onboarding behavior and split onboarding flow ([cb31f22](https://github.com/trycompai/comp/commit/cb31f2234ea84701b6f4a670d735ecc6a0bddc03))
+
+## [1.48.1](https://github.com/trycompai/comp/compare/v1.48.0...v1.48.1) (2025-06-30)
+
+
+### Bug Fixes
+
+* fixed an issue with uploading files to comments in a policy ([8a3903c](https://github.com/trycompai/comp/commit/8a3903c291770e4da8aa5b55ff0b973330781430))
+
+# [1.48.0](https://github.com/trycompai/comp/compare/v1.47.0...v1.48.0) (2025-06-27)
+
+
+### Bug Fixes
+
+* **middleware:** refine onboarding redirect logic to check for explicit false value ([93dfa37](https://github.com/trycompai/comp/commit/93dfa379be2cce444acdd8db85e2decd28da958b))
+* **onboarding:** enhance textarea handling and improve localStorage integration ([64821a3](https://github.com/trycompai/comp/commit/64821a3b4484b613177c7887b0824277270192aa))
+
+
+### Features
+
+* **onboarding:** enhance post-payment onboarding flow with loading state and step tracking ([6b5f055](https://github.com/trycompai/comp/commit/6b5f055188d729240015e0c7e3e6a40404ec5c8a))
+* **onboarding:** implement split onboarding flow and middleware checks ([7346380](https://github.com/trycompai/comp/commit/73463801f7eff32dcf34cf475ac675ea173aedbf))
+
+# [1.47.0](https://github.com/trycompai/comp/compare/v1.46.0...v1.47.0) (2025-06-27)
+
+
+### Features
+
+* **slack-notifications:** add Slack integration for Stripe webhook events ([76511b7](https://github.com/trycompai/comp/commit/76511b720ebdabc1c0d5b0a40b09ec036e2c2560))
+* **tracking:** implement unified tracking for onboarding and purchase events ([29bec28](https://github.com/trycompai/comp/commit/29bec2819f7ea7d5ffb24be5476207ab944ddfc6))
+
+# [1.46.0](https://github.com/trycompai/comp/compare/v1.45.1...v1.46.0) (2025-06-26)
+
+
+### Features
+
+* add testimonial section and update pricing card layout ([63f3898](https://github.com/trycompai/comp/commit/63f38982bf0b3a2a6e3b3864652b334a1c539c84))
+* add trial badge to pricing card component ([0e4d92b](https://github.com/trycompai/comp/commit/0e4d92bd7a8cf251b64968e89ffd35425f3725fd))
+* update pricing card component with review link ([2164e5f](https://github.com/trycompai/comp/commit/2164e5f3e432327d41f77d9d80b7d7604969cdd3))
+
 ## [1.45.1](https://github.com/trycompai/comp/compare/v1.45.0...v1.45.1) (2025-06-26)
 
 
