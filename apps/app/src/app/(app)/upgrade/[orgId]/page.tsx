@@ -83,6 +83,7 @@ export default async function UpgradePage({ params }: PageProps) {
             company={member.organization.name}
             orgId={orgId}
             complianceFrameworks={complianceFrameworks}
+            planType={member.organization.subscriptionType}
           />
         </div>
       </>

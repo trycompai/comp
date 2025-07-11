@@ -1,4 +1,5 @@
 import { STRIPE_SUB_CACHE } from '@/app/api/stripe/stripeDataToKv.type';
+import { SubscriptionType } from '@comp/db/types';
 
 export interface PricingCardsProps {
   organizationId: string;
@@ -21,7 +22,7 @@ export interface PriceDetail {
 }
 
 export interface PricingCardProps {
-  planType: 'starter' | 'managed';
+  planType: SubscriptionType;
   onCheckoutUpfront: () => void;
   onCheckoutMonthly: () => void;
   title: string;
@@ -37,6 +38,4 @@ export interface PricingCardProps {
   isLoadingSubscription?: boolean;
 }
 
-export type SubscriptionType = 'NONE' | 'FREE' | 'STARTER' | 'MANAGED';
 export type PaymentType = 'upfront' | 'monthly';
-export type PlanType = 'starter' | 'managed';

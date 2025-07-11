@@ -27,7 +27,7 @@ export const PricingCard = ({
   isCurrentPlan,
   isLoadingSubscription,
 }: PricingCardProps) => {
-  const isPopular = planType === 'managed';
+  const isPopular = planType === 'MANAGED';
 
   return (
     <Card
