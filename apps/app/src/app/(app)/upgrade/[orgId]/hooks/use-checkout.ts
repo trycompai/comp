@@ -1,11 +1,12 @@
 import { generateCheckoutSessionAction } from '@/app/api/stripe/generate-checkout-session/generate-checkout-session';
 import { trackEvent, trackPurchaseEvent } from '@/utils/tracking';
+import { SubscriptionType } from '@comp/db/types';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { PLAN_TYPES } from '../constants/pricing';
-import { PaymentType, PlanType } from '../types/pricing';
+import { PaymentType } from '../types/pricing';
 
 interface UseCheckoutProps {
   organizationId: string;
@@ -46,9 +47,9 @@ export function useCheckout({
     },
   });
 
-  const handleSubscribe = (plan: PlanType, paymentType: PaymentType) => {
+  const handleSubscribe = (plan: SubscriptionType, paymentType: PaymentType) => {
     // Don't allow subscribing to starter if already on starter
-    if (plan === 'starter' && hasStarterSubscription) {
+    if (plan === 'STARTER' && hasStarterSubscription) {
       return;
     }
 
@@ -59,7 +60,7 @@ export function useCheckout({
     let priceId: string | undefined;
     let planType: string;
 
-    if (plan === 'starter') {
+    if (plan === 'STARTER') {
       priceId = isYearly
         ? priceDetails.starterYearlyPrice?.id
         : priceDetails.starterMonthlyPrice?.id;
@@ -79,7 +80,7 @@ export function useCheckout({
 
     // Track checkout started event
     const value =
-      plan === 'starter'
+      plan === 'STARTER'
         ? isYearly
           ? prices.starterYearlyPriceTotal
           : prices.starterMonthlyPrice
