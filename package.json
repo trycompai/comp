@@ -1,6 +1,6 @@
 {
   "name": "comp",
-  "version": "1.49.0",
+  "version": "1.50.0",
   "devDependencies": {
     "@azure/core-http": "^3.0.5",
     "@azure/core-rest-pipeline": "^1.21.0",

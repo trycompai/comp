@@ -1,3 +1,17 @@
+# [1.50.0](https://github.com/trycompai/comp/compare/v1.49.0...v1.50.0) (2025-07-11)
+
+
+### Bug Fixes
+
+* standardize plan type casing in PricingCard component ([6a2b48f](https://github.com/trycompai/comp/commit/6a2b48f275a03203394d3cc68e7f206876f8c0b8))
+* update subscription handling in checkout hook ([3175ddd](https://github.com/trycompai/comp/commit/3175ddd52fb43f2dfec9f073da43ad86cdf212fe))
+
+
+### Features
+
+* enhance upgrade flow with subscription type handling ([5650623](https://github.com/trycompai/comp/commit/56506235a37d9b795207f001766e14a859d390db))
+* integrate HubSpot API for user and company management ([0ab2560](https://github.com/trycompai/comp/commit/0ab2560c124e2b77c5b1bcc2d4969f7bce7079b8))
+
 # [1.49.0](https://github.com/trycompai/comp/compare/v1.48.1...v1.49.0) (2025-07-03)
 
 
