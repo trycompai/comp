@@ -112,7 +112,7 @@ export default async function Layout({
         </div>
         <AssistantSheet />
         <Suspense fallback={null}>
-          <CheckoutCompleteDialog />
+          <CheckoutCompleteDialog orgId={organization.id} />
         </Suspense>
       </AnimatedLayout>
       <HotKeys />

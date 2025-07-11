@@ -26,7 +26,9 @@ import {
   Zap,
 } from 'lucide-react';
 import { useQueryState } from 'nuqs';
+import { usePostHog } from 'posthog-js/react';
 import { useEffect, useState } from 'react';
+import { zaraz } from 'zaraz-ts';
 
 type PlanType = 'starter' | 'done-for-you';
 
@@ -50,13 +52,14 @@ interface PlanContent {
   footerText: string;
 }
 
-export function CheckoutCompleteDialog() {
+export function CheckoutCompleteDialog({ orgId }: { orgId: string }) {
   const [checkoutComplete, setCheckoutComplete] = useQueryState('checkoutComplete', {
     defaultValue: '',
     clearOnDefault: true,
   });
   const [open, setOpen] = useState(false);
   const [planType, setPlanType] = useState<PlanType | null>(null);
+  const posthog = usePostHog();
 
   useEffect(() => {
     if (checkoutComplete === 'starter' || checkoutComplete === 'done-for-you') {
@@ -64,6 +67,11 @@ export function CheckoutCompleteDialog() {
 
       // Store the plan type before clearing the query param
       setPlanType(detectedPlanType);
+
+      // Track the checkout completion event
+      zaraz.track('checkout_completed', { plan_type: detectedPlanType });
+
+      posthog?.capture('checkout_completed', { plan_type: detectedPlanType, orgId });
 
       // Show the dialog
       setOpen(true);

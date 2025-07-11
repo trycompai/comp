@@ -13,6 +13,7 @@ model Organization {
   onboardingCompleted    Boolean          @default(false)
   subscriptionType       SubscriptionType @default(NONE)
   stripeSubscriptionData Json?
+  hadCall                Boolean          @default(false)
 
   // FleetDM
   fleetDmLabelId        Int?
