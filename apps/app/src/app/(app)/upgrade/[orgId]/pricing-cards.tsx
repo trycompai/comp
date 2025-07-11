@@ -49,9 +49,9 @@ export function PricingCards({
       <div className="flex justify-center w-full">
         <div className="max-w-md w-full">
           <PricingCard
-            planType="managed"
-            onCheckoutUpfront={() => handleSubscribe('managed', 'upfront')}
-            onCheckoutMonthly={() => handleSubscribe('managed', 'monthly')}
+            planType="MANAGED"
+            onCheckoutUpfront={() => handleSubscribe('MANAGED', 'upfront')}
+            onCheckoutMonthly={() => handleSubscribe('MANAGED', 'monthly')}
             title="Done For You"
             description="For companies up to 25 people."
             annualPrice={prices.managedYearlyPriceTotal}
