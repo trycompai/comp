@@ -1,6 +1,6 @@
 import { STRIPE_SUB_CACHE } from '@/app/api/stripe/stripeDataToKv.type';
+import { SubscriptionType } from '@comp/db/types';
 import { PRICING_DEFAULTS } from '../constants/pricing';
-import { SubscriptionType } from '../types/pricing';
 
 export function calculatePriceFromStripe(
   stripePrice: { unitAmount: number | null } | null,
