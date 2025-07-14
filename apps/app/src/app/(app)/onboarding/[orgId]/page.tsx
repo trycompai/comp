@@ -51,7 +51,7 @@ export default async function OnboardingPage({ params }: OnboardingPageProps) {
   }
 
   // Check if they have a subscription
-  if (organization.subscriptionType === 'NONE') {
+  if (!organization.hasAccess) {
     redirect(`/upgrade/${orgId}`);
   }
 
