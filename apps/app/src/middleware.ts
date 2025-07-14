@@ -1,4 +1,3 @@
-import { getSubscriptionData } from '@/app/api/stripe/getSubscriptionData';
 import { auth } from '@/utils/auth';
 import { db } from '@comp/db';
 import { headers } from 'next/headers';
@@ -12,18 +11,11 @@ export const config = {
   ],
 };
 
-// Routes that don't require subscription
-const SUBSCRIPTION_EXEMPT_ROUTES = [
-  '/auth',
-  '/invite',
-  '/setup',
-  '/upgrade',
-  '/settings/billing',
-  '/onboarding',
-];
+// Unprotected routes
+const UNPROTECTED_ROUTES = ['/auth', '/invite', '/setup', '/upgrade'];
 
-function isSubscriptionExempt(pathname: string): boolean {
-  return SUBSCRIPTION_EXEMPT_ROUTES.some((route) => pathname.includes(route));
+function isUnprotectedRoute(pathname: string): boolean {
+  return UNPROTECTED_ROUTES.some((route) => pathname.includes(route));
 }
 
 export async function middleware(request: NextRequest) {
@@ -107,25 +99,20 @@ export async function middleware(request: NextRequest) {
       }
     }
 
-    // Check subscription status for organization routes
     const orgMatch = nextUrl.pathname.match(/^\/org_[a-zA-Z0-9]+/);
-    if (orgMatch && !isSubscriptionExempt(nextUrl.pathname)) {
-      const orgId = orgMatch[0].substring(1); // Remove leading slash
-      console.log(
-        `[MIDDLEWARE] Checking subscription for path: ${nextUrl.pathname}, orgId: ${orgId}`,
-      );
+    if (orgMatch && !isUnprotectedRoute(nextUrl.pathname)) {
+      const orgId = orgMatch[0].substring(1);
 
-      // Check subscription status (handles both Stripe and self-serve)
-      const subscription = await getSubscriptionData(orgId);
+      const foundOrg = await db.organization.findFirst({
+        where: { id: orgId },
+        select: { hasAccess: true },
+      });
 
-      // Allow access for valid statuses
-      const validStatuses = ['active', 'trialing', 'self-serve', 'past_due', 'paused'];
+      const hasAccess = foundOrg?.hasAccess;
 
-      // Redirect to upgrade page only if they have no valid subscription
-      if (!subscription || !validStatuses.includes(subscription.status)) {
-        console.log(
-          `[MIDDLEWARE] Redirecting org ${orgId} to upgrade. Status: ${subscription?.status}`,
-        );
+      console.log(`[MIDDLEWARE] Checking access for org ${orgId}: ${hasAccess}`);
+
+      if (!hasAccess) {
         const url = new URL(`/upgrade/${orgId}`, request.url);
         // Preserve existing search params
         nextUrl.searchParams.forEach((value, key) => {
@@ -134,7 +121,7 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(url);
       }
 
-      // NEW: Check onboarding status for paid users
+      // Check onboarding status for paid users
       const org = await db.organization.findUnique({
         where: { id: orgId },
         select: { onboardingCompleted: true },

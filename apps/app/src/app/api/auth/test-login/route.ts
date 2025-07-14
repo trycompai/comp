@@ -43,7 +43,7 @@ async function handleLogin(request: NextRequest) {
   const body = await request.json();
   console.log('[TEST-LOGIN] Request body:', body);
 
-  const { email, name } = body;
+  const { email, name, hasAccess } = body;
   const testPassword = 'Test123456!'; // Use a stronger test password
 
   console.log('[TEST-LOGIN] Checking for existing user:', email);
@@ -92,7 +92,7 @@ async function handleLogin(request: NextRequest) {
       await db.organization.create({
         data: {
           name: `Test Org ${Date.now()}`,
-          subscriptionType: 'NONE', // New users haven't chosen a subscription yet
+          hasAccess: hasAccess || false, // Allow setting hasAccess for tests
           members: {
             create: {
               userId: user.id,
@@ -140,7 +140,7 @@ async function handleLogin(request: NextRequest) {
       data: {
         id: `org_${Date.now()}`,
         name: `Test Org ${Date.now()}`,
-        subscriptionType: 'NONE', // New users haven't chosen a subscription yet
+        hasAccess: hasAccess || false, // Allow setting hasAccess for tests
         members: {
           create: {
             id: `mem_${Date.now()}`,

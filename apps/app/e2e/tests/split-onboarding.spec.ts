@@ -1,16 +1,26 @@
 import { expect, test } from '@playwright/test';
-import { authenticateTestUser, clearAuth } from '../utils/auth-helpers';
+import { authenticateTestUser, clearAuth, grantAccess } from '../utils/auth-helpers';
 import { generateTestData } from '../utils/helpers';
 
 test.describe('Split Onboarding Flow', () => {
+  // New flow based on org.hasAccess column:
+  //
+  // 1. hasAccess = false: 3 setup steps → book a call → (after approval) 9 onboarding steps → product access
+  // 2. hasAccess = true, incomplete onboarding: 3 setup steps → 9 onboarding steps → product access
+  // 3. hasAccess = true, completed onboarding: redirect to app (skip setup/onboarding)
+  //
+  // Users with incomplete onboarding (even if hasAccess=true) are redirected from product pages to onboarding
+
   test.beforeEach(async ({ page }) => {
     // Clear any existing auth state
     await clearAuth(page);
   });
 
-  test('new user completes split onboarding: 3 steps → payment → 9 steps → product access', async ({
+  test('new user without access: 3 steps → book call (blocked from onboarding/product)', async ({
     page,
   }) => {
+    // Tests the flow for a new user who doesn't have access (hasAccess = false)
+    // They complete setup, see the book a call page, and are blocked from accessing onboarding/product
     const testData = generateTestData();
     const website = `example${Date.now()}.com`;
 
@@ -19,6 +29,7 @@ test.describe('Split Onboarding Flow', () => {
       email: testData.email,
       name: testData.userName,
       skipOrg: true, // Don't create org, user will go through setup
+      hasAccess: false, // This user doesn't have access initially
     });
 
     // Navigate to setup
@@ -55,22 +66,201 @@ test.describe('Split Onboarding Flow', () => {
     // Should redirect to upgrade page
     await expect(page).toHaveURL(/\/upgrade\/org_/);
 
-    // Mock successful payment by navigating to Stripe success URL
+    // Extract orgId from URL
     const orgIdMatch = page.url().match(/org_[a-zA-Z0-9]+/);
     expect(orgIdMatch).toBeTruthy();
     const orgId = orgIdMatch![0];
 
-    // Simulate Stripe success redirect
-    await page.goto(`/api/stripe/success?organizationId=${orgId}&planType=starter`);
+    // If they haven't booked a call (hasAccess is false), they see a book a call page.
+    await expect(page.getByText(`Let's get ${testData.organizationName} approved`)).toBeVisible();
+    await expect(
+      page.getByText(
+        'A quick 20-minute call with our team to understand your compliance needs and approve your organization for access.',
+      ),
+    ).toBeVisible();
 
-    // Should redirect to onboarding
+    // For this test, we'll stop here since the user doesn't have access
+    // In a real scenario, they would book a call and get approved
+    // but for testing purposes, we'll just verify they see the book a call page
+
+    // Try to access onboarding directly - should be redirected back to upgrade
+    await page.goto(`/onboarding/${orgId}`);
+    await expect(page).toHaveURL(`/upgrade/${orgId}`);
+
+    // Try to access product pages - should be redirected back to upgrade
+    await page.goto(`/${orgId}/frameworks`);
+    await expect(page).toHaveURL(`/upgrade/${orgId}`);
+
+    await page.goto(`/${orgId}/policies`);
+    await expect(page).toHaveURL(`/upgrade/${orgId}`);
+  });
+
+  test('user with access but incomplete onboarding: 3 steps → directly to onboarding', async ({
+    page,
+  }) => {
+    // Tests user who has access (hasAccess = true) but hasn't completed onboarding
+    // They skip the book a call step and go directly to onboarding
+    const testData = generateTestData();
+    const website = `example${Date.now()}.com`;
+
+    // Authenticate user first
+    await authenticateTestUser(page, {
+      email: testData.email,
+      name: testData.userName,
+      skipOrg: true,
+      hasAccess: true, // This user has access
+    });
+
+    // Navigate to setup
+    await page.goto('/setup');
+    await page.waitForURL(/\/setup\/[a-zA-Z0-9]+/, { timeout: 10000 });
+
+    // Complete the 3 initial steps
+    // Step 1: Select framework
+    await expect(page.locator('text=/compliance frameworks/i').first()).toBeVisible({
+      timeout: 10000,
+    });
+    const checkedFrameworks = await page.locator('input[type="checkbox"]:checked').count();
+    if (checkedFrameworks === 0) {
+      await page.locator('label:has-text("SOC 2")').click();
+    }
+    await page.getByRole('button', { name: 'Next' }).click();
+
+    // Step 2: Organization name
+    await page.waitForSelector('input[name="organizationName"]', { timeout: 10000 });
+    await page.locator('input[name="organizationName"]').fill(testData.organizationName);
+    await page.getByRole('button', { name: 'Next' }).click();
+
+    // Step 3: Website
+    await page.waitForSelector('input[name="website"]', { timeout: 10000 });
+    await page.locator('input[name="website"]').fill(website);
+    await page.getByRole('button', { name: 'Next' }).click();
+
+    // Extract orgId from URL
+    const orgIdMatch = page.url().match(/org_[a-zA-Z0-9]+/);
+    expect(orgIdMatch).toBeTruthy();
+    const orgId = orgIdMatch![0];
+
+    // Since the user has access (hasAccess = true), they should be redirected directly to onboarding
+    // This bypasses the book a call step
+    await page.goto(`/onboarding/${orgId}`);
     await expect(page).toHaveURL(`/onboarding/${orgId}`);
 
-    // Should see step 4 (describe)
+    // Should see step 4 (describe) - no book a call step
     await expect(page.getByText('Step 4 of 12')).toBeVisible();
     await expect(page.getByText('Tell us a bit about your business')).toBeVisible();
+  });
 
-    // Complete remaining steps quickly
+  test('user with access but incomplete onboarding: redirected from product to onboarding', async ({
+    page,
+    context,
+  }) => {
+    // Tests user who has access (hasAccess = true) but hasn't completed onboarding
+    // When they try to access product pages, they should be redirected to onboarding
+    const testData = generateTestData();
+    const website = `example${Date.now()}.com`;
+
+    // Authenticate user first
+    await authenticateTestUser(page, {
+      email: testData.email,
+      name: testData.userName,
+      skipOrg: true,
+      hasAccess: true, // This user has access
+    });
+
+    // First create org through minimal flow
+    await page.goto('/setup');
+    await page.waitForURL(/\/setup\/[a-zA-Z0-9]+/, { timeout: 10000 });
+
+    // Select framework
+    const checkedFrameworks = await page.locator('input[type="checkbox"]:checked').count();
+    if (checkedFrameworks === 0) {
+      await page.locator('label:has-text("SOC 2")').click();
+    }
+    await page.getByRole('button', { name: 'Next' }).click();
+
+    // Fill organization name
+    await page.waitForSelector('input[name="organizationName"]', { timeout: 10000 });
+    await page.locator('input[name="organizationName"]').fill(testData.organizationName);
+    await page.getByRole('button', { name: 'Next' }).click();
+
+    // Fill website
+    await page.waitForSelector('input[name="website"]', { timeout: 10000 });
+    await page.locator('input[name="website"]').fill(website);
+    await page.getByRole('button', { name: 'Next' }).click();
+
+    const orgIdMatch = page.url().match(/org_[a-zA-Z0-9]+/);
+    expect(orgIdMatch).toBeTruthy();
+    const orgId = orgIdMatch![0];
+
+    // Since the user has access (hasAccess = true), they can access onboarding
+    await page.goto(`/onboarding/${orgId}`);
+    await expect(page).toHaveURL(`/onboarding/${orgId}`);
+
+    // Try to access product without completing onboarding
+    await page.goto(`/${orgId}/frameworks`);
+
+    // Should be redirected back to onboarding
+    await expect(page).toHaveURL(`/onboarding/${orgId}`);
+
+    // Try different product routes
+    await page.goto(`/${orgId}/policies`);
+    await expect(page).toHaveURL(`/onboarding/${orgId}`);
+
+    await page.goto(`/${orgId}/vendors`);
+    await expect(page).toHaveURL(`/onboarding/${orgId}`);
+  });
+
+  test('user with access and completed onboarding: redirected from setup/onboarding to app', async ({
+    page,
+  }) => {
+    // Tests user who has access (hasAccess = true) and completed onboarding
+    // They should be redirected from setup/upgrade/onboarding pages directly to the app
+    const testData = generateTestData();
+    const website = `example${Date.now()}.com`;
+
+    // Authenticate user first
+    await authenticateTestUser(page, {
+      email: testData.email,
+      name: testData.userName,
+      skipOrg: true,
+      hasAccess: true, // This user has access
+    });
+
+    // First create org through setup flow
+    await page.goto('/setup');
+    await page.waitForURL(/\/setup\/[a-zA-Z0-9]+/, { timeout: 10000 });
+
+    // Complete the 3 initial steps
+    // Step 1: Select framework
+    await expect(page.locator('text=/compliance frameworks/i').first()).toBeVisible({
+      timeout: 10000,
+    });
+    const checkedFrameworks = await page.locator('input[type="checkbox"]:checked').count();
+    if (checkedFrameworks === 0) {
+      await page.locator('label:has-text("SOC 2")').click();
+    }
+    await page.getByRole('button', { name: 'Next' }).click();
+
+    // Step 2: Organization name
+    await page.waitForSelector('input[name="organizationName"]', { timeout: 10000 });
+    await page.locator('input[name="organizationName"]').fill(testData.organizationName);
+    await page.getByRole('button', { name: 'Next' }).click();
+
+    // Step 3: Website
+    await page.waitForSelector('input[name="website"]', { timeout: 10000 });
+    await page.locator('input[name="website"]').fill(website);
+    await page.getByRole('button', { name: 'Next' }).click();
+
+    // Extract orgId from URL
+    const orgIdMatch = page.url().match(/org_[a-zA-Z0-9]+/);
+    expect(orgIdMatch).toBeTruthy();
+    const orgId = orgIdMatch![0];
+
+    // Since the user has access (hasAccess = true), they can access onboarding
+    await page.goto(`/onboarding/${orgId}`);
+
+    // Complete all onboarding steps quickly to simulate a completed state
     const remainingSteps = [
       { field: 'textarea', value: 'We are a test company' },
       { field: 'select', text: 'Technology' },
@@ -105,66 +295,106 @@ test.describe('Split Onboarding Flow', () => {
     // Should redirect to product
     await expect(page).toHaveURL(`/${orgId}/frameworks`);
 
-    // Verify can access product pages
+    // Now test that user with completed onboarding goes directly to app
+    // When they try to access /setup, /upgrade, or /onboarding, they should be redirected
+    await page.goto('/setup');
+    await expect(page).toHaveURL(`/${orgId}/frameworks`);
+
+    await page.goto(`/upgrade/${orgId}`);
+    await expect(page).toHaveURL(`/${orgId}/frameworks`);
+
+    await page.goto(`/onboarding/${orgId}`);
+    await expect(page).toHaveURL(`/${orgId}/frameworks`);
+
+    // Should have access to all product pages
     await page.goto(`/${orgId}/policies`);
     await expect(page).toHaveURL(`/${orgId}/policies`);
+
+    await page.goto(`/${orgId}/vendors`);
+    await expect(page).toHaveURL(`/${orgId}/vendors`);
   });
 
-  test('paid user without completed onboarding is redirected to /onboarding', async ({
-    page,
-    context,
-  }) => {
-    // Create a user with subscription but incomplete onboarding
+  test('user blocked by hasAccess → grant access → refresh shows onboarding', async ({ page }) => {
+    // Tests the flow where user is initially blocked, then access is granted, then they can access onboarding
     const testData = generateTestData();
     const website = `example${Date.now()}.com`;
 
-    // Authenticate user first
+    // Authenticate user first (without access)
     await authenticateTestUser(page, {
       email: testData.email,
       name: testData.userName,
       skipOrg: true,
+      hasAccess: false, // This user doesn't have access initially
     });
 
-    // First create org through minimal flow
+    // Navigate to setup
     await page.goto('/setup');
     await page.waitForURL(/\/setup\/[a-zA-Z0-9]+/, { timeout: 10000 });
 
-    // Select framework
+    // Complete the 3 initial steps
+    // Step 1: Select framework
+    await expect(page.locator('text=/compliance frameworks/i').first()).toBeVisible({
+      timeout: 10000,
+    });
     const checkedFrameworks = await page.locator('input[type="checkbox"]:checked').count();
     if (checkedFrameworks === 0) {
       await page.locator('label:has-text("SOC 2")').click();
     }
     await page.getByRole('button', { name: 'Next' }).click();
 
-    // Fill organization name
+    // Step 2: Organization name
     await page.waitForSelector('input[name="organizationName"]', { timeout: 10000 });
     await page.locator('input[name="organizationName"]').fill(testData.organizationName);
     await page.getByRole('button', { name: 'Next' }).click();
 
-    // Fill website
+    // Step 3: Website
     await page.waitForSelector('input[name="website"]', { timeout: 10000 });
     await page.locator('input[name="website"]').fill(website);
     await page.getByRole('button', { name: 'Next' }).click();
 
+    // Should redirect to upgrade page
+    await expect(page).toHaveURL(/\/upgrade\/org_/);
+
+    // Extract orgId from URL
     const orgIdMatch = page.url().match(/org_[a-zA-Z0-9]+/);
     expect(orgIdMatch).toBeTruthy();
     const orgId = orgIdMatch![0];
 
-    // Simulate payment completion
-    await page.goto(`/api/stripe/success?organizationId=${orgId}&planType=starter`);
-    await expect(page).toHaveURL(`/onboarding/${orgId}`);
+    // Verify they see the book a call page (blocked by hasAccess = false)
+    await expect(page.getByText(`Let's get ${testData.organizationName} approved`)).toBeVisible();
+    await expect(
+      page.getByText(
+        'A quick 20-minute call with our team to understand your compliance needs and approve your organization for access.',
+      ),
+    ).toBeVisible();
 
-    // Try to access product without completing onboarding
+    // Verify they can't access onboarding or product pages
+    await page.goto(`/onboarding/${orgId}`);
+    await expect(page).toHaveURL(`/upgrade/${orgId}`);
+
     await page.goto(`/${orgId}/frameworks`);
+    await expect(page).toHaveURL(`/upgrade/${orgId}`);
 
-    // Should be redirected back to onboarding
+    // Now simulate access being granted (like after a successful call)
+    await grantAccess(page, orgId, true);
+
+    // Refresh the page - they should now be able to access onboarding
+    await page.reload();
+
+    // They should now be redirected to onboarding
     await expect(page).toHaveURL(`/onboarding/${orgId}`);
 
-    // Try different product routes
-    await page.goto(`/${orgId}/policies`);
+    // Verify they can see the onboarding content
+    await expect(page.getByText('Step 4 of 12')).toBeVisible();
+    await expect(page.getByText('Tell us a bit about your business')).toBeVisible();
+
+    // Verify they can now access onboarding directly
+    await page.goto(`/onboarding/${orgId}`);
     await expect(page).toHaveURL(`/onboarding/${orgId}`);
 
-    await page.goto(`/${orgId}/vendors`);
+    // But if they try to access product pages, they should be redirected to onboarding
+    // (since they have access but haven't completed onboarding)
+    await page.goto(`/${orgId}/frameworks`);
     await expect(page).toHaveURL(`/onboarding/${orgId}`);
   });
 
@@ -179,6 +409,7 @@ test.describe('Split Onboarding Flow', () => {
       email: firstOrg.email,
       name: firstOrg.userName,
       skipOrg: true,
+      hasAccess: true, // This user has access
     });
 
     await page.goto('/setup');

@@ -1,6 +1,5 @@
 'use server';
 
-import { createStripeCustomer } from '@/actions/organization/lib/create-stripe-customer';
 import { getFrameworkNames } from '@/actions/organization/lib/get-framework-names';
 import { initializeOrganization } from '@/actions/organization/lib/initialize-organization';
 import { authActionClientWithoutOrg } from '@/actions/safe-action';
@@ -144,20 +143,6 @@ export const createOrganization = authActionClientWithoutOrg
           triggerJobCompleted: false,
         },
       });
-
-      // Create Stripe customer for new org
-      const stripeCustomerId = await createStripeCustomer({
-        name: parsedInput.organizationName,
-        email: session.user.email,
-        organizationId: orgId,
-      });
-
-      if (stripeCustomerId) {
-        await db.organization.update({
-          where: { id: orgId },
-          data: { stripeCustomerId },
-        });
-      }
 
       // Initialize frameworks using the existing function
       if (parsedInput.frameworkIds && parsedInput.frameworkIds.length > 0) {

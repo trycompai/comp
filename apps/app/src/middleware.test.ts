@@ -17,12 +17,6 @@ import { createMockRequest } from '@/test-utils/helpers/middleware';
 import { createMockSession, mockAuth, setupAuthMocks } from '@/test-utils/mocks/auth';
 import { mockDb } from '@/test-utils/mocks/db';
 
-// Mock getSubscriptionData
-const mockGetSubscriptionData = vi.fn();
-vi.mock('@/app/api/stripe/getSubscriptionData', () => ({
-  getSubscriptionData: mockGetSubscriptionData,
-}));
-
 vi.mock('next/headers', () => ({
   headers: vi.fn(
     () =>
@@ -58,18 +52,18 @@ describe('Middleware', () => {
 
     it('should allow authenticated users to access their org', async () => {
       // Arrange
-      const { session, user } = setupAuthMocks();
+      const { user } = setupAuthMocks();
 
-      // Also mock that user is a member of the org
-      mockDb.member.findFirst.mockResolvedValue({
-        id: 'member_123',
-        userId: user!.id,
-        organizationId: 'org_123',
-        role: 'owner',
+      // Mock that the organization has access
+      mockDb.organization.findFirst.mockResolvedValue({
+        hasAccess: true,
       });
 
-      // Mock valid subscription
-      mockGetSubscriptionData.mockResolvedValue({ status: 'active' });
+      // Mock that onboarding is completed
+      mockDb.organization.findUnique.mockResolvedValue({
+        id: 'org_123',
+        onboardingCompleted: true,
+      });
 
       const request = createMockRequest('/org_123/dashboard');
 
@@ -160,15 +154,17 @@ describe('Middleware', () => {
     });
   });
 
-  describe('Subscription Validation', () => {
+  describe('Access Control (hasAccess)', () => {
     beforeEach(() => {
-      // Set up authenticated user for subscription tests
+      // Set up authenticated user for access control tests
       setupAuthMocks();
     });
 
-    it('should block access to org routes without valid subscription', async () => {
+    it('should block access to org routes without hasAccess', async () => {
       // Arrange
-      mockGetSubscriptionData.mockResolvedValue({ status: 'canceled' });
+      mockDb.organization.findFirst.mockResolvedValue({
+        hasAccess: false,
+      });
 
       const request = createMockRequest('/org_123/dashboard');
 
@@ -180,36 +176,36 @@ describe('Middleware', () => {
       expect(response.headers.get('location')).toBe('http://localhost:3000/upgrade/org_123');
     });
 
-    it('should allow access with valid subscription statuses', async () => {
+    it('should allow access with hasAccess = true', async () => {
       // Arrange
-      const validStatuses = ['active', 'trialing', 'self-serve', 'past_due', 'paused'];
+      mockDb.organization.findFirst.mockResolvedValue({
+        hasAccess: true,
+      });
 
-      for (const status of validStatuses) {
-        mockGetSubscriptionData.mockResolvedValue({ status });
+      // Mock onboarding completed so we don't get redirected to onboarding
+      mockDb.organization.findUnique.mockResolvedValue({
+        id: 'org_123',
+        onboardingCompleted: true,
+      });
 
-        const request = createMockRequest('/org_123/dashboard');
+      const request = createMockRequest('/org_123/dashboard');
 
-        // Act
-        const response = await middleware(request);
+      // Act
+      const response = await middleware(request);
 
-        // Assert
-        expect(response.status).toBe(200);
-      }
+      // Assert
+      expect(response.status).toBe(200);
     });
 
-    it('should bypass subscription check for exempt routes', async () => {
+    it('should bypass access check for unprotected routes', async () => {
       // Arrange
-      const exemptRoutes = [
-        '/org_123/settings/billing',
-        '/org_123/upgrade',
-        '/setup',
-        '/auth',
-        '/invite/abc123',
-      ];
+      const unprotectedRoutes = ['/upgrade/org_123', '/setup', '/auth', '/invite/abc123'];
 
-      mockGetSubscriptionData.mockResolvedValue({ status: 'canceled' });
+      mockDb.organization.findFirst.mockResolvedValue({
+        hasAccess: false,
+      });
 
-      for (const route of exemptRoutes) {
+      for (const route of unprotectedRoutes) {
         const request = createMockRequest(route);
 
         // Act
@@ -224,6 +220,42 @@ describe('Middleware', () => {
         }
       }
     });
+
+    it('should handle organizations that do not exist', async () => {
+      // Arrange
+      mockDb.organization.findFirst.mockResolvedValue(null);
+
+      const request = createMockRequest('/org_123/dashboard');
+
+      // Act
+      const response = await middleware(request);
+
+      // Assert
+      expect(response.status).toBe(307);
+      expect(response.headers.get('location')).toBe('http://localhost:3000/upgrade/org_123');
+    });
+
+    it('should preserve query parameters when redirecting to upgrade', async () => {
+      // Arrange
+      mockDb.organization.findFirst.mockResolvedValue({
+        hasAccess: false,
+      });
+
+      const request = createMockRequest('/org_123/dashboard', {
+        searchParams: {
+          redirect: 'policies',
+          tab: 'active',
+        },
+      });
+
+      // Act
+      const response = await middleware(request);
+
+      // Assert
+      expect(response.status).toBe(307);
+      const location = response.headers.get('location');
+      expect(location).toBe('http://localhost:3000/upgrade/org_123?redirect=policies&tab=active');
+    });
   });
 
   describe('Session Healing', () => {
@@ -235,9 +267,8 @@ describe('Middleware', () => {
       mockDb.organization.findFirst.mockResolvedValue({
         id: 'org_123',
         name: 'Test Org',
+        hasAccess: true,
       });
-
-      mockGetSubscriptionData.mockResolvedValue({ status: 'active' });
 
       const request = createMockRequest('/org_123/dashboard');
 
@@ -255,12 +286,15 @@ describe('Middleware', () => {
 
   describe('Onboarding Completion', () => {
     beforeEach(() => {
-      // Set up authenticated user with valid subscription for onboarding tests
+      // Set up authenticated user with access for onboarding tests
       setupAuthMocks();
-      mockGetSubscriptionData.mockResolvedValue({ status: 'active' });
+      // Mock that the organization has access (required for onboarding checks)
+      mockDb.organization.findFirst.mockResolvedValue({
+        hasAccess: true,
+      });
     });
 
-    it('should redirect to /onboarding when subscription is active but onboarding not completed', async () => {
+    it('should redirect to /onboarding when user has access but onboarding not completed', async () => {
       // Arrange
       mockDb.organization.findUnique.mockResolvedValue({
         id: 'org_123',
@@ -334,16 +368,16 @@ describe('Middleware', () => {
       );
     });
 
-    it('should not check onboarding for subscription-exempt routes', async () => {
+    it('should not check onboarding for unprotected routes', async () => {
       // Arrange
       mockDb.organization.findUnique.mockResolvedValue({
         id: 'org_123',
         onboardingCompleted: false,
       });
 
-      const exemptRoutes = ['/upgrade/org_123', '/onboarding/org_123', '/auth', '/setup'];
+      const unprotectedRoutes = ['/upgrade/org_123', '/onboarding/org_123', '/auth', '/setup'];
 
-      for (const route of exemptRoutes) {
+      for (const route of unprotectedRoutes) {
         const request = createMockRequest(route);
 
         // Act

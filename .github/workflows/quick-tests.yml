@@ -74,8 +74,6 @@ jobs:
           UPSTASH_REDIS_REST_TOKEN: dummy-token
           RESEND_API_KEY: dummy-resend-key
           TRIGGER_SECRET_KEY: dummy-trigger-key
-          STRIPE_SECRET_KEY: sk_test_dummy_key_for_ci_builds
-          STRIPE_WEBHOOK_SECRET: whsec_test_dummy_webhook_secret
 
       - name: Post test results to PR
         if: failure() && github.event_name == 'pull_request'

@@ -1,5 +1,3 @@
-import { BookingDialog } from '@/app/(app)/upgrade/[orgId]/components/BookingDialog';
-import { STRIPE_SUB_CACHE } from '@/app/api/stripe/stripeDataToKv.type';
 import { UserMenu } from '@/components/user-menu';
 import { getOrganizations } from '@/data/getOrganizations';
 import { auth } from '@/utils/auth';
@@ -10,7 +8,7 @@ import { Suspense } from 'react';
 import { AssistantButton } from './ai/chat-button';
 import { MobileMenu } from './mobile-menu';
 
-export async function Header({ subscription }: { subscription: STRIPE_SUB_CACHE }) {
+export async function Header() {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -30,10 +28,6 @@ export async function Header({ subscription }: { subscription: STRIPE_SUB_CACHE 
       <AssistantButton />
 
       <div className="ml-auto flex space-x-2">
-        <div className="hidden gap-2 md:flex">
-          <BookingDialog subscription={subscription} />
-        </div>
-
         <Suspense fallback={<Skeleton className="h-8 w-8 rounded-full" />}>
           <UserMenu />
         </Suspense>
