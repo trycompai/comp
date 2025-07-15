@@ -22,6 +22,7 @@ interface SelectPillsProps {
   onValueChange?: (selectedValues: string[]) => void;
   placeholder?: string;
   disabled?: boolean;
+  'data-testid'?: string;
 }
 
 export const SelectPills: FC<SelectPillsProps> = ({
@@ -31,6 +32,7 @@ export const SelectPills: FC<SelectPillsProps> = ({
   onValueChange,
   placeholder = 'Type to search...',
   disabled = false,
+  'data-testid': dataTestId,
 }) => {
   const [inputValue, setInputValue] = useState<string>('');
   const [selectedPills, setSelectedPills] = useState<string[]>(value || defaultValue);
@@ -219,6 +221,7 @@ export const SelectPills: FC<SelectPillsProps> = ({
               isOpen && !inputValue ? 'Type to search or press Enter to add custom...' : placeholder
             }
             disabled={disabled}
+            data-testid={dataTestId}
           />
         </PopoverAnchor>
       </div>
@@ -245,6 +248,7 @@ export const SelectPills: FC<SelectPillsProps> = ({
                     highlightedIndex === index && 'bg-accent',
                   )}
                   onClick={() => handleItemSelect(item)}
+                  data-testid={`${dataTestId}-option-${item.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
                 >
                   <input
                     type="radio"
@@ -254,6 +258,7 @@ export const SelectPills: FC<SelectPillsProps> = ({
                     className="sr-only"
                     checked={highlightedIndex === index}
                     onChange={() => handleItemSelect(item)}
+                    data-testid={`pill-option-${index}`}
                   />
                   <label
                     htmlFor={`pill-${item.name}`}

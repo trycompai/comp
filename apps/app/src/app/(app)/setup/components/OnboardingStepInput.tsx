@@ -29,11 +29,13 @@ export function OnboardingStepInput({
 }: OnboardingStepInputProps) {
   if (currentStep.key === 'frameworkIds') {
     return (
-      <FrameworkSelection
-        value={form.getValues(currentStep.key) || []}
-        onChange={(value) => form.setValue(currentStep.key, value)}
-        onLoadingChange={onLoadingChange}
-      />
+      <div data-testid={`onboarding-input-${currentStep.key}`}>
+        <FrameworkSelection
+          value={form.getValues(currentStep.key) || []}
+          onChange={(value) => form.setValue(currentStep.key, value)}
+          onLoadingChange={onLoadingChange}
+        />
+      </div>
     );
   }
 
@@ -42,7 +44,14 @@ export function OnboardingStepInput({
       <Controller
         name={currentStep.key}
         control={form.control}
-        render={({ field }) => <WebsiteInput {...field} placeholder="example.com" autoFocus />}
+        render={({ field }) => (
+          <WebsiteInput
+            {...field}
+            placeholder="example.com"
+            autoFocus
+            data-testid={`onboarding-input-${currentStep.key}`}
+          />
+        )}
       />
     );
   }
@@ -55,23 +64,32 @@ export function OnboardingStepInput({
         rows={2}
         maxLength={300}
         className="h-24 resize-none"
+        data-testid={`onboarding-input-${currentStep.key}`}
       />
     );
   }
 
   if (currentStep.options) {
-    if (currentStep.key === 'industry' || currentStep.key === 'teamSize') {
+    if (
+      currentStep.key === 'industry' ||
+      currentStep.key === 'teamSize' ||
+      currentStep.key === 'workLocation'
+    ) {
       return (
         <Select
           onValueChange={(value) => form.setValue(currentStep.key, value)}
           defaultValue={form.watch(currentStep.key)}
         >
-          <SelectTrigger>
+          <SelectTrigger data-testid={`onboarding-input-${currentStep.key}`}>
             <SelectValue placeholder={currentStep.placeholder} />
           </SelectTrigger>
           <SelectContent>
             {currentStep.options.map((option) => (
-              <SelectItem key={option} value={option}>
+              <SelectItem
+                key={option}
+                value={option}
+                data-testid={`onboarding-option-${option.toLowerCase().replace(/\s+/g, '-')}`}
+              >
                 {option}
               </SelectItem>
             ))}
@@ -87,18 +105,26 @@ export function OnboardingStepInput({
     const selected = (form.watch(currentStep.key) || '').split(',').filter(Boolean);
 
     return (
-      <SelectPills
-        data={options}
-        value={selected}
-        onValueChange={(values: string[]) => {
-          form.setValue(currentStep.key, values.join(','));
-        }}
-        placeholder={`Search or add custom (press Enter) • ${currentStep.placeholder}`}
-      />
+      <div data-testid={`onboarding-input-${currentStep.key}`}>
+        <SelectPills
+          data={options}
+          value={selected}
+          onValueChange={(values: string[]) => {
+            form.setValue(currentStep.key, values.join(','));
+          }}
+          placeholder={`Search or add custom (press Enter) • ${currentStep.placeholder}`}
+          data-testid={`onboarding-input-${currentStep.key}-search`}
+        />
+      </div>
     );
   }
 
   return (
-    <Input {...form.register(currentStep.key)} placeholder={currentStep.placeholder} autoFocus />
+    <Input
+      {...form.register(currentStep.key)}
+      placeholder={currentStep.placeholder}
+      autoFocus
+      data-testid={`onboarding-input-${currentStep.key}`}
+    />
   );
 }

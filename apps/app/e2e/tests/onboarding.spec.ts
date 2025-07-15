@@ -5,7 +5,9 @@ import { fillFormField, generateTestData, waitForURL } from '../utils/helpers';
 // Increase test timeout for complex flows
 test.describe.configure({ timeout: 60000 });
 
-test.describe('Onboarding Flow', () => {
+// DEPRECATED: This test file is for the old full onboarding flow.
+// The new split onboarding flow is tested in split-onboarding.spec.ts
+test.describe.skip('Onboarding Flow (DEPRECATED)', () => {
   test.beforeEach(async ({ page }) => {
     // Clear any existing auth state
     await clearAuth(page);
@@ -388,7 +390,7 @@ test.describe('Onboarding Flow', () => {
   });
 });
 
-test.describe('Setup Page Components', () => {
+test.describe.skip('Setup Page Components (DEPRECATED)', () => {
   test.beforeEach(async ({ page }) => {
     const testData = generateTestData();
 

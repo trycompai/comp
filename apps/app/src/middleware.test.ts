@@ -40,7 +40,7 @@ describe('Middleware', () => {
     it('should redirect unauthenticated users to /auth', async () => {
       // Arrange
       setupAuthMocks({ session: null, user: null });
-      const request = createMockRequest('/org_123/dashboard');
+      const request = await createMockRequest('/org_123/dashboard');
 
       // Act
       const response = await middleware(request);
@@ -65,7 +65,7 @@ describe('Middleware', () => {
         onboardingCompleted: true,
       });
 
-      const request = createMockRequest('/org_123/dashboard');
+      const request = await createMockRequest('/org_123/dashboard');
 
       // Act
       const response = await middleware(request);
@@ -83,7 +83,7 @@ describe('Middleware', () => {
       // User is NOT a member of org_OTHER
       mockDb.member.findFirst.mockResolvedValue(null);
 
-      const request = createMockRequest('/org_OTHER/dashboard');
+      const request = await createMockRequest('/org_OTHER/dashboard');
 
       // Act
       const response = await middleware(request);
@@ -103,7 +103,7 @@ describe('Middleware', () => {
 
       mockDb.organization.findFirst.mockResolvedValue(null);
 
-      const request = createMockRequest('/');
+      const request = await createMockRequest('/');
 
       // Act
       const response = await middleware(request);
@@ -123,8 +123,8 @@ describe('Middleware', () => {
         name: 'Existing Org',
       });
 
-      const request = createMockRequest('/setup', {
-        searchParams: { intent: 'create-additional' },
+      const request = await createMockRequest('/setup', {
+        searchParams: Promise.resolve({ intent: 'create-additional' }),
       });
 
       // Act
@@ -143,7 +143,7 @@ describe('Middleware', () => {
         name: 'Existing Org',
       });
 
-      const request = createMockRequest('/setup');
+      const request = await createMockRequest('/setup');
 
       // Act
       const response = await middleware(request);
@@ -166,7 +166,7 @@ describe('Middleware', () => {
         hasAccess: false,
       });
 
-      const request = createMockRequest('/org_123/dashboard');
+      const request = await createMockRequest('/org_123/dashboard');
 
       // Act
       const response = await middleware(request);
@@ -188,7 +188,7 @@ describe('Middleware', () => {
         onboardingCompleted: true,
       });
 
-      const request = createMockRequest('/org_123/dashboard');
+      const request = await createMockRequest('/org_123/dashboard');
 
       // Act
       const response = await middleware(request);
@@ -206,7 +206,7 @@ describe('Middleware', () => {
       });
 
       for (const route of unprotectedRoutes) {
-        const request = createMockRequest(route);
+        const request = await createMockRequest(route);
 
         // Act
         const response = await middleware(request);
@@ -225,7 +225,7 @@ describe('Middleware', () => {
       // Arrange
       mockDb.organization.findFirst.mockResolvedValue(null);
 
-      const request = createMockRequest('/org_123/dashboard');
+      const request = await createMockRequest('/org_123/dashboard');
 
       // Act
       const response = await middleware(request);
@@ -241,11 +241,11 @@ describe('Middleware', () => {
         hasAccess: false,
       });
 
-      const request = createMockRequest('/org_123/dashboard', {
-        searchParams: {
+      const request = await createMockRequest('/org_123/dashboard', {
+        searchParams: Promise.resolve({
           redirect: 'policies',
           tab: 'active',
-        },
+        }),
       });
 
       // Act
@@ -270,7 +270,7 @@ describe('Middleware', () => {
         hasAccess: true,
       });
 
-      const request = createMockRequest('/org_123/dashboard');
+      const request = await createMockRequest('/org_123/dashboard');
 
       // Act
       const response = await middleware(request);
@@ -301,7 +301,7 @@ describe('Middleware', () => {
         onboardingCompleted: false,
       });
 
-      const request = createMockRequest('/org_123/frameworks');
+      const request = await createMockRequest('/org_123/frameworks');
 
       // Act
       const response = await middleware(request);
@@ -318,7 +318,7 @@ describe('Middleware', () => {
         onboardingCompleted: true,
       });
 
-      const request = createMockRequest('/org_123/frameworks');
+      const request = await createMockRequest('/org_123/frameworks');
 
       // Act
       const response = await middleware(request);
@@ -334,7 +334,7 @@ describe('Middleware', () => {
         onboardingCompleted: false,
       });
 
-      const request = createMockRequest('/onboarding/org_123');
+      const request = await createMockRequest('/onboarding/org_123');
 
       // Act
       const response = await middleware(request);
@@ -350,11 +350,11 @@ describe('Middleware', () => {
         onboardingCompleted: false,
       });
 
-      const request = createMockRequest('/org_123/frameworks', {
-        searchParams: {
+      const request = await createMockRequest('/org_123/frameworks', {
+        searchParams: Promise.resolve({
           checkoutComplete: 'starter',
           value: '99',
-        },
+        }),
       });
 
       // Act
@@ -378,7 +378,7 @@ describe('Middleware', () => {
       const unprotectedRoutes = ['/upgrade/org_123', '/onboarding/org_123', '/auth', '/setup'];
 
       for (const route of unprotectedRoutes) {
-        const request = createMockRequest(route);
+        const request = await createMockRequest(route);
 
         // Act
         const response = await middleware(request);
@@ -399,7 +399,7 @@ describe('Middleware', () => {
         onboardingCompleted: null,
       });
 
-      const request = createMockRequest('/org_123/frameworks');
+      const request = await createMockRequest('/org_123/frameworks');
 
       // Act
       const response = await middleware(request);
@@ -422,7 +422,7 @@ describe('Middleware', () => {
       ];
 
       for (const path of maliciousRequests) {
-        const request = createMockRequest(path);
+        const request = await createMockRequest(path);
 
         // Act
         const response = await middleware(request);

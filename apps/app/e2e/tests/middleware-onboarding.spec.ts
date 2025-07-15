@@ -18,18 +18,23 @@ test.describe('Middleware Onboarding Behavior', () => {
     });
 
     // Try to access organization page
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
 
-    // Should NOT be redirected to onboarding
-    await page.waitForTimeout(2000); // Give time for any redirects
-    expect(page.url()).not.toContain('/onboarding');
+    // Wait for all redirects to complete
+    await page.waitForTimeout(3000); // Just wait for redirects to settle
 
-    // Should be on an authenticated page (org page, frameworks, etc)
-    const isOnOrgPage =
-      page.url().includes('/org_') ||
-      page.url().includes('/frameworks') ||
-      page.url().includes('/setup');
-    expect(isOnOrgPage).toBeTruthy();
+    const currentUrl = page.url();
+    console.log('Current URL after navigation:', currentUrl);
+
+    expect(currentUrl).not.toContain('/onboarding');
+
+    // Should be on an authenticated page - could be org page or setup (if activeOrgId not set)
+    const isOnValidPage =
+      currentUrl.match(/\/org_[a-zA-Z0-9]+\//) !== null || // Organization routes
+      currentUrl.match(/\/setup\/[a-zA-Z0-9]+/) !== null || // Dynamic setup URLs
+      currentUrl.includes('/upgrade'); // Upgrade page
+
+    expect(isOnValidPage).toBeTruthy();
   });
 
   test('user without org is redirected to setup', async ({ page }) => {
@@ -43,19 +48,32 @@ test.describe('Middleware Onboarding Behavior', () => {
     });
 
     // Navigate to root
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
 
-    // Should be redirected to setup
-    await page.waitForURL(/\/setup\/[a-zA-Z0-9]+/, { timeout: 10000 });
-    expect(page.url()).toContain('/setup/');
+    // Wait for redirects
+    await page.waitForTimeout(2000);
+
+    const currentUrl = page.url();
+    console.log('User without org redirected to:', currentUrl);
+
+    // Should be redirected to setup (with dynamic ID)
+    expect(currentUrl).toMatch(/\/setup\/[a-zA-Z0-9]+/);
   });
 
   test('unauthenticated user is redirected to auth', async ({ page }) => {
-    // Try to access protected route without auth
-    await page.goto('/org_123/frameworks');
+    // Try to access protected route without auth, expecting redirect
+    const response = await page.goto('/org_123/frameworks', {
+      waitUntil: 'commit', // Just wait for navigation to start, not complete
+    });
+
+    // Wait a bit for redirect
+    await page.waitForTimeout(1000);
+
+    // Check final URL
+    const currentUrl = page.url();
+    console.log('Unauthenticated user redirected to:', currentUrl);
 
     // Should be redirected to auth
-    await page.waitForURL(/\/auth/, { timeout: 5000 });
-    expect(page.url()).toContain('/auth');
+    expect(currentUrl).toContain('/auth');
   });
 });
