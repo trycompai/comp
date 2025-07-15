@@ -4,17 +4,21 @@ import { NextRequest, NextResponse } from 'next/server';
 interface MockRequestOptions {
   session?: Session | null;
   headers?: Record<string, string>;
-  searchParams?: Record<string, string>;
+  searchParams?: Promise<Record<string, string>>;
   method?: string;
 }
 
-export function createMockRequest(pathname: string, options: MockRequestOptions = {}): NextRequest {
+export async function createMockRequest(
+  pathname: string,
+  options: MockRequestOptions = {},
+): Promise<NextRequest> {
   const { headers = {}, searchParams = {}, method = 'GET' } = options;
 
   // Build URL with search params
   const url = new URL(pathname, 'http://localhost:3000');
-  Object.entries(searchParams).forEach(([key, value]) => {
-    url.searchParams.set(key, value);
+  const searchParamsObj = await searchParams;
+  Object.entries(searchParamsObj).forEach(([key, value]) => {
+    url.searchParams.set(key, value as string);
   });
 
   // Create headers

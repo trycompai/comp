@@ -12,6 +12,8 @@ export async function POST(request: NextRequest) {
   console.log('[TEST-LOGIN] Endpoint hit at:', new Date().toISOString());
   console.log('[TEST-LOGIN] E2E_TEST_MODE:', process.env.E2E_TEST_MODE);
   console.log('[TEST-LOGIN] NODE_ENV:', process.env.NODE_ENV);
+  console.log('[TEST-LOGIN] Request URL:', request.url);
+  console.log('[TEST-LOGIN] Request headers:', Object.fromEntries(request.headers.entries()));
   console.log('[TEST-LOGIN] =========================');
 
   // Only allow in E2E test mode
@@ -31,7 +33,7 @@ export async function POST(request: NextRequest) {
     const result = await Promise.race([handleLogin(request), timeoutPromise]);
     return result as NextResponse;
   } catch (error) {
-    console.error('[TEST-LOGIN] Error:', error);
+    console.error('[TEST-LOGIN] Error in POST handler:', error);
     return NextResponse.json(
       { error: 'Failed to create test session', details: error },
       { status: 500 },
@@ -40,26 +42,62 @@ export async function POST(request: NextRequest) {
 }
 
 async function handleLogin(request: NextRequest) {
-  const body = await request.json();
-  console.log('[TEST-LOGIN] Request body:', body);
+  let body;
+  try {
+    body = await request.json();
+    console.log('[TEST-LOGIN] Request body:', body);
+  } catch (err) {
+    console.error('[TEST-LOGIN] Failed to parse request body:', err);
+    return NextResponse.json(
+      { error: 'Invalid request body', details: String(err) },
+      { status: 400 },
+    );
+  }
 
   const { email, name, hasAccess } = body;
   const testPassword = 'Test123456!'; // Use a stronger test password
 
   console.log('[TEST-LOGIN] Checking for existing user:', email);
 
-  // Check if user already exists
-  const existingUser = await db.user.findUnique({
-    where: { email },
-  });
+  // For E2E tests, always start with a clean user state
+  // Delete existing user if present to avoid password/state issues
+  let existingUser;
+  try {
+    existingUser = await db.user.findUnique({
+      where: { email },
+    });
+    console.log(
+      '[TEST-LOGIN] Existing user lookup result:',
+      existingUser ? existingUser.id : 'none',
+    );
+  } catch (err) {
+    console.error('[TEST-LOGIN] Error looking up existing user:', err);
+    return NextResponse.json(
+      { error: 'Failed to check for existing user', details: String(err) },
+      { status: 500 },
+    );
+  }
 
-  console.log('[TEST-LOGIN] Existing user found:', !!existingUser);
+  if (existingUser) {
+    try {
+      console.log('[TEST-LOGIN] Deleting existing user for clean state');
+      await db.user.delete({ where: { email } });
+      console.log('[TEST-LOGIN] Existing user deleted');
+    } catch (err) {
+      console.error('[TEST-LOGIN] Error deleting existing user:', err);
+      return NextResponse.json(
+        { error: 'Failed to delete existing user', details: String(err) },
+        { status: 500 },
+      );
+    }
+  }
 
-  if (!existingUser) {
-    console.log('[TEST-LOGIN] Creating new user via Better Auth');
+  console.log('[TEST-LOGIN] Creating new user via Better Auth');
 
-    // First, sign up the user using Better Auth's signUpEmail method
-    const signUpResponse = await auth.api.signUpEmail({
+  // Create the user using Better Auth's signUpEmail method
+  let signUpResponse;
+  try {
+    signUpResponse = await auth.api.signUpEmail({
       body: {
         email,
         password: testPassword,
@@ -68,114 +106,249 @@ async function handleLogin(request: NextRequest) {
       headers: request.headers, // Pass the request headers
       asResponse: true,
     });
-
     console.log('[TEST-LOGIN] Sign up response status:', signUpResponse.status);
+  } catch (err) {
+    console.error('[TEST-LOGIN] Error during signUpEmail:', err);
+    return NextResponse.json(
+      { error: 'Failed to sign up (exception)', details: String(err) },
+      { status: 500 },
+    );
+  }
 
-    if (!signUpResponse.ok) {
-      const errorData = await signUpResponse.json();
-      return NextResponse.json({ error: 'Failed to sign up', details: errorData }, { status: 400 });
+  if (!signUpResponse.ok) {
+    let errorData;
+    try {
+      errorData = await signUpResponse.json();
+    } catch (err) {
+      errorData = { parseError: String(err) };
     }
+    console.error('[TEST-LOGIN] Sign up failed:', errorData);
+    return NextResponse.json({ error: 'Failed to sign up', details: errorData }, { status: 400 });
+  }
 
-    // Mark the user as verified (for test purposes)
+  // Mark the user as verified (for test purposes)
+  try {
     await db.user.update({
       where: { email },
       data: { emailVerified: true },
     });
+    console.log('[TEST-LOGIN] User marked as verified');
+  } catch (err) {
+    console.error('[TEST-LOGIN] Error marking user as verified:', err);
+    return NextResponse.json(
+      { error: 'Failed to mark user as verified', details: String(err) },
+      { status: 500 },
+    );
+  }
 
-    // Get the user to create organization
-    const user = await db.user.findUnique({
+  // Get the user we just created
+  let user;
+  try {
+    user = await db.user.findUnique({
       where: { email },
     });
-
-    if (user && !body.skipOrg) {
-      // Create a test organization for the user only if skipOrg is not true
-      await db.organization.create({
-        data: {
-          name: `Test Org ${Date.now()}`,
-          hasAccess: hasAccess || false, // Allow setting hasAccess for tests
-          members: {
-            create: {
-              userId: user.id,
-              role: 'owner',
-              department: Departments.hr,
-              isActive: true,
-              fleetDmLabelId: Math.floor(Math.random() * 10000),
-            },
-          },
-        },
-      });
+    if (!user) {
+      console.log('[TEST-LOGIN] User not found after creation');
+      return NextResponse.json({ error: 'User not found after creation' }, { status: 400 });
     }
+    console.log('[TEST-LOGIN] User found:', user.id, user.email);
+  } catch (err) {
+    console.error('[TEST-LOGIN] Error fetching user after creation:', err);
+    return NextResponse.json(
+      { error: 'Failed to fetch user after creation', details: String(err) },
+      { status: 500 },
+    );
   }
 
-  // Always sign in to get a fresh session with updated user state
-  console.log('[TEST-LOGIN] Signing in user:', email);
+  // Try signing in with a small delay to ensure user is fully committed
+  try {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    console.log('[TEST-LOGIN] Delay after user creation complete');
+  } catch (err) {
+    console.error('[TEST-LOGIN] Error during delay:', err);
+  }
 
-  const signInResponse = await auth.api.signInEmail({
-    body: {
-      email,
-      password: testPassword,
-    },
-    headers: request.headers, // Pass the request headers
-    asResponse: true,
-  });
+  console.log('[TEST-LOGIN] Attempting sign in for user:', email, 'with password:', testPassword);
 
-  console.log('[TEST-LOGIN] Sign in response status:', signInResponse.status);
+  let responseData: any;
+  let signInResponse;
+  try {
+    signInResponse = await auth.api.signInEmail({
+      body: {
+        email,
+        password: testPassword,
+      },
+      headers: request.headers,
+      asResponse: true,
+    });
+    console.log('[TEST-LOGIN] Sign in response status:', signInResponse.status);
+  } catch (err) {
+    console.error('[TEST-LOGIN] Error during signInEmail:', err);
+    return NextResponse.json(
+      { error: 'Failed to sign in (exception)', details: String(err) },
+      { status: 500 },
+    );
+  }
 
   if (!signInResponse.ok) {
-    const errorData = await signInResponse.json();
-    console.log('[TEST-LOGIN] Sign in failed:', errorData);
-    return NextResponse.json({ error: 'Failed to sign in', details: errorData }, { status: 400 });
-  }
+    let errorData;
+    try {
+      errorData = await signInResponse.json();
+    } catch (e) {
+      try {
+        errorData = await signInResponse.text();
+      } catch (err) {
+        errorData = { parseError: String(err) };
+      }
+    }
+    console.error('[TEST-LOGIN] Sign in failed with error:', errorData);
+    console.log(
+      '[TEST-LOGIN] Response headers:',
+      Object.fromEntries(signInResponse.headers.entries()),
+    );
 
-  // Get the response data
-  const responseData = await signInResponse.json();
-  console.log('[TEST-LOGIN] Sign in successful, user:', responseData.user.id);
+    // Try alternative approach - create session directly
+    console.log('[TEST-LOGIN] Attempting direct session creation...');
+
+    try {
+      const sessionResponse = await auth.api.createSession({
+        body: {
+          userId: user.id,
+        },
+        headers: request.headers,
+        asResponse: true,
+      });
+
+      if (sessionResponse.ok) {
+        const sessionData = await sessionResponse.json();
+        console.log('[TEST-LOGIN] Direct session creation successful');
+        // Continue with the original flow using the session data
+        responseData = { user, session: sessionData.session };
+      } else {
+        let sessionErrorData;
+        try {
+          sessionErrorData = await sessionResponse.json();
+        } catch (err) {
+          sessionErrorData = { parseError: String(err) };
+        }
+        console.error('[TEST-LOGIN] Direct session creation also failed:', sessionErrorData);
+        return NextResponse.json(
+          { error: 'Failed to create session', details: errorData },
+          { status: 400 },
+        );
+      }
+    } catch (sessionError) {
+      console.error('[TEST-LOGIN] Direct session creation error:', sessionError);
+      return NextResponse.json(
+        { error: 'Failed to create session', details: errorData },
+        { status: 400 },
+      );
+    }
+  } else {
+    // Get the response data from successful sign-in
+    try {
+      responseData = await signInResponse.json();
+      console.log('[TEST-LOGIN] Sign in successful, user:', responseData.user?.id);
+    } catch (err) {
+      console.error('[TEST-LOGIN] Error parsing sign in response JSON:', err);
+      return NextResponse.json(
+        { error: 'Failed to parse sign in response', details: String(err) },
+        { status: 500 },
+      );
+    }
+  }
 
   // Create an organization for the user if skipOrg is not true
   let org = null;
   if (!body.skipOrg) {
     console.log('[TEST-LOGIN] Creating test organization');
-
-    org = await db.organization.create({
-      data: {
-        id: `org_${Date.now()}`,
-        name: `Test Org ${Date.now()}`,
-        hasAccess: hasAccess || false, // Allow setting hasAccess for tests
-        members: {
-          create: {
-            id: `mem_${Date.now()}`,
-            userId: responseData.user.id,
-            role: 'owner',
-            department: Departments.it,
-            isActive: true,
-            fleetDmLabelId: 0,
+    try {
+      org = await db.organization.create({
+        data: {
+          name: `Test Org ${Date.now()}`,
+          hasAccess: hasAccess || false, // Allow setting hasAccess for tests
+          members: {
+            create: {
+              userId: responseData.user.id,
+              role: 'owner',
+              department: Departments.it,
+              isActive: true,
+              fleetDmLabelId: 0,
+            },
           },
         },
-      },
-    });
+      });
+      console.log('[TEST-LOGIN] Created organization:', org.id);
+    } catch (err) {
+      console.error('[TEST-LOGIN] Error creating organization:', err);
+      return NextResponse.json(
+        { error: 'Failed to create organization', details: String(err) },
+        { status: 500 },
+      );
+    }
 
-    console.log('[TEST-LOGIN] Created organization:', org.id);
+    // Set this as the active organization for the session (non-blocking)
+    try {
+      const setActiveOrgResponse = await auth.api.setActiveOrganization({
+        headers: request.headers,
+        body: {
+          organizationId: org.id,
+        },
+        asResponse: true,
+      });
 
-    // Don't set active organization here - let the client handle it
-    // The session will have the organization available
+      if (!setActiveOrgResponse.ok) {
+        console.log('[TEST-LOGIN] Warning: setActiveOrganization returned non-ok status');
+        // Try again with a small delay
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        await auth.api.setActiveOrganization({
+          headers: request.headers,
+          body: {
+            organizationId: org.id,
+          },
+        });
+      }
 
-    console.log('[TEST-LOGIN] Organization created successfully');
+      console.log('[TEST-LOGIN] Set organization as active:', org.id);
+    } catch (err) {
+      console.error(
+        '[TEST-LOGIN] Warning: Failed to set active organization (continuing anyway):',
+        err,
+      );
+      // Don't fail the entire request - user can still authenticate
+      // The middleware will handle setting active org if needed
+    }
   }
 
   // Create a new response with the data
-  const response = NextResponse.json({
-    success: true,
-    user: responseData.user,
-    session: responseData.session,
-    organizationId: body.skipOrg ? null : org?.id,
-  });
+  let response;
+  try {
+    response = NextResponse.json({
+      success: true,
+      user: responseData.user,
+      session: responseData.session,
+      organizationId: body.skipOrg ? null : org?.id,
+    });
+    console.log('[TEST-LOGIN] Created response object');
+  } catch (err) {
+    console.error('[TEST-LOGIN] Error creating response object:', err);
+    return NextResponse.json(
+      { error: 'Failed to create response', details: String(err) },
+      { status: 500 },
+    );
+  }
 
   // Copy all cookies from Better Auth's response to our response
-  const cookies = signInResponse.headers.getSetCookie();
-  console.log('[TEST-LOGIN] Setting cookies count:', cookies.length);
-  cookies.forEach((cookie: string) => {
-    response.headers.append('Set-Cookie', cookie);
-  });
+  try {
+    const cookies = signInResponse.headers.getSetCookie();
+    console.log('[TEST-LOGIN] Setting cookies count:', cookies.length);
+    cookies.forEach((cookie: string) => {
+      response.headers.append('Set-Cookie', cookie);
+    });
+  } catch (err) {
+    console.error('[TEST-LOGIN] Error copying cookies:', err);
+    // Still return the response, but log the error
+  }
 
   console.log('[TEST-LOGIN] Returning success response');
   return response;

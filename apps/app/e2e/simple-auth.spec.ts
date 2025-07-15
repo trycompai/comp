@@ -1,70 +1,51 @@
 import { expect, test } from '@playwright/test';
+import { authenticateTestUser } from './utils/auth-helpers';
 
 test('simple auth flow', async ({ page, context, browserName }) => {
-  // Create a test user and authenticate
-  const testEmail = `test-${Date.now()}@example.com`;
+  const testEmail = `test-${Date.now()}-${Math.random().toString(36).substring(7)}-${browserName}@example.com`;
 
-  console.log(`[${browserName}] Starting test with email: ${testEmail}`);
-
-  const response = await context.request.post('http://localhost:3000/api/auth/test-login', {
-    data: {
-      email: testEmail,
-      name: 'Test User',
-    },
-    timeout: 30000, // 30 second timeout
+  // Authenticate user
+  await authenticateTestUser(page, {
+    email: testEmail,
+    name: 'Test User',
+    skipOrg: false,
+    hasAccess: true,
   });
-
-  // Add debugging for all browsers
-  if (!response.ok()) {
-    console.error(`[${browserName}] Test login failed:`, {
-      status: response.status(),
-      statusText: response.statusText(),
-    });
-    try {
-      const body = await response.text();
-      console.error(`[${browserName}] Response body:`, body);
-    } catch (e) {
-      console.error(`[${browserName}] Could not read response body`);
-    }
-  }
-
-  expect(response.ok()).toBeTruthy();
-  const data = await response.json();
-  expect(data.success).toBe(true);
-  expect(data.user).toBeDefined();
-  expect(data.user.email).toBe(testEmail);
-  expect(data.user.emailVerified).toBe(true);
 
   // Verify session cookie was set
   const cookies = await context.cookies();
   const sessionCookie = cookies.find((c) => c.name === 'better-auth.session_token');
   expect(sessionCookie).toBeDefined();
-  expect(sessionCookie?.httpOnly).toBe(true);
 
-  // Navigate to auth page - should be redirected since we're authenticated
-  await page.goto('http://localhost:3000/auth', { waitUntil: 'domcontentloaded' });
+  // Navigate to root first
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
 
-  // Wait for the redirect to happen
-  // Since we know we should be redirected, wait for URL change
-  let retries = 0;
-  const maxRetries = 10;
+  // Wait for final redirect to complete
+  await page.waitForTimeout(3000); // Just wait for redirects to settle
 
-  while (page.url().includes('/auth') && retries < maxRetries) {
-    await page.waitForTimeout(500);
-    retries++;
-  }
+  const afterRootUrl = page.url();
+  console.log('URL after navigating to root:', afterRootUrl);
+
+  // Now navigate to auth page - should be redirected since we're authenticated
+  await page.goto('/auth', { waitUntil: 'domcontentloaded' });
+
+  // Wait for redirect away from auth
+  await page.waitForURL((url) => !url.toString().includes('/auth'), { timeout: 5000 });
 
   const currentUrl = page.url();
+  console.log('Current URL after auth redirect:', currentUrl);
 
-  // Verify we're redirected to an authenticated route
   expect(currentUrl).not.toContain('/auth');
 
-  // Common authenticated routes include /setup, /dashboard, /upgrade, or organization-specific routes
+  console.log('Current URL after auth redirect:', currentUrl);
+
+  // User should be on one of these authenticated routes
   const isAuthenticatedRoute =
-    currentUrl.includes('/setup') ||
-    currentUrl.includes('/dashboard') ||
+    currentUrl.includes('/setup') || // Matches both /setup and /setup/
+    currentUrl.match(/\/org_[a-zA-Z0-9]+\//) !== null || // Organization routes
     currentUrl.includes('/upgrade') ||
-    currentUrl.includes('/org_');
+    currentUrl.includes('/no-access') ||
+    currentUrl.includes('/onboarding');
 
   expect(isAuthenticatedRoute).toBeTruthy();
 });

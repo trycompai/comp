@@ -56,6 +56,7 @@ export function OnboardingFormActions({
             form="onboarding-form" // Important: links to the form in OrganizationSetupForm.tsx
             className="flex items-center gap-2"
             disabled={isSubmitting || !isCurrentStepValid}
+            data-testid="setup-finish-button"
           >
             <motion.span
               key="finish-label"
@@ -76,6 +77,7 @@ export function OnboardingFormActions({
             form="onboarding-form" // Important: links to the form in OrganizationSetupForm.tsx
             className="flex items-center gap-2"
             disabled={isSubmitting || !isCurrentStepValid}
+            data-testid="setup-next-button"
           >
             <motion.span
               key="next-label"
