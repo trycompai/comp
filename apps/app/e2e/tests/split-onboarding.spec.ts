@@ -1,241 +1,403 @@
 import { expect, test } from '@playwright/test';
-import { authenticateTestUser, clearAuth } from '../utils/auth-helpers';
+import { authenticateTestUser, clearAuth, grantAccess } from '../utils/auth-helpers';
 import { generateTestData } from '../utils/helpers';
 
 test.describe('Split Onboarding Flow', () => {
+  test.setTimeout(60000);
+
   test.beforeEach(async ({ page }) => {
-    // Clear any existing auth state
     await clearAuth(page);
   });
 
-  test('new user completes split onboarding: 3 steps → payment → 9 steps → product access', async ({
-    page,
-  }) => {
+  test('new user without access: 3 steps → book call', async ({ page }) => {
     const testData = generateTestData();
     const website = `example${Date.now()}.com`;
 
-    // Authenticate user first
+    // Authenticate user without access
     await authenticateTestUser(page, {
       email: testData.email,
       name: testData.userName,
-      skipOrg: true, // Don't create org, user will go through setup
+      skipOrg: true,
+      hasAccess: false,
     });
 
-    // Navigate to setup
+    // Go to setup
     await page.goto('/setup');
+    await page.waitForURL(/\/setup\/[a-zA-Z0-9]+/);
 
-    // Should redirect to /setup/[setupId]
-    await page.waitForURL(/\/setup\/[a-zA-Z0-9]+/, { timeout: 10000 });
+    // Step 1: Framework selection - wait for it to be auto-selected
+    await expect(page.getByText('Step 1 of 3')).toBeVisible();
+    await expect(page.getByText('Which compliance frameworks do you need?')).toBeVisible();
 
-    // Wait for content to load
-    await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
+    // Wait for frameworks to load and one to be auto-selected
+    await page.waitForSelector('input[type="checkbox"]:checked');
 
-    // Step 1: Select framework
-    await expect(page.locator('text=/compliance frameworks/i').first()).toBeVisible({
-      timeout: 10000,
-    });
-
-    // Check if framework is already selected, if not select one
-    const checkedFrameworks = await page.locator('input[type="checkbox"]:checked').count();
-    if (checkedFrameworks === 0) {
-      await page.locator('label:has-text("SOC 2")').click();
-    }
-    await page.getByRole('button', { name: 'Next' }).click();
+    // Click Next
+    await page.getByTestId('setup-next-button').click();
 
     // Step 2: Organization name
-    await page.waitForSelector('input[name="organizationName"]', { timeout: 10000 });
-    await page.locator('input[name="organizationName"]').fill(testData.organizationName);
-    await page.getByRole('button', { name: 'Next' }).click();
+    await expect(page.getByText('Step 2 of 3')).toBeVisible();
+    await expect(page.getByText('What is your company name?')).toBeVisible();
+
+    await page.getByPlaceholder('e.g., Acme Inc.').fill(testData.organizationName);
+    await page.getByTestId('setup-next-button').click();
 
     // Step 3: Website
-    await page.waitForSelector('input[name="website"]', { timeout: 10000 });
-    await page.locator('input[name="website"]').fill(website);
-    await page.getByRole('button', { name: 'Next' }).click();
+    await expect(page.getByText('Step 3 of 3')).toBeVisible();
+    await expect(page.getByText("What's your company website?")).toBeVisible();
 
-    // Should redirect to upgrade page
-    await expect(page).toHaveURL(/\/upgrade\/org_/);
+    await page.getByPlaceholder('example.com').fill(website);
 
-    // Mock successful payment by navigating to Stripe success URL
-    const orgIdMatch = page.url().match(/org_[a-zA-Z0-9]+/);
-    expect(orgIdMatch).toBeTruthy();
-    const orgId = orgIdMatch![0];
+    // Click Finish and wait for redirect
+    await Promise.all([
+      page.waitForURL(/\/upgrade\/org_/),
+      page.getByTestId('setup-finish-button').click(),
+    ]);
 
-    // Simulate Stripe success redirect
-    await page.goto(`/api/stripe/success?organizationId=${orgId}&planType=starter`);
-
-    // Should redirect to onboarding
-    await expect(page).toHaveURL(`/onboarding/${orgId}`);
-
-    // Should see step 4 (describe)
-    await expect(page.getByText('Step 4 of 12')).toBeVisible();
-    await expect(page.getByText('Tell us a bit about your business')).toBeVisible();
-
-    // Complete remaining steps quickly
-    const remainingSteps = [
-      { field: 'textarea', value: 'We are a test company' },
-      { field: 'select', text: 'Technology' },
-      { field: 'select', text: '11-50' },
-      { field: 'multiselect', values: ['Company-provided laptops'] },
-      { field: 'multiselect', values: ['Single sign-on (SSO)'] },
-      { field: 'multiselect', values: ['GitHub'] },
-      { field: 'multiselect', values: ['Remote'] },
-      { field: 'multiselect', values: ['Cloud (AWS, GCP, Azure)'] },
-      { field: 'multiselect', values: ['Customer data'] },
-    ];
-
-    for (const step of remainingSteps) {
-      if (step.field === 'textarea' && step.value) {
-        await page.locator('textarea').fill(step.value);
-      } else if (step.field === 'select' && step.text) {
-        await page.getByRole('combobox').click();
-        await page.getByRole('option', { name: step.text }).click();
-      } else if (step.field === 'multiselect' && step.values) {
-        for (const value of step.values) {
-          await page.getByPlaceholder(/Type to search/).click();
-          await page.getByRole('option', { name: value }).click();
-        }
-      }
-      await page.getByRole('button', { name: 'Next' }).click();
-    }
-
-    // Final step should say "Complete Setup"
-    await expect(page.getByRole('button', { name: 'Complete Setup' })).toBeVisible();
-    await page.getByRole('button', { name: 'Complete Setup' }).click();
-
-    // Should redirect to product
-    await expect(page).toHaveURL(`/${orgId}/frameworks`);
-
-    // Verify can access product pages
-    await page.goto(`/${orgId}/policies`);
-    await expect(page).toHaveURL(`/${orgId}/policies`);
+    // Should see book a call page
+    await expect(page.getByText(`Let's get ${testData.organizationName} approved`)).toBeVisible();
+    await expect(page.getByText('A quick 20-minute call with our team')).toBeVisible();
   });
 
-  test('paid user without completed onboarding is redirected to /onboarding', async ({
-    page,
-    context,
-  }) => {
-    // Create a user with subscription but incomplete onboarding
+  test('user creates org → book call → gets access → onboarding', async ({ page }) => {
     const testData = generateTestData();
     const website = `example${Date.now()}.com`;
 
-    // Authenticate user first
+    // Authenticate user with access
     await authenticateTestUser(page, {
       email: testData.email,
       name: testData.userName,
       skipOrg: true,
+      hasAccess: true,
     });
 
-    // First create org through minimal flow
+    // Go to setup
     await page.goto('/setup');
-    await page.waitForURL(/\/setup\/[a-zA-Z0-9]+/, { timeout: 10000 });
+    await page.waitForURL(/\/setup\/[a-zA-Z0-9]+/);
 
-    // Select framework
-    const checkedFrameworks = await page.locator('input[type="checkbox"]:checked').count();
-    if (checkedFrameworks === 0) {
-      await page.locator('label:has-text("SOC 2")').click();
-    }
-    await page.getByRole('button', { name: 'Next' }).click();
+    // Step 1: Framework selection
+    await expect(page.getByText('Step 1 of 3')).toBeVisible();
+    await page.waitForSelector('input[type="checkbox"]:checked');
+    await page.getByTestId('setup-next-button').click();
 
-    // Fill organization name
-    await page.waitForSelector('input[name="organizationName"]', { timeout: 10000 });
-    await page.locator('input[name="organizationName"]').fill(testData.organizationName);
-    await page.getByRole('button', { name: 'Next' }).click();
+    // Step 2: Organization name
+    await expect(page.getByText('Step 2 of 3')).toBeVisible();
+    await page.getByPlaceholder('e.g., Acme Inc.').fill(testData.organizationName);
+    await page.getByTestId('setup-next-button').click();
 
-    // Fill website
-    await page.waitForSelector('input[name="website"]', { timeout: 10000 });
-    await page.locator('input[name="website"]').fill(website);
-    await page.getByRole('button', { name: 'Next' }).click();
+    // Step 3: Website
+    await expect(page.getByText('Step 3 of 3')).toBeVisible();
+    await page.getByPlaceholder('example.com').fill(website);
 
-    const orgIdMatch = page.url().match(/org_[a-zA-Z0-9]+/);
-    expect(orgIdMatch).toBeTruthy();
-    const orgId = orgIdMatch![0];
+    // Click Finish and wait for redirect - NEW ORGS ALWAYS GO TO BOOK CALL FIRST
+    await Promise.all([
+      page.waitForURL(/\/upgrade\/org_/),
+      page.getByTestId('setup-finish-button').click(),
+    ]);
 
-    // Simulate payment completion
-    await page.goto(`/api/stripe/success?organizationId=${orgId}&planType=starter`);
-    await expect(page).toHaveURL(`/onboarding/${orgId}`);
+    // Even users with access get redirected to book call for NEW organizations
+    await expect(page.getByText(`Let's get ${testData.organizationName} approved`)).toBeVisible();
+    await expect(page.getByText('A quick 20-minute call with our team')).toBeVisible();
 
-    // Try to access product without completing onboarding
-    await page.goto(`/${orgId}/frameworks`);
+    // Extract orgId to grant access and test the onboarding flow
+    const orgId = page.url().match(/org_[a-zA-Z0-9]+/)?.[0];
+    expect(orgId).toBeTruthy();
 
-    // Should be redirected back to onboarding
-    await expect(page).toHaveURL(`/onboarding/${orgId}`);
+    // Now grant access (simulating Lewis manually approving the org)
+    await grantAccess(page, orgId!, true);
+    await page.reload();
 
-    // Try different product routes
-    await page.goto(`/${orgId}/policies`);
-    await expect(page).toHaveURL(`/onboarding/${orgId}`);
-
-    await page.goto(`/${orgId}/vendors`);
-    await expect(page).toHaveURL(`/onboarding/${orgId}`);
+    // Should now redirect to onboarding
+    await expect(page).toHaveURL(`/onboarding/${orgId!}`);
+    await expect(page.getByText('Step 1 of 9')).toBeVisible();
+    await expect(page.getByText('Describe your company in a few sentences')).toBeVisible();
   });
 
-  test('existing user can create additional organization', async ({ page }) => {
-    // This assumes we have a test user with existing org
-    // First complete one org setup
-    const firstOrg = generateTestData();
-    const firstWebsite = `example${Date.now()}.com`;
+  test('user with approved org: redirected from product to onboarding', async ({ page }) => {
+    const testData = generateTestData();
+    const website = `example${Date.now()}.com`;
 
-    // Authenticate user first
+    // Authenticate user with access
     await authenticateTestUser(page, {
-      email: firstOrg.email,
-      name: firstOrg.userName,
+      email: testData.email,
+      name: testData.userName,
       skipOrg: true,
+      hasAccess: true,
     });
 
+    // Complete setup to create org
     await page.goto('/setup');
-    await page.waitForURL(/\/setup\/[a-zA-Z0-9]+/, { timeout: 10000 });
+    await page.waitForURL(/\/setup\/[a-zA-Z0-9]+/);
 
-    // Select framework
-    const checkedFrameworks = await page.locator('input[type="checkbox"]:checked').count();
-    if (checkedFrameworks === 0) {
-      await page.locator('label:has-text("SOC 2")').click();
-    }
-    await page.getByRole('button', { name: 'Next' }).click();
+    // Go through 3 steps quickly
+    await page.waitForSelector('input[type="checkbox"]:checked');
+    // Wait for the button to be enabled (form validation needs to catch up)
+    await page.waitForFunction(
+      () => {
+        const button = document.querySelector(
+          '[data-testid="setup-next-button"]',
+        ) as HTMLButtonElement;
+        return button && !button.disabled && button.offsetParent !== null;
+      },
+      { timeout: 10000 },
+    );
+    await page.waitForTimeout(500); // Brief pause for stability
+    await page.getByTestId('setup-next-button').click();
 
-    // Fill organization name
-    await page.waitForSelector('input[name="organizationName"]', { timeout: 10000 });
-    await page.locator('input[name="organizationName"]').fill(firstOrg.organizationName);
-    await page.getByRole('button', { name: 'Next' }).click();
+    await page.getByPlaceholder('e.g., Acme Inc.').fill(testData.organizationName);
+    // Wait for the button to be enabled after filling the organization name
+    await page.waitForFunction(
+      () => {
+        const button = document.querySelector(
+          '[data-testid="setup-next-button"]',
+        ) as HTMLButtonElement;
+        return button && !button.disabled && button.offsetParent !== null;
+      },
+      { timeout: 5000 },
+    );
+    await page.waitForTimeout(300); // Brief pause for stability
+    await page.getByTestId('setup-next-button').click();
 
-    // Fill website
-    await page.waitForSelector('input[name="website"]', { timeout: 10000 });
-    await page.locator('input[name="website"]').fill(firstWebsite);
-    await page.getByRole('button', { name: 'Next' }).click();
+    await page.getByPlaceholder('example.com').fill(website);
+    await Promise.all([
+      page.waitForURL(/\/upgrade\/org_/),
+      page.getByTestId('setup-finish-button').click(),
+    ]);
 
-    const firstOrgIdMatch = page.url().match(/org_[a-zA-Z0-9]+/);
-    const firstOrgId = firstOrgIdMatch ? firstOrgIdMatch[0] : null;
-    expect(firstOrgId).toBeTruthy();
+    // Extract orgId from current URL
+    const orgId = page.url().match(/org_[a-zA-Z0-9]+/)?.[0];
+    expect(orgId).toBeTruthy();
 
-    // Now create additional org using dropdown
-    await page.goto(`/upgrade/${firstOrgId}`);
+    // Grant access (simulating Lewis manually approving the org)
+    await grantAccess(page, orgId!, true);
+    await page.reload();
 
-    // Try navigating directly to setup with intent
-    await page.goto('/setup?intent=create-additional');
+    // Should now be on onboarding
+    await expect(page).toHaveURL(`/onboarding/${orgId!}`);
 
-    // Should redirect to /setup/[setupId] with intent preserved
-    await page.waitForURL(/\/setup\/[a-zA-Z0-9]+\?intent=create-additional/, { timeout: 10000 });
+    // Try to access product pages - should redirect back to onboarding since onboarding not completed
+    await page.goto(`/${orgId!}/frameworks`);
+    await expect(page).toHaveURL(/\/onboarding\/org_/);
 
-    // Complete setup for second org
-    const secondOrg = generateTestData();
-    const secondWebsite = `example${Date.now() + 1}.com`;
+    await page.goto(`/${orgId!}/policies`);
+    await expect(page).toHaveURL(/\/onboarding\/org_/);
+  });
 
-    // Select a different framework
-    await page.locator('label:has-text("ISO 27001")').click();
-    await page.getByRole('button', { name: 'Next' }).click();
+  test('completed user redirected from setup to app', async ({ page }) => {
+    const testData = generateTestData();
+    const website = `example${Date.now()}.com`;
 
-    // Fill organization name
-    await page.waitForSelector('input[name="organizationName"]', { timeout: 10000 });
-    await page.locator('input[name="organizationName"]').fill(secondOrg.organizationName);
-    await page.getByRole('button', { name: 'Next' }).click();
+    // Authenticate user with access
+    await authenticateTestUser(page, {
+      email: testData.email,
+      name: testData.userName,
+      skipOrg: true,
+      hasAccess: true,
+    });
 
-    // Fill website
-    await page.waitForSelector('input[name="website"]', { timeout: 10000 });
-    await page.locator('input[name="website"]').fill(secondWebsite);
-    await page.getByRole('button', { name: 'Next' }).click();
+    // Complete setup
+    await page.goto('/setup');
+    await page.waitForURL(/\/setup\/[a-zA-Z0-9]+/);
 
-    // Should redirect to upgrade for the new org
-    await expect(page).toHaveURL(/\/upgrade\/org_/);
-    const secondOrgIdMatch = page.url().match(/org_[a-zA-Z0-9]+/);
-    const secondOrgId = secondOrgIdMatch ? secondOrgIdMatch[0] : null;
-    expect(secondOrgId).not.toBe(firstOrgId);
+    await page.waitForSelector('input[type="checkbox"]:checked');
+    // Wait for the button to be enabled (form validation needs to catch up)
+    await page.waitForFunction(
+      () => {
+        const button = document.querySelector(
+          '[data-testid="setup-next-button"]',
+        ) as HTMLButtonElement;
+        return button && !button.disabled && button.offsetParent !== null;
+      },
+      { timeout: 10000 },
+    );
+    await page.waitForTimeout(500); // Brief pause for stability
+    await page.getByTestId('setup-next-button').click();
+
+    await page.getByPlaceholder('e.g., Acme Inc.').fill(testData.organizationName);
+    // Wait for the button to be enabled after filling the organization name
+    await page.waitForFunction(
+      () => {
+        const button = document.querySelector(
+          '[data-testid="setup-next-button"]',
+        ) as HTMLButtonElement;
+        return button && !button.disabled && button.offsetParent !== null;
+      },
+      { timeout: 5000 },
+    );
+    await page.waitForTimeout(300); // Brief pause for stability
+    await page.getByTestId('setup-next-button').click();
+
+    await page.getByPlaceholder('example.com').fill(website);
+    await Promise.all([
+      page.waitForURL(/\/upgrade\/org_/),
+      page.getByTestId('setup-finish-button').click(),
+    ]);
+
+    const orgId = page.url().match(/org_[a-zA-Z0-9]+/)?.[0];
+    expect(orgId).toBeTruthy();
+
+    // Grant access (simulating Lewis manually approving the org)
+    await grantAccess(page, orgId!, true);
+    await page.reload();
+
+    // Should now be on onboarding
+    await expect(page).toHaveURL(`/onboarding/${orgId!}`);
+
+    // Complete onboarding quickly - all 9 steps
+
+    // Step 1: Describe company
+    await page
+      .getByTestId('onboarding-input-describe')
+      .fill('We are a test company that provides compliance solutions.');
+    await page.getByTestId('onboarding-next-button').click();
+
+    // Step 2: Industry (dropdown)
+    await page.getByTestId('onboarding-input-industry').click();
+    await page.waitForSelector('[data-testid="onboarding-option-saas"]', { state: 'visible' });
+    await page.getByTestId('onboarding-option-saas').click();
+    await page.getByTestId('onboarding-next-button').click();
+
+    // Step 3: Team size (dropdown)
+    await page.getByTestId('onboarding-input-teamSize').click();
+    await page.waitForSelector('[data-testid="onboarding-option-11-50"]', { state: 'visible' });
+    await page.getByTestId('onboarding-option-11-50').click();
+    await page.getByTestId('onboarding-next-button').click();
+
+    // Step 4: Devices (multi-select)
+    await page.getByTestId('onboarding-input-devices-search').click();
+    await page.waitForSelector(
+      '[data-testid="onboarding-input-devices-search-option-company-provided-laptops"]',
+      { state: 'visible' },
+    );
+    await page
+      .getByTestId('onboarding-input-devices-search-option-company-provided-laptops')
+      .click();
+    await page.getByTestId('onboarding-next-button').click();
+
+    // Step 5: Authentication (multi-select)
+    await page.getByTestId('onboarding-input-authentication-search').click();
+    await page.waitForSelector(
+      '[data-testid="onboarding-input-authentication-search-option-google-workspace"]',
+      { state: 'visible' },
+    );
+    await page
+      .getByTestId('onboarding-input-authentication-search-option-google-workspace')
+      .click();
+    await page.getByTestId('onboarding-next-button').click();
+
+    // Step 6: Software (multi-select)
+    await page.getByTestId('onboarding-input-software-search').click();
+    await page.waitForSelector('[data-testid="onboarding-input-software-search-option-github"]', {
+      state: 'visible',
+    });
+    await page.getByTestId('onboarding-input-software-search-option-github').click();
+    await page.getByTestId('onboarding-next-button').click();
+
+    // Step 7: Work location (dropdown)
+    await page.getByTestId('onboarding-input-workLocation').click();
+    await page.waitForSelector('[data-testid="onboarding-option-fully-remote"]', {
+      state: 'visible',
+    });
+    await page.getByTestId('onboarding-option-fully-remote').click();
+    await page.getByTestId('onboarding-next-button').click();
+
+    // Step 8: Infrastructure (multi-select)
+    await page.getByTestId('onboarding-input-infrastructure-search').click();
+    await page.waitForSelector(
+      '[data-testid="onboarding-input-infrastructure-search-option-aws"]',
+      { state: 'visible' },
+    );
+    await page.getByTestId('onboarding-input-infrastructure-search-option-aws').click();
+    await page.getByTestId('onboarding-next-button').click();
+
+    // Step 9: Data types (multi-select) - Final step
+    await page.getByTestId('onboarding-input-dataTypes-search').click();
+    await page.waitForSelector(
+      '[data-testid="onboarding-input-dataTypes-search-option-customer-pii"]',
+      { state: 'visible' },
+    );
+    await page.getByTestId('onboarding-input-dataTypes-search-option-customer-pii').click();
+
+    // Final step - Complete Setup button
+    await page.getByTestId('onboarding-next-button').click();
+
+    // Wait for the redirect chain: /onboarding/org_xxx → /org_xxx/ → /org_xxx/frameworks
+    await page.waitForURL(`/${orgId!}/frameworks`, { timeout: 10000 });
+
+    // Now test redirects for completed user
+    await page.goto('/setup');
+    await expect(page).toHaveURL(`/${orgId!}/frameworks`);
+
+    await page.goto(`/upgrade/${orgId!}`);
+    await expect(page).toHaveURL(`/${orgId!}/frameworks`);
+  });
+
+  test('user without access gets blocked then granted access', async ({ page }) => {
+    const testData = generateTestData();
+    const website = `example${Date.now()}.com`;
+
+    // Authenticate user without access
+    await authenticateTestUser(page, {
+      email: testData.email,
+      name: testData.userName,
+      skipOrg: true,
+      hasAccess: false,
+    });
+
+    // Complete setup to get to book call page
+    await page.goto('/setup');
+    await page.waitForURL(/\/setup\/[a-zA-Z0-9]+/);
+
+    await page.waitForSelector('input[type="checkbox"]:checked');
+    // Wait for the button to be enabled (form validation needs to catch up)
+    await page.waitForFunction(
+      () => {
+        const button = document.querySelector(
+          '[data-testid="setup-next-button"]',
+        ) as HTMLButtonElement;
+        return button && !button.disabled && button.offsetParent !== null;
+      },
+      { timeout: 10000 },
+    );
+    await page.waitForTimeout(500); // Brief pause for stability
+    await page.getByTestId('setup-next-button').click();
+
+    await page.getByPlaceholder('e.g., Acme Inc.').fill(testData.organizationName);
+    // Wait for the button to be enabled after filling the organization name
+    await page.waitForFunction(
+      () => {
+        const button = document.querySelector(
+          '[data-testid="setup-next-button"]',
+        ) as HTMLButtonElement;
+        return button && !button.disabled && button.offsetParent !== null;
+      },
+      { timeout: 5000 },
+    );
+    await page.waitForTimeout(300); // Brief pause for stability
+    await page.getByTestId('setup-next-button').click();
+
+    await page.getByPlaceholder('example.com').fill(website);
+    await Promise.all([
+      page.waitForURL(/\/upgrade\/org_/),
+      page.getByTestId('setup-finish-button').click(),
+    ]);
+
+    const orgId = page.url().match(/org_[a-zA-Z0-9]+/)?.[0];
+    expect(orgId).toBeTruthy();
+
+    // Verify blocked
+    await expect(page.getByText(`Let's get ${testData.organizationName} approved`)).toBeVisible();
+
+    // Try accessing onboarding - should be blocked
+    await page.goto(`/onboarding/${orgId!}`);
+    await expect(page).toHaveURL(`/upgrade/${orgId!}`);
+
+    // Grant access
+    await grantAccess(page, orgId!, true);
+    await page.reload();
+
+    // Should now redirect to onboarding
+    await expect(page).toHaveURL(`/onboarding/${orgId!}`);
+    await expect(page.getByText('Step 1 of 9')).toBeVisible();
   });
 });

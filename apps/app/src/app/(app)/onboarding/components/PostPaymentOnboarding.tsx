@@ -129,6 +129,7 @@ export function PostPaymentOnboarding({
                 form="onboarding-form"
                 disabled={isOnboarding || isFinalizing || isLoading}
                 className="group transition-all hover:pl-3"
+                data-testid="onboarding-next-button"
               >
                 {isFinalizing ? (
                   'Setting up...'

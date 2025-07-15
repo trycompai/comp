@@ -6,16 +6,16 @@ import { redirect } from 'next/navigation';
 export default async function RootPage({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
 
   // Helper function to build URL with search params
-  const buildUrlWithParams = (path: string) => {
+  const buildUrlWithParams = async (path: string): Promise<string> => {
     const params = new URLSearchParams();
-    Object.entries(searchParams).forEach(([key, value]) => {
+    Object.entries(await searchParams).forEach(([key, value]) => {
       if (value !== undefined) {
         if (Array.isArray(value)) {
           value.forEach((v) => params.append(key, v));
@@ -29,13 +29,13 @@ export default async function RootPage({
   };
 
   if (!session) {
-    return redirect(buildUrlWithParams('/auth'));
+    return redirect(await buildUrlWithParams('/auth'));
   }
 
   const orgId = session.session.activeOrganizationId;
 
   if (!orgId) {
-    return redirect(buildUrlWithParams('/setup'));
+    return redirect(await buildUrlWithParams('/setup'));
   }
 
   const member = await db.member.findFirst({
@@ -46,12 +46,12 @@ export default async function RootPage({
   });
 
   if (member?.role === 'employee') {
-    return redirect(buildUrlWithParams('/no-access'));
+    return redirect(await buildUrlWithParams('/no-access'));
   }
 
   if (!member) {
-    return redirect(buildUrlWithParams('/setup'));
+    return redirect(await buildUrlWithParams('/setup'));
   }
 
-  return redirect(buildUrlWithParams(`/${orgId}/frameworks`));
+  return redirect(await buildUrlWithParams(`/${orgId}/frameworks`));
 }
