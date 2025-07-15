@@ -1,6 +1,5 @@
 'use client';
 
-import { SubscriptionType } from '@comp/db/types';
 import { Button } from '@comp/ui/button';
 import { Card } from '@comp/ui/card';
 import { ArrowRight } from 'lucide-react';
@@ -12,26 +11,22 @@ export function BookingStep({
   company,
   orgId,
   complianceFrameworks,
-  planType,
+  hasAccess,
 }: {
   email: string;
   name: string;
   company: string;
   orgId: string;
   complianceFrameworks: string[];
-  planType: SubscriptionType;
+  hasAccess: boolean;
 }) {
-  const title =
-    planType === 'FREE' || planType === 'STARTER'
-      ? 'Talk to us to upgrade'
-      : `Let's get ${company} approved`;
+  const title = !hasAccess ? `Let's get ${company} approved` : 'Talk to us to upgrade';
 
-  const description =
-    planType === 'FREE' || planType === 'STARTER'
-      ? 'A quick 20-minute call with our team to understand your compliance needs and upgrade your plan.'
-      : `A quick 20-minute call with our team to understand your compliance needs and approve your organization for access.`;
+  const description = !hasAccess
+    ? `A quick 20-minute call with our team to understand your compliance needs and approve your organization for access.`
+    : `A quick 20-minute call with our team to understand your compliance needs and upgrade your plan.`;
 
-  const cta = planType === 'FREE' || planType === 'STARTER' ? 'Book a Call' : 'Book Your Demo';
+  const cta = !hasAccess ? 'Book Your Demo' : 'Book a Call';
 
   return (
     <div className="flex justify-center w-full animate-in fade-in-50 duration-500">

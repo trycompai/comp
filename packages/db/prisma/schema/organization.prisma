@@ -1,19 +1,14 @@
 model Organization {
-  id               String      @id @default(dbgenerated("generate_prefixed_cuid('org'::text)"))
-  name             String
-  slug             String      @unique @default(dbgenerated("generate_prefixed_cuid('slug'::text)"))
-  logo             String?
-  createdAt        DateTime    @default(now())
-  metadata         String?
-  stripeCustomerId String?
-  onboarding       Onboarding?
-  website          String?
-
-  // Subscription tracking
-  onboardingCompleted    Boolean          @default(false)
-  subscriptionType       SubscriptionType @default(NONE)
-  stripeSubscriptionData Json?
-  hadCall                Boolean          @default(false)
+  id                  String      @id @default(dbgenerated("generate_prefixed_cuid('org'::text)"))
+  name                String
+  slug                String      @unique @default(dbgenerated("generate_prefixed_cuid('slug'::text)"))
+  logo                String?
+  createdAt           DateTime    @default(now())
+  metadata            String?
+  onboarding          Onboarding?
+  website             String?
+  onboardingCompleted Boolean     @default(false)
+  hasAccess           Boolean     @default(false)
 
   // FleetDM
   fleetDmLabelId        Int?
@@ -36,13 +31,4 @@ model Organization {
   context            Context[]
 
   @@index([slug])
-  @@index([subscriptionType])
-  @@index([stripeCustomerId])
-}
-
-enum SubscriptionType {
-  NONE
-  FREE
-  STARTER
-  MANAGED
 }

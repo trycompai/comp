@@ -4,6 +4,7 @@ interface AuthOptions {
   email?: string;
   name?: string;
   skipOrg?: boolean;
+  hasAccess?: boolean;
 }
 
 /**
@@ -67,4 +68,29 @@ export async function authenticateTestUser(page: Page, options: AuthOptions = {}
  */
 export async function clearAuth(page: Page) {
   await page.context().clearCookies();
+}
+
+/**
+ * Grant access to an organization for testing purposes
+ * This calls the test-grant-access endpoint to update the hasAccess field
+ */
+export async function grantAccess(
+  page: Page,
+  orgId: string,
+  hasAccess: boolean = true,
+): Promise<void> {
+  console.log(`Granting access to organization: ${orgId}, hasAccess: ${hasAccess}`);
+
+  const response = await page.context().request.post('/api/auth/test-grant-access', {
+    data: { orgId, hasAccess },
+    timeout: 10000,
+  });
+
+  if (!response.ok()) {
+    const errorBody = await response.text();
+    throw new Error(`Failed to grant access: ${response.status()} - ${errorBody}`);
+  }
+
+  const result = await response.json();
+  console.log('Access granted successfully:', result);
 }

@@ -21,7 +21,7 @@ export async function GET() {
       data: {
         id: `org_test_${Date.now()}`,
         name: 'Test DB Org',
-        subscriptionType: 'FREE',
+        hasAccess: true,
       },
     });
 
