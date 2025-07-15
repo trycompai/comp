@@ -61,12 +61,15 @@ test.describe('Middleware Onboarding Behavior', () => {
   });
 
   test('unauthenticated user is redirected to auth', async ({ page }) => {
-    // Try to access protected route without auth
-    await page.goto('/org_123/frameworks', { waitUntil: 'domcontentloaded' });
+    // Try to access protected route without auth, expecting redirect
+    const response = await page.goto('/org_123/frameworks', {
+      waitUntil: 'commit', // Just wait for navigation to start, not complete
+    });
 
-    // Wait for the redirect to complete
-    await page.waitForTimeout(2000);
+    // Wait a bit for redirect
+    await page.waitForTimeout(1000);
 
+    // Check final URL
     const currentUrl = page.url();
     console.log('Unauthenticated user redirected to:', currentUrl);
 
