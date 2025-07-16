@@ -1,6 +1,6 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["driverAdapters", "postgresqlExtensions", "prismaSchemaFolder"]
+  previewFeatures = ["driverAdapters", "postgresqlExtensions"]
   binaryTargets   = ["native", "debian-openssl-3.0.x"]
 }
 

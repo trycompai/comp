@@ -1,5 +1,9 @@
 {
   "extends": "@comp/tsconfig/base.json",
-  "include": ["src", "."],
+  "include": [
+    "src",
+    ".",
+    "trigger.config.ts"
+  ],
   "exclude": ["node_modules"]
 }
