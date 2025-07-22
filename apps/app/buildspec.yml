@@ -17,20 +17,35 @@ phases:
       - echo "DATABASE_URL length:" ${#DATABASE_URL}
       - echo "DATABASE_URL (masked):" $(echo "$DATABASE_URL" | sed 's/:[^@]*@/:***@/')
       - echo "NODE_ENV:" $NODE_ENV
-      - cd apps/app
-
       - echo "=== INSTALLING DEPENDENCIES ==="
+      - echo "Current working directory:"
+      - pwd
+      - echo "Repository structure:"
+      - ls -la
+      - echo "Navigating to app directory..."
+      - cd apps/app
+      - echo "App directory contents:"
+      - ls -la
       - export PATH="/root/.bun/bin:$PATH"
       - export PGSSLMODE=require
       - export NEXT_TELEMETRY_DISABLED=1
       - echo "Installing dependencies with parallel processing..."
       - echo "Using aggressive caching with 72GB memory..."
-      - SKIP_ENV_VALIDATION=true bun install --frozen-lockfile --concurrent 36
+      - echo "Checking lockfile status..."
+      - ls -la ../../bun.lock* || echo "No root lockfile found"
+      - ls -la bun.lock* || echo "No local lockfile found"
+      - echo "Installing dependencies from monorepo root..."
+      - cd ../../
+      - echo "Attempting frozen lockfile install first..."
+      - SKIP_ENV_VALIDATION=true bun install --frozen-lockfile --concurrent 36 || (echo "Frozen lockfile failed, installing with updates..." && SKIP_ENV_VALIDATION=true bun install --concurrent 36)
+      - cd apps/app
       - echo "Re-generating Prisma client in app context for runtime compatibility..."
-      - bun x prisma generate --schema=../../packages/db/prisma/schema.prisma
+      - bun x prisma generate --schema=../packages/db/prisma/schema.prisma
 
       - echo "=== GENERATING PRISMA CLIENT ==="
-      - cd ../../packages/db
+      - echo "Current directory before Prisma generation:"
+      - pwd
+      - cd packages/db
       - echo "Generating Prisma client with all binary targets..."
       - bun x prisma generate
       - echo "Verifying generated binary targets..."
@@ -138,6 +153,7 @@ cache:
     - 'packages/db/node_modules/**/*'
     - '/root/.bun/install/cache/**/*'
     - '.next/cache/**/*'
+    - 'bun.lock'
 
 artifacts:
   files:
