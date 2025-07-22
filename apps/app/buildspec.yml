@@ -65,34 +65,31 @@ phases:
 
       - echo "=== BUILDING DOCKER RUNTIME IMAGE WITH PRE-BUILT ARTIFACTS ==="
       - echo "Creating runtime-only Docker image with build artifacts..."
-      - |
-        cat > Dockerfile.runtime << 'EOF'
-        # Use Node.js Alpine for smaller runtime image
-        FROM node:18-alpine AS runtime
-
-        WORKDIR /app
-
-        ENV NODE_ENV=production
-        ENV NEXT_TELEMETRY_DISABLED=1
-        ENV PORT=3000
-        ENV HOSTNAME="0.0.0.0"
-        ENV NODE_TLS_REJECT_UNAUTHORIZED=0
-
-        # Copy the complete standalone build from CodeBuild
-        COPY .next/standalone ./
-
-        # Create non-root user for security
-        RUN addgroup -g 1001 -S nodejs && \
-            adduser -S nextjs -u 1001 && \
-            chown -R nextjs:nodejs /app
-
-        USER nextjs
-
-        EXPOSE 3000
-
-        # Use node to run the standalone server.js
-        CMD ["node", "server.js"]
-        EOF
+      - echo "# Use Node.js Alpine for smaller runtime image" > Dockerfile.runtime
+      - echo "FROM node:18-alpine AS runtime" >> Dockerfile.runtime
+      - echo "" >> Dockerfile.runtime
+      - echo "WORKDIR /app" >> Dockerfile.runtime
+      - echo "" >> Dockerfile.runtime
+      - echo "ENV NODE_ENV=production" >> Dockerfile.runtime
+      - echo "ENV NEXT_TELEMETRY_DISABLED=1" >> Dockerfile.runtime
+      - echo "ENV PORT=3000" >> Dockerfile.runtime
+      - echo "ENV HOSTNAME=\"0.0.0.0\"" >> Dockerfile.runtime
+      - echo "ENV NODE_TLS_REJECT_UNAUTHORIZED=0" >> Dockerfile.runtime
+      - echo "" >> Dockerfile.runtime
+      - echo "# Copy the complete standalone build from CodeBuild" >> Dockerfile.runtime
+      - echo "COPY .next/standalone ./" >> Dockerfile.runtime
+      - echo "" >> Dockerfile.runtime
+      - echo "# Create non-root user for security" >> Dockerfile.runtime
+      - echo "RUN addgroup -g 1001 -S nodejs && \\" >> Dockerfile.runtime
+      - echo "    adduser -S nextjs -u 1001 && \\" >> Dockerfile.runtime
+      - echo "    chown -R nextjs:nodejs /app" >> Dockerfile.runtime
+      - echo "" >> Dockerfile.runtime
+      - echo "USER nextjs" >> Dockerfile.runtime
+      - echo "" >> Dockerfile.runtime
+      - echo "EXPOSE 3000" >> Dockerfile.runtime
+      - echo "" >> Dockerfile.runtime
+      - echo "# Use node to run the standalone server.js" >> Dockerfile.runtime
+      - echo "CMD [\"node\", \"server.js\"]" >> Dockerfile.runtime
       - docker build -f Dockerfile.runtime -t $IMAGE_REPO_NAME:$IMAGE_TAG .
       - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $REPOSITORY_URI:$IMAGE_TAG
       - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $REPOSITORY_URI:latest
@@ -103,11 +100,7 @@ phases:
       - docker push $REPOSITORY_URI:$IMAGE_TAG
       - docker push $REPOSITORY_URI:latest
       - echo "Updating ECS service to deploy new image..."
-      - |
-        if ! aws ecs update-service --cluster $ECS_CLUSTER_NAME --service $ECS_SERVICE_NAME --force-new-deployment; then
-          echo "❌ Failed to update ECS service"
-          exit 1
-        fi
+      - aws ecs update-service --cluster $ECS_CLUSTER_NAME --service $ECS_SERVICE_NAME --force-new-deployment || (echo "❌ Failed to update ECS service" && exit 1)
       - echo "Writing image definitions file..."
       - 'printf "[{\"name\":\"%s-app\",\"imageUri\":\"%s\"}]" $IMAGE_REPO_NAME $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json'
 
