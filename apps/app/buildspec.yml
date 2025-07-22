@@ -36,6 +36,9 @@ phases:
       - echo "✅ Type checking passed"
 
       - echo "=== RUNNING DATABASE MIGRATIONS ==="
+      - echo "Testing database connectivity..."
+      - echo "DATABASE_URL endpoint:" $(echo "$DATABASE_URL" | sed 's/.*@\([^:]*\):.*/\1/')
+      - nslookup $(echo "$DATABASE_URL" | sed 's/.*@\([^:]*\):.*/\1/') || echo "DNS lookup failed"
       - echo "Running migrations before build..."
       - NODE_TLS_REJECT_UNAUTHORIZED=0 bun run apply-migrations
       - echo "✅ Database migrations completed"

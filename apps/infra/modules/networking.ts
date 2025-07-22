@@ -427,7 +427,7 @@ export function createNetworking(config: CommonConfig) {
     vpcId: vpc.id,
     serviceName: `com.amazonaws.${config.awsRegion}.codebuild`,
     vpcEndpointType: 'Interface',
-    subnetIds: publicSubnetIds,
+    subnetIds: privateSubnetIds, // CodeBuild runs in private subnets, so endpoints should be there too
     securityGroupIds: [vpcEndpointSecurityGroup.id],
     tags: {
       ...commonTags,
@@ -441,7 +441,7 @@ export function createNetworking(config: CommonConfig) {
     vpcId: vpc.id,
     serviceName: `com.amazonaws.${config.awsRegion}.logs`,
     vpcEndpointType: 'Interface',
-    subnetIds: publicSubnetIds,
+    subnetIds: privateSubnetIds, // CodeBuild logs from private subnets, so endpoint should be there too
     securityGroupIds: [vpcEndpointSecurityGroup.id],
     tags: {
       ...commonTags,
