@@ -94,8 +94,18 @@ phases:
 
       - echo "=== PREPARING STANDALONE BUILD FILES ==="
       - echo "Next.js standalone build requires manual copying of static files..."
+      - echo "Checking build artifacts..."
+      - ls -la .next/ || echo "No .next directory found"
+      - ls -la .next/static/ || echo "No .next/static directory found"
+      - ls -la public/ || echo "No public directory found"
+      - echo "Copying public assets..."
       - cp -r public .next/standalone/ || echo "No public folder found"
-      - cp -r .next/static .next/standalone/.next/ || echo "No static folder found"
+      - echo "Copying static assets..."
+      - mkdir -p .next/standalone/.next/static
+      - cp -r .next/static/* .next/standalone/.next/static/ || echo "No static files found"
+      - echo "Verifying copied static files..."
+      - ls -la .next/standalone/.next/static/ || echo "Static files not copied"
+      - ls -la .next/standalone/public/ || echo "Public files not copied"
       - echo "Copying Prisma client to standalone build..."
       - mkdir -p .next/standalone/node_modules/.prisma
       - 'mkdir -p ".next/standalone/node_modules/@prisma"'
@@ -127,6 +137,9 @@ phases:
       - ls -la .next/standalone/node_modules/.prisma/client/
       - echo "Checking for required binary targets..."
       - ls -la .next/standalone/node_modules/.prisma/client/ | grep -E "(linux-musl|debian)" || echo "Warning Expected binary targets not found"
+      - echo "Detailed binary files in copied Prisma client:"
+      - find .next/standalone/node_modules/.prisma/client/ -name "*linux-musl*" 2>/dev/null || echo "No linux-musl binaries found"
+      - find .next/standalone/node_modules/.prisma/client/ -name "*debian*" 2>/dev/null || echo "No debian binaries found"
       - echo "✅ Standalone files prepared"
 
       - echo "=== VERIFYING BUILD ARTIFACTS ==="
