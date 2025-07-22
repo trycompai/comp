@@ -16,13 +16,11 @@ Go to **Settings → Branches** in your GitHub repository and add a branch prote
 ### Must Pass Before Merging:
 
 1. **Quick Checks** (Quick Tests)
-
    - Fast smoke tests that run on every PR
    - Includes type checking, linting, and critical middleware tests
    - Should complete in < 5 minutes
 
 2. **Unit Tests** (Unit Tests / app)
-
    - Vitest unit tests for the main app
    - Tests business logic, utilities, and components
 

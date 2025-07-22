@@ -244,7 +244,6 @@ Start and initialize the PostgreSQL database using Docker:
    ```
 
 2. Default credentials:
-
    - Database name: `comp`
    - Username: `postgres`
    - Password: `postgres`
@@ -307,7 +306,6 @@ bun docker:clean
 If `.env` files don’t load values as expected, you can hard-code the following:
 
 - **`comp/packages/kv/src/index.ts`** → Hard-coded Redis client credentials:
-
   - **URL**: The Redis URL needs to start with `https`. Example:
     ```sh
     url: "https://default:AXhaAA***MA@charmed-wombat-3**0.upstash.io:6379"
@@ -318,7 +316,6 @@ If `.env` files don’t load values as expected, you can hard-code the following
     ```
 
 - **`comp/packages/db/prisma/schema.prisma`** → Hard-coded `DATABASE_URL`:
-
   - Example:
     `sh
     datasource db {
@@ -328,7 +325,6 @@ If `.env` files don’t load values as expected, you can hard-code the following
     `
 
 - **`comp/apps/portal/src/app/lib/auth.ts`** → Hard-coded Google environment variables `clientId`, `clientSecret` under `socialProviders/google`:
-
   - Example:
     ```js
     socialProviders: {

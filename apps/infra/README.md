@@ -82,7 +82,6 @@ If you encounter issues during `pulumi up`:
    ```
 
 3. **"ECR authorization failed"**
-
    - Ensure your AWS user has ECR permissions
    - Check AWS region matches your config
 

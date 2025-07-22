@@ -62,7 +62,6 @@ See [BRANCH_PROTECTION.md](BRANCH_PROTECTION.md) for setup instructions.
 ## Workflow Files
 
 - **Testing**
-
   - `test-quick.yml` - Type checking, linting, smoke tests
   - `unit-tests.yml` - Vitest tests for all apps
   - `e2e-tests.yml` - Playwright tests (multi-browser)

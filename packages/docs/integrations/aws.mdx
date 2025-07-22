@@ -24,25 +24,21 @@ Before setting up the integration, ensure you have:
 1. **Log into your AWS Management Console**
 
 2. **Enable Security Hub**
-
    - Navigate to **Security Hub** in the AWS Console
    - Click **Get Started**
    - Enable Security Hub in your **desired regions**
    - Optionally, enable **default security standards** (like CIS AWS Foundations)
 
 3. **Choose a Region Code**
-
    - Decide which AWS region you want Comp AI to use (e.g., `us-east-1`, `us-west-2`)
    - Copy this region code — you’ll need it in the Comp AI UI
 
 4. **Create an IAM User for Comp AI**
-
    - Go to **IAM > Users**, then click **Add user**
    - Enter a name like `CompAIIntegrationUser`
    - Choose **Programmatic access** (this generates the Access Key ID & Secret)
 
 5. **Set Permissions**
-
    - On the permissions screen, click **Attach policies directly**
    - Attach the following AWS managed policies:
      - `SecurityAudit`
@@ -51,7 +47,6 @@ Before setting up the integration, ensure you have:
    _(Or use a custom least-privilege policy — see example below)_
 
 6. **Create the User**
-
    - Click **Next**, then **Create user**
    - Copy and securely store the **Access Key ID** and **Secret Access Key**
    - You will only see the secret once!
