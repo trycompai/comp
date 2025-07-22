@@ -280,7 +280,7 @@ export function createNetworking(config: CommonConfig) {
     },
   });
 
-  // Allow CodeBuild to access database
+  // Allow CodeBuild to access database - explicit ingress rule
   const buildDatabaseAccess = new aws.ec2.SecurityGroupRule(
     `${config.projectName}-build-database-access`,
     {
@@ -291,6 +291,26 @@ export function createNetworking(config: CommonConfig) {
       sourceSecurityGroupId: codeBuildSecurityGroup.id,
       securityGroupId: databaseSecurityGroup.id,
       description: 'Allow CodeBuild to access database for builds',
+    },
+    {
+      dependsOn: [codeBuildSecurityGroup, databaseSecurityGroup],
+    },
+  );
+
+  // Also allow access from private subnet CIDR as backup (CodeBuild runs in private subnets)
+  const buildDatabaseCidrAccess = new aws.ec2.SecurityGroupRule(
+    `${config.projectName}-build-database-cidr-access`,
+    {
+      type: 'ingress',
+      fromPort: 5432,
+      toPort: 5432,
+      protocol: 'tcp',
+      cidrBlocks: [networkConfig.subnets.private[0].cidr, networkConfig.subnets.private[1].cidr],
+      securityGroupId: databaseSecurityGroup.id,
+      description: 'Allow access from private subnets (CodeBuild backup rule)',
+    },
+    {
+      dependsOn: [databaseSecurityGroup],
     },
   );
 
