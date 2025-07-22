@@ -150,9 +150,10 @@ export function createBuildSystem(
     source: {
       type: 'GITHUB',
       location: `https://github.com/${config.githubOrg}/${config.githubRepo}.git`,
-      buildspec: 'apps/web/buildspec.yml',
+      buildspec: 'apps/app/buildspec.yml',
       gitCloneDepth: 1,
     },
+    sourceVersion: config.githubBranch, // Specify which branch to build from
     tags: {
       ...commonTags,
       Name: `${config.projectName}-app-build`,

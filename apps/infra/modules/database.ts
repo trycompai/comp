@@ -18,7 +18,8 @@ export function createDatabase(config: CommonConfig, network: NetworkOutputs) {
 
   // Create AWS Secret for database credentials (will be populated after RDS instance is created)
   const dbSecret = new aws.secretsmanager.Secret(`${config.projectName}-db-secret`, {
-    name: `${config.projectName}/database/master-password`,
+    // Use a unique name to avoid conflicts with deleted secrets
+    namePrefix: `${config.projectName}/database/master-password-`,
     description: 'Complete DATABASE_URL for PostgreSQL database',
     tags: {
       ...commonTags,
@@ -102,8 +103,8 @@ export function createDatabase(config: CommonConfig, network: NetworkOutputs) {
     storageType: 'gp3',
     storageEncrypted: true,
 
-    dbName: `default`,
-    username: `admin`,
+    dbName: config.dbName,
+    username: config.dbUsername,
     password: dbPassword.result,
 
     vpcSecurityGroupIds: [network.securityGroups.database],
@@ -142,10 +143,12 @@ export function createDatabase(config: CommonConfig, network: NetworkOutputs) {
     `${config.projectName}-db-secret-version`,
     {
       secretId: dbSecret.id,
-      secretString: dbInstance.endpoint.apply(
-        (endpoint) =>
-          `postgresql://admin:${dbPassword.result}@${endpoint}:5432/default?sslmode=require`,
-      ),
+      secretString: pulumi
+        .all([dbInstance.endpoint, dbInstance.username, dbInstance.dbName])
+        .apply(
+          ([endpoint, username, dbName]) =>
+            `postgresql://${username}:${dbPassword.result}@${endpoint}:5432/${dbName}?sslmode=require`,
+        ),
     },
   );
 

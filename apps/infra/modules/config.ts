@@ -30,8 +30,11 @@ export function createConfig(projectName: string): CommonConfig {
     throw new Error('ENABLE_RDS_READ_REPLICAS is not set');
   }
 
-  const stack = pulumi.getStack(); // dev, staging, prod
+  const stack = pulumi.getStack(); // dev, staging, prod, mariano-test, etc.
   const pulumiConfig = new pulumi.Config(projectName);
+
+  // Use the stack name for resource naming to ensure environment-specific names
+  const resourcePrefix = `comp-${stack}`;
 
   // Feature flags
   const enableTailscale = pulumiConfig.getBoolean('enableTailscale') ?? false;
@@ -40,7 +43,7 @@ export function createConfig(projectName: string): CommonConfig {
 
   // Base configuration applicable to all environments
   const baseConfig = {
-    projectName,
+    projectName: resourcePrefix, // Use stack-based naming for resources
     enableRDSReadReplicas: process.env.ENABLE_RDS_READ_REPLICAS === 'true',
     region: process.env.AWS_REGION,
     awsRegion: process.env.AWS_REGION,
@@ -48,6 +51,10 @@ export function createConfig(projectName: string): CommonConfig {
     enableDebugEndpoints: process.env.ENABLE_DEBUG_ENDPOINTS === 'true',
     githubOrg: process.env.GITHUB_ORG,
     githubRepo: process.env.GITHUB_REPO,
+    githubBranch: pulumiConfig.get('githubBranch') || process.env.GITHUB_BRANCH || 'main', // Pulumi config takes precedence, then env var, then default
+    // Database configuration
+    dbName: process.env.DB_NAME || 'compdb',
+    dbUsername: process.env.DB_USERNAME || 'compadmin',
     commonTags: {
       Project: projectName,
       Environment: stack,

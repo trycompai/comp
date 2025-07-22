@@ -17,6 +17,7 @@ export interface CommonConfig {
   enableDebugEndpoints: boolean;
   githubOrg: string;
   githubRepo: string;
+  githubBranch: string;
   commonTags: ResourceTags;
   networkConfig: NetworkConfig;
   securityConfig: SecurityConfig;
@@ -25,6 +26,8 @@ export interface CommonConfig {
   dbMaxAllocatedStorage: number;
   dbBackupRetentionPeriod: number;
   dbDeletionProtection: boolean;
+  dbName: string;
+  dbUsername: string;
   logRetentionDays: number;
   // Optional feature configurations
   tailscale?: {

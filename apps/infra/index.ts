@@ -103,9 +103,7 @@ const applications = [
 
 // Deploy configured applications
 // TODO: Implement createApplicationDeployment in build module
-const deployments = applications.map((app) =>
-  build.createApplicationDeployment(app, database, container),
-);
+applications.map((app) => build.createApplicationDeployment(app, database, container));
 
 // ==========================================
 // STACK OUTPUTS (COMPREHENSIVE AS PER PROPOSAL)

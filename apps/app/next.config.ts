@@ -2,6 +2,7 @@ import type { NextConfig } from 'next';
 import './src/env.mjs';
 
 const config: NextConfig = {
+  output: 'standalone', // Required for Docker builds
   poweredByHeader: false,
   reactStrictMode: true,
   turbopack: {
