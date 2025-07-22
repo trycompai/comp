@@ -101,7 +101,7 @@ export function createBuildSystem(
       type: 'NO_ARTIFACTS',
     },
     environment: {
-      computeType: 'BUILD_GENERAL1_MEDIUM',
+      computeType: 'BUILD_GENERAL1_2XLARGE',
       image: 'aws/codebuild/standard:7.0',
       type: 'LINUX_CONTAINER',
       privilegedMode: true, // Required for Docker builds
@@ -278,7 +278,7 @@ export function createBuildSystem(
     appProjectName: appProject.name,
     appProjectArn: appProject.arn,
     codebuildRoleArn: codebuildRole.arn,
-    buildInstanceType: 'BUILD_GENERAL1_MEDIUM',
+    buildInstanceType: 'BUILD_GENERAL1_2XLARGE',
     buildTimeout: 20,
     createApplicationDeployment,
   };

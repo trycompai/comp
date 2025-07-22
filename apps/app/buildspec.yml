@@ -23,7 +23,9 @@ phases:
       - export PATH="/root/.bun/bin:$PATH"
       - export PGSSLMODE=require
       - export NEXT_TELEMETRY_DISABLED=1
-      - SKIP_ENV_VALIDATION=true bun install --frozen-lockfile
+      - echo "Installing dependencies with parallel processing..."
+      - echo "Using aggressive caching with 72GB memory..."
+      - SKIP_ENV_VALIDATION=true bun install --frozen-lockfile --concurrent 36
       - echo "Re-generating Prisma client in app context for runtime compatibility..."
       - bun x prisma generate --schema=../../packages/db/prisma/schema.prisma
 
@@ -36,7 +38,7 @@ phases:
       - cd ../../apps/app
 
       - echo "=== TYPE CHECKING ==="
-      - echo "Running TypeScript type checking..."
+      - echo "Running TypeScript type checking with parallel processing..."
       - bun run typecheck
       - echo "✅ Type checking passed"
 
@@ -62,6 +64,9 @@ phases:
 
       - echo "=== BUILDING NEXT.JS ON CODEBUILD HOST (WITH MIGRATED DATABASE) ==="
       - echo "Running Next.js build with database access for SSG..."
+      - echo "Optimizing build for 36 vCPUs..."
+      - export UV_THREADPOOL_SIZE=36
+      - export NODE_OPTIONS="--max-old-space-size=65536"
       - NODE_TLS_REJECT_UNAUTHORIZED=0 bun run build
       - echo "✅ Next.js build completed with database access"
 
@@ -112,7 +117,8 @@ phases:
 
       - echo "=== BUILDING DOCKER RUNTIME IMAGE WITH PRE-BUILT ARTIFACTS ==="
       - echo "Creating runtime-only Docker image with build artifacts..."
-      - docker build -f Dockerfile -t $IMAGE_REPO_NAME:$IMAGE_TAG .
+      - echo "Using parallel Docker build with 36 cores..."
+      - docker build --progress=plain --build-arg BUILDKIT_INLINE_CACHE=1 -f Dockerfile -t $IMAGE_REPO_NAME:$IMAGE_TAG .
       - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $REPOSITORY_URI:$IMAGE_TAG
       - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $REPOSITORY_URI:latest
 
@@ -125,6 +131,13 @@ phases:
       - aws ecs update-service --cluster $ECS_CLUSTER_NAME --service $ECS_SERVICE_NAME --force-new-deployment || (echo "❌ Failed to update ECS service" && exit 1)
       - echo "Writing image definitions file..."
       - 'printf "[{\"name\":\"%s-app\",\"imageUri\":\"%s\"}]" $IMAGE_REPO_NAME $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json'
+
+cache:
+  paths:
+    - 'node_modules/**/*'
+    - 'packages/db/node_modules/**/*'
+    - '/root/.bun/install/cache/**/*'
+    - '.next/cache/**/*'
 
 artifacts:
   files:
