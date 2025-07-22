@@ -140,6 +140,26 @@ export function createBuildSystem(
           value: config.nodeEnv,
           type: 'PLAINTEXT',
         },
+        {
+          name: 'AUTH_SECRET',
+          value: config.authSecret,
+          type: 'PLAINTEXT',
+        },
+        {
+          name: 'RESEND_API_KEY',
+          value: config.resendApiKey,
+          type: 'PLAINTEXT',
+        },
+        {
+          name: 'REVALIDATION_SECRET',
+          value: config.revalidationSecret,
+          type: 'PLAINTEXT',
+        },
+        {
+          name: 'NEXT_PUBLIC_PORTAL_URL',
+          value: config.portalUrl,
+          type: 'PLAINTEXT',
+        },
       ],
     },
     vpcConfig: {

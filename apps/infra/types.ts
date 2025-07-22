@@ -18,6 +18,10 @@ export interface CommonConfig {
   githubOrg: string;
   githubRepo: string;
   githubBranch: string;
+  authSecret: string;
+  resendApiKey: string;
+  revalidationSecret: string;
+  portalUrl: string;
   commonTags: ResourceTags;
   networkConfig: NetworkConfig;
   securityConfig: SecurityConfig;

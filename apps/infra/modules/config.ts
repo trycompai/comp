@@ -30,6 +30,22 @@ export function createConfig(projectName: string): CommonConfig {
     throw new Error('ENABLE_RDS_READ_REPLICAS is not set');
   }
 
+  if (!process.env.AUTH_SECRET) {
+    throw new Error('AUTH_SECRET is not set');
+  }
+
+  if (!process.env.RESEND_API_KEY) {
+    throw new Error('RESEND_API_KEY is not set');
+  }
+
+  if (!process.env.REVALIDATION_SECRET) {
+    throw new Error('REVALIDATION_SECRET is not set');
+  }
+
+  if (!process.env.NEXT_PUBLIC_PORTAL_URL) {
+    throw new Error('NEXT_PUBLIC_PORTAL_URL is not set');
+  }
+
   const stack = pulumi.getStack(); // dev, staging, prod, mariano-test, etc.
   const pulumiConfig = new pulumi.Config(projectName);
 
@@ -55,6 +71,11 @@ export function createConfig(projectName: string): CommonConfig {
     githubOrg: process.env.GITHUB_ORG,
     githubRepo: process.env.GITHUB_REPO,
     githubBranch: pulumiConfig.get('githubBranch') || process.env.GITHUB_BRANCH || 'main', // Pulumi config takes precedence, then env var, then default
+    // Next.js application configuration
+    authSecret: process.env.AUTH_SECRET,
+    resendApiKey: process.env.RESEND_API_KEY,
+    revalidationSecret: process.env.REVALIDATION_SECRET,
+    portalUrl: process.env.NEXT_PUBLIC_PORTAL_URL,
     // Database configuration
     dbName: process.env.DB_NAME || 'compdb',
     dbUsername: process.env.DB_USERNAME || 'compadmin',
