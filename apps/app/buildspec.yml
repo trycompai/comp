@@ -79,6 +79,12 @@ phases:
       - ls -la .next/standalone/.next/static/ || echo "❌ .next/standalone/.next/static/ not found"
       - ls -la .next/standalone/public/ || echo "❌ .next/standalone/public/ not found"
       - ls -la .next/standalone/server.js || echo "❌ server.js not found"
+      - echo "Contents of .next/standalone directory:"
+      - find .next/standalone -type f -name "*.js" | head -20
+      - echo "Looking for server entry points:"
+      - find .next/standalone -name "server.*" -o -name "index.*" -o -name "start.*" | head -10
+      - echo "Checking package.json in standalone build:"
+      - cat .next/standalone/package.json || echo "No package.json found"
 
       - echo "=== BUILDING DOCKER RUNTIME IMAGE WITH PRE-BUILT ARTIFACTS ==="
       - echo "Creating runtime-only Docker image with build artifacts..."
@@ -105,8 +111,8 @@ phases:
       - echo "" >> Dockerfile.runtime
       - echo "EXPOSE 3000" >> Dockerfile.runtime
       - echo "" >> Dockerfile.runtime
-      - echo "# Use node to run the standalone server.js" >> Dockerfile.runtime
-      - echo "CMD [\"node\", \"server.js\"]" >> Dockerfile.runtime
+      - echo "# Use node to run the standalone server - try multiple possible entry points" >> Dockerfile.runtime
+      - echo "CMD [\"sh\", \"-c\", \"if [ -f server.js ]; then node server.js; elif [ -f index.js ]; then node index.js; elif [ -f start.js ]; then node start.js; else echo 'No entry point found' && exit 1; fi\"]" >> Dockerfile.runtime
       - docker build -f Dockerfile.runtime -t $IMAGE_REPO_NAME:$IMAGE_TAG .
       - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $REPOSITORY_URI:$IMAGE_TAG
       - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $REPOSITORY_URI:latest
