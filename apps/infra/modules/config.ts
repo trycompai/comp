@@ -33,8 +33,11 @@ export function createConfig(projectName: string): CommonConfig {
   const stack = pulumi.getStack(); // dev, staging, prod, mariano-test, etc.
   const pulumiConfig = new pulumi.Config(projectName);
 
-  // Use the stack name for resource naming to ensure environment-specific names
-  const resourcePrefix = `comp-${stack}`;
+  // Use PULUMI_PROJECT_NAME as the environment identifier for resource naming
+  const environmentName = process.env.PULUMI_PROJECT_NAME || stack;
+
+  // Use the environment name for resource naming to ensure environment-specific names
+  const resourcePrefix = `${environmentName}`;
 
   // Feature flags
   const enableTailscale = pulumiConfig.getBoolean('enableTailscale') ?? false;
