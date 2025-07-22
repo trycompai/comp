@@ -52,9 +52,16 @@ phases:
 
       # Prepare standalone build
       - echo "Preparing standalone build..."
+      - echo "DEBUG - Checking build output structure..."
+      - ls -la .next/
+      - ls -la .next/static/ || echo "No static directory found"
+      - echo "DEBUG - Copying files..."
       - cp -r public .next/standalone/ || echo "No public folder"
       - mkdir -p .next/standalone/.next/static
-      - cp -r .next/static/* .next/standalone/.next/static/ || echo "No static files"
+      - if [ -d ".next/static" ]; then cp -r .next/static/* .next/standalone/.next/static/; else echo "No .next/static directory"; fi
+      - echo "DEBUG - Verifying copied files..."
+      - ls -la .next/standalone/.next/ || echo "No .next in standalone"
+      - ls -la .next/standalone/.next/static/ || echo "No static in standalone"
 
       # Copy Prisma client
       - echo "Copying Prisma client..."
