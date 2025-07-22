@@ -78,8 +78,8 @@ const monitoring = createMonitoring(config, database, container, loadBalancer, {
 
 const applications = [
   {
-    name: 'pathfinder-web',
-    contextPath: '../web',
+    name: `${config.projectName}-app`,
+    contextPath: '../app',
     requiresDatabaseAccess: true,
     dependsOnMigrations: true,
     buildCommand: 'npm run build',
