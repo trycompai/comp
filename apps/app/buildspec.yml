@@ -43,7 +43,12 @@ phases:
       - echo "Generating Prisma client with all binary targets..."
       - bun x prisma generate
       - echo "Verifying generated binary targets..."
-      - ls -la node_modules/.prisma/client/
+      - echo "Checking local node_modules..."
+      - ls -la node_modules/.prisma/client/ || echo "Not found locally"
+      - echo "Checking root node_modules..."
+      - ls -la ../../node_modules/.prisma/client/ || echo "Not found in root"
+      - echo "Checking @prisma/client location..."
+      - ls -la ../../node_modules/@prisma/client/ || echo "@prisma/client not found"
       - cd ../../
 
       - echo "=== TYPE CHECKING ==="
@@ -95,10 +100,13 @@ phases:
       - mkdir -p .next/standalone/node_modules/.prisma
       - 'mkdir -p ".next/standalone/node_modules/@prisma"'
       - echo "Checking available Prisma client locations..."
+      - ls -la ../../node_modules/.prisma/client/ || echo "No .prisma client in root"
       - ls -la ../../packages/db/node_modules/.prisma/client/ || echo "No .prisma client in packages/db"
       - ls -la node_modules/.prisma/client/ || echo "No .prisma client in apps/app"
       - echo "Copying .prisma client directory..."
-      - if [ -d "../../packages/db/node_modules/.prisma/client" ]; then
+      - if [ -d "../../node_modules/.prisma/client" ]; then
+        cp -r ../../node_modules/.prisma/client .next/standalone/node_modules/.prisma/;
+        elif [ -d "../../packages/db/node_modules/.prisma/client" ]; then
         cp -r ../../packages/db/node_modules/.prisma/client .next/standalone/node_modules/.prisma/;
         elif [ -d "node_modules/.prisma/client" ]; then
         cp -r node_modules/.prisma/client .next/standalone/node_modules/.prisma/;
@@ -106,7 +114,9 @@ phases:
         echo "❌ No .prisma client found"; exit 1;
         fi
       - echo "Copying @prisma/client directory..."
-      - if [ -d "../../packages/db/node_modules/@prisma/client" ]; then
+      - if [ -d "../../node_modules/@prisma/client" ]; then
+        cp -r "../../node_modules/@prisma/client" ".next/standalone/node_modules/@prisma/";
+        elif [ -d "../../packages/db/node_modules/@prisma/client" ]; then
         cp -r "../../packages/db/node_modules/@prisma/client" ".next/standalone/node_modules/@prisma/";
         elif [ -d "node_modules/@prisma/client" ]; then
         cp -r "node_modules/@prisma/client" ".next/standalone/node_modules/@prisma/";
