@@ -1,0 +1,77 @@
+version: 0.2
+
+# ==========================================
+# APPLICATION BUILD SPECIFICATION
+# ==========================================
+# This buildspec is used by CodeBuild to build and deploy the Pathfinder application
+# It runs within the VPC and has access to the private database for SSG builds
+
+env:
+  variables:
+    NODE_ENV: "production"
+    BUILD_MODE: "production"
+    DOCKER_BUILDKIT: "1"
+  parameter-store:
+    DATABASE_URL: "/pathfinder/database/connection-string"
+    ECR_REPOSITORY_URI: "/pathfinder/ecr/repository-uri"
+    ECS_CLUSTER_NAME: "/pathfinder/ecs/cluster-name"
+    ECS_SERVICE_NAME: "/pathfinder/ecs/service-name"
+  
+phases:
+  install:
+    runtime-versions:
+      nodejs: 18
+      docker: 20
+    commands:
+      - echo "Installing dependencies and logging into ECR..."
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_REPOSITORY_URI
+
+  pre_build:
+    commands:
+      - echo "Retrieving database credentials for build-time queries..."
+      - |
+        DB_SECRET=$(aws secretsmanager get-secret-value --secret-id $DATABASE_SECRET_ARN --query SecretString --output text)
+        export DATABASE_URL=$(echo $DB_SECRET | jq -r '.database_url')
+      - echo "Setting up build environment..."
+      - cd apps/web
+      - npm ci --production=false
+
+  build:
+    commands:
+      - echo "Building Next.js application with database access..."
+      - npm run build
+      - echo "Building Docker image..."
+      - docker build -t $ECR_REPOSITORY_URI:$IMAGE_TAG .
+      - docker tag $ECR_REPOSITORY_URI:$IMAGE_TAG $ECR_REPOSITORY_URI:latest
+
+  post_build:
+    commands:
+      - echo "Pushing Docker image to ECR..."
+      - docker push $ECR_REPOSITORY_URI:$IMAGE_TAG
+      - docker push $ECR_REPOSITORY_URI:latest
+      - echo "Build completed at $(date)"
+
+cache:
+  paths:
+    - 'apps/web/node_modules/**/*'
+    - 'apps/web/.next/cache/**/*'
+    - '/root/.docker/**/*'
+
+# Artifacts for deployment tracking
+artifacts:
+  files:
+    - deployment-manifest.json
+    - task-def.json
+    - updated-task-def.json
+  name: application-artifacts
+
+# Build reports
+reports:
+  jest-reports:
+    files:
+      - 'coverage/clover.xml'
+    file-format: 'CLOVERXML'
+  eslint-reports:
+    files:
+      - 'eslint-report.xml'
+    file-format: 'CHECKSTYLEXR' 
