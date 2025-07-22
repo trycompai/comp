@@ -88,32 +88,7 @@ phases:
 
       - echo "=== BUILDING DOCKER RUNTIME IMAGE WITH PRE-BUILT ARTIFACTS ==="
       - echo "Creating runtime-only Docker image with build artifacts..."
-      - echo "# Use Node.js Alpine for smaller runtime image" > Dockerfile.runtime
-      - echo "FROM node:18-alpine AS runtime" >> Dockerfile.runtime
-      - echo "" >> Dockerfile.runtime
-      - echo "WORKDIR /app" >> Dockerfile.runtime
-      - echo "" >> Dockerfile.runtime
-      - echo "ENV NODE_ENV=production" >> Dockerfile.runtime
-      - echo "ENV NEXT_TELEMETRY_DISABLED=1" >> Dockerfile.runtime
-      - echo "ENV PORT=3000" >> Dockerfile.runtime
-      - echo "ENV HOSTNAME=\"0.0.0.0\"" >> Dockerfile.runtime
-      - echo "ENV NODE_TLS_REJECT_UNAUTHORIZED=0" >> Dockerfile.runtime
-      - echo "" >> Dockerfile.runtime
-      - echo "# Copy the complete standalone build from CodeBuild" >> Dockerfile.runtime
-      - echo "COPY .next/standalone ./" >> Dockerfile.runtime
-      - echo "" >> Dockerfile.runtime
-      - echo "# Create non-root user for security" >> Dockerfile.runtime
-      - echo "RUN addgroup -g 1001 -S nodejs && \\" >> Dockerfile.runtime
-      - echo "    adduser -S nextjs -u 1001 && \\" >> Dockerfile.runtime
-      - echo "    chown -R nextjs:nodejs /app" >> Dockerfile.runtime
-      - echo "" >> Dockerfile.runtime
-      - echo "USER nextjs" >> Dockerfile.runtime
-      - echo "" >> Dockerfile.runtime
-      - echo "EXPOSE 3000" >> Dockerfile.runtime
-      - echo "" >> Dockerfile.runtime
-      - echo "# Use node to run the standalone server - handle monorepo structure" >> Dockerfile.runtime
-      - echo "CMD [\"sh\", \"-c\", \"if [ -f apps/app/server.js ]; then node apps/app/server.js; elif [ -f server.js ]; then node server.js; elif [ -f index.js ]; then node index.js; else echo 'No entry point found' && exit 1; fi\"]" >> Dockerfile.runtime
-      - docker build -f Dockerfile.runtime -t $IMAGE_REPO_NAME:$IMAGE_TAG .
+      - docker build -f Dockerfile -t $IMAGE_REPO_NAME:$IMAGE_TAG .
       - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $REPOSITORY_URI:$IMAGE_TAG
       - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $REPOSITORY_URI:latest
 
