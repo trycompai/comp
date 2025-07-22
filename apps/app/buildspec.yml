@@ -18,29 +18,23 @@ phases:
       - echo "DATABASE_URL (masked):" $(echo "$DATABASE_URL" | sed 's/:[^@]*@/:***@/')
       - echo "NODE_ENV:" $NODE_ENV
       - echo "=== INSTALLING DEPENDENCIES ==="
-      - echo "Current working directory:"
+      - echo "Current working directory (should be repository root):"
       - pwd
       - echo "Repository structure:"
-      - ls -la
-      - echo "Navigating to app directory..."
-      - cd apps/app
-      - echo "App directory contents:"
       - ls -la
       - export PATH="/root/.bun/bin:$PATH"
       - export PGSSLMODE=require
       - export NEXT_TELEMETRY_DISABLED=1
       - echo "Installing dependencies with parallel processing..."
       - echo "Using aggressive caching with 72GB memory..."
-      - echo "Checking lockfile status..."
-      - ls -la ../../bun.lock* || echo "No root lockfile found"
-      - ls -la bun.lock* || echo "No local lockfile found"
-      - echo "Installing dependencies from monorepo root..."
-      - cd ../../
+      - echo "Checking lockfile status:"
+      - ls -la bun.lock* || echo "No lockfile found"
       - echo "Attempting frozen lockfile install first..."
       - SKIP_ENV_VALIDATION=true bun install --frozen-lockfile --concurrent 36 || (echo "Frozen lockfile failed, installing with updates..." && SKIP_ENV_VALIDATION=true bun install --concurrent 36)
-      - cd apps/app
       - echo "Re-generating Prisma client in app context for runtime compatibility..."
-      - bun x prisma generate --schema=../packages/db/prisma/schema.prisma
+      - echo "Checking for schema file:"
+      - ls -la packages/db/prisma/schema.prisma || echo "Schema not found"
+      - bun x prisma generate --schema=packages/db/prisma/schema.prisma
 
       - echo "=== GENERATING PRISMA CLIENT ==="
       - echo "Current directory before Prisma generation:"
@@ -50,12 +44,15 @@ phases:
       - bun x prisma generate
       - echo "Verifying generated binary targets..."
       - ls -la node_modules/.prisma/client/
-      - cd ../../apps/app
+      - cd ../../
 
       - echo "=== TYPE CHECKING ==="
       - echo "Running TypeScript type checking with parallel processing..."
+      - echo "Navigating to app directory for type checking..."
+      - cd apps/app
       - bun run typecheck
       - echo "✅ Type checking passed"
+      - cd ../../
 
       - echo "=== VALIDATING APPLICATION ENVIRONMENT VARIABLES ==="
       - echo "Checking required Next.js environment variables..."
@@ -74,14 +71,19 @@ phases:
       - echo "Checking security groups and network..."
       - curl -s http://169.254.169.254/latest/meta-data/local-ipv4 || echo "Metadata service not accessible (expected in VPC mode)"
       - echo "Running migrations before build..."
+      - echo "Navigating to app directory for migrations..."
+      - cd apps/app
       - NODE_TLS_REJECT_UNAUTHORIZED=0 bun run apply-migrations
       - echo "✅ Database migrations completed"
+      - cd ../../
 
       - echo "=== BUILDING NEXT.JS ON CODEBUILD HOST (WITH MIGRATED DATABASE) ==="
       - echo "Running Next.js build with database access for SSG..."
       - echo "Optimizing build for 36 vCPUs..."
       - export UV_THREADPOOL_SIZE=36
       - export NODE_OPTIONS="--max-old-space-size=65536"
+      - echo "Navigating to app directory for build..."
+      - cd apps/app
       - NODE_TLS_REJECT_UNAUTHORIZED=0 bun run build
       - echo "✅ Next.js build completed with database access"
 
