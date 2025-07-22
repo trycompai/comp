@@ -1,6 +1,12 @@
 import * as aws from '@pulumi/aws';
 import * as pulumi from '@pulumi/pulumi';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
 import { CommonConfig, ContainerOutputs, DatabaseOutputs, NetworkOutputs } from '../types';
+
+// Load app environment variables from the app's .env file
+const appEnvPath = path.resolve(__dirname, '../../app/.env');
+const appEnv = dotenv.config({ path: appEnvPath }).parsed || {};
 
 export function createBuildSystem(
   config: CommonConfig,
@@ -140,39 +146,39 @@ export function createBuildSystem(
           value: config.nodeEnv,
           type: 'PLAINTEXT',
         },
-        // Application-specific environment variables (passed through from deployment environment)
-        ...(process.env.AUTH_SECRET
+        // Application-specific environment variables (read from apps/app/.env)
+        ...(appEnv.AUTH_SECRET
           ? [
               {
                 name: 'AUTH_SECRET',
-                value: process.env.AUTH_SECRET,
+                value: appEnv.AUTH_SECRET,
                 type: 'PLAINTEXT',
               },
             ]
           : []),
-        ...(process.env.RESEND_API_KEY
+        ...(appEnv.RESEND_API_KEY
           ? [
               {
                 name: 'RESEND_API_KEY',
-                value: process.env.RESEND_API_KEY,
+                value: appEnv.RESEND_API_KEY,
                 type: 'PLAINTEXT',
               },
             ]
           : []),
-        ...(process.env.REVALIDATION_SECRET
+        ...(appEnv.REVALIDATION_SECRET
           ? [
               {
                 name: 'REVALIDATION_SECRET',
-                value: process.env.REVALIDATION_SECRET,
+                value: appEnv.REVALIDATION_SECRET,
                 type: 'PLAINTEXT',
               },
             ]
           : []),
-        ...(process.env.NEXT_PUBLIC_PORTAL_URL
+        ...(appEnv.NEXT_PUBLIC_PORTAL_URL
           ? [
               {
                 name: 'NEXT_PUBLIC_PORTAL_URL',
-                value: process.env.NEXT_PUBLIC_PORTAL_URL,
+                value: appEnv.NEXT_PUBLIC_PORTAL_URL,
                 type: 'PLAINTEXT',
               },
             ]
