@@ -42,7 +42,7 @@ phases:
       - echo "Testing TCP connectivity to database..."
       - timeout 10 bash -c "</dev/tcp/$(echo "$DATABASE_URL" | sed 's/.*@\([^:]*\):.*/\1/')/5432" && echo "✅ TCP connection successful" || echo "❌ TCP connection failed"
       - echo "Checking security groups and network..."
-      - curl -s http://169.254.169.254/latest/meta-data/local-ipv4 && echo " (CodeBuild private IP)"
+      - curl -s http://169.254.169.254/latest/meta-data/local-ipv4 || echo "Metadata service not accessible (expected in VPC mode)"
       - echo "Running migrations before build..."
       - NODE_TLS_REJECT_UNAUTHORIZED=0 bun run apply-migrations
       - echo "✅ Database migrations completed"
