@@ -36,11 +36,6 @@ export const subdomainAvailabilitySchema = z.object({
     }),
 });
 
-export const uploadSchema = z.object({
-  file: z.instanceof(File),
-  organizationId: z.string(),
-});
-
 export const deleteOrganizationSchema = z.object({
   id: z.string(),
   organizationId: z.string(),
