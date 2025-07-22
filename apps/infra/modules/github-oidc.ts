@@ -1,13 +1,27 @@
 import * as aws from '@pulumi/aws';
+import * as pulumi from '@pulumi/pulumi';
 import { CommonConfig } from '../types';
 
 export function createGithubOidc(config: CommonConfig) {
   const { commonTags } = config;
 
-  // GitHub OIDC Provider for GitHub Actions
-  const githubOidcProvider = new aws.iam.OpenIdConnectProvider(
-    `${config.projectName}-github-oidc-provider`,
-    {
+  // Check if we should use existing OIDC provider or create new one
+  const useExistingOidc = new pulumi.Config().getBoolean('useExistingGithubOidc') ?? false;
+
+  let githubOidcProvider: { arn: pulumi.Output<string>; url: pulumi.Output<string> };
+
+  if (useExistingOidc) {
+    // Get the existing GitHub OIDC Provider
+    const existingProvider = aws.iam.getOpenIdConnectProviderOutput({
+      url: 'https://token.actions.githubusercontent.com',
+    });
+    githubOidcProvider = {
+      arn: existingProvider.arn,
+      url: existingProvider.url,
+    };
+  } else {
+    // Create a new GitHub OIDC Provider
+    const newProvider = new aws.iam.OpenIdConnectProvider('github-actions-oidc-provider', {
       url: 'https://token.actions.githubusercontent.com',
       clientIdLists: ['sts.amazonaws.com'],
       thumbprintLists: [
@@ -16,11 +30,16 @@ export function createGithubOidc(config: CommonConfig) {
       ],
       tags: {
         ...commonTags,
-        Name: `${config.projectName}-github-oidc-provider`,
+        Name: 'github-actions-oidc-provider',
         Type: 'oidc-provider',
+        Purpose: 'github-actions-authentication',
       },
-    },
-  );
+    });
+    githubOidcProvider = {
+      arn: newProvider.arn,
+      url: newProvider.url,
+    };
+  }
 
   // Deployment Role for GitHub Actions (read-write access)
   const deploymentRole = new aws.iam.Role(`${config.projectName}-github-deployment-role`, {
