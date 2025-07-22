@@ -111,8 +111,8 @@ phases:
       - echo "" >> Dockerfile.runtime
       - echo "EXPOSE 3000" >> Dockerfile.runtime
       - echo "" >> Dockerfile.runtime
-      - echo "# Use node to run the standalone server - try multiple possible entry points" >> Dockerfile.runtime
-      - echo "CMD [\"sh\", \"-c\", \"if [ -f server.js ]; then node server.js; elif [ -f index.js ]; then node index.js; elif [ -f start.js ]; then node start.js; else echo 'No entry point found' && exit 1; fi\"]" >> Dockerfile.runtime
+      - echo "# Use node to run the standalone server - handle monorepo structure" >> Dockerfile.runtime
+      - echo "CMD [\"sh\", \"-c\", \"if [ -f apps/app/server.js ]; then node apps/app/server.js; elif [ -f server.js ]; then node server.js; elif [ -f index.js ]; then node index.js; else echo 'No entry point found' && exit 1; fi\"]" >> Dockerfile.runtime
       - docker build -f Dockerfile.runtime -t $IMAGE_REPO_NAME:$IMAGE_TAG .
       - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $REPOSITORY_URI:$IMAGE_TAG
       - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $REPOSITORY_URI:latest
