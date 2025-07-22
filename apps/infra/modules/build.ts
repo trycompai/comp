@@ -137,7 +137,7 @@ export function createBuildSystem(
         },
         {
           name: 'NODE_ENV',
-          value: process.env.NODE_ENV || 'production',
+          value: config.nodeEnv,
           type: 'PLAINTEXT',
         },
       ],

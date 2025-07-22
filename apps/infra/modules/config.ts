@@ -26,10 +26,6 @@ export function createConfig(projectName: string): CommonConfig {
     throw new Error('GITHUB_REPO is not set');
   }
 
-  if (!process.env.DOMAIN_NAME) {
-    throw new Error('DOMAIN_NAME is not set');
-  }
-
   if (!process.env.ENABLE_RDS_READ_REPLICAS) {
     throw new Error('ENABLE_RDS_READ_REPLICAS is not set');
   }
@@ -50,7 +46,6 @@ export function createConfig(projectName: string): CommonConfig {
     awsRegion: process.env.AWS_REGION,
     nodeEnv: process.env.NODE_ENV,
     enableDebugEndpoints: process.env.ENABLE_DEBUG_ENDPOINTS === 'true',
-    domainName: process.env.DOMAIN_NAME,
     githubOrg: process.env.GITHUB_ORG,
     githubRepo: process.env.GITHUB_REPO,
     commonTags: {
@@ -64,82 +59,6 @@ export function createConfig(projectName: string): CommonConfig {
 
   // Environment-specific configurations
   const environmentConfigs = {
-    dev: {
-      database: {
-        instanceClass: 'db.t3.small',
-        allocatedStorage: 20,
-        maxAllocatedStorage: 100,
-        deletionProtection: false,
-        backupRetentionPeriod: 3,
-      },
-      scaling: {
-        minCapacity: 1,
-        maxCapacity: 3,
-        targetCpuUtilization: 70,
-      },
-      tailscale: {
-        instanceType: 't3.nano',
-      },
-      monitoring: {
-        logRetentionDays: 3,
-        detailedMonitoring: false,
-      },
-      networking: {
-        vpcCidr: '10.0.0.0/16',
-        subnets: {
-          public: [
-            { cidr: '10.0.1.0/24', az: 0 },
-            { cidr: '10.0.2.0/24', az: 1 },
-          ],
-          private: [
-            { cidr: '10.0.10.0/24', az: 0 },
-            { cidr: '10.0.20.0/24', az: 1 },
-          ],
-        },
-      },
-      security: {
-        allowedCidrBlocks: ['0.0.0.0/0'],
-        enableWaf: false,
-      },
-    },
-    staging: {
-      database: {
-        instanceClass: 'db.t3.small',
-        allocatedStorage: 50,
-        maxAllocatedStorage: 200,
-        deletionProtection: false,
-        backupRetentionPeriod: 7,
-      },
-      scaling: {
-        minCapacity: 2,
-        maxCapacity: 5,
-        targetCpuUtilization: 60,
-      },
-      tailscale: {
-        instanceType: 't3.nano',
-      },
-      monitoring: {
-        logRetentionDays: 7,
-        detailedMonitoring: true,
-      },
-      networking: {
-        vpcCidr: '10.1.0.0/16',
-        subnets: {
-          public: [
-            { cidr: '10.1.1.0/24', az: 0 },
-            { cidr: '10.1.2.0/24', az: 1 },
-          ],
-          private: [
-            { cidr: '10.1.10.0/24', az: 0 },
-            { cidr: '10.1.20.0/24', az: 1 },
-          ],
-        },
-      },
-      security: {
-        allowedCidrBlocks: ['0.0.0.0/0'],
-        enableWaf: true,
-      },
-    },
     prod: {
       database: {
         instanceClass: 'db.t3.medium',
@@ -180,8 +99,7 @@ export function createConfig(projectName: string): CommonConfig {
     },
   };
 
-  const envConfig =
-    environmentConfigs[stack as keyof typeof environmentConfigs] || environmentConfigs.dev;
+  const envConfig = environmentConfigs.prod;
 
   return {
     ...baseConfig,

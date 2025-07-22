@@ -15,7 +15,6 @@ export interface CommonConfig {
   awsRegion: string;
   nodeEnv: string;
   enableDebugEndpoints: boolean;
-  domainName?: string;
   githubOrg: string;
   githubRepo: string;
   commonTags: ResourceTags;
