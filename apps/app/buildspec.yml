@@ -12,153 +12,67 @@ phases:
 
   build:
     commands:
-      - echo "=== BUILD ENVIRONMENT DEBUG ==="
-      - echo "DATABASE_URL exists:" $(test -n "$DATABASE_URL" && echo "YES" || echo "NO")
-      - echo "DATABASE_URL length:" ${#DATABASE_URL}
-      - echo "DATABASE_URL (masked):" $(echo "$DATABASE_URL" | sed 's/:[^@]*@/:***@/')
-      - echo "NODE_ENV:" $NODE_ENV
-      - echo "=== INSTALLING DEPENDENCIES ==="
-      - echo "Current working directory (should be repository root):"
-      - pwd
-      - echo "Repository structure:"
-      - ls -la
+      # Environment setup
       - export PATH="/root/.bun/bin:$PATH"
       - export PGSSLMODE=require
       - export NEXT_TELEMETRY_DISABLED=1
-      - echo "Installing dependencies with parallel processing..."
-      - echo "Using aggressive caching with 72GB memory..."
-      - echo "Checking lockfile status:"
-      - ls -la bun.lock* || echo "No lockfile found"
-      - echo "Attempting frozen lockfile install first..."
-      - SKIP_ENV_VALIDATION=true bun install --frozen-lockfile --concurrent 36 || (echo "Frozen lockfile failed, installing with updates..." && SKIP_ENV_VALIDATION=true bun install --concurrent 36)
-      - echo "Re-generating Prisma client in app context for runtime compatibility..."
-      - echo "Checking for schema file:"
-      - ls -la packages/db/prisma/schema.prisma || echo "Schema not found"
+      - export UV_THREADPOOL_SIZE=36
+      - export NODE_OPTIONS="--max-old-space-size=65536"
+
+      # Install dependencies
+      - echo "Installing dependencies..."
+      - SKIP_ENV_VALIDATION=true bun install --frozen-lockfile --concurrent 36 || SKIP_ENV_VALIDATION=true bun install --concurrent 36
+
+      # Generate Prisma client
+      - echo "Generating Prisma client..."
       - bun x prisma generate --schema=packages/db/prisma/schema.prisma
+      - cd packages/db && bun x prisma generate && cd ../../
 
-      - echo "=== GENERATING PRISMA CLIENT ==="
-      - echo "Current directory before Prisma generation:"
-      - pwd
-      - cd packages/db
-      - echo "Generating Prisma client with all binary targets..."
-      - bun x prisma generate
-      - echo "Verifying generated binary targets..."
-      - echo "Checking local node_modules..."
-      - ls -la node_modules/.prisma/client/ || echo "Not found locally"
-      - echo "Checking root node_modules..."
-      - ls -la ../../node_modules/.prisma/client/ || echo "Not found in root"
-      - echo "Checking @prisma/client location..."
-      - ls -la ../../node_modules/@prisma/client/ || echo "@prisma/client not found"
-      - cd ../../
-
-      - echo "=== TYPE CHECKING ==="
-      - echo "Running TypeScript type checking with parallel processing..."
-      - echo "Navigating to app directory for type checking..."
-      - cd apps/app
-      - bun run typecheck
-      - echo "✅ Type checking passed"
-      - cd ../../
-
-      - echo "=== VALIDATING APPLICATION ENVIRONMENT VARIABLES ==="
-      - echo "Checking required Next.js environment variables..."
+      # Validate environment variables
+      - echo "Validating environment variables..."
       - '[ -n "$AUTH_SECRET" ] || { echo "❌ AUTH_SECRET is not set"; exit 1; }'
       - '[ -n "$RESEND_API_KEY" ] || { echo "❌ RESEND_API_KEY is not set"; exit 1; }'
       - '[ -n "$REVALIDATION_SECRET" ] || { echo "❌ REVALIDATION_SECRET is not set"; exit 1; }'
       - '[ -n "$NEXT_PUBLIC_PORTAL_URL" ] || { echo "❌ NEXT_PUBLIC_PORTAL_URL is not set"; exit 1; }'
-      - echo "✅ All required environment variables are set"
 
-      - echo "=== RUNNING DATABASE MIGRATIONS ==="
-      - echo "Testing database connectivity..."
-      - echo "DATABASE_URL endpoint:" $(echo "$DATABASE_URL" | sed 's/.*@\([^:]*\):.*/\1/')
-      - nslookup $(echo "$DATABASE_URL" | sed 's/.*@\([^:]*\):.*/\1/') || echo "DNS lookup failed"
-      - echo "Testing TCP connectivity to database..."
-      - timeout 10 bash -c "</dev/tcp/$(echo "$DATABASE_URL" | sed 's/.*@\([^:]*\):.*/\1/')/5432" && echo "✅ TCP connection successful" || echo "❌ TCP connection failed"
-      - echo "Checking security groups and network..."
-      - curl -s http://169.254.169.254/latest/meta-data/local-ipv4 || echo "Metadata service not accessible (expected in VPC mode)"
-      - echo "Running migrations before build..."
-      - echo "Navigating to app directory for migrations..."
+      # Run database migrations
+      - echo "Running database migrations..."
       - cd apps/app
       - NODE_TLS_REJECT_UNAUTHORIZED=0 bun run apply-migrations
-      - echo "✅ Database migrations completed"
       - cd ../../
 
-      - echo "=== BUILDING NEXT.JS ON CODEBUILD HOST (WITH MIGRATED DATABASE) ==="
-      - echo "Running Next.js build with database access for SSG..."
-      - echo "Optimizing build for 36 vCPUs..."
-      - export UV_THREADPOOL_SIZE=36
-      - export NODE_OPTIONS="--max-old-space-size=65536"
-      - echo "Navigating to app directory for build..."
+      # Type check
+      - echo "Type checking..."
+      - cd apps/app && bun run typecheck && cd ../../
+
+      # Build Next.js app
+      - echo "Building Next.js application..."
       - cd apps/app
       - NODE_TLS_REJECT_UNAUTHORIZED=0 bun run build
-      - echo "✅ Next.js build completed with database access"
 
-      - echo "=== PREPARING STANDALONE BUILD FILES ==="
-      - echo "Next.js standalone build requires manual copying of static files..."
-      - echo "Checking build artifacts..."
-      - ls -la .next/ || echo "No .next directory found"
-      - ls -la .next/static/ || echo "No .next/static directory found"
-      - ls -la public/ || echo "No public directory found"
-      - echo "Copying public assets..."
-      - cp -r public .next/standalone/ || echo "No public folder found"
-      - echo "Copying static assets..."
+      # Prepare standalone build
+      - echo "Preparing standalone build..."
+      - cp -r public .next/standalone/ || echo "No public folder"
       - mkdir -p .next/standalone/.next/static
-      - cp -r .next/static/* .next/standalone/.next/static/ || echo "No static files found"
-      - echo "Verifying copied static files..."
-      - ls -la .next/standalone/.next/static/ || echo "Static files not copied"
-      - ls -la .next/standalone/public/ || echo "Public files not copied"
-      - echo "Copying Prisma client to standalone build..."
-      - mkdir -p .next/standalone/node_modules/.prisma
-      - 'mkdir -p ".next/standalone/node_modules/@prisma"'
-      - echo "Checking available Prisma client locations..."
-      - ls -la ../../node_modules/.prisma/client/ || echo "No .prisma client in root"
-      - ls -la ../../packages/db/node_modules/.prisma/client/ || echo "No .prisma client in packages/db"
-      - ls -la node_modules/.prisma/client/ || echo "No .prisma client in apps/app"
-      - echo "Copying .prisma client directory..."
+      - cp -r .next/static/* .next/standalone/.next/static/ || echo "No static files"
+
+      # Copy Prisma client
+      - echo "Copying Prisma client..."
+      - mkdir -p .next/standalone/node_modules/.prisma .next/standalone/node_modules/@prisma
       - if [ -d "../../node_modules/.prisma/client" ]; then
         cp -r ../../node_modules/.prisma/client .next/standalone/node_modules/.prisma/;
-        elif [ -d "../../packages/db/node_modules/.prisma/client" ]; then
-        cp -r ../../packages/db/node_modules/.prisma/client .next/standalone/node_modules/.prisma/;
         elif [ -d "node_modules/.prisma/client" ]; then
         cp -r node_modules/.prisma/client .next/standalone/node_modules/.prisma/;
-        else
-        echo "❌ No .prisma client found"; exit 1;
         fi
-      - echo "Copying @prisma/client directory..."
       - if [ -d "../../node_modules/@prisma/client" ]; then
         cp -r "../../node_modules/@prisma/client" ".next/standalone/node_modules/@prisma/";
-        elif [ -d "../../packages/db/node_modules/@prisma/client" ]; then
-        cp -r "../../packages/db/node_modules/@prisma/client" ".next/standalone/node_modules/@prisma/";
         elif [ -d "node_modules/@prisma/client" ]; then
         cp -r "node_modules/@prisma/client" ".next/standalone/node_modules/@prisma/";
-        else
-        echo "❌ No @prisma/client found"; exit 1;
         fi
-      - echo "Verifying copied Prisma client binaries..."
-      - ls -la .next/standalone/node_modules/.prisma/client/
-      - echo "Checking for required binary targets..."
-      - ls -la .next/standalone/node_modules/.prisma/client/ | grep -E "(linux-musl|debian)" || echo "Warning Expected binary targets not found"
-      - echo "Detailed binary files in copied Prisma client:"
-      - find .next/standalone/node_modules/.prisma/client/ -name "*linux-musl*" 2>/dev/null || echo "No linux-musl binaries found"
-      - find .next/standalone/node_modules/.prisma/client/ -name "*debian*" 2>/dev/null || echo "No debian binaries found"
-      - echo "✅ Standalone files prepared"
 
-      - echo "=== VERIFYING BUILD ARTIFACTS ==="
-      - echo "Checking if required files exist..."
-      - ls -la .next/standalone/ || echo "❌ .next/standalone/ not found"
-      - ls -la .next/standalone/.next/static/ || echo "❌ .next/standalone/.next/static/ not found"
-      - ls -la .next/standalone/public/ || echo "❌ .next/standalone/public/ not found"
-      - ls -la .next/standalone/server.js || echo "❌ server.js not found"
-      - echo "Contents of .next/standalone directory:"
-      - find .next/standalone -type f -name "*.js" | head -20
-      - echo "Looking for server entry points:"
-      - find .next/standalone -name "server.*" -o -name "index.*" -o -name "start.*" | head -10
-      - echo "Checking package.json in standalone build:"
-      - cat .next/standalone/package.json || echo "No package.json found"
-
-      - echo "=== BUILDING DOCKER RUNTIME IMAGE WITH PRE-BUILT ARTIFACTS ==="
-      - echo "Creating runtime-only Docker image with build artifacts..."
-      - echo "Using parallel Docker build with 36 cores..."
-      - docker build --progress=plain --build-arg BUILDKIT_INLINE_CACHE=1 -f Dockerfile -t $IMAGE_REPO_NAME:$IMAGE_TAG .
+      # Build Docker image
+      - echo "Building Docker image..."
+      - docker build --build-arg BUILDKIT_INLINE_CACHE=1 -f Dockerfile -t $IMAGE_REPO_NAME:$IMAGE_TAG .
       - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $REPOSITORY_URI:$IMAGE_TAG
       - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $REPOSITORY_URI:latest
 
@@ -167,9 +81,8 @@ phases:
       - echo "Pushing images to ECR..."
       - docker push $REPOSITORY_URI:$IMAGE_TAG
       - docker push $REPOSITORY_URI:latest
-      - echo "Updating ECS service to deploy new image..."
-      - aws ecs update-service --cluster $ECS_CLUSTER_NAME --service $ECS_SERVICE_NAME --force-new-deployment || (echo "❌ Failed to update ECS service" && exit 1)
-      - echo "Writing image definitions file..."
+      - echo "Updating ECS service..."
+      - aws ecs update-service --cluster $ECS_CLUSTER_NAME --service $ECS_SERVICE_NAME --force-new-deployment
       - 'printf "[{\"name\":\"%s-app\",\"imageUri\":\"%s\"}]" $IMAGE_REPO_NAME $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json'
 
 cache:
