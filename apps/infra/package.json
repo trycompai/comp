@@ -1,6 +1,10 @@
 {
   "name": "@comp/infra",
   "main": "index.ts",
+  "scripts": {
+    "lint": "echo 'No linting configured for infra'",
+    "typecheck": "tsc --noEmit"
+  },
   "devDependencies": {
     "@types/node": "^24.0.3",
     "typescript": "^5.8.3"
