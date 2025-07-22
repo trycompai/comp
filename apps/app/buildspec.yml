@@ -52,8 +52,10 @@ phases:
       - echo "Copying Prisma client to standalone build..."
       - mkdir -p .next/standalone/node_modules/.prisma
       - 'mkdir -p ".next/standalone/node_modules/@prisma"'
-      - cp -r ../../packages/db/node_modules/.prisma/client .next/standalone/node_modules/.prisma/ || cp -r node_modules/.prisma/client .next/standalone/node_modules/.prisma/ || echo "Warning: .prisma client not found"
-      - 'cp -r "../../packages/db/node_modules/@prisma/client" ".next/standalone/node_modules/@prisma/" || cp -r "node_modules/@prisma/client" ".next/standalone/node_modules/@prisma/" || echo "Warning: @prisma/client not found"'
+      - cp -r ../../packages/db/node_modules/.prisma/client .next/standalone/node_modules/.prisma/ || echo "Trying local .prisma client..."
+      - cp -r node_modules/.prisma/client .next/standalone/node_modules/.prisma/ || echo "Warning .prisma client not found"
+      - cp -r "../../packages/db/node_modules/@prisma/client" ".next/standalone/node_modules/@prisma/" || echo "Trying local @prisma/client..."
+      - cp -r "node_modules/@prisma/client" ".next/standalone/node_modules/@prisma/" || echo "Warning @prisma/client not found"
       - echo "✅ Standalone files prepared"
 
       - echo "=== VERIFYING BUILD ARTIFACTS ==="
