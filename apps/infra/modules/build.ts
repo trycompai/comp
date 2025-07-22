@@ -140,26 +140,43 @@ export function createBuildSystem(
           value: config.nodeEnv,
           type: 'PLAINTEXT',
         },
-        {
-          name: 'AUTH_SECRET',
-          value: config.authSecret,
-          type: 'PLAINTEXT',
-        },
-        {
-          name: 'RESEND_API_KEY',
-          value: config.resendApiKey,
-          type: 'PLAINTEXT',
-        },
-        {
-          name: 'REVALIDATION_SECRET',
-          value: config.revalidationSecret,
-          type: 'PLAINTEXT',
-        },
-        {
-          name: 'NEXT_PUBLIC_PORTAL_URL',
-          value: config.portalUrl,
-          type: 'PLAINTEXT',
-        },
+        // Application-specific environment variables (passed through from deployment environment)
+        ...(process.env.AUTH_SECRET
+          ? [
+              {
+                name: 'AUTH_SECRET',
+                value: process.env.AUTH_SECRET,
+                type: 'PLAINTEXT',
+              },
+            ]
+          : []),
+        ...(process.env.RESEND_API_KEY
+          ? [
+              {
+                name: 'RESEND_API_KEY',
+                value: process.env.RESEND_API_KEY,
+                type: 'PLAINTEXT',
+              },
+            ]
+          : []),
+        ...(process.env.REVALIDATION_SECRET
+          ? [
+              {
+                name: 'REVALIDATION_SECRET',
+                value: process.env.REVALIDATION_SECRET,
+                type: 'PLAINTEXT',
+              },
+            ]
+          : []),
+        ...(process.env.NEXT_PUBLIC_PORTAL_URL
+          ? [
+              {
+                name: 'NEXT_PUBLIC_PORTAL_URL',
+                value: process.env.NEXT_PUBLIC_PORTAL_URL,
+                type: 'PLAINTEXT',
+              },
+            ]
+          : []),
       ],
     },
     vpcConfig: {

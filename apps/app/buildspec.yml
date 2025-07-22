@@ -35,6 +35,14 @@ phases:
       - bun run typecheck
       - echo "✅ Type checking passed"
 
+      - echo "=== VALIDATING APPLICATION ENVIRONMENT VARIABLES ==="
+      - echo "Checking required Next.js environment variables..."
+      - '[ -n "$AUTH_SECRET" ] || { echo "❌ AUTH_SECRET is not set"; exit 1; }'
+      - '[ -n "$RESEND_API_KEY" ] || { echo "❌ RESEND_API_KEY is not set"; exit 1; }'
+      - '[ -n "$REVALIDATION_SECRET" ] || { echo "❌ REVALIDATION_SECRET is not set"; exit 1; }'
+      - '[ -n "$NEXT_PUBLIC_PORTAL_URL" ] || { echo "❌ NEXT_PUBLIC_PORTAL_URL is not set"; exit 1; }'
+      - echo "✅ All required environment variables are set"
+
       - echo "=== RUNNING DATABASE MIGRATIONS ==="
       - echo "Testing database connectivity..."
       - echo "DATABASE_URL endpoint:" $(echo "$DATABASE_URL" | sed 's/.*@\([^:]*\):.*/\1/')
