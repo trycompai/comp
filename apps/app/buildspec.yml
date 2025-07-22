@@ -52,16 +52,19 @@ phases:
 
       # Prepare standalone build
       - echo "Preparing standalone build..."
-      - echo "DEBUG - Checking build output structure..."
+      - echo "DEBUG - Checking what Next.js built..."
       - ls -la .next/
+      - ls -la .next/standalone/ || echo "No standalone directory"
+      - echo "DEBUG - Checking if static files exist..."
       - ls -la .next/static/ || echo "No static directory found"
-      - echo "DEBUG - Copying files..."
+      - echo "DEBUG - Copying static files to standalone..."
       - cp -r public .next/standalone/ || echo "No public folder"
       - mkdir -p .next/standalone/.next/static
       - if [ -d ".next/static" ]; then cp -r .next/static/* .next/standalone/.next/static/; else echo "No .next/static directory"; fi
-      - echo "DEBUG - Verifying copied files..."
-      - ls -la .next/standalone/.next/ || echo "No .next in standalone"
-      - ls -la .next/standalone/.next/static/ || echo "No static in standalone"
+      - echo "DEBUG - Final verification..."
+      - ls -la .next/standalone/ || echo "Standalone empty"
+      - find .next/standalone -name "*.css" | head -3 || echo "No CSS files found"
+      - find .next/standalone -name "*.js" | head -3 || echo "No JS files found"
 
       # Copy Prisma client
       - echo "Copying Prisma client..."
