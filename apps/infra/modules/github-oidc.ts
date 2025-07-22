@@ -1,28 +1,17 @@
 import * as aws from '@pulumi/aws';
-import * as pulumi from '@pulumi/pulumi';
 import { CommonConfig } from '../types';
 
 export function createGithubOidc(config: CommonConfig) {
   const { commonTags } = config;
 
-  // Check if we should use existing OIDC provider or create new one
-  const useExistingOidc = new pulumi.Config().getBoolean('useExistingGithubOidc') ?? false;
+  // GitHub OIDC provider - matches the imported resource from AWS
+  const githubOidcUrl = 'https://token.actions.githubusercontent.com';
 
-  let githubOidcProvider: { arn: pulumi.Output<string>; url: pulumi.Output<string> };
-
-  if (useExistingOidc) {
-    // Get the existing GitHub OIDC Provider
-    const existingProvider = aws.iam.getOpenIdConnectProviderOutput({
-      url: 'https://token.actions.githubusercontent.com',
-    });
-    githubOidcProvider = {
-      arn: existingProvider.arn,
-      url: existingProvider.url,
-    };
-  } else {
-    // Create a new GitHub OIDC Provider
-    const newProvider = new aws.iam.OpenIdConnectProvider('github-actions-oidc-provider', {
-      url: 'https://token.actions.githubusercontent.com',
+  // Create OIDC provider (will use imported state if already imported)
+  const githubOidcProvider = new aws.iam.OpenIdConnectProvider(
+    'github-actions-oidc-provider',
+    {
+      url: githubOidcUrl,
       clientIdLists: ['sts.amazonaws.com'],
       thumbprintLists: [
         '6938fd4d98bab03faadb97b34396831e3780aea1', // GitHub Actions OIDC thumbprint
@@ -34,12 +23,11 @@ export function createGithubOidc(config: CommonConfig) {
         Type: 'oidc-provider',
         Purpose: 'github-actions-authentication',
       },
-    });
-    githubOidcProvider = {
-      arn: newProvider.arn,
-      url: newProvider.url,
-    };
-  }
+    },
+    {
+      protect: true, // Protect from accidental deletion since it's shared across stacks
+    },
+  );
 
   // Deployment Role for GitHub Actions (read-write access)
   const deploymentRole = new aws.iam.Role(`${config.projectName}-github-deployment-role`, {

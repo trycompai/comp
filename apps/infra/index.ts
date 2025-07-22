@@ -1,6 +1,7 @@
 import * as pulumi from '@pulumi/pulumi';
 // import * as tailscale from "@pulumi/tailscale";  // Available for future Tailscale provider usage
 import * as dotenv from 'dotenv';
+import { createAppSecrets } from './modules/app-secrets';
 import { createBuildSystem } from './modules/build';
 import { createConfig } from './modules/config';
 import { createContainer } from './modules/container';
@@ -44,29 +45,32 @@ const network = createNetworking(config);
 // 2. Data Layer - Private RDS PostgreSQL
 const database = createDatabase(config, network);
 
-// 3. Load Balancing - ALB with Health Checks (create target group first)
+// 3. Application Secrets - Separate from database secrets
+const appSecrets = createAppSecrets(config);
+
+// 4. Load Balancing - ALB with Health Checks (create target group first)
 const loadBalancer = createLoadBalancer(config, network);
 
-// 4. Container Platform - ECR, ECS Cluster (with load balancer integration)
-const container = createContainer(config, network, database, loadBalancer);
+// 5. Container Platform - ECR, ECS Cluster (with load balancer integration)
+const container = createContainer(config, network, database, loadBalancer, appSecrets);
 
-// 5. Build System - CodeBuild with VPC Database Access
+// 6. Build System - CodeBuild with VPC Database Access
 const build = createBuildSystem(config, network, database, container);
 
-// 6. Auto-scaling - ECS Service Scaling
+// 7. Auto-scaling - ECS Service Scaling
 const scaling = createScaling(config, container, loadBalancer);
 
-// 7. GitHub OIDC - For GitHub Actions authentication
+// 8. GitHub OIDC - For GitHub Actions authentication
 const githubOidc = createGithubOidc(config);
 
 // ==========================================
 // OPTIONAL INFRASTRUCTURE (FEATURE-GATED)
 // ==========================================
 
-// 8. Development Access - Tailscale Subnet Router (Optional)
+// 9. Development Access - Tailscale Subnet Router (Optional)
 const tailscale = enableTailscale ? createTailscale(config, network, database) : undefined;
 
-// 9. Observability - Better Stack + CloudWatch (Optional/Configurable)
+// 10. Observability - Better Stack + CloudWatch (Optional/Configurable)
 const monitoring = createMonitoring(config, database, container, loadBalancer, {
   enableBetterStack,
   enableDetailedMonitoring,

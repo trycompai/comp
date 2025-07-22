@@ -24,10 +24,15 @@ phases:
       - export PGSSLMODE=require
       - export NEXT_TELEMETRY_DISABLED=1
       - SKIP_ENV_VALIDATION=true bun install --frozen-lockfile
+      - echo "Re-generating Prisma client in app context for runtime compatibility..."
+      - bun x prisma generate --schema=../../packages/db/prisma/schema.prisma
 
       - echo "=== GENERATING PRISMA CLIENT ==="
       - cd ../../packages/db
+      - echo "Generating Prisma client with all binary targets..."
       - bun x prisma generate
+      - echo "Verifying generated binary targets..."
+      - ls -la node_modules/.prisma/client/
       - cd ../../apps/app
 
       - echo "=== TYPE CHECKING ==="
@@ -67,10 +72,29 @@ phases:
       - echo "Copying Prisma client to standalone build..."
       - mkdir -p .next/standalone/node_modules/.prisma
       - 'mkdir -p ".next/standalone/node_modules/@prisma"'
-      - cp -r ../../packages/db/node_modules/.prisma/client .next/standalone/node_modules/.prisma/ || echo "Trying local .prisma client..."
-      - cp -r node_modules/.prisma/client .next/standalone/node_modules/.prisma/ || echo "Warning .prisma client not found"
-      - cp -r "../../packages/db/node_modules/@prisma/client" ".next/standalone/node_modules/@prisma/" || echo "Trying local @prisma/client..."
-      - cp -r "node_modules/@prisma/client" ".next/standalone/node_modules/@prisma/" || echo "Warning @prisma/client not found"
+      - echo "Checking available Prisma client locations..."
+      - ls -la ../../packages/db/node_modules/.prisma/client/ || echo "No .prisma client in packages/db"
+      - ls -la node_modules/.prisma/client/ || echo "No .prisma client in apps/app"
+      - echo "Copying .prisma client directory..."
+      - if [ -d "../../packages/db/node_modules/.prisma/client" ]; then
+        cp -r ../../packages/db/node_modules/.prisma/client .next/standalone/node_modules/.prisma/;
+        elif [ -d "node_modules/.prisma/client" ]; then
+        cp -r node_modules/.prisma/client .next/standalone/node_modules/.prisma/;
+        else
+        echo "❌ No .prisma client found"; exit 1;
+        fi
+      - echo "Copying @prisma/client directory..."
+      - if [ -d "../../packages/db/node_modules/@prisma/client" ]; then
+        cp -r "../../packages/db/node_modules/@prisma/client" ".next/standalone/node_modules/@prisma/";
+        elif [ -d "node_modules/@prisma/client" ]; then
+        cp -r "node_modules/@prisma/client" ".next/standalone/node_modules/@prisma/";
+        else
+        echo "❌ No @prisma/client found"; exit 1;
+        fi
+      - echo "Verifying copied Prisma client binaries..."
+      - ls -la .next/standalone/node_modules/.prisma/client/
+      - echo "Checking for required binary targets..."
+      - ls -la .next/standalone/node_modules/.prisma/client/ | grep -E "(linux-musl|debian)" || echo "Warning Expected binary targets not found"
       - echo "✅ Standalone files prepared"
 
       - echo "=== VERIFYING BUILD ARTIFACTS ==="

@@ -7,6 +7,7 @@ export function createContainer(
   network: NetworkOutputs,
   database: DatabaseOutputs,
   loadBalancer?: LoadBalancerOutputs,
+  appSecrets?: { secretArn: pulumi.Output<string>; secretId: pulumi.Output<string> },
 ) {
   const { commonTags } = config;
 
@@ -140,18 +141,20 @@ export function createContainer(
     `${config.projectName}-task-execution-secrets-policy`,
     {
       role: taskExecutionRole.id,
-      policy: database.secretArn.apply((secretArn) =>
-        JSON.stringify({
-          Version: '2012-10-17',
-          Statement: [
-            {
-              Effect: 'Allow',
-              Action: ['secretsmanager:GetSecretValue', 'secretsmanager:DescribeSecret'],
-              Resource: secretArn,
-            },
-          ],
-        }),
-      ),
+      policy: pulumi
+        .all([database.secretArn, appSecrets?.secretArn])
+        .apply(([dbSecretArn, appSecretArn]) =>
+          JSON.stringify({
+            Version: '2012-10-17',
+            Statement: [
+              {
+                Effect: 'Allow',
+                Action: ['secretsmanager:GetSecretValue', 'secretsmanager:DescribeSecret'],
+                Resource: [dbSecretArn, ...(appSecretArn ? [appSecretArn] : [])],
+              },
+            ],
+          }),
+        ),
     },
   );
 
@@ -209,52 +212,78 @@ export function createContainer(
     executionRoleArn: taskExecutionRole.arn,
     taskRoleArn: taskRole.arn,
     containerDefinitions: pulumi
-      .all([repository.repositoryUrl, logGroup.name, database.secretArn])
-      .apply(([repoUrl, logGroupName, secretArn]: [string, string, string]) =>
-        JSON.stringify([
-          {
-            name: `${config.projectName}-app`,
-            image: `${repoUrl}:latest`,
-            essential: true,
-            portMappings: [
+      .all([
+        repository.repositoryUrl,
+        logGroup.name,
+        database.secretArn,
+        appSecrets?.secretArn || pulumi.output(''),
+      ])
+      .apply(
+        ([repoUrl, logGroupName, dbSecretArn, appSecretArn]: [string, string, string, string]) => {
+          const secrets = [
+            {
+              name: 'DATABASE_URL',
+              valueFrom: dbSecretArn,
+            },
+          ];
+
+          if (appSecrets && appSecretArn) {
+            secrets.push(
               {
-                containerPort: 3000,
-                protocol: 'tcp',
-              },
-            ],
-            environment: [
-              {
-                name: 'NODE_ENV',
-                value: 'production',
+                name: 'AUTH_SECRET',
+                valueFrom: `${appSecretArn}:AUTH_SECRET::`,
               },
               {
-                name: 'PORT',
-                value: '3000',
+                name: 'RESEND_API_KEY',
+                valueFrom: `${appSecretArn}:RESEND_API_KEY::`,
               },
-            ],
-            secrets: [
               {
-                name: 'DATABASE_URL',
-                valueFrom: secretArn,
+                name: 'REVALIDATION_SECRET',
+                valueFrom: `${appSecretArn}:REVALIDATION_SECRET::`,
               },
-            ],
-            logConfiguration: {
-              logDriver: 'awslogs',
-              options: {
-                'awslogs-group': logGroupName,
-                'awslogs-region': config.awsRegion,
-                'awslogs-stream-prefix': 'ecs',
+            );
+          }
+
+          return JSON.stringify([
+            {
+              name: `${config.projectName}-app`,
+              image: `${repoUrl}:latest`,
+              essential: true,
+              portMappings: [
+                {
+                  containerPort: 3000,
+                  protocol: 'tcp',
+                },
+              ],
+              environment: [
+                {
+                  name: 'NODE_ENV',
+                  value: 'production',
+                },
+                {
+                  name: 'PORT',
+                  value: '3000',
+                },
+              ],
+              secrets,
+              logConfiguration: {
+                logDriver: 'awslogs',
+                options: {
+                  'awslogs-group': logGroupName,
+                  'awslogs-region': config.awsRegion,
+                  'awslogs-stream-prefix': 'ecs',
+                },
+              },
+              healthCheck: {
+                command: ['CMD-SHELL', 'curl -f http://localhost:3000/health || exit 1'],
+                interval: 30,
+                timeout: 5,
+                retries: 3,
+                startPeriod: 60,
               },
             },
-            healthCheck: {
-              command: ['CMD-SHELL', 'curl -f http://localhost:3000/health || exit 1'],
-              interval: 30,
-              timeout: 5,
-              retries: 3,
-              startPeriod: 60,
-            },
-          },
-        ]),
+          ]);
+        },
       ),
     tags: {
       ...commonTags,

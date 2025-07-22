@@ -144,10 +144,10 @@ export function createDatabase(config: CommonConfig, network: NetworkOutputs) {
     {
       secretId: dbSecret.id,
       secretString: pulumi
-        .all([dbInstance.endpoint, dbInstance.username, dbInstance.dbName])
+        .all([dbInstance.endpoint, dbInstance.username, dbInstance.dbName, dbPassword.result])
         .apply(
-          ([endpoint, username, dbName]) =>
-            `postgresql://${username}:${dbPassword.result}@${endpoint}:5432/${dbName}?sslmode=require`,
+          ([endpoint, username, dbName, password]) =>
+            `postgresql://${username}:${password}@${endpoint}:5432/${dbName}?sslmode=require`,
         ),
     },
   );
