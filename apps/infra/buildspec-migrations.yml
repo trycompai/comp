@@ -25,7 +25,7 @@ phases:
 
       # Run database migrations
       - echo "Running database migrations..."
-      - echo "DATABASE_URL is configured: $([ -n \"$DATABASE_URL\" ] && echo 'YES' || echo 'NO')"
+      - 'echo "DATABASE_URL is configured: $([ -n \"$DATABASE_URL\" ] && echo ''YES'' || echo ''NO'')"'
       - bun x prisma migrate deploy
 
       # Verify migration success
