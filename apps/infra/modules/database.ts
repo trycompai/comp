@@ -153,7 +153,7 @@ export function createDatabase(config: CommonConfig, network: NetworkOutputs) {
         ])
         .apply(([endpoint, username, dbName, password, port]) =>
           JSON.stringify({
-            connectionString: `postgresql://${username}:${password}@${endpoint}:${port.toString()}/${dbName}?sslmode=require`,
+            connectionString: `postgresql://${username}:${password}@${endpoint}/${dbName}?sslmode=require`,
           }),
         ),
     },
@@ -252,7 +252,7 @@ export function createDatabase(config: CommonConfig, network: NetworkOutputs) {
       ])
       .apply(
         ([username, password, endpoint, port, dbName]) =>
-          `postgresql://${username}:${password}@${endpoint}:${port.toString()}/${dbName}?sslmode=require`,
+          `postgresql://${username}:${password}@${endpoint}/${dbName}?sslmode=require`,
       ),
     readReplicaEndpoint: readReplica?.endpoint,
     logGroupName: dbLogGroup.name,
