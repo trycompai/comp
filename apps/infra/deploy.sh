@@ -110,9 +110,16 @@ wait_for_build() {
 echo -e "${YELLOW}📋 Step 1: Updating infrastructure...${NC}"
 cd "$INFRA_DIR"
 export NODE_ENV=production
-pulumi up --yes
+if ! pulumi up --yes; then
+    echo -e "${RED}❌ Pulumi update failed. Aborting deployment.${NC}"
+    exit 1
+fi
 cd "$PROJECT_ROOT"
-echo -e "${GREEN}✅ Infrastructure updated${NC}"
+echo -e "${GREEN}✅ Infrastructure updated successfully${NC}"
+
+# Add a small delay to ensure propagation
+echo -e "${YELLOW}⏳ Waiting 15 seconds for infrastructure changes to propagate...${NC}"
+sleep 15
 
 # Step 2: Build and Deploy Application (includes migrations)
 echo -e "${YELLOW}🔨 Step 2: Building application (migrations + Next.js + Docker)...${NC}"
