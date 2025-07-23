@@ -118,7 +118,7 @@ export function createBuildSystem(
         },
         {
           name: 'DATABASE_URL',
-          value: `${database.secretArn}:connectionString::`,
+          value: pulumi.interpolate`${database.secretArn}:connectionString`,
           type: 'SECRETS_MANAGER',
         },
         {
