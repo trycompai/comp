@@ -90,8 +90,8 @@ export function createBuildSystem(
   });
 
   // CodeBuild project for building application image (requires database access)
-  const appProject = new aws.codebuild.Project(`${config.projectName}-app-build-v2`, {
-    name: `${config.projectName}-app-build-v2`,
+  const appProject = new aws.codebuild.Project(`${config.projectName}-app-build`, {
+    name: `${config.projectName}-app-build`,
     description: 'Build application Docker image with database access',
     serviceRole: codebuildRole.arn,
     artifacts: {
@@ -184,7 +184,7 @@ export function createBuildSystem(
     sourceVersion: config.githubBranch, // Specify which branch to build from
     tags: {
       ...commonTags,
-      Name: `${config.projectName}-app-build-v2`,
+      Name: `${config.projectName}-app-build`,
       Type: 'codebuild-project',
       Purpose: 'application-image-build',
     },
