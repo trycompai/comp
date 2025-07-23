@@ -1,60 +1,69 @@
 import * as aws from '@pulumi/aws';
-import * as pulumi from '@pulumi/pulumi';
-import { CommonConfig, NetworkOutputs } from '../types';
+import { ApplicationConfig, CommonConfig, NetworkOutputs } from '../types';
 
-export function createLoadBalancer(config: CommonConfig, network: NetworkOutputs) {
+// Create individual ALB for each application
+export function createApplicationLoadBalancer(
+  config: CommonConfig,
+  network: NetworkOutputs,
+  app: ApplicationConfig,
+) {
   const { commonTags } = config;
+  const appName = `${config.projectName}-${app.name}`;
 
-  // Create ALB without default target group since we'll create app-specific ones
-  const lb = new aws.lb.LoadBalancer(`${config.projectName}-lb`, {
+  // Create ALB for this specific app
+  const lb = new aws.lb.LoadBalancer(`${appName}-lb`, {
+    name: `${appName}-lb`.substring(0, 32), // AWS limit
     loadBalancerType: 'application',
     subnets: network.publicSubnetIds,
     securityGroups: [network.securityGroups.alb],
     tags: {
       ...commonTags,
-      Name: `${config.projectName}-lb`,
+      Name: `${appName}-lb`,
       Type: 'application-load-balancer',
+      App: app.name,
     },
   });
 
-  // Create a default target group (required for listener)
-  const defaultTargetGroup = new aws.lb.TargetGroup(`${config.projectName}-default-tg`, {
-    name: `${config.projectName}-def-tg`.substring(0, 32), // AWS limit is 32 chars
-    port: 80,
+  // Create target group for this app
+  const targetGroup = new aws.lb.TargetGroup(`${appName}-tg`, {
+    name: `${appName}-tg`.substring(0, 32), // AWS limit
+    port: app.containerPort,
     protocol: 'HTTP',
     targetType: 'ip',
     vpcId: network.vpcId,
     healthCheck: {
       enabled: true,
-      path: '/',
-      healthyThreshold: 2,
-      unhealthyThreshold: 3,
-      timeout: 30,
-      interval: 60,
+      path: app.healthCheck?.path || '/health',
+      interval: app.healthCheck?.interval || 60,
+      timeout: app.healthCheck?.timeout || 30,
+      healthyThreshold: app.healthCheck?.healthyThreshold || 2,
+      unhealthyThreshold: app.healthCheck?.unhealthyThreshold || 3,
       matcher: '200',
     },
     tags: {
       ...commonTags,
-      Name: `${config.projectName}-def-tg`,
+      Name: `${appName}-tg`,
       Type: 'target-group',
+      App: app.name,
     },
   });
 
-  // Create HTTP listener
-  const httpListener = new aws.lb.Listener(`${config.projectName}-http-listener`, {
+  // Create HTTP listener - no routing rules needed, direct to target group
+  const httpListener = new aws.lb.Listener(`${appName}-http-listener`, {
     loadBalancerArn: lb.arn,
     port: 80,
     protocol: 'HTTP',
     defaultActions: [
       {
         type: 'forward',
-        targetGroupArn: defaultTargetGroup.arn,
+        targetGroupArn: targetGroup.arn,
       },
     ],
     tags: {
       ...commonTags,
-      Name: `${config.projectName}-http-listener`,
+      Name: `${appName}-http-listener`,
       Type: 'listener',
+      App: app.name,
     },
   });
 
@@ -62,54 +71,22 @@ export function createLoadBalancer(config: CommonConfig, network: NetworkOutputs
     albArn: lb.arn,
     albDnsName: lb.dnsName,
     albZoneId: lb.zoneId,
-    targetGroupArn: defaultTargetGroup.arn,
+    targetGroupArn: targetGroup.arn,
     applicationUrl: lb.dnsName.apply((dns) => `http://${dns}`),
-    healthCheckUrl: lb.dnsName.apply((dns) => `http://${dns}/health`),
-    certificateArn: undefined,
+    healthCheckUrl: lb.dnsName.apply((dns) => `http://${dns}${app.healthCheck?.path || '/health'}`),
     httpListenerArn: httpListener.arn,
+    certificateArn: undefined,
   };
 }
 
-// Create listener rules for app routing
-export interface ApplicationRoutingArgs {
-  projectName: string;
-  appName: string;
-  loadBalancerArn: pulumi.Output<string>;
-  targetGroupArn: pulumi.Output<string>;
-  pathPattern?: string;
-  hostHeader?: string[];
-  priority: number;
-  httpListenerArn: pulumi.Output<string>;
-}
-
-export function createApplicationRouting(args: ApplicationRoutingArgs) {
-  const conditions = [];
-
-  if (args.pathPattern) {
-    conditions.push({
-      pathPattern: {
-        values: [args.pathPattern],
-      },
-    });
-  }
-
-  if (args.hostHeader) {
-    conditions.push({
-      hostHeader: {
-        values: args.hostHeader,
-      },
-    });
-  }
-
-  return new aws.lb.ListenerRule(`${args.projectName}-${args.appName}-rule`, {
-    listenerArn: args.httpListenerArn,
-    priority: args.priority,
-    conditions,
-    actions: [
-      {
-        type: 'forward',
-        targetGroupArn: args.targetGroupArn,
-      },
-    ],
-  });
+// Main function to create load balancers for all applications
+export function createLoadBalancers(
+  config: CommonConfig,
+  network: NetworkOutputs,
+  applications: ApplicationConfig[],
+) {
+  return applications.map((app) => ({
+    app: app.name,
+    loadBalancer: createApplicationLoadBalancer(config, network, app),
+  }));
 }

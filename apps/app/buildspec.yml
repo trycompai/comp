@@ -29,8 +29,6 @@ phases:
 
       # Generate Prisma client
       - echo "Generating Prisma client..."
-      - cd ../../
-      - bun x prisma generate --schema=packages/db/prisma/schema.prisma
       - cd packages/db && bun x prisma generate && cd ../../
 
       # Validate environment variables

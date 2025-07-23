@@ -19,7 +19,7 @@ export function createApplicationContainer(
     taskExecutionRole: aws.iam.Role;
     taskRole: aws.iam.Role;
   },
-  loadBalancer?: LoadBalancerOutputs,
+  loadBalancer: LoadBalancerOutputs,
   appSecrets?: Record<string, { arn: pulumi.Output<string>; name: pulumi.Output<string> }>,
 ) {
   const { commonTags } = config;
@@ -78,33 +78,6 @@ export function createApplicationContainer(
       App: app.name,
     },
   });
-
-  // App-specific Target Group (if routing is configured)
-  let targetGroup: aws.lb.TargetGroup | undefined;
-  if (app.routing && loadBalancer) {
-    targetGroup = new aws.lb.TargetGroup(`${appName}-tg`, {
-      name: `${appName}-tg`.substring(0, 32), // AWS limit
-      port: app.containerPort,
-      protocol: 'HTTP',
-      targetType: 'ip',
-      vpcId: network.vpcId,
-      healthCheck: {
-        enabled: true,
-        path: app.healthCheck?.path || '/health',
-        interval: app.healthCheck?.interval || 60,
-        timeout: app.healthCheck?.timeout || 30,
-        healthyThreshold: app.healthCheck?.healthyThreshold || 2,
-        unhealthyThreshold: app.healthCheck?.unhealthyThreshold || 3,
-        matcher: '200',
-      },
-      tags: {
-        ...commonTags,
-        Name: `${appName}-tg`,
-        Type: 'target-group',
-        App: app.name,
-      },
-    });
-  }
 
   // App-specific Task Definition
   const taskDefinition = new aws.ecs.TaskDefinition(`${appName}-task`, {
@@ -202,15 +175,13 @@ export function createApplicationContainer(
       assignPublicIp: false,
     },
     enableExecuteCommand: true,
-    loadBalancers: targetGroup
-      ? [
-          {
-            targetGroupArn: targetGroup.arn,
-            containerName: `${app.name}-container`,
-            containerPort: app.containerPort,
-          },
-        ]
-      : undefined,
+    loadBalancers: [
+      {
+        targetGroupArn: loadBalancer.targetGroupArn,
+        containerName: `${app.name}-container`,
+        containerPort: app.containerPort,
+      },
+    ],
     tags: {
       ...commonTags,
       Name: `${appName}-service`,
@@ -228,7 +199,7 @@ export function createApplicationContainer(
     taskDefinitionArn: taskDefinition.arn,
     logGroupName: logGroup.name,
     logGroupArn: logGroup.arn,
-    targetGroupArn: targetGroup?.arn,
+    targetGroupArn: loadBalancer.targetGroupArn,
   };
 }
 
@@ -238,7 +209,7 @@ export function createContainer(
   applications: ApplicationConfig[],
   network: NetworkOutputs,
   database: DatabaseOutputs,
-  loadBalancer?: LoadBalancerOutputs,
+  loadBalancers: Array<{ app: string; loadBalancer: LoadBalancerOutputs }>,
   appSecrets?: Record<
     string,
     Record<string, { arn: pulumi.Output<string>; name: pulumi.Output<string> }>
@@ -365,17 +336,22 @@ export function createContainer(
   });
 
   // Create application-specific resources
-  const appContainers = applications.map((app) =>
-    createApplicationContainer(
+  const appContainers = applications.map((app) => {
+    const appLoadBalancer = loadBalancers.find((lb) => lb.app === app.name);
+    if (!appLoadBalancer) {
+      throw new Error(`No load balancer found for app: ${app.name}`);
+    }
+
+    return createApplicationContainer(
       config,
       app,
       network,
       database,
       { cluster, taskExecutionRole, taskRole },
-      loadBalancer,
+      appLoadBalancer.loadBalancer,
       appSecrets?.[app.name],
-    ),
-  );
+    );
+  });
 
   // Return shared resources and app-specific resources
   return {

@@ -7,7 +7,7 @@ import { createConfig } from './modules/config';
 import { createContainer } from './modules/container';
 import { createDatabase } from './modules/database';
 import { createGithubOidc } from './modules/github-oidc';
-import { createApplicationRouting, createLoadBalancer } from './modules/loadbalancer';
+import { createLoadBalancers } from './modules/loadbalancer';
 import { createMonitoring } from './modules/monitoring';
 import { createNetworking } from './modules/networking';
 import { createScaling } from './modules/scaling';
@@ -50,9 +50,6 @@ const applications: ApplicationConfig[] = [
       timeout: 5,
       healthyThreshold: 2,
       unhealthyThreshold: 3,
-    },
-    routing: {
-      pathPattern: '/*', // Default route
     },
     cpu: 256,
     memory: 512,
@@ -101,16 +98,18 @@ const applications: ApplicationConfig[] = [
       healthyThreshold: 2,
       unhealthyThreshold: 3,
     },
-    routing: {
-      pathPattern: '/portal/*',
-    },
     cpu: 256,
     memory: 512,
     desiredCount: 1,
     minCount: 1,
     maxCount: 5,
     targetCPUPercent: 70,
-    requiredSecrets: ['PORTAL_API_KEY'],
+    requiredSecrets: [
+      'BETTER_AUTH_SECRET',
+      'BETTER_AUTH_URL',
+      'RESEND_API_KEY',
+      'NEXT_PUBLIC_BETTER_AUTH_URL',
+    ],
     includeDatabaseUrl: true,
     environmentVariables: {
       NODE_ENV: 'production',
@@ -135,7 +134,7 @@ const database = createDatabase(config, network);
 const appSecrets = createAppSecrets(config, applications);
 
 // 4. Load Balancing - ALB with Health Checks
-const loadBalancer = createLoadBalancer(config, network);
+const loadBalancers = createLoadBalancers(config, network, applications);
 
 // 5. Container Platform - Multi-app ECS support
 const container = createContainer(
@@ -143,7 +142,7 @@ const container = createContainer(
   applications,
   network,
   database,
-  loadBalancer,
+  loadBalancers,
   appSecrets,
 );
 
@@ -153,33 +152,23 @@ const build = createBuildSystem(config, network, database, container, appSecrets
 // 7. Wire up applications
 const deployments = applications.map((app, index) => {
   const appContainer = container.applications![index];
+  const appLoadBalancer = loadBalancers.find((lb) => lb.app === app.name)?.loadBalancer;
 
   // Create build project for this app
   const buildProject = build.createApplicationBuildProject(app, appContainer);
 
-  // Create routing rules if app has routing config and target group
-  if (app.routing && appContainer.targetGroupArn) {
-    createApplicationRouting({
-      projectName: config.projectName,
-      appName: app.name,
-      loadBalancerArn: loadBalancer.albArn,
-      targetGroupArn: appContainer.targetGroupArn,
-      pathPattern: app.routing.pathPattern,
-      hostHeader: app.routing.hostnames,
-      priority: (index + 1) * 100,
-      httpListenerArn: loadBalancer.httpListenerArn,
-    });
-  }
+  // No routing rules needed with multiple ALBs
 
   return {
     app,
     buildProject,
     container: appContainer,
+    loadBalancer: appLoadBalancer,
   };
 });
 
-// 8. Auto-scaling - ECS Service Scaling
-const scaling = createScaling(config, applications, container, loadBalancer);
+// 8. Auto-scaling - ECS Service Scaling (pass first load balancer for now)
+const scaling = createScaling(config, applications, container, loadBalancers[0]?.loadBalancer);
 
 // 9. GitHub OIDC - For GitHub Actions authentication
 const githubOidc = createGithubOidc(config);
@@ -201,10 +190,17 @@ const appContainers =
     {} as Record<string, (typeof container.applications)[0]>,
   ) || {};
 
-const monitoring = createMonitoring(config, applications, database, appContainers, loadBalancer, {
-  enableBetterStack,
-  enableDetailedMonitoring,
-});
+const monitoring = createMonitoring(
+  config,
+  applications,
+  database,
+  appContainers,
+  loadBalancers[0]?.loadBalancer,
+  {
+    enableBetterStack,
+    enableDetailedMonitoring,
+  },
+);
 
 // ==========================================
 // STACK OUTPUTS
@@ -215,12 +211,8 @@ export const applicationOutputs = deployments.reduce(
   (acc, deployment) => {
     const appName = deployment.app.name;
 
-    // Build URL based on routing config
-    const appUrl = deployment.app.routing?.pathPattern
-      ? pulumi.interpolate`${loadBalancer.applicationUrl}${deployment.app.routing.pathPattern.replace('/*', '')}`
-      : deployment.app.routing?.hostnames
-        ? pulumi.interpolate`http://${deployment.app.routing.hostnames[0]}`
-        : loadBalancer.applicationUrl;
+    // Each app now has its own load balancer, so use that directly
+    const appUrl = deployment.loadBalancer?.applicationUrl || pulumi.output('');
 
     acc[appName] = {
       url: appUrl,
@@ -228,7 +220,7 @@ export const applicationOutputs = deployments.reduce(
       ecrRepository: deployment.container.repositoryUrl,
       logGroup: deployment.container.logGroupName,
       buildProject: deployment.buildProject.name,
-      healthCheckUrl: pulumi.interpolate`${appUrl}${deployment.app.healthCheck?.path || '/health'}`,
+      healthCheckUrl: deployment.loadBalancer?.healthCheckUrl || pulumi.output(''),
       secrets: appSecrets[deployment.app.name]
         ? Object.entries(appSecrets[deployment.app.name]).reduce(
             (acc, [secretName, secret]) => {
@@ -247,7 +239,8 @@ export const applicationOutputs = deployments.reduce(
 );
 
 // Infrastructure outputs
-export const albUrl = loadBalancer.applicationUrl;
+export const albUrl =
+  loadBalancers[0]?.loadBalancer?.applicationUrl || pulumi.output('Main app ALB not found');
 export const clusterName = container.clusterName;
 
 // Database outputs
