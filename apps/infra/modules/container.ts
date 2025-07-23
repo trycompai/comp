@@ -223,7 +223,7 @@ export function createContainer(
           const secrets = [
             {
               name: 'DATABASE_URL',
-              valueFrom: `${dbSecretArn}::connectionString::`,
+              valueFrom: `${dbSecretArn}:connectionString::`,
             },
           ];
 
@@ -231,15 +231,15 @@ export function createContainer(
             secrets.push(
               {
                 name: 'AUTH_SECRET',
-                valueFrom: `${appSecretArn}::AUTH_SECRET::`,
+                valueFrom: `${appSecretArn}:AUTH_SECRET::`,
               },
               {
                 name: 'RESEND_API_KEY',
-                valueFrom: `${appSecretArn}::RESEND_API_KEY::`,
+                valueFrom: `${appSecretArn}:RESEND_API_KEY::`,
               },
               {
                 name: 'REVALIDATION_SECRET',
-                valueFrom: `${appSecretArn}::REVALIDATION_SECRET::`,
+                valueFrom: `${appSecretArn}:REVALIDATION_SECRET::`,
               },
             );
           }
