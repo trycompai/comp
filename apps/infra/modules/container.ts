@@ -1,74 +1,62 @@
 import * as aws from '@pulumi/aws';
 import * as pulumi from '@pulumi/pulumi';
-import { CommonConfig, DatabaseOutputs, LoadBalancerOutputs, NetworkOutputs } from '../types';
+import {
+  ApplicationConfig,
+  CommonConfig,
+  DatabaseOutputs,
+  LoadBalancerOutputs,
+  NetworkOutputs,
+} from '../types';
 
-export function createContainer(
+// Function to create container resources for a single application
+export function createApplicationContainer(
   config: CommonConfig,
+  app: ApplicationConfig,
   network: NetworkOutputs,
   database: DatabaseOutputs,
+  sharedResources: {
+    cluster: aws.ecs.Cluster;
+    taskExecutionRole: aws.iam.Role;
+    taskRole: aws.iam.Role;
+  },
   loadBalancer?: LoadBalancerOutputs,
-  appSecrets?: { secretArn: pulumi.Output<string>; secretId: pulumi.Output<string> },
+  appSecret?: { secretArn: pulumi.Output<string>; secretId: pulumi.Output<string> },
 ) {
   const { commonTags } = config;
+  const appName = `${config.projectName}-${app.name}`;
 
-  // ECR Repository for container images
-  const repository = new aws.ecr.Repository(`${config.projectName}-repository`, {
-    name: config.projectName,
+  // App-specific ECR Repository
+  const repository = new aws.ecr.Repository(`${appName}-repository`, {
+    name: appName.toLowerCase(), // ECR names must be lowercase
     imageTagMutability: 'MUTABLE',
-    imageScanningConfiguration: {
-      scanOnPush: true,
-    },
     encryptionConfigurations: [
       {
         encryptionType: 'AES256',
       },
     ],
+    imageScanningConfiguration: {
+      scanOnPush: true,
+    },
     tags: {
       ...commonTags,
-      Name: `${config.projectName}-repository`,
+      Name: `${appName}-repository`,
       Type: 'ecr-repository',
+      App: app.name,
     },
   });
 
-  // ECR Lifecycle Policy
-  const lifecyclePolicy = new aws.ecr.LifecyclePolicy(`${config.projectName}-lifecycle-policy`, {
+  // ECR Lifecycle Policy to manage image retention
+  const lifecyclePolicy = new aws.ecr.LifecyclePolicy(`${appName}-lifecycle-policy`, {
     repository: repository.name,
     policy: JSON.stringify({
       rules: [
         {
           rulePriority: 1,
-          description: 'Keep last 10 production images',
+          description: 'Keep last 10 images',
           selection: {
-            tagStatus: 'tagged',
-            tagPrefixList: ['prod'],
+            tagStatus: 'any',
             countType: 'imageCountMoreThan',
             countNumber: 10,
-          },
-          action: {
-            type: 'expire',
-          },
-        },
-        {
-          rulePriority: 2,
-          description: 'Keep last 5 development images',
-          selection: {
-            tagStatus: 'tagged',
-            tagPrefixList: ['dev'],
-            countType: 'imageCountMoreThan',
-            countNumber: 5,
-          },
-          action: {
-            type: 'expire',
-          },
-        },
-        {
-          rulePriority: 3,
-          description: 'Delete untagged images older than 1 day',
-          selection: {
-            tagStatus: 'untagged',
-            countType: 'sinceImagePushed',
-            countUnit: 'days',
-            countNumber: 1,
           },
           action: {
             type: 'expire',
@@ -78,7 +66,174 @@ export function createContainer(
     }),
   });
 
-  // ECS Cluster
+  // App-specific CloudWatch Log Group
+  const logGroup = new aws.cloudwatch.LogGroup(`${appName}-logs`, {
+    name: `/ecs/${appName}`,
+    retentionInDays: 30,
+    tags: {
+      ...commonTags,
+      Name: `${appName}-logs`,
+      Type: 'cloudwatch-logs',
+      App: app.name,
+    },
+  });
+
+  // App-specific Target Group (if routing is configured)
+  let targetGroup: aws.lb.TargetGroup | undefined;
+  if (app.routing && loadBalancer) {
+    targetGroup = new aws.lb.TargetGroup(`${appName}-tg`, {
+      name: `${appName}-tg`.substring(0, 32), // AWS limit
+      port: app.containerPort,
+      protocol: 'HTTP',
+      targetType: 'ip',
+      vpcId: network.vpcId,
+      healthCheck: {
+        enabled: true,
+        path: app.healthCheck?.path || '/health',
+        interval: app.healthCheck?.interval || 60,
+        timeout: app.healthCheck?.timeout || 30,
+        healthyThreshold: app.healthCheck?.healthyThreshold || 2,
+        unhealthyThreshold: app.healthCheck?.unhealthyThreshold || 3,
+        matcher: '200',
+      },
+      tags: {
+        ...commonTags,
+        Name: `${appName}-tg`,
+        Type: 'target-group',
+        App: app.name,
+      },
+    });
+  }
+
+  // App-specific Task Definition
+  const taskDefinition = new aws.ecs.TaskDefinition(`${appName}-task`, {
+    family: appName,
+    networkMode: 'awsvpc',
+    requiresCompatibilities: ['FARGATE'],
+    cpu: (app.cpu || 256).toString(),
+    memory: (app.memory || 512).toString(),
+    executionRoleArn: sharedResources.taskExecutionRole.arn,
+    taskRoleArn: sharedResources.taskRole.arn,
+    containerDefinitions: pulumi
+      .all([
+        repository.repositoryUrl,
+        logGroup.name,
+        database.secretArn,
+        appSecret?.secretArn || pulumi.output(''),
+      ])
+      .apply(([repoUrl, logGroupName, dbSecretArn, appSecretArn]) => {
+        const secrets = [];
+
+        // Add database secret if needed
+        if (app.includeDatabaseUrl) {
+          secrets.push({
+            name: 'DATABASE_URL',
+            valueFrom: `${dbSecretArn}:connectionString::`,
+          });
+        }
+
+        // Add app-specific secrets if provided
+        if (appSecretArn && app.requiredSecrets) {
+          app.requiredSecrets.forEach((secretName) => {
+            secrets.push({
+              name: secretName,
+              valueFrom: `${appSecretArn}:${secretName}::`,
+            });
+          });
+        }
+
+        return JSON.stringify([
+          {
+            name: `${app.name}-container`,
+            image: pulumi.interpolate`${repoUrl}:latest`,
+            essential: true,
+            portMappings: [
+              {
+                containerPort: app.containerPort,
+                protocol: 'tcp',
+              },
+            ],
+            environment: Object.entries(app.environmentVariables || {}).map(([key, value]) => ({
+              name: key,
+              value: value,
+            })),
+            secrets,
+            logConfiguration: {
+              logDriver: 'awslogs',
+              options: {
+                'awslogs-group': logGroupName,
+                'awslogs-region': config.awsRegion,
+                'awslogs-stream-prefix': 'ecs',
+              },
+            },
+          },
+        ]);
+      }),
+    tags: {
+      ...commonTags,
+      Name: `${appName}-task`,
+      Type: 'ecs-task-definition',
+      App: app.name,
+    },
+  });
+
+  // App-specific ECS Service
+  const service = new aws.ecs.Service(`${appName}-service`, {
+    name: appName,
+    cluster: sharedResources.cluster.id,
+    taskDefinition: taskDefinition.arn,
+    desiredCount: app.desiredCount || app.minCount || 1,
+    launchType: 'FARGATE',
+    platformVersion: 'LATEST',
+    networkConfiguration: {
+      subnets: network.privateSubnetIds,
+      securityGroups: [network.securityGroups.ecs],
+      assignPublicIp: false,
+    },
+    enableExecuteCommand: true,
+    loadBalancers: targetGroup
+      ? [
+          {
+            targetGroupArn: targetGroup.arn,
+            containerName: `${app.name}-container`,
+            containerPort: app.containerPort,
+          },
+        ]
+      : undefined,
+    tags: {
+      ...commonTags,
+      Name: `${appName}-service`,
+      Type: 'ecs-service',
+      App: app.name,
+    },
+  });
+
+  return {
+    serviceName: service.name,
+    repositoryUrl: repository.repositoryUrl,
+    repositoryArn: repository.arn,
+    taskDefinitionArn: taskDefinition.arn,
+    logGroupName: logGroup.name,
+    logGroupArn: logGroup.arn,
+    targetGroupArn: targetGroup?.arn,
+  };
+}
+
+// Main container function that creates shared resources and calls createApplicationContainer for each app
+export function createContainer(
+  config: CommonConfig,
+  applications: ApplicationConfig[],
+  network: NetworkOutputs,
+  database: DatabaseOutputs,
+  loadBalancer?: LoadBalancerOutputs,
+  appSecrets?: Record<
+    string,
+    { secretArn: pulumi.Output<string>; secretId: pulumi.Output<string> }
+  >,
+) {
+  const { commonTags } = config;
+
+  // Create shared ECS Cluster
   const cluster = new aws.ecs.Cluster(`${config.projectName}-cluster`, {
     name: config.projectName,
     settings: [
@@ -94,18 +249,7 @@ export function createContainer(
     },
   });
 
-  // CloudWatch Log Group for application logs
-  const logGroup = new aws.cloudwatch.LogGroup(`${config.projectName}-app-logs`, {
-    name: `/aws/ecs/${config.projectName}`,
-    retentionInDays: config.logRetentionDays,
-    tags: {
-      ...commonTags,
-      Name: `${config.projectName}-app-logs`,
-      Type: 'log-group',
-    },
-  });
-
-  // ECS Task Execution Role
+  // Create shared IAM roles that all apps can use
   const taskExecutionRole = new aws.iam.Role(`${config.projectName}-task-execution-role`, {
     name: `${config.projectName}-ecs-task-execution-role`,
     assumeRolePolicy: JSON.stringify({
@@ -141,20 +285,18 @@ export function createContainer(
     `${config.projectName}-task-execution-secrets-policy`,
     {
       role: taskExecutionRole.id,
-      policy: pulumi
-        .all([database.secretArn, appSecrets?.secretArn])
-        .apply(([dbSecretArn, appSecretArn]) =>
-          JSON.stringify({
-            Version: '2012-10-17',
-            Statement: [
-              {
-                Effect: 'Allow',
-                Action: ['secretsmanager:GetSecretValue', 'secretsmanager:DescribeSecret'],
-                Resource: [dbSecretArn, ...(appSecretArn ? [appSecretArn] : [])],
-              },
-            ],
-          }),
-        ),
+      policy: pulumi.all([database.secretArn]).apply(([dbSecretArn]) =>
+        JSON.stringify({
+          Version: '2012-10-17',
+          Statement: [
+            {
+              Effect: 'Allow',
+              Action: ['secretsmanager:GetSecretValue', 'secretsmanager:DescribeSecret'],
+              Resource: [dbSecretArn, 'arn:aws:secretsmanager:*:*:secret:*'],
+            },
+          ],
+        }),
+      ),
     },
   );
 
@@ -183,227 +325,42 @@ export function createContainer(
   // Task Role Policy for application access
   const taskRolePolicy = new aws.iam.RolePolicy(`${config.projectName}-task-role-policy`, {
     role: taskRole.id,
-    policy: logGroup.arn.apply((logGroupArn) =>
-      JSON.stringify({
-        Version: '2012-10-17',
-        Statement: [
-          {
-            Effect: 'Allow',
-            Action: ['secretsmanager:GetSecretValue', 'secretsmanager:DescribeSecret'],
-            Resource: '*',
-          },
-          {
-            Effect: 'Allow',
-            Action: ['logs:CreateLogStream', 'logs:PutLogEvents'],
-            Resource: logGroupArn,
-          },
-        ],
-      }),
-    ),
-  });
-
-  // ECS Task Definition
-  const taskDefinition = new aws.ecs.TaskDefinition(`${config.projectName}-task`, {
-    family: config.projectName,
-    networkMode: 'awsvpc',
-    requiresCompatibilities: ['FARGATE'],
-    cpu: '1024',
-    memory: '2048',
-    executionRoleArn: taskExecutionRole.arn,
-    taskRoleArn: taskRole.arn,
-    containerDefinitions: pulumi
-      .all([
-        repository.repositoryUrl,
-        logGroup.name,
-        database.secretArn,
-        appSecrets?.secretArn || pulumi.output(''),
-      ])
-      .apply(
-        ([repoUrl, logGroupName, dbSecretArn, appSecretArn]: [string, string, string, string]) => {
-          const secrets = [
-            {
-              name: 'DATABASE_URL',
-              valueFrom: `${dbSecretArn}:connectionString::`,
-            },
-          ];
-
-          if (appSecrets && appSecretArn) {
-            secrets.push(
-              // Required secrets
-              {
-                name: 'AUTH_SECRET',
-                valueFrom: `${appSecretArn}:AUTH_SECRET::`,
-              },
-              {
-                name: 'RESEND_API_KEY',
-                valueFrom: `${appSecretArn}:RESEND_API_KEY::`,
-              },
-              {
-                name: 'REVALIDATION_SECRET',
-                valueFrom: `${appSecretArn}:REVALIDATION_SECRET::`,
-              },
-              {
-                name: 'SECRET_KEY',
-                valueFrom: `${appSecretArn}:SECRET_KEY::`,
-              },
-              {
-                name: 'UPSTASH_REDIS_REST_URL',
-                valueFrom: `${appSecretArn}:UPSTASH_REDIS_REST_URL::`,
-              },
-              {
-                name: 'UPSTASH_REDIS_REST_TOKEN',
-                valueFrom: `${appSecretArn}:UPSTASH_REDIS_REST_TOKEN::`,
-              },
-              {
-                name: 'OPENAI_API_KEY',
-                valueFrom: `${appSecretArn}:OPENAI_API_KEY::`,
-              },
-              {
-                name: 'TRIGGER_SECRET_KEY',
-                valueFrom: `${appSecretArn}:TRIGGER_SECRET_KEY::`,
-              },
-
-              // Optional secrets
-              {
-                name: 'IS_VERCEL',
-                valueFrom: `${appSecretArn}:IS_VERCEL::`,
-              },
-              {
-                name: 'AUTH_GOOGLE_ID',
-                valueFrom: `${appSecretArn}:AUTH_GOOGLE_ID::`,
-              },
-              {
-                name: 'AUTH_GOOGLE_SECRET',
-                valueFrom: `${appSecretArn}:AUTH_GOOGLE_SECRET::`,
-              },
-              {
-                name: 'AUTH_GITHUB_ID',
-                valueFrom: `${appSecretArn}:AUTH_GITHUB_ID::`,
-              },
-              {
-                name: 'AUTH_GITHUB_SECRET',
-                valueFrom: `${appSecretArn}:AUTH_GITHUB_SECRET::`,
-              },
-              {
-                name: 'AWS_BUCKET_NAME',
-                valueFrom: `${appSecretArn}:AWS_BUCKET_NAME::`,
-              },
-              {
-                name: 'AWS_REGION',
-                valueFrom: `${appSecretArn}:AWS_REGION::`,
-              },
-              {
-                name: 'AWS_ACCESS_KEY_ID',
-                valueFrom: `${appSecretArn}:AWS_ACCESS_KEY_ID::`,
-              },
-              {
-                name: 'AWS_SECRET_ACCESS_KEY',
-                valueFrom: `${appSecretArn}:AWS_SECRET_ACCESS_KEY::`,
-              },
-              {
-                name: 'DISCORD_WEBHOOK_URL',
-                valueFrom: `${appSecretArn}:DISCORD_WEBHOOK_URL::`,
-              },
-              {
-                name: 'SLACK_SALES_WEBHOOK',
-                valueFrom: `${appSecretArn}:SLACK_SALES_WEBHOOK::`,
-              },
-              {
-                name: 'HUBSPOT_ACCESS_TOKEN',
-                valueFrom: `${appSecretArn}:HUBSPOT_ACCESS_TOKEN::`,
-              },
-            );
-          }
-
-          return JSON.stringify([
-            {
-              name: `${config.projectName}-app`,
-              image: `${repoUrl}:latest`,
-              essential: true,
-              portMappings: [
-                {
-                  containerPort: 3000,
-                  protocol: 'tcp',
-                },
-              ],
-              environment: [
-                {
-                  name: 'NODE_ENV',
-                  value: 'production',
-                },
-                {
-                  name: 'PORT',
-                  value: '3000',
-                },
-              ],
-              secrets,
-              logConfiguration: {
-                logDriver: 'awslogs',
-                options: {
-                  'awslogs-group': logGroupName,
-                  'awslogs-region': config.awsRegion,
-                  'awslogs-stream-prefix': 'ecs',
-                },
-              },
-              healthCheck: {
-                command: ['CMD-SHELL', 'curl -f http://localhost:3000/api/health || exit 1'],
-                interval: 30,
-                timeout: 10,
-                retries: 5,
-                startPeriod: 120,
-              },
-            },
-          ]);
+    policy: JSON.stringify({
+      Version: '2012-10-17',
+      Statement: [
+        {
+          Effect: 'Allow',
+          Action: ['secretsmanager:GetSecretValue', 'secretsmanager:DescribeSecret'],
+          Resource: '*',
         },
-      ),
-    tags: {
-      ...commonTags,
-      Name: `${config.projectName}-task`,
-      Type: 'ecs-task-definition',
-    },
+        {
+          Effect: 'Allow',
+          Action: ['logs:CreateLogStream', 'logs:PutLogEvents'],
+          Resource: '*',
+        },
+      ],
+    }),
   });
 
-  // ECS Service
-  const service = new aws.ecs.Service(`${config.projectName}-service`, {
-    name: config.projectName,
-    cluster: cluster.id,
-    taskDefinition: taskDefinition.arn,
-    desiredCount: 2,
-    launchType: 'FARGATE',
-    platformVersion: 'LATEST',
-    networkConfiguration: {
-      subnets: network.privateSubnetIds,
-      securityGroups: [network.securityGroups.ecs],
-      assignPublicIp: false,
-    },
-    enableExecuteCommand: true,
-    // Attach to load balancer if provided
-    loadBalancers: loadBalancer
-      ? [
-          {
-            targetGroupArn: loadBalancer.targetGroupArn,
-            containerName: `${config.projectName}-app`,
-            containerPort: 3000,
-          },
-        ]
-      : undefined,
-    tags: {
-      ...commonTags,
-      Name: `${config.projectName}-service`,
-      Type: 'ecs-service',
-    },
-  });
+  // Create application-specific resources
+  const appContainers = applications.map((app) =>
+    createApplicationContainer(
+      config,
+      app,
+      network,
+      database,
+      { cluster, taskExecutionRole, taskRole },
+      loadBalancer,
+      appSecrets?.[app.name],
+    ),
+  );
 
+  // Return shared resources and app-specific resources
   return {
     clusterName: cluster.name,
     clusterArn: cluster.arn,
-    serviceName: service.name,
-    repositoryUrl: repository.repositoryUrl,
-    repositoryArn: repository.arn,
-    taskDefinitionArn: taskDefinition.arn,
-    logGroupName: logGroup.name,
-    logGroupArn: logGroup.arn,
     taskExecutionRoleArn: taskExecutionRole.arn,
     taskRoleArn: taskRole.arn,
+    applications: appContainers,
   };
 }

@@ -1,0 +1,45 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - echo Building image tag...
+      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - IMAGE_URI=$ECR_REPOSITORY_URI:$IMAGE_TAG
+      - IMAGE_URI_LATEST=$ECR_REPOSITORY_URI:latest
+
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Building the Docker image for $APP_NAME...
+      - cd apps/$APP_NAME
+      - docker build -t $IMAGE_URI -t $IMAGE_URI_LATEST -f $DOCKERFILE_PATH .
+      - echo Build completed on `date`
+
+  post_build:
+    commands:
+      - echo Pushing the Docker images...
+      - docker push $IMAGE_URI
+      - docker push $IMAGE_URI_LATEST
+      - echo Writing image definitions file...
+      - printf '[{"name":"%s-container","imageUri":"%s"}]' "$APP_NAME" "$IMAGE_URI" > imagedefinitions.json
+      - echo Updating ECS service...
+      - |
+        aws ecs update-service \
+          --cluster $ECS_CLUSTER_NAME \
+          --service $ECS_SERVICE_NAME \
+          --force-new-deployment \
+          --region $AWS_DEFAULT_REGION
+      - echo Deployment initiated successfully
+
+cache:
+  paths:
+    - '/root/.npm/**/*'
+    - '/root/.next/cache/**/*'
+
+artifacts:
+  files:
+    - imagedefinitions.json
+  name: ${APP_NAME}-build

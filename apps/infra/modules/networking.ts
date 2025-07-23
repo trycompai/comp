@@ -1,7 +1,7 @@
 import * as aws from '@pulumi/aws';
-import { CommonConfig } from '../types';
+import { ApplicationConfig, CommonConfig } from '../types';
 
-export function createNetworking(config: CommonConfig) {
+export function createNetworking(config: CommonConfig, applications: ApplicationConfig[]) {
   const { commonTags, networkConfig, securityConfig } = config;
 
   // ==========================================
@@ -204,13 +204,14 @@ export function createNetworking(config: CommonConfig) {
     vpcId: vpc.id,
     description: 'Security group for ECS services',
     ingress: [
-      {
+      // Create ingress rules for each application's port
+      ...applications.map((app) => ({
         protocol: 'tcp',
-        fromPort: 3000,
-        toPort: 3000,
+        fromPort: app.containerPort,
+        toPort: app.containerPort,
         securityGroups: [albSecurityGroup.id],
-        description: 'HTTP access from ALB only',
-      },
+        description: `HTTP access from ALB for ${app.name} app`,
+      })),
     ],
     egress: [
       {

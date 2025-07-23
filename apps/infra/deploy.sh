@@ -10,6 +10,49 @@ NC='\033[0m' # No Color
 # Configuration
 AWS_REGION=${AWS_REGION:-us-east-1}
 PROJECT_NAME=${PROJECT_NAME:-comp}  # Base project name, can be overridden
+AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text 2>/dev/null || echo "")
+
+# Parse command line arguments
+DEPLOY_APP=true
+DEPLOY_PORTAL=true
+SKIP_INFRA=false
+SKIP_MIGRATIONS=false
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --app-only)
+            DEPLOY_PORTAL=false
+            shift
+            ;;
+        --portal-only)
+            DEPLOY_APP=false
+            shift
+            ;;
+        --skip-infra)
+            SKIP_INFRA=true
+            shift
+            ;;
+        --skip-migrations)
+            SKIP_MIGRATIONS=true
+            shift
+            ;;
+        --help)
+            echo "Usage: $0 [options]"
+            echo "Options:"
+            echo "  --app-only         Deploy only the main app"
+            echo "  --portal-only      Deploy only the portal"
+            echo "  --skip-infra       Skip Pulumi infrastructure update"
+            echo "  --skip-migrations  Skip database migrations (DANGEROUS!)"
+            echo "  --help             Show this help message"
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Run '$0 --help' for usage information"
+            exit 1
+            ;;
+    esac
+done
 
 # Get the script's directory
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -50,6 +93,8 @@ PROJECT_PREFIX="${PROJECT_NAME}-${ENV_NAME}"
 CLUSTER_NAME="${PROJECT_PREFIX}"
 SERVICE_NAME="${PROJECT_PREFIX}"  # Service name matches project prefix
 APP_PROJECT="${PROJECT_PREFIX}-app-build"
+PORTAL_PROJECT="${PROJECT_PREFIX}-portal-build"
+MIGRATION_PROJECT="${PROJECT_PREFIX}-migrations"
 
 echo -e "${GREEN}🚀 Starting deployment for environment: ${ENV_NAME}${NC}"
 echo -e "${YELLOW}📋 Using resource prefix: ${PROJECT_PREFIX}${NC}"
@@ -64,7 +109,9 @@ SERVICE_NAME=${ACTUAL_SERVICE:-$SERVICE_NAME}
 
 echo -e "${YELLOW}📋 Cluster: ${CLUSTER_NAME}${NC}"
 echo -e "${YELLOW}📋 Service: ${SERVICE_NAME}${NC}"
-echo -e "${YELLOW}📋 CodeBuild Project: ${APP_PROJECT}${NC}"
+echo -e "${YELLOW}📋 Migration Project: ${MIGRATION_PROJECT}${NC}"
+echo -e "${YELLOW}📋 App CodeBuild Project: ${APP_PROJECT}${NC}"
+echo -e "${YELLOW}📋 Portal CodeBuild Project: ${PORTAL_PROJECT}${NC}"
 echo -e "${YELLOW}📋 AWS Region: ${AWS_REGION}${NC}"
 
 # Confirm deployment
@@ -74,6 +121,16 @@ if [[ ! "$response" =~ ^[Yy]$ ]]; then
     echo -e "${RED}❌ Deployment cancelled${NC}"
     exit 1
 fi
+
+# Function to generate CodeBuild console URL
+get_codebuild_url() {
+    local build_id=$1
+    # Extract project name from build ID (format: project-name:build-uuid)
+    local project_name=$(echo "$build_id" | cut -d':' -f1)
+    # URL encode the build ID (replace : with %3A)
+    local encoded_build_id=$(echo "$build_id" | sed 's/:/%3A/g')
+    echo "https://${AWS_REGION}.console.aws.amazon.com/codesuite/codebuild/${AWS_ACCOUNT_ID}/projects/${project_name}/build/${encoded_build_id}/?region=${AWS_REGION}"
+}
 
 # Function to wait for CodeBuild
 wait_for_build() {
@@ -107,31 +164,116 @@ wait_for_build() {
 }
 
 # Step 1: Update Infrastructure
-echo -e "${YELLOW}📋 Step 1: Updating infrastructure...${NC}"
-cd "$INFRA_DIR"
-export NODE_ENV=production
-if ! pulumi up --yes; then
-    echo -e "${RED}❌ Pulumi update failed. Aborting deployment.${NC}"
-    exit 1
+if [ "$SKIP_INFRA" = false ]; then
+    echo -e "${YELLOW}📋 Step 1: Updating infrastructure...${NC}"
+    cd "$INFRA_DIR"
+    export NODE_ENV=production
+    if ! pulumi up --yes; then
+        echo -e "${RED}❌ Pulumi update failed. Aborting deployment.${NC}"
+        exit 1
+    fi
+    cd "$PROJECT_ROOT"
+    echo -e "${GREEN}✅ Infrastructure updated successfully${NC}"
+else
+    echo -e "${YELLOW}⏭️  Step 1: Skipping infrastructure update${NC}"
 fi
-cd "$PROJECT_ROOT"
-echo -e "${GREEN}✅ Infrastructure updated successfully${NC}"
 
 # Add a small delay to ensure propagation
 echo -e "${YELLOW}⏳ Waiting 15 seconds for infrastructure changes to propagate...${NC}"
 sleep 15
 
-# Step 2: Build and Deploy Application (includes migrations)
-echo -e "${YELLOW}🔨 Step 2: Building application (migrations + Next.js + Docker)...${NC}"
-app_build_id=$(aws codebuild start-build \
-    --project-name "$APP_PROJECT" \
-    --query 'build.id' --output text)
+# Step 2: Run Database Migrations (MUST complete before apps)
+if [ "$SKIP_MIGRATIONS" = false ]; then
+    echo -e "${YELLOW}🗃️  Step 2: Running database migrations...${NC}"
+    migration_build_id=$(aws codebuild start-build \
+        --project-name "$MIGRATION_PROJECT" \
+        --query 'build.id' --output text)
 
-echo "App build ID: $app_build_id"
-wait_for_build "$app_build_id" "Application"
+    echo "Migration build ID: $migration_build_id"
+    migration_url=$(get_codebuild_url "$migration_build_id")
+    echo -e "${YELLOW}🔗 View build: ${migration_url}${NC}"
+    if ! wait_for_build "$migration_build_id" "Database Migrations"; then
+        echo -e "${RED}❌ Migration failed. Aborting deployment.${NC}"
+        exit 1
+    fi
+else
+    echo -e "${YELLOW}⏭️  Step 2: Skipping database migrations (DANGEROUS!)${NC}"
+fi
 
-# Step 3: Verify Deployment
-echo -e "${YELLOW}🔍 Step 3: Verifying deployment...${NC}"
+# Step 3: Build and Deploy Applications (in parallel)
+echo -e "${YELLOW}🔨 Step 3: Building and deploying applications...${NC}"
+
+# Display what will be deployed
+echo -e "${YELLOW}📦 Applications to deploy:${NC}"
+if [ "$DEPLOY_APP" = true ]; then
+    echo -e "  - Main App ✓"
+else
+    echo -e "  - Main App ✗ (skipped)"
+fi
+if [ "$DEPLOY_PORTAL" = true ]; then
+    echo -e "  - Portal ✓"
+else
+    echo -e "  - Portal ✗ (skipped)"
+fi
+echo ""
+
+# Start app build
+if [ "$DEPLOY_APP" = true ]; then
+    app_build_id=$(aws codebuild start-build \
+        --project-name "$APP_PROJECT" \
+        --query 'build.id' --output text)
+    echo "App build ID: $app_build_id"
+    app_url=$(get_codebuild_url "$app_build_id")
+    echo -e "${YELLOW}🔗 View app build: ${app_url}${NC}"
+fi
+
+# Start portal build (if project exists)
+portal_build_id=""
+if [ "$DEPLOY_PORTAL" = true ] && aws codebuild describe-projects --names "$PORTAL_PROJECT" &>/dev/null; then
+    portal_build_id=$(aws codebuild start-build \
+        --project-name "$PORTAL_PROJECT" \
+        --query 'build.id' --output text)
+    echo "Portal build ID: $portal_build_id"
+    portal_url=$(get_codebuild_url "$portal_build_id")
+    echo -e "${YELLOW}🔗 View portal build: ${portal_url}${NC}"
+fi
+
+# Display summary of running builds
+echo ""
+echo -e "${GREEN}📊 Build Summary:${NC}"
+if [ "$DEPLOY_APP" = true ] && [ -n "$app_build_id" ]; then
+    echo -e "${YELLOW}  🔨 App Build:${NC}"
+    echo -e "     ID: $app_build_id"
+    echo -e "     🔗 ${app_url}"
+fi
+if [ "$DEPLOY_PORTAL" = true ] && [ -n "$portal_build_id" ]; then
+    echo -e "${YELLOW}  🔨 Portal Build:${NC}"
+    echo -e "     ID: $portal_build_id"
+    echo -e "     🔗 ${portal_url}"
+fi
+echo ""
+
+# Wait for builds to complete
+build_failed=false
+if [ "$DEPLOY_APP" = true ] && [ -n "$app_build_id" ]; then
+    if ! wait_for_build "$app_build_id" "Application"; then
+        build_failed=true
+    fi
+fi
+
+if [ "$DEPLOY_PORTAL" = true ] && [ -n "$portal_build_id" ]; then
+    if ! wait_for_build "$portal_build_id" "Portal"; then
+        build_failed=true
+    fi
+fi
+
+if [ "$build_failed" = true ]; then
+    echo -e "${RED}❌ One or more builds failed. Deployment incomplete.${NC}"
+    exit 1
+fi
+
+# Step 4: Verify Deployment
+echo -e "${YELLOW}🔍 Step 4: Verifying deployment...${NC}"
 
 # Wait for ECS service to stabilize after the build updated it
 echo -e "${YELLOW}⏳ Waiting for ECS deployment to stabilize...${NC}"

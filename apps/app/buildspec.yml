@@ -5,9 +5,10 @@ phases:
     commands:
       - echo "Logging in to Amazon ECR..."
       - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
-      - REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME
+      - REPOSITORY_URI=$ECR_REPOSITORY_URI
       - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
       - IMAGE_TAG=${COMMIT_HASH:=latest}
+      - echo "Installing dependencies..."
       - curl -fsSL https://bun.sh/install | bash
 
   build:
@@ -19,12 +20,16 @@ phases:
       - export UV_THREADPOOL_SIZE=36
       - export NODE_OPTIONS="--max-old-space-size=65536"
 
+      # Navigate to app directory
+      - cd apps/$APP_NAME
+
       # Install dependencies
       - echo "Installing dependencies..."
       - SKIP_ENV_VALIDATION=true bun install --frozen-lockfile --concurrent 36 || SKIP_ENV_VALIDATION=true bun install --concurrent 36
 
       # Generate Prisma client
       - echo "Generating Prisma client..."
+      - cd ../../
       - bun x prisma generate --schema=packages/db/prisma/schema.prisma
       - cd packages/db && bun x prisma generate && cd ../../
 
@@ -32,19 +37,13 @@ phases:
       - echo "Validating environment variables..."
       - '[ -n "$NEXT_PUBLIC_PORTAL_URL" ] || { echo "❌ NEXT_PUBLIC_PORTAL_URL is not set"; exit 1; }'
 
-      # Run database migrations
-      - echo "Running database migrations..."
-      - cd apps/app
-      - NODE_TLS_REJECT_UNAUTHORIZED=0 bun run apply-migrations
-      - cd ../../
-
       # Type check
       - echo "Type checking..."
-      - cd apps/app && bun run typecheck && cd ../../
+      - cd apps/$APP_NAME && bun run typecheck && cd ../../
 
       # Build Next.js app
       - echo "Building Next.js application..."
-      - cd apps/app
+      - cd apps/$APP_NAME
       - NODE_TLS_REJECT_UNAUTHORIZED=0 bun run build
 
       # Prepare standalone build
@@ -55,8 +54,8 @@ phases:
       - echo "DEBUG - Checking if static files exist..."
       - ls -la .next/static/ || echo "No static directory found"
       - echo "DEBUG - Copying static files to standalone..."
-      - cp -r public .next/standalone/apps/app/ || echo "No public folder"
-      - cp -r .next/static .next/standalone/apps/app/.next/ || echo "No .next/static directory"
+      - cp -r public .next/standalone/apps/$APP_NAME/ || echo "No public folder"
+      - cp -r .next/static .next/standalone/apps/$APP_NAME/.next/ || echo "No .next/static directory"
       - echo "DEBUG - Final verification..."
       - ls -la .next/standalone/ || echo "Standalone empty"
       - find .next/standalone -name "*.css" | head -3 || echo "No CSS files found"
@@ -78,18 +77,17 @@ phases:
 
       # Build Docker image
       - echo "Building Docker image..."
-      - docker build --build-arg BUILDKIT_INLINE_CACHE=1 -f Dockerfile -t $IMAGE_REPO_NAME:$IMAGE_TAG .
-      - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $REPOSITORY_URI:$IMAGE_TAG
-      - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $REPOSITORY_URI:latest
+      - docker build --build-arg BUILDKIT_INLINE_CACHE=1 -f ${DOCKERFILE_PATH:-Dockerfile} -t $ECR_REPOSITORY_URI:$IMAGE_TAG .
+      - docker tag $ECR_REPOSITORY_URI:$IMAGE_TAG $ECR_REPOSITORY_URI:latest
 
   post_build:
     commands:
       - echo "Pushing images to ECR..."
-      - docker push $REPOSITORY_URI:$IMAGE_TAG
-      - docker push $REPOSITORY_URI:latest
+      - docker push $ECR_REPOSITORY_URI:$IMAGE_TAG
+      - docker push $ECR_REPOSITORY_URI:latest
       - echo "Updating ECS service..."
       - aws ecs update-service --cluster $ECS_CLUSTER_NAME --service $ECS_SERVICE_NAME --force-new-deployment
-      - 'printf "[{\"name\":\"%s-app\",\"imageUri\":\"%s\"}]" $IMAGE_REPO_NAME $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json'
+      - 'printf "[{\"name\":\"%s-container\",\"imageUri\":\"%s\"}]" $APP_NAME $ECR_REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json'
 
 cache:
   paths:
@@ -102,4 +100,4 @@ cache:
 artifacts:
   files:
     - imagedefinitions.json
-  name: app-build
+  name: ${APP_NAME}-build
