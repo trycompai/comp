@@ -70,6 +70,7 @@ const applications: ApplicationConfig[] = [
       'UPSTASH_REDIS_REST_TOKEN',
       'OPENAI_API_KEY', // Used for populating policies with AI
       'TRIGGER_SECRET_KEY',
+      'NEXT_PUBLIC_PORTAL_URL',
 
       // Optional - comment out if not used.
       'AUTH_GOOGLE_ID',
