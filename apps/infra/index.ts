@@ -114,9 +114,8 @@ applications.map((app) => build.createApplicationDeployment(app, database, conta
 // ==========================================
 
 // Core application URLs
-export const url = loadBalancer.applicationUrl;
-export const albDns = loadBalancer.albDnsName;
 export const applicationUrl = loadBalancer.applicationUrl;
+export const albDns = loadBalancer.albDnsName;
 
 // Infrastructure details
 export const ecrRepositoryUrl = container.repositoryUrl;
@@ -124,41 +123,24 @@ export const ecsClusterName = container.clusterName;
 export const ecsServiceName = container.serviceName;
 
 // Database connection information
-export const database_endpoint = database.endpoint;
-export const database_port = pulumi.output(5432);
-export const database_name = database.dbName;
-export const database_username = database.username;
+export const databaseEndpoint = database.endpoint;
+export const databaseName = database.dbName;
+export const databaseUsername = database.username;
+export const databasePassword = pulumi.secret(database.password);
 
 // Tailscale-accessible database information (if Tailscale enabled)
-export const tailscale_enabled = enableTailscale;
-export const tailscale_database_host = enableTailscale ? database.endpoint : undefined;
-export const tailscale_database_url = enableTailscale
-  ? pulumi.interpolate`postgresql://${database.username}:${database.password}@${database.endpoint}:5432/${database.dbName}?sslmode=require`
-  : undefined;
-export const tailscale_router_ip = enableTailscale ? tailscale?.instancePrivateIp : undefined;
-export const tailscale_connection_guide = enableTailscale
+export const tailscaleEnabled = enableTailscale;
+export const tailscaleConnectionGuide = enableTailscale
   ? pulumi.interpolate`
 # Connect to database through Tailscale:
 # 1. Ensure you're connected to Tailscale network
-# 2. Use this connection string: postgresql://${database.username}:[PASSWORD]@${database.endpoint}:5432/${database.dbName}?sslmode=require
-# 3. Get password with: pulumi stack output database_password --show-secrets
+# 2. Use this connection string: postgresql://${database.username}:${database.password}@${database.endpoint}:${database.port}/${database.dbName}?sslmode=require
+# 3. Get password with: pulumi stack output databasePassword --show-secrets
 `
   : 'Tailscale not enabled for this environment';
 
 // Better Stack information (if enabled)
-export const betterstack_enabled = enableBetterStack;
-export const betterstack_lambda_arn = enableBetterStack
+export const betterstackEnabled = enableBetterStack;
+export const betterstackLambdaArn = enableBetterStack
   ? monitoring.logForwarderFunctionArn
-  : undefined;
-
-// Repository and cluster information
-export const ecr_repository_url = container.repositoryUrl;
-export const ecs_cluster_name = container.clusterName;
-export const repositoryUrl = container.repositoryUrl;
-export const databaseEndpoint = database.endpoint;
-
-// Security outputs (marked as secrets)
-export const database_password = pulumi.secret(database.password);
-export const tailscale_auth_key = enableTailscale
-  ? pulumi.secret(tailscale?.authSecretArn)
   : undefined;
