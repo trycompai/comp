@@ -55,7 +55,7 @@ const loadBalancer = createLoadBalancer(config, network);
 const container = createContainer(config, network, database, loadBalancer, appSecrets);
 
 // 6. Build System - CodeBuild with VPC Database Access
-const build = createBuildSystem(config, network, database, container);
+const build = createBuildSystem(config, network, database, container, appSecrets);
 
 // 7. Auto-scaling - ECS Service Scaling
 const scaling = createScaling(config, container, loadBalancer);

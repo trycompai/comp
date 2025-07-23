@@ -1,18 +1,13 @@
 import * as aws from '@pulumi/aws';
 import * as pulumi from '@pulumi/pulumi';
-import * as dotenv from 'dotenv';
-import * as path from 'path';
 import { CommonConfig, ContainerOutputs, DatabaseOutputs, NetworkOutputs } from '../types';
-
-// Load app environment variables from the app's .env file
-const appEnvPath = path.resolve(__dirname, '../../app/.env');
-const appEnv = dotenv.config({ path: appEnvPath }).parsed || {};
 
 export function createBuildSystem(
   config: CommonConfig,
   network: NetworkOutputs,
   database: DatabaseOutputs,
   container: ContainerOutputs,
+  appSecrets?: { secretArn: pulumi.Output<string>; secretId: pulumi.Output<string> },
 ) {
   const { commonTags } = config;
 
@@ -41,55 +36,57 @@ export function createBuildSystem(
   // CodeBuild policy for basic operations
   const codebuildPolicy = new aws.iam.RolePolicy(`${config.projectName}-codebuild-policy`, {
     role: codebuildRole.id,
-    policy: database.secretArn.apply((secretArn) =>
-      JSON.stringify({
-        Version: '2012-10-17',
-        Statement: [
-          {
-            Effect: 'Allow',
-            Action: ['logs:CreateLogGroup', 'logs:CreateLogStream', 'logs:PutLogEvents'],
-            Resource: 'arn:aws:logs:*:*:*',
-          },
-          {
-            Effect: 'Allow',
-            Action: [
-              'ecr:BatchCheckLayerAvailability',
-              'ecr:GetDownloadUrlForLayer',
-              'ecr:BatchGetImage',
-              'ecr:GetAuthorizationToken',
-              'ecr:PutImage',
-              'ecr:InitiateLayerUpload',
-              'ecr:UploadLayerPart',
-              'ecr:CompleteLayerUpload',
-            ],
-            Resource: '*',
-          },
-          {
-            Effect: 'Allow',
-            Action: [
-              'ec2:CreateNetworkInterface',
-              'ec2:DescribeDhcpOptions',
-              'ec2:DescribeNetworkInterfaces',
-              'ec2:DeleteNetworkInterface',
-              'ec2:DescribeSubnets',
-              'ec2:DescribeSecurityGroups',
-              'ec2:DescribeVpcs',
-            ],
-            Resource: '*',
-          },
-          {
-            Effect: 'Allow',
-            Action: ['ec2:CreateNetworkInterfacePermission'],
-            Resource: '*',
-          },
-          {
-            Effect: 'Allow',
-            Action: ['secretsmanager:GetSecretValue', 'secretsmanager:DescribeSecret'],
-            Resource: secretArn,
-          },
-        ],
-      }),
-    ),
+    policy: pulumi
+      .all([database.secretArn, appSecrets?.secretArn])
+      .apply(([dbSecretArn, appSecretArn]) =>
+        JSON.stringify({
+          Version: '2012-10-17',
+          Statement: [
+            {
+              Effect: 'Allow',
+              Action: ['logs:CreateLogGroup', 'logs:CreateLogStream', 'logs:PutLogEvents'],
+              Resource: 'arn:aws:logs:*:*:*',
+            },
+            {
+              Effect: 'Allow',
+              Action: [
+                'ecr:BatchCheckLayerAvailability',
+                'ecr:GetDownloadUrlForLayer',
+                'ecr:BatchGetImage',
+                'ecr:GetAuthorizationToken',
+                'ecr:PutImage',
+                'ecr:InitiateLayerUpload',
+                'ecr:UploadLayerPart',
+                'ecr:CompleteLayerUpload',
+              ],
+              Resource: '*',
+            },
+            {
+              Effect: 'Allow',
+              Action: [
+                'ec2:CreateNetworkInterface',
+                'ec2:DescribeDhcpOptions',
+                'ec2:DescribeNetworkInterfaces',
+                'ec2:DeleteNetworkInterface',
+                'ec2:DescribeSubnets',
+                'ec2:DescribeSecurityGroups',
+                'ec2:DescribeVpcs',
+              ],
+              Resource: '*',
+            },
+            {
+              Effect: 'Allow',
+              Action: ['ec2:CreateNetworkInterfacePermission'],
+              Resource: '*',
+            },
+            {
+              Effect: 'Allow',
+              Action: ['secretsmanager:GetSecretValue', 'secretsmanager:DescribeSecret'],
+              Resource: [dbSecretArn, ...(appSecretArn ? [appSecretArn] : [])],
+            },
+          ],
+        }),
+      ),
   });
 
   // CodeBuild project for building application image (requires database access)
@@ -121,6 +118,26 @@ export function createBuildSystem(
           value: pulumi.interpolate`${database.secretArn}:connectionString`,
           type: 'SECRETS_MANAGER',
         },
+        // Application secrets from AWS Secrets Manager
+        ...(appSecrets
+          ? [
+              {
+                name: 'AUTH_SECRET',
+                value: pulumi.interpolate`${appSecrets.secretArn}:AUTH_SECRET`,
+                type: 'SECRETS_MANAGER',
+              },
+              {
+                name: 'RESEND_API_KEY',
+                value: pulumi.interpolate`${appSecrets.secretArn}:RESEND_API_KEY`,
+                type: 'SECRETS_MANAGER',
+              },
+              {
+                name: 'REVALIDATION_SECRET',
+                value: pulumi.interpolate`${appSecrets.secretArn}:REVALIDATION_SECRET`,
+                type: 'SECRETS_MANAGER',
+              },
+            ]
+          : []),
         {
           name: 'ECR_REPOSITORY_URI',
           value: container.repositoryUrl,
@@ -146,43 +163,11 @@ export function createBuildSystem(
           value: config.nodeEnv,
           type: 'PLAINTEXT',
         },
-        // Application-specific environment variables (read from apps/app/.env)
-        ...(appEnv.AUTH_SECRET
-          ? [
-              {
-                name: 'AUTH_SECRET',
-                value: appEnv.AUTH_SECRET,
-                type: 'PLAINTEXT',
-              },
-            ]
-          : []),
-        ...(appEnv.RESEND_API_KEY
-          ? [
-              {
-                name: 'RESEND_API_KEY',
-                value: appEnv.RESEND_API_KEY,
-                type: 'PLAINTEXT',
-              },
-            ]
-          : []),
-        ...(appEnv.REVALIDATION_SECRET
-          ? [
-              {
-                name: 'REVALIDATION_SECRET',
-                value: appEnv.REVALIDATION_SECRET,
-                type: 'PLAINTEXT',
-              },
-            ]
-          : []),
-        ...(appEnv.NEXT_PUBLIC_PORTAL_URL
-          ? [
-              {
-                name: 'NEXT_PUBLIC_PORTAL_URL',
-                value: appEnv.NEXT_PUBLIC_PORTAL_URL,
-                type: 'PLAINTEXT',
-              },
-            ]
-          : []),
+        {
+          name: 'NEXT_PUBLIC_PORTAL_URL',
+          value: 'http://localhost:3002',
+          type: 'PLAINTEXT',
+        },
       ],
     },
     vpcConfig: {

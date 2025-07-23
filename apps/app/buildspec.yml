@@ -30,9 +30,6 @@ phases:
 
       # Validate environment variables
       - echo "Validating environment variables..."
-      - '[ -n "$AUTH_SECRET" ] || { echo "❌ AUTH_SECRET is not set"; exit 1; }'
-      - '[ -n "$RESEND_API_KEY" ] || { echo "❌ RESEND_API_KEY is not set"; exit 1; }'
-      - '[ -n "$REVALIDATION_SECRET" ] || { echo "❌ REVALIDATION_SECRET is not set"; exit 1; }'
       - '[ -n "$NEXT_PUBLIC_PORTAL_URL" ] || { echo "❌ NEXT_PUBLIC_PORTAL_URL is not set"; exit 1; }'
 
       # Run database migrations
