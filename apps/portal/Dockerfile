@@ -1,37 +1,28 @@
-# Build stage
-FROM node:20-alpine AS builder
+# Use Node.js Alpine for smaller runtime image
+FROM node:20-alpine AS runtime
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
-COPY apps/portal/package*.json ./apps/portal/
+# Install curl for health checks
+RUN apk add --no-cache curl
 
-# Install dependencies
-RUN npm ci
-
-# Copy source code
-COPY . .
-
-# Build the portal app
-RUN npm run build --workspace=apps/portal
-
-# Production stage
-FROM node:20-alpine AS runner
-
-WORKDIR /app
-
-# Copy necessary files from builder
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/apps/portal/.next ./apps/portal/.next
-COPY --from=builder /app/apps/portal/public ./apps/portal/public
-COPY --from=builder /app/apps/portal/package.json ./apps/portal/package.json
-
-# Set environment to production
+# Set production environment variables
 ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3001
+ENV HOSTNAME="0.0.0.0"
 
-# Expose the port
+# Copy the complete standalone build from CodeBuild
+COPY .next/standalone ./
+
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nextjs -u 1001 && \
+    chown -R nextjs:nodejs /app
+
+USER nextjs
+
 EXPOSE 3001
 
-# Start the application
-CMD ["npm", "run", "start", "--workspace=apps/portal"] 
+# Use node to run the standalone server - handle monorepo structure
+CMD ["sh", "-c", "if [ -f apps/portal/server.js ]; then node apps/portal/server.js; elif [ -f server.js ]; then node server.js; elif [ -f index.js ]; then node index.js; else echo 'No entry point found' && exit 1; fi"] 

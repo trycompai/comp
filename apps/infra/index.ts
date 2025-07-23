@@ -84,7 +84,6 @@ const applications: ApplicationConfig[] = [
       'DISCORD_WEBHOOK_URL',
       'SLACK_SALES_WEBHOOK',
       'HUBSPOT_ACCESS_TOKEN',
-      'IS_VERCEL',
     ],
     includeDatabaseUrl: true,
     environmentVariables: {

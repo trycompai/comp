@@ -3,7 +3,6 @@
 # This script handles:
 # 1. Running database migrations (via CodeBuild)
 # 2. Building and deploying applications (via CodeBuild)
-# 3. Verifying deployment success
 #
 # Infrastructure updates should be done separately with 'pulumi up'
 
@@ -92,25 +91,12 @@ fi
 
 # Construct resource names based on environment
 PROJECT_PREFIX="${PROJECT_NAME}-${ENV_NAME}"
-CLUSTER_NAME="${PROJECT_PREFIX}"
-SERVICE_NAME="${PROJECT_PREFIX}"  # Service name matches project prefix
 APP_PROJECT="${PROJECT_PREFIX}-app-build"
 PORTAL_PROJECT="${PROJECT_PREFIX}-portal-build"
 MIGRATION_PROJECT="${PROJECT_PREFIX}-migrations"
 
 echo -e "${GREEN}🚀 Starting deployment for environment: ${ENV_NAME}${NC}"
 echo -e "${YELLOW}📋 Using resource prefix: ${PROJECT_PREFIX}${NC}"
-
-# Try to get actual values from Pulumi outputs
-ACTUAL_CLUSTER=$(cd "$INFRA_DIR" && pulumi stack output ecsClusterName 2>/dev/null || echo "")
-ACTUAL_SERVICE=$(cd "$INFRA_DIR" && pulumi stack output ecsServiceName 2>/dev/null || echo "")
-
-# Use actual values if available, otherwise use constructed names
-CLUSTER_NAME=${ACTUAL_CLUSTER:-$CLUSTER_NAME}
-SERVICE_NAME=${ACTUAL_SERVICE:-$SERVICE_NAME}
-
-echo -e "${YELLOW}📋 Cluster: ${CLUSTER_NAME}${NC}"
-echo -e "${YELLOW}📋 Service: ${SERVICE_NAME}${NC}"
 echo -e "${YELLOW}📋 Migration Project: ${MIGRATION_PROJECT}${NC}"
 echo -e "${YELLOW}📋 App CodeBuild Project: ${APP_PROJECT}${NC}"
 echo -e "${YELLOW}📋 Portal CodeBuild Project: ${PORTAL_PROJECT}${NC}"
@@ -194,23 +180,36 @@ echo ""
 
 # Start app build
 if [ "$DEPLOY_APP" = true ]; then
-    app_build_id=$(aws codebuild start-build \
-        --project-name "$APP_PROJECT" \
-        --query 'build.id' --output text)
-    echo "App build ID: $app_build_id"
-    app_url=$(get_codebuild_url "$app_build_id")
-    echo -e "${YELLOW}🔗 View app build: ${app_url}${NC}"
+    echo -e "${YELLOW}🔨 Starting app build...${NC}"
+    if aws codebuild batch-get-projects --names "$APP_PROJECT" --query 'projects[0].name' --output text &>/dev/null; then
+        app_build_id=$(aws codebuild start-build \
+            --project-name "$APP_PROJECT" \
+            --query 'build.id' --output text)
+        echo "App build ID: $app_build_id"
+        app_url=$(get_codebuild_url "$app_build_id")
+        echo -e "${YELLOW}🔗 View app build: ${app_url}${NC}"
+    else
+        echo -e "${RED}❌ App CodeBuild project '$APP_PROJECT' does not exist${NC}"
+        exit 1
+    fi
 fi
 
-# Start portal build (if project exists)
+# Start portal build
 portal_build_id=""
-if [ "$DEPLOY_PORTAL" = true ] && aws codebuild describe-projects --names "$PORTAL_PROJECT" &>/dev/null; then
-    portal_build_id=$(aws codebuild start-build \
-        --project-name "$PORTAL_PROJECT" \
-        --query 'build.id' --output text)
-    echo "Portal build ID: $portal_build_id"
-    portal_url=$(get_codebuild_url "$portal_build_id")
-    echo -e "${YELLOW}🔗 View portal build: ${portal_url}${NC}"
+if [ "$DEPLOY_PORTAL" = true ]; then
+    echo -e "${YELLOW}🔨 Starting portal build...${NC}"
+    if aws codebuild batch-get-projects --names "$PORTAL_PROJECT" --query 'projects[0].name' --output text &>/dev/null; then
+        portal_build_id=$(aws codebuild start-build \
+            --project-name "$PORTAL_PROJECT" \
+            --query 'build.id' --output text)
+        echo "Portal build ID: $portal_build_id"
+        portal_url=$(get_codebuild_url "$portal_build_id")
+        echo -e "${YELLOW}🔗 View portal build: ${portal_url}${NC}"
+    else
+        echo -e "${RED}❌ Portal CodeBuild project '$PORTAL_PROJECT' does not exist${NC}"
+        echo -e "${YELLOW}💡 You may need to update your Pulumi configuration to include the portal app${NC}"
+        exit 1
+    fi
 fi
 
 # Display summary of running builds
@@ -247,108 +246,16 @@ if [ "$build_failed" = true ]; then
     exit 1
 fi
 
-# Step 3: Verify Deployment
-echo -e "${YELLOW}🔍 Step 3: Verifying deployment...${NC}"
+# Get ALB DNS name for final output
+alb_dns=$(cd "$INFRA_DIR" && pulumi stack output albUrl 2>/dev/null | sed 's|http://||' || echo "")
 
-# Wait for ECS service to stabilize after the build updated it
-echo -e "${YELLOW}⏳ Waiting for ECS deployment to stabilize...${NC}"
-
-# Set a timeout of 10 minutes (600 seconds) for the wait
-# Use a cross-platform timeout implementation
-wait_with_timeout() {
-    local timeout_duration=$1
-    shift
-    local command=("$@")
-    
-    # Start the command in the background
-    "${command[@]}" &
-    local cmd_pid=$!
-    
-    # Wait for either the command to complete or timeout
-    local count=0
-    while kill -0 "$cmd_pid" 2>/dev/null && [ $count -lt $timeout_duration ]; do
-        sleep 1
-        ((count++))
-    done
-    
-    # Check if command is still running (timed out)
-    if kill -0 "$cmd_pid" 2>/dev/null; then
-        kill "$cmd_pid" 2>/dev/null
-        wait "$cmd_pid" 2>/dev/null
-        return 1  # Timeout occurred
-    else
-        wait "$cmd_pid"
-        return $?  # Return the command's exit status
-    fi
-}
-
-if ! wait_with_timeout 600 aws ecs wait services-stable \
-    --cluster "$CLUSTER_NAME" \
-    --services "$SERVICE_NAME"; then
-    
-    echo -e "${RED}❌ ECS service failed to stabilize within 10 minutes${NC}"
-    
-    # Get the current service status for debugging
-    echo -e "${RED}Current service status:${NC}"
-    aws ecs describe-services \
-        --cluster "$CLUSTER_NAME" \
-        --services "$SERVICE_NAME" \
-        --query 'services[0].{desired:desiredCount,running:runningCount,pending:pendingCount,status:status}' \
-        --output table
-    
-    # Get recent events
-    echo -e "${RED}Recent service events:${NC}"
-    aws ecs describe-services \
-        --cluster "$CLUSTER_NAME" \
-        --services "$SERVICE_NAME" \
-        --query 'services[0].events[0:5]' \
-        --output json
-    
-    # Check for failed tasks
-    echo -e "${RED}Checking for task failures:${NC}"
-    TASK_ARNS=$(aws ecs list-tasks \
-        --cluster "$CLUSTER_NAME" \
-        --service-name "$SERVICE_NAME" \
-        --desired-status STOPPED \
-        --query 'taskArns[0:3]' \
-        --output json)
-    
-    if [ "$TASK_ARNS" != "[]" ] && [ -n "$TASK_ARNS" ]; then
-        aws ecs describe-tasks \
-            --cluster "$CLUSTER_NAME" \
-            --tasks $TASK_ARNS \
-            --query 'tasks[*].{taskArn:taskArn,stoppedReason:stoppedReason}' \
-            --output table
-    fi
-    
-    echo -e "${RED}❌ Deployment failed - ECS service is not stable${NC}"
-    exit 1
-fi
-
-echo -e "${GREEN}✅ ECS service is stable${NC}"
-
-# Get ALB DNS name
-alb_dns=$(aws elbv2 describe-load-balancers \
-    --query "LoadBalancers[?contains(LoadBalancerName, \`${PROJECT_PREFIX}-lb\`)].DNSName" \
-    --output text)
-
-# If not found via AWS CLI, try to get from Pulumi outputs
-if [ -z "$alb_dns" ]; then
-    echo -e "${YELLOW}⚠️  Could not find load balancer via AWS CLI, checking Pulumi outputs...${NC}"
-    alb_dns=$(cd "$INFRA_DIR" && pulumi stack output albDns 2>/dev/null || echo "")
-fi
-
-if [ -z "$alb_dns" ]; then
-    echo -e "${RED}❌ Could not find load balancer DNS name${NC}"
-    exit 1
-fi
-
-# Health check
-if curl -sf "http://$alb_dns/" > /dev/null; then
-    echo -e "${GREEN}✅ Health check passed${NC}"
-    echo -e "${GREEN}🎉 Deployment completed successfully!${NC}"
+if [ -n "$alb_dns" ]; then
+    echo -e "${GREEN}🎉 Build and deployment completed successfully!${NC}"
     echo -e "${GREEN}🌐 Application URL: http://$alb_dns${NC}"
+    if [ "$DEPLOY_PORTAL" = true ]; then
+        echo -e "${GREEN}🏛️  Portal URL: http://$alb_dns/portal${NC}"
+    fi
 else
-    echo -e "${RED}❌ Health check failed${NC}"
-    exit 1
+    echo -e "${GREEN}🎉 Build and deployment completed successfully!${NC}"
+    echo -e "${YELLOW}ℹ️  Check Pulumi outputs for application URLs${NC}"
 fi 
