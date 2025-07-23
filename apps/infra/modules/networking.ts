@@ -457,6 +457,20 @@ export function createNetworking(config: CommonConfig, applications: Application
     },
   });
 
+  // STS VPC Endpoint (essential for IAM role assumption in VPC)
+  const stsVpcEndpoint = new aws.ec2.VpcEndpoint(`${config.projectName}-sts-endpoint`, {
+    vpcId: vpc.id,
+    serviceName: `com.amazonaws.${config.awsRegion}.sts`,
+    vpcEndpointType: 'Interface',
+    subnetIds: privateSubnetIds,
+    securityGroupIds: [vpcEndpointSecurityGroup.id],
+    tags: {
+      ...commonTags,
+      Name: `${config.projectName}-sts-endpoint`,
+      Type: 'vpc-endpoint',
+    },
+  });
+
   // CloudWatch Logs VPC Endpoint (for CodeBuild logging)
   const logsVpcEndpoint = new aws.ec2.VpcEndpoint(`${config.projectName}-logs-endpoint`, {
     vpcId: vpc.id,
@@ -496,6 +510,7 @@ export function createNetworking(config: CommonConfig, applications: Application
       ecrDkr: ecrDkrVpcEndpoint.id,
       codebuild: codebuildVpcEndpoint.id,
       logs: logsVpcEndpoint.id,
+      sts: stsVpcEndpoint.id,
     },
   };
 }
