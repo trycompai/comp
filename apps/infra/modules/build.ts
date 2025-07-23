@@ -252,6 +252,14 @@ export function createBuildSystem(
             value,
             type: 'PLAINTEXT' as const,
           })),
+          // Add all required secrets from AWS Secrets Manager
+          ...(app.requiredSecrets && appSecrets?.[app.name]
+            ? app.requiredSecrets.map((secretName) => ({
+                name: secretName,
+                value: pulumi.interpolate`${appSecrets[app.name].secretArn}:${secretName}`,
+                type: 'SECRETS_MANAGER' as const,
+              }))
+            : []),
         ],
       },
       vpcConfig: app.includeDatabaseUrl

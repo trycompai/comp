@@ -90,6 +90,7 @@ const applications: ApplicationConfig[] = [
     environmentVariables: {
       NODE_ENV: 'production',
       NEXT_TELEMETRY_DISABLED: '1',
+      NEXT_PUBLIC_PORTAL_URL: 'PLACEHOLDER', // This will be injected from secrets
     },
   },
   {
