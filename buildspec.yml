@@ -17,3 +17,4 @@
 - echo "Checking specific paths..."
 - ls -la .next/standalone/apps/app/.next/static/chunks/ || echo "No chunks directory"
 - ls -la .next/standalone/apps/app/.next/static/media/ || echo "No media directory"
+- ls -la .next/standalone/apps/app/public/ || echo "No public directory"
