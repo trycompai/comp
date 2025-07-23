@@ -1,10 +1,10 @@
 import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
-const AWS_REGION = process.env.AWS_REGION;
-const AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID;
-const AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY;
-export const BUCKET_NAME = process.env.AWS_BUCKET_NAME;
+const AWS_REGION = process.env.APP_AWS_REGION;
+const AWS_ACCESS_KEY_ID = process.env.APP_AWS_ACCESS_KEY_ID;
+const AWS_SECRET_ACCESS_KEY = process.env.APP_AWS_SECRET_ACCESS_KEY;
+export const BUCKET_NAME = process.env.APP_AWS_BUCKET_NAME;
 
 if (!AWS_ACCESS_KEY_ID || !AWS_SECRET_ACCESS_KEY || !BUCKET_NAME || !AWS_REGION) {
   // Log the error in production environments
