@@ -32,7 +32,7 @@ export function createScaling(
         {
           maxCapacity: app.maxCount || 10,
           minCapacity: app.minCount || 1,
-          resourceId: pulumi.interpolate`service/${config.projectName}-cluster/${appContainer.serviceName}`,
+          resourceId: pulumi.interpolate`service/${container.clusterName}/${appContainer.serviceName}`,
           scalableDimension: 'ecs:service:DesiredCount',
           serviceNamespace: 'ecs',
           tags: {
@@ -41,6 +41,10 @@ export function createScaling(
             Type: 'autoscaling-target',
             App: app.name,
           },
+        },
+        {
+          // Ensure the ECS service exists before creating the scaling target
+          dependsOn: appContainer.service ? [appContainer.service] : [],
         },
       );
 

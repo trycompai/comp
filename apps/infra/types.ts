@@ -134,6 +134,8 @@ export interface ContainerOutputs {
   // Multi-app outputs
   applications: Array<{
     serviceName: pulumi.Output<string>;
+    serviceArn: pulumi.Output<string>;
+    service?: aws.ecs.Service; // Optional to maintain backward compatibility
     repositoryUrl: pulumi.Output<string>;
     repositoryArn: pulumi.Output<string>;
     taskDefinitionArn: pulumi.Output<string>;

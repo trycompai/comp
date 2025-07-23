@@ -29,6 +29,7 @@ export function createApplicationContainer(
   const repository = new aws.ecr.Repository(`${appName}-repository`, {
     name: appName.toLowerCase(), // ECR names must be lowercase
     imageTagMutability: 'MUTABLE',
+    forceDelete: true, // Allow deletion even when images exist
     encryptionConfigurations: [
       {
         encryptionType: 'AES256',
@@ -145,7 +146,7 @@ export function createApplicationContainer(
         return JSON.stringify([
           {
             name: `${app.name}-container`,
-            image: pulumi.interpolate`${repoUrl}:latest`,
+            image: `${repoUrl}:latest`,
             essential: true,
             portMappings: [
               {
@@ -210,6 +211,8 @@ export function createApplicationContainer(
 
   return {
     serviceName: service.name,
+    serviceArn: service.id,
+    service: service, // Return the actual service resource for dependencies
     repositoryUrl: repository.repositoryUrl,
     repositoryArn: repository.arn,
     taskDefinitionArn: taskDefinition.arn,

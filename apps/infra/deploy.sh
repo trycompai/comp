@@ -1,4 +1,12 @@
 #!/bin/bash
+# Deploy script for applications and database migrations
+# This script handles:
+# 1. Running database migrations (via CodeBuild)
+# 2. Building and deploying applications (via CodeBuild)
+# 3. Verifying deployment success
+#
+# Infrastructure updates should be done separately with 'pulumi up'
+
 set -e
 
 # Colors for output
@@ -15,7 +23,6 @@ AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text 2>/de
 # Parse command line arguments
 DEPLOY_APP=true
 DEPLOY_PORTAL=true
-SKIP_INFRA=false
 SKIP_MIGRATIONS=false
 
 while [[ $# -gt 0 ]]; do
@@ -28,10 +35,6 @@ while [[ $# -gt 0 ]]; do
             DEPLOY_APP=false
             shift
             ;;
-        --skip-infra)
-            SKIP_INFRA=true
-            shift
-            ;;
         --skip-migrations)
             SKIP_MIGRATIONS=true
             shift
@@ -41,7 +44,6 @@ while [[ $# -gt 0 ]]; do
             echo "Options:"
             echo "  --app-only         Deploy only the main app"
             echo "  --portal-only      Deploy only the portal"
-            echo "  --skip-infra       Skip Pulumi infrastructure update"
             echo "  --skip-migrations  Skip database migrations (DANGEROUS!)"
             echo "  --help             Show this help message"
             exit 0
@@ -114,14 +116,6 @@ echo -e "${YELLOW}📋 App CodeBuild Project: ${APP_PROJECT}${NC}"
 echo -e "${YELLOW}📋 Portal CodeBuild Project: ${PORTAL_PROJECT}${NC}"
 echo -e "${YELLOW}📋 AWS Region: ${AWS_REGION}${NC}"
 
-# Confirm deployment
-echo -e "${YELLOW}⚠️  This will deploy to the '${ENV_NAME}' environment. Continue? (y/N)${NC}"
-read -r response
-if [[ ! "$response" =~ ^[Yy]$ ]]; then
-    echo -e "${RED}❌ Deployment cancelled${NC}"
-    exit 1
-fi
-
 # Function to generate CodeBuild console URL
 get_codebuild_url() {
     local build_id=$1
@@ -163,28 +157,9 @@ wait_for_build() {
     done
 }
 
-# Step 1: Update Infrastructure
-if [ "$SKIP_INFRA" = false ]; then
-    echo -e "${YELLOW}📋 Step 1: Updating infrastructure...${NC}"
-    cd "$INFRA_DIR"
-    export NODE_ENV=production
-    if ! pulumi up --yes; then
-        echo -e "${RED}❌ Pulumi update failed. Aborting deployment.${NC}"
-        exit 1
-    fi
-    cd "$PROJECT_ROOT"
-    echo -e "${GREEN}✅ Infrastructure updated successfully${NC}"
-else
-    echo -e "${YELLOW}⏭️  Step 1: Skipping infrastructure update${NC}"
-fi
-
-# Add a small delay to ensure propagation
-echo -e "${YELLOW}⏳ Waiting 15 seconds for infrastructure changes to propagate...${NC}"
-sleep 15
-
-# Step 2: Run Database Migrations (MUST complete before apps)
+# Step 1: Run Database Migrations (MUST complete before apps)
 if [ "$SKIP_MIGRATIONS" = false ]; then
-    echo -e "${YELLOW}🗃️  Step 2: Running database migrations...${NC}"
+    echo -e "${YELLOW}🗃️  Step 1: Running database migrations...${NC}"
     migration_build_id=$(aws codebuild start-build \
         --project-name "$MIGRATION_PROJECT" \
         --query 'build.id' --output text)
@@ -197,11 +172,11 @@ if [ "$SKIP_MIGRATIONS" = false ]; then
         exit 1
     fi
 else
-    echo -e "${YELLOW}⏭️  Step 2: Skipping database migrations (DANGEROUS!)${NC}"
+    echo -e "${YELLOW}⏭️  Step 1: Skipping database migrations (DANGEROUS!)${NC}"
 fi
 
-# Step 3: Build and Deploy Applications (in parallel)
-echo -e "${YELLOW}🔨 Step 3: Building and deploying applications...${NC}"
+# Step 2: Build and Deploy Applications (in parallel)
+echo -e "${YELLOW}🔨 Step 2: Building and deploying applications...${NC}"
 
 # Display what will be deployed
 echo -e "${YELLOW}📦 Applications to deploy:${NC}"
@@ -272,8 +247,8 @@ if [ "$build_failed" = true ]; then
     exit 1
 fi
 
-# Step 4: Verify Deployment
-echo -e "${YELLOW}🔍 Step 4: Verifying deployment...${NC}"
+# Step 3: Verify Deployment
+echo -e "${YELLOW}🔍 Step 3: Verifying deployment...${NC}"
 
 # Wait for ECS service to stabilize after the build updated it
 echo -e "${YELLOW}⏳ Waiting for ECS deployment to stabilize...${NC}"

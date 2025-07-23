@@ -19,6 +19,7 @@ export function createLoadBalancer(config: CommonConfig, network: NetworkOutputs
 
   // Create a default target group (required for listener)
   const defaultTargetGroup = new aws.lb.TargetGroup(`${config.projectName}-default-tg`, {
+    name: `${config.projectName}-def-tg`.substring(0, 32), // AWS limit is 32 chars
     port: 80,
     protocol: 'HTTP',
     targetType: 'ip',
@@ -34,7 +35,7 @@ export function createLoadBalancer(config: CommonConfig, network: NetworkOutputs
     },
     tags: {
       ...commonTags,
-      Name: `${config.projectName}-default-tg`,
+      Name: `${config.projectName}-def-tg`,
       Type: 'target-group',
     },
   });
