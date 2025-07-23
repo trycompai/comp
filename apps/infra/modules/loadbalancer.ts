@@ -25,8 +25,8 @@ export function createApplicationLoadBalancer(
   });
 
   // Create target group for this app
-  const targetGroup = new aws.lb.TargetGroup(`${appName}-tg`, {
-    name: `${appName}-tg`.substring(0, 32), // AWS limit
+  const targetGroup = new aws.lb.TargetGroup(`${appName}-tg-v2`, {
+    name: `${appName}-tg-v2`.substring(0, 32), // AWS limit - add v2 to avoid conflicts
     port: app.containerPort,
     protocol: 'HTTP',
     targetType: 'ip',
@@ -42,7 +42,7 @@ export function createApplicationLoadBalancer(
     },
     tags: {
       ...commonTags,
-      Name: `${appName}-tg`,
+      Name: `${appName}-tg-v2`,
       Type: 'target-group',
       App: app.name,
     },
