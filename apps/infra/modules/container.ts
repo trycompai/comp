@@ -20,7 +20,7 @@ export function createApplicationContainer(
     taskRole: aws.iam.Role;
   },
   loadBalancer?: LoadBalancerOutputs,
-  appSecret?: { secretArn: pulumi.Output<string>; secretId: pulumi.Output<string> },
+  appSecrets?: Record<string, { arn: pulumi.Output<string>; name: pulumi.Output<string> }>,
 ) {
   const { commonTags } = config;
   const appName = `${config.projectName}-${app.name}`;
@@ -116,13 +116,8 @@ export function createApplicationContainer(
     executionRoleArn: sharedResources.taskExecutionRole.arn,
     taskRoleArn: sharedResources.taskRole.arn,
     containerDefinitions: pulumi
-      .all([
-        repository.repositoryUrl,
-        logGroup.name,
-        database.secretArn,
-        appSecret?.secretArn || pulumi.output(''),
-      ])
-      .apply(([repoUrl, logGroupName, dbSecretArn, appSecretArn]) => {
+      .all([repository.repositoryUrl, logGroup.name, database.secretArn])
+      .apply(([repoUrl, logGroupName, dbSecretArn]) => {
         const secrets = [];
 
         // Add database secret if needed
@@ -134,12 +129,14 @@ export function createApplicationContainer(
         }
 
         // Add app-specific secrets if provided
-        if (appSecretArn && app.requiredSecrets) {
+        if (appSecrets && app.requiredSecrets) {
           app.requiredSecrets.forEach((secretName) => {
-            secrets.push({
-              name: secretName,
-              valueFrom: `${appSecretArn}:${secretName}::`,
-            });
+            if (appSecrets[secretName]) {
+              secrets.push({
+                name: secretName,
+                valueFrom: appSecrets[secretName].arn,
+              });
+            }
           });
         }
 
@@ -231,7 +228,7 @@ export function createContainer(
   loadBalancer?: LoadBalancerOutputs,
   appSecrets?: Record<
     string,
-    { secretArn: pulumi.Output<string>; secretId: pulumi.Output<string> }
+    Record<string, { arn: pulumi.Output<string>; name: pulumi.Output<string> }>
   >,
 ) {
   const { commonTags } = config;
@@ -283,23 +280,32 @@ export function createContainer(
     },
   );
 
+  // Collect all secret ARNs from all applications
+  const allAppSecretArns = appSecrets
+    ? Object.values(appSecrets).flatMap((appSecretMap) =>
+        Object.values(appSecretMap).map((secret) => secret.arn),
+      )
+    : [];
+
   // Add policy for Secrets Manager access to task execution role
   const taskExecutionSecretsPolicy = new aws.iam.RolePolicy(
     `${config.projectName}-task-execution-secrets-policy`,
     {
       role: taskExecutionRole.id,
-      policy: pulumi.all([database.secretArn]).apply(([dbSecretArn]) =>
-        JSON.stringify({
-          Version: '2012-10-17',
-          Statement: [
-            {
-              Effect: 'Allow',
-              Action: ['secretsmanager:GetSecretValue', 'secretsmanager:DescribeSecret'],
-              Resource: [dbSecretArn, 'arn:aws:secretsmanager:*:*:secret:*'],
-            },
-          ],
-        }),
-      ),
+      policy: pulumi
+        .all([database.secretArn, ...allAppSecretArns])
+        .apply(([dbSecretArn, ...secretArns]) =>
+          JSON.stringify({
+            Version: '2012-10-17',
+            Statement: [
+              {
+                Effect: 'Allow',
+                Action: ['secretsmanager:GetSecretValue', 'secretsmanager:DescribeSecret'],
+                Resource: [dbSecretArn, ...secretArns],
+              },
+            ],
+          }),
+        ),
     },
   );
 

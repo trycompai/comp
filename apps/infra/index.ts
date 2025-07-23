@@ -90,7 +90,6 @@ const applications: ApplicationConfig[] = [
     environmentVariables: {
       NODE_ENV: 'production',
       NEXT_TELEMETRY_DISABLED: '1',
-      NEXT_PUBLIC_PORTAL_URL: 'PLACEHOLDER', // This will be injected from secrets
     },
   },
   {
@@ -231,7 +230,15 @@ export const applicationOutputs = deployments.reduce(
       logGroup: deployment.container.logGroupName,
       buildProject: deployment.buildProject.name,
       healthCheckUrl: pulumi.interpolate`${appUrl}${deployment.app.healthCheck?.path || '/health'}`,
-      secretArn: appSecrets[deployment.app.name]?.secretArn,
+      secrets: appSecrets[deployment.app.name]
+        ? Object.entries(appSecrets[deployment.app.name]).reduce(
+            (acc, [secretName, secret]) => {
+              acc[secretName] = secret.name;
+              return acc;
+            },
+            {} as Record<string, pulumi.Output<string>>,
+          )
+        : undefined,
       deployCommand: pulumi.interpolate`aws codebuild start-build --project-name ${deployment.buildProject.name}`,
     };
 
@@ -288,7 +295,7 @@ IMPORTANT: Deployment Order
 
 To update secrets:
 1. Go to AWS Secrets Manager
-2. Find the secret for your app (format: ${projectName}/{appName}/secrets-*)
-3. Update the secret values as needed
+2. Find individual secrets for your app (format: ${projectName}/{appName}/SECRET_NAME)
+3. Update each secret value as needed (they are stored as plaintext, not JSON)
 `,
   );

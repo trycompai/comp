@@ -5,53 +5,54 @@ import { ApplicationConfig, CommonConfig } from '../types';
 export function createAppSecrets(config: CommonConfig, applications: ApplicationConfig[]) {
   const { commonTags } = config;
 
-  // Create a secret for each application that needs secrets
+  // Create individual secrets for each application
   const appSecrets = applications
     .filter((app) => app.requiredSecrets && app.requiredSecrets.length > 0)
-    .map((app) => {
-      // Create app-specific secret
-      const secret = new aws.secretsmanager.Secret(`${config.projectName}-${app.name}-secret`, {
-        namePrefix: `${config.projectName}/${app.name}/secrets-`,
-        description: `Application secrets for ${app.name}. Update these values in AWS Secrets Manager.`,
-        tags: {
-          ...commonTags,
-          Name: `${config.projectName}-${app.name}-secret`,
-          Type: 'secret',
-          Purpose: 'application-secrets',
-          App: app.name,
-        },
-      });
+    .reduce(
+      (acc, app) => {
+        const secrets: Record<string, { arn: pulumi.Output<string>; name: pulumi.Output<string> }> =
+          {};
 
-      // Create placeholders for all required secrets
-      const placeholders: Record<string, string> = {};
-      app.requiredSecrets!.forEach((secretName) => {
-        placeholders[secretName] = 'PLACEHOLDER';
-      });
+        // Create individual secret for each required secret
+        app.requiredSecrets!.forEach((secretName) => {
+          const secret = new aws.secretsmanager.Secret(
+            `${config.projectName}-${app.name}-${secretName}`,
+            {
+              name: `${config.projectName}/${app.name}/${secretName}`,
+              description: `${secretName} for ${app.name} application`,
+              tags: {
+                ...commonTags,
+                Name: `${config.projectName}-${app.name}-${secretName}`,
+                Type: 'secret',
+                App: app.name,
+                SecretName: secretName,
+              },
+            },
+          );
 
-      const secretVersion = new aws.secretsmanager.SecretVersion(
-        `${config.projectName}-${app.name}-secret-version`,
-        {
-          secretId: secret.id,
-          secretString: JSON.stringify(placeholders),
-        },
-      );
+          // Create secret version with placeholder value
+          new aws.secretsmanager.SecretVersion(
+            `${config.projectName}-${app.name}-${secretName}-version`,
+            {
+              secretId: secret.id,
+              secretString: 'PLACEHOLDER',
+            },
+          );
 
-      return {
-        appName: app.name,
-        secretArn: secret.arn,
-        secretId: secret.id,
-      };
-    });
+          secrets[secretName] = {
+            arn: secret.arn,
+            name: secret.name,
+          };
+        });
 
-  // Return a map of app name to secret info
-  return appSecrets.reduce(
-    (acc, appSecret) => {
-      acc[appSecret.appName] = {
-        secretArn: appSecret.secretArn,
-        secretId: appSecret.secretId,
-      };
-      return acc;
-    },
-    {} as Record<string, { secretArn: pulumi.Output<string>; secretId: pulumi.Output<string> }>,
-  );
+        acc[app.name] = secrets;
+        return acc;
+      },
+      {} as Record<
+        string,
+        Record<string, { arn: pulumi.Output<string>; name: pulumi.Output<string> }>
+      >,
+    );
+
+  return appSecrets;
 }

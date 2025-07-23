@@ -15,7 +15,7 @@ export function createBuildSystem(
   container: ContainerOutputs,
   appSecrets?: Record<
     string,
-    { secretArn: pulumi.Output<string>; secretId: pulumi.Output<string> }
+    Record<string, { arn: pulumi.Output<string>; name: pulumi.Output<string> }>
   >,
 ) {
   const { commonTags } = config;
@@ -42,12 +42,19 @@ export function createBuildSystem(
     },
   });
 
+  // Collect all secret ARNs from all applications
+  const allSecretArns = appSecrets
+    ? Object.values(appSecrets).flatMap((appSecretMap) =>
+        Object.values(appSecretMap).map((secret) => secret.arn),
+      )
+    : [];
+
   // CodeBuild policy for basic operations
   const codebuildPolicy = new aws.iam.RolePolicy(`${config.projectName}-codebuild-policy`, {
     role: codebuildRole.id,
     policy: pulumi
-      .all([database.secretArn, appSecrets?.secretArn])
-      .apply(([dbSecretArn, appSecretArn]) =>
+      .all([database.secretArn, ...allSecretArns])
+      .apply(([dbSecretArn, ...secretArns]) =>
         JSON.stringify({
           Version: '2012-10-17',
           Statement: [
@@ -91,7 +98,7 @@ export function createBuildSystem(
             {
               Effect: 'Allow',
               Action: ['secretsmanager:GetSecretValue', 'secretsmanager:DescribeSecret'],
-              Resource: [dbSecretArn, ...(appSecretArn ? [appSecretArn] : [])],
+              Resource: [dbSecretArn, ...secretArns],
             },
           ],
         }),
@@ -256,7 +263,7 @@ export function createBuildSystem(
           ...(app.requiredSecrets && appSecrets?.[app.name]
             ? app.requiredSecrets.map((secretName) => ({
                 name: secretName,
-                value: pulumi.interpolate`${appSecrets[app.name].secretArn}:${secretName}`,
+                value: appSecrets[app.name][secretName].arn,
                 type: 'SECRETS_MANAGER' as const,
               }))
             : []),

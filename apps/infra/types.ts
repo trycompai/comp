@@ -279,7 +279,7 @@ export interface ApplicationOutput {
   logGroup: pulumi.Output<string>;
   buildProject: pulumi.Output<string>;
   healthCheckUrl: pulumi.Output<string>;
-  secretArn?: pulumi.Output<string>;
+  secrets?: Record<string, pulumi.Output<string>>;
   deployCommand: pulumi.Output<string>;
 }
 
