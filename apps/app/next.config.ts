@@ -2,7 +2,6 @@ import type { NextConfig } from 'next';
 import './src/env.mjs';
 
 const config: NextConfig = {
-  output: 'standalone', // Required for Docker builds
   poweredByHeader: false,
   reactStrictMode: true,
   turbopack: {
@@ -49,5 +48,9 @@ const config: NextConfig = {
   },
   skipTrailingSlashRedirect: true,
 };
+
+if (!process.env.IS_VERCEL || process.env.IS_VERCEL === 'false') {
+  config.output = 'standalone'; // Required for Docker builds
+}
 
 export default config;

@@ -229,6 +229,7 @@ export function createContainer(
 
           if (appSecrets && appSecretArn) {
             secrets.push(
+              // Required secrets
               {
                 name: 'AUTH_SECRET',
                 valueFrom: `${appSecretArn}:AUTH_SECRET::`,
@@ -240,6 +241,76 @@ export function createContainer(
               {
                 name: 'REVALIDATION_SECRET',
                 valueFrom: `${appSecretArn}:REVALIDATION_SECRET::`,
+              },
+              {
+                name: 'SECRET_KEY',
+                valueFrom: `${appSecretArn}:SECRET_KEY::`,
+              },
+              {
+                name: 'UPSTASH_REDIS_REST_URL',
+                valueFrom: `${appSecretArn}:UPSTASH_REDIS_REST_URL::`,
+              },
+              {
+                name: 'UPSTASH_REDIS_REST_TOKEN',
+                valueFrom: `${appSecretArn}:UPSTASH_REDIS_REST_TOKEN::`,
+              },
+              {
+                name: 'OPENAI_API_KEY',
+                valueFrom: `${appSecretArn}:OPENAI_API_KEY::`,
+              },
+              {
+                name: 'TRIGGER_SECRET_KEY',
+                valueFrom: `${appSecretArn}:TRIGGER_SECRET_KEY::`,
+              },
+
+              // Optional secrets
+              {
+                name: 'IS_VERCEL',
+                valueFrom: `${appSecretArn}:IS_VERCEL::`,
+              },
+              {
+                name: 'AUTH_GOOGLE_ID',
+                valueFrom: `${appSecretArn}:AUTH_GOOGLE_ID::`,
+              },
+              {
+                name: 'AUTH_GOOGLE_SECRET',
+                valueFrom: `${appSecretArn}:AUTH_GOOGLE_SECRET::`,
+              },
+              {
+                name: 'AUTH_GITHUB_ID',
+                valueFrom: `${appSecretArn}:AUTH_GITHUB_ID::`,
+              },
+              {
+                name: 'AUTH_GITHUB_SECRET',
+                valueFrom: `${appSecretArn}:AUTH_GITHUB_SECRET::`,
+              },
+              {
+                name: 'AWS_BUCKET_NAME',
+                valueFrom: `${appSecretArn}:AWS_BUCKET_NAME::`,
+              },
+              {
+                name: 'AWS_REGION',
+                valueFrom: `${appSecretArn}:AWS_REGION::`,
+              },
+              {
+                name: 'AWS_ACCESS_KEY_ID',
+                valueFrom: `${appSecretArn}:AWS_ACCESS_KEY_ID::`,
+              },
+              {
+                name: 'AWS_SECRET_ACCESS_KEY',
+                valueFrom: `${appSecretArn}:AWS_SECRET_ACCESS_KEY::`,
+              },
+              {
+                name: 'DISCORD_WEBHOOK_URL',
+                valueFrom: `${appSecretArn}:DISCORD_WEBHOOK_URL::`,
+              },
+              {
+                name: 'SLACK_SALES_WEBHOOK',
+                valueFrom: `${appSecretArn}:SLACK_SALES_WEBHOOK::`,
+              },
+              {
+                name: 'HUBSPOT_ACCESS_TOKEN',
+                valueFrom: `${appSecretArn}:HUBSPOT_ACCESS_TOKEN::`,
               },
             );
           }
