@@ -151,9 +151,10 @@ export function createDatabase(config: CommonConfig, network: NetworkOutputs) {
           dbPassword.result,
           dbInstance.port,
         ])
-        .apply(
-          ([endpoint, username, dbName, password, port]) =>
-            `postgresql://${username}:${password}@${endpoint}:${port}/${dbName}?sslmode=require`,
+        .apply(([endpoint, username, dbName, password, port]) =>
+          JSON.stringify({
+            connectionString: `postgresql://${username}:${password}@${endpoint}:${port}/${dbName}?sslmode=require`,
+          }),
         ),
     },
   );

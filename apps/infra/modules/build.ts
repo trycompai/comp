@@ -93,120 +93,117 @@ export function createBuildSystem(
   });
 
   // CodeBuild project for building application image (requires database access)
-  const appProject = database.connectionString.apply(
-    (dbUrl) =>
-      new aws.codebuild.Project(`${config.projectName}-app-build`, {
-        name: `${config.projectName}-app-build`,
-        description: 'Build application Docker image with database access',
-        serviceRole: codebuildRole.arn,
-        artifacts: {
-          type: 'NO_ARTIFACTS',
+  const appProject = new aws.codebuild.Project(`${config.projectName}-app-build`, {
+    name: `${config.projectName}-app-build`,
+    description: 'Build application Docker image with database access',
+    serviceRole: codebuildRole.arn,
+    artifacts: {
+      type: 'NO_ARTIFACTS',
+    },
+    environment: {
+      computeType: 'BUILD_GENERAL1_2XLARGE',
+      image: 'aws/codebuild/standard:7.0',
+      type: 'LINUX_CONTAINER',
+      privilegedMode: true, // Required for Docker builds
+      environmentVariables: [
+        {
+          name: 'AWS_ACCOUNT_ID',
+          value: aws.getCallerIdentityOutput().accountId,
+          type: 'PLAINTEXT',
         },
-        environment: {
-          computeType: 'BUILD_GENERAL1_2XLARGE',
-          image: 'aws/codebuild/standard:7.0',
-          type: 'LINUX_CONTAINER',
-          privilegedMode: true, // Required for Docker builds
-          environmentVariables: [
-            {
-              name: 'AWS_ACCOUNT_ID',
-              value: aws.getCallerIdentityOutput().accountId,
-              type: 'PLAINTEXT',
-            },
-            {
-              name: 'IMAGE_REPO_NAME',
-              value: config.projectName,
-              type: 'PLAINTEXT',
-            },
-            {
-              name: 'DATABASE_URL',
-              value: dbUrl, // Use the resolved string value here
-              type: 'PLAINTEXT',
-            },
-            {
-              name: 'ECR_REPOSITORY_URI',
-              value: container.repositoryUrl,
-              type: 'PLAINTEXT',
-            },
-            {
-              name: 'ECS_CLUSTER_NAME',
-              value: container.clusterName,
-              type: 'PLAINTEXT',
-            },
-            {
-              name: 'ECS_SERVICE_NAME',
-              value: container.serviceName,
-              type: 'PLAINTEXT',
-            },
-            {
-              name: 'AWS_DEFAULT_REGION',
-              value: config.awsRegion,
-              type: 'PLAINTEXT',
-            },
-            {
-              name: 'NODE_ENV',
-              value: config.nodeEnv,
-              type: 'PLAINTEXT',
-            },
-            // Application-specific environment variables (read from apps/app/.env)
-            ...(appEnv.AUTH_SECRET
-              ? [
-                  {
-                    name: 'AUTH_SECRET',
-                    value: appEnv.AUTH_SECRET,
-                    type: 'PLAINTEXT',
-                  },
-                ]
-              : []),
-            ...(appEnv.RESEND_API_KEY
-              ? [
-                  {
-                    name: 'RESEND_API_KEY',
-                    value: appEnv.RESEND_API_KEY,
-                    type: 'PLAINTEXT',
-                  },
-                ]
-              : []),
-            ...(appEnv.REVALIDATION_SECRET
-              ? [
-                  {
-                    name: 'REVALIDATION_SECRET',
-                    value: appEnv.REVALIDATION_SECRET,
-                    type: 'PLAINTEXT',
-                  },
-                ]
-              : []),
-            ...(appEnv.NEXT_PUBLIC_PORTAL_URL
-              ? [
-                  {
-                    name: 'NEXT_PUBLIC_PORTAL_URL',
-                    value: appEnv.NEXT_PUBLIC_PORTAL_URL,
-                    type: 'PLAINTEXT',
-                  },
-                ]
-              : []),
-          ],
+        {
+          name: 'IMAGE_REPO_NAME',
+          value: config.projectName,
+          type: 'PLAINTEXT',
         },
-        vpcConfig: {
-          vpcId: network.vpcId,
-          subnets: network.privateSubnetIds,
-          securityGroupIds: [network.securityGroups.codeBuild],
+        {
+          name: 'DATABASE_URL',
+          value: `${database.secretArn}:connectionString::`,
+          type: 'SECRETS_MANAGER',
         },
-        source: {
-          type: 'GITHUB',
-          location: `https://github.com/${config.githubOrg}/${config.githubRepo}.git`,
-          buildspec: 'apps/app/buildspec.yml',
-          gitCloneDepth: 1,
+        {
+          name: 'ECR_REPOSITORY_URI',
+          value: container.repositoryUrl,
+          type: 'PLAINTEXT',
         },
-        sourceVersion: config.githubBranch, // Specify which branch to build from
-        tags: {
-          ...commonTags,
-          Name: `${config.projectName}-app-build`,
-          Type: 'codebuild-project',
-          Purpose: 'application-image-build',
+        {
+          name: 'ECS_CLUSTER_NAME',
+          value: container.clusterName,
+          type: 'PLAINTEXT',
         },
-      }),
-  );
+        {
+          name: 'ECS_SERVICE_NAME',
+          value: container.serviceName,
+          type: 'PLAINTEXT',
+        },
+        {
+          name: 'AWS_DEFAULT_REGION',
+          value: config.awsRegion,
+          type: 'PLAINTEXT',
+        },
+        {
+          name: 'NODE_ENV',
+          value: config.nodeEnv,
+          type: 'PLAINTEXT',
+        },
+        // Application-specific environment variables (read from apps/app/.env)
+        ...(appEnv.AUTH_SECRET
+          ? [
+              {
+                name: 'AUTH_SECRET',
+                value: appEnv.AUTH_SECRET,
+                type: 'PLAINTEXT',
+              },
+            ]
+          : []),
+        ...(appEnv.RESEND_API_KEY
+          ? [
+              {
+                name: 'RESEND_API_KEY',
+                value: appEnv.RESEND_API_KEY,
+                type: 'PLAINTEXT',
+              },
+            ]
+          : []),
+        ...(appEnv.REVALIDATION_SECRET
+          ? [
+              {
+                name: 'REVALIDATION_SECRET',
+                value: appEnv.REVALIDATION_SECRET,
+                type: 'PLAINTEXT',
+              },
+            ]
+          : []),
+        ...(appEnv.NEXT_PUBLIC_PORTAL_URL
+          ? [
+              {
+                name: 'NEXT_PUBLIC_PORTAL_URL',
+                value: appEnv.NEXT_PUBLIC_PORTAL_URL,
+                type: 'PLAINTEXT',
+              },
+            ]
+          : []),
+      ],
+    },
+    vpcConfig: {
+      vpcId: network.vpcId,
+      subnets: network.privateSubnetIds,
+      securityGroupIds: [network.securityGroups.codeBuild],
+    },
+    source: {
+      type: 'GITHUB',
+      location: `https://github.com/${config.githubOrg}/${config.githubRepo}.git`,
+      buildspec: 'apps/app/buildspec.yml',
+      gitCloneDepth: 1,
+    },
+    sourceVersion: config.githubBranch, // Specify which branch to build from
+    tags: {
+      ...commonTags,
+      Name: `${config.projectName}-app-build`,
+      Type: 'codebuild-project',
+      Purpose: 'application-image-build',
+    },
+  });
 
   // Additional IAM permissions for ECS deployment
   const ecsDeployPolicy = new aws.iam.RolePolicy(`${config.projectName}-ecs-deploy-policy`, {

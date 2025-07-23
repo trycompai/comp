@@ -223,7 +223,7 @@ export function createContainer(
           const secrets = [
             {
               name: 'DATABASE_URL',
-              valueFrom: dbSecretArn,
+              valueFrom: `${dbSecretArn}:connectionString::`,
             },
           ];
 
