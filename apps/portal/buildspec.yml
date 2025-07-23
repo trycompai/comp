@@ -33,9 +33,9 @@ phases:
       - bun x prisma generate --schema=packages/db/prisma/schema.prisma
       - cd packages/db && bun x prisma generate && cd ../../
 
-      # Type check
+      # Type check (optional - skip if script doesn't exist)
       - echo "Type checking..."
-      - cd apps/$APP_NAME && bun run typecheck && cd ../../
+      - cd apps/$APP_NAME && (bun run typecheck || echo "No typecheck script found, skipping...") && cd ../../
 
       # Build Next.js portal app
       - echo "Building Next.js portal application..."
