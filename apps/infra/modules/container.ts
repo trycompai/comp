@@ -116,8 +116,19 @@ export function createApplicationContainer(
     executionRoleArn: sharedResources.taskExecutionRole.arn,
     taskRoleArn: sharedResources.taskRole.arn,
     containerDefinitions: pulumi
-      .all([repository.repositoryUrl, logGroup.name, database.secretArn])
-      .apply(([repoUrl, logGroupName, dbSecretArn]) => {
+      .all([
+        repository.repositoryUrl,
+        logGroup.name,
+        database.secretArn,
+        // Resolve all secret ARNs
+        ...(appSecrets && app.requiredSecrets
+          ? app.requiredSecrets
+              .filter((secretName) => appSecrets[secretName])
+              .map((secretName) => appSecrets[secretName].arn)
+          : []),
+      ])
+      .apply((values) => {
+        const [repoUrl, logGroupName, dbSecretArn, ...appSecretArns] = values;
         const secrets = [];
 
         // Add database secret if needed
@@ -130,12 +141,14 @@ export function createApplicationContainer(
 
         // Add app-specific secrets if provided
         if (appSecrets && app.requiredSecrets) {
+          let secretIndex = 0;
           app.requiredSecrets.forEach((secretName) => {
             if (appSecrets[secretName]) {
               secrets.push({
                 name: secretName,
-                valueFrom: appSecrets[secretName].arn,
+                valueFrom: appSecretArns[secretIndex],
               });
+              secretIndex++;
             }
           });
         }
