@@ -144,10 +144,16 @@ export function createDatabase(config: CommonConfig, network: NetworkOutputs) {
     {
       secretId: dbSecret.id,
       secretString: pulumi
-        .all([dbInstance.endpoint, dbInstance.username, dbInstance.dbName, dbPassword.result])
+        .all([
+          dbInstance.endpoint,
+          dbInstance.username,
+          dbInstance.dbName,
+          dbPassword.result,
+          dbInstance.port,
+        ])
         .apply(
-          ([endpoint, username, dbName, password]) =>
-            `postgresql://${username}:${password}@${endpoint}:5432/${dbName}?sslmode=require`,
+          ([endpoint, username, dbName, password, port]) =>
+            `postgresql://${username}:${password}@${endpoint}:${port}/${dbName}?sslmode=require`,
         ),
     },
   );
@@ -235,7 +241,7 @@ export function createDatabase(config: CommonConfig, network: NetworkOutputs) {
     password: dbPassword.result,
     secretArn: dbSecret.arn,
     secretId: dbSecret.id,
-    connectionString: pulumi.interpolate`postgresql://${dbInstance.username}:${dbPassword.result}@${dbInstance.endpoint}:5432/${dbInstance.dbName}?sslmode=require`,
+    connectionString: pulumi.interpolate`postgresql://${dbInstance.username}:${dbPassword.result}@${dbInstance.endpoint}:${dbInstance.port}/${dbInstance.dbName}?sslmode=require`,
     readReplicaEndpoint: readReplica?.endpoint,
     logGroupName: dbLogGroup.name,
     connectionAlarmArn: dbConnectionAlarm.arn,
