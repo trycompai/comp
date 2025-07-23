@@ -235,7 +235,7 @@ export function createDatabase(config: CommonConfig, network: NetworkOutputs) {
     password: dbPassword.result,
     secretArn: dbSecret.arn,
     secretId: dbSecret.id,
-    connectionString: pulumi.interpolate`postgresql://${dbInstance.username}:${dbPassword.result}@${dbInstance.endpoint}/${dbInstance.dbName}?sslmode=require`,
+    connectionString: pulumi.interpolate`postgresql://${dbInstance.username}:${dbPassword.result}@${dbInstance.endpoint}:5432/${dbInstance.dbName}?sslmode=require`,
     readReplicaEndpoint: readReplica?.endpoint,
     logGroupName: dbLogGroup.name,
     connectionAlarmArn: dbConnectionAlarm.arn,
