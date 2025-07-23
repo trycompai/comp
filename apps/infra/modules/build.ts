@@ -295,6 +295,7 @@ export function createBuildSystem(
           fetchSubmodules: false,
         },
       },
+      sourceVersion: config.githubBranch,
       cache: {
         type: 'LOCAL',
         modes: ['LOCAL_DOCKER_LAYER_CACHE', 'LOCAL_SOURCE_CACHE'],
