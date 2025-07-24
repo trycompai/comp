@@ -1,5 +1,6 @@
 {
   "name": "@comp/db",
+  "description": "Database package with Prisma client and schema for Comp AI",
   "version": "1.0.0",
   "dependencies": {
     "@prisma/client": "6.9.0"
@@ -8,36 +9,68 @@
     "@comp/tsconfig": "workspace:*",
     "prisma": "^6.9.0",
     "ts-node": "^10.9.2",
+    "tsup": "^8.5.0",
     "typescript": "^5.8.3"
   },
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "default": "./src/index.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
     },
     "./types": {
-      "types": "./src/types.ts",
-      "default": "./src/types.ts"
+      "types": "./dist/types.d.ts",
+      "import": "./dist/types.mjs",
+      "require": "./dist/types.js"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "import": "./dist/client.mjs",
+      "require": "./dist/client.js"
     }
   },
-  "main": "./src/index.ts",
+  "files": [
+    "dist/**",
+    "prisma/**",
+    "README.md"
+  ],
+  "keywords": [
+    "comp-ai",
+    "database",
+    "postgresql",
+    "prisma"
+  ],
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
   "prisma": {
     "schema": "prisma",
     "seed": "ts-node prisma/seed/seed.ts"
   },
+  "publishConfig": {
+    "access": "public",
+    "name": "@trycompai/db"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/comp-ai/comp.git",
+    "directory": "packages/db"
+  },
   "scripts": {
+    "build": "tsup src/index.ts src/types.ts --format cjs,esm --dts && bun run db:generate",
     "clean": "rm -rf .turbo node_modules dist",
     "db:generate": "bunx prisma generate",
     "db:migrate": "bunx prisma migrate dev",
     "db:push": "bunx prisma db push",
     "db:seed": "bunx prisma db seed",
     "db:studio": "bunx prisma studio",
-    "dev": "tsc --watch",
+    "dev": "tsup src/index.ts src/types.ts --format cjs,esm --watch --dts",
     "docker:clean": "docker-compose down -v",
     "docker:down": "docker-compose down",
     "docker:up": "docker-compose up -d",
     "lint": "prettier --check 'src/**/*.{ts,tsx,js,jsx,json}' 'prisma/**/*.prisma' && tsc --noEmit",
+    "postbuild": "cp -r prisma dist/ || echo 'No prisma directory to copy'",
     "typecheck": "tsc --noEmit"
   },
-  "types": "./src/index.ts"
+  "types": "./dist/index.d.ts"
 }

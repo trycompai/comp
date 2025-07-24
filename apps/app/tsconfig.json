@@ -19,7 +19,17 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@comp/db": ["../../packages/db/src/index.ts"],
+      "@comp/db/*": ["../../packages/db/src/*"],
+      "@comp/email": ["../../packages/email/index.ts"],
+      "@comp/email/*": ["../../packages/email/*"],
+      "@comp/kv": ["../../packages/kv/src/index.ts"],
+      "@comp/kv/*": ["../../packages/kv/src/*"],
+      "@comp/ui": ["../../packages/ui/src/components/index.ts"],
+      "@comp/ui/*": ["../../packages/ui/src/*"],
+      "@comp/utils": ["../../packages/utils/src/index.ts"],
+      "@comp/utils/*": ["../../packages/utils/src/*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "trigger.config.ts"],

@@ -1464,6 +1464,7 @@
   devDependencies:
     prisma "^6.9.0"
     ts-node "^10.9.2"
+    tsup "^8.5.0"
     typescript "^5.8.3"
   dependencies:
     "@prisma/client" "6.9.0"
@@ -1474,7 +1475,7 @@
   devDependencies:
     react "^19.1.0"
     react-dom "^19.1.0"
-    tsup "^8.4.0"
+    tsup "^8.5.0"
     typescript "^5.8.3"
   dependencies:
     "@comp/ui" "workspace:*"
@@ -1560,6 +1561,9 @@
 "@comp/kv@^workspace:packages/kv":
   version "workspace:packages/kv"
   resolved "workspace:packages/kv"
+  devDependencies:
+    tsup "^8.5.0"
+    typescript "^5.8.3"
   dependencies:
     "@upstash/redis" "^1.34.2"
     server-only "0.0.1"
@@ -1632,6 +1636,7 @@
     react "^19.1.0"
     react-dom "^19.1.0"
     tailwindcss "^4.1.8"
+    tsup "^8.5.0"
     typescript "^5.8.3"
   dependencies:
     "@radix-ui/react-accordion" "1.2.11"
@@ -18146,7 +18151,7 @@ tsscmp@^1.0.6:
   resolved "https://registry.npmjs.org/tsscmp/-/tsscmp-1.0.6.tgz"
   integrity sha512-LxhtAkPDTkVCMQjt2h6eBVY28KCjikZqZfMcC15YBeNjkgUpdCfBu5HoiOTDu86v6smE8yOjyEktJ8hlbANHQA==
 
-tsup@^8.4.0:
+tsup@^8.5.0:
   version "8.5.0"
   resolved "https://registry.npmjs.org/tsup/-/tsup-8.5.0.tgz"
   integrity sha512-VmBp77lWNQq6PfuMqCHD3xWl22vEoWsKajkF8t+yMBawlUS8JzEI+vOVMeuNZIuMML8qXRizFKi9oD5glKQVcQ==

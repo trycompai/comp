@@ -1,5 +1,5 @@
-import { MagicLinkEmail } from '@comp/email/emails/magic-link';
-import { sendEmail } from '@comp/email/lib/resend';
+import { MagicLinkEmail } from '../emails/magic-link';
+import { sendEmail } from './resend';
 
 export const sendMagicLinkEmail = async (params: {
   url: string;
@@ -8,20 +8,21 @@ export const sendMagicLinkEmail = async (params: {
 }) => {
   const { url, email, inviteCode } = params;
 
-  const emailTemplate = MagicLinkEmail({
-    email,
-    url: url,
-    inviteCode,
-  });
-
   try {
-    await sendEmail({
+    const sent = await sendEmail({
       to: email,
-      subject: 'Comp AI Login Link',
-      react: emailTemplate,
+      subject: 'Your sign-in link for Comp AI',
+      react: MagicLinkEmail({ url, email, inviteCode }),
     });
-  } catch (e) {
-    console.error(e);
-    throw e;
+
+    if (!sent) {
+      console.error('Failed to send magic link email');
+      return { success: false };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error sending magic link email:', error);
+    return { success: false };
   }
 };

@@ -61,3 +61,6 @@ export const client =
         url: process.env.UPSTASH_REDIS_REST_URL!,
         token: process.env.UPSTASH_REDIS_REST_TOKEN!,
       });
+
+// Re-export Redis types for convenience
+export type { Redis } from '@upstash/redis';

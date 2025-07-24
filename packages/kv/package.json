@@ -1,16 +1,52 @@
 {
   "name": "@comp/kv",
+  "description": "Key-value store utilities using Upstash Redis for Comp AI",
   "version": "1.0.0",
   "dependencies": {
     "@upstash/redis": "^1.34.2",
     "server-only": "0.0.1"
   },
-  "main": "src/index.ts",
-  "private": true,
+  "devDependencies": {
+    "tsup": "^8.5.0",
+    "typescript": "^5.8.3"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist/**",
+    "README.md"
+  ],
+  "keywords": [
+    "cache",
+    "comp-ai",
+    "key-value",
+    "redis",
+    "upstash"
+  ],
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "publishConfig": {
+    "access": "public",
+    "name": "@trycompai/kv"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/comp-ai/comp.git",
+    "directory": "packages/kv"
+  },
   "scripts": {
-    "clean": "rm -rf .turbo node_modules",
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "clean": "rm -rf .turbo node_modules dist",
+    "dev": "tsup src/index.ts --format cjs,esm --watch --dts",
     "format": "prettier --write .",
     "lint": "prettier --check .",
     "typecheck": "tsc --noEmit"
-  }
+  },
+  "types": "./dist/index.d.ts"
 }

@@ -375,6 +375,45 @@ Steps to deploy Comp AI on Docker are coming soon.
 
 Steps to deploy Comp AI on Vercel are coming soon.
 
+## 📦 Package Publishing
+
+This repository uses semantic-release to automatically publish packages to npm when merging to the `release` branch. The following packages are published:
+
+- `@comp/db` - Database utilities with Prisma client
+- `@comp/email` - Email templates and components
+- `@comp/kv` - Key-value store utilities using Upstash Redis
+- `@comp/ui` - UI component library with Tailwind CSS
+
+### Setup
+
+1. **NPM Token**: Add your npm token as `NPM_TOKEN` in GitHub repository secrets
+2. **Release Branch**: Create and merge PRs into the `release` branch to trigger publishing
+3. **Versioning**: Uses conventional commits for automatic version bumping
+
+### Usage
+
+```bash
+# Install a published package
+npm install @comp/ui
+
+# Use in your project
+import { Button } from '@comp/ui/button'
+import { client } from '@comp/kv'
+```
+
+### Development
+
+```bash
+# Build all packages
+bun run build
+
+# Build specific package
+bun run -F @comp/ui build
+
+# Test packages locally
+bun run release:packages --dry-run
+```
+
 ## Contributors
 
 <a href="https://github.com/trycompai/comp/graphs/contributors">
