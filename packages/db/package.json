@@ -1,15 +1,17 @@
 {
   "name": "@trycompai/db",
-  "version": "1.0.0",
   "description": "Database package with Prisma client and schema for Comp AI",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
-  "files": [
-    "dist/**",
-    "prisma/**",
-    "README.md"
-  ],
+  "version": "1.0.0",
+  "dependencies": {
+    "@prisma/client": "6.9.0"
+  },
+  "devDependencies": {
+    "@comp/tsconfig": "workspace:*",
+    "prisma": "^6.9.0",
+    "ts-node": "^10.9.2",
+    "tsup": "^8.5.0",
+    "typescript": "^5.8.3"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -27,6 +29,32 @@
       "require": "./dist/client.js"
     }
   },
+  "files": [
+    "dist/**",
+    "prisma/**",
+    "README.md"
+  ],
+  "keywords": [
+    "comp-ai",
+    "database",
+    "postgresql",
+    "prisma"
+  ],
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "prisma": {
+    "schema": "prisma",
+    "seed": "ts-node prisma/seed/seed.ts"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/comp-ai/comp.git",
+    "directory": "packages/db"
+  },
   "scripts": {
     "build": "tsup src/index.ts src/types.ts --format cjs,esm --dts && bun run db:generate",
     "clean": "rm -rf .turbo node_modules dist",
@@ -43,33 +71,5 @@
     "postbuild": "cp -r prisma dist/ || echo 'No prisma directory to copy'",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {
-    "@prisma/client": "6.9.0"
-  },
-  "devDependencies": {
-    "@comp/tsconfig": "workspace:*",
-    "prisma": "^6.9.0",
-    "ts-node": "^10.9.2",
-    "tsup": "^8.5.0",
-    "typescript": "^5.8.3"
-  },
-  "prisma": {
-    "schema": "prisma",
-    "seed": "ts-node prisma/seed/seed.ts"
-  },
-  "keywords": [
-    "prisma",
-    "database",
-    "postgresql",
-    "comp-ai"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/comp-ai/comp.git",
-    "directory": "packages/db"
-  },
-  "license": "MIT",
-  "publishConfig": {
-    "access": "public"
-  }
+  "types": "./dist/index.d.ts"
 }

@@ -1,20 +1,43 @@
 {
   "name": "@trycompai/kv",
-  "version": "1.0.0",
   "description": "Key-value store utilities using Upstash Redis for Comp AI",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
-  "files": [
-    "dist/**",
-    "README.md"
-  ],
+  "version": "1.0.0",
+  "dependencies": {
+    "@upstash/redis": "^1.34.2",
+    "server-only": "0.0.1"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.0",
+    "typescript": "^5.8.3"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
       "require": "./dist/index.js"
     }
+  },
+  "files": [
+    "dist/**",
+    "README.md"
+  ],
+  "keywords": [
+    "cache",
+    "comp-ai",
+    "key-value",
+    "redis",
+    "upstash"
+  ],
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/comp-ai/comp.git",
+    "directory": "packages/kv"
   },
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts",
@@ -24,28 +47,5 @@
     "lint": "prettier --check .",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {
-    "@upstash/redis": "^1.34.2",
-    "server-only": "0.0.1"
-  },
-  "devDependencies": {
-    "tsup": "^8.5.0",
-    "typescript": "^5.8.3"
-  },
-  "keywords": [
-    "redis",
-    "upstash",
-    "key-value",
-    "cache",
-    "comp-ai"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/comp-ai/comp.git",
-    "directory": "packages/kv"
-  },
-  "license": "MIT",
-  "publishConfig": {
-    "access": "public"
-  }
+  "types": "./dist/index.d.ts"
 }
