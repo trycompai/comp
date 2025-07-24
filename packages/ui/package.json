@@ -1,6 +1,5 @@
 {
   "name": "@trycompai/ui",
-  "type": "module",
   "description": "UI component library for Comp AI",
   "version": "1.0.0",
   "dependencies": {
@@ -201,5 +200,6 @@
     "typecheck": "tsc --noEmit"
   },
   "sideEffects": false,
+  "type": "module",
   "types": "./dist/index.d.ts"
 }
