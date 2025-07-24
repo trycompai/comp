@@ -1,7 +1,7 @@
 <!-- PROJECT LOGO -->
 <p align="center">
   <a href="https://github.com/trycompai/comp">
-   <img src="https://trycomp.ai/logo.png" alt="Logo">
+   <img src="https://trycomp.ai/horizontal_black.svg" alt="Logo" width="50%">
   </a>
 
   <h3 align="center">Comp AI</h3>
@@ -60,7 +60,7 @@ Contact our founders at hello@trycomp.ai to learn more about how we can help you
 
 ## Stay Up-to-Date
 
-Join our [waitlist](https://trycomp.ai) to get early access to the cloud hosted version of Comp AI.
+Get access to the cloud hosted version of [Comp AI](https://trycomp.ai).
 
 ## Getting Started
 
