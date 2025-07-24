@@ -38,6 +38,8 @@
       "@comp/ui/tailwind.config": ["../../packages/ui/tailwind.config.ts"],
       "@comp/utils": ["../../packages/utils/src/index.ts"],
       "@comp/utils/*": ["../../packages/utils/src/*"],
+      "@comp/integrations": ["../../packages/integrations/src/index.ts"],
+      "@comp/integrations/*": ["../../packages/integrations/src/*"],
       "@comp/analytics": ["../../packages/analytics/src/index.ts"],
       "@comp/analytics/*": ["../../packages/analytics/src/*"],
       "@comp/tsconfig": ["../../packages/tsconfig"],
