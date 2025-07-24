@@ -1,5 +1,6 @@
 {
-  "name": "@comp/ui",
+  "name": "@trycompai/ui",
+  "description": "UI component library for Comp AI",
   "version": "1.0.0",
   "dependencies": {
     "@radix-ui/react-accordion": "1.2.11",
@@ -80,6 +81,7 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "tailwindcss": "^4.1.8",
+    "tsup": "^8.5.0",
     "typescript": "^5.8.3"
   },
   "exports": {
@@ -157,10 +159,23 @@
     "./select-pills": "./src/components/select-pills.tsx"
   },
   "files": [
+    "dist/**",
+    "src/**",
     "tailwind.config.ts",
     "postcss.config.js",
-    "globals.css"
+    "README.md"
   ],
+  "keywords": [
+    "comp-ai",
+    "components",
+    "radix-ui",
+    "react",
+    "tailwindcss",
+    "ui"
+  ],
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
   "overrides": {
     "react-is": "^19.1.0"
   },
@@ -168,12 +183,23 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
-  "private": true,
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/comp-ai/comp.git",
+    "directory": "packages/ui"
+  },
   "scripts": {
-    "clean": "rm -rf .turbo node_modules",
+    "build": "tsup src/components/index.ts src/hooks/index.ts src/utils/index.ts --format cjs,esm --dts",
+    "clean": "rm -rf .turbo node_modules dist",
+    "dev": "tsup src/components/index.ts src/hooks/index.ts src/utils/index.ts --format cjs,esm --watch --dts",
     "format": "prettier --write .",
     "lint": "prettier --check .",
     "typecheck": "tsc --noEmit"
   },
-  "sideEffects": false
+  "sideEffects": false,
+  "type": "module",
+  "types": "./dist/index.d.ts"
 }

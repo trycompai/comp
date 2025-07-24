@@ -1,5 +1,5 @@
 import { env } from '@/env.mjs';
-import { initializeServer } from '@comp/analytics/src/server';
+import { initializeServer } from '@comp/analytics/server';
 import { cn } from '@comp/ui/cn';
 import '@comp/ui/globals.css';
 import { GeistMono } from 'geist/font/mono';

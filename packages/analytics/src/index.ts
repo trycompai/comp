@@ -23,7 +23,6 @@ export const Analytics = {
   },
 };
 
-// Export components for client usage
+// Export components for client usage only
 export * from './components/page-view';
 export * from './components/provider';
-export * from './server';

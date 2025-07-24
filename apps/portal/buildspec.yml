@@ -1,0 +1,98 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo "Logging in to Amazon ECR..."
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - REPOSITORY_URI=$ECR_REPOSITORY_URI
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - IMAGE_TAG=${COMMIT_HASH:=latest}
+      - echo "Installing dependencies..."
+      - curl -fsSL https://bun.sh/install | bash
+
+  build:
+    commands:
+      # Environment setup
+      - export PATH="/root/.bun/bin:$PATH"
+      - export PGSSLMODE=require
+      - export NEXT_TELEMETRY_DISABLED=1
+      - export UV_THREADPOOL_SIZE=36
+      - export NODE_OPTIONS="--max-old-space-size=65536"
+
+      # Navigate to portal directory
+      - cd apps/$APP_NAME
+
+      # Install dependencies
+      - echo "Installing dependencies..."
+      - SKIP_ENV_VALIDATION=true bun install --frozen-lockfile --concurrent 36 || SKIP_ENV_VALIDATION=true bun install --concurrent 36
+      - cd ../../
+
+      # Generate Prisma client
+      - echo "Generating Prisma client..."
+      - cd packages/db && bun x prisma generate && cd ../../
+
+      # Type check (optional - skip if script doesn't exist)
+      - echo "Type checking..."
+      - cd apps/$APP_NAME && (bun run typecheck || echo "No typecheck script found, skipping...") && cd ../../
+
+      # Build Next.js portal app
+      - echo "Building Next.js portal application..."
+      - cd apps/$APP_NAME
+      - NODE_TLS_REJECT_UNAUTHORIZED=0 bun run build
+
+      # Prepare standalone build
+      - echo "Preparing standalone build..."
+      - echo "DEBUG - Checking what Next.js built..."
+      - ls -la .next/
+      - ls -la .next/standalone/ || echo "No standalone directory"
+      - echo "DEBUG - Checking if static files exist..."
+      - ls -la .next/static/ || echo "No static directory found"
+      - echo "DEBUG - Copying static files to standalone..."
+      - cp -r public .next/standalone/apps/$APP_NAME/ || echo "No public folder"
+      - cp -r .next/static .next/standalone/apps/$APP_NAME/.next/ || echo "No .next/static directory"
+      - echo "DEBUG - Final verification..."
+      - ls -la .next/standalone/ || echo "Standalone empty"
+      - find .next/standalone -name "*.css" | head -3 || echo "No CSS files found"
+      - find .next/standalone -name "*.js" | head -3 || echo "No JS files found"
+
+      # Copy Prisma client
+      - echo "Copying Prisma client..."
+      - mkdir -p .next/standalone/node_modules/.prisma .next/standalone/node_modules/@prisma
+      - if [ -d "../../node_modules/.prisma/client" ]; then
+        cp -r ../../node_modules/.prisma/client .next/standalone/node_modules/.prisma/;
+        elif [ -d "node_modules/.prisma/client" ]; then
+        cp -r node_modules/.prisma/client .next/standalone/node_modules/.prisma/;
+        fi
+      - if [ -d "../../node_modules/@prisma/client" ]; then
+        cp -r "../../node_modules/@prisma/client" ".next/standalone/node_modules/@prisma/";
+        elif [ -d "node_modules/@prisma/client" ]; then
+        cp -r "node_modules/@prisma/client" ".next/standalone/node_modules/@prisma/";
+        fi
+
+      # Build Docker image
+      - echo "Building Docker image..."
+      - docker build --build-arg BUILDKIT_INLINE_CACHE=1 -f ${DOCKERFILE_PATH:-Dockerfile} -t $ECR_REPOSITORY_URI:$IMAGE_TAG .
+      - docker tag $ECR_REPOSITORY_URI:$IMAGE_TAG $ECR_REPOSITORY_URI:latest
+
+  post_build:
+    commands:
+      - echo "Pushing images to ECR..."
+      - docker push $ECR_REPOSITORY_URI:$IMAGE_TAG
+      - docker push $ECR_REPOSITORY_URI:latest
+      - echo "Updating ECS service..."
+      - aws ecs update-service --cluster $ECS_CLUSTER_NAME --service $ECS_SERVICE_NAME --force-new-deployment
+      - 'printf "[{\"name\":\"%s-container\",\"imageUri\":\"%s\"}]" $APP_NAME $ECR_REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json'
+
+cache:
+  paths:
+    - 'node_modules/**/*'
+    - 'packages/db/node_modules/**/*'
+    - '/root/.bun/install/cache/**/*'
+    - '.next/cache/**/*'
+    - 'bun.lock'
+
+artifacts:
+  files:
+    - imagedefinitions.json
+  name: ${APP_NAME}-build

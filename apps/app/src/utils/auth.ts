@@ -135,7 +135,7 @@ export const auth = betterAuth({
         const url = `${protocol}://${domain}/auth`;
 
         await sendInviteMemberEmail({
-          email: data.email,
+          inviteeEmail: data.email,
           inviteLink,
           organizationName: data.organization.name,
         });
