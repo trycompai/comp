@@ -1,8 +1,34 @@
 {
-  "name": "@comp/tsconfig",
+  "name": "@trycompai/tsconfig",
+  "description": "Shared TypeScript configurations for Comp AI",
   "version": "1.0.0",
+  "exports": {
+    "./base": "./base.json",
+    "./base.json": "./base.json",
+    "./nextjs": "./nextjs.json",
+    "./nextjs.json": "./nextjs.json", 
+    "./react-library": "./react-library.json",
+    "./react-library.json": "./react-library.json"
+  },
   "files": [
-    "base.json"
+    "base.json",
+    "nextjs.json",
+    "react-library.json",
+    "README.md"
   ],
-  "private": true
+  "keywords": [
+    "comp-ai",
+    "configuration",
+    "tsconfig",
+    "typescript"
+  ],
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/comp-ai/comp.git",
+    "directory": "packages/tsconfig"
+  }
 }

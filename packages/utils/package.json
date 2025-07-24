@@ -1,5 +1,5 @@
 {
-  "name": "@comp/utils",
+  "name": "@trycompai/utils",
   "version": "1.0.0",
   "devDependencies": {
     "typescript": "^5.8.3"

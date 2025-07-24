@@ -1,5 +1,5 @@
 {
-  "name": "@comp/kv",
+  "name": "@trycompai/kv",
   "description": "Key-value store utilities using Upstash Redis for Comp AI",
   "version": "1.0.0",
   "dependencies": {
@@ -32,8 +32,7 @@
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "publishConfig": {
-    "access": "public",
-    "name": "@trycompai/kv"
+    "access": "public"
   },
   "repository": {
     "type": "git",

@@ -1,7 +1,5 @@
-import { db } from '@comp/db';
-import { OTPVerificationEmail } from '@comp/email';
-import { sendInviteMemberEmail } from '@comp/email/lib/invite-member';
-import { sendEmail } from '@comp/email/lib/resend';
+import { db } from '@trycompai/db';
+import { OTPVerificationEmail, sendEmail, sendInviteMemberEmail } from '@trycompai/email';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { nextCookies } from 'better-auth/next-js';
@@ -29,7 +27,7 @@ export const auth = betterAuth({
         const url = `${protocol}://${domain}/auth`;
 
         await sendInviteMemberEmail({
-          email: data.email,
+          inviteeEmail: data.email,
           inviteLink,
           organizationName: data.organization.name,
         });

@@ -3,8 +3,11 @@
   "version": "0.1.0",
   "dependencies": {
     "@aws-sdk/s3-request-presigner": "^3.832.0",
-    "@comp/db": "workspace:*",
-    "@comp/ui": "workspace:*",
+    "@trycompai/analytics": "workspace:*",
+    "@trycompai/db": "workspace:*",
+    "@trycompai/email": "workspace:*",
+    "@trycompai/kv": "workspace:*",
+    "@trycompai/ui": "workspace:*",
     "@react-email/components": "^0.0.41",
     "@react-email/render": "^1.1.2",
     "@t3-oss/env-nextjs": "^0.13.8",

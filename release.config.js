@@ -50,6 +50,20 @@ module.exports = {
       },
     ],
     [
+      '@semantic-release/npm',
+      {
+        npmPublish: true,
+        pkgRoot: 'packages/analytics',
+      },
+    ],
+    [
+      '@semantic-release/npm',
+      {
+        npmPublish: true,
+        pkgRoot: 'packages/tsconfig',
+      },
+    ],
+    [
       '@semantic-release/git',
       {
         assets: ['package.json', 'bun.lockb', 'CHANGELOG.md', 'packages/*/package.json'],

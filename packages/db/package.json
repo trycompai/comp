@@ -1,12 +1,12 @@
 {
-  "name": "@comp/db",
+  "name": "@trycompai/db",
   "description": "Database package with Prisma client and schema for Comp AI",
   "version": "1.0.0",
   "dependencies": {
     "@prisma/client": "6.9.0"
   },
   "devDependencies": {
-    "@comp/tsconfig": "workspace:*",
+    "@trycompai/tsconfig": "workspace:*",
     "prisma": "^6.9.0",
     "ts-node": "^10.9.2",
     "tsup": "^8.5.0",
@@ -48,8 +48,7 @@
     "seed": "ts-node prisma/seed/seed.ts"
   },
   "publishConfig": {
-    "access": "public",
-    "name": "@trycompai/db"
+    "access": "public"
   },
   "repository": {
     "type": "git",

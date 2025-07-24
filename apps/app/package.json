@@ -13,7 +13,7 @@
     "@browserbasehq/sdk": "^2.5.0",
     "@calcom/atoms": "^1.0.102-framer",
     "@calcom/embed-react": "^1.5.3",
-    "@comp/db": "workspace:*",
+    "@trycompai/db": "workspace:*",
     "@date-fns/tz": "^1.2.0",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/modifiers": "^9.0.0",

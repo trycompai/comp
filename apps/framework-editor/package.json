@@ -1,8 +1,8 @@
 {
   "name": "@comp/framework-editor",
   "dependencies": {
-    "@comp/db": "workspace:*",
-    "@comp/ui": "workspace:*",
+    "@trycompai/db": "workspace:*",
+    "@trycompai/ui": "workspace:*",
     "@hookform/resolvers": "^5.1.1",
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/react-virtual": "^3.13.8",

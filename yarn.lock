@@ -1339,13 +1339,6 @@
     "@types/conventional-commits-parser" "^5.0.0"
     chalk "^5.3.0"
 
-"@comp/analytics@^workspace:packages/analytics":
-  version "workspace:packages/analytics"
-  resolved "workspace:packages/analytics"
-  dependencies:
-    posthog-js "^1.236.6"
-    posthog-node "^4.14.0"
-
 "@comp/app@^workspace:apps/app", "@comp/app@workspace:*":
   version "workspace:apps/app"
   resolved "workspace:apps/app"
@@ -1384,9 +1377,6 @@
     "@browserbasehq/sdk" "^2.5.0"
     "@calcom/atoms" "^1.0.102-framer"
     "@calcom/embed-react" "^1.5.3"
-  dependencies:
-    "@comp/db" "workspace:*"
-  dependencies:
     "@date-fns/tz" "^1.2.0"
     "@dnd-kit/core" "^6.3.1"
     "@dnd-kit/modifiers" "^9.0.0"
@@ -1414,6 +1404,9 @@
     "@tiptap/extension-table-row" "^2.22.3"
     "@trigger.dev/react-hooks" "3.3.17"
     "@trigger.dev/sdk" "3.3.17"
+  dependencies:
+    "@trycompai/db" "workspace:*"
+  dependencies:
     "@types/canvas-confetti" "^1.9.0"
     "@types/three" "^0.177.0"
     "@uploadthing/react" "^7.3.0"
@@ -1456,39 +1449,6 @@
     zaraz-ts "^1.2.0"
     zustand "^5.0.3"
 
-"@comp/db@^workspace:packages/db", "@comp/db@workspace:*":
-  version "workspace:packages/db"
-  resolved "workspace:packages/db"
-  devDependencies:
-    "@comp/tsconfig" "workspace:*"
-  devDependencies:
-    prisma "^6.9.0"
-    ts-node "^10.9.2"
-    tsup "^8.5.0"
-    typescript "^5.8.3"
-  dependencies:
-    "@prisma/client" "6.9.0"
-
-"@comp/email@^workspace:packages/email":
-  version "workspace:packages/email"
-  resolved "workspace:packages/email"
-  devDependencies:
-    react "^19.1.0"
-    react-dom "^19.1.0"
-    tsup "^8.5.0"
-    typescript "^5.8.3"
-  dependencies:
-    "@comp/ui" "workspace:*"
-    "@comp/utils" "workspace:*"
-  dependencies:
-    "@react-email/components" "^0.0.41"
-    "@react-email/render" "^1.1.2"
-    "@react-email/tailwind" "1.0.5"
-    date-fns "^4.1.0"
-    next "15.4.0-canary.85"
-    react-email "^4.0.15"
-    responsive-react-email "^0.0.5"
-
 "@comp/framework-editor@^workspace:apps/framework-editor":
   version "workspace:apps/framework-editor"
   resolved "workspace:apps/framework-editor"
@@ -1503,12 +1463,13 @@
     tailwindcss "^4.1.8"
     typescript "^5.8.3"
   dependencies:
-    "@comp/db" "workspace:*"
-    "@comp/ui" "workspace:*"
-  dependencies:
     "@hookform/resolvers" "^5.1.1"
     "@tanstack/react-table" "^8.21.3"
     "@tanstack/react-virtual" "^3.13.8"
+  dependencies:
+    "@trycompai/db" "workspace:*"
+    "@trycompai/ui" "workspace:*"
+  dependencies:
     better-auth "^1.2.8"
     lucide-react "^0.518.0"
     next "15.4.0-canary.85"
@@ -1535,39 +1496,6 @@
     "@pulumi/tailscale" "^0.17.0"
     dotenv "^17.2.0"
 
-"@comp/integrations@^workspace:packages/integrations":
-  version "workspace:packages/integrations"
-  resolved "workspace:packages/integrations"
-  devDependencies:
-    "@types/node" "^24.0.3"
-    "@types/node-fetch" "^2.6.2"
-    typescript "^5.8.3"
-  dependencies:
-    "@ai-sdk/openai" "^1.3.19"
-    "@aws-sdk/client-securityhub" "^3.0.0"
-    "@azure/identity" "^4.10.0"
-  dependencies:
-    "@comp/app" "workspace:*"
-  dependencies:
-    "@slack/bolt" "^3.22.0"
-    "@slack/web-api" "^7.8.0"
-    ai "^4.3.16"
-    jsonwebtoken "^9.0.2"
-    node-fetch "^2.6.7"
-    sharp "^0.34.2"
-    stoppable "^1.1.0"
-    zod "3.25.67"
-
-"@comp/kv@^workspace:packages/kv":
-  version "workspace:packages/kv"
-  resolved "workspace:packages/kv"
-  devDependencies:
-    tsup "^8.5.0"
-    typescript "^5.8.3"
-  dependencies:
-    "@upstash/redis" "^1.34.2"
-    server-only "0.0.1"
-
 "@comp/portal@^workspace:apps/portal":
   version "workspace:apps/portal"
   resolved "workspace:apps/portal"
@@ -1584,13 +1512,16 @@
     typescript "^5.8.3"
   dependencies:
     "@aws-sdk/s3-request-presigner" "^3.832.0"
-  dependencies:
-    "@comp/db" "workspace:*"
-    "@comp/ui" "workspace:*"
-  dependencies:
     "@react-email/components" "^0.0.41"
     "@react-email/render" "^1.1.2"
     "@t3-oss/env-nextjs" "^0.13.8"
+  dependencies:
+    "@trycompai/analytics" "workspace:*"
+    "@trycompai/db" "workspace:*"
+    "@trycompai/email" "workspace:*"
+    "@trycompai/kv" "workspace:*"
+    "@trycompai/ui" "workspace:*"
+  dependencies:
     "@types/jszip" "^3.4.1"
     archiver "^7.0.1"
     better-auth "^1.2.8"
@@ -1614,106 +1545,13 @@
     tailwindcss "^4.1.8"
     typescript "^5.8.3"
   dependencies:
-    "@comp/db" "workspace:*"
-    "@comp/ui" "workspace:*"
-  dependencies:
     "@lottiefiles/dotlottie-react" "^0.14.2"
+  dependencies:
+    "@trycompai/db" "workspace:*"
+    "@trycompai/ui" "workspace:*"
+  dependencies:
     lucide-react "^0.518.0"
     next "15.4.0-canary.85"
-
-"@comp/tsconfig@^workspace:packages/tsconfig", "@comp/tsconfig@workspace:*":
-  version "workspace:packages/tsconfig"
-  resolved "workspace:packages/tsconfig"
-
-"@comp/ui@^workspace:packages/ui", "@comp/ui@workspace:*":
-  version "workspace:packages/ui"
-  resolved "workspace:packages/ui"
-  devDependencies:
-    "@tailwindcss/cli" "^4.1.10"
-    "@tailwindcss/postcss" "^4.1.10"
-    autoprefixer "^10.4.21"
-    postcss "^8.5.4"
-    react "^19.1.0"
-    react-dom "^19.1.0"
-    tailwindcss "^4.1.8"
-    tsup "^8.5.0"
-    typescript "^5.8.3"
-  dependencies:
-    "@radix-ui/react-accordion" "1.2.11"
-    "@radix-ui/react-alert-dialog" "1.1.14"
-    "@radix-ui/react-avatar" "1.1.10"
-    "@radix-ui/react-checkbox" "1.3.2"
-    "@radix-ui/react-collapsible" "1.1.11"
-    "@radix-ui/react-context-menu" "2.2.15"
-    "@radix-ui/react-dialog" "1.1.14"
-    "@radix-ui/react-dropdown-menu" "2.1.15"
-    "@radix-ui/react-hover-card" "1.1.14"
-    "@radix-ui/react-icons" "^1.3.0"
-    "@radix-ui/react-label" "2.1.7"
-    "@radix-ui/react-navigation-menu" "1.2.13"
-    "@radix-ui/react-popover" "1.1.14"
-    "@radix-ui/react-progress" "1.1.7"
-    "@radix-ui/react-radio-group" "1.3.7"
-    "@radix-ui/react-scroll-area" "1.2.9"
-    "@radix-ui/react-select" "2.2.5"
-    "@radix-ui/react-separator" "1.1.7"
-    "@radix-ui/react-slider" "1.3.5"
-    "@radix-ui/react-slot" "1.2.3"
-    "@radix-ui/react-switch" "1.2.5"
-    "@radix-ui/react-tabs" "1.1.12"
-    "@radix-ui/react-toast" "1.2.14"
-    "@radix-ui/react-toggle" "1.1.9"
-    "@radix-ui/react-toggle-group" "1.1.10"
-    "@radix-ui/react-tooltip" "1.2.7"
-    "@radix-ui/react-use-is-hydrated" "^0.1.0"
-    "@tailwindcss/typography" "^0.5.16"
-    "@tiptap/extension-bold" "2.14.0"
-    "@tiptap/extension-character-count" "2.14.0"
-    "@tiptap/extension-code-block-lowlight" "2.14.0"
-    "@tiptap/extension-highlight" "2.22.3"
-    "@tiptap/extension-image" "2.14.0"
-    "@tiptap/extension-link" "2.14.0"
-    "@tiptap/extension-placeholder" "2.14.0"
-    "@tiptap/extension-table" "^2.22.3"
-    "@tiptap/extension-table-cell" "^2.22.3"
-    "@tiptap/extension-table-header" "^2.22.3"
-    "@tiptap/extension-table-row" "^2.22.3"
-    "@tiptap/extension-task-item" "2.22.3"
-    "@tiptap/extension-task-list" "2.14.0"
-    "@tiptap/extension-text-align" "2.22.3"
-    "@tiptap/extension-typography" "2.14.0"
-    "@tiptap/extension-underline" "2.22.3"
-    "@tiptap/pm" "2.22.3"
-    "@tiptap/react" "2.14.0"
-    "@tiptap/starter-kit" "2.14.0"
-    "@tiptap/suggestion" "2.14.0"
-    "@uidotdev/usehooks" "^2.4.1"
-    class-variance-authority "^0.7.1"
-    clsx "^2.1.1"
-    cmdk "1.0.4"
-    date-fns "^4.1.0"
-    embla-carousel-react "8.5.1"
-    input-otp "1.4.2"
-    jsonfile "^6.1.0"
-    lucide-react "^0.518.0"
-    react-day-picker "8.10.1"
-    react-dropzone "^14.3.5"
-    react-icons "^5.3.0"
-    react-number-format "^5.4.2"
-    react-resizable-panels "^3.0.3"
-    recharts "2.15.0"
-    tailwind-merge "^2.5.5"
-    tailwindcss-animate "^1.0.7"
-    tippy.js "^6.3.7"
-    use-callback-ref "^1.3.3"
-    use-debounce "^10.0.4"
-    vaul "^0.9.6"
-
-"@comp/utils@^workspace:packages/utils", "@comp/utils@workspace:*":
-  version "workspace:packages/utils"
-  resolved "workspace:packages/utils"
-  devDependencies:
-    typescript "^5.8.3"
 
 "@cspotcode/source-map-support@^0.8.0":
   version "0.8.1"
@@ -6377,6 +6215,177 @@
     uncrypto "^0.1.3"
     uuid "^9.0.0"
     ws "^8.11.0"
+
+"@trycompai/analytics@^workspace:packages/analytics", "@trycompai/analytics@workspace:*":
+  version "workspace:packages/analytics"
+  resolved "workspace:packages/analytics"
+  devDependencies:
+    tsup "^8.4.0"
+    typescript "^5.8.3"
+  dependencies:
+    posthog-js "^1.236.6"
+    posthog-node "^4.14.0"
+
+"@trycompai/db@^workspace:packages/db", "@trycompai/db@workspace:*":
+  version "workspace:packages/db"
+  resolved "workspace:packages/db"
+  devDependencies:
+    "@trycompai/tsconfig" "workspace:*"
+  devDependencies:
+    prisma "^6.9.0"
+    ts-node "^10.9.2"
+    tsup "^8.5.0"
+    typescript "^5.8.3"
+  dependencies:
+    "@prisma/client" "6.9.0"
+
+"@trycompai/email@^workspace:packages/email", "@trycompai/email@workspace:*":
+  version "workspace:packages/email"
+  resolved "workspace:packages/email"
+  devDependencies:
+    react "^19.1.0"
+    react-dom "^19.1.0"
+    tsup "^8.5.0"
+    typescript "^5.8.3"
+  dependencies:
+    "@react-email/components" "^0.0.41"
+    "@react-email/render" "^1.1.2"
+    "@react-email/tailwind" "1.0.5"
+  dependencies:
+    "@trycompai/ui" "workspace:*"
+    "@trycompai/utils" "workspace:*"
+  dependencies:
+    date-fns "^4.1.0"
+    next "15.4.0-canary.85"
+    react-email "^4.0.15"
+    responsive-react-email "^0.0.5"
+
+"@trycompai/integrations@^workspace:packages/integrations":
+  version "workspace:packages/integrations"
+  resolved "workspace:packages/integrations"
+  devDependencies:
+    "@types/node" "^24.0.3"
+    "@types/node-fetch" "^2.6.2"
+    typescript "^5.8.3"
+  dependencies:
+    "@ai-sdk/openai" "^1.3.19"
+    "@aws-sdk/client-securityhub" "^3.0.0"
+    "@azure/identity" "^4.10.0"
+  dependencies:
+    "@comp/app" "workspace:*"
+  dependencies:
+    "@slack/bolt" "^3.22.0"
+    "@slack/web-api" "^7.8.0"
+    ai "^4.3.16"
+    jsonwebtoken "^9.0.2"
+    node-fetch "^2.6.7"
+    sharp "^0.34.2"
+    stoppable "^1.1.0"
+    zod "3.25.67"
+
+"@trycompai/kv@^workspace:packages/kv", "@trycompai/kv@workspace:*":
+  version "workspace:packages/kv"
+  resolved "workspace:packages/kv"
+  devDependencies:
+    tsup "^8.5.0"
+    typescript "^5.8.3"
+  dependencies:
+    "@upstash/redis" "^1.34.2"
+    server-only "0.0.1"
+
+"@trycompai/tsconfig@^workspace:packages/tsconfig", "@trycompai/tsconfig@workspace:*":
+  version "workspace:packages/tsconfig"
+  resolved "workspace:packages/tsconfig"
+
+"@trycompai/ui@^workspace:packages/ui", "@trycompai/ui@workspace:*":
+  version "workspace:packages/ui"
+  resolved "workspace:packages/ui"
+  devDependencies:
+    "@tailwindcss/cli" "^4.1.10"
+    "@tailwindcss/postcss" "^4.1.10"
+    autoprefixer "^10.4.21"
+    postcss "^8.5.4"
+    react "^19.1.0"
+    react-dom "^19.1.0"
+    tailwindcss "^4.1.8"
+    tsup "^8.5.0"
+    typescript "^5.8.3"
+  dependencies:
+    "@radix-ui/react-accordion" "1.2.11"
+    "@radix-ui/react-alert-dialog" "1.1.14"
+    "@radix-ui/react-avatar" "1.1.10"
+    "@radix-ui/react-checkbox" "1.3.2"
+    "@radix-ui/react-collapsible" "1.1.11"
+    "@radix-ui/react-context-menu" "2.2.15"
+    "@radix-ui/react-dialog" "1.1.14"
+    "@radix-ui/react-dropdown-menu" "2.1.15"
+    "@radix-ui/react-hover-card" "1.1.14"
+    "@radix-ui/react-icons" "^1.3.0"
+    "@radix-ui/react-label" "2.1.7"
+    "@radix-ui/react-navigation-menu" "1.2.13"
+    "@radix-ui/react-popover" "1.1.14"
+    "@radix-ui/react-progress" "1.1.7"
+    "@radix-ui/react-radio-group" "1.3.7"
+    "@radix-ui/react-scroll-area" "1.2.9"
+    "@radix-ui/react-select" "2.2.5"
+    "@radix-ui/react-separator" "1.1.7"
+    "@radix-ui/react-slider" "1.3.5"
+    "@radix-ui/react-slot" "1.2.3"
+    "@radix-ui/react-switch" "1.2.5"
+    "@radix-ui/react-tabs" "1.1.12"
+    "@radix-ui/react-toast" "1.2.14"
+    "@radix-ui/react-toggle" "1.1.9"
+    "@radix-ui/react-toggle-group" "1.1.10"
+    "@radix-ui/react-tooltip" "1.2.7"
+    "@radix-ui/react-use-is-hydrated" "^0.1.0"
+    "@tailwindcss/typography" "^0.5.16"
+    "@tiptap/extension-bold" "2.14.0"
+    "@tiptap/extension-character-count" "2.14.0"
+    "@tiptap/extension-code-block-lowlight" "2.14.0"
+    "@tiptap/extension-highlight" "2.22.3"
+    "@tiptap/extension-image" "2.14.0"
+    "@tiptap/extension-link" "2.14.0"
+    "@tiptap/extension-placeholder" "2.14.0"
+    "@tiptap/extension-table" "^2.22.3"
+    "@tiptap/extension-table-cell" "^2.22.3"
+    "@tiptap/extension-table-header" "^2.22.3"
+    "@tiptap/extension-table-row" "^2.22.3"
+    "@tiptap/extension-task-item" "2.22.3"
+    "@tiptap/extension-task-list" "2.14.0"
+    "@tiptap/extension-text-align" "2.22.3"
+    "@tiptap/extension-typography" "2.14.0"
+    "@tiptap/extension-underline" "2.22.3"
+    "@tiptap/pm" "2.22.3"
+    "@tiptap/react" "2.14.0"
+    "@tiptap/starter-kit" "2.14.0"
+    "@tiptap/suggestion" "2.14.0"
+    "@uidotdev/usehooks" "^2.4.1"
+    class-variance-authority "^0.7.1"
+    clsx "^2.1.1"
+    cmdk "1.0.4"
+    date-fns "^4.1.0"
+    embla-carousel-react "8.5.1"
+    input-otp "1.4.2"
+    jsonfile "^6.1.0"
+    lucide-react "^0.518.0"
+    react-day-picker "8.10.1"
+    react-dropzone "^14.3.5"
+    react-icons "^5.3.0"
+    react-number-format "^5.4.2"
+    react-resizable-panels "^3.0.3"
+    recharts "2.15.0"
+    tailwind-merge "^2.5.5"
+    tailwindcss-animate "^1.0.7"
+    tippy.js "^6.3.7"
+    use-callback-ref "^1.3.3"
+    use-debounce "^10.0.4"
+    vaul "^0.9.6"
+
+"@trycompai/utils@^workspace:packages/utils", "@trycompai/utils@workspace:*":
+  version "workspace:packages/utils"
+  resolved "workspace:packages/utils"
+  devDependencies:
+    typescript "^5.8.3"
 
 "@tsconfig/node10@^1.0.7":
   version "1.0.11"
@@ -18151,7 +18160,7 @@ tsscmp@^1.0.6:
   resolved "https://registry.npmjs.org/tsscmp/-/tsscmp-1.0.6.tgz"
   integrity sha512-LxhtAkPDTkVCMQjt2h6eBVY28KCjikZqZfMcC15YBeNjkgUpdCfBu5HoiOTDu86v6smE8yOjyEktJ8hlbANHQA==
 
-tsup@^8.5.0:
+tsup@^8.4.0, tsup@^8.5.0:
   version "8.5.0"
   resolved "https://registry.npmjs.org/tsup/-/tsup-8.5.0.tgz"
   integrity sha512-VmBp77lWNQq6PfuMqCHD3xWl22vEoWsKajkF8t+yMBawlUS8JzEI+vOVMeuNZIuMML8qXRizFKi9oD5glKQVcQ==
