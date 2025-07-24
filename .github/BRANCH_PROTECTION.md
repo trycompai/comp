@@ -101,9 +101,7 @@ Protect matching branches:
   Status checks that are required:
   - Quick Checks
   - Unit Tests (app)
-  - Unit Tests (framework-editor)
   - Unit Tests (portal)
-  - Unit Tests (trust)
   - E2E Tests - chromium
   - E2E Tests - firefox
   - E2E Tests - webkit
