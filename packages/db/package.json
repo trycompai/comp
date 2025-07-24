@@ -1,5 +1,5 @@
 {
-  "name": "@trycompai/db",
+  "name": "@comp/db",
   "description": "Database package with Prisma client and schema for Comp AI",
   "version": "1.0.0",
   "dependencies": {
@@ -48,7 +48,8 @@
     "seed": "ts-node prisma/seed/seed.ts"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "name": "@trycompai/db"
   },
   "repository": {
     "type": "git",

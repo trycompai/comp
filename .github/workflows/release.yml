@@ -54,10 +54,10 @@ jobs:
       - name: Build packages
         run: |
           echo "🔨 Building packages before release..."
-          bun run -F @trycompai/db build
-          bun run -F @trycompai/email build
-          bun run -F @trycompai/kv build
-          bun run -F @trycompai/ui build
+          bun run -F @comp/db build
+          bun run -F @comp/email build
+          bun run -F @comp/kv build
+          bun run -F @comp/ui build
 
       - name: Release
         env:

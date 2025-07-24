@@ -87,7 +87,7 @@
     "test": "turbo test --parallel",
     "test:release": "node scripts/test-release.js",
     "typecheck": "turbo typecheck",
-    "typecheck:ci": "turbo typecheck --filter={apps/**} --filter={packages/**} --filter=!@comp/integrations --filter=!@trycompai/ui"
+    "typecheck:ci": "turbo typecheck --filter={apps/**} --filter={packages/**} --filter=!@comp/integrations --filter=!@comp/ui"
   },
   "workspaces": [
     "apps/*",

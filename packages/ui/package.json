@@ -1,5 +1,5 @@
 {
-  "name": "@trycompai/ui",
+  "name": "@comp/ui",
   "description": "UI component library for Comp AI",
   "version": "1.0.0",
   "dependencies": {
@@ -184,7 +184,8 @@
     "react-dom": "^19.1.0"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "name": "@trycompai/ui"
   },
   "repository": {
     "type": "git",
