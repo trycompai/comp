@@ -1,5 +1,5 @@
 {
-  "name": "@comp/email",
+  "name": "@trycompai/email",
   "version": "1.0.0",
   "description": "Email templates and utilities for Comp AI",
   "main": "./dist/index.js",
@@ -27,8 +27,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@comp/ui": "workspace:*",
-    "@comp/utils": "workspace:*",
+    "@trycompai/ui": "workspace:*",
+    "@trycompai/utils": "workspace:*",
     "@react-email/components": "^0.0.41",
     "@react-email/render": "^1.1.2",
     "@react-email/tailwind": "1.0.5",

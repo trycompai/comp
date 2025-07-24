@@ -1,5 +1,5 @@
 {
-  "name": "@comp/db",
+  "name": "@trycompai/db",
   "version": "1.0.0",
   "description": "Database package with Prisma client and schema for Comp AI",
   "main": "./dist/index.js",

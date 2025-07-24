@@ -1,5 +1,5 @@
 {
-  "name": "@comp/ui",
+  "name": "@trycompai/ui",
   "version": "1.0.0",
   "description": "UI component library for Comp AI",
   "main": "./dist/index.js",

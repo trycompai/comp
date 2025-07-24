@@ -1,5 +1,5 @@
 {
-  "name": "@comp/kv",
+  "name": "@trycompai/kv",
   "version": "1.0.0",
   "description": "Key-value store utilities using Upstash Redis for Comp AI",
   "main": "./dist/index.js",
