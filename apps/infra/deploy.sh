@@ -246,16 +246,28 @@ if [ "$build_failed" = true ]; then
     exit 1
 fi
 
-# Get ALB DNS name for final output
-alb_dns=$(cd "$INFRA_DIR" && pulumi stack output albUrl 2>/dev/null | sed 's|http://||' || echo "")
+# Get individual ALB URLs for each app from applicationOutputs
+app_url=""
+portal_url=""
 
-if [ -n "$alb_dns" ]; then
-    echo -e "${GREEN}🎉 Build and deployment completed successfully!${NC}"
-    echo -e "${GREEN}🌐 Application URL: http://$alb_dns${NC}"
-    if [ "$DEPLOY_PORTAL" = true ]; then
-        echo -e "${GREEN}🏛️  Portal URL: http://$alb_dns/portal${NC}"
-    fi
-else
-    echo -e "${GREEN}🎉 Build and deployment completed successfully!${NC}"
+if [ "$DEPLOY_APP" = true ]; then
+    app_url=$(cd "$INFRA_DIR" && pulumi stack output applicationOutputs --json 2>/dev/null | jq -r '.app.url // ""' || echo "")
+fi
+
+if [ "$DEPLOY_PORTAL" = true ]; then
+    portal_url=$(cd "$INFRA_DIR" && pulumi stack output applicationOutputs --json 2>/dev/null | jq -r '.portal.url // ""' || echo "")
+fi
+
+echo -e "${GREEN}🎉 Build and deployment completed successfully!${NC}"
+
+if [ "$DEPLOY_APP" = true ] && [ -n "$app_url" ]; then
+    echo -e "${GREEN}🌐 Application URL: $app_url${NC}"
+fi
+
+if [ "$DEPLOY_PORTAL" = true ] && [ -n "$portal_url" ]; then
+    echo -e "${GREEN}🏛️  Portal URL: $portal_url${NC}"
+fi
+
+if [ -z "$app_url" ] && [ -z "$portal_url" ]; then
     echo -e "${YELLOW}ℹ️  Check Pulumi outputs for application URLs${NC}"
 fi 
