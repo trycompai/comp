@@ -152,7 +152,10 @@ export interface LoadBalancerOutputs {
   targetGroupArn: pulumi.Output<string>;
   applicationUrl: pulumi.Output<string>;
   healthCheckUrl: pulumi.Output<string>;
-  certificateArn?: string;
+  httpListenerArn: pulumi.Output<string>;
+  httpsListenerArn?: pulumi.Output<string>;
+  certificateArn?: pulumi.Output<string>;
+  hasCustomDomain?: boolean;
 }
 
 export interface GithubOidcOutputs {
@@ -258,8 +261,7 @@ export interface ApplicationConfig {
     unhealthyThreshold?: number;
   };
   routing?: {
-    pathPattern?: string; // e.g., '/portal/*'
-    hostnames?: string[]; // e.g., ['portal.example.com']
+    hostnames?: string[]; // e.g., ['portal.example.com'] - OPTIONAL, if not provided uses ALB DNS
   };
   cpu?: number;
   memory?: number;

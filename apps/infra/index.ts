@@ -1,19 +1,22 @@
 import * as pulumi from '@pulumi/pulumi';
 // import * as tailscale from "@pulumi/tailscale";  // Available for future Tailscale provider usage
 import * as dotenv from 'dotenv';
+import { createApplicationOutputs } from './modules/app-outputs';
 import { createAppSecrets } from './modules/app-secrets';
 import { createBuildSystem } from './modules/build';
 import { createConfig } from './modules/config';
 import { createContainer } from './modules/container';
 import { createDatabase } from './modules/database';
+import { createDNSOutputs, createDeploymentInstructions } from './modules/dns-utils';
 import { createGithubOidc } from './modules/github-oidc';
 import { createLoadBalancers } from './modules/loadbalancer';
 import { createMonitoring } from './modules/monitoring';
 import { createNetworking } from './modules/networking';
 import { createScaling } from './modules/scaling';
+import { createSSLCertificates } from './modules/ssl';
 import { createTailscale } from './modules/tailscale';
 import { validateApplicationConfigs } from './modules/validation';
-import { ApplicationConfig, ApplicationOutput } from './types';
+import { ApplicationConfig } from './types';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -31,6 +34,7 @@ const pathfinderConfig = new pulumi.Config(projectName);
 const enableTailscale = pathfinderConfig.getBoolean('enableTailscale') ?? false;
 const enableBetterStack = pathfinderConfig.getBoolean('enableBetterStack') ?? false;
 const enableDetailedMonitoring = pathfinderConfig.getBoolean('enableDetailedMonitoring') ?? false;
+const enableHttps = pathfinderConfig.getBoolean('enableHttps') ?? false;
 
 // ==========================================
 // INFRASTRUCTURE CONFIGURATION
@@ -44,6 +48,12 @@ const applications: ApplicationConfig[] = [
   {
     name: 'app',
     containerPort: 3000,
+    // OPTION 1: Use custom domain (uncomment the routing section below)
+    routing: {
+      hostnames: ['app-aws.trycomp.ai'],
+    },
+    // OPTION 2: No routing config = uses ALB DNS directly
+    // (just comment out the routing section above)
     healthCheck: {
       path: '/api/health',
       interval: 30,
@@ -91,6 +101,12 @@ const applications: ApplicationConfig[] = [
   {
     name: 'portal',
     containerPort: 3001,
+    // OPTION 1: Use custom domain (uncomment the routing section below)
+    routing: {
+      hostnames: ['portal-aws.trycomp.ai'],
+    },
+    // OPTION 2: No routing config = uses ALB DNS directly
+    // (just comment out the routing section above)
     healthCheck: {
       path: '/health',
       interval: 30,
@@ -133,10 +149,19 @@ const database = createDatabase(config, network);
 // 3. Application Secrets - Per-app secrets
 const appSecrets = createAppSecrets(config, applications);
 
-// 4. Load Balancing - ALB with Health Checks
-const loadBalancers = createLoadBalancers(config, network, applications);
+// 4. SSL Certificates - Create certificates for custom domains
+const ssl = createSSLCertificates(config, applications);
 
-// 5. Container Platform - Multi-app ECS support
+// 5. Load Balancing - ALB with Health Checks and SSL
+const loadBalancers = createLoadBalancers(
+  config,
+  network,
+  applications,
+  ssl.certificates,
+  enableHttps,
+);
+
+// 6. Container Platform - Multi-app ECS support
 const container = createContainer(
   config,
   applications,
@@ -146,10 +171,10 @@ const container = createContainer(
   appSecrets,
 );
 
-// 6. Build System - CodeBuild with VPC Database Access
+// 7. Build System - CodeBuild with VPC Database Access
 const build = createBuildSystem(config, network, database, container, appSecrets);
 
-// 7. Wire up applications
+// 8. Wire up applications
 const deployments = applications.map((app, index) => {
   const appContainer = container.applications![index];
   const appLoadBalancer = loadBalancers.find((lb) => lb.app === app.name)?.loadBalancer;
@@ -167,20 +192,20 @@ const deployments = applications.map((app, index) => {
   };
 });
 
-// 8. Auto-scaling - ECS Service Scaling (pass first load balancer for now)
+// 9. Auto-scaling - ECS Service Scaling (pass first load balancer for now)
 const scaling = createScaling(config, applications, container, loadBalancers[0]?.loadBalancer);
 
-// 9. GitHub OIDC - For GitHub Actions authentication
+// 10. GitHub OIDC - For GitHub Actions authentication
 const githubOidc = createGithubOidc(config);
 
 // ==========================================
 // OPTIONAL INFRASTRUCTURE (FEATURE-GATED)
 // ==========================================
 
-// 10. Development Access - Tailscale Subnet Router (Optional)
+// 11. Development Access - Tailscale Subnet Router (Optional)
 const tailscale = enableTailscale ? createTailscale(config, network, database) : undefined;
 
-// 11. Observability - Better Stack + CloudWatch (Optional/Configurable)
+// 12. Observability - Better Stack + CloudWatch (Optional/Configurable)
 const appContainers =
   container.applications?.reduce(
     (acc, appContainer, index) => {
@@ -203,44 +228,26 @@ const monitoring = createMonitoring(
 );
 
 // ==========================================
+// DNS AND DEPLOYMENT OUTPUTS
+// ==========================================
+
+// Create consolidated DNS outputs
+const dnsOutputs = createDNSOutputs(
+  applications,
+  ssl.validationRecords,
+  loadBalancers,
+  projectName,
+  enableHttps,
+);
+
+// ==========================================
 // STACK OUTPUTS
 // ==========================================
 
-// Application-specific outputs
-export const applicationOutputs = deployments.reduce(
-  (acc, deployment) => {
-    const appName = deployment.app.name;
-
-    // Each app now has its own load balancer, so use that directly
-    const appUrl = deployment.loadBalancer?.applicationUrl || pulumi.output('');
-
-    acc[appName] = {
-      url: appUrl,
-      serviceName: deployment.container.serviceName,
-      ecrRepository: deployment.container.repositoryUrl,
-      logGroup: deployment.container.logGroupName,
-      buildProject: deployment.buildProject.name,
-      healthCheckUrl: deployment.loadBalancer?.healthCheckUrl || pulumi.output(''),
-      secrets: appSecrets[deployment.app.name]
-        ? Object.entries(appSecrets[deployment.app.name]).reduce(
-            (acc, [secretName, secret]) => {
-              acc[secretName] = secret.name;
-              return acc;
-            },
-            {} as Record<string, pulumi.Output<string>>,
-          )
-        : undefined,
-      deployCommand: pulumi.interpolate`aws codebuild start-build --project-name ${deployment.buildProject.name}`,
-    };
-
-    return acc;
-  },
-  {} as Record<string, ApplicationOutput>,
-);
+// Application-specific outputs (from utility module)
+export const applicationOutputs = createApplicationOutputs(deployments, appSecrets);
 
 // Infrastructure outputs
-export const albUrl =
-  loadBalancers[0]?.loadBalancer?.applicationUrl || pulumi.output('Main app ALB not found');
 export const clusterName = container.clusterName;
 
 // Database outputs
@@ -251,8 +258,25 @@ export const databaseName = database.dbName;
 export const migrationProjectName = build.migrationProject.name;
 export const runMigrationsCommand = pulumi.interpolate`aws codebuild start-build --project-name ${build.migrationProject.name}`;
 
-// Tailscale outputs (if enabled)
-export const tailscaleEnabled = enableTailscale;
+// Monitoring outputs
+export const dashboardUrl = monitoring.applicationDashboardUrl;
+export const infrastructureDashboardUrl = monitoring.infrastructureDashboardUrl;
+
+// DNS setup (only if custom domains are configured)
+export const allDnsRecords =
+  ssl.validationRecords.length > 0 ? dnsOutputs.allDnsRecords : undefined;
+
+// Deployment instructions (from utility module)
+export const deploymentInstructions = createDeploymentInstructions(
+  migrationProjectName,
+  ssl.validationRecords,
+  enableHttps,
+  projectName,
+  applications,
+  loadBalancers,
+);
+
+// Tailscale connection guide (only if enabled)
 export const tailscaleConnectionGuide = enableTailscale
   ? pulumi.interpolate`
 # Connect to database through Tailscale:
@@ -260,34 +284,4 @@ export const tailscaleConnectionGuide = enableTailscale
 # 2. Use: postgresql://${database.username}:[PASSWORD]@${database.endpoint}:${database.port}/${database.dbName}?sslmode=require
 # 3. Get password with: pulumi stack output databasePassword --show-secrets (if stored)
 `
-  : 'Tailscale not enabled';
-
-// Monitoring outputs
-export const dashboardUrl = monitoring.applicationDashboardUrl;
-export const infrastructureDashboardUrl = monitoring.infrastructureDashboardUrl;
-
-// Deployment instructions
-export const deploymentInstructions = pulumi
-  .all([migrationProjectName, applicationOutputs['app']?.deployCommand || pulumi.output('')])
-  .apply(
-    ([migrationProject, appDeployCmd]) => `
-IMPORTANT: Deployment Order
-===========================
-1. FIRST run database migrations (required before any app deployment):
-   aws codebuild start-build --project-name ${migrationProject}
-   
-2. THEN deploy applications (can be run in parallel):
-   - App: ${appDeployCmd}
-   - Portal: aws codebuild start-build --project-name [portal-project-name]
-   
-3. Monitor deployments:
-   - CodeBuild console for build progress
-   - ECS console for service updates
-   - CloudWatch logs for runtime issues
-
-To update secrets:
-1. Go to AWS Secrets Manager
-2. Find individual secrets for your app (format: ${projectName}/{appName}/SECRET_NAME)
-3. Update each secret value as needed (they are stored as plaintext, not JSON)
-`,
-  );
+  : undefined;

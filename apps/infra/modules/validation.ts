@@ -42,14 +42,20 @@ export function validateApplicationConfigs(applications: ApplicationConfig[]): v
       );
     }
 
-    // Validate routing - must have either path or hostname, not both
+    // Validate routing - routing is optional, if provided must have hostnames
     if (app.routing) {
-      if (app.routing.pathPattern && app.routing.hostnames) {
-        throw new Error(`App '${app.name}' cannot have both path-based and host-based routing`);
+      if (!app.routing.hostnames || app.routing.hostnames.length === 0) {
+        throw new Error(`App '${app.name}' routing must have at least one hostname`);
       }
-      if (!app.routing.pathPattern && !app.routing.hostnames) {
-        throw new Error(`App '${app.name}' must have either pathPattern or hostnames for routing`);
-      }
+
+      // Validate hostname format
+      app.routing.hostnames.forEach((hostname) => {
+        if (!/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(hostname)) {
+          throw new Error(
+            `App '${app.name}' has invalid hostname '${hostname}': must be a valid domain name`,
+          );
+        }
+      });
     }
 
     // Validate scaling configuration
