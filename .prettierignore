@@ -31,3 +31,4 @@ coverage/
 
 # Dist
 packages/*/dist
+dist/*
