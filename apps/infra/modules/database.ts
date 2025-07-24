@@ -118,7 +118,7 @@ export function createDatabase(config: CommonConfig, network: NetworkOutputs) {
     backupWindow: '03:00-04:00',
     maintenanceWindow: 'Sun:04:00-Sun:05:00',
 
-    deletionProtection: config.dbDeletionProtection || false,
+    deletionProtection: config.dbDeletionProtection || true,
     skipFinalSnapshot: !config.dbDeletionProtection,
     finalSnapshotIdentifier: config.dbDeletionProtection
       ? `${config.projectName}-final-snapshot`

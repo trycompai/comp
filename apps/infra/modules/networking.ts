@@ -1,7 +1,7 @@
 import * as aws from '@pulumi/aws';
-import { CommonConfig } from '../types';
+import { ApplicationConfig, CommonConfig } from '../types';
 
-export function createNetworking(config: CommonConfig) {
+export function createNetworking(config: CommonConfig, applications: ApplicationConfig[]) {
   const { commonTags, networkConfig, securityConfig } = config;
 
   // ==========================================
@@ -204,13 +204,14 @@ export function createNetworking(config: CommonConfig) {
     vpcId: vpc.id,
     description: 'Security group for ECS services',
     ingress: [
-      {
+      // Create ingress rules for each application's port
+      ...applications.map((app) => ({
         protocol: 'tcp',
-        fromPort: 3000,
-        toPort: 3000,
+        fromPort: app.containerPort,
+        toPort: app.containerPort,
         securityGroups: [albSecurityGroup.id],
-        description: 'HTTP access from ALB only',
-      },
+        description: `HTTP access from ALB for ${app.name} app`,
+      })),
     ],
     egress: [
       {
@@ -456,6 +457,20 @@ export function createNetworking(config: CommonConfig) {
     },
   });
 
+  // STS VPC Endpoint (essential for IAM role assumption in VPC)
+  const stsVpcEndpoint = new aws.ec2.VpcEndpoint(`${config.projectName}-sts-endpoint`, {
+    vpcId: vpc.id,
+    serviceName: `com.amazonaws.${config.awsRegion}.sts`,
+    vpcEndpointType: 'Interface',
+    subnetIds: privateSubnetIds,
+    securityGroupIds: [vpcEndpointSecurityGroup.id],
+    tags: {
+      ...commonTags,
+      Name: `${config.projectName}-sts-endpoint`,
+      Type: 'vpc-endpoint',
+    },
+  });
+
   // CloudWatch Logs VPC Endpoint (for CodeBuild logging)
   const logsVpcEndpoint = new aws.ec2.VpcEndpoint(`${config.projectName}-logs-endpoint`, {
     vpcId: vpc.id,
@@ -495,6 +510,7 @@ export function createNetworking(config: CommonConfig) {
       ecrDkr: ecrDkrVpcEndpoint.id,
       codebuild: codebuildVpcEndpoint.id,
       logs: logsVpcEndpoint.id,
+      sts: stsVpcEndpoint.id,
     },
   };
 }

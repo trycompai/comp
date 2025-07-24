@@ -1,6 +1,7 @@
+import type { NextConfig } from 'next';
 import './src/env.mjs';
 
-const config = {
+const config: NextConfig = {
   images: {
     remotePatterns: [
       {
@@ -27,5 +28,9 @@ const config = {
   },
   skipTrailingSlashRedirect: true,
 };
+
+if (process.env.VERCEL !== '1') {
+  config.output = 'standalone'; // Required for Docker builds
+}
 
 export default config;

@@ -1,13 +1,22 @@
 import * as aws from '@pulumi/aws';
 import * as pulumi from '@pulumi/pulumi';
-import { CommonConfig, ContainerOutputs, DatabaseOutputs, NetworkOutputs } from '../types';
+import {
+  ApplicationConfig,
+  CommonConfig,
+  ContainerOutputs,
+  DatabaseOutputs,
+  NetworkOutputs,
+} from '../types';
 
 export function createBuildSystem(
   config: CommonConfig,
   network: NetworkOutputs,
   database: DatabaseOutputs,
   container: ContainerOutputs,
-  appSecrets?: { secretArn: pulumi.Output<string>; secretId: pulumi.Output<string> },
+  appSecrets?: Record<
+    string,
+    Record<string, { arn: pulumi.Output<string>; name: pulumi.Output<string> }>
+  >,
 ) {
   const { commonTags } = config;
 
@@ -33,12 +42,19 @@ export function createBuildSystem(
     },
   });
 
+  // Collect all secret ARNs from all applications
+  const allSecretArns = appSecrets
+    ? Object.values(appSecrets).flatMap((appSecretMap) =>
+        Object.values(appSecretMap).map((secret) => secret.arn),
+      )
+    : [];
+
   // CodeBuild policy for basic operations
   const codebuildPolicy = new aws.iam.RolePolicy(`${config.projectName}-codebuild-policy`, {
     role: codebuildRole.id,
     policy: pulumi
-      .all([database.secretArn, appSecrets?.secretArn])
-      .apply(([dbSecretArn, appSecretArn]) =>
+      .all([database.secretArn, pulumi.all(allSecretArns)])
+      .apply(([dbSecretArn, secretArns]) =>
         JSON.stringify({
           Version: '2012-10-17',
           Statement: [
@@ -82,112 +98,11 @@ export function createBuildSystem(
             {
               Effect: 'Allow',
               Action: ['secretsmanager:GetSecretValue', 'secretsmanager:DescribeSecret'],
-              Resource: [dbSecretArn, ...(appSecretArn ? [appSecretArn] : [])],
+              Resource: [dbSecretArn, ...secretArns],
             },
           ],
         }),
       ),
-  });
-
-  // CodeBuild project for building application image (requires database access)
-  const appProject = new aws.codebuild.Project(`${config.projectName}-app-build`, {
-    name: `${config.projectName}-app-build`,
-    description: 'Build application Docker image with database access',
-    serviceRole: codebuildRole.arn,
-    artifacts: {
-      type: 'NO_ARTIFACTS',
-    },
-    environment: {
-      computeType: 'BUILD_GENERAL1_2XLARGE',
-      image: 'aws/codebuild/standard:7.0',
-      type: 'LINUX_CONTAINER',
-      privilegedMode: true, // Required for Docker builds
-      environmentVariables: [
-        {
-          name: 'AWS_ACCOUNT_ID',
-          value: aws.getCallerIdentityOutput().accountId,
-          type: 'PLAINTEXT',
-        },
-        {
-          name: 'IMAGE_REPO_NAME',
-          value: config.projectName,
-          type: 'PLAINTEXT',
-        },
-        {
-          name: 'DATABASE_URL',
-          value: pulumi.interpolate`${database.secretArn}:connectionString`,
-          type: 'SECRETS_MANAGER',
-        },
-        // Application secrets from AWS Secrets Manager
-        ...(appSecrets
-          ? [
-              {
-                name: 'AUTH_SECRET',
-                value: pulumi.interpolate`${appSecrets.secretArn}:AUTH_SECRET`,
-                type: 'SECRETS_MANAGER',
-              },
-              {
-                name: 'RESEND_API_KEY',
-                value: pulumi.interpolate`${appSecrets.secretArn}:RESEND_API_KEY`,
-                type: 'SECRETS_MANAGER',
-              },
-              {
-                name: 'REVALIDATION_SECRET',
-                value: pulumi.interpolate`${appSecrets.secretArn}:REVALIDATION_SECRET`,
-                type: 'SECRETS_MANAGER',
-              },
-            ]
-          : []),
-        {
-          name: 'ECR_REPOSITORY_URI',
-          value: container.repositoryUrl,
-          type: 'PLAINTEXT',
-        },
-        {
-          name: 'ECS_CLUSTER_NAME',
-          value: container.clusterName,
-          type: 'PLAINTEXT',
-        },
-        {
-          name: 'ECS_SERVICE_NAME',
-          value: container.serviceName,
-          type: 'PLAINTEXT',
-        },
-        {
-          name: 'AWS_DEFAULT_REGION',
-          value: config.awsRegion,
-          type: 'PLAINTEXT',
-        },
-        {
-          name: 'NODE_ENV',
-          value: config.nodeEnv,
-          type: 'PLAINTEXT',
-        },
-        {
-          name: 'NEXT_PUBLIC_PORTAL_URL',
-          value: 'http://localhost:3002',
-          type: 'PLAINTEXT',
-        },
-      ],
-    },
-    vpcConfig: {
-      vpcId: network.vpcId,
-      subnets: network.privateSubnetIds,
-      securityGroupIds: [network.securityGroups.codeBuild],
-    },
-    source: {
-      type: 'GITHUB',
-      location: `https://github.com/${config.githubOrg}/${config.githubRepo}.git`,
-      buildspec: 'apps/app/buildspec.yml',
-      gitCloneDepth: 1,
-    },
-    sourceVersion: config.githubBranch, // Specify which branch to build from
-    tags: {
-      ...commonTags,
-      Name: `${config.projectName}-app-build`,
-      Type: 'codebuild-project',
-      Purpose: 'application-image-build',
-    },
   });
 
   // Additional IAM permissions for ECS deployment
@@ -239,6 +154,15 @@ export function createBuildSystem(
     },
     database: DatabaseOutputs,
     container: ContainerOutputs,
+    appContainer: {
+      serviceName: pulumi.Output<string>;
+      repositoryUrl: pulumi.Output<string>;
+      repositoryArn: pulumi.Output<string>;
+      taskDefinitionArn: pulumi.Output<string>;
+      logGroupName: pulumi.Output<string>;
+      logGroupArn: pulumi.Output<string>;
+      targetGroupArn?: pulumi.Output<string>;
+    },
   ) {
     // Return deployment configuration for the application
     return {
@@ -247,24 +171,215 @@ export function createBuildSystem(
       // Single build command that does everything (migrations + app)
       buildCommands: {
         // Single step: Run the complete build (migrations + app + deploy)
-        deployWithMigrations: `aws codebuild start-build --project-name ${appProject.name}`,
+        deployWithMigrations: `aws codebuild start-build --project-name ${config.projectName}-${app.name}-build`,
       },
       // Docker image reference
-      containerImage: pulumi.interpolate`${container.repositoryUrl}:${app.name}-latest`,
+      containerImage: pulumi.interpolate`${appContainer.repositoryUrl}:${app.name}-latest`,
       healthCheckPath: app.healthCheckPath,
       resourceRequirements: app.resourceRequirements,
       scaling: app.scaling,
       // Build project reference
-      buildProject: appProject.name,
+      buildProject: `${config.projectName}-${app.name}-build`,
     };
   }
 
+  // Create per-app build project function
+  function createApplicationBuildProject(
+    app: ApplicationConfig,
+    appContainer: {
+      repositoryUrl: pulumi.Output<string>;
+      serviceName: pulumi.Output<string>;
+      targetGroupArn?: pulumi.Output<string>;
+    },
+  ) {
+    // Default buildspec path is at the app's root directory
+    const buildspecPath = `apps/${app.name}/buildspec.yml`;
+
+    return new aws.codebuild.Project(
+      `${config.projectName}-${app.name}-build`,
+      {
+        name: `${config.projectName}-${app.name}-build`,
+        description: `Build ${app.name} Docker image`,
+        serviceRole: codebuildRole.arn,
+        artifacts: {
+          type: 'NO_ARTIFACTS',
+        },
+        environment: {
+          computeType: 'BUILD_GENERAL1_LARGE',
+          image: 'aws/codebuild/standard:7.0',
+          type: 'LINUX_CONTAINER',
+          privilegedMode: true,
+          environmentVariables: [
+            {
+              name: 'AWS_ACCOUNT_ID',
+              value: aws.getCallerIdentityOutput().accountId,
+              type: 'PLAINTEXT',
+            },
+            {
+              name: 'APP_NAME',
+              value: app.name,
+              type: 'PLAINTEXT',
+            },
+            {
+              name: 'DOCKERFILE_PATH',
+              value: './Dockerfile',
+              type: 'PLAINTEXT',
+            },
+            {
+              name: 'ECR_REPOSITORY_URI',
+              value: appContainer.repositoryUrl,
+              type: 'PLAINTEXT',
+            },
+            {
+              name: 'ECS_CLUSTER_NAME',
+              value: container.clusterName,
+              type: 'PLAINTEXT',
+            },
+            {
+              name: 'ECS_SERVICE_NAME',
+              value: appContainer.serviceName,
+              type: 'PLAINTEXT',
+            },
+            {
+              name: 'AWS_DEFAULT_REGION',
+              value: config.awsRegion,
+              type: 'PLAINTEXT',
+            },
+            // Only add DATABASE_URL if app needs it
+            ...(app.includeDatabaseUrl
+              ? [
+                  {
+                    name: 'DATABASE_URL',
+                    value: pulumi.interpolate`${database.secretArn}:connectionString`,
+                    type: 'SECRETS_MANAGER' as const,
+                  },
+                ]
+              : []),
+            // Add custom environment variables from app config
+            ...Object.entries(app.environmentVariables || {}).map(([key, value]) => ({
+              name: key,
+              value,
+              type: 'PLAINTEXT' as const,
+            })),
+            // Add all required secrets from AWS Secrets Manager
+            ...(app.requiredSecrets && appSecrets?.[app.name]
+              ? app.requiredSecrets.map((secretName) => ({
+                  name: secretName,
+                  value: appSecrets[app.name][secretName].arn,
+                  type: 'SECRETS_MANAGER' as const,
+                }))
+              : []),
+          ],
+        },
+        vpcConfig: app.includeDatabaseUrl
+          ? {
+              vpcId: network.vpcId,
+              subnets: network.privateSubnetIds,
+              securityGroupIds: [network.securityGroups.codeBuild],
+            }
+          : undefined,
+        source: {
+          type: 'GITHUB',
+          location: `https://github.com/${config.githubOrg}/${config.githubRepo}.git`,
+          buildspec: buildspecPath,
+          gitCloneDepth: 1,
+        },
+        sourceVersion: config.githubBranch,
+        tags: {
+          ...commonTags,
+          Name: `${config.projectName}-${app.name}-build`,
+          Type: 'codebuild-project',
+          App: app.name,
+        },
+      },
+      {
+        dependsOn: [codebuildPolicy, ecsDeployPolicy],
+      },
+    );
+  }
+
+  // Create Database Migration Project
+  function createMigrationProject() {
+    const migrationProject = new aws.codebuild.Project(
+      `${config.projectName}-migrations`,
+      {
+        name: `${config.projectName}-migrations`,
+        description: 'Run database migrations before application deployments',
+        serviceRole: codebuildRole.arn,
+        artifacts: {
+          type: 'NO_ARTIFACTS',
+        },
+        source: {
+          type: 'GITHUB',
+          location: `https://github.com/${config.githubOrg}/${config.githubRepo}.git`,
+          buildspec: 'apps/infra/buildspec-migrations.yml',
+          gitCloneDepth: 1,
+          gitSubmodulesConfig: {
+            fetchSubmodules: false,
+          },
+        },
+        sourceVersion: config.githubBranch,
+        cache: {
+          type: 'LOCAL',
+          modes: ['LOCAL_DOCKER_LAYER_CACHE', 'LOCAL_SOURCE_CACHE'],
+        },
+        environment: {
+          type: 'LINUX_CONTAINER',
+          image: 'aws/codebuild/standard:7.0',
+          computeType: 'BUILD_GENERAL1_MEDIUM',
+          privilegedMode: true,
+          environmentVariables: [
+            {
+              name: 'PROJECT_NAME',
+              value: config.projectName,
+              type: 'PLAINTEXT',
+            },
+            {
+              name: 'DATABASE_URL',
+              value: pulumi.interpolate`${database.secretArn}:connectionString`,
+              type: 'SECRETS_MANAGER' as const,
+            },
+          ],
+        },
+        vpcConfig: {
+          vpcId: network.vpcId,
+          subnets: [network.privateSubnetIds[0], network.privateSubnetIds[1]],
+          securityGroupIds: [network.securityGroups.codeBuild],
+        },
+        logsConfig: {
+          cloudwatchLogs: {
+            status: 'ENABLED',
+            groupName: `/aws/codebuild/${config.projectName}-migrations`,
+          },
+        },
+        buildBatchConfig: {
+          serviceRole: codebuildRole.arn,
+          timeoutInMins: 10,
+        },
+        tags: {
+          ...commonTags,
+          Name: `${config.projectName}-migrations`,
+          Type: 'codebuild-project',
+          Purpose: 'database-migrations',
+        },
+      },
+      {
+        dependsOn: [codebuildPolicy, ecsDeployPolicy],
+      },
+    );
+
+    return migrationProject;
+  }
+
+  const migrationProject = createMigrationProject();
+
   return {
-    appProjectName: appProject.name,
-    appProjectArn: appProject.arn,
+    codebuildRole,
     codebuildRoleArn: codebuildRole.arn,
     buildInstanceType: 'BUILD_GENERAL1_2XLARGE',
     buildTimeout: 20,
     createApplicationDeployment,
+    createApplicationBuildProject,
+    migrationProject,
   };
 }

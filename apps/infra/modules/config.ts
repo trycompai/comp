@@ -6,17 +6,10 @@ import { CommonConfig } from '../types';
 dotenv.config();
 
 export function createConfig(projectName: string): CommonConfig {
-  if (!process.env.AWS_REGION) {
-    throw new Error('AWS_REGION is not set');
-  }
+  const config = new pulumi.Config(projectName);
+  const awsConfig = new pulumi.Config('aws');
 
-  if (!process.env.NODE_ENV) {
-    throw new Error('NODE_ENV is not set');
-  }
-
-  if (!process.env.ENABLE_DEBUG_ENDPOINTS) {
-    throw new Error('ENABLE_DEBUG_ENDPOINTS is not set');
-  }
+  // NODE_ENV check removed for language-agnostic support
 
   if (!process.env.GITHUB_ORG) {
     throw new Error('GITHUB_ORG is not set');
@@ -30,8 +23,15 @@ export function createConfig(projectName: string): CommonConfig {
     throw new Error('ENABLE_RDS_READ_REPLICAS is not set');
   }
 
+  if (!process.env.ENABLE_DEBUG_ENDPOINTS) {
+    throw new Error('ENABLE_DEBUG_ENDPOINTS is not set');
+  }
+
   const stack = pulumi.getStack(); // dev, staging, prod, mariano-test, etc.
   const pulumiConfig = new pulumi.Config(projectName);
+
+  // Get AWS region from Pulumi AWS config or environment
+  const awsRegion = awsConfig.require('region');
 
   // Use PULUMI_PROJECT_NAME as the environment identifier for resource naming
   const environmentName = process.env.PULUMI_PROJECT_NAME || stack;
@@ -48,9 +48,9 @@ export function createConfig(projectName: string): CommonConfig {
   const baseConfig = {
     projectName: resourcePrefix, // Use stack-based naming for resources
     enableRDSReadReplicas: process.env.ENABLE_RDS_READ_REPLICAS === 'true',
-    region: process.env.AWS_REGION,
-    awsRegion: process.env.AWS_REGION,
-    nodeEnv: process.env.NODE_ENV,
+    region: awsRegion,
+    awsRegion: awsRegion,
+    // nodeEnv removed for language-agnostic support
     enableDebugEndpoints: process.env.ENABLE_DEBUG_ENDPOINTS === 'true',
     githubOrg: process.env.GITHUB_ORG,
     githubRepo: process.env.GITHUB_REPO,
@@ -68,48 +68,44 @@ export function createConfig(projectName: string): CommonConfig {
   };
 
   // Environment-specific configurations
-  const environmentConfigs = {
-    prod: {
-      database: {
-        instanceClass: 'db.t3.medium',
-        allocatedStorage: 100,
-        maxAllocatedStorage: 1000,
-        deletionProtection: true,
-        backupRetentionPeriod: 30,
-      },
-      scaling: {
-        minCapacity: 3,
-        maxCapacity: 20,
-        targetCpuUtilization: 50,
-      },
-      tailscale: {
-        instanceType: 't3.small', // Slightly larger for prod
-      },
-      monitoring: {
-        logRetentionDays: 30,
-        detailedMonitoring: true,
-      },
-      networking: {
-        vpcCidr: '10.2.0.0/16',
-        subnets: {
-          public: [
-            { cidr: '10.2.1.0/24', az: 0 },
-            { cidr: '10.2.2.0/24', az: 1 },
-          ],
-          private: [
-            { cidr: '10.2.10.0/24', az: 0 },
-            { cidr: '10.2.20.0/24', az: 1 },
-          ],
-        },
-      },
-      security: {
-        allowedCidrBlocks: ['0.0.0.0/0'],
-        enableWaf: true,
+  const envConfig = {
+    database: {
+      instanceClass: 'db.t3.medium',
+      allocatedStorage: 100,
+      maxAllocatedStorage: 1000,
+      deletionProtection: true,
+      backupRetentionPeriod: 30,
+    },
+    scaling: {
+      minCapacity: 3,
+      maxCapacity: 20,
+      targetCpuUtilization: 50,
+    },
+    tailscale: {
+      instanceType: 't3.small',
+    },
+    monitoring: {
+      logRetentionDays: 30,
+      detailedMonitoring: true,
+    },
+    networking: {
+      vpcCidr: '10.2.0.0/16',
+      subnets: {
+        public: [
+          { cidr: '10.2.1.0/24', az: 0 },
+          { cidr: '10.2.2.0/24', az: 1 },
+        ],
+        private: [
+          { cidr: '10.2.10.0/24', az: 0 },
+          { cidr: '10.2.20.0/24', az: 1 },
+        ],
       },
     },
+    security: {
+      allowedCidrBlocks: ['0.0.0.0/0'],
+      enableWaf: true,
+    },
   };
-
-  const envConfig = environmentConfigs.prod;
 
   return {
     ...baseConfig,

@@ -1,3 +1,4 @@
+import * as aws from '@pulumi/aws';
 import * as pulumi from '@pulumi/pulumi';
 
 // ==========================================
@@ -13,7 +14,6 @@ export interface CommonConfig {
   enableRDSReadReplicas: boolean;
   region: string;
   awsRegion: string;
-  nodeEnv: string;
   enableDebugEndpoints: boolean;
   githubOrg: string;
   githubRepo: string;
@@ -129,14 +129,20 @@ export interface DatabaseOutputs {
 export interface ContainerOutputs {
   clusterName: pulumi.Output<string>;
   clusterArn: pulumi.Output<string>;
-  serviceName: pulumi.Output<string>;
-  repositoryUrl: pulumi.Output<string>;
-  repositoryArn: pulumi.Output<string>;
-  taskDefinitionArn: pulumi.Output<string>;
-  logGroupName: pulumi.Output<string>;
-  logGroupArn: pulumi.Output<string>;
   taskExecutionRoleArn: pulumi.Output<string>;
   taskRoleArn: pulumi.Output<string>;
+  // Multi-app outputs
+  applications: Array<{
+    serviceName: pulumi.Output<string>;
+    serviceArn: pulumi.Output<string>;
+    service?: aws.ecs.Service; // Optional to maintain backward compatibility
+    repositoryUrl: pulumi.Output<string>;
+    repositoryArn: pulumi.Output<string>;
+    taskDefinitionArn: pulumi.Output<string>;
+    logGroupName: pulumi.Output<string>;
+    logGroupArn: pulumi.Output<string>;
+    targetGroupArn?: pulumi.Output<string>;
+  }>;
 }
 
 export interface LoadBalancerOutputs {
@@ -167,6 +173,15 @@ export interface BuildSystemOutputs {
     app: ApplicationConfig,
     database: DatabaseOutputs,
     container: ContainerOutputs,
+    appContainer: {
+      serviceName: pulumi.Output<string>;
+      repositoryUrl: pulumi.Output<string>;
+      repositoryArn: pulumi.Output<string>;
+      taskDefinitionArn: pulumi.Output<string>;
+      logGroupName: pulumi.Output<string>;
+      logGroupArn: pulumi.Output<string>;
+      targetGroupArn?: pulumi.Output<string>;
+    },
   ) => ApplicationDeployment;
 }
 
@@ -217,11 +232,15 @@ export interface MonitoringOutputs {
 }
 
 export interface ScalingOutputs {
-  minCapacity: pulumi.Output<number>;
-  maxCapacity: pulumi.Output<number>;
-  cpuScaleUpThreshold: number;
-  cpuScaleDownThreshold: number;
-  memoryScaleUpThreshold: number;
+  applicationScaling: Record<
+    string,
+    {
+      target: aws.appautoscaling.Target;
+      cpuPolicy: aws.appautoscaling.Policy;
+      memoryPolicy: aws.appautoscaling.Policy;
+      requestCountPolicy?: aws.appautoscaling.Policy;
+    }
+  >;
 }
 
 // ==========================================
@@ -230,21 +249,38 @@ export interface ScalingOutputs {
 
 export interface ApplicationConfig {
   name: string;
-  contextPath: string;
-  requiresDatabaseAccess: boolean;
-  dependsOnMigrations: boolean;
-  buildCommand?: string;
-  healthCheckPath: string;
-  environmentVariables: Record<string, string>;
-  resourceRequirements: {
-    cpu: number;
-    memory: number;
+  containerPort: number;
+  healthCheck?: {
+    path?: string;
+    interval?: number;
+    timeout?: number;
+    healthyThreshold?: number;
+    unhealthyThreshold?: number;
   };
-  scaling: {
-    minInstances: number;
-    maxInstances: number;
-    targetCpuPercent: number;
+  routing?: {
+    pathPattern?: string; // e.g., '/portal/*'
+    hostnames?: string[]; // e.g., ['portal.example.com']
   };
+  cpu?: number;
+  memory?: number;
+  desiredCount?: number;
+  minCount?: number;
+  maxCount?: number;
+  targetCPUPercent?: number;
+  requiredSecrets?: string[];
+  includeDatabaseUrl?: boolean; // Whether this app needs DATABASE_URL injected as environment variable
+  environmentVariables?: Record<string, string>; // Non-sensitive env vars
+}
+
+export interface ApplicationOutput {
+  url: pulumi.Output<string>;
+  serviceName: pulumi.Output<string>;
+  ecrRepository: pulumi.Output<string>;
+  logGroup: pulumi.Output<string>;
+  buildProject: pulumi.Output<string>;
+  healthCheckUrl: pulumi.Output<string>;
+  secrets?: Record<string, pulumi.Output<string>>;
+  deployCommand: pulumi.Output<string>;
 }
 
 // Duplicate ResourceTags interface removed - using the one at the top of the file
