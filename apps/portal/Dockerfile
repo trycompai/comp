@@ -1,5 +1,5 @@
 # Use Node.js Alpine for smaller runtime image
-FROM node:20-alpine AS runtime
+FROM node:18-alpine AS runtime
 
 WORKDIR /app
 
@@ -11,6 +11,7 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3001
 ENV HOSTNAME="0.0.0.0"
+ENV NODE_TLS_REJECT_UNAUTHORIZED=0
 
 # Copy the complete standalone build from CodeBuild
 COPY .next/standalone ./

@@ -26,11 +26,10 @@ phases:
       # Install dependencies
       - echo "Installing dependencies..."
       - SKIP_ENV_VALIDATION=true bun install --frozen-lockfile --concurrent 36 || SKIP_ENV_VALIDATION=true bun install --concurrent 36
-
-      # Generate Prisma client (portal also needs database access)
-      - echo "Generating Prisma client..."
       - cd ../../
-      - bun x prisma generate --schema=packages/db/prisma/schema.prisma
+
+      # Generate Prisma client
+      - echo "Generating Prisma client..."
       - cd packages/db && bun x prisma generate && cd ../../
 
       # Type check (optional - skip if script doesn't exist)
