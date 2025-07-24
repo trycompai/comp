@@ -1,26 +1,31 @@
-import InviteEmail from '@comp/email/emails/invite';
-import { sendEmail } from '@comp/email/lib/resend';
+import InviteEmail from '../emails/invite';
+import { sendEmail } from './resend';
 
 export const sendInviteMemberEmail = async (params: {
-  email: string;
-  inviteLink: string;
   organizationName: string;
+  inviteLink: string;
+  inviteeEmail: string;
 }) => {
-  const { email, inviteLink, organizationName } = params;
+  const { organizationName, inviteLink, inviteeEmail } = params;
 
-  const emailTemplate = InviteEmail({
-    email,
-    inviteLink,
-    organizationName,
-  });
   try {
-    await sendEmail({
-      to: email,
-      subject: "You've been invited to join an organization in Comp AI",
-      react: emailTemplate,
+    const sent = await sendEmail({
+      to: inviteeEmail,
+      subject: `You've been invited to join ${organizationName} on Comp AI`,
+      react: InviteEmail({
+        organizationName,
+        inviteLink,
+      }),
     });
-  } catch (e) {
-    console.error(e);
-    throw e;
+
+    if (!sent) {
+      console.error('Failed to send invite email');
+      return { success: false };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error sending invite email:', error);
+    return { success: false };
   }
 };

@@ -1,19 +1,24 @@
-import { WaitlistEmail } from '@comp/email/emails/waitlist';
-import { sendEmail } from '@comp/email/lib/resend';
+import { WaitlistEmail } from '../emails/waitlist';
+import { sendEmail } from './resend';
 
 export const sendWaitlistEmail = async (params: { email: string }) => {
   const { email } = params;
 
-  const emailTemplate = WaitlistEmail({ email });
-
   try {
-    await sendEmail({
+    const sent = await sendEmail({
       to: email,
-      subject: 'Confirm your email to join the Comp AI waitlist',
-      react: emailTemplate,
+      subject: 'Welcome to the Comp AI waitlist!',
+      react: WaitlistEmail({ email }),
     });
-  } catch (e) {
-    console.error(e);
-    throw e;
+
+    if (!sent) {
+      console.error('Failed to send waitlist email');
+      return { success: false };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error sending waitlist email:', error);
+    return { success: false };
   }
 };
