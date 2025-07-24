@@ -6220,7 +6220,7 @@
   version "workspace:packages/analytics"
   resolved "workspace:packages/analytics"
   devDependencies:
-    tsup "^8.4.0"
+    tsup "^8.5.0"
     typescript "^5.8.3"
   dependencies:
     posthog-js "^1.236.6"
@@ -18160,7 +18160,7 @@ tsscmp@^1.0.6:
   resolved "https://registry.npmjs.org/tsscmp/-/tsscmp-1.0.6.tgz"
   integrity sha512-LxhtAkPDTkVCMQjt2h6eBVY28KCjikZqZfMcC15YBeNjkgUpdCfBu5HoiOTDu86v6smE8yOjyEktJ8hlbANHQA==
 
-tsup@^8.4.0, tsup@^8.5.0:
+tsup@^8.5.0:
   version "8.5.0"
   resolved "https://registry.npmjs.org/tsup/-/tsup-8.5.0.tgz"
   integrity sha512-VmBp77lWNQq6PfuMqCHD3xWl22vEoWsKajkF8t+yMBawlUS8JzEI+vOVMeuNZIuMML8qXRizFKi9oD5glKQVcQ==

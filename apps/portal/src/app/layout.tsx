@@ -1,7 +1,7 @@
 import { env } from '@/env.mjs';
-import { initializeServer } from '@trycompai/analytics/server';
-import { cn } from '@trycompai/ui/cn';
-import '@trycompai/ui/globals.css';
+import { initializeServer } from '@comp/analytics/server';
+import { cn } from '@comp/ui/cn';
+import '@comp/ui/globals.css';
 import { GeistMono } from 'geist/font/mono';
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';

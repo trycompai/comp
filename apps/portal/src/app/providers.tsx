@@ -1,6 +1,6 @@
 'use client';
 
-import { AnalyticsProvider } from '@trycompai/analytics';
+import { AnalyticsProvider } from '@comp/analytics';
 import { ThemeProvider } from 'next-themes';
 import type { ReactNode } from 'react';
 

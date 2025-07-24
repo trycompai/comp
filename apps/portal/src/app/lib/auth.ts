@@ -1,5 +1,5 @@
-import { db } from '@trycompai/db';
-import { OTPVerificationEmail, sendEmail, sendInviteMemberEmail } from '@trycompai/email';
+import { db } from '@comp/db';
+import { OTPVerificationEmail, sendEmail, sendInviteMemberEmail } from '@comp/email';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { nextCookies } from 'better-auth/next-js';
