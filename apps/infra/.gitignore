@@ -1,8 +1,0 @@
-node_modules/
-bin/
-Pulumi.*.yaml
-!Pulumi.yaml
-.pulumi/
-
-# Debug directory for temporary files
-.debug/
