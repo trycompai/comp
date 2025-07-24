@@ -27,7 +27,7 @@
       "@comp/kv": ["../../packages/kv/src/index.ts"],
       "@comp/kv/*": ["../../packages/kv/src/*"],
       "@comp/ui": ["../../packages/ui/src/components/index.ts"],
-      "@comp/ui/*": ["../../packages/ui/src/components/*"],
+      "@comp/ui/*": ["../../packages/ui/src/*"],
       "@comp/utils": ["../../packages/utils/src/index.ts"],
       "@comp/utils/*": ["../../packages/utils/src/*"],
       "@comp/analytics": ["../../packages/analytics/src/index.ts"],
