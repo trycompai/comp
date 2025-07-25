@@ -1,6 +1,10 @@
 {
   "name": "comp",
   "version": "1.49.0",
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
   "devDependencies": {
     "@azure/core-http": "^3.0.5",
     "@azure/core-rest-pipeline": "^1.21.0",
@@ -36,10 +40,8 @@
     "prettier": "^3.5.3",
     "prettier-plugin-organize-imports": "^4.1.0",
     "prettier-plugin-tailwindcss": "^0.6.0",
-    "react": "^19.1.0",
     "react-dnd": "^16.0.1",
     "react-dnd-html5-backend": "^16.0.1",
-    "react-dom": "^19.1.0",
     "react-email": "^4.0.15",
     "react-hook-form": "^7.58.1",
     "semantic-release": "^24.2.5",
