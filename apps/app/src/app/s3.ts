@@ -1,12 +1,12 @@
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 
-const AWS_REGION = process.env.APP_AWS_REGION;
-const AWS_ACCESS_KEY_ID = process.env.APP_AWS_ACCESS_KEY_ID;
-const AWS_SECRET_ACCESS_KEY = process.env.APP_AWS_SECRET_ACCESS_KEY;
+const APP_AWS_REGION = process.env.APP_AWS_REGION;
+const APP_AWS_ACCESS_KEY_ID = process.env.APP_AWS_ACCESS_KEY_ID;
+const APP_AWS_SECRET_ACCESS_KEY = process.env.APP_AWS_SECRET_ACCESS_KEY;
 
 export const BUCKET_NAME = process.env.AWS_BUCKET_NAME;
 
-if (!AWS_ACCESS_KEY_ID || !AWS_SECRET_ACCESS_KEY || !BUCKET_NAME || !AWS_REGION) {
+if (!APP_AWS_ACCESS_KEY_ID || !APP_AWS_SECRET_ACCESS_KEY || !BUCKET_NAME || !APP_AWS_REGION) {
   // Log the error in production environments
   if (process.env.NODE_ENV === 'production') {
     console.error('AWS S3 credentials or configuration missing in environment variables.');
@@ -21,10 +21,10 @@ if (!AWS_ACCESS_KEY_ID || !AWS_SECRET_ACCESS_KEY || !BUCKET_NAME || !AWS_REGION)
 // Create a single S3 client instance
 // Add null checks or assertions if the checks above don't guarantee non-null values
 export const s3Client = new S3Client({
-  region: AWS_REGION!,
+  region: APP_AWS_REGION!,
   credentials: {
-    accessKeyId: AWS_ACCESS_KEY_ID!,
-    secretAccessKey: AWS_SECRET_ACCESS_KEY!,
+    accessKeyId: APP_AWS_ACCESS_KEY_ID!,
+    secretAccessKey: APP_AWS_SECRET_ACCESS_KEY!,
   },
 });
 
