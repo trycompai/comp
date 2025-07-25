@@ -49,7 +49,7 @@ const config: NextConfig = {
 };
 
 if (process.env.VERCEL !== '1') {
-  config.output = 'standalone'; // Required for Docker builds
+  config.output = 'standalone';
 }
 
 export default config;
