@@ -1291,7 +1291,7 @@
     "@types/conventional-commits-parser" "^5.0.0"
     chalk "^5.3.0"
 
-"@comp/app@^workspace:apps/app", "@comp/app@workspace:*":
+"@comp/app@apps/app", "@comp/app@workspace:*":
   version "workspace:apps/app"
   resolved "workspace:apps/app"
   devDependencies:
@@ -1402,7 +1402,7 @@
     zaraz-ts "^1.2.0"
     zustand "^5.0.3"
 
-"@comp/portal@^workspace:apps/portal":
+"@comp/portal@apps/portal":
   version "workspace:apps/portal"
   resolved "workspace:apps/portal"
   devDependencies:
@@ -5569,7 +5569,7 @@
     uuid "^9.0.0"
     ws "^8.11.0"
 
-"@trycompai/analytics@^workspace:packages/analytics", "@trycompai/analytics@workspace:*":
+"@trycompai/analytics@packages/analytics", "@trycompai/analytics@workspace:*":
   version "workspace:packages/analytics"
   resolved "workspace:packages/analytics"
   devDependencies:
@@ -5579,7 +5579,7 @@
     posthog-js "^1.236.6"
     posthog-node "^4.14.0"
 
-"@trycompai/db@^workspace:packages/db", "@trycompai/db@workspace:*":
+"@trycompai/db@packages/db", "@trycompai/db@workspace:*":
   version "workspace:packages/db"
   resolved "workspace:packages/db"
   devDependencies:
@@ -5592,7 +5592,7 @@
   dependencies:
     "@prisma/client" "6.9.0"
 
-"@trycompai/email@^workspace:packages/email", "@trycompai/email@workspace:*":
+"@trycompai/email@packages/email", "@trycompai/email@workspace:*":
   version "workspace:packages/email"
   resolved "workspace:packages/email"
   devDependencies:
@@ -5613,7 +5613,7 @@
     react-email "^4.0.15"
     responsive-react-email "^0.0.5"
 
-"@trycompai/integrations@^workspace:packages/integrations":
+"@trycompai/integrations@packages/integrations":
   version "workspace:packages/integrations"
   resolved "workspace:packages/integrations"
   devDependencies:
@@ -5636,7 +5636,7 @@
     stoppable "^1.1.0"
     zod "3.25.67"
 
-"@trycompai/kv@^workspace:packages/kv", "@trycompai/kv@workspace:*":
+"@trycompai/kv@packages/kv", "@trycompai/kv@workspace:*":
   version "workspace:packages/kv"
   resolved "workspace:packages/kv"
   devDependencies:
@@ -5646,11 +5646,11 @@
     "@upstash/redis" "^1.34.2"
     server-only "0.0.1"
 
-"@trycompai/tsconfig@^workspace:packages/tsconfig", "@trycompai/tsconfig@workspace:*":
+"@trycompai/tsconfig@packages/tsconfig", "@trycompai/tsconfig@workspace:*":
   version "workspace:packages/tsconfig"
   resolved "workspace:packages/tsconfig"
 
-"@trycompai/ui@^workspace:packages/ui", "@trycompai/ui@workspace:*":
+"@trycompai/ui@packages/ui", "@trycompai/ui@workspace:*":
   version "workspace:packages/ui"
   resolved "workspace:packages/ui"
   devDependencies:
@@ -5734,7 +5734,7 @@
     use-debounce "^10.0.4"
     vaul "^0.9.6"
 
-"@trycompai/utils@^workspace:packages/utils", "@trycompai/utils@workspace:*":
+"@trycompai/utils@packages/utils", "@trycompai/utils@workspace:*":
   version "workspace:packages/utils"
   resolved "workspace:packages/utils"
   devDependencies:
