@@ -3,10 +3,6 @@
   "workspaces": {
     "": {
       "name": "comp",
-      "dependencies": {
-        "react": "^19.1.0",
-        "react-dom": "^19.1.0",
-      },
       "devDependencies": {
         "@azure/core-http": "^3.0.5",
         "@azure/core-rest-pipeline": "^1.21.0",

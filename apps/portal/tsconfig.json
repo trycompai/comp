@@ -42,8 +42,8 @@
       "@comp/integrations/*": ["../../packages/integrations/src/*"],
       "@comp/analytics": ["../../packages/analytics/src/index.ts"],
       "@comp/analytics/*": ["../../packages/analytics/src/*"],
-      "@comp/tsconfig": ["../../packages/tsconfig"],
-      "@comp/tsconfig/*": ["../../packages/tsconfig/*"],
+      "@trycompai/tsconfig": ["../../packages/tsconfig"],
+      "@trycompai/tsconfig/*": ["../../packages/tsconfig/*"],
       "@trycompai/db": ["../../packages/db/src/index.ts"],
       "@trycompai/db/*": ["../../packages/db/src/*"],
       "@trycompai/email": ["../../packages/email/index.ts"],
@@ -55,9 +55,7 @@
       "@trycompai/utils": ["../../packages/utils/src/index.ts"],
       "@trycompai/utils/*": ["../../packages/utils/src/*"],
       "@trycompai/analytics": ["../../packages/analytics/src/index.ts"],
-      "@trycompai/analytics/*": ["../../packages/analytics/src/*"],
-      "@trycompai/tsconfig": ["../../packages/tsconfig"],
-      "@trycompai/tsconfig/*": ["../../packages/tsconfig/*"]
+      "@trycompai/analytics/*": ["../../packages/analytics/src/*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
