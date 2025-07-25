@@ -9,7 +9,7 @@
     "@trycompai/ui": "workspace:*",
     "@trycompai/utils": "workspace:*",
     "date-fns": "^4.1.0",
-    "next": "^15.4.4",
+    "next": "15.4.2-canary.16",
     "react-email": "^4.0.15",
     "responsive-react-email": "^0.0.5"
   },

@@ -1291,7 +1291,7 @@
     "@types/conventional-commits-parser" "^5.0.0"
     chalk "^5.3.0"
 
-"@comp/app@^workspace:apps/app", "@comp/app@workspace:*":
+"@comp/app@apps/app", "@comp/app@workspace:*":
   version "workspace:apps/app"
   resolved "workspace:apps/app"
   devDependencies:
@@ -1307,7 +1307,7 @@
     "@vitejs/plugin-react" "^4.6.0"
     "@vitest/ui" "^3.2.4"
     eslint "^9"
-    eslint-config-next "^15.4.4"
+    eslint-config-next "15.4.2-canary.16"
     fleetctl "^4.68.1"
     jsdom "^26.1.0"
     postcss "^8.5.4"
@@ -1355,9 +1355,7 @@
     "@tiptap/extension-table-row" "^2.22.3"
     "@trigger.dev/react-hooks" "3.3.17"
     "@trigger.dev/sdk" "3.3.17"
-  dependencies:
     "@trycompai/db" "workspace:*"
-  dependencies:
     "@types/canvas-confetti" "^1.9.0"
     "@types/three" "^0.177.0"
     "@uploadthing/react" "^7.3.0"
@@ -1372,7 +1370,7 @@
     framer-motion "^12.18.1"
     geist "^1.3.1"
     motion "^12.9.2"
-    next "^15.4.4"
+    next "15.4.2-canary.16"
     next-safe-action "^8.0.3"
     next-themes "^0.4.4"
     nuqs "^2.4.3"
@@ -1402,7 +1400,7 @@
     zaraz-ts "^1.2.0"
     zustand "^5.0.3"
 
-"@comp/portal@^workspace:apps/portal":
+"@comp/portal@apps/portal":
   version "workspace:apps/portal"
   resolved "workspace:apps/portal"
   devDependencies:
@@ -1410,7 +1408,7 @@
     "@types/archiver" "^6.0.3"
     "@types/node" "^24.0.3"
     eslint "^9"
-    eslint-config-next "^15.4.4"
+    eslint-config-next "15.4.2-canary.16"
     postcss "^8.5.4"
     tailwindcss "^4.1.8"
     typescript "^5.8.3"
@@ -1420,13 +1418,11 @@
     "@react-email/components" "^0.0.41"
     "@react-email/render" "^1.1.2"
     "@t3-oss/env-nextjs" "^0.13.8"
-  dependencies:
     "@trycompai/analytics" "workspace:*"
     "@trycompai/db" "workspace:*"
     "@trycompai/email" "workspace:*"
     "@trycompai/kv" "workspace:*"
     "@trycompai/ui" "workspace:*"
-  dependencies:
     "@types/jszip" "^3.4.1"
     "@upstash/ratelimit" "^2.0.5"
     archiver "^7.0.1"
@@ -1434,7 +1430,7 @@
     class-variance-authority "^0.7.1"
     geist "^1.3.1"
     jszip "^3.10.1"
-    next "^15.4.4"
+    next "15.4.2-canary.16"
     next-safe-action "^8.0.3"
     next-themes "^0.4.4"
     react "^19.1.0"
@@ -2352,52 +2348,97 @@
     "@emnapi/runtime" "^1.4.3"
     "@tybys/wasm-util" "^0.10.0"
 
+"@next/env@15.4.2-canary.16":
+  version "15.4.2-canary.16"
+  resolved "https://registry.npmjs.org/@next/env/-/env-15.4.2-canary.16.tgz"
+  integrity sha512-rSLh+IMkAPKjIUYQrH3UCl3D/Xcq/X5w+rppo7rv8D+aw/19ODieNFC8e2NtUZ1uBP6SxlTrmn9E5rwX+YRdXg==
+
 "@next/env@15.4.4":
   version "15.4.4"
   resolved "https://registry.npmjs.org/@next/env/-/env-15.4.4.tgz"
   integrity sha512-SJKOOkULKENyHSYXE5+KiFU6itcIb6wSBjgM92meK0HVKpo94dNOLZVdLLuS7/BxImROkGoPsjR4EnuDucqiiA==
 
-"@next/eslint-plugin-next@15.4.4":
-  version "15.4.4"
-  resolved "https://registry.npmjs.org/@next/eslint-plugin-next/-/eslint-plugin-next-15.4.4.tgz"
-  integrity sha512-1FDsyN//ai3Jd97SEd7scw5h1yLdzDACGOPRofr2GD3sEFsBylEEoL0MHSerd4n2dq9Zm/mFMqi4+NRMOreOKA==
+"@next/eslint-plugin-next@15.4.2-canary.16":
+  version "15.4.2-canary.16"
+  resolved "https://registry.npmjs.org/@next/eslint-plugin-next/-/eslint-plugin-next-15.4.2-canary.16.tgz"
+  integrity sha512-Y7Iusyriwn2hWD1ruJRvZK+hm9UVITjxr6JNEzOtrvJ5uOwDELjJtiU54VeiC4gldAYdbl1deEhdrBZ7aTfHHg==
   dependencies:
     fast-glob "3.3.1"
+
+"@next/swc-darwin-arm64@15.4.2-canary.16":
+  version "15.4.2-canary.16"
+  resolved "https://registry.npmjs.org/@next/swc-darwin-arm64/-/swc-darwin-arm64-15.4.2-canary.16.tgz"
+  integrity sha512-XL0KWYWcc5C3BYefpmkdwOoMe4qMwYyyC70dSqY2F6evq/tJksFZFazul6seD5xx/p0nta7PgJRiQOiKCQdpwQ==
 
 "@next/swc-darwin-arm64@15.4.4":
   version "15.4.4"
   resolved "https://registry.npmjs.org/@next/swc-darwin-arm64/-/swc-darwin-arm64-15.4.4.tgz"
   integrity sha512-eVG55dnGwfUuG+TtnUCt+mEJ+8TGgul6nHEvdb8HEH7dmJIFYOCApAaFrIrxwtEq2Cdf+0m5sG1Np8cNpw9EAw==
 
+"@next/swc-darwin-x64@15.4.2-canary.16":
+  version "15.4.2-canary.16"
+  resolved "https://registry.npmjs.org/@next/swc-darwin-x64/-/swc-darwin-x64-15.4.2-canary.16.tgz"
+  integrity sha512-iF16S+JGjrGv9OSWxywmfLgq/M/pLRDBrlUxAqjk6U15uK8gq0IVzuGyL0qNDTtrDiadsscGmigCJGOEwdm1eQ==
+
 "@next/swc-darwin-x64@15.4.4":
   version "15.4.4"
   resolved "https://registry.npmjs.org/@next/swc-darwin-x64/-/swc-darwin-x64-15.4.4.tgz"
   integrity sha512-zqG+/8apsu49CltEj4NAmCGZvHcZbOOOsNoTVeIXphYWIbE4l6A/vuQHyqll0flU2o3dmYCXsBW5FmbrGDgljQ==
+
+"@next/swc-linux-arm64-gnu@15.4.2-canary.16":
+  version "15.4.2-canary.16"
+  resolved "https://registry.npmjs.org/@next/swc-linux-arm64-gnu/-/swc-linux-arm64-gnu-15.4.2-canary.16.tgz"
+  integrity sha512-Idc5TemlKFOuafEKXA6qFmpv/t9S9yfi17KEK3YoNpfALUtX9fgpZ99X+ADuQixYK6sItB7gTKChfNctiVPlsQ==
 
 "@next/swc-linux-arm64-gnu@15.4.4":
   version "15.4.4"
   resolved "https://registry.npmjs.org/@next/swc-linux-arm64-gnu/-/swc-linux-arm64-gnu-15.4.4.tgz"
   integrity sha512-LRD4l2lq4R+2QCHBQVC0wjxxkLlALGJCwigaJ5FSRSqnje+MRKHljQNZgDCaKUZQzO/TXxlmUdkZP/X3KNGZaw==
 
+"@next/swc-linux-arm64-musl@15.4.2-canary.16":
+  version "15.4.2-canary.16"
+  resolved "https://registry.npmjs.org/@next/swc-linux-arm64-musl/-/swc-linux-arm64-musl-15.4.2-canary.16.tgz"
+  integrity sha512-yNYoDIJWsygiLtnQ4zewadY5TyqnIu8+jcTVHmhHeDWJFaviBmrvt/U7IcuWBtQwpMYBCshVMKRlqWHTNDWhpw==
+
 "@next/swc-linux-arm64-musl@15.4.4":
   version "15.4.4"
   resolved "https://registry.npmjs.org/@next/swc-linux-arm64-musl/-/swc-linux-arm64-musl-15.4.4.tgz"
   integrity sha512-LsGUCTvuZ0690fFWerA4lnQvjkYg9gHo12A3wiPUR4kCxbx/d+SlwmonuTH2SWZI+RVGA9VL3N0S03WTYv6bYg==
+
+"@next/swc-linux-x64-gnu@15.4.2-canary.16":
+  version "15.4.2-canary.16"
+  resolved "https://registry.npmjs.org/@next/swc-linux-x64-gnu/-/swc-linux-x64-gnu-15.4.2-canary.16.tgz"
+  integrity sha512-T85erPFUJpmHTRlAy4V1BBbRe8WFk0uC7DTFkPafTXSshk5ww2an+FrpoTtKUTlXESq+CNzXpb80ZAlpYagRCQ==
 
 "@next/swc-linux-x64-gnu@15.4.4":
   version "15.4.4"
   resolved "https://registry.npmjs.org/@next/swc-linux-x64-gnu/-/swc-linux-x64-gnu-15.4.4.tgz"
   integrity sha512-aOy5yNRpLL3wNiJVkFYl6w22hdREERNjvegE6vvtix8LHRdsTHhWTpgvcYdCK7AIDCQW5ATmzr9XkPHvSoAnvg==
 
+"@next/swc-linux-x64-musl@15.4.2-canary.16":
+  version "15.4.2-canary.16"
+  resolved "https://registry.npmjs.org/@next/swc-linux-x64-musl/-/swc-linux-x64-musl-15.4.2-canary.16.tgz"
+  integrity sha512-dZdmfyavwZy7b0o8hCCGrOAZHBj+RWdVtI/vGijGxte910WQtUquVccu7W14htL2FNe5yFcsSWFW74Dy5Nli3Q==
+
 "@next/swc-linux-x64-musl@15.4.4":
   version "15.4.4"
   resolved "https://registry.npmjs.org/@next/swc-linux-x64-musl/-/swc-linux-x64-musl-15.4.4.tgz"
   integrity sha512-FL7OAn4UkR8hKQRGBmlHiHinzOb07tsfARdGh7v0Z0jEJ3sz8/7L5bR23ble9E6DZMabSStqlATHlSxv1fuzAg==
 
+"@next/swc-win32-arm64-msvc@15.4.2-canary.16":
+  version "15.4.2-canary.16"
+  resolved "https://registry.npmjs.org/@next/swc-win32-arm64-msvc/-/swc-win32-arm64-msvc-15.4.2-canary.16.tgz"
+  integrity sha512-xvRQXTqSZ8JljsLwlVf1fcwTZjTXpHj4YbcE8aG2Lze3kt/xFo8QGEX9BT1kTCETM/hx14paIBlPY8zLey/rLQ==
+
 "@next/swc-win32-arm64-msvc@15.4.4":
   version "15.4.4"
   resolved "https://registry.npmjs.org/@next/swc-win32-arm64-msvc/-/swc-win32-arm64-msvc-15.4.4.tgz"
   integrity sha512-eEdNW/TXwjYhOulQh0pffTMMItWVwKCQpbziSBmgBNFZIIRn2GTXrhrewevs8wP8KXWYMx8Z+mNU0X+AfvtrRg==
+
+"@next/swc-win32-x64-msvc@15.4.2-canary.16":
+  version "15.4.2-canary.16"
+  resolved "https://registry.npmjs.org/@next/swc-win32-x64-msvc/-/swc-win32-x64-msvc-15.4.2-canary.16.tgz"
+  integrity sha512-ESWrS/3Xc96B8NYqCWjIJRfe0BQMxxWUXl5j7YoIdsriFWQdBjo0zyxX+m7SvSuyV5v5+kVWOMpU5R07KfllKQ==
 
 "@next/swc-win32-x64-msvc@15.4.4":
   version "15.4.4"
@@ -5569,7 +5610,7 @@
     uuid "^9.0.0"
     ws "^8.11.0"
 
-"@trycompai/analytics@^workspace:packages/analytics", "@trycompai/analytics@workspace:*":
+"@trycompai/analytics@packages/analytics", "@trycompai/analytics@workspace:*":
   version "workspace:packages/analytics"
   resolved "workspace:packages/analytics"
   devDependencies:
@@ -5579,12 +5620,11 @@
     posthog-js "^1.236.6"
     posthog-node "^4.14.0"
 
-"@trycompai/db@^workspace:packages/db", "@trycompai/db@workspace:*":
+"@trycompai/db@packages/db", "@trycompai/db@workspace:*":
   version "workspace:packages/db"
   resolved "workspace:packages/db"
   devDependencies:
     "@trycompai/tsconfig" "workspace:*"
-  devDependencies:
     prisma "^6.9.0"
     ts-node "^10.9.2"
     tsup "^8.5.0"
@@ -5592,7 +5632,7 @@
   dependencies:
     "@prisma/client" "6.9.0"
 
-"@trycompai/email@^workspace:packages/email", "@trycompai/email@workspace:*":
+"@trycompai/email@packages/email", "@trycompai/email@workspace:*":
   version "workspace:packages/email"
   resolved "workspace:packages/email"
   devDependencies:
@@ -5604,16 +5644,14 @@
     "@react-email/components" "^0.0.41"
     "@react-email/render" "^1.1.2"
     "@react-email/tailwind" "1.0.5"
-  dependencies:
     "@trycompai/ui" "workspace:*"
     "@trycompai/utils" "workspace:*"
-  dependencies:
     date-fns "^4.1.0"
-    next "^15.4.4"
+    next "15.4.2-canary.16"
     react-email "^4.0.15"
     responsive-react-email "^0.0.5"
 
-"@trycompai/integrations@^workspace:packages/integrations":
+"@trycompai/integrations@packages/integrations":
   version "workspace:packages/integrations"
   resolved "workspace:packages/integrations"
   devDependencies:
@@ -5636,7 +5674,7 @@
     stoppable "^1.1.0"
     zod "3.25.67"
 
-"@trycompai/kv@^workspace:packages/kv", "@trycompai/kv@workspace:*":
+"@trycompai/kv@packages/kv", "@trycompai/kv@workspace:*":
   version "workspace:packages/kv"
   resolved "workspace:packages/kv"
   devDependencies:
@@ -5646,11 +5684,11 @@
     "@upstash/redis" "^1.34.2"
     server-only "0.0.1"
 
-"@trycompai/tsconfig@^workspace:packages/tsconfig", "@trycompai/tsconfig@workspace:*":
+"@trycompai/tsconfig@packages/tsconfig", "@trycompai/tsconfig@workspace:*":
   version "workspace:packages/tsconfig"
   resolved "workspace:packages/tsconfig"
 
-"@trycompai/ui@^workspace:packages/ui", "@trycompai/ui@workspace:*":
+"@trycompai/ui@packages/ui", "@trycompai/ui@workspace:*":
   version "workspace:packages/ui"
   resolved "workspace:packages/ui"
   devDependencies:
@@ -5734,7 +5772,7 @@
     use-debounce "^10.0.4"
     vaul "^0.9.6"
 
-"@trycompai/utils@^workspace:packages/utils", "@trycompai/utils@workspace:*":
+"@trycompai/utils@packages/utils", "@trycompai/utils@workspace:*":
   version "workspace:packages/utils"
   resolved "workspace:packages/utils"
   devDependencies:
@@ -9399,12 +9437,12 @@ eslint@*, "eslint@^2 || ^3 || ^4 || ^5 || ^6 || ^7.2.0 || ^8 || ^9", "eslint@^3 
     natural-compare "^1.4.0"
     optionator "^0.9.3"
 
-eslint-config-next@^15.4.4:
-  version "15.4.4"
-  resolved "https://registry.npmjs.org/eslint-config-next/-/eslint-config-next-15.4.4.tgz"
-  integrity sha512-sK/lWLUVF5om18O5w76Jt3F8uzu/LP5mVa6TprCMWkjWHUmByq80iHGHcdH7k1dLiJlj+DRIWf98d5piwRsSuA==
+"eslint-config-next@15.4.2-canary.16":
+  version "15.4.2-canary.16"
+  resolved "https://registry.npmjs.org/eslint-config-next/-/eslint-config-next-15.4.2-canary.16.tgz"
+  integrity sha512-Dv8OXIHnNFK1z13IvgbBpXdtOIjvilNVABFnau7NlaCdUFmKH/CQmmGL/ZQ4igDJz03hD7PkIZvvWicvak6K7w==
   dependencies:
-    "@next/eslint-plugin-next" "15.4.4"
+    "@next/eslint-plugin-next" "15.4.2-canary.16"
     "@rushstack/eslint-patch" "^1.10.3"
     "@typescript-eslint/eslint-plugin" "^5.4.2 || ^6.0.0 || ^7.0.0 || ^8.0.0"
     "@typescript-eslint/parser" "^5.4.2 || ^6.0.0 || ^7.0.0 || ^8.0.0"
@@ -13081,7 +13119,28 @@ netmask@^2.0.2:
   resolved "https://registry.npmjs.org/netmask/-/netmask-2.0.2.tgz"
   integrity sha512-dBpDMdxv9Irdq66304OLfEmQ9tbNRFnFTuZiLo+bD+r332bBmMJ8GBLXklIXXgxd3+v9+KUnZaUR5PJMa75Gsg==
 
-next@*, "next@>= 14.0.0", next@>=13.2.0, next@>=14.2.0, "next@^13.0.0 || ^14.0.0 || ^15.0.0", next@^15.4.4:
+"next@15.4.2-canary.16":
+  version "15.4.2-canary.16"
+  resolved "https://registry.npmjs.org/next/-/next-15.4.2-canary.16.tgz"
+  integrity sha512-woAb2J7LNgYQ1nJ7eWfTrC8UHSwU6PRUrfRNx5KtoCHUX4B4W7zwC6Pbza3vaKgexG2/eWUzGF+Fi7qnb5yGNA==
+  dependencies:
+    "@next/env" "15.4.2-canary.16"
+    "@swc/helpers" "0.5.15"
+    caniuse-lite "^1.0.30001579"
+    postcss "8.4.31"
+    styled-jsx "5.1.6"
+  optionalDependencies:
+    sharp "^0.34.3"
+    "@next/swc-darwin-arm64" "15.4.2-canary.16"
+    "@next/swc-darwin-x64" "15.4.2-canary.16"
+    "@next/swc-linux-arm64-gnu" "15.4.2-canary.16"
+    "@next/swc-linux-arm64-musl" "15.4.2-canary.16"
+    "@next/swc-linux-x64-gnu" "15.4.2-canary.16"
+    "@next/swc-linux-x64-musl" "15.4.2-canary.16"
+    "@next/swc-win32-arm64-msvc" "15.4.2-canary.16"
+    "@next/swc-win32-x64-msvc" "15.4.2-canary.16"
+
+next@*, "next@>= 14.0.0", next@>=13.2.0, next@>=14.2.0, "next@^13.0.0 || ^14.0.0 || ^15.0.0":
   version "15.4.4"
   resolved "https://registry.npmjs.org/next/-/next-15.4.4.tgz"
   integrity sha512-kNcubvJjOL9yUOfwtZF3HfDhuhp+kVD+FM2A6Tyua1eI/xfmY4r/8ZS913MMz+oWKDlbps/dQOWdDricuIkXLw==
@@ -17121,7 +17180,7 @@ typed-query-selector@^2.12.0:
   resolved "https://registry.npmjs.org/typed-query-selector/-/typed-query-selector-2.12.0.tgz"
   integrity sha512-SbklCd1F0EiZOyPiW192rrHZzZ5sBijB6xM+cpmrwDqObvdtunOHHIk9fCGsoK5JVIYXoyEp4iEdE3upFH3PAg==
 
-typescript@>=2.7, typescript@>=2.9, typescript@>=3.3.1, typescript@>=4.5.0, typescript@>=4.8.4, "typescript@>=4.8.4 <5.9.0", typescript@>=4.9.5, typescript@>=5, typescript@>=5.1.0, typescript@^5.0.0, typescript@^5.8.2, typescript@^5.8.3:
+typescript@>=2.7, typescript@>=2.9, typescript@>=4.5.0, typescript@>=4.8.4, "typescript@>=4.8.4 <5.9.0", typescript@>=4.9.5, typescript@>=5, typescript@>=5.1.0, typescript@^5.0.0, typescript@^5.8.2, typescript@^5.8.3:
   version "5.8.3"
   resolved "https://registry.npmjs.org/typescript/-/typescript-5.8.3.tgz"
   integrity sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ==
