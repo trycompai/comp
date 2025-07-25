@@ -93,7 +93,6 @@ To develop locally:
    ```
 
 5. Set up your `.env` file:
-
    - Duplicate `.env.example` to `.env`.
    - Use `openssl rand -base64 32` to generate a key and add it under `SECRET_KEY` in the `.env` file.
    - Setup Trigger.dev

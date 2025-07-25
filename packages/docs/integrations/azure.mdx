@@ -20,11 +20,9 @@ Before setting up the integration, ensure you have:
 ### Configuration Steps
 
 1. **Log into your Azure Portal**
-
    - Visit [https://portal.azure.com](https://portal.azure.com)
 
 2. **Enable Microsoft Defender for Cloud**
-
    - In the left-hand menu, search for and select **Microsoft Defender for Cloud**
    - Click **Getting started**
    - Select the subscription(s) you want to onboard
@@ -32,7 +30,6 @@ Before setting up the integration, ensure you have:
    - Wait for the provisioning to complete (this may take a few minutes)
 
 3. **Register an Application in Azure AD**
-
    - Navigate to **Azure Active Directory > App registrations**
    - Click **+ New registration**
    - Name the app (e.g., `CompAIIntegrationApp`)
@@ -40,13 +37,11 @@ Before setting up the integration, ensure you have:
    - Click **Register**
 
 4. **Get the Client ID and Tenant ID**
-
    - After registration, go to the app's **Overview** page
    - Copy the **Application (client) ID**
    - Copy the **Directory (tenant) ID**
 
 5. **Create a Client Secret**
-
    - In the app menu, go to **Certificates & secrets**
    - Under **Client secrets**, click **+ New client secret**
    - Add a description and set an expiration
@@ -54,7 +49,6 @@ Before setting up the integration, ensure you have:
    - Copy the **Client secret value** — you won’t be able to see it again!
 
 6. **Assign the Application Access to a Subscription**
-
    - Go to **Subscriptions** in the Azure portal
    - Select the subscription you want to integrate
    - Copy the **Subscription ID**

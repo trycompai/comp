@@ -1,12 +1,13 @@
 {
-  "name": "@comp/email",
+  "name": "@trycompai/email",
+  "description": "Email templates and utilities for Comp AI",
   "version": "1.0.0",
   "dependencies": {
-    "@comp/ui": "workspace:*",
-    "@comp/utils": "workspace:*",
     "@react-email/components": "^0.0.41",
     "@react-email/render": "^1.1.2",
     "@react-email/tailwind": "1.0.5",
+    "@trycompai/ui": "workspace:*",
+    "@trycompai/utils": "workspace:*",
     "date-fns": "^4.1.0",
     "next": "15.4.0-canary.85",
     "react-email": "^4.0.15",
@@ -15,19 +16,42 @@
   "devDependencies": {
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "tsup": "^8.4.0",
+    "tsup": "^8.5.0",
     "typescript": "^5.8.3"
   },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./emails/*": "./emails/*",
+    "./lib/*": "./lib/*"
+  },
   "files": [
-    "dist/**"
+    "dist/**",
+    "README.md"
   ],
+  "keywords": [
+    "comp-ai",
+    "email-templates",
+    "react-email"
+  ],
+  "license": "MIT",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "peerDependencies": {
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
-  "private": true,
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/comp-ai/comp.git",
+    "directory": "packages/email"
+  },
   "scripts": {
     "build": "tsup index.ts --format cjs,esm --dts",
     "clean": "rm -rf .turbo node_modules dist",

@@ -49,4 +49,8 @@ const config: NextConfig = {
   skipTrailingSlashRedirect: true,
 };
 
+if (process.env.VERCEL !== '1') {
+  config.output = 'standalone'; // Required for Docker builds
+}
+
 export default config;
