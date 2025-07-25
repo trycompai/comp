@@ -1,16 +1,56 @@
 {
-  "name": "@comp/analytics",
+  "name": "@trycompai/analytics",
+  "description": "Analytics utilities using PostHog for Comp AI",
   "version": "1.0.0",
   "dependencies": {
     "posthog-js": "^1.236.6",
     "posthog-node": "^4.14.0"
   },
-  "main": "src/index.ts",
-  "private": true,
+  "devDependencies": {
+    "tsup": "^8.5.0",
+    "typescript": "^5.8.3"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.mjs",
+      "require": "./dist/server.js"
+    },
+    "./components": "./src/components"
+  },
+  "files": [
+    "dist/**",
+    "README.md"
+  ],
+  "keywords": [
+    "analytics",
+    "comp-ai",
+    "posthog",
+    "tracking"
+  ],
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/comp-ai/comp.git",
+    "directory": "packages/analytics"
+  },
   "scripts": {
-    "clean": "rm -rf .turbo node_modules",
+    "build": "tsup src/index.ts src/server.ts --format cjs,esm --dts",
+    "clean": "rm -rf .turbo node_modules dist",
+    "dev": "tsup src/index.ts src/server.ts --format cjs,esm --watch --dts",
     "format": "prettier --write .",
     "lint": "prettier --check .",
     "typecheck": "tsc --noEmit"
-  }
+  },
+  "types": "./dist/index.d.ts"
 }

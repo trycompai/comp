@@ -1,8 +1,8 @@
 module.exports = {
-  branches: ['release'], // Branches to release from
+  branches: ['release'],
   plugins: [
-    '@semantic-release/commit-analyzer', // Analyzes commit messages
-    '@semantic-release/release-notes-generator', // Generates release notes
+    '@semantic-release/commit-analyzer',
+    '@semantic-release/release-notes-generator',
     [
       'semantic-release-discord-notifier',
       {
@@ -13,15 +13,63 @@ module.exports = {
         },
       },
     ],
-    '@semantic-release/changelog', // Updates the CHANGELOG.md file
-    ['@semantic-release/npm', { npmPublish: false }],
+    '@semantic-release/changelog',
     [
-      '@semantic-release/git', // Commits package.json and CHANGELOG.md
+      '@semantic-release/npm',
       {
-        assets: ['package.json', 'bun.lockb', 'CHANGELOG.md'],
+        npmPublish: false, // Root package stays private
+      },
+    ],
+    // Publish each package individually
+    [
+      '@semantic-release/npm',
+      {
+        npmPublish: true,
+        pkgRoot: 'packages/db',
+      },
+    ],
+    [
+      '@semantic-release/npm',
+      {
+        npmPublish: true,
+        pkgRoot: 'packages/email',
+      },
+    ],
+    [
+      '@semantic-release/npm',
+      {
+        npmPublish: true,
+        pkgRoot: 'packages/kv',
+      },
+    ],
+    [
+      '@semantic-release/npm',
+      {
+        npmPublish: true,
+        pkgRoot: 'packages/ui',
+      },
+    ],
+    [
+      '@semantic-release/npm',
+      {
+        npmPublish: true,
+        pkgRoot: 'packages/analytics',
+      },
+    ],
+    [
+      '@semantic-release/npm',
+      {
+        npmPublish: true,
+        pkgRoot: 'packages/tsconfig',
+      },
+    ],
+    [
+      '@semantic-release/git',
+      {
+        assets: ['package.json', 'bun.lockb', 'CHANGELOG.md', 'packages/*/package.json'],
         message: 'chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}',
       },
     ],
-    '@semantic-release/github', // Creates a GitHub release
+    '@semantic-release/github',
   ],
 };

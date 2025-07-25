@@ -28,3 +28,7 @@ coverage/
 **/test-results/
 **/playwright/.cache/
 **/.playwright/ 
+
+# Dist
+packages/*/dist
+dist/*

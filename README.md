@@ -244,7 +244,6 @@ Start and initialize the PostgreSQL database using Docker:
    ```
 
 2. Default credentials:
-
    - Database name: `comp`
    - Username: `postgres`
    - Password: `postgres`
@@ -307,7 +306,6 @@ bun docker:clean
 If `.env` files don’t load values as expected, you can hard-code the following:
 
 - **`comp/packages/kv/src/index.ts`** → Hard-coded Redis client credentials:
-
   - **URL**: The Redis URL needs to start with `https`. Example:
     ```sh
     url: "https://default:AXhaAA***MA@charmed-wombat-3**0.upstash.io:6379"
@@ -318,7 +316,6 @@ If `.env` files don’t load values as expected, you can hard-code the following
     ```
 
 - **`comp/packages/db/prisma/schema.prisma`** → Hard-coded `DATABASE_URL`:
-
   - Example:
     `sh
     datasource db {
@@ -328,7 +325,6 @@ If `.env` files don’t load values as expected, you can hard-code the following
     `
 
 - **`comp/apps/portal/src/app/lib/auth.ts`** → Hard-coded Google environment variables `clientId`, `clientSecret` under `socialProviders/google`:
-
   - Example:
     ```js
     socialProviders: {
@@ -378,6 +374,45 @@ Steps to deploy Comp AI on Docker are coming soon.
 ### Vercel
 
 Steps to deploy Comp AI on Vercel are coming soon.
+
+## 📦 Package Publishing
+
+This repository uses semantic-release to automatically publish packages to npm when merging to the `release` branch. The following packages are published:
+
+- `@comp/db` - Database utilities with Prisma client
+- `@comp/email` - Email templates and components
+- `@comp/kv` - Key-value store utilities using Upstash Redis
+- `@comp/ui` - UI component library with Tailwind CSS
+
+### Setup
+
+1. **NPM Token**: Add your npm token as `NPM_TOKEN` in GitHub repository secrets
+2. **Release Branch**: Create and merge PRs into the `release` branch to trigger publishing
+3. **Versioning**: Uses conventional commits for automatic version bumping
+
+### Usage
+
+```bash
+# Install a published package
+npm install @comp/ui
+
+# Use in your project
+import { Button } from '@comp/ui/button'
+import { client } from '@comp/kv'
+```
+
+### Development
+
+```bash
+# Build all packages
+bun run build
+
+# Build specific package
+bun run -F @comp/ui build
+
+# Test packages locally
+bun run release:packages --dry-run
+```
 
 ## Contributors
 

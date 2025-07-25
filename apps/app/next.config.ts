@@ -27,7 +27,6 @@ const config: NextConfig = {
     serverActions: {
       bodySizeLimit: '15mb',
     },
-    nodeMiddleware: true,
     authInterrupts: true,
   },
   async rewrites() {
@@ -48,5 +47,9 @@ const config: NextConfig = {
   },
   skipTrailingSlashRedirect: true,
 };
+
+if (process.env.VERCEL !== '1') {
+  config.output = 'standalone'; // Required for Docker builds
+}
 
 export default config;
