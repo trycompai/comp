@@ -29,10 +29,10 @@
     "@prisma/instrumentation": "6.6.0",
     "@react-email/components": "^0.0.41",
     "@react-email/render": "^1.1.2",
-    "@t3-oss/env-nextjs": "^0.13.8",
     "@react-three/drei": "^10.3.0",
     "@react-three/fiber": "^9.1.2",
     "@react-three/postprocessing": "^3.0.4",
+    "@t3-oss/env-nextjs": "^0.13.8",
     "@tanstack/react-query": "^5.74.4",
     "@tanstack/react-table": "^8.21.3",
     "@tiptap/extension-table": "^2.22.3",
@@ -64,6 +64,8 @@
     "posthog-js": "^1.236.6",
     "posthog-node": "^4.14.0",
     "puppeteer-core": "^24.7.2",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
     "react-email": "^4.0.15",
     "react-hook-form": "^7.58.1",
     "react-hotkeys-hook": "^5.1.0",
@@ -82,9 +84,7 @@
     "use-long-press": "^3.3.0",
     "xml2js": "^0.6.2",
     "zaraz-ts": "^1.2.0",
-    "zustand": "^5.0.3",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "zustand": "^5.0.3"
   },
   "devDependencies": {
     "@playwright/experimental-ct-react": "^1.53.1",
