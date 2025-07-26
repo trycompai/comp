@@ -4,7 +4,7 @@ const APP_AWS_REGION = process.env.APP_AWS_REGION;
 const APP_AWS_ACCESS_KEY_ID = process.env.APP_AWS_ACCESS_KEY_ID;
 const APP_AWS_SECRET_ACCESS_KEY = process.env.APP_AWS_SECRET_ACCESS_KEY;
 
-export const BUCKET_NAME = process.env.AWS_BUCKET_NAME;
+export const BUCKET_NAME = process.env.APP_AWS_BUCKET_NAME;
 
 if (!APP_AWS_ACCESS_KEY_ID || !APP_AWS_SECRET_ACCESS_KEY || !BUCKET_NAME || !APP_AWS_REGION) {
   // Log the error in production environments
