@@ -7,6 +7,7 @@ import { PrismaExtension } from './customPrismaExtension';
 
 export default defineConfig({
   project: 'proj_lhxjliiqgcdyqbgtucda',
+  runtime: 'bun',
   logLevel: 'log',
   instrumentations: [new PrismaInstrumentation()],
   maxDuration: 300, // 5 minutes
@@ -15,7 +16,6 @@ export default defineConfig({
       new PrismaExtension({
         schema: '../../packages/db/prisma',
         version: '6.9.0',
-        clientGenerator: 'client',
         isUsingSchemaFolder: true,
       }),
       puppeteer(),
