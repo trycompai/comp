@@ -247,7 +247,7 @@ export class PrismaExtension implements BuildExtension {
       build: {
         env: {
           ...env,
-          PRISMA_CLI_BINARY_TARGETS: 'native,debian-openssl-3.0.x',
+          PRISMA_CLI_BINARY_TARGETS: 'debian-openssl-3.0.x',
         },
       },
     });
