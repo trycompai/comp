@@ -104,7 +104,7 @@ export class PrismaExtension implements BuildExtension {
     const commands: string[] = [];
     let prismaDir: string | undefined;
     const generatorFlags: string[] = [];
-    
+
     if (this.options.clientGenerator) {
       generatorFlags.push(`--generator=${this.options.clientGenerator}`);
     }
@@ -178,19 +178,16 @@ export class PrismaExtension implements BuildExtension {
           ' ',
         )}`,
       );
-      
+
       // Debug: List what was generated
       commands.push(
         `ls -la ./prisma/generated/prisma/ || echo "No generated client at ./prisma/generated/prisma/"`,
         `ls -la ./generated/prisma/ || echo "No generated client at ./generated/prisma/"`,
       );
-      
+
       // Ensure the parent directories exist
-      commands.push(
-        `mkdir -p /app/packages/db/generated`,
-        `mkdir -p packages/db/generated`,
-      );
-      
+      commands.push(`mkdir -p /app/packages/db/generated`, `mkdir -p packages/db/generated`);
+
       // Copy the generated client to where the code expects it
       // Try multiple source locations to handle different generation scenarios
       commands.push(
@@ -200,7 +197,7 @@ export class PrismaExtension implements BuildExtension {
         // Also symlink for relative paths
         `if [ -d "/app/packages/db/generated/prisma" ]; then cd packages/db && ln -sf /app/packages/db/generated . && echo "Created symlink"; fi`,
       );
-      
+
       // Verify the final result
       commands.push(
         `ls -la /app/packages/db/generated/prisma/ || echo "ERROR: No client at final location"`,
@@ -224,19 +221,16 @@ export class PrismaExtension implements BuildExtension {
           ' ',
         )}`,
       );
-      
+
       // Debug: List what was generated
       commands.push(
         `ls -la ./prisma/generated/prisma/ || echo "No generated client at ./prisma/generated/prisma/"`,
         `ls -la ./generated/prisma/ || echo "No generated client at ./generated/prisma/"`,
       );
-      
+
       // Ensure the parent directories exist
-      commands.push(
-        `mkdir -p /app/packages/db/generated`,
-        `mkdir -p packages/db/generated`,
-      );
-      
+      commands.push(`mkdir -p /app/packages/db/generated`, `mkdir -p packages/db/generated`);
+
       // Copy the generated client to where the code expects it
       // Try multiple source locations to handle different generation scenarios
       commands.push(
@@ -246,7 +240,7 @@ export class PrismaExtension implements BuildExtension {
         // Also symlink for relative paths
         `if [ -d "/app/packages/db/generated/prisma" ]; then cd packages/db && ln -sf /app/packages/db/generated . && echo "Created symlink"; fi`,
       );
-      
+
       // Verify the final result
       commands.push(
         `ls -la /app/packages/db/generated/prisma/ || echo "ERROR: No client at final location"`,
