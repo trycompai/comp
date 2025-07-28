@@ -6,15 +6,11 @@
     "@prisma/client": "6.9.0"
   },
   "devDependencies": {
-    "prisma": "6.9.0",
     "@trycompai/tsconfig": "workspace:*",
+    "prisma": "6.9.0",
     "ts-node": "^10.9.2",
     "tsup": "^8.5.0",
     "typescript": "^5.8.3"
-  },
-  "peerDependencies": {
-    "@prisma/client": "6.9.0",
-    "prisma": "6.9.0"
   },
   "exports": {
     ".": "./src/index.ts",
@@ -36,6 +32,10 @@
   "license": "MIT",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
+  "peerDependencies": {
+    "@prisma/client": "6.9.0",
+    "prisma": "6.9.0"
+  },
   "prisma": {
     "schema": "prisma",
     "seed": "ts-node prisma/seed/seed.ts"
