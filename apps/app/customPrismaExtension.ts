@@ -177,6 +177,12 @@ export class PrismaExtension implements BuildExtension {
           ' ',
         )}`,
       );
+
+      // Add commands to copy the generated client to the expected location
+      commands.push(
+        `mkdir -p packages/db/generated`,
+        `cp -r ./prisma/generated/prisma packages/db/generated/`,
+      );
     } else {
       prismaDir = dirname(this._resolvedSchemaPath);
       // Now we need to add a layer that:
@@ -192,9 +198,15 @@ export class PrismaExtension implements BuildExtension {
       commands.push(
         `${binaryForRuntime(
           manifest.runtime,
-        )} node_modules/prisma/build/index.js generate --schema=./prisma/schema ${generatorFlags.join(
+        )} node_modules/prisma/build/index.js generate --schema=./prisma/schema.prisma ${generatorFlags.join(
           ' ',
         )}`,
+      );
+
+      // Add commands to copy the generated client to the expected location
+      commands.push(
+        `mkdir -p packages/db/generated`,
+        `cp -r ./prisma/generated/prisma packages/db/generated/`,
       );
     }
     const env: Record<string, string | undefined> = {};
