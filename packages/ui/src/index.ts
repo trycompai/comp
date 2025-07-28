@@ -10,4 +10,4 @@ export * from './utils';
 // Export types
 export type * from './components';
 export type * from './hooks';
-export type * from './utils'; 
+export type * from './utils';
