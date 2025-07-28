@@ -1307,12 +1307,10 @@
     "@vitejs/plugin-react" "^4.6.0"
     "@vitest/ui" "^3.2.4"
     eslint "^9"
-    eslint-config-next "15.4.0-canary.85"
+    eslint-config-next "15.4.2-canary.16"
     fleetctl "^4.68.1"
     jsdom "^26.1.0"
     postcss "^8.5.4"
-    react "^19.1.0"
-    react-dom "^19.1.0"
     tailwindcss "^4.1.8"
     typescript "^5.8.3"
     vite-tsconfig-paths "^5.1.4"
@@ -1348,6 +1346,7 @@
     "@react-three/drei" "^10.3.0"
     "@react-three/fiber" "^9.1.2"
     "@react-three/postprocessing" "^3.0.4"
+    "@t3-oss/env-nextjs" "^0.13.8"
     "@tanstack/react-query" "^5.74.4"
     "@tanstack/react-table" "^8.21.3"
     "@tiptap/extension-table" "^2.22.3"
@@ -1373,7 +1372,7 @@
     framer-motion "^12.18.1"
     geist "^1.3.1"
     motion "^12.9.2"
-    next "15.4.0-canary.85"
+    next "15.4.2-canary.16"
     next-safe-action "^8.0.3"
     next-themes "^0.4.4"
     nuqs "^2.4.3"
@@ -1381,6 +1380,8 @@
     posthog-js "^1.236.6"
     posthog-node "^4.14.0"
     puppeteer-core "^24.7.2"
+    react "^19.1.0"
+    react-dom "^19.1.0"
     react-email "^4.0.15"
     react-hook-form "^7.58.1"
     react-hotkeys-hook "^5.1.0"
@@ -1409,13 +1410,12 @@
     "@types/archiver" "^6.0.3"
     "@types/node" "^24.0.3"
     eslint "^9"
-    eslint-config-next "15.4.0-canary.85"
+    eslint-config-next "15.4.2-canary.16"
     postcss "^8.5.4"
-    react "^19.1.0"
-    react-dom "^19.1.0"
     tailwindcss "^4.1.8"
     typescript "^5.8.3"
   dependencies:
+    "@aws-sdk/client-s3" "^3.806.0"
     "@aws-sdk/s3-request-presigner" "^3.832.0"
     "@react-email/components" "^0.0.41"
     "@react-email/render" "^1.1.2"
@@ -1428,12 +1428,19 @@
     "@trycompai/ui" "workspace:*"
   dependencies:
     "@types/jszip" "^3.4.1"
+    "@upstash/ratelimit" "^2.0.5"
     archiver "^7.0.1"
     better-auth "^1.2.8"
     class-variance-authority "^0.7.1"
+    geist "^1.3.1"
     jszip "^3.10.1"
-    next "15.4.0-canary.85"
+    next "15.4.2-canary.16"
+    next-safe-action "^8.0.3"
+    next-themes "^0.4.4"
+    react "^19.1.0"
+    react-dom "^19.1.0"
     react-email "^4.0.15"
+    sonner "^2.0.5"
 
 "@cspotcode/source-map-support@^0.8.0":
   version "0.8.1"
@@ -1957,17 +1964,17 @@
     minimatch "^3.1.2"
     strip-json-comments "^3.1.1"
 
-"@eslint/js@9.31.0":
-  version "9.31.0"
-  resolved "https://registry.npmjs.org/@eslint/js/-/js-9.31.0.tgz"
-  integrity sha512-LOm5OVt7D4qiKCqoiPbA7LWmI+tbw1VbTUowBcUMgQSuM6poJufkFkYDcQpo5KfgD39TnNySV26QjOh7VFpSyw==
+"@eslint/js@9.32.0":
+  version "9.32.0"
+  resolved "https://registry.npmjs.org/@eslint/js/-/js-9.32.0.tgz"
+  integrity sha512-BBpRFZK3eX6uMLKz8WxFOBIFFcGFJ/g8XuwjTHCqHROSIsopI+ddn/d5Cfh36+7+e5edVS8dbSHnBNhrLEX0zg==
 
 "@eslint/object-schema@^2.1.6":
   version "2.1.6"
   resolved "https://registry.npmjs.org/@eslint/object-schema/-/object-schema-2.1.6.tgz"
   integrity sha512-RBMg5FRL0I0gs51M/guSAj5/e14VQ4tpZnQNWwuDT66P14I43ItmPfIZRhO9fUVIPOAQXU47atlywZ/czoqFPA==
 
-"@eslint/plugin-kit@^0.3.1":
+"@eslint/plugin-kit@^0.3.4":
   version "0.3.4"
   resolved "https://registry.npmjs.org/@eslint/plugin-kit/-/plugin-kit-0.3.4.tgz"
   integrity sha512-Ul5l+lHEcw3L5+k8POx6r74mxEYKG5kOb6Xpy2gCRW6zweT6TEhAf8vhxGgjhqrd/VO/Dirhsb+1hNpD1ue9hw==
@@ -2031,9 +2038,9 @@
   integrity sha512-lhqDEAvWixy3bZ+UOYbPwUbBkwBq5C1LAJ/xPC8Oi+lL54oyakv/npbA0aU2hgCsx/1NUd4IBvV03+aUBWxerw==
 
 "@hookform/resolvers@^5.1.1":
-  version "5.1.1"
-  resolved "https://registry.npmjs.org/@hookform/resolvers/-/resolvers-5.1.1.tgz"
-  integrity sha512-J/NVING3LMAEvexJkyTLjruSm7aOFx7QX21pzkiJfMoNG0wl5aFEjLTl7ay7IQb9EWY6AkrBy7tHL2Alijpdcg==
+  version "5.2.0"
+  resolved "https://registry.npmjs.org/@hookform/resolvers/-/resolvers-5.2.0.tgz"
+  integrity sha512-3YI+VqxJQH6ryRWG+j3k+M19Wf37LeSKJDg6Vdjq6makLOqZGYn77iTaYLMLpVi/uHc1N6OTCmcxJwhOQV979g==
   dependencies:
     "@standard-schema/utils" "^0.3.0"
 
@@ -2357,57 +2364,57 @@
     "@emnapi/runtime" "^1.4.3"
     "@tybys/wasm-util" "^0.10.0"
 
-"@next/env@15.4.0-canary.85":
-  version "15.4.0-canary.85"
-  resolved "https://registry.npmjs.org/@next/env/-/env-15.4.0-canary.85.tgz"
-  integrity sha512-9WnWqH1DU6qAlEJUzQyT8L0TkpzKa6UQ/zYNB9fCUnvnkEkLo2OP8+CobpWzpRhOuyWkbPz5VmX15WZFfsDGkA==
+"@next/env@15.4.2-canary.16":
+  version "15.4.2-canary.16"
+  resolved "https://registry.npmjs.org/@next/env/-/env-15.4.2-canary.16.tgz"
+  integrity sha512-rSLh+IMkAPKjIUYQrH3UCl3D/Xcq/X5w+rppo7rv8D+aw/19ODieNFC8e2NtUZ1uBP6SxlTrmn9E5rwX+YRdXg==
 
-"@next/eslint-plugin-next@15.4.0-canary.85":
-  version "15.4.0-canary.85"
-  resolved "https://registry.npmjs.org/@next/eslint-plugin-next/-/eslint-plugin-next-15.4.0-canary.85.tgz"
-  integrity sha512-2tUqcO7NRzKPEO4mygaqU+3GiSKVl6uPqhx1Ok7Ph2SDqg+QmqyQpX+JuZ7V8PcQdjXp4KpVGfhuVx3fy+Mcbg==
+"@next/eslint-plugin-next@15.4.2-canary.16":
+  version "15.4.2-canary.16"
+  resolved "https://registry.npmjs.org/@next/eslint-plugin-next/-/eslint-plugin-next-15.4.2-canary.16.tgz"
+  integrity sha512-Y7Iusyriwn2hWD1ruJRvZK+hm9UVITjxr6JNEzOtrvJ5uOwDELjJtiU54VeiC4gldAYdbl1deEhdrBZ7aTfHHg==
   dependencies:
     fast-glob "3.3.1"
 
-"@next/swc-darwin-arm64@15.4.0-canary.85":
-  version "15.4.0-canary.85"
-  resolved "https://registry.npmjs.org/@next/swc-darwin-arm64/-/swc-darwin-arm64-15.4.0-canary.85.tgz"
-  integrity sha512-za0E9RDk5mubKtCC9VgZccKdUa+jigtnHfpcxWz3YEq5KI7hq20SuV/64ige/pKoT5+ROV6sqO+5RFhPqWzpwA==
+"@next/swc-darwin-arm64@15.4.2-canary.16":
+  version "15.4.2-canary.16"
+  resolved "https://registry.npmjs.org/@next/swc-darwin-arm64/-/swc-darwin-arm64-15.4.2-canary.16.tgz"
+  integrity sha512-XL0KWYWcc5C3BYefpmkdwOoMe4qMwYyyC70dSqY2F6evq/tJksFZFazul6seD5xx/p0nta7PgJRiQOiKCQdpwQ==
 
-"@next/swc-darwin-x64@15.4.0-canary.85":
-  version "15.4.0-canary.85"
-  resolved "https://registry.npmjs.org/@next/swc-darwin-x64/-/swc-darwin-x64-15.4.0-canary.85.tgz"
-  integrity sha512-YkRjaE0lSdppT4kCCyrEwMct0el/YvLRhceNhB5iHHacieEmVkU5IRHRpWL9b6VNM5tCuYj0lLohcmUTj2sDiw==
+"@next/swc-darwin-x64@15.4.2-canary.16":
+  version "15.4.2-canary.16"
+  resolved "https://registry.npmjs.org/@next/swc-darwin-x64/-/swc-darwin-x64-15.4.2-canary.16.tgz"
+  integrity sha512-iF16S+JGjrGv9OSWxywmfLgq/M/pLRDBrlUxAqjk6U15uK8gq0IVzuGyL0qNDTtrDiadsscGmigCJGOEwdm1eQ==
 
-"@next/swc-linux-arm64-gnu@15.4.0-canary.85":
-  version "15.4.0-canary.85"
-  resolved "https://registry.npmjs.org/@next/swc-linux-arm64-gnu/-/swc-linux-arm64-gnu-15.4.0-canary.85.tgz"
-  integrity sha512-Mwoff9MQ78NL5zMXP/JOd/ArhLiC8zjN6dUp85Xx6lAiW/g0uzEjzAgrZga3K+07eSJjQ+7vGNdjVK3rl0odUA==
+"@next/swc-linux-arm64-gnu@15.4.2-canary.16":
+  version "15.4.2-canary.16"
+  resolved "https://registry.npmjs.org/@next/swc-linux-arm64-gnu/-/swc-linux-arm64-gnu-15.4.2-canary.16.tgz"
+  integrity sha512-Idc5TemlKFOuafEKXA6qFmpv/t9S9yfi17KEK3YoNpfALUtX9fgpZ99X+ADuQixYK6sItB7gTKChfNctiVPlsQ==
 
-"@next/swc-linux-arm64-musl@15.4.0-canary.85":
-  version "15.4.0-canary.85"
-  resolved "https://registry.npmjs.org/@next/swc-linux-arm64-musl/-/swc-linux-arm64-musl-15.4.0-canary.85.tgz"
-  integrity sha512-TXAVI+oVHCHkHwBYYlQLabGxHHylnIHDB+HvXy9hcrY/BozUF9jEjZb1x9HLMORzWM60mfWsALl1j1putN7lRA==
+"@next/swc-linux-arm64-musl@15.4.2-canary.16":
+  version "15.4.2-canary.16"
+  resolved "https://registry.npmjs.org/@next/swc-linux-arm64-musl/-/swc-linux-arm64-musl-15.4.2-canary.16.tgz"
+  integrity sha512-yNYoDIJWsygiLtnQ4zewadY5TyqnIu8+jcTVHmhHeDWJFaviBmrvt/U7IcuWBtQwpMYBCshVMKRlqWHTNDWhpw==
 
-"@next/swc-linux-x64-gnu@15.4.0-canary.85":
-  version "15.4.0-canary.85"
-  resolved "https://registry.npmjs.org/@next/swc-linux-x64-gnu/-/swc-linux-x64-gnu-15.4.0-canary.85.tgz"
-  integrity sha512-lG8E8HFpabOMyZG+BFqijEoB/Pd5MowaVogXaPcjHbnncIoZytvCHT2ZUc83/y3Aly1xpre+dVAShOsGzwm7XA==
+"@next/swc-linux-x64-gnu@15.4.2-canary.16":
+  version "15.4.2-canary.16"
+  resolved "https://registry.npmjs.org/@next/swc-linux-x64-gnu/-/swc-linux-x64-gnu-15.4.2-canary.16.tgz"
+  integrity sha512-T85erPFUJpmHTRlAy4V1BBbRe8WFk0uC7DTFkPafTXSshk5ww2an+FrpoTtKUTlXESq+CNzXpb80ZAlpYagRCQ==
 
-"@next/swc-linux-x64-musl@15.4.0-canary.85":
-  version "15.4.0-canary.85"
-  resolved "https://registry.npmjs.org/@next/swc-linux-x64-musl/-/swc-linux-x64-musl-15.4.0-canary.85.tgz"
-  integrity sha512-4WALgXIS7oIw65OMoic4wEsiiVKYMh3nLcWAHuAks9kpoH1dIxF2B2ve58iXpqJIZ98xS7LfsMQoXqEK1aA6Eg==
+"@next/swc-linux-x64-musl@15.4.2-canary.16":
+  version "15.4.2-canary.16"
+  resolved "https://registry.npmjs.org/@next/swc-linux-x64-musl/-/swc-linux-x64-musl-15.4.2-canary.16.tgz"
+  integrity sha512-dZdmfyavwZy7b0o8hCCGrOAZHBj+RWdVtI/vGijGxte910WQtUquVccu7W14htL2FNe5yFcsSWFW74Dy5Nli3Q==
 
-"@next/swc-win32-arm64-msvc@15.4.0-canary.85":
-  version "15.4.0-canary.85"
-  resolved "https://registry.npmjs.org/@next/swc-win32-arm64-msvc/-/swc-win32-arm64-msvc-15.4.0-canary.85.tgz"
-  integrity sha512-DGgM++G920r3OHUU4X+HopxJZGGK+Gb+UWjDKepbxPtOTX64/XvAhoiA523a+eXm3ysi+kycuA0+jRlwrKEB/Q==
+"@next/swc-win32-arm64-msvc@15.4.2-canary.16":
+  version "15.4.2-canary.16"
+  resolved "https://registry.npmjs.org/@next/swc-win32-arm64-msvc/-/swc-win32-arm64-msvc-15.4.2-canary.16.tgz"
+  integrity sha512-xvRQXTqSZ8JljsLwlVf1fcwTZjTXpHj4YbcE8aG2Lze3kt/xFo8QGEX9BT1kTCETM/hx14paIBlPY8zLey/rLQ==
 
-"@next/swc-win32-x64-msvc@15.4.0-canary.85":
-  version "15.4.0-canary.85"
-  resolved "https://registry.npmjs.org/@next/swc-win32-x64-msvc/-/swc-win32-x64-msvc-15.4.0-canary.85.tgz"
-  integrity sha512-nYHH5JH347B9ZdcKRIi8xhUnum9bjMRLL3f2ozKp942U1yucQn9N67HGhWDXHW0dy2Hzx2Em+PhlWTHe2vztSQ==
+"@next/swc-win32-x64-msvc@15.4.2-canary.16":
+  version "15.4.2-canary.16"
+  resolved "https://registry.npmjs.org/@next/swc-win32-x64-msvc/-/swc-win32-x64-msvc-15.4.2-canary.16.tgz"
+  integrity sha512-ESWrS/3Xc96B8NYqCWjIJRfe0BQMxxWUXl5j7YoIdsriFWQdBjo0zyxX+m7SvSuyV5v5+kVWOMpU5R07KfllKQ==
 
 "@next/third-parties@^15.3.1":
   version "15.4.4"
@@ -5614,7 +5621,7 @@
     "@trycompai/utils" "workspace:*"
   dependencies:
     date-fns "^4.1.0"
-    next "15.4.0-canary.85"
+    next "15.4.2-canary.16"
     react-email "^4.0.15"
     responsive-react-email "^0.0.5"
 
@@ -7070,14 +7077,14 @@ aria-hidden@^1.2.4:
   dependencies:
     tslib "^2.0.0"
 
-aria-query@5.3.0:
+aria-query@5.3.0, aria-query@^5.0.0:
   version "5.3.0"
   resolved "https://registry.npmjs.org/aria-query/-/aria-query-5.3.0.tgz"
   integrity sha512-b0P0sZPKtyu8HkeRAfCq0IfURZK+SuwMjY1UXGBU27wpAiTwQAIlq56IbIO+ytk/JjS1fMR14ee5WBBfKi5J6A==
   dependencies:
     dequal "^2.0.3"
 
-aria-query@^5.0.0, aria-query@^5.3.2:
+aria-query@^5.3.2:
   version "5.3.2"
   resolved "https://registry.npmjs.org/aria-query/-/aria-query-5.3.2.tgz"
   integrity sha512-COROpnaoap1E2F000S62r6A60uHZnmlvomhfyT2DlTcrY1OrBKn2UhH7qn5wTC9zMvD0AY7csdPSNwKP+7WiQw==
@@ -8782,9 +8789,9 @@ dir-glob@^3.0.0, dir-glob@^3.0.1:
     path-type "^4.0.0"
 
 discord-api-types@^0.38.1:
-  version "0.38.16"
-  resolved "https://registry.npmjs.org/discord-api-types/-/discord-api-types-0.38.16.tgz"
-  integrity sha512-Cz42dC5WqJD17Yk0bRy7YLTJmh3NKo4FGpxZuA8MHqT0RPxKSrll5YhlODZ2z5DiEV/gpHMeTSrTFTWpSXjT1Q==
+  version "0.38.17"
+  resolved "https://registry.npmjs.org/discord-api-types/-/discord-api-types-0.38.17.tgz"
+  integrity sha512-/fCx5jdUoR2hBFcj77Qx7Tmx1Ub8V/QpyS6uorjFvxRLcJJ348QxMFml9QW/eXh3i46eO4Ve8qGVepStpInEPg==
 
 discord.js@^14.7.1:
   version "14.21.0"
@@ -8948,17 +8955,17 @@ effect@3.16.8:
     fast-check "^3.23.1"
 
 effect@^3.13.7, effect@^3.16.8:
-  version "3.17.1"
-  resolved "https://registry.npmjs.org/effect/-/effect-3.17.1.tgz"
-  integrity sha512-t917ks10FGNf7MpwOxHUg6vo42p0XsdMHuBMVpy4NttPu5gIv8/ah5MgbHLVQJ2kmDvZfQUT1/xyCa1IR09u2Q==
+  version "3.17.2"
+  resolved "https://registry.npmjs.org/effect/-/effect-3.17.2.tgz"
+  integrity sha512-xYHNOw90nfD9blT+VHgbK2uogu1gWQjfd1f1HIiRjnxIH9/cAmm3qj/muZZXL4VDSwTUZXZNhahUCxCBc4ZaHg==
   dependencies:
     "@standard-schema/spec" "^1.0.0"
     fast-check "^3.23.1"
 
 electron-to-chromium@^1.5.173:
-  version "1.5.190"
-  resolved "https://registry.npmjs.org/electron-to-chromium/-/electron-to-chromium-1.5.190.tgz"
-  integrity sha512-k4McmnB2091YIsdCgkS0fMVMPOJgxl93ltFzaryXqwip1AaxeDqKCGLxkXODDA5Ab/D+tV5EL5+aTx76RvLRxw==
+  version "1.5.191"
+  resolved "https://registry.npmjs.org/electron-to-chromium/-/electron-to-chromium-1.5.191.tgz"
+  integrity sha512-xcwe9ELcuxYLUFqZZxL19Z6HVKcvNkIwhbHUz7L3us6u12yR+7uY89dSl570f/IqNthx8dAw3tojG7i4Ni4tDA==
 
 embla-carousel@8.5.1:
   version "8.5.1"
@@ -9364,9 +9371,9 @@ escodegen@^2.1.0:
     esutils "^2.0.2"
 
 eslint@*, "eslint@^2 || ^3 || ^4 || ^5 || ^6 || ^7.2.0 || ^8 || ^9", "eslint@^3 || ^4 || ^5 || ^6 || ^7 || ^8 || ^9", "eslint@^3 || ^4 || ^5 || ^6 || ^7 || ^8 || ^9.7", "eslint@^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0-0 || ^9.0.0", "eslint@^6.0.0 || ^7.0.0 || >=8.0.0", "eslint@^7.23.0 || ^8.0.0 || ^9.0.0", "eslint@^8.57.0 || ^9.0.0", eslint@^9:
-  version "9.31.0"
-  resolved "https://registry.npmjs.org/eslint/-/eslint-9.31.0.tgz"
-  integrity sha512-QldCVh/ztyKJJZLr4jXNUByx3gR+TDYZCRXEktiZoUR3PGy4qCmSbkxcIle8GEwGpb5JBZazlaJ/CxLidXdEbQ==
+  version "9.32.0"
+  resolved "https://registry.npmjs.org/eslint/-/eslint-9.32.0.tgz"
+  integrity sha512-LSehfdpgMeWcTZkWZVIJl+tkZ2nuSkyyB9C27MZqFWXuph7DvaowgcTvKqxvpLW1JZIk8PN7hFY3Rj9LQ7m7lg==
   dependencies:
     "@eslint-community/eslint-utils" "^4.2.0"
     "@eslint-community/regexpp" "^4.12.1"
@@ -9374,8 +9381,8 @@ eslint@*, "eslint@^2 || ^3 || ^4 || ^5 || ^6 || ^7.2.0 || ^8 || ^9", "eslint@^3 
     "@eslint/config-helpers" "^0.3.0"
     "@eslint/core" "^0.15.0"
     "@eslint/eslintrc" "^3.3.1"
-    "@eslint/js" "9.31.0"
-    "@eslint/plugin-kit" "^0.3.1"
+    "@eslint/js" "9.32.0"
+    "@eslint/plugin-kit" "^0.3.4"
     "@humanfs/node" "^0.16.6"
     "@humanwhocodes/module-importer" "^1.0.1"
     "@humanwhocodes/retry" "^0.4.2"
@@ -9404,12 +9411,12 @@ eslint@*, "eslint@^2 || ^3 || ^4 || ^5 || ^6 || ^7.2.0 || ^8 || ^9", "eslint@^3 
     natural-compare "^1.4.0"
     optionator "^0.9.3"
 
-"eslint-config-next@15.4.0-canary.85":
-  version "15.4.0-canary.85"
-  resolved "https://registry.npmjs.org/eslint-config-next/-/eslint-config-next-15.4.0-canary.85.tgz"
-  integrity sha512-aI8S/cGs3AapI3po3ANDh5wnZ5JiZcFEn32n+P7FrfHwEY1IittY6ktTajt8HZEZqnhwFM38d2GH1PMscxP6bw==
+"eslint-config-next@15.4.2-canary.16":
+  version "15.4.2-canary.16"
+  resolved "https://registry.npmjs.org/eslint-config-next/-/eslint-config-next-15.4.2-canary.16.tgz"
+  integrity sha512-Dv8OXIHnNFK1z13IvgbBpXdtOIjvilNVABFnau7NlaCdUFmKH/CQmmGL/ZQ4igDJz03hD7PkIZvvWicvak6K7w==
   dependencies:
-    "@next/eslint-plugin-next" "15.4.0-canary.85"
+    "@next/eslint-plugin-next" "15.4.2-canary.16"
     "@rushstack/eslint-patch" "^1.10.3"
     "@typescript-eslint/eslint-plugin" "^5.4.2 || ^6.0.0 || ^7.0.0 || ^8.0.0"
     "@typescript-eslint/parser" "^5.4.2 || ^6.0.0 || ^7.0.0 || ^8.0.0"
@@ -10164,7 +10171,7 @@ fs.realpath@^1.0.0:
   resolved "https://registry.npmjs.org/fs.realpath/-/fs.realpath-1.0.0.tgz"
   integrity sha512-OO0pH2lK6a0hZnAdau5ItzHPI6pUlvI7jMVnxUQRtw4owF2wk8lOSabtGDCTP4Ggrg2MbGnWO9X8K1t4+fGMDw==
 
-fsevents@2.3.2:
+fsevents@2.3.2, fsevents@~2.3.2:
   version "2.3.2"
   resolved "https://registry.npmjs.org/fsevents/-/fsevents-2.3.2.tgz"
   integrity sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==
@@ -11900,9 +11907,9 @@ linkify-it@^5.0.0:
     uc.micro "^2.0.0"
 
 linkifyjs@^4.2.0:
-  version "4.3.1"
-  resolved "https://registry.npmjs.org/linkifyjs/-/linkifyjs-4.3.1.tgz"
-  integrity sha512-DRSlB9DKVW04c4SUdGvKK5FR6be45lTU9M76JnngqPeeGDqPwYc0zdUErtsNVMtxPXgUWV4HbXbnC4sNyBxkYg==
+  version "4.3.2"
+  resolved "https://registry.npmjs.org/linkifyjs/-/linkifyjs-4.3.2.tgz"
+  integrity sha512-NT1CJtq3hHIreOianA8aSXn6Cw0JzYOuDQbOrSPe7gqFnCpKP++MQe3ODgO3oh2GJFORkAAdqredOa60z63GbA==
 
 load-json-file@^4.0.0:
   version "4.0.0"
@@ -13086,22 +13093,22 @@ netmask@^2.0.2:
   resolved "https://registry.npmjs.org/netmask/-/netmask-2.0.2.tgz"
   integrity sha512-dBpDMdxv9Irdq66304OLfEmQ9tbNRFnFTuZiLo+bD+r332bBmMJ8GBLXklIXXgxd3+v9+KUnZaUR5PJMa75Gsg==
 
-next@*, "next@15.4.0-canary.85", "next@>= 14.0.0", next@>=13.2.0, next@>=14.2.0, "next@^13.0.0 || ^14.0.0 || ^15.0.0":
-  version "15.4.0-canary.85"
-  resolved "https://registry.npmjs.org/next/-/next-15.4.0-canary.85.tgz"
-  integrity sha512-xD+Es5CYPkb20//rQ9/vmWhx1TCohe8V2BhVzwkMv9UwAF8wMUK4GCyHyyXnvxqlNRfGG8KhDjS4IaTxq1ShEg==
+next@*, "next@15.4.2-canary.16", "next@>= 14.0.0", next@>=13.2.0, next@>=14.2.0, "next@^13.0.0 || ^14.0.0 || ^15.0.0":
+  version "15.4.2-canary.16"
+  resolved "https://registry.npmjs.org/next/-/next-15.4.2-canary.16.tgz"
+  integrity sha512-woAb2J7LNgYQ1nJ7eWfTrC8UHSwU6PRUrfRNx5KtoCHUX4B4W7zwC6Pbza3vaKgexG2/eWUzGF+Fi7qnb5yGNA==
   optionalDependencies:
-    "@next/swc-darwin-arm64" "15.4.0-canary.85"
-    "@next/swc-darwin-x64" "15.4.0-canary.85"
-    "@next/swc-linux-arm64-gnu" "15.4.0-canary.85"
-    "@next/swc-linux-arm64-musl" "15.4.0-canary.85"
-    "@next/swc-linux-x64-gnu" "15.4.0-canary.85"
-    "@next/swc-linux-x64-musl" "15.4.0-canary.85"
-    "@next/swc-win32-arm64-msvc" "15.4.0-canary.85"
-    "@next/swc-win32-x64-msvc" "15.4.0-canary.85"
-    sharp "^0.34.1"
+    "@next/swc-darwin-arm64" "15.4.2-canary.16"
+    "@next/swc-darwin-x64" "15.4.2-canary.16"
+    "@next/swc-linux-arm64-gnu" "15.4.2-canary.16"
+    "@next/swc-linux-arm64-musl" "15.4.2-canary.16"
+    "@next/swc-linux-x64-gnu" "15.4.2-canary.16"
+    "@next/swc-linux-x64-musl" "15.4.2-canary.16"
+    "@next/swc-win32-arm64-msvc" "15.4.2-canary.16"
+    "@next/swc-win32-x64-msvc" "15.4.2-canary.16"
+    sharp "^0.34.3"
   dependencies:
-    "@next/env" "15.4.0-canary.85"
+    "@next/env" "15.4.2-canary.16"
     "@swc/helpers" "0.5.15"
     caniuse-lite "^1.0.30001579"
     postcss "8.4.31"
@@ -15665,7 +15672,7 @@ setprototypeof@1.2.0:
   resolved "https://registry.npmjs.org/setprototypeof/-/setprototypeof-1.2.0.tgz"
   integrity sha512-E5LDX7Wrp85Kil5bhZv46j8jOeboKq5JMmYM3gVGdGH8xFpPWXUMsNrlODCrkoxMEeNi/XZIwuRvY4XNwYMJpw==
 
-sharp@^0.34.1, sharp@^0.34.2:
+sharp@^0.34.2, sharp@^0.34.3:
   version "0.34.3"
   resolved "https://registry.npmjs.org/sharp/-/sharp-0.34.3.tgz"
   integrity sha512-eX2IQ6nFohW4DbvHIOLRB3MHFpYqaqvXd3Tp5e/T/dSH83fxaNJQRvDMhASmkNTsNTVF2/OOopzRCt7xokgPfg==
@@ -17987,9 +17994,9 @@ zod@3.25.67, "zod@>= 3", zod@^3, zod@^3.18.0, zod@^3.20.2, zod@^3.23.8, "zod@^3.
   integrity sha512-idA2YXwpCdqUSKRCACDE6ItZD9TZzy3OZMtpfLoh6oPR47lipysRrJfjzMqFxQ3uJuUPyUeWe1r9vLH33xO/Qw==
 
 zod@^4.0.5:
-  version "4.0.9"
-  resolved "https://registry.npmjs.org/zod/-/zod-4.0.9.tgz"
-  integrity sha512-PAqUh1FW4Irxcs6/sWfnhJGV/8F0eLNd1FryydBfbA9Qvz1LaJk0TDrSC+hIKlArS/xVISuX/yjlS1bzg2D3Zw==
+  version "4.0.10"
+  resolved "https://registry.npmjs.org/zod/-/zod-4.0.10.tgz"
+  integrity sha512-3vB+UU3/VmLL2lvwcY/4RV2i9z/YU0DTV/tDuYjrwmx5WeJ7hwy+rGEEx8glHp6Yxw7ibRbKSaIFBgReRPe5KA==
 
 zod-error@1.5.0:
   version "1.5.0"

@@ -76,7 +76,7 @@ export const deleteComment = async (input: z.infer<typeof schema>) => {
             const key = extractS3KeyFromUrl(att.url);
             await s3Client.send(
               new DeleteObjectCommand({
-                Bucket: process.env.AWS_BUCKET_NAME!,
+                Bucket: process.env.APP_AWS_BUCKET_NAME!,
                 Key: key,
               }),
             );
