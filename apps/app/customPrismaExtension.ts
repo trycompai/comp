@@ -42,6 +42,7 @@ export type PrismaExtensionOptions = {
   clientGenerator?: string;
   directUrlEnvVarName?: string;
   isUsingSchemaFolder?: boolean;
+  shouldGenerateTypes?: boolean;
 };
 
 export function prismaExtension(options: PrismaExtensionOptions): PrismaExtension {
@@ -172,7 +173,7 @@ export class PrismaExtension implements BuildExtension {
       commands.push(
         `${binaryForRuntime(
           manifest.runtime,
-        )} ../../node_modules/prisma/build/index.js generate --schema=./prisma/schema ${generatorFlags.join(
+        )} node_modules/prisma/build/index.js generate --schema=./prisma/schema ${generatorFlags.join(
           ' ',
         )}`,
       );
@@ -191,7 +192,7 @@ export class PrismaExtension implements BuildExtension {
       commands.push(
         `${binaryForRuntime(
           manifest.runtime,
-        )} ../../node_modules/prisma/build/index.js generate --schema=./prisma/schema ${generatorFlags.join(
+        )} node_modules/prisma/build/index.js generate --schema=./prisma/schema ${generatorFlags.join(
           ' ',
         )}`,
       );
@@ -208,7 +209,7 @@ export class PrismaExtension implements BuildExtension {
         recursive: true,
       });
       commands.push(
-        `${binaryForRuntime(manifest.runtime)} ../../node_modules/prisma/build/index.js migrate deploy`,
+        `${binaryForRuntime(manifest.runtime)} node_modules/prisma/build/index.js migrate deploy`,
       );
     }
     env.DATABASE_URL = manifest.deploy.env?.DATABASE_URL;
