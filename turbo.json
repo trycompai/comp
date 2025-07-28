@@ -55,6 +55,10 @@
     "db:generate": {
       "cache": false
     },
+    "db:migrate": {
+      "cache": false,
+      "persistent": true
+    },
     "auth:build": {
       "cache": false,
       "env": ["BETTER_AUTH_SECRET", "BETTER_AUTH_URL", "AUTH_GOOGLE_ID", "AUTH_GOOGLE_SECRET"]
