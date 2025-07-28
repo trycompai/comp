@@ -26,6 +26,7 @@
     "@nangohq/frontend": "^0.53.2",
     "@next/third-parties": "^15.3.1",
     "@number-flow/react": "^0.5.9",
+    "@prisma/client": "6.9.0",
     "@prisma/instrumentation": "6.6.0",
     "@react-email/components": "^0.0.41",
     "@react-email/render": "^1.1.2",
@@ -106,7 +107,8 @@
     "tailwindcss": "^4.1.8",
     "typescript": "^5.8.3",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "prisma": "6.9.0"
   },
   "exports": {
     "./src/lib/encryption": "./src/lib/encryption.ts"

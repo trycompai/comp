@@ -82,6 +82,7 @@
         "@nangohq/frontend": "^0.53.2",
         "@next/third-parties": "^15.3.1",
         "@number-flow/react": "^0.5.9",
+        "@prisma/client": "6.9.0",
         "@prisma/instrumentation": "6.6.0",
         "@react-email/components": "^0.0.41",
         "@react-email/render": "^1.1.2",
@@ -97,7 +98,7 @@
         "@tiptap/extension-table-row": "^2.22.3",
         "@trigger.dev/react-hooks": "3.3.17",
         "@trigger.dev/sdk": "3.3.17",
-        "@trycompai/db": "workspace:*",
+        "@trycompai/db": "*",
         "@types/canvas-confetti": "^1.9.0",
         "@types/three": "^0.177.0",
         "@uploadthing/react": "^7.3.0",
@@ -119,6 +120,7 @@
         "playwright-core": "^1.52.0",
         "posthog-js": "^1.236.6",
         "posthog-node": "^4.14.0",
+        "prisma": "6.9.0",
         "puppeteer-core": "^24.7.2",
         "react": "^19.1.0",
         "react-dom": "^19.1.0",
@@ -227,9 +229,11 @@
     },
     "packages/db": {
       "name": "@trycompai/db",
-      "version": "1.1.1",
-      "devDependencies": {
+      "version": "1.1.2",
+      "dependencies": {
         "@prisma/client": "6.9.0",
+      },
+      "devDependencies": {
         "@trycompai/tsconfig": "workspace:*",
         "prisma": "6.9.0",
         "ts-node": "^10.9.2",

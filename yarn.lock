@@ -1340,6 +1340,7 @@
     "@nangohq/frontend" "^0.53.2"
     "@next/third-parties" "^15.3.1"
     "@number-flow/react" "^0.5.9"
+    "@prisma/client" "6.9.0"
     "@prisma/instrumentation" "6.6.0"
     "@react-email/components" "^0.0.41"
     "@react-email/render" "^1.1.2"
@@ -1356,7 +1357,7 @@
     "@trigger.dev/react-hooks" "3.3.17"
     "@trigger.dev/sdk" "3.3.17"
   dependencies:
-    "@trycompai/db" "workspace:*"
+    "@trycompai/db" "*"
   dependencies:
     "@types/canvas-confetti" "^1.9.0"
     "@types/three" "^0.177.0"
@@ -1379,6 +1380,7 @@
     playwright-core "^1.52.0"
     posthog-js "^1.236.6"
     posthog-node "^4.14.0"
+    prisma "6.9.0"
     puppeteer-core "^24.7.2"
     react "^19.1.0"
     react-dom "^19.1.0"
@@ -5591,11 +5593,9 @@
     posthog-js "^1.236.6"
     posthog-node "^4.14.0"
 
-"@trycompai/db@^workspace:packages/db", "@trycompai/db@workspace:*":
+"@trycompai/db@^workspace:packages/db", "@trycompai/db@*":
   version "workspace:packages/db"
   resolved "workspace:packages/db"
-  devDependencies:
-    "@prisma/client" "6.9.0"
   devDependencies:
     "@trycompai/tsconfig" "workspace:*"
   devDependencies:
@@ -5603,6 +5603,8 @@
     ts-node "^10.9.2"
     tsup "^8.5.0"
     typescript "^5.8.3"
+  dependencies:
+    "@prisma/client" "6.9.0"
 
 "@trycompai/email@^workspace:packages/email", "@trycompai/email@workspace:*":
   version "workspace:packages/email"
