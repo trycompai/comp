@@ -170,11 +170,17 @@ export class PrismaExtension implements BuildExtension {
         await cp(source, destination);
       }
       commands.push(
-        `${binaryForRuntime(
-          manifest.runtime,
-        )} node_modules/prisma/build/index.js generate --schema=./prisma/schema ${generatorFlags.join(
-          ' ',
-        )}`,
+        `echo "🚀 Starting Prisma client generation (schema folder mode)..." && ` +
+          `echo "📋 Schema location: ./prisma/schema" && ` +
+          `ls -la ./prisma/ && ` +
+          `${binaryForRuntime(
+            manifest.runtime,
+          )} node_modules/prisma/build/index.js generate --schema=./prisma/schema ${generatorFlags.join(
+            ' ',
+          )} && ` +
+          `echo "✅ Prisma generation completed" && ` +
+          `echo "📂 Checking what was generated..." && ` +
+          `ls -la ./generated/ 2>/dev/null || echo "❌ No generated folder found after generation"`,
       );
     } else {
       prismaDir = dirname(this._resolvedSchemaPath);
@@ -196,6 +202,28 @@ export class PrismaExtension implements BuildExtension {
         )}`,
       );
     }
+
+    // Add command to copy generated client to standard location for custom output directories
+    commands.push(
+      `echo "🔍 Checking for generated Prisma client..." && ` +
+        `ls -la ./generated/ 2>/dev/null || echo "❌ No ./generated/ directory found" && ` +
+        `if [ -d "./generated/prisma" ]; then ` +
+        `echo "✅ Found ./generated/prisma directory" && ` +
+        `ls -la ./generated/prisma/ && ` +
+        `echo "📂 Creating ./node_modules/@prisma/client directory..." && ` +
+        `mkdir -p ./node_modules/@prisma/client && ` +
+        `echo "📋 Copying from ./generated/prisma/ to ./node_modules/@prisma/client/..." && ` +
+        `cp -r ./generated/prisma/* ./node_modules/@prisma/client/ && ` +
+        `echo "✅ Copy completed successfully" && ` +
+        `ls -la ./node_modules/@prisma/client/; ` +
+        `else ` +
+        `echo "❌ ./generated/prisma directory not found"; ` +
+        `fi && ` +
+        `echo "🔍 Final check - looking for query engines..." && ` +
+        `find ./node_modules/@prisma/client -name "*engine*" 2>/dev/null || echo "❌ No engines found in @prisma/client" && ` +
+        `find ./generated -name "*engine*" 2>/dev/null || echo "❌ No engines found in generated/"`,
+    );
+
     const env: Record<string, string | undefined> = {};
     if (this.options.migrate) {
       // Copy the migrations directory to the build output path
