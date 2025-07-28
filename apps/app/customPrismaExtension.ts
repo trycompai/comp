@@ -43,7 +43,7 @@ export type PrismaExtensionOptions = {
   directUrlEnvVarName?: string;
   isUsingSchemaFolder?: boolean;
 };
-const BINARY_TARGET = 'linux-arm64-openssl-3.0.x';
+const BINARY_TARGET = 'debian-openssl-3.0.x';
 export function prismaExtension(options: PrismaExtensionOptions): PrismaExtension {
   return new PrismaExtension(options);
 }
