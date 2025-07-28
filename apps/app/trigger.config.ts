@@ -7,7 +7,6 @@ import { PrismaExtension } from './customPrismaExtension';
 
 export default defineConfig({
   project: 'proj_lhxjliiqgcdyqbgtucda',
-  runtime: 'bun',
   logLevel: 'log',
   instrumentations: [new PrismaInstrumentation()],
   maxDuration: 300, // 5 minutes
