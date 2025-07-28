@@ -1,5 +1,5 @@
 import { db } from '@comp/db';
-import type { Member, Organization, User } from '@prisma/client';
+import type { Member, Organization, User } from '@comp/db/types';
 import { NoAccessMessage } from '../../components/NoAccessMessage';
 import type { FleetPolicy, Host } from '../types';
 import { EmployeeTasksList } from './EmployeeTasksList';

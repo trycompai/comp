@@ -1,7 +1,7 @@
 import { trainingVideos as trainingVideosData } from '@/lib/data/training-videos';
 import { auth } from '@/utils/auth';
 import { db } from '@comp/db';
-import type { Member, Policy, User } from '@prisma/client';
+import type { Member, Policy, User } from '@comp/db/types';
 import { headers } from 'next/headers';
 import { EmployeeCompletionChart } from './EmployeeCompletionChart';
 

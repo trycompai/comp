@@ -1,12 +1,12 @@
 'use client';
 
 import { updateVendorInherentRisk } from '@/app/(app)/[orgId]/vendors/[vendorId]/actions/update-vendor-inherent-risk';
+import { Impact, Likelihood } from '@comp/db/types';
 import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { useToast } from '@comp/ui/use-toast';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Impact, Likelihood } from '@prisma/client';
 import { useQueryState } from 'nuqs';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';

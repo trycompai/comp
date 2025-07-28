@@ -1,7 +1,7 @@
 'use server';
 
 import { db } from '@comp/db';
-import { Impact, Likelihood } from '@prisma/client';
+import { Impact, Likelihood } from '@comp/db/types';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { authActionClient } from '../safe-action';
 import { updateResidualRiskSchema } from '../schema';

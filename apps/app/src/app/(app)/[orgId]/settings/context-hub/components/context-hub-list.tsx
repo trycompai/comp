@@ -1,6 +1,6 @@
+import type { Context } from '@comp/db/types';
 import { Badge } from '@comp/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
-import type { Context } from '@prisma/client';
 
 export async function ContextHubList({ entries }: { entries: Context[] }) {
   return (

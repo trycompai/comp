@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useRef, useState } from 'react';
 
+import type { Role } from '@comp/db/types';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,7 +35,6 @@ import {
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
 import { Label } from '@comp/ui/label';
-import type { Role } from '@prisma/client';
 
 import { MultiRoleCombobox } from './MultiRoleCombobox';
 import type { MemberWithUser } from './TeamMembers';
