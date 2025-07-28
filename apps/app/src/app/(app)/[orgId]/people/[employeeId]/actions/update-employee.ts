@@ -3,7 +3,7 @@
 import { authActionClient } from '@/actions/safe-action';
 import { db } from '@comp/db';
 import type { Departments } from '@comp/db/types';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '@comp/db/types';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { appErrors } from '../types';

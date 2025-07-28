@@ -41,7 +41,7 @@
     "@tiptap/extension-table-row": "^2.22.3",
     "@trigger.dev/react-hooks": "3.3.17",
     "@trigger.dev/sdk": "3.3.17",
-    "@trycompai/db": "workspace:*",
+    "@trycompai/db": "*",
     "@types/canvas-confetti": "^1.9.0",
     "@types/three": "^0.177.0",
     "@uploadthing/react": "^7.3.0",
@@ -143,5 +143,6 @@
     "test:watch": "vitest --watch",
     "trigger:dev": "npx trigger.dev@latest dev",
     "typecheck": "tsc --noEmit"
-  }
+  },
+  "type": "module"
 }

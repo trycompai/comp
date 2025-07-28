@@ -1,6 +1,6 @@
 'use client';
 
-import type { Role } from '@prisma/client';
+import type { Role } from '@comp/db/types';
 import * as React from 'react';
 
 import { Dialog, DialogContent } from '@comp/ui/dialog';

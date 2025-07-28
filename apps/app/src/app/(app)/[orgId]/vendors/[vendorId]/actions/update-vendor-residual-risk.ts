@@ -3,7 +3,7 @@
 import { appErrors } from '@/lib/errors';
 import type { ActionResponse } from '@/types/actions';
 import { db } from '@comp/db';
-import { Impact, Likelihood } from '@prisma/client';
+import { Impact, Likelihood } from '@comp/db/types';
 import { createSafeActionClient } from 'next-safe-action';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';

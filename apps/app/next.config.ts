@@ -17,7 +17,6 @@ const config: NextConfig = {
       },
     ],
   },
-  transpilePackages: ['@comp/ui'],
   logging: {
     fetches: {
       fullUrl: process.env.LOG_FETCHES === 'true',
