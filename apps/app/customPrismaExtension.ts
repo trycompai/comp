@@ -179,28 +179,25 @@ export class PrismaExtension implements BuildExtension {
         )}`,
       );
 
-      // Debug: List what was generated
+      // Debug: Show current working directory and structure
       commands.push(
-        `ls -la ./prisma/generated/prisma/ || echo "No generated client at ./prisma/generated/prisma/"`,
-        `ls -la ./generated/prisma/ || echo "No generated client at ./generated/prisma/"`,
+        `echo "Current directory: $(pwd)"`,
+        `echo "Directory structure:"`,
+        `ls -la`,
+        `echo "Looking for generated Prisma client:"`,
+        `find . -name "runtime" -type d | head -20`,
       );
 
-      // Ensure the parent directories exist
-      commands.push(`mkdir -p /app/packages/db/generated`, `mkdir -p packages/db/generated`);
-
-      // Copy the generated client to where the code expects it
-      // Try multiple source locations to handle different generation scenarios
+      // The generated client will be at ./prisma/generated/prisma
+      // But packages/db/src/client.ts expects it at ../generated/prisma relative to src
+      // Which means it should be at packages/db/generated/prisma
       commands.push(
-        `if [ -d "./prisma/generated/prisma" ]; then cp -r ./prisma/generated/prisma /app/packages/db/generated/ && echo "Copied from ./prisma/generated/prisma"; fi`,
-        `if [ -d "./generated/prisma" ]; then cp -r ./generated/prisma /app/packages/db/generated/ && echo "Copied from ./generated/prisma"; fi`,
-        `if [ -d "../generated/prisma" ]; then cp -r ../generated/prisma /app/packages/db/generated/ && echo "Copied from ../generated/prisma"; fi`,
-        // Also symlink for relative paths
-        `if [ -d "/app/packages/db/generated/prisma" ]; then cd packages/db && ln -sf /app/packages/db/generated . && echo "Created symlink"; fi`,
-      );
-
-      // Verify the final result
-      commands.push(
-        `ls -la /app/packages/db/generated/prisma/ || echo "ERROR: No client at final location"`,
+        `echo "Ensuring target directory exists..."`,
+        `mkdir -p packages/db/generated`,
+        `echo "Copying generated Prisma client..."`,
+        `cp -r ./prisma/generated/prisma packages/db/generated/`,
+        `echo "Verifying copy..."`,
+        `ls -la packages/db/generated/prisma/ | head -10`,
       );
     } else {
       prismaDir = dirname(this._resolvedSchemaPath);
@@ -222,28 +219,25 @@ export class PrismaExtension implements BuildExtension {
         )}`,
       );
 
-      // Debug: List what was generated
+      // Debug: Show current working directory and structure
       commands.push(
-        `ls -la ./prisma/generated/prisma/ || echo "No generated client at ./prisma/generated/prisma/"`,
-        `ls -la ./generated/prisma/ || echo "No generated client at ./generated/prisma/"`,
+        `echo "Current directory: $(pwd)"`,
+        `echo "Directory structure:"`,
+        `ls -la`,
+        `echo "Looking for generated Prisma client:"`,
+        `find . -name "runtime" -type d | head -20`,
       );
 
-      // Ensure the parent directories exist
-      commands.push(`mkdir -p /app/packages/db/generated`, `mkdir -p packages/db/generated`);
-
-      // Copy the generated client to where the code expects it
-      // Try multiple source locations to handle different generation scenarios
+      // The generated client will be at ./prisma/generated/prisma
+      // But packages/db/src/client.ts expects it at ../generated/prisma relative to src
+      // Which means it should be at packages/db/generated/prisma
       commands.push(
-        `if [ -d "./prisma/generated/prisma" ]; then cp -r ./prisma/generated/prisma /app/packages/db/generated/ && echo "Copied from ./prisma/generated/prisma"; fi`,
-        `if [ -d "./generated/prisma" ]; then cp -r ./generated/prisma /app/packages/db/generated/ && echo "Copied from ./generated/prisma"; fi`,
-        `if [ -d "../generated/prisma" ]; then cp -r ../generated/prisma /app/packages/db/generated/ && echo "Copied from ../generated/prisma"; fi`,
-        // Also symlink for relative paths
-        `if [ -d "/app/packages/db/generated/prisma" ]; then cd packages/db && ln -sf /app/packages/db/generated . && echo "Created symlink"; fi`,
-      );
-
-      // Verify the final result
-      commands.push(
-        `ls -la /app/packages/db/generated/prisma/ || echo "ERROR: No client at final location"`,
+        `echo "Ensuring target directory exists..."`,
+        `mkdir -p packages/db/generated`,
+        `echo "Copying generated Prisma client..."`,
+        `cp -r ./prisma/generated/prisma packages/db/generated/`,
+        `echo "Verifying copy..."`,
+        `ls -la packages/db/generated/prisma/ | head -10`,
       );
     }
     const env: Record<string, string | undefined> = {};
