@@ -145,6 +145,5 @@
     "test:watch": "vitest --watch",
     "trigger:dev": "npx trigger.dev@latest dev",
     "typecheck": "tsc --noEmit"
-  },
-  "type": "module"
+  }
 }
