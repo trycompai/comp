@@ -104,6 +104,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.4.2-canary.16",
     "fleetctl": "^4.68.1",
+    "glob": "^11.0.3",
     "jsdom": "^26.1.0",
     "postcss": "^8.5.4",
     "prisma": "^6.13.0",
@@ -127,6 +128,7 @@
   "private": true,
   "scripts": {
     "analyze-locale-usage": "bunx tsx src/locales/analyze-locale-usage.ts",
+
     "build": "next build",
     "deploy:trigger-prod": "npx trigger.dev@latest deploy",
     "dev": "bun i && bunx concurrently --kill-others --names \"next,trigger\" --prefix-colors \"yellow,blue\" \"next dev --turbo -p 3000\" \"bun run trigger:dev\"",
