@@ -129,9 +129,9 @@
   "private": true,
   "scripts": {
     "analyze-locale-usage": "bunx tsx src/locales/analyze-locale-usage.ts",
-    "db:getschema": "cp ../../node_modules/@trycompai/db/dist/schema.prisma prisma/schema.prisma",
-    "db:generate": "bun run db:getschema && prisma generate",
     "build": "next build",
+    "db:generate": "bun run db:getschema && prisma generate",
+    "db:getschema": "cp ../../node_modules/@trycompai/db/dist/schema.prisma prisma/schema.prisma",
     "deploy:trigger-prod": "npx trigger.dev@latest deploy",
     "dev": "bun i && bunx concurrently --kill-others --names \"next,trigger\" --prefix-colors \"yellow,blue\" \"next dev --turbo -p 3000\" \"bun run trigger:dev\"",
     "lint": "next lint && prettier --check .",
