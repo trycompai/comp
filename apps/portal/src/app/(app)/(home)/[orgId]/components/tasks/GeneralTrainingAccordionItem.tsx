@@ -1,7 +1,7 @@
 'use client';
 
 import { trainingVideos } from '@/lib/data/training-videos';
-import type { EmployeeTrainingVideoCompletion } from '@comp/db/types';
+import type { EmployeeTrainingVideoCompletion } from '@/db/types';
 import { AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
 import { cn } from '@comp/ui/cn';
 import { CheckCircle2, Circle } from 'lucide-react';

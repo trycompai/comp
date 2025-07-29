@@ -1,6 +1,6 @@
 'use client';
 
-import type { Member, Policy } from '@comp/db/types';
+import type { Member, Policy } from '@/db/types';
 import { Button } from '@comp/ui/button';
 import {
   Card,

@@ -1,16 +1,15 @@
 import type { NextConfig } from 'next';
-import * as path from 'path';
 import './src/env.mjs';
 
 const config: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
+  transpilePackages: ['@trycompai/db'],
   turbopack: {
     resolveAlias: {
       underscore: 'lodash',
     },
   },
-  outputFileTracingRoot: path.join(__dirname, '../../'),
   images: {
     remotePatterns: [
       {

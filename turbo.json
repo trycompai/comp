@@ -49,7 +49,7 @@
         "DUB_PROGRAM_ID"
       ],
       "inputs": ["$TURBO_DEFAULT$", ".env"],
-      "dependsOn": ["^build", "^db:generate"],
+      "dependsOn": ["^build"],
       "outputs": [".next/**", "!.next/cache/**", "next-env.d.ts"]
     },
     "lint": {
@@ -60,18 +60,7 @@
     },
     "dev": {
       "inputs": ["$TURBO_DEFAULT$", ".env"],
-      "dependsOn": ["^db:generate"],
       "persistent": true,
-      "cache": false
-    },
-    "db:generate": {
-      "cache": false
-    },
-    "db:migrate": {
-      "cache": false,
-      "persistent": true
-    },
-    "db:push": {
       "cache": false
     },
     "clean": {

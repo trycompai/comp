@@ -1,7 +1,7 @@
 'use client';
 
 import { acceptAllPolicies } from '@/actions/accept-policies';
-import type { Member, Policy } from '@comp/db/types';
+import type { Member, Policy } from '@/db/types';
 import { AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
 import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';

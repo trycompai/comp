@@ -3,9 +3,9 @@
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
 import { useDataTable } from '@/hooks/use-data-table';
-import type { Control, Task } from '@comp/db/types';
 import { Input } from '@comp/ui/input';
 import { ColumnDef } from '@tanstack/react-table';
+import type { Control, Task } from '@trycompai/db';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';

@@ -1,9 +1,9 @@
 'use client';
 
-import type { FrameworkEditorFramework } from '@comp/db/types';
-import { Control, Task } from '@comp/db/types';
 import { Button } from '@comp/ui/button';
 import { Dialog } from '@comp/ui/dialog';
+import type { FrameworkEditorFramework } from '@trycompai/db';
+import { Control, Task } from '@trycompai/db';
 import { PlusIcon } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';

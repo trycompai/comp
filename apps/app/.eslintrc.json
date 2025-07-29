@@ -1,9 +1,10 @@
 {
-  "extends": "next/core-web-vitals",
+  "extends": ["next/core-web-vitals"],
+  "ignorePatterns": ["src/db/generated/**"],
   "rules": {
-    "react/no-unescaped-entities": "off",
+    "react-hooks/rules-of-hooks": "error",
     "react-hooks/exhaustive-deps": "warn",
-    "react-hooks/rules-of-hooks": "warn",
+    "react/no-unescaped-entities": "off",
     "react/display-name": "off"
   }
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import type { Member, Policy } from '@comp/db/types';
+import type { Member, Policy } from '@/db/types';
 import { Button } from '@comp/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';

@@ -64,7 +64,7 @@ export function usePostPaymentOnboarding({
 
     setStepIndex(initialStep);
     setIsLoading(false);
-  }, []);
+  }, [savedAnswers, savedStepIndex]);
 
   const step = postPaymentSteps[stepIndex];
   const stepSchema = z.object({

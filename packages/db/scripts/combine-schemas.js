@@ -3,17 +3,16 @@
 const fs = require('fs');
 const path = require('path');
 
+const BASE_DIR = path.join(__dirname, '../prisma');
 const SCHEMA_DIR = path.join(__dirname, '../prisma/schema');
 const BASE_SCHEMA = path.join(__dirname, '../prisma/schema.prisma');
-const OUTPUT_DIR = path.join(__dirname, '../dist/prisma');
+const OUTPUT_DIR = path.join(__dirname, '../dist');
 const OUTPUT_SCHEMA = path.join(OUTPUT_DIR, 'schema.prisma');
 
 console.log('🔨 Combining Prisma schema files...');
 
 // Read the base schema file
 let combinedSchema = fs.readFileSync(BASE_SCHEMA, 'utf8');
-
-// The base schema should be complete as-is (no modifications needed)
 
 // Read all .prisma files from the schema directory
 const schemaFiles = fs
@@ -49,20 +48,25 @@ if (!fs.existsSync(OUTPUT_DIR)) {
 // Write the combined schema
 fs.writeFileSync(OUTPUT_SCHEMA, combinedSchema);
 
-console.log(`✅ Combined schema written to: ${OUTPUT_SCHEMA}`);
-console.log(`📏 Total size: ${Math.round(combinedSchema.length / 1024)}KB`);
+// Copy the client, index, and types files
+const clientFileContent = `import { PrismaClient } from './generated/prisma';
+const globalForPrisma = global as unknown as { prisma: PrismaClient };
+export const db = globalForPrisma.prisma || new PrismaClient();
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db;
+`;
+fs.writeFileSync(path.join(OUTPUT_DIR, 'client.ts'), clientFileContent);
 
-// Also copy SQL files if they exist
-const sqlFiles = ['functionDefinition.sql', 'randomSecret.sql'];
-sqlFiles.forEach((file) => {
-  const src = path.join(__dirname, '../prisma', file);
-  const dest = path.join(OUTPUT_DIR, file);
+// Create an index file that re-exports the db client
+const indexFileContent = `export { db } from './client'
+export * from './generated/prisma';
+`;
+fs.writeFileSync(path.join(OUTPUT_DIR, 'index.ts'), indexFileContent);
 
-  if (fs.existsSync(src)) {
-    fs.copyFileSync(src, dest);
-    console.log(`📄 Copied ${file}`);
-  }
+// Copy the generated/prisma directory
+fs.cpSync(path.join(BASE_DIR, 'generated'), path.join(OUTPUT_DIR, 'generated'), {
+  recursive: true,
 });
 
-console.log(`🎯 Schema built for distribution only - main development setup unchanged`);
-console.log(`📂 Output directory: ${OUTPUT_DIR}`);
+console.log(`✅ Combined schema written to: ${OUTPUT_SCHEMA}`);
+console.log(`📏 Total size: ${Math.round(combinedSchema.length / 1024)}KB`);
+console.log(`🎯 Schema ready for distribution - users will generate their own Prisma client`);

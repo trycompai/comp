@@ -1,7 +1,7 @@
 'use client';
 
-import type { Attachment, Member, Task, User } from '@comp/db/types';
 import { Card } from '@comp/ui/card';
+import type { Attachment, Member, Task, User } from '@trycompai/db';
 import { useMemo, useState } from 'react';
 import { CommentWithAuthor } from '../../../../../../components/comments/Comments';
 import { updateTask } from '../../actions/updateTask';

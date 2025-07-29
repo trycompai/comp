@@ -1,6 +1,5 @@
 import { auth } from '@/utils/auth';
-import { db } from '@comp/db';
-import { Departments } from '@comp/db/types';
+import { db, Departments } from '@trycompai/db';
 import { NextRequest, NextResponse } from 'next/server';
 
 // Force dynamic rendering for this route

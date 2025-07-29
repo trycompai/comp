@@ -1,4 +1,4 @@
-import { TaskFrequency } from '@comp/db/types';
+import { TaskFrequency } from '@trycompai/db';
 import { differenceInDays, startOfDay } from 'date-fns';
 
 interface ReviewInfo {

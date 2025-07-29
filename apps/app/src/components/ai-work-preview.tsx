@@ -224,7 +224,7 @@ export function AiWorkPreview() {
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [currentIndex, workItems.length]);
+  }, [currentIndex, workItems.length, workItems]);
 
   // Get visible items (previous, current, next)
   const getVisibleItems = () => {

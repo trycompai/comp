@@ -2,10 +2,10 @@
 
 import { OnboardingStepInput } from '@/app/(app)/setup/components/OnboardingStepInput';
 import { LogoSpinner } from '@/components/logo-spinner';
-import type { Organization } from '@comp/db/types';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@comp/ui/card';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@comp/ui/form';
+import type { Organization } from '@trycompai/db';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { useEffect } from 'react';
 import { usePostPaymentOnboarding } from '../hooks/usePostPaymentOnboarding';

@@ -1,7 +1,7 @@
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { CheckoutCompleteTracking } from '@/components/tracking/CheckoutCompleteTracking';
 import { auth } from '@/utils/auth';
-import { db } from '@comp/db';
+import { db } from '@trycompai/db';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { cache } from 'react';

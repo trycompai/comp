@@ -1,4 +1,4 @@
-import { Departments, type Member, type Session, type User } from '@comp/db/types';
+import { Departments, type Member, type Session, type User } from '@trycompai/db';
 import { vi } from 'vitest';
 
 // Mock auth API structure

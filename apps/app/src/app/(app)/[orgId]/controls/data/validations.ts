@@ -1,5 +1,5 @@
 import { getFiltersStateParser, getSortingStateParser } from '@/lib/parsers';
-import { Control } from '@comp/db/types';
+import { Control } from '@trycompai/db';
 import {
   createSearchParamsCache,
   parseAsArrayOf,

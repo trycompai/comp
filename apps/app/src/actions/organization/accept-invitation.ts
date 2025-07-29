@@ -1,6 +1,6 @@
 'use server';
 
-import { db } from '@comp/db';
+import { db } from '@trycompai/db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { Resend } from 'resend';
 import { z } from 'zod';

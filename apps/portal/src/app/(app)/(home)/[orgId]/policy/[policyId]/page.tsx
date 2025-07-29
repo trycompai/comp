@@ -1,5 +1,5 @@
 import { auth } from '@/app/lib/auth';
-import { db } from '@comp/db';
+import { db } from '@/db';
 import {
   Card,
   CardContent,

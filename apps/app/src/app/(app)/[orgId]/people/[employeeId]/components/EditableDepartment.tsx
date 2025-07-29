@@ -1,7 +1,7 @@
 'use client';
 
-import type { Departments } from '@comp/db/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
+import type { Departments } from '@trycompai/db';
 import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
 import { toast } from 'sonner';

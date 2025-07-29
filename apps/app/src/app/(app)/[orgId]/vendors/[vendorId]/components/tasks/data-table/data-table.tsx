@@ -1,8 +1,8 @@
 'use client';
 
-import type { Task } from '@comp/db/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@comp/ui/table';
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
+import type { Task } from '@trycompai/db';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useGetColumnHeaders } from './client-columns';
 

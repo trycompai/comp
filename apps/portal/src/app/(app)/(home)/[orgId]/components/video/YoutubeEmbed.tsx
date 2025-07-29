@@ -1,6 +1,6 @@
 'use client';
 
-import type { EmployeeTrainingVideoCompletion } from '@comp/db/types';
+import type { EmployeeTrainingVideoCompletion } from '@/db/types';
 import { Button } from '@comp/ui/button';
 import { ArrowRight, Check } from 'lucide-react';
 import { useState } from 'react';

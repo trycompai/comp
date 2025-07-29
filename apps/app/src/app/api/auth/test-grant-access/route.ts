@@ -1,4 +1,4 @@
-import { db } from '@comp/db';
+import { db } from '@trycompai/db';
 import { NextRequest, NextResponse } from 'next/server';
 
 // Force dynamic rendering for this route

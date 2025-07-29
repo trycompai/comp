@@ -4,10 +4,10 @@ import { DataTable } from '@/components/data-table/data-table';
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
 import { StatusIndicator } from '@/components/status-indicator';
 import { useDataTable } from '@/hooks/use-data-table';
-import { Task } from '@comp/db/types';
 import { Icons } from '@comp/ui/icons';
 import { Input } from '@comp/ui/input';
 import { ColumnDef } from '@tanstack/react-table';
+import { Task } from '@trycompai/db';
 import { useMemo, useState } from 'react';
 
 interface TasksTableProps {

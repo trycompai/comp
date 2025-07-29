@@ -3,15 +3,15 @@
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
 import { useDataTable } from '@/hooks/use-data-table';
+import { Icons } from '@comp/ui/icons';
+import { Input } from '@comp/ui/input';
+import { ColumnDef } from '@tanstack/react-table';
 import type {
   FrameworkEditorFramework,
   FrameworkEditorRequirement,
   FrameworkInstance,
   RequirementMap,
-} from '@comp/db/types';
-import { Icons } from '@comp/ui/icons';
-import { Input } from '@comp/ui/input';
-import { ColumnDef } from '@tanstack/react-table';
+} from '@trycompai/db';
 import { useMemo, useState } from 'react';
 
 interface RequirementsTableProps {

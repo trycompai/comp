@@ -1,7 +1,7 @@
 'use client';
 
 import { FrameworkCard } from '@/components/framework-card';
-import type { FrameworkEditorFramework } from '@comp/db/types';
+import type { FrameworkEditorFramework } from '@trycompai/db';
 import { useEffect, useState } from 'react';
 
 interface FrameworkSelectionProps {
@@ -39,7 +39,7 @@ export function FrameworkSelection({ value, onChange, onLoadingChange }: Framewo
     }
 
     fetchFrameworks();
-  }, [onLoadingChange]); // Removed onChange and value from dependencies to prevent infinite loop
+  }, [onLoadingChange, onChange, value]);
 
   if (isLoading) {
     return null;

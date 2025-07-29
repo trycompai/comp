@@ -1,4 +1,3 @@
-import { Control } from '@comp/db/types';
 import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
 import {
@@ -11,6 +10,7 @@ import {
   DialogTrigger,
 } from '@comp/ui/dialog';
 import MultipleSelector, { Option } from '@comp/ui/multiple-selector';
+import { Control } from '@trycompai/db';
 import { PlusIcon } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';

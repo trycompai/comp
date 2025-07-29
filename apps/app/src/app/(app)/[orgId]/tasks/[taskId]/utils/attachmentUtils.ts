@@ -1,4 +1,4 @@
-import type { AttachmentType } from '@comp/db/types';
+import type { AttachmentType } from '@trycompai/db';
 import { FileAudio, FileIcon, FileImage, FileText, FileVideo } from 'lucide-react';
 import type React from 'react';
 

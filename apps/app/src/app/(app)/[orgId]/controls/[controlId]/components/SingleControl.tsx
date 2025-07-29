@@ -1,15 +1,6 @@
 'use client';
 
 import { StatusIndicator } from '@/components/status-indicator';
-import type {
-  Control,
-  FrameworkEditorFramework,
-  FrameworkEditorRequirement,
-  FrameworkInstance,
-  Policy,
-  RequirementMap,
-  Task,
-} from '@comp/db/types';
 import { Button } from '@comp/ui/button';
 import {
   DropdownMenu,
@@ -18,6 +9,15 @@ import {
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
+import type {
+  Control,
+  FrameworkEditorFramework,
+  FrameworkEditorRequirement,
+  FrameworkInstance,
+  Policy,
+  RequirementMap,
+  Task,
+} from '@trycompai/db';
 import { MoreVertical, Trash2 } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';

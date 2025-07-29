@@ -1,14 +1,14 @@
 import { openai } from '@ai-sdk/openai';
-import { db } from '@comp/db';
+import { logger, task, tasks } from '@trigger.dev/sdk/v3';
 import {
+  db,
   Departments,
   Impact,
   Likelihood,
   RiskCategory,
   RiskTreatmentType,
   VendorCategory,
-} from '@comp/db/types';
-import { logger, task, tasks } from '@trigger.dev/sdk/v3';
+} from '@trycompai/db';
 import { generateObject } from 'ai';
 import axios from 'axios';
 import z from 'zod';

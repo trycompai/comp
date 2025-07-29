@@ -1,6 +1,6 @@
 'use client';
 
-import type { Member } from '@comp/db/types';
+import type { Member } from '@/db/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';

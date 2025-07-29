@@ -1,4 +1,4 @@
-import { db } from '@comp/db';
+import { db } from '@/db';
 import { OTPVerificationEmail, sendEmail, sendInviteMemberEmail } from '@comp/email';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';

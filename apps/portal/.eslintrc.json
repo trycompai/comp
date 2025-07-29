@@ -1,5 +1,6 @@
 {
   "extends": "next/core-web-vitals",
+  "ignorePatterns": ["src/db/generated/**"],
   "rules": {
     "react/no-unescaped-entities": "off"
   }

@@ -1,4 +1,4 @@
-import { db } from '@comp/db';
+import { db } from '@trycompai/db';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';

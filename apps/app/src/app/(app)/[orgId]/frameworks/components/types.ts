@@ -1,4 +1,4 @@
-import type { FrameworkInstance, IntegrationResult, Policy, Task } from '@comp/db/types';
+import type { FrameworkInstance, IntegrationResult, Policy, Task } from '@trycompai/db';
 import { FrameworkInstanceWithControls } from '../types';
 
 export interface ComplianceScoresProps {
