@@ -49,6 +49,7 @@ generator client {
   provider        = "prisma-client-js"
   output          = "../node_modules/.prisma/client"
   previewFeatures = ["postgresqlExtensions"]
+  binaryTargets   = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
@@ -79,6 +80,7 @@ model User {
   provider        = "prisma-client-js"
   output          = "../node_modules/.prisma/client"
   previewFeatures = ["postgresqlExtensions"]
+  binaryTargets   = ["native", "rhel-openssl-3.0.x"]
 }`,
       );
     } else {
@@ -87,6 +89,7 @@ model User {
   provider        = "prisma-client-js"
   output          = "../node_modules/.prisma/client"
   previewFeatures = ["postgresqlExtensions"]
+  binaryTargets   = ["native", "rhel-openssl-3.0.x"]
 }
 
 ${schemaContent}`;
