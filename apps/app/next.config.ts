@@ -4,6 +4,7 @@ import './src/env.mjs';
 const config: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
+  serverExternalPackages: ['@prisma/client', 'prisma'],
   turbopack: {
     resolveAlias: {
       underscore: 'lodash',
