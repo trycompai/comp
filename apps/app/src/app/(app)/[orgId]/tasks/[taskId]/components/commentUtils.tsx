@@ -1,4 +1,4 @@
-import { AttachmentType } from '@comp/db/types';
+import { AttachmentType } from '@trycompai/db';
 import { FileAudio, FileQuestion, FileText, FileVideo } from 'lucide-react';
 
 // Formats a date object into relative time string (e.g., "5m ago")

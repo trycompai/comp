@@ -1,7 +1,6 @@
 'use server';
 
-import { db } from '@comp/db';
-import { Impact, Likelihood } from '@comp/db/types';
+import { db, Impact, Likelihood } from '@trycompai/db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { authActionClient } from '../safe-action';
 import { updateResidualRiskSchema } from '../schema';

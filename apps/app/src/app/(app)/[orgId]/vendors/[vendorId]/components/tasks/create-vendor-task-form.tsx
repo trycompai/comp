@@ -1,7 +1,6 @@
 'use client';
 
 import { SelectAssignee } from '@/components/SelectAssignee';
-import { Member, User } from '@comp/db/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
 import { Button } from '@comp/ui/button';
 import { Calendar } from '@comp/ui/calendar';
@@ -11,6 +10,7 @@ import { Input } from '@comp/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
 import { Textarea } from '@comp/ui/textarea';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Member, User } from '@trycompai/db';
 import { format } from 'date-fns';
 import { ArrowRightIcon, CalendarIcon } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';

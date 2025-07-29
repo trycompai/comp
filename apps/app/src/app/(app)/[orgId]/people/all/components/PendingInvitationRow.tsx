@@ -1,6 +1,5 @@
 'use client';
 
-import type { Invitation } from '@comp/db/types';
 import { Avatar, AvatarFallback } from '@comp/ui/avatar';
 import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
@@ -19,6 +18,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
+import type { Invitation } from '@trycompai/db';
 import { Clock, MoreHorizontal, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 

@@ -7,12 +7,12 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { authClient } from '@/utils/auth-client';
-import type { Invitation, Role } from '@comp/db/types';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent } from '@comp/ui/card';
 import { Input } from '@comp/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Separator } from '@comp/ui/separator';
+import type { Invitation, Role } from '@trycompai/db';
 
 import { MemberRow } from './MemberRow';
 import { PendingInvitationRow } from './PendingInvitationRow';

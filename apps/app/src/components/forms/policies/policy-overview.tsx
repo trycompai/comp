@@ -4,7 +4,6 @@ import { updatePolicyFormAction } from '@/actions/policies/update-policy-form-ac
 import { updatePolicyFormSchema } from '@/actions/schema';
 import { StatusIndicator } from '@/components/status-indicator';
 import { useSession } from '@/utils/auth-client';
-import { Departments, Frequency, type Policy, type PolicyStatus } from '@comp/db/types';
 import { Button } from '@comp/ui/button';
 import { Calendar } from '@comp/ui/calendar';
 import { cn } from '@comp/ui/cn';
@@ -13,6 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Switch } from '@comp/ui/switch';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Departments, Frequency, type Policy, type PolicyStatus } from '@trycompai/db';
 import { format } from 'date-fns';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';

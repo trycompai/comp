@@ -2,8 +2,8 @@
 
 'use server';
 
-import { db } from '@comp/db';
-import type { TaskStatus } from '@comp/db/types';
+import type { TaskStatus } from '@trycompai/db';
+import { db } from '@trycompai/db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { authActionClient } from '../../safe-action';
 import { updateTaskSchema } from '../../schema';

@@ -1,8 +1,8 @@
 'use server';
 
 import { auth } from '@/utils/auth';
-import { db } from '@comp/db';
-import type { Invitation, Member, User } from '@comp/db/types';
+import type { Invitation, Member, User } from '@trycompai/db';
+import { db } from '@trycompai/db';
 import { headers } from 'next/headers';
 import { removeMember } from '../actions/removeMember';
 import { revokeInvitation } from '../actions/revokeInvitation';

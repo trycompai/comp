@@ -1,4 +1,4 @@
-import { Departments, TaskFrequency, TaskStatus } from '@comp/db/types';
+import { Departments, TaskFrequency, TaskStatus } from '@trycompai/db';
 
 // Define possible statuses based on the Prisma schema
 export const taskStatuses: TaskStatus[] = ['todo', 'in_progress', 'done', 'not_relevant'];

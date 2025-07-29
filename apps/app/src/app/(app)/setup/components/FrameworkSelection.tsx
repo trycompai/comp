@@ -1,8 +1,8 @@
 'use client';
 
 import { FrameworkCard } from '@/components/framework-card';
-import type { FrameworkEditorFramework } from '@comp/db/types';
-import { useEffect, useState } from 'react';
+import type { FrameworkEditorFramework } from '@trycompai/db';
+import { useEffect, useRef, useState } from 'react';
 
 interface FrameworkSelectionProps {
   value: string[];
@@ -15,6 +15,14 @@ export function FrameworkSelection({ value, onChange, onLoadingChange }: Framewo
     Pick<FrameworkEditorFramework, 'id' | 'name' | 'description' | 'version' | 'visible'>[]
   >([]);
   const [isLoading, setIsLoading] = useState(true);
+  const onChangeRef = useRef(onChange);
+  const valueRef = useRef(value);
+
+  // Keep refs up to date
+  useEffect(() => {
+    onChangeRef.current = onChange;
+    valueRef.current = value;
+  });
 
   useEffect(() => {
     async function fetchFrameworks() {
@@ -24,12 +32,6 @@ export function FrameworkSelection({ value, onChange, onLoadingChange }: Framewo
         if (!response.ok) throw new Error('Failed to fetch frameworks');
         const data = await response.json();
         setFrameworks(data.frameworks);
-
-        // Auto-select the first visible framework if none selected
-        const visibleFrameworks = data.frameworks.filter((f: any) => f.visible);
-        if (visibleFrameworks.length > 0 && (!value || value.length === 0)) {
-          onChange([visibleFrameworks[0].id]);
-        }
       } catch (error) {
         console.error('Error fetching frameworks:', error);
       } finally {
@@ -39,7 +41,17 @@ export function FrameworkSelection({ value, onChange, onLoadingChange }: Framewo
     }
 
     fetchFrameworks();
-  }, [onLoadingChange]); // Removed onChange and value from dependencies to prevent infinite loop
+  }, []); // Only run once on mount
+
+  // Separate effect for auto-selection - only when frameworks first load
+  useEffect(() => {
+    if (frameworks.length > 0 && (!valueRef.current || valueRef.current.length === 0)) {
+      const visibleFrameworks = frameworks.filter((f) => f.visible);
+      if (visibleFrameworks.length > 0) {
+        onChangeRef.current([visibleFrameworks[0].id]);
+      }
+    }
+  }, [frameworks]); // Only depend on frameworks
 
   if (isLoading) {
     return null;

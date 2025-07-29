@@ -1,9 +1,9 @@
 'use client';
 
 import { LogoSpinner } from '@/components/logo-spinner';
-import type { Onboarding } from '@comp/db/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
+import type { Onboarding } from '@trycompai/db';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertTriangle, Rocket, ShieldAlert, Zap } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -42,15 +42,13 @@ export const OnboardingTracker = ({
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
   const triggerJobId = onboarding.triggerJobId;
 
-  if (!triggerJobId || !publicAccessToken) {
-    return <div className="text-muted-foreground text-sm">Unable to load onboarding tracker.</div>;
-  }
-
-  const { run, error } = useRealtimeRun(triggerJobId, {
+  const { run, error } = useRealtimeRun(triggerJobId || '', {
     accessToken: publicAccessToken,
   });
 
   useEffect(() => {
+    if (!triggerJobId || !publicAccessToken) return;
+
     let interval: NodeJS.Timeout;
     if (run && IN_PROGRESS_STATUSES.includes(run.status)) {
       interval = setInterval(() => {
@@ -60,7 +58,11 @@ export const OnboardingTracker = ({
       setCurrentMessageIndex(0); // Reset when not in progress
     }
     return () => clearInterval(interval);
-  }, [run?.status]);
+  }, [run, triggerJobId, publicAccessToken]);
+
+  if (!triggerJobId || !publicAccessToken) {
+    return <div className="text-muted-foreground text-sm">Unable to load onboarding tracker.</div>;
+  }
 
   if (!triggerJobId) {
     return (

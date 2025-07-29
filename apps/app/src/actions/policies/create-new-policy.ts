@@ -1,7 +1,6 @@
 'use server';
 
-import { db } from '@comp/db';
-import { Departments, Frequency } from '@comp/db/types';
+import { db, Departments, Frequency } from '@trycompai/db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { authActionClient } from '../safe-action';
 import { createPolicySchema } from '../schema';

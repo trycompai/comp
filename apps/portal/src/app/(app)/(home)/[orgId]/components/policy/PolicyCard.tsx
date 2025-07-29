@@ -1,6 +1,5 @@
 'use client';
 
-import type { Member, Policy } from '@comp/db/types';
 import { Button } from '@comp/ui/button';
 import {
   Card,
@@ -11,6 +10,7 @@ import {
   CardTitle,
 } from '@comp/ui/card';
 import type { JSONContent } from '@tiptap/react';
+import type { Member, Policy } from '@trycompai/db';
 import { ArrowRight, Check } from 'lucide-react';
 import { useState } from 'react';
 import { PolicyEditor } from './PolicyEditor';

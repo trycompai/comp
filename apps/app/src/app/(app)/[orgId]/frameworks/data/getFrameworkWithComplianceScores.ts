@@ -4,7 +4,7 @@ import {
   Control, // Policy might still be useful if full Policy objects were ever passed, but selected fields are more common now
   type PolicyStatus, // For the selected policy type
   type Task,
-} from '@comp/db/types';
+} from '@trycompai/db';
 import { FrameworkInstanceWithComplianceScore } from '../components/types';
 import { FrameworkInstanceWithControls } from '../types'; // This now has policies with selected fields
 

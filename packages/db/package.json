@@ -1,86 +1,46 @@
 {
   "name": "@trycompai/db",
   "description": "Database package with Prisma client and schema for Comp AI",
-  "version": "1.1.2",
+  "version": "1.2.7",
   "dependencies": {
-    "@prisma/client": "6.9.0"
+    "@prisma/client": "^6.13.0"
   },
   "devDependencies": {
     "@trycompai/tsconfig": "workspace:*",
-    "prisma": "6.9.0",
-    "ts-node": "^10.9.2",
-    "tsup": "^8.5.0",
+    "prisma": "^6.13.0",
     "typescript": "^5.8.3"
   },
   "exports": {
-    ".": "./src/index.ts",
-    "./types": "./src/types.ts",
-    "./schema": "./dist/prisma/schema.prisma"
+    ".": "./dist/index.ts"
   },
   "files": [
-    "dist/**",
-    "generated/**",
-    "prisma/**",
-    "scripts/setup-consumer.sh",
+    "dist/generated",
+    "dist/schema.prisma",
+    "dist/client.ts",
+    "dist/index.ts",
     "README.md",
     "INTEGRATION_GUIDE.md"
   ],
-  "keywords": [
-    "comp-ai",
-    "database",
-    "postgresql",
-    "prisma"
-  ],
-  "license": "MIT",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
-  "peerDependencies": {
-    "@prisma/client": "6.9.0",
-    "prisma": "6.9.0"
-  },
-  "prisma": {
-    "schema": "prisma",
-    "seed": "ts-node prisma/seed/seed.ts"
-  },
   "publishConfig": {
     "access": "public"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/comp-ai/comp.git",
+    "url": "git+https://github.com/trycompai/comp.git",
     "directory": "packages/db"
   },
   "scripts": {
-    "build": "bun run db:generate && tsup",
-    "clean": "rm -rf .turbo node_modules dist",
-    "db:generate": "bunx prisma generate",
-    "db:migrate": "bunx prisma migrate dev",
-    "db:push": "bunx prisma db push",
-    "db:seed": "bunx prisma db seed",
-    "db:studio": "bunx prisma studio",
-    "dev": "tsup --watch",
+    "build": "rm -rf dist && rm -rf ./prisma/generated && prisma generate && node scripts/combine-schemas.js",
+    "check-types": "tsc --noEmit",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:push": "prisma db push",
+    "db:seed": "prisma db seed",
+    "db:studio": "prisma studio",
     "docker:clean": "docker-compose down -v",
     "docker:down": "docker-compose down",
     "docker:up": "docker-compose up -d",
     "lint": "prettier --check 'src/**/*.{ts,tsx,js,jsx,json}' 'prisma/**/*.prisma' && tsc --noEmit",
-    "postbuild": "node scripts/combine-schemas.js",
-    "postinstall": "prisma generate",
-    "typecheck": "tsc --noEmit"
-  },
-  "tsup": {
-    "entry": [
-      "src/index.ts",
-      "src/types.ts"
-    ],
-    "format": [
-      "cjs",
-      "esm"
-    ],
-    "dts": false,
-    "clean": true,
-    "external": [
-      "@prisma/client"
-    ]
-  },
-  "types": "./dist/index.d.ts"
+    "prepublishOnly": "bun run build"
+  }
 }

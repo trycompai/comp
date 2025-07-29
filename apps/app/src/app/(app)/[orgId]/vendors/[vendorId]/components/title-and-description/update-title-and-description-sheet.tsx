@@ -1,11 +1,11 @@
 'use client';
 
-import type { Vendor } from '@comp/db/types';
 import { Button } from '@comp/ui/button';
 import { Drawer, DrawerContent, DrawerTitle } from '@comp/ui/drawer';
 import { useMediaQuery } from '@comp/ui/hooks';
 import { ScrollArea } from '@comp/ui/scroll-area';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@comp/ui/sheet';
+import type { Vendor } from '@trycompai/db';
 import { X } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 

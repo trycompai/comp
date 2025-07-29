@@ -3,8 +3,6 @@
 import { createRiskAction } from '@/actions/risk/create-risk-action';
 import { createRiskSchema } from '@/actions/schema';
 import { SelectAssignee } from '@/components/SelectAssignee';
-import type { Member, RiskStatus, User } from '@comp/db/types';
-import { Departments, RiskCategory } from '@comp/db/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
 import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
@@ -12,6 +10,8 @@ import { Input } from '@comp/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Textarea } from '@comp/ui/textarea';
 import { zodResolver } from '@hookform/resolvers/zod';
+import type { Member, RiskStatus, User } from '@trycompai/db';
+import { Departments, RiskCategory } from '@trycompai/db';
 import { ArrowRightIcon } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useQueryState } from 'nuqs';

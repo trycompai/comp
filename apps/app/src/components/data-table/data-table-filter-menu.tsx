@@ -315,148 +315,143 @@ function DataTableFilterItem<TData>({
   onFilterUpdate,
   onFilterRemove,
 }: DataTableFilterItemProps<TData>) {
-  {
-    const [showFieldSelector, setShowFieldSelector] = React.useState(false);
-    const [showOperatorSelector, setShowOperatorSelector] = React.useState(false);
-    const [showValueSelector, setShowValueSelector] = React.useState(false);
+  const [showFieldSelector, setShowFieldSelector] = React.useState(false);
+  const [showOperatorSelector, setShowOperatorSelector] = React.useState(false);
+  const [showValueSelector, setShowValueSelector] = React.useState(false);
 
-    const column = columns.find((column) => column.id === filter.id);
-    if (!column) return null;
+  const column = columns.find((column) => column.id === filter.id);
+  const onItemKeyDown = React.useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+        return;
+      }
 
-    const operatorListboxId = `${filterItemId}-operator-listbox`;
-    const inputId = `${filterItemId}-input`;
+      if (showFieldSelector || showOperatorSelector || showValueSelector) {
+        return;
+      }
 
-    const columnMeta = column.columnDef.meta;
-    const filterOperators = getFilterOperators(filter.variant);
+      if (REMOVE_FILTER_SHORTCUTS.includes(event.key.toLowerCase())) {
+        event.preventDefault();
+        onFilterRemove(filter.filterId);
+      }
+    },
+    [filter.filterId, showFieldSelector, showOperatorSelector, showValueSelector, onFilterRemove],
+  );
 
-    const onItemKeyDown = React.useCallback(
-      (event: React.KeyboardEvent<HTMLDivElement>) => {
-        if (
-          event.target instanceof HTMLInputElement ||
-          event.target instanceof HTMLTextAreaElement
-        ) {
-          return;
+  const operatorListboxId = `${filterItemId}-operator-listbox`;
+  const inputId = `${filterItemId}-input`;
+
+  if (!column) return null;
+
+  const columnMeta = column.columnDef.meta;
+  const filterOperators = getFilterOperators(filter.variant);
+
+  return (
+    <div
+      key={filter.filterId}
+      id={filterItemId}
+      className="bg-background flex h-8 items-center rounded-sm"
+      onKeyDown={onItemKeyDown}
+    >
+      <Popover open={showFieldSelector} onOpenChange={setShowFieldSelector}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="dark:bg-input/30 rounded-sm rounded-l-md border border-r-0 font-normal"
+          >
+            {columnMeta?.icon && <columnMeta.icon className="text-muted-foreground" />}
+            {columnMeta?.label ?? column.id}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          align="start"
+          className="w-48 origin-[var(--radix-popover-content-transform-origin)] p-0"
+        >
+          <Command loop>
+            <CommandInput placeholder="Search fields..." />
+            <CommandList>
+              <CommandEmpty>No fields found.</CommandEmpty>
+              <CommandGroup>
+                {columns.map((column) => (
+                  <CommandItem
+                    key={column.id}
+                    value={column.id}
+                    onSelect={() => {
+                      onFilterUpdate(filter.filterId, {
+                        id: column.id as Extract<keyof TData, string>,
+                        variant: column.columnDef.meta?.variant ?? 'text',
+                        operator: getDefaultFilterOperator(
+                          column.columnDef.meta?.variant ?? 'text',
+                        ),
+                        value: '',
+                      });
+
+                      setShowFieldSelector(false);
+                    }}
+                  >
+                    {column.columnDef.meta?.icon && <column.columnDef.meta.icon />}
+                    <span className="truncate">{column.columnDef.meta?.label ?? column.id}</span>
+                    <Check
+                      className={cn(
+                        'ml-auto',
+                        column.id === filter.id ? 'opacity-100' : 'opacity-0',
+                      )}
+                    />
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+      <Select
+        open={showOperatorSelector}
+        onOpenChange={setShowOperatorSelector}
+        value={filter.operator}
+        onValueChange={(value: FilterOperator) =>
+          onFilterUpdate(filter.filterId, {
+            operator: value,
+            value: value === 'isEmpty' || value === 'isNotEmpty' ? '' : filter.value,
+          })
         }
-
-        if (showFieldSelector || showOperatorSelector || showValueSelector) {
-          return;
-        }
-
-        if (REMOVE_FILTER_SHORTCUTS.includes(event.key.toLowerCase())) {
-          event.preventDefault();
-          onFilterRemove(filter.filterId);
-        }
-      },
-      [filter.filterId, showFieldSelector, showOperatorSelector, showValueSelector, onFilterRemove],
-    );
-
-    return (
-      <div
-        key={filter.filterId}
-        id={filterItemId}
-        className="bg-background flex h-8 items-center rounded-sm"
-        onKeyDown={onItemKeyDown}
       >
-        <Popover open={showFieldSelector} onOpenChange={setShowFieldSelector}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="dark:bg-input/30 rounded-sm rounded-l-md border border-r-0 font-normal"
-            >
-              {columnMeta?.icon && <columnMeta.icon className="text-muted-foreground" />}
-              {columnMeta?.label ?? column.id}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent
-            align="start"
-            className="w-48 origin-[var(--radix-popover-content-transform-origin)] p-0"
-          >
-            <Command loop>
-              <CommandInput placeholder="Search fields..." />
-              <CommandList>
-                <CommandEmpty>No fields found.</CommandEmpty>
-                <CommandGroup>
-                  {columns.map((column) => (
-                    <CommandItem
-                      key={column.id}
-                      value={column.id}
-                      onSelect={() => {
-                        onFilterUpdate(filter.filterId, {
-                          id: column.id as Extract<keyof TData, string>,
-                          variant: column.columnDef.meta?.variant ?? 'text',
-                          operator: getDefaultFilterOperator(
-                            column.columnDef.meta?.variant ?? 'text',
-                          ),
-                          value: '',
-                        });
-
-                        setShowFieldSelector(false);
-                      }}
-                    >
-                      {column.columnDef.meta?.icon && <column.columnDef.meta.icon />}
-                      <span className="truncate">{column.columnDef.meta?.label ?? column.id}</span>
-                      <Check
-                        className={cn(
-                          'ml-auto',
-                          column.id === filter.id ? 'opacity-100' : 'opacity-0',
-                        )}
-                      />
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
-        <Select
-          open={showOperatorSelector}
-          onOpenChange={setShowOperatorSelector}
-          value={filter.operator}
-          onValueChange={(value: FilterOperator) =>
-            onFilterUpdate(filter.filterId, {
-              operator: value,
-              value: value === 'isEmpty' || value === 'isNotEmpty' ? '' : filter.value,
-            })
-          }
+        <SelectTrigger
+          aria-controls={operatorListboxId}
+          className="h-8 rounded-sm border-r-0 px-2.5 lowercase [&_svg]:hidden [&[data-size]]:h-8"
         >
-          <SelectTrigger
-            aria-controls={operatorListboxId}
-            className="h-8 rounded-sm border-r-0 px-2.5 lowercase [&_svg]:hidden [&[data-size]]:h-8"
-          >
-            <SelectValue placeholder={filter.operator} />
-          </SelectTrigger>
-          <SelectContent
-            id={operatorListboxId}
-            className="origin-[var(--radix-select-content-transform-origin)]"
-          >
-            {filterOperators.map((operator) => (
-              <SelectItem key={operator.value} className="lowercase" value={operator.value}>
-                {operator.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {onFilterInputRender({
-          filter,
-          column,
-          inputId,
-          onFilterUpdate,
-          showValueSelector,
-          setShowValueSelector,
-        })}
-        <Button
-          aria-controls={filterItemId}
-          variant="ghost"
-          size="sm"
-          className="dark:bg-input/30 h-full rounded-sm rounded-r-md border border-l-0 px-1.5 font-normal"
-          onClick={() => onFilterRemove(filter.filterId)}
+          <SelectValue placeholder={filter.operator} />
+        </SelectTrigger>
+        <SelectContent
+          id={operatorListboxId}
+          className="origin-[var(--radix-select-content-transform-origin)]"
         >
-          <X className="size-3.5" />
-        </Button>
-      </div>
-    );
-  }
+          {filterOperators.map((operator) => (
+            <SelectItem key={operator.value} className="lowercase" value={operator.value}>
+              {operator.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {onFilterInputRender({
+        filter,
+        column,
+        inputId,
+        onFilterUpdate,
+        showValueSelector,
+        setShowValueSelector,
+      })}
+      <Button
+        aria-controls={filterItemId}
+        variant="ghost"
+        size="sm"
+        className="dark:bg-input/30 h-full rounded-sm rounded-r-md border border-l-0 px-1.5 font-normal"
+        onClick={() => onFilterRemove(filter.filterId)}
+      >
+        <X className="size-3.5" />
+      </Button>
+    </div>
+  );
 }
 
 interface FilterValueSelectorProps<TData> {
