@@ -6,21 +6,9 @@ const config: NextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@trycompai/db'],
   env: {
-    // Tell Prisma where to find binaries from the published package
-    PRISMA_QUERY_ENGINE_LIBRARY: process.env.VERCEL
-      ? '/vercel/path0/apps/app/node_modules/@trycompai/db/dist/generated/prisma/libquery_engine-rhel-openssl-3.0.x.so.node'
-      : undefined,
+    // Force Prisma to use binary engine instead of library engine
+    PRISMA_CLIENT_ENGINE_TYPE: 'binary',
   },
-  // Backup: Install the official Prisma monorepo plugin if env variable doesn't work
-  // Run: bun add @prisma/nextjs-monorepo-workaround-plugin --dev
-  // Then uncomment the webpack section below:
-
-  // webpack: (config, { isServer }) => {
-  //   if (isServer) {
-  //     config.plugins.push(new (require('@prisma/nextjs-monorepo-workaround-plugin'))())
-  //   }
-  //   return config
-  // },
   turbopack: {
     resolveAlias: {
       underscore: 'lodash',
