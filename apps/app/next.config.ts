@@ -1,15 +1,16 @@
 import type { NextConfig } from 'next';
+import * as path from 'path';
 import './src/env.mjs';
 
 const config: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
-  serverExternalPackages: ['@prisma/client', 'prisma'],
   turbopack: {
     resolveAlias: {
       underscore: 'lodash',
     },
   },
+  outputFileTracingRoot: path.join(__dirname, '../../'),
   images: {
     remotePatterns: [
       {
