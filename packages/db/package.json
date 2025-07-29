@@ -3,7 +3,7 @@
   "description": "Database package with Prisma client and schema for Comp AI",
   "version": "1.1.2",
   "dependencies": {
-    "@prisma/client": "6.9.0"
+    "@prisma/client": "6.13.0"
   },
   "devDependencies": {
     "@trycompai/tsconfig": "workspace:*",
@@ -35,7 +35,7 @@
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "peerDependencies": {
-    "@prisma/client": "6.9.0",
+    "@prisma/client": "6.13.0",
     "prisma": "6.9.0"
   },
   "prisma": {
