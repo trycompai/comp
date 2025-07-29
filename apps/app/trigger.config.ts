@@ -1,9 +1,8 @@
 import { PrismaInstrumentation } from '@prisma/instrumentation';
 import { syncVercelEnvVars } from '@trigger.dev/build/extensions/core';
-
 import { puppeteer } from '@trigger.dev/build/extensions/puppeteer';
 import { defineConfig } from '@trigger.dev/sdk/v3';
-import { PrismaExtension } from './customPrismaExtension';
+import { prismaExtension } from './customPrismaExtension';
 
 export default defineConfig({
   project: 'proj_lhxjliiqgcdyqbgtucda',
@@ -12,10 +11,10 @@ export default defineConfig({
   maxDuration: 300, // 5 minutes
   build: {
     extensions: [
-      new PrismaExtension({
-        schema: '../../packages/db/prisma',
+      prismaExtension({
         version: '6.13.0',
-        isUsingSchemaFolder: true,
+        dbPackageVersion: '^1.2.5', // Version of @trycompai/db package
+        // migrate: true, // Uncomment if you need migrations
       }),
       puppeteer(),
       syncVercelEnvVars(),
