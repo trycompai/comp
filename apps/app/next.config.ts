@@ -1,5 +1,6 @@
 import type { NextConfig } from 'next';
 import './src/env.mjs';
+import * as path from 'path';
 
 const config: NextConfig = {
   poweredByHeader: false,
@@ -9,6 +10,7 @@ const config: NextConfig = {
       underscore: 'lodash',
     },
   },
+  outputFileTracingRoot: path.join(__dirname, '../../'),
   outputFileTracingIncludes: {
     '/api/**/*': ['../../packages/db/generated/prisma/**/*'],
     '/**/*': ['../../packages/db/generated/prisma/**/*'],
