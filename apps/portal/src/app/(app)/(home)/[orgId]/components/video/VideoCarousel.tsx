@@ -1,7 +1,7 @@
 'use client';
 
-import type { EmployeeTrainingVideoCompletion } from '@/db/types';
 import { trainingVideos } from '@/lib/data/training-videos';
+import type { EmployeeTrainingVideoCompletion } from '@trycompai/db';
 import { useAction } from 'next-safe-action/hooks';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';

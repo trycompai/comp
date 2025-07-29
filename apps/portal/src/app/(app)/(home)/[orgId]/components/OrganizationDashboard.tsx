@@ -1,5 +1,5 @@
-import { db } from '@/db';
-import type { Member, Organization, User } from '@/db/types';
+import type { Member, Organization, User } from '@trycompai/db';
+import { db } from '@trycompai/db';
 import { NoAccessMessage } from '../../components/NoAccessMessage';
 import type { FleetPolicy, Host } from '../types';
 import { EmployeeTasksList } from './EmployeeTasksList';

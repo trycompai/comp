@@ -1,6 +1,6 @@
-import { db } from '@/db';
 import { getFleetInstance } from '@/utils/fleet';
 import { logger } from '@/utils/logger';
+import { db } from '@trycompai/db';
 import { AxiosError } from 'axios';
 import type { CreateFleetLabelParams } from './types';
 

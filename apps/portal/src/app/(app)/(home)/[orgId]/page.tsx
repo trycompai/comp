@@ -1,8 +1,8 @@
 import { auth } from '@/app/lib/auth';
 import { getPostHogClient } from '@/app/posthog';
-import { db } from '@/db';
-import type { Member } from '@/db/types';
 import { getFleetInstance } from '@/utils/fleet';
+import type { Member } from '@trycompai/db';
+import { db } from '@trycompai/db';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { OrganizationDashboard } from './components/OrganizationDashboard';
