@@ -3,7 +3,12 @@
   "globalDependencies": ["**/.env"],
   "ui": "stream",
   "tasks": {
+    "prisma:generate": {
+      "cache": false,
+      "outputs": ["prisma/schema.prisma", "node_modules/.prisma/**"]
+    },
     "build": {
+      "dependsOn": ["^build", "prisma:generate"],
       "env": [
         "AUTH_GOOGLE_ID",
         "AUTH_GOOGLE_SECRET",
