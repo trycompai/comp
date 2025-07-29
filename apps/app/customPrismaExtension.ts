@@ -202,11 +202,16 @@ export class PrismaExtension implements BuildExtension {
         `ls -la packages/db/generated/prisma/`,
         `echo "Looking for query engine in copied location:"`,
         `find packages/db/generated/prisma -name "*.node" -type f`,
-        // Also copy to the app level for the absolute path
-        `mkdir -p /app/packages/db/generated`,
-        `cp -r ./prisma/generated/prisma /app/packages/db/generated/`,
-        `echo "Verifying absolute path copy:"`,
-        `ls -la /app/packages/db/generated/prisma/`,
+        // Copy to the locations where Prisma is actually looking
+        `echo "Copying to /app/generated/prisma (where Prisma is looking)..."`,
+        `mkdir -p /app/generated`,
+        `cp -r ./prisma/generated/prisma /app/generated/`,
+        `echo "Also copying binary to /app/prisma..."`,
+        `mkdir -p /app/prisma`,
+        `cp ./prisma/generated/prisma/libquery_engine-*.node /app/prisma/`,
+        `echo "Verifying copies:"`,
+        `ls -la /app/generated/prisma/ | grep -E "(\.node|\.js)$"`,
+        `ls -la /app/prisma/*.node || echo "No .node files in /app/prisma"`,
       );
     } else {
       prismaDir = dirname(this._resolvedSchemaPath);
