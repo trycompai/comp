@@ -13,7 +13,7 @@ export default defineConfig({
     extensions: [
       prismaExtension({
         version: '6.13.0',
-        dbPackageVersion: '^1.2.5', // Version of @trycompai/db package
+        dbPackageVersion: '^1.2.8', // Version of @trycompai/db package with compiled JS
         // migrate: true, // Uncomment if you need migrations
       }),
       puppeteer(),

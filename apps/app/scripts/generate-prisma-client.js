@@ -58,13 +58,7 @@ datasource db {
   directUrl  = env("DATABASE_URL")
   extensions = [pgcrypto]
 }
-
-// Add your models here - this is a fallback
-model User {
-  id String @id @default(dbgenerated("generate_prefixed_cuid('usr'::text)"))
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}`;
+`;
 
     console.log('✅ Created minimal schema as fallback');
   } else {
