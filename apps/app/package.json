@@ -116,7 +116,7 @@
     "./src/lib/encryption": "./src/lib/encryption.ts"
   },
   "peerDependencies": {
-    "react": "^19.1.0",
+    "react": "^19.1.1",
     "react-dom": "^19.1.0"
   },
   "pnpm": {
