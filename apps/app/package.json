@@ -126,13 +126,13 @@
     }
   },
   "private": true,
-    "scripts": {
+  "scripts": {
     "analyze-locale-usage": "bunx tsx src/locales/analyze-locale-usage.ts",
-    "postinstall": "node scripts/generate-prisma-client.js",
     "build": "next build",
     "deploy:trigger-prod": "npx trigger.dev@latest deploy",
     "dev": "bun i && bunx concurrently --kill-others --names \"next,trigger\" --prefix-colors \"yellow,blue\" \"next dev --turbo -p 3000\" \"bun run trigger:dev\"",
     "lint": "next lint && prettier --check .",
+    "postinstall": "node scripts/generate-prisma-client.js",
     "start": "next start",
     "test": "vitest",
     "test:all": "./scripts/test-all.sh",
