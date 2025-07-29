@@ -10,7 +10,7 @@ const config: NextConfig = {
     // 1. Use binary engine (more compatible with serverless than library engine)
     PRISMA_CLIENT_ENGINE_TYPE: 'binary',
     // 2. Point directly to binary location in published package (Vercel only)
-    PRISMA_QUERY_ENGINE_BINARY: process.env.VERCEL 
+    PRISMA_QUERY_ENGINE_BINARY: process.env.VERCEL
       ? '/vercel/path0/apps/app/node_modules/@trycompai/db/dist/generated/prisma/query-engine-rhel-openssl-3.0.x'
       : undefined,
   },
