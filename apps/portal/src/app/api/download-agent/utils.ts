@@ -1,5 +1,5 @@
-import { logger } from '@/utils/logger';
 import { db } from '@/db';
+import { logger } from '@/utils/logger';
 import type { SupportedOS } from './types';
 
 /**

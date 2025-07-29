@@ -1,8 +1,8 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
-import { logger } from '@/utils/logger';
 import { db } from '@/db';
+import { logger } from '@/utils/logger';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
