@@ -104,6 +104,7 @@ export class PrismaExtension implements BuildExtension {
     const commands: string[] = [];
     let prismaDir: string | undefined;
     const generatorFlags: string[] = [];
+
     if (this.options.clientGenerator) {
       generatorFlags.push(`--generator=${this.options.clientGenerator}`);
     }
@@ -178,10 +179,25 @@ export class PrismaExtension implements BuildExtension {
         )}`,
       );
 
-      // Add commands to copy the generated client to the expected location
+      // Debug: Show current working directory and structure
       commands.push(
+        `echo "Current directory: $(pwd)"`,
+        `echo "Directory structure:"`,
+        `ls -la`,
+        `echo "Looking for generated Prisma client:"`,
+        `find . -name "runtime" -type d | head -20`,
+      );
+
+      // The generated client will be at ./prisma/generated/prisma
+      // But packages/db/src/client.ts expects it at ../generated/prisma relative to src
+      // Which means it should be at packages/db/generated/prisma
+      commands.push(
+        `echo "Ensuring target directory exists..."`,
         `mkdir -p packages/db/generated`,
+        `echo "Copying generated Prisma client..."`,
         `cp -r ./prisma/generated/prisma packages/db/generated/`,
+        `echo "Verifying copy..."`,
+        `ls -la packages/db/generated/prisma/ | head -10`,
       );
     } else {
       prismaDir = dirname(this._resolvedSchemaPath);
@@ -203,10 +219,25 @@ export class PrismaExtension implements BuildExtension {
         )}`,
       );
 
-      // Add commands to copy the generated client to the expected location
+      // Debug: Show current working directory and structure
       commands.push(
+        `echo "Current directory: $(pwd)"`,
+        `echo "Directory structure:"`,
+        `ls -la`,
+        `echo "Looking for generated Prisma client:"`,
+        `find . -name "runtime" -type d | head -20`,
+      );
+
+      // The generated client will be at ./prisma/generated/prisma
+      // But packages/db/src/client.ts expects it at ../generated/prisma relative to src
+      // Which means it should be at packages/db/generated/prisma
+      commands.push(
+        `echo "Ensuring target directory exists..."`,
         `mkdir -p packages/db/generated`,
+        `echo "Copying generated Prisma client..."`,
         `cp -r ./prisma/generated/prisma packages/db/generated/`,
+        `echo "Verifying copy..."`,
+        `ls -la packages/db/generated/prisma/ | head -10`,
       );
     }
     const env: Record<string, string | undefined> = {};
