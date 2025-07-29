@@ -19,6 +19,8 @@
   },
   "files": [
     "dist/**",
+    "generated/**",
+    "prisma/**",
     "scripts/setup-consumer.sh",
     "README.md",
     "INTEGRATION_GUIDE.md"
@@ -62,6 +64,7 @@
     "docker:up": "docker-compose up -d",
     "lint": "prettier --check 'src/**/*.{ts,tsx,js,jsx,json}' 'prisma/**/*.prisma' && tsc --noEmit",
     "postbuild": "node scripts/combine-schemas.js",
+    "postinstall": "prisma generate",
     "typecheck": "tsc --noEmit"
   },
   "tsup": {
