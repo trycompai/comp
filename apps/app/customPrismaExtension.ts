@@ -185,7 +185,9 @@ export class PrismaExtension implements BuildExtension {
         `echo "Directory structure:"`,
         `ls -la`,
         `echo "Looking for generated Prisma client:"`,
-        `find . -name "runtime" -type d | head -20`,
+        `find . -name "libquery_engine*.node" -type f | head -20`,
+        `echo "Prisma generated structure:"`,
+        `ls -la ./prisma/generated/prisma/`,
       );
 
       // The generated client will be at ./prisma/generated/prisma
@@ -197,7 +199,14 @@ export class PrismaExtension implements BuildExtension {
         `echo "Copying generated Prisma client..."`,
         `cp -r ./prisma/generated/prisma packages/db/generated/`,
         `echo "Verifying copy..."`,
-        `ls -la packages/db/generated/prisma/ | head -10`,
+        `ls -la packages/db/generated/prisma/`,
+        `echo "Looking for query engine in copied location:"`,
+        `find packages/db/generated/prisma -name "*.node" -type f`,
+        // Also copy to the app level for the absolute path
+        `mkdir -p /app/packages/db/generated`,
+        `cp -r ./prisma/generated/prisma /app/packages/db/generated/`,
+        `echo "Verifying absolute path copy:"`,
+        `ls -la /app/packages/db/generated/prisma/`,
       );
     } else {
       prismaDir = dirname(this._resolvedSchemaPath);
@@ -225,7 +234,9 @@ export class PrismaExtension implements BuildExtension {
         `echo "Directory structure:"`,
         `ls -la`,
         `echo "Looking for generated Prisma client:"`,
-        `find . -name "runtime" -type d | head -20`,
+        `find . -name "libquery_engine*.node" -type f | head -20`,
+        `echo "Prisma generated structure:"`,
+        `ls -la ./prisma/generated/prisma/`,
       );
 
       // The generated client will be at ./prisma/generated/prisma
@@ -237,7 +248,14 @@ export class PrismaExtension implements BuildExtension {
         `echo "Copying generated Prisma client..."`,
         `cp -r ./prisma/generated/prisma packages/db/generated/`,
         `echo "Verifying copy..."`,
-        `ls -la packages/db/generated/prisma/ | head -10`,
+        `ls -la packages/db/generated/prisma/`,
+        `echo "Looking for query engine in copied location:"`,
+        `find packages/db/generated/prisma -name "*.node" -type f`,
+        // Also copy to the app level for the absolute path
+        `mkdir -p /app/packages/db/generated`,
+        `cp -r ./prisma/generated/prisma /app/packages/db/generated/`,
+        `echo "Verifying absolute path copy:"`,
+        `ls -la /app/packages/db/generated/prisma/`,
       );
     }
     const env: Record<string, string | undefined> = {};
@@ -279,6 +297,7 @@ export class PrismaExtension implements BuildExtension {
       env,
       dependencies: {
         prisma: version,
+        '@prisma/client': version,
       },
     });
     context.addLayer({
@@ -286,6 +305,7 @@ export class PrismaExtension implements BuildExtension {
       commands,
       dependencies: {
         prisma: version,
+        '@prisma/client': version,
       },
       build: {
         env: {
