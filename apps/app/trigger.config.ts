@@ -14,7 +14,7 @@ export default defineConfig({
     extensions: [
       new PrismaExtension({
         schema: '../../packages/db/prisma',
-        version: '6.9.0',
+        version: '6.13.0',
         isUsingSchemaFolder: true,
       }),
       puppeteer(),

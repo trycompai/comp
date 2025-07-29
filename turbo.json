@@ -49,8 +49,20 @@
         "DUB_PROGRAM_ID"
       ],
       "inputs": ["$TURBO_DEFAULT$", ".env"],
-      "dependsOn": ["^build", "^db:generate", "^auth:build"],
-      "outputs": [".next/**", "!.next/cache/**", "next-env.d.ts", "data:build"]
+      "dependsOn": ["^build", "^db:generate"],
+      "outputs": [".next/**", "!.next/cache/**", "next-env.d.ts"]
+    },
+    "lint": {
+      "dependsOn": ["^lint"]
+    },
+    "typecheck": {
+      "outputs": ["node_modules/.cache/tsbuildinfo.json"]
+    },
+    "dev": {
+      "inputs": ["$TURBO_DEFAULT$", ".env"],
+      "dependsOn": ["^db:generate"],
+      "persistent": true,
+      "cache": false
     },
     "db:generate": {
       "cache": false
@@ -59,37 +71,11 @@
       "cache": false,
       "persistent": true
     },
-    "auth:build": {
-      "cache": false,
-      "env": ["BETTER_AUTH_SECRET", "BETTER_AUTH_URL", "AUTH_GOOGLE_ID", "AUTH_GOOGLE_SECRET"]
-    },
-    "data:build": {
-      "cache": false,
-      "env": ["DATABASE_URL"],
-      "inputs": ["$TURBO_DEFAULT$", ".env"],
-      "dependsOn": ["^db:generate"],
-      "outputs": ["data:build"]
-    },
     "db:push": {
       "cache": false
     },
     "clean": {
       "cache": false
-    },
-    "integrations:dev": {
-      "cache": false
-    },
-    "dev": {
-      "inputs": ["$TURBO_DEFAULT$", ".env"],
-      "dependsOn": ["^db:generate"],
-      "persistent": true,
-      "cache": false
-    },
-    "lint": {
-      "dependsOn": []
-    },
-    "typecheck": {
-      "outputs": ["node_modules/.cache/tsbuildinfo.json"]
     },
     "deps:check": {
       "cache": false

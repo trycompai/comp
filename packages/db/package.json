@@ -3,11 +3,11 @@
   "description": "Database package with Prisma client and schema for Comp AI",
   "version": "1.1.2",
   "dependencies": {
-    "@prisma/client": "6.9.0"
+    "@prisma/client": "^6.13.0"
   },
   "devDependencies": {
     "@trycompai/tsconfig": "workspace:*",
-    "prisma": "6.9.0",
+    "prisma": "^6.13.0",
     "ts-node": "^10.9.2",
     "tsup": "^8.5.0",
     "typescript": "^5.8.3"
@@ -35,19 +35,15 @@
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "peerDependencies": {
-    "@prisma/client": "6.9.0",
-    "prisma": "6.9.0"
-  },
-  "prisma": {
-    "schema": "prisma",
-    "seed": "ts-node prisma/seed/seed.ts"
+    "@prisma/client": "^6.13.0",
+    "prisma": "^6.13.0"
   },
   "publishConfig": {
     "access": "public"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/comp-ai/comp.git",
+    "url": "git+https://github.com/trycompai/comp.git",
     "directory": "packages/db"
   },
   "scripts": {
