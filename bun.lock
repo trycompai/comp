@@ -99,7 +99,7 @@
         "@tiptap/extension-table-row": "^2.22.3",
         "@trigger.dev/react-hooks": "3.3.17",
         "@trigger.dev/sdk": "3.3.17",
-        "@trycompai/db": "^1.2.6",
+        "@trycompai/db": "^1.2.7",
         "@types/canvas-confetti": "^1.9.0",
         "@types/three": "^0.177.0",
         "@uploadthing/react": "^7.3.0",
@@ -184,7 +184,7 @@
         "@react-email/render": "^1.1.2",
         "@t3-oss/env-nextjs": "^0.13.8",
         "@trycompai/analytics": "workspace:*",
-        "@trycompai/db": "^1.2.6",
+        "@trycompai/db": "^1.2.7",
         "@trycompai/email": "workspace:*",
         "@trycompai/kv": "workspace:*",
         "@trycompai/ui": "workspace:*",
@@ -1568,7 +1568,7 @@
 
     "@trycompai/analytics": ["@trycompai/analytics@workspace:packages/analytics"],
 
-    "@trycompai/db": ["@trycompai/db@1.2.6", "", { "dependencies": { "@prisma/client": "^6.13.0" } }, "sha512-pLg4Dhm9u9ySFvNWobgglO0DmJY5KwV4+RSkFbuuW1dFHbuLXUAUBqd+6cH/HDrQZgIxViJ6Yo9VEsUchmFv9w=="],
+    "@trycompai/db": ["@trycompai/db@1.2.7", "", { "dependencies": { "@prisma/client": "^6.13.0" } }, "sha512-jf4wY8cYqYX4ah5cFL2vGwR08kLS89KfwvStI1sPD0eHjlc54NT6LEqED6fJR5o72EozSynICLBQ4Jtg5qAZIA=="],
 
     "@trycompai/email": ["@trycompai/email@workspace:packages/email"],
 
