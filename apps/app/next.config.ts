@@ -28,7 +28,6 @@ const config: NextConfig = {
       bodySizeLimit: '15mb',
     },
     authInterrupts: true,
-    nodeMiddleware: true,
   },
   async rewrites() {
     return [
