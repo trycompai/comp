@@ -17,7 +17,7 @@
     "dist/generated",
     "dist/schema.prisma",
     "dist/client.ts",
-    "dist/index.ts", 
+    "dist/index.ts",
     "README.md",
     "INTEGRATION_GUIDE.md"
   ],
@@ -30,7 +30,7 @@
     "directory": "packages/db"
   },
   "scripts": {
-    "lint": "prettier --check 'src/**/*.{ts,tsx,js,jsx,json}' 'prisma/**/*.prisma' && tsc --noEmit",
+    "build": "rm -rf dist && rm -rf ./prisma/generated && prisma generate && node scripts/combine-schemas.js",
     "check-types": "tsc --noEmit",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
@@ -40,7 +40,7 @@
     "docker:clean": "docker-compose down -v",
     "docker:down": "docker-compose down",
     "docker:up": "docker-compose up -d",
-    "build": "rm -rf dist && rm -rf ./prisma/generated && prisma generate && node scripts/combine-schemas.js",
+    "lint": "prettier --check 'src/**/*.{ts,tsx,js,jsx,json}' 'prisma/**/*.prisma' && tsc --noEmit",
     "prepublishOnly": "bun run build"
   }
 }
