@@ -1,0 +1,43 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo "Installing dependencies for migrations..."
+      - curl -fsSL https://bun.sh/install | bash
+      - export PATH="/root/.bun/bin:$PATH"
+
+  build:
+    commands:
+      # Environment setup
+      - export PATH="/root/.bun/bin:$PATH"
+      - export PGSSLMODE=require
+      - export NODE_TLS_REJECT_UNAUTHORIZED=0
+
+      # Install dependencies
+      - echo "Installing dependencies..."
+      - cd packages/db
+      - SKIP_ENV_VALIDATION=true bun install --frozen-lockfile || SKIP_ENV_VALIDATION=true bun install
+
+      # Generate Prisma client
+      - echo "Generating Prisma client..."
+      - bun x prisma generate
+
+      # Run database migrations
+      - echo "Running database migrations..."
+      - 'echo "DATABASE_URL is configured: $([ -n \"$DATABASE_URL\" ] && echo ''YES'' || echo ''NO'')"'
+      - bun x prisma migrate deploy
+
+      # Verify migration success
+      - echo "Verifying database schema..."
+      - bun x prisma db pull --print
+
+  post_build:
+    commands:
+      - echo "Database migrations completed successfully on `date`"
+
+cache:
+  paths:
+    - 'node_modules/**/*'
+    - 'packages/db/node_modules/**/*'
+    - '/root/.bun/install/cache/**/*'
