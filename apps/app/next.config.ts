@@ -4,11 +4,14 @@ import './src/env.mjs';
 const config: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
-  serverExternalPackages: ['@prisma/client', 'prisma'],
   turbopack: {
     resolveAlias: {
       underscore: 'lodash',
     },
+  },
+  outputFileTracingIncludes: {
+    '/api/**/*': ['../../packages/db/generated/prisma/**/*'],
+    '/**/*': ['../../packages/db/generated/prisma/**/*'],
   },
   images: {
     remotePatterns: [
