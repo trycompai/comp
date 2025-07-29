@@ -12,8 +12,14 @@ const config: NextConfig = {
   },
   outputFileTracingRoot: path.join(__dirname, '../../'),
   outputFileTracingIncludes: {
-    '/api/**/*': ['../../packages/db/generated/prisma/**/*'],
-    '/**/*': ['../../packages/db/generated/prisma/**/*'],
+    '/api/**/*': [
+      '../../packages/db/generated/prisma/**/*',
+      '../../packages/db/generated/prisma/libquery_engine-*.node',
+    ],
+    '/**/*': [
+      '../../packages/db/generated/prisma/**/*',
+      '../../packages/db/generated/prisma/libquery_engine-*.node',
+    ],
   },
   images: {
     remotePatterns: [
@@ -51,6 +57,16 @@ const config: NextConfig = {
     ];
   },
   skipTrailingSlashRedirect: true,
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      // Ensure Prisma binaries are copied
+      config.externals.push({
+        '@prisma/client': 'commonjs @prisma/client',
+        '../generated/prisma': 'commonjs ../generated/prisma',
+      });
+    }
+    return config;
+  },
 };
 
 if (process.env.VERCEL !== '1') {
