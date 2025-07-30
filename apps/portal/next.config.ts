@@ -4,7 +4,7 @@ import './src/env.mjs';
 const config: NextConfig = {
   transpilePackages: ['@trycompai/db'],
   outputFileTracingIncludes: {
-    '/api/**/*': ['./prisma/generated/prisma/**/*'],
+    '/api/**/*': ['./prisma/**/*'],
   },
   images: {
     remotePatterns: [
