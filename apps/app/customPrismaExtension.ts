@@ -2,7 +2,7 @@ import { binaryForRuntime, BuildContext, BuildExtension, BuildManifest } from '@
 import assert from 'node:assert';
 import { existsSync } from 'node:fs';
 import { cp } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 
 export type PrismaExtensionOptions = {
   version?: string;
@@ -44,15 +44,35 @@ export class PrismaExtension implements BuildExtension {
     }
 
     // Resolve the path to the schema from the published @trycompai/db package
-    const dbPackagePath = resolve(
-      context.workingDir,
-      'node_modules/@trycompai/db/dist/schema.prisma',
-    );
+    // In a monorepo, node_modules are typically hoisted to the workspace root
+    // Walk up the directory tree to find the workspace root (where node_modules/@trycompai/db exists)
+    let workspaceRoot = context.workingDir;
+    let dbPackagePath = resolve(workspaceRoot, 'node_modules/@trycompai/db/dist/schema.prisma');
+
+    // If not found in working dir, try parent directories
+    while (!existsSync(dbPackagePath) && workspaceRoot !== dirname(workspaceRoot)) {
+      workspaceRoot = dirname(workspaceRoot);
+      dbPackagePath = resolve(workspaceRoot, 'node_modules/@trycompai/db/dist/schema.prisma');
+    }
+
     this._resolvedSchemaPath = dbPackagePath;
 
+    context.logger.debug(`Workspace root: ${workspaceRoot}`);
     context.logger.debug(
       `Resolved the prisma schema from @trycompai/db package to: ${this._resolvedSchemaPath}`,
     );
+
+    // Debug: List contents of the @trycompai/db package directory
+    const dbPackageDir = resolve(workspaceRoot, 'node_modules/@trycompai/db');
+    const dbDistDir = resolve(workspaceRoot, 'node_modules/@trycompai/db/dist');
+
+    try {
+      const { readdirSync } = require('node:fs');
+      context.logger.debug(`@trycompai/db package directory contents:`, readdirSync(dbPackageDir));
+      context.logger.debug(`@trycompai/db/dist directory contents:`, readdirSync(dbDistDir));
+    } catch (err) {
+      context.logger.debug(`Failed to list directory contents:`, err);
+    }
 
     // Check that the prisma schema exists in the published package
     if (!existsSync(this._resolvedSchemaPath)) {
