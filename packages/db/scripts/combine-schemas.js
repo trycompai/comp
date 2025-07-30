@@ -49,7 +49,7 @@ if (!fs.existsSync(OUTPUT_DIR)) {
 fs.writeFileSync(OUTPUT_SCHEMA, combinedSchema);
 
 // Copy the client, index, and types files
-const clientFileContent = `import { PrismaClient } from './generated/prisma';
+const clientFileContent = `import { PrismaClient } from '@prisma/client';
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 export const db = globalForPrisma.prisma || new PrismaClient();
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db;
@@ -58,14 +58,9 @@ fs.writeFileSync(path.join(OUTPUT_DIR, 'client.ts'), clientFileContent);
 
 // Create an index file that re-exports the db client
 const indexFileContent = `export { db } from './client'
-export * from './generated/prisma';
+export * from '@prisma/client';
 `;
 fs.writeFileSync(path.join(OUTPUT_DIR, 'index.ts'), indexFileContent);
-
-// Copy the generated/prisma directory
-fs.cpSync(path.join(BASE_DIR, 'generated'), path.join(OUTPUT_DIR, 'generated'), {
-  recursive: true,
-});
 
 console.log(`✅ Combined schema written to: ${OUTPUT_SCHEMA}`);
 console.log(`📏 Total size: ${Math.round(combinedSchema.length / 1024)}KB`);
