@@ -1,7 +1,7 @@
 import { decrypt } from '@comp/app/src/lib/encryption';
 import { type DecryptFunction, getIntegrationHandler } from '@comp/integrations';
-import { logger, schemaTask } from '@trigger.dev/sdk/v3';
 import { db } from '@db';
+import { logger, schemaTask } from '@trigger.dev/sdk/v3';
 import { z } from 'zod';
 
 export const sendIntegrationResults = schemaTask({
