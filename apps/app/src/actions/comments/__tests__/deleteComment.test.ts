@@ -1,4 +1,4 @@
-import { AttachmentEntityType, CommentEntityType } from '@trycompai/db';
+import { AttachmentEntityType, CommentEntityType } from '@db';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Import the mock setup utilities first
@@ -10,7 +10,7 @@ vi.mock('@/utils/auth', () => ({
   auth: mockAuth,
 }));
 
-vi.mock('@trycompai/db', () => ({
+vi.mock('@db', () => ({
   db: mockDb,
 }));
 

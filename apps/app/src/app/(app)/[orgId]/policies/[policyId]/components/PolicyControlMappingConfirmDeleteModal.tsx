@@ -8,7 +8,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@comp/ui/dialog';
-import type { Control } from '@trycompai/db';
+import type { Control } from '@db';
 import { X } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';

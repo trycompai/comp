@@ -13,7 +13,7 @@ import {
   CommandSeparator,
 } from '@comp/ui/command';
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@comp/ui/dialog';
-import type { Organization } from '@trycompai/db';
+import type { Organization } from '@db';
 import { Check, ChevronsUpDown, Loader2, Plus, Search } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';

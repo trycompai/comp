@@ -9,7 +9,7 @@ import { Input } from '@comp/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Textarea } from '@comp/ui/textarea';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Policy } from '@trycompai/db';
+import { Policy } from '@db';
 import { Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useQueryState } from 'nuqs';

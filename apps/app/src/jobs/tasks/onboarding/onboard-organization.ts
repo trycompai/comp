@@ -8,7 +8,7 @@ import {
   RiskCategory,
   RiskTreatmentType,
   VendorCategory,
-} from '@trycompai/db';
+} from '@db';
 import { generateObject } from 'ai';
 import axios from 'axios';
 import z from 'zod';

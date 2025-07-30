@@ -1,6 +1,6 @@
 import { getOrganizations } from '@/data/getOrganizations';
 import { auth } from '@/utils/auth';
-import type { Organization } from '@trycompai/db';
+import type { Organization } from '@db';
 import { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';

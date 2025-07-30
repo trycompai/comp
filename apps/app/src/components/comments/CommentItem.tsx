@@ -16,8 +16,8 @@ import {
 } from '@comp/ui/dropdown-menu';
 import { Label } from '@comp/ui/label';
 import { Textarea } from '@comp/ui/textarea';
-import type { AttachmentType } from '@trycompai/db';
-import { AttachmentEntityType } from '@trycompai/db'; // Import AttachmentEntityType
+import type { AttachmentType } from '@db';
+import { AttachmentEntityType } from '@db'; // Import AttachmentEntityType
 import {
   Loader2, // Import Loader2
   MoreHorizontal, // Import Paperclip

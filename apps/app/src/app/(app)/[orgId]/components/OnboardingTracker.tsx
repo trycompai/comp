@@ -3,7 +3,7 @@
 import { LogoSpinner } from '@/components/logo-spinner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
-import type { Onboarding } from '@trycompai/db';
+import type { Onboarding } from '@db';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertTriangle, Rocket, ShieldAlert, Zap } from 'lucide-react';
 import { useEffect, useState } from 'react';

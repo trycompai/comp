@@ -11,7 +11,7 @@ import type {
   FrameworkEditorRequirement,
   FrameworkInstance,
   RequirementMap,
-} from '@trycompai/db';
+} from '@db';
 import { useMemo, useState } from 'react';
 
 interface RequirementsTableProps {

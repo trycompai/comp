@@ -3,7 +3,7 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
-import { db } from '@trycompai/db';
+import { db } from '@db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { createVendorTaskSchema } from '../schema';
 

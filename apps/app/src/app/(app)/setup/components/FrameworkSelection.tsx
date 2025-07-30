@@ -1,7 +1,7 @@
 'use client';
 
 import { FrameworkCard } from '@/components/framework-card';
-import type { FrameworkEditorFramework } from '@trycompai/db';
+import type { FrameworkEditorFramework } from '@db';
 import { useEffect, useRef, useState } from 'react';
 
 interface FrameworkSelectionProps {

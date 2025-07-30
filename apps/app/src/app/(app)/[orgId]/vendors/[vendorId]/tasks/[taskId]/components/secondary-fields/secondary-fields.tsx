@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { Member, Task, User } from '@trycompai/db';
+import type { Member, Task, User } from '@db';
 import { ArrowRightIcon, Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useForm } from 'react-hook-form';

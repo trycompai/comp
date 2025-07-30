@@ -13,7 +13,7 @@ import {
 } from '@comp/ui/alert-dialog';
 import { Button } from '@comp/ui/button';
 import type { ColumnDef } from '@tanstack/react-table';
-import type { Context } from '@trycompai/db';
+import type { Context } from '@db';
 import { Trash2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';

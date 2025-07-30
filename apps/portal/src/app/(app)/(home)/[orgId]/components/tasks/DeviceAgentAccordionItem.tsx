@@ -4,7 +4,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@c
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { cn } from '@comp/ui/cn';
-import type { Member } from '@trycompai/db';
+import type { Member } from '@db';
 import { CheckCircle2, Circle, Download, Loader2, XCircle } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';

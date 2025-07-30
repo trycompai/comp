@@ -1,6 +1,6 @@
 import { researchJobCore } from '@/jobs/lib/research';
 import { schemaTask } from '@trigger.dev/sdk/v3';
-import { db } from '@trycompai/db';
+import { db } from '@db';
 import { z } from 'zod';
 
 const firecrawlDataSchema = z.object({

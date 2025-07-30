@@ -1,6 +1,6 @@
 'use client';
 
-import type { Member, Task, User } from '@trycompai/db';
+import type { Member, Task, User } from '@db';
 import { useAction } from 'next-safe-action/hooks';
 import { parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useCallback, useMemo } from 'react';

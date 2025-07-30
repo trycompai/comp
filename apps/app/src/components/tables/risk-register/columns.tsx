@@ -4,7 +4,7 @@ import { StatusIndicator } from '@/components/status-indicator';
 import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
 import type { ColumnDef } from '@tanstack/react-table';
-import type { Departments, RiskStatus } from '@trycompai/db';
+import type { Departments, RiskStatus } from '@db';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 

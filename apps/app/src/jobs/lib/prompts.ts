@@ -1,6 +1,6 @@
 import type { JSONContent } from '@tiptap/react';
 import { logger } from '@trigger.dev/sdk/v3';
-import { Policy } from '@trycompai/db';
+import { Policy } from '@db';
 
 export const generatePrompt = ({
   policy,

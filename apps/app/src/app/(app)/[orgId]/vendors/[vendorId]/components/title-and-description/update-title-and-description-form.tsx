@@ -6,7 +6,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@comp/ui/input';
 import { Textarea } from '@comp/ui/textarea';
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { Vendor } from '@trycompai/db';
+import type { Vendor } from '@db';
 import { Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useQueryState } from 'nuqs';

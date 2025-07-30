@@ -2,8 +2,8 @@
 
 import { Button } from '@comp/ui/button';
 import { Dialog } from '@comp/ui/dialog';
-import type { FrameworkEditorFramework } from '@trycompai/db';
-import { Control, Task } from '@trycompai/db';
+import type { FrameworkEditorFramework } from '@db';
+import { Control, Task } from '@db';
 import { PlusIcon } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';

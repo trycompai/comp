@@ -3,7 +3,7 @@
 import { StatusIndicator, StatusType } from '@/components/status-indicator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import type { ColumnDef } from '@tanstack/react-table';
-import type { Policy } from '@trycompai/db';
+import type { Policy } from '@db';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 

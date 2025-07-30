@@ -1,5 +1,5 @@
 import type { JSONContent } from '@tiptap/react';
-import { Control, Member, Policy, User } from '@trycompai/db';
+import { Control, Member, Policy, User } from '@db';
 import { Comments, CommentWithAuthor } from '../../../../../../components/comments/Comments';
 import { AuditLogWithRelations } from '../data';
 import { PolicyPageEditor } from '../editor/components/PolicyDetails';

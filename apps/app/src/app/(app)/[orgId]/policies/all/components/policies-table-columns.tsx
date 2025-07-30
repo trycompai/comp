@@ -4,7 +4,7 @@ import { DataTableColumnHeader } from '@/components/data-table/data-table-column
 import { StatusIndicator } from '@/components/status-indicator';
 import { formatDate } from '@/lib/format';
 import { ColumnDef } from '@tanstack/react-table';
-import { Policy } from '@trycompai/db';
+import { Policy } from '@db';
 
 export function getPolicyColumns(): ColumnDef<Policy>[] {
   return [

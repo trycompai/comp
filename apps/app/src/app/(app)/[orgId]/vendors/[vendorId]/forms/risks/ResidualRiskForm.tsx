@@ -6,7 +6,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { useToast } from '@comp/ui/use-toast';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Impact, Likelihood } from '@trycompai/db';
+import { Impact, Likelihood } from '@db';
 import { useQueryState } from 'nuqs';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';

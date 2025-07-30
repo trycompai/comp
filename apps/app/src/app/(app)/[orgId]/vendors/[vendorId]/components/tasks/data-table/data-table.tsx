@@ -2,7 +2,7 @@
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@comp/ui/table';
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
-import type { Task } from '@trycompai/db';
+import type { Task } from '@db';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useGetColumnHeaders } from './client-columns';
 

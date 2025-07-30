@@ -7,7 +7,7 @@ import { useDataTable } from '@/hooks/use-data-table';
 import { Icons } from '@comp/ui/icons';
 import { Input } from '@comp/ui/input';
 import { ColumnDef } from '@tanstack/react-table';
-import { Policy } from '@trycompai/db';
+import { Policy } from '@db';
 import { useMemo, useState } from 'react';
 
 interface PoliciesTableProps {

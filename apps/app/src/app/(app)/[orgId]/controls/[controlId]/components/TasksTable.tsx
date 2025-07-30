@@ -7,7 +7,7 @@ import { useDataTable } from '@/hooks/use-data-table';
 import { Icons } from '@comp/ui/icons';
 import { Input } from '@comp/ui/input';
 import { ColumnDef } from '@tanstack/react-table';
-import { Task } from '@trycompai/db';
+import { Task } from '@db';
 import { useMemo, useState } from 'react';
 
 interface TasksTableProps {

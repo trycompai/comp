@@ -1,7 +1,7 @@
 import { getOrganizations } from '@/data/getOrganizations';
 import { auth } from '@/utils/auth';
-import type { Organization } from '@trycompai/db';
-import { db } from '@trycompai/db';
+import type { Organization } from '@db';
+import { db } from '@db';
 import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 import { AcceptInvite } from '../../setup/components/accept-invite';

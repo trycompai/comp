@@ -6,7 +6,7 @@ import { CreateRiskSheet } from '@/components/sheets/create-risk-sheet';
 import { useDataTable } from '@/hooks/use-data-table';
 import { useSession } from '@/utils/auth-client';
 import { ColumnDef } from '@tanstack/react-table';
-import type { Member, Risk, User } from '@trycompai/db';
+import type { Member, Risk, User } from '@db';
 import { useQueryState } from 'nuqs';
 import { useMemo } from 'react';
 import { columns as getColumns } from './components/table/RiskColumns';

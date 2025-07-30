@@ -1,5 +1,5 @@
 import { getFiltersStateParser, getSortingStateParser } from '@/lib/parsers';
-import { Risk } from '@trycompai/db';
+import { Risk } from '@db';
 import {
   createSearchParamsCache,
   parseAsArrayOf,

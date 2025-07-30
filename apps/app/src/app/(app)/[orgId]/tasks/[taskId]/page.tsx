@@ -1,6 +1,6 @@
 import { auth } from '@/utils/auth';
-import type { Attachment } from '@trycompai/db';
-import { AttachmentEntityType, CommentEntityType, db } from '@trycompai/db';
+import type { Attachment } from '@db';
+import { AttachmentEntityType, CommentEntityType, db } from '@db';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { CommentWithAuthor } from '../../../../../components/comments/Comments';

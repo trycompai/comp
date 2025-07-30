@@ -3,7 +3,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
 import { Badge } from '@comp/ui/badge';
 import type { ColumnDef } from '@tanstack/react-table';
-import { VendorStatus } from '@trycompai/db';
+import { VendorStatus } from '@db';
 import { format } from 'date-fns';
 import Link from 'next/link';
 

@@ -3,7 +3,7 @@
 import { authActionClient } from '@/actions/safe-action';
 import { BUCKET_NAME, extractS3KeyFromUrl, s3Client } from '@/app/s3';
 import { DeleteObjectCommand } from '@aws-sdk/client-s3';
-import { AttachmentEntityType, db } from '@trycompai/db';
+import { AttachmentEntityType, db } from '@db';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 

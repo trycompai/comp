@@ -1,6 +1,6 @@
 import { getFleetInstance } from '@/lib/fleet';
 import { logger, task } from '@trigger.dev/sdk/v3';
-import { db } from '@trycompai/db';
+import { db } from '@db';
 
 export const createFleetLabelForOrg = task({
   id: 'create-fleet-label-for-org',

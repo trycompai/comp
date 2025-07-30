@@ -12,7 +12,7 @@ import {
 } from '@comp/ui/dialog';
 import { Form } from '@comp/ui/form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Policy } from '@trycompai/db';
+import { Policy } from '@db';
 import { Trash2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';

@@ -1,8 +1,8 @@
 'use server';
 
 import { auth } from '@/utils/auth';
-import type { Role } from '@trycompai/db';
-import { db } from '@trycompai/db';
+import type { Role } from '@db';
+import { db } from '@db';
 
 export const addEmployeeWithoutInvite = async ({
   email,

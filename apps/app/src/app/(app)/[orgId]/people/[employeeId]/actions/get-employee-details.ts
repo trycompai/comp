@@ -2,7 +2,7 @@
 
 import { authActionClient } from '@/actions/safe-action';
 import { auth } from '@/utils/auth';
-import { db } from '@trycompai/db';
+import { db } from '@db';
 import { headers } from 'next/headers';
 import { type AppError, appErrors, employeeDetailsInputSchema } from '../types';
 

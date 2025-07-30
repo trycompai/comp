@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from '@comp/ui/card';
 import type { JSONContent } from '@tiptap/react';
-import type { Member, Policy } from '@trycompai/db';
+import type { Member, Policy } from '@db';
 import { ArrowRight, Check } from 'lucide-react';
 import { useState } from 'react';
 import { PolicyEditor } from './PolicyEditor';

@@ -5,7 +5,7 @@ import { DataTableColumnHeader } from '@/components/data-table/data-table-column
 import { DataTableToolbar } from '@/components/data-table/data-table-toolbar';
 import { useDataTable } from '@/hooks/use-data-table';
 import { ColumnDef } from '@tanstack/react-table';
-import type { FrameworkEditorRequirement } from '@trycompai/db';
+import type { FrameworkEditorRequirement } from '@db';
 import { useParams } from 'next/navigation';
 import { useMemo } from 'react';
 import type { FrameworkInstanceWithControls } from '../../types';
