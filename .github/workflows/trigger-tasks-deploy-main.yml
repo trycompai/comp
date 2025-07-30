@@ -24,6 +24,7 @@ jobs:
         run: bunx prisma generate
       - name: 🚀 Deploy Trigger.dev
         working-directory: ./apps/app
+        timeout-minutes: 20
         env:
           TRIGGER_ACCESS_TOKEN: ${{ secrets.TRIGGER_ACCESS_TOKEN }}
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
