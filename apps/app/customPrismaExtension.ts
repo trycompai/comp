@@ -1,4 +1,8 @@
-import { BuildContext, BuildExtension, BuildManifest } from '@trigger.dev/build';
+import { binaryForRuntime, BuildContext, BuildExtension, BuildManifest } from '@trigger.dev/build';
+import assert from 'node:assert';
+import { existsSync } from 'node:fs';
+import { cp } from 'node:fs/promises';
+import { join, resolve } from 'node:path';
 
 export type PrismaExtensionOptions = {
   version?: string;
@@ -17,6 +21,7 @@ export function prismaExtension(options: PrismaExtensionOptions = {}): PrismaExt
 export class PrismaExtension implements BuildExtension {
   moduleExternals: string[];
   public readonly name = 'PrismaExtension';
+  private _resolvedSchemaPath?: string;
 
   constructor(private options: PrismaExtensionOptions) {
     this.moduleExternals = [
@@ -38,13 +43,31 @@ export class PrismaExtension implements BuildExtension {
       return;
     }
 
-    context.logger.debug('Using published @trycompai/db package - no local generation needed');
+    // Resolve the path to the schema from the published @trycompai/db package
+    const dbPackagePath = resolve(
+      context.workingDir,
+      'node_modules/@trycompai/db/dist/schema.prisma',
+    );
+    this._resolvedSchemaPath = dbPackagePath;
+
+    context.logger.debug(
+      `Resolved the prisma schema from @trycompai/db package to: ${this._resolvedSchemaPath}`,
+    );
+
+    // Check that the prisma schema exists in the published package
+    if (!existsSync(this._resolvedSchemaPath)) {
+      throw new Error(
+        `PrismaExtension could not find the prisma schema at ${this._resolvedSchemaPath}. Make sure @trycompai/db package is installed with version ${this.options.dbPackageVersion || 'latest'}`,
+      );
+    }
   }
 
   async onBuildComplete(context: BuildContext, manifest: BuildManifest) {
     if (context.target === 'dev') {
       return;
     }
+
+    assert(this._resolvedSchemaPath, 'Resolved schema path is not set');
 
     context.logger.debug('Looking for @prisma/client in the externals', {
       externals: manifest.externals,
@@ -62,11 +85,23 @@ export class PrismaExtension implements BuildExtension {
     }
 
     context.logger.debug(
-      `PrismaExtension is using Prisma client version ${version} from published package`,
+      `PrismaExtension is generating the Prisma client for version ${version} from @trycompai/db package`,
     );
 
     const commands: string[] = [];
     const env: Record<string, string | undefined> = {};
+
+    // Copy the prisma schema from the published package to the build output path
+    const schemaDestinationPath = join(manifest.outputPath, 'prisma', 'schema.prisma');
+    context.logger.debug(
+      `Copying the prisma schema from ${this._resolvedSchemaPath} to ${schemaDestinationPath}`,
+    );
+    await cp(this._resolvedSchemaPath, schemaDestinationPath);
+
+    // Add prisma generate command to generate the client from the copied schema
+    commands.push(
+      `${binaryForRuntime(manifest.runtime)} node_modules/prisma/build/index.js generate --schema=./prisma/schema.prisma`,
+    );
 
     // Only handle migrations if requested
     if (this.options.migrate) {
@@ -86,7 +121,7 @@ export class PrismaExtension implements BuildExtension {
         process.env[this.options.directUrlEnvVarName];
       if (!env[this.options.directUrlEnvVarName]) {
         context.logger.warn(
-          `prismaExtension could not resolve the ${this.options.directUrlEnvVarName} environment variable. Make sure you add it to your environment variables or provide it as an environment variable to the deploy CLI command.`,
+          `prismaExtension could not resolve the ${this.options.directUrlEnvVarName} environment variable. Make sure you add it to your environment variables or provide it as an environment variable to the deploy CLI command. See our docs for more info: https://trigger.dev/docs/deploy-environment-variables`,
         );
       }
     } else {
@@ -96,15 +131,15 @@ export class PrismaExtension implements BuildExtension {
 
     if (!env.DATABASE_URL) {
       context.logger.warn(
-        'prismaExtension could not resolve the DATABASE_URL environment variable. Make sure you add it to your environment variables.',
+        'prismaExtension could not resolve the DATABASE_URL environment variable. Make sure you add it to your environment variables. See our docs for more info: https://trigger.dev/docs/deploy-environment-variables',
       );
     }
 
-    context.logger.debug('Adding the prisma layer for published package', {
+    context.logger.debug('Adding the prisma layer with the following commands', {
       commands,
       env,
       dependencies: {
-        '@prisma/client': version,
+        prisma: version,
         '@trycompai/db': this.options.dbPackageVersion || 'latest',
       },
     });
@@ -113,14 +148,11 @@ export class PrismaExtension implements BuildExtension {
       id: 'prisma',
       commands,
       dependencies: {
-        '@prisma/client': version,
+        prisma: version,
         '@trycompai/db': this.options.dbPackageVersion || 'latest',
       },
       build: {
-        env: {
-          ...env,
-          PRISMA_CLI_BINARY_TARGETS: 'debian-openssl-3.0.x',
-        },
+        env,
       },
     });
   }
