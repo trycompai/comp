@@ -1,4 +1,4 @@
-name: Database Migrations Dev
+name: Database Migrations Main
 on:
   push: # Runs AFTER merge to main (never during PR review!)
     branches:
@@ -11,9 +11,18 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
       - name: Apply database migrations
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL_DEV }}
         run: |
           cd packages/db
-          npx prisma migrate deploy
+          bunx prisma migrate deploy
