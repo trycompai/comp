@@ -12,7 +12,7 @@ import {
   AlertDialogTrigger,
 } from '@comp/ui/alert-dialog';
 import { Button } from '@comp/ui/button';
-import type { Context } from '@prisma/client';
+import type { Context } from '@db';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Trash2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';

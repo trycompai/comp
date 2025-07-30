@@ -1,4 +1,3 @@
-import type { Departments, Member, Task, TaskFrequency, TaskStatus, User } from '@comp/db/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
 import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
@@ -8,6 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
+import type { Departments, Member, Task, TaskFrequency, TaskStatus, User } from '@db';
 import { MoreVertical, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { TaskStatusIndicator } from '../../components/TaskStatusIndicator';

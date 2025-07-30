@@ -4,7 +4,7 @@ import { AnimatedGradientBackgroundWrapper } from '@/app/(app)/setup/components/
 import { MinimalHeader } from '@/components/layout/MinimalHeader';
 import { getOrganizations } from '@/data/getOrganizations';
 import { auth } from '@/utils/auth';
-import type { Organization } from '@comp/db/types';
+import type { Organization } from '@db';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';

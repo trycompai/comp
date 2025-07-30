@@ -79,3 +79,6 @@ debug-setup-page.png
 .playground/
 
 packages/*/dist
+
+# Generated Prisma Client
+**/src/db/generated/

@@ -5,8 +5,6 @@ import { deleteCommentAttachment } from '@/actions/comments/deleteCommentAttachm
 import { getCommentAttachmentUrl } from '@/actions/comments/getCommentAttachmentUrl'; // Import action
 import { updateComment } from '@/actions/comments/updateComment';
 import { uploadFile } from '@/actions/files/upload-file';
-import type { AttachmentType } from '@comp/db/types';
-import { AttachmentEntityType } from '@comp/db/types'; // Import AttachmentEntityType
 import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent } from '@comp/ui/card';
@@ -18,6 +16,8 @@ import {
 } from '@comp/ui/dropdown-menu';
 import { Label } from '@comp/ui/label';
 import { Textarea } from '@comp/ui/textarea';
+import type { AttachmentType } from '@db';
+import { AttachmentEntityType } from '@db'; // Import AttachmentEntityType
 import {
   Loader2, // Import Loader2
   MoreHorizontal, // Import Paperclip
@@ -358,7 +358,9 @@ export function CommentItem({ comment }: { comment: CommentWithAuthor }) {
             ) : (
               <Textarea
                 value={editedContent}
-                onChange={(e) => setEditedContent(e.target.value)}
+                onChange={(e: { target: { value: React.SetStateAction<string> } }) =>
+                  setEditedContent(e.target.value)
+                }
                 className="bg-background/50 min-h-[60px] text-sm"
                 placeholder="Edit comment..."
               />

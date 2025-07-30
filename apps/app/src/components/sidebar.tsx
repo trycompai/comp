@@ -1,6 +1,6 @@
 import { getOrganizations } from '@/data/getOrganizations';
-import type { Organization } from '@comp/db/types';
 import { cn } from '@comp/ui/cn';
+import type { Organization } from '@db';
 import { cookies } from 'next/headers';
 import { MainMenu } from './main-menu';
 import { OrganizationSwitcher } from './organization-switcher';

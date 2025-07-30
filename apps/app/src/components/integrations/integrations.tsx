@@ -1,8 +1,8 @@
 'use client';
 
-import { Integration } from '@comp/db/types';
 import { integrations } from '@comp/integrations';
 import { Button } from '@comp/ui/button';
+import { Integration } from '@db';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { IntegrationsCard } from './integrations-card';
 

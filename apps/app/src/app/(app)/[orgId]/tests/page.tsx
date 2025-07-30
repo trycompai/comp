@@ -1,6 +1,6 @@
 import { AppOnboarding } from '@/components/app-onboarding';
 import { auth } from '@/utils/auth';
-import { db } from '@comp/db';
+import { db } from '@db';
 import { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';

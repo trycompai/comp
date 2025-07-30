@@ -1,7 +1,6 @@
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { auth } from '@/utils/auth';
-import { db } from '@comp/db';
-import { Role, TaskStatus } from '@comp/db/types';
+import { db, Role, TaskStatus } from '@db';
 import { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { TaskList } from './components/TaskList';

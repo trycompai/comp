@@ -1,4 +1,3 @@
-import { db } from '@comp/db';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -7,6 +6,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@comp/ui/breadcrumb';
+import { db } from '@db';
 
 export default async function Layout({
   children,

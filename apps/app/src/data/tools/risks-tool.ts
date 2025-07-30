@@ -1,6 +1,5 @@
 import { auth } from '@/utils/auth';
-import { db } from '@comp/db';
-import { Departments, RiskCategory, RiskStatus } from '@comp/db/types';
+import { db, Departments, RiskCategory, RiskStatus } from '@db';
 import { tool } from 'ai';
 import { headers } from 'next/headers';
 import { z } from 'zod';

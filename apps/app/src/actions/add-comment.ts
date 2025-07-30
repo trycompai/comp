@@ -1,8 +1,7 @@
 'use server';
 
 import { AppError, appErrors } from '@/lib/errors';
-import { db } from '@comp/db';
-import { CommentEntityType } from '@comp/db/types';
+import { CommentEntityType, db } from '@db';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { z } from 'zod';

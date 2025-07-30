@@ -1,6 +1,6 @@
 'use client';
 
-import type { Member, Task, User } from '@comp/db/types';
+import type { Member, Task, User } from '@db';
 import clsx from 'clsx';
 import { useRef } from 'react';
 import { useDrop } from 'react-dnd';

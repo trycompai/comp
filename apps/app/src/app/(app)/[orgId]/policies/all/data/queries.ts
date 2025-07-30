@@ -1,8 +1,7 @@
 import 'server-only';
 
 import { auth } from '@/utils/auth';
-import { db } from '@comp/db';
-import { Prisma } from '@prisma/client';
+import { db, Prisma } from '@db';
 import { headers } from 'next/headers';
 import { cache } from 'react';
 import type { GetPolicySchema } from './validations';

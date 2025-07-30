@@ -1,6 +1,6 @@
 'use client';
 
-import type { Control, FrameworkEditorRequirement, RequirementMap, Task } from '@comp/db/types';
+import type { Control, FrameworkEditorRequirement, RequirementMap, Task } from '@db';
 import { RequirementControlsTable } from './table/RequirementControlsTable';
 
 interface RequirementControlsProps {

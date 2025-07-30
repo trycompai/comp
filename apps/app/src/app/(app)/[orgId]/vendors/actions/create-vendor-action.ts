@@ -2,8 +2,7 @@
 
 import type { ActionResponse } from '@/types/actions';
 import { auth } from '@/utils/auth';
-import { db } from '@comp/db';
-import { type Vendor, VendorCategory, VendorStatus } from '@comp/db/types';
+import { db, type Vendor, VendorCategory, VendorStatus } from '@db';
 import { createSafeActionClient } from 'next-safe-action';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';

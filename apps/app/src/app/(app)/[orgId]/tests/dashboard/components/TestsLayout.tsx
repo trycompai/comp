@@ -1,9 +1,9 @@
 'use client';
 
-import { Integration } from '@comp/db/types';
 import { Button } from '@comp/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
+import { Integration } from '@db';
 import { RefreshCw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';

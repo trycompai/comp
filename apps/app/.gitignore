@@ -49,3 +49,8 @@ next-env.d.ts
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+# Generated Prisma Client
+prisma/generated
+# Copied schema from @trycompai/db package - always generate fresh
+prisma/schema.prisma

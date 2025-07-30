@@ -49,6 +49,39 @@ const StatusTooltip = ({ active, payload }: any) => {
 };
 
 export function PolicyStatusChart({ data }: PolicyStatusChartProps) {
+  const chartData = React.useMemo(() => {
+    if (!data) return [];
+    const items = [
+      {
+        name: 'Published',
+        value: data.publishedPolicies,
+        fill: CHART_COLORS.published,
+      },
+      {
+        name: 'Draft',
+        value: data.draftPolicies,
+        fill: CHART_COLORS.draft,
+      },
+      {
+        name: 'Needs Review',
+        value: data.needsReviewPolicies,
+        fill: CHART_COLORS.needs_review,
+      },
+      {
+        name: 'Archived',
+        value: data.archivedPolicies,
+        fill: CHART_COLORS.archived,
+      },
+    ];
+    return items.filter((item) => item.value > 0);
+  }, [data]);
+
+  // Calculate most common status
+  const mostCommonStatus = React.useMemo(() => {
+    if (!chartData.length) return null;
+    return chartData.reduce((prev, current) => (prev.value > current.value ? prev : current));
+  }, [chartData]);
+
   if (!data) {
     return (
       <Card className="flex flex-col overflow-hidden border">
@@ -75,44 +108,11 @@ export function PolicyStatusChart({ data }: PolicyStatusChartProps) {
     );
   }
 
-  const chartData = React.useMemo(() => {
-    const items = [
-      {
-        name: 'Published',
-        value: data.publishedPolicies,
-        fill: CHART_COLORS.published,
-      },
-      {
-        name: 'Draft',
-        value: data.draftPolicies,
-        fill: CHART_COLORS.draft,
-      },
-      {
-        name: 'Archived',
-        value: data.archivedPolicies,
-        fill: CHART_COLORS.archived,
-      },
-      {
-        name: 'Needs Review',
-        value: data.needsReviewPolicies,
-        fill: CHART_COLORS.needs_review,
-      },
-    ];
-
-    return items.filter((item) => item.value);
-  }, [data]);
-
   const chartConfig = {
     value: {
       label: 'Count',
     },
   } satisfies ChartConfig;
-
-  // Calculate most common status
-  const mostCommonStatus = React.useMemo(() => {
-    if (!chartData.length) return null;
-    return chartData.reduce((prev, current) => (prev.value > current.value ? prev : current));
-  }, [chartData]);
 
   return (
     <Card className="flex flex-col overflow-hidden border">

@@ -1,5 +1,5 @@
 import { getServersideSession } from '@/lib/get-session';
-import { db } from '@comp/db';
+import { db } from '@db';
 import { headers } from 'next/headers';
 import { cache } from 'react';
 

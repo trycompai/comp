@@ -20,7 +20,7 @@ export function VendorsTable({ promises }: VendorsTableProps) {
   const [{ data: vendors, pageCount }, assignees] = React.use(promises);
 
   // Define columns memoized
-  const memoizedColumns = React.useMemo(() => columns, [orgId]);
+  const memoizedColumns = React.useMemo(() => columns, []);
 
   const { table } = useDataTable({
     data: vendors,

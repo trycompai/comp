@@ -1,6 +1,6 @@
 'use client';
 
-import { Control, Task } from '@comp/db/types';
+import { Control, Task } from '@db';
 import type { FrameworkInstanceWithControls } from '../types';
 import { FrameworkCard } from './FrameworkCard';
 

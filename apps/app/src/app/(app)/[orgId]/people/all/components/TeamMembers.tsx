@@ -1,8 +1,8 @@
 'use server';
 
 import { auth } from '@/utils/auth';
-import { db } from '@comp/db';
-import type { Invitation, Member, User } from '@prisma/client';
+import type { Invitation, Member, User } from '@db';
+import { db } from '@db';
 import { headers } from 'next/headers';
 import { removeMember } from '../actions/removeMember';
 import { revokeInvitation } from '../actions/revokeInvitation';

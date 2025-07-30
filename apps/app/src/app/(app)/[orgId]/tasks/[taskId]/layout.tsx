@@ -1,5 +1,5 @@
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
-import { db } from '@comp/db';
+import { db } from '@db';
 
 export default async function Layout({
   children,

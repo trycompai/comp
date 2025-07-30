@@ -36,7 +36,7 @@ WORKDIR /app
 COPY packages/db/prisma ./packages/db/prisma
 
 # Create minimal package.json for Prisma
-RUN echo '{"name":"migrator","type":"module","dependencies":{"prisma":"^6.9.0","@prisma/client":"^6.9.0"}}' > package.json
+RUN echo '{"name":"migrator","type":"module","dependencies":{"prisma":"^6.13.0","@prisma/client":"^6.13.0"}}' > package.json
 
 # Install ONLY Prisma dependencies
 RUN bun install

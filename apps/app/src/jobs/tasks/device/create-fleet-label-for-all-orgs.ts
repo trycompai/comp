@@ -1,4 +1,4 @@
-import { db } from '@comp/db';
+import { db } from '@db';
 import { logger, task } from '@trigger.dev/sdk/v3';
 import { createFleetLabelForOrg } from './create-fleet-label-for-org';
 

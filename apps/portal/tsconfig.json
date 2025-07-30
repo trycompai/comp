@@ -20,8 +20,7 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
-      "@comp/db": ["../../packages/db/src/index.ts"],
-      "@comp/db/*": ["../../packages/db/src/*"],
+      "@db": ["./prisma"],
       "@comp/email": ["../../packages/email/index.ts"],
       "@comp/email/*": ["../../packages/email/*"],
       "@comp/kv": ["../../packages/kv/src/index.ts"],
@@ -44,8 +43,6 @@
       "@comp/analytics/*": ["../../packages/analytics/src/*"],
       "@trycompai/tsconfig": ["../../packages/tsconfig"],
       "@trycompai/tsconfig/*": ["../../packages/tsconfig/*"],
-      "@trycompai/db": ["../../packages/db/src/index.ts"],
-      "@trycompai/db/*": ["../../packages/db/src/*"],
       "@trycompai/email": ["../../packages/email/index.ts"],
       "@trycompai/email/*": ["../../packages/email/*"],
       "@trycompai/kv": ["../../packages/kv/src/index.ts"],

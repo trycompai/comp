@@ -1,10 +1,10 @@
 'use client';
 
-import type { Control, Task } from '@comp/db/types';
 import { Badge } from '@comp/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { cn } from '@comp/ui/cn';
 import { Progress } from '@comp/ui/progress';
+import type { Control, Task } from '@db';
 import { BarChart3, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';

@@ -1,5 +1,4 @@
-import { db } from '@comp/db';
-import { Prisma } from '@comp/db/types';
+import { db, Prisma } from '@db';
 
 // Define a type for FrameworkEditorFramework with requirements included
 // This assumes FrameworkEditorFramework and FrameworkEditorRequirement are valid Prisma types.

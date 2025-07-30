@@ -1,6 +1,6 @@
 import { decrypt } from '@comp/app/src/lib/encryption';
-import { db } from '@comp/db';
 import { type DecryptFunction, getIntegrationHandler } from '@comp/integrations';
+import { db } from '@db';
 import { logger, schemaTask } from '@trigger.dev/sdk/v3';
 import { z } from 'zod';
 

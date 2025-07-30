@@ -5,10 +5,16 @@
     "paths": {
       "@/*": ["./src/*"]
     },
+    "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "verbatimModuleSyntax": false
+    "verbatimModuleSyntax": false,
+    "jsx": "preserve",
+    "skipLibCheck": true,
+    "types": ["react", "react-dom"],
+    "declaration": true,
+    "declarationDir": "dist"
   },
   "include": ["src"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "dist"]
 }

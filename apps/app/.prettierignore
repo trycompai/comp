@@ -1,4 +1,7 @@
 # Playwright test artifacts
 playwright-report/
 test-results/
-.playwright/ 
+.playwright/
+
+# Generated Prisma Client
+src/db/generated/ 

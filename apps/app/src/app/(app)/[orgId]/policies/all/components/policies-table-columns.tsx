@@ -3,7 +3,7 @@
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
 import { StatusIndicator } from '@/components/status-indicator';
 import { formatDate } from '@/lib/format';
-import { Policy } from '@comp/db/types';
+import { Policy } from '@db';
 import { ColumnDef } from '@tanstack/react-table';
 
 export function getPolicyColumns(): ColumnDef<Policy>[] {

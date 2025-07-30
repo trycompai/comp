@@ -3,7 +3,7 @@
 import { extractS3KeyFromUrl, s3Client } from '@/app/s3';
 import { auth } from '@/utils/auth';
 import { DeleteObjectCommand } from '@aws-sdk/client-s3';
-import { db } from '@comp/db';
+import { db } from '@db';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { z } from 'zod';

@@ -2,11 +2,11 @@
 
 import { addCommentAction } from '@/actions/add-comment';
 import { addCommentSchema } from '@/actions/schema';
-import { CommentEntityType } from '@comp/db/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
 import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@comp/ui/form';
 import { Textarea } from '@comp/ui/textarea';
+import { CommentEntityType } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRightIcon } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';

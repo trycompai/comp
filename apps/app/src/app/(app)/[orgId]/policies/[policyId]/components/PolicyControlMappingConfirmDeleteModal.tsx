@@ -1,4 +1,3 @@
-import type { Control } from '@comp/db/types';
 import { Button } from '@comp/ui/button';
 import {
   Dialog,
@@ -9,6 +8,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@comp/ui/dialog';
+import type { Control } from '@db';
 import { X } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';

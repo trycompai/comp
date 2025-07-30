@@ -2,6 +2,10 @@ import type { NextConfig } from 'next';
 import './src/env.mjs';
 
 const config: NextConfig = {
+  transpilePackages: ['@trycompai/db'],
+  outputFileTracingIncludes: {
+    '/api/**/*': ['./prisma/**/*'],
+  },
   images: {
     remotePatterns: [
       {

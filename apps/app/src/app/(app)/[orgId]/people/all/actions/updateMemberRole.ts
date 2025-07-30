@@ -1,7 +1,6 @@
 'use server';
 
-import { db } from '@comp/db';
-import { Departments, Role } from '@prisma/client';
+import { db, Departments, Role } from '@db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
 // Adjust safe-action import for colocalized structure
