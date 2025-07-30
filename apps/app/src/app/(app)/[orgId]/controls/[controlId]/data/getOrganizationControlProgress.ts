@@ -1,7 +1,7 @@
 'use server';
 
 import { auth } from '@/utils/auth';
-import { db } from '@trycompai/db';
+import { db } from '@db';
 import { headers } from 'next/headers';
 
 export interface ControlProgressResponse {

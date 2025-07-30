@@ -11,8 +11,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Switch } from '@comp/ui/switch';
+import { Departments, Frequency, type Policy, type PolicyStatus } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Departments, Frequency, type Policy, type PolicyStatus } from '@trycompai/db';
 import { format } from 'date-fns';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';

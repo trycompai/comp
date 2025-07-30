@@ -6,7 +6,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@comp/ui/breadcrumb';
-import { db } from '@trycompai/db';
+import { db } from '@db';
 
 export default async function Layout({
   children,

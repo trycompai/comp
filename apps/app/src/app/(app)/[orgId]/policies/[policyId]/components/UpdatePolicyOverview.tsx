@@ -10,7 +10,7 @@ import { cn } from '@comp/ui/cn';
 import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Switch } from '@comp/ui/switch';
-import { Departments, Frequency, Member, type Policy, PolicyStatus, User } from '@trycompai/db';
+import { Departments, Frequency, Member, type Policy, PolicyStatus, User } from '@db';
 import { format } from 'date-fns';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';

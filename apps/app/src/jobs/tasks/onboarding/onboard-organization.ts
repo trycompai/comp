@@ -1,5 +1,4 @@
 import { openai } from '@ai-sdk/openai';
-import { logger, task, tasks } from '@trigger.dev/sdk/v3';
 import {
   db,
   Departments,
@@ -8,7 +7,8 @@ import {
   RiskCategory,
   RiskTreatmentType,
   VendorCategory,
-} from '@trycompai/db';
+} from '@db';
+import { logger, task, tasks } from '@trigger.dev/sdk/v3';
 import { generateObject } from 'ai';
 import axios from 'axios';
 import z from 'zod';

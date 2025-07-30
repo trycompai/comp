@@ -1,6 +1,6 @@
 'use client';
 
-import type { Member, Task, TaskStatus, User } from '@trycompai/db';
+import type { Member, Task, TaskStatus, User } from '@db';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';

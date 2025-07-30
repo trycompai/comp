@@ -13,8 +13,8 @@ import {
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
 import { Icons } from '@comp/ui/icons';
-import type { Member, Policy, User } from '@trycompai/db';
-import { Control } from '@trycompai/db';
+import type { Member, Policy, User } from '@db';
+import { Control } from '@db';
 import { format } from 'date-fns';
 import {
   ArchiveIcon,

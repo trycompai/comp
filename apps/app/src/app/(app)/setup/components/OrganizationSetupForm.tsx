@@ -4,7 +4,7 @@ import { changeOrganizationAction } from '@/actions/change-organization';
 import { LogoSpinner } from '@/components/logo-spinner';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@comp/ui/card';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@comp/ui/form';
-import type { Organization } from '@trycompai/db';
+import type { Organization } from '@db';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';

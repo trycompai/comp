@@ -1,7 +1,7 @@
 'use client';
 
 import { Separator } from '@comp/ui/separator';
-import { CommentEntityType, type Attachment, type Task } from '@trycompai/db';
+import { CommentEntityType, type Attachment, type Task } from '@db';
 import { useEffect, useState } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 import { CommentForm } from '../../../../../../components/comments/CommentForm';

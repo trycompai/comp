@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
-import type { Departments, Member, Task, TaskFrequency, TaskStatus, User } from '@trycompai/db';
+import type { Departments, Member, Task, TaskFrequency, TaskStatus, User } from '@db';
 import { MoreVertical, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { TaskStatusIndicator } from '../../components/TaskStatusIndicator';

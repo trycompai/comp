@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@comp/ui/button';
-import type { Member, Policy } from '@trycompai/db';
+import type { Member, Policy } from '@db';
 import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
 import { PolicyCarousel } from './PolicyCarousel';

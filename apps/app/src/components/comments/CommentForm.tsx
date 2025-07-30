@@ -6,7 +6,7 @@ import { Button } from '@comp/ui/button';
 import { Input } from '@comp/ui/input';
 import { Label } from '@comp/ui/label';
 import { Textarea } from '@comp/ui/textarea';
-import type { CommentEntityType } from '@trycompai/db';
+import type { CommentEntityType } from '@db';
 import clsx from 'clsx';
 import { ArrowUp, Loader2, Paperclip } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';

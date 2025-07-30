@@ -3,7 +3,7 @@
 import { BUCKET_NAME, s3Client } from '@/app/s3';
 import { auth } from '@/utils/auth';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
-import { AttachmentEntityType, CommentEntityType, db } from '@trycompai/db';
+import { AttachmentEntityType, CommentEntityType, db } from '@db';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { z } from 'zod';

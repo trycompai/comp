@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
-import { db, PolicyStatus } from '@trycompai/db';
+import { db, PolicyStatus } from '@db';
 import type { CSSProperties } from 'react';
 
 interface Props {

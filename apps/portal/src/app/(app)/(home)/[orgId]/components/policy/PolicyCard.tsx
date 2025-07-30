@@ -9,8 +9,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@comp/ui/card';
+import type { Member, Policy } from '@db';
 import type { JSONContent } from '@tiptap/react';
-import type { Member, Policy } from '@trycompai/db';
 import { ArrowRight, Check } from 'lucide-react';
 import { useState } from 'react';
 import { PolicyEditor } from './PolicyEditor';

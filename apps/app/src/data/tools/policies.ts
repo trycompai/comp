@@ -1,5 +1,5 @@
 import { auth } from '@/utils/auth';
-import { db } from '@trycompai/db';
+import { db } from '@db';
 import { tool } from 'ai';
 import { headers } from 'next/headers';
 import { z } from 'zod';

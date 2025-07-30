@@ -1,4 +1,4 @@
-import type { PolicyStatus } from '@trycompai/db';
+import type { PolicyStatus } from '@db';
 
 // Define the expected structure for policies (typically with selected fields)
 export type SelectedPolicy = {

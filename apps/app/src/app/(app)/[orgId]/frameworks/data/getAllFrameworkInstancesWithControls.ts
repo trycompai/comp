@@ -1,7 +1,7 @@
 'use server';
 
-import type { Control, PolicyStatus, RequirementMap } from '@trycompai/db';
-import { db } from '@trycompai/db';
+import type { Control, PolicyStatus, RequirementMap } from '@db';
+import { db } from '@db';
 import { cache } from 'react';
 import type { FrameworkInstanceWithControls } from '../types';
 

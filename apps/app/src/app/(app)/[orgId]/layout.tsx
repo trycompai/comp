@@ -5,7 +5,7 @@ import { AssistantSheet } from '@/components/sheets/assistant-sheet';
 import { Sidebar } from '@/components/sidebar';
 import { SidebarProvider } from '@/context/sidebar-context';
 import { auth } from '@/utils/auth';
-import { db } from '@trycompai/db';
+import { db } from '@db';
 import dynamic from 'next/dynamic';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';

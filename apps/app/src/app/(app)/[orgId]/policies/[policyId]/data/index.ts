@@ -11,7 +11,7 @@ import {
   Member,
   Organization,
   User,
-} from '@trycompai/db';
+} from '@db';
 import { headers } from 'next/headers';
 
 // Define the type for AuditLog with its relations
