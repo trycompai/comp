@@ -14,7 +14,6 @@ export default defineConfig({
       prismaExtension({
         version: '6.13.0',
         dbPackageVersion: '^1.2.8', // Version of @trycompai/db package with compiled JS
-        // migrate: true, // Uncomment if you need migrations
       }),
       puppeteer(),
       syncVercelEnvVars(),
