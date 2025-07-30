@@ -1,7 +1,7 @@
 {
   "name": "@trycompai/db",
   "description": "Database package with Prisma client and schema for Comp AI",
-  "version": "1.2.8",
+  "version": "1.2.9",
   "dependencies": {
     "@prisma/client": "^6.13.0"
   },
