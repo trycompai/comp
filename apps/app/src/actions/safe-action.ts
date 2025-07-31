@@ -22,7 +22,7 @@ if (env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN) {
 export const actionClientWithMeta = createSafeActionClient({
   handleServerError(e) {
     // Log the error for debugging
-    logger('Server error:', e);
+    logger.error('Server error:', e);
 
     // Throw the error instead of returning it
     if (e instanceof Error) {
@@ -69,12 +69,12 @@ export const authActionClient = actionClientWithMeta
     });
 
     if (process.env.NODE_ENV === 'development') {
-      logger('Input ->', JSON.stringify(clientInput, null, 2));
-      logger('Result ->', JSON.stringify(result.data, null, 2));
+      logger.info('Input ->', JSON.stringify(clientInput, null, 2));
+      logger.info('Result ->', JSON.stringify(result.data, null, 2));
 
       // Also log validation errors if they exist
       if (result.validationErrors) {
-        logger('Validation Errors ->', JSON.stringify(result.validationErrors, null, 2));
+        logger.warn('Validation Errors ->', JSON.stringify(result.validationErrors, null, 2));
       }
 
       return result;
@@ -212,7 +212,7 @@ export const authActionClient = actionClientWithMeta
         },
       });
     } catch (error) {
-      logger('Audit log error:', error);
+      logger.error('Audit log error:', error);
     }
 
     // Add revalidation logic based on the cursor rules
@@ -274,12 +274,12 @@ export const authActionClientWithoutOrg = actionClientWithMeta
     });
 
     if (process.env.NODE_ENV === 'development') {
-      logger('Input ->', JSON.stringify(clientInput, null, 2));
-      logger('Result ->', JSON.stringify(result.data, null, 2));
+      logger.info('Input ->', JSON.stringify(clientInput, null, 2));
+      logger.info('Result ->', JSON.stringify(result.data, null, 2));
 
       // Also log validation errors if they exist
       if (result.validationErrors) {
-        logger('Validation Errors ->', JSON.stringify(result.validationErrors, null, 2));
+        logger.warn('Validation Errors ->', JSON.stringify(result.validationErrors, null, 2));
       }
 
       return result;
