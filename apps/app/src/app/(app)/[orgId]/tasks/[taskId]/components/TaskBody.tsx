@@ -7,6 +7,7 @@ import { Textarea } from '@comp/ui/textarea';
 import type { Attachment } from '@db';
 import { AttachmentEntityType } from '@db';
 import { Loader2, Paperclip, Plus } from 'lucide-react';
+import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
 import type React from 'react';
 import { useCallback, useRef, useState } from 'react';
@@ -37,76 +38,59 @@ export function TaskBody({
   onAttachmentsChange,
 }: TaskBodyProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isUploading, setIsUploading] = useState(false);
   const [busyAttachmentId, setBusyAttachmentId] = useState<string | null>(null);
   const router = useRouter();
-
-  const resetState = () => {
-    setIsUploading(false);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
+  const { execute, isExecuting } = useAction(uploadFile, {
+    onSuccess: () => {
+      onAttachmentsChange?.();
+      router.refresh();
+      toast.success('File uploaded successfully');
+    },
+    onError: ({ error }) => {
+      toast.error(error.serverError || 'Failed to upload file.');
+    },
+    onSettled: () => {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    },
+  });
 
   const handleFileSelect = useCallback(
     async (event: React.ChangeEvent<HTMLInputElement>) => {
       const files = event.target.files;
       if (!files || files.length === 0) return;
-      setIsUploading(true);
-      try {
-        const uploadedAttachments = [];
-        for (const file of Array.from(files)) {
-          const MAX_FILE_SIZE_MB = 5;
-          const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
-          if (file.size > MAX_FILE_SIZE_BYTES) {
-            toast.error(`File "${file.name}" exceeds the ${MAX_FILE_SIZE_MB}MB limit.`);
-            continue;
-          }
 
-          const reader = new FileReader();
-          reader.onloadend = async () => {
-            const base64Data = (reader.result as string)?.split(',')[1];
-            if (!base64Data) {
-              toast.error('Failed to read file data.');
-              resetState();
-              return;
-            }
-            const { success, data, error } = await uploadFile({
-              fileName: file.name,
-              fileType: file.type,
-              fileData: base64Data,
-              entityId: taskId,
-              entityType: AttachmentEntityType.task,
-            });
-
-            if (success && data) {
-              uploadedAttachments.push(data);
-            } else {
-              const errorMessage = error || 'Failed to process attachment after upload.';
-              toast.error(String(errorMessage));
-            }
-          };
-          reader.onerror = () => {
-            toast.error('Error reading file.');
-            resetState();
-          };
-          reader.readAsDataURL(file);
-          await new Promise<void>((resolve) => {
-            const intervalId = setInterval(() => {
-              if (reader.readyState === FileReader.DONE) {
-                clearInterval(intervalId);
-                resolve(undefined);
-              }
-            }, 100);
-          });
+      for (const file of Array.from(files)) {
+        const MAX_FILE_SIZE_MB = 10;
+        const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+        if (file.size > MAX_FILE_SIZE_BYTES) {
+          toast.error(`File "${file.name}" exceeds the ${MAX_FILE_SIZE_MB}MB limit.`);
+          continue;
         }
-        onAttachmentsChange?.();
-        router.refresh();
-      } finally {
-        setIsUploading(false);
+
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const base64Data = (reader.result as string)?.split(',')[1];
+          if (!base64Data) {
+            toast.error('Failed to read file data.');
+            return;
+          }
+          execute({
+            fileName: file.name,
+            fileType: file.type,
+            fileData: base64Data,
+            entityId: taskId,
+            entityType: AttachmentEntityType.task,
+          });
+        };
+        reader.onerror = () => {
+          toast.error('Error reading file.');
+        };
+        reader.readAsDataURL(file);
       }
     },
-    [taskId, onAttachmentsChange, router],
+    [execute, taskId, onAttachmentsChange, router],
   );
 
   const triggerFileInput = () => {
@@ -144,8 +128,6 @@ export function TaskBody({
     [onAttachmentsChange, router],
   );
 
-  const isUploadingFile = isUploading;
-
   return (
     <div className="flex flex-col gap-4">
       <input
@@ -153,21 +135,21 @@ export function TaskBody({
         onChange={onTitleChange}
         className="h-auto shrink-0 border-none bg-transparent p-0 md:text-lg font-semibold tracking-tight shadow-none focus-visible:ring-0"
         placeholder="Task Title"
-        disabled={disabled || isUploadingFile || !!busyAttachmentId}
+        disabled={disabled || isExecuting || !!busyAttachmentId}
       />
       <Textarea
         value={description}
         onChange={onDescriptionChange}
         placeholder="Add description..."
         className="text-muted-foreground text-md min-h-[80px] resize-none border-none p-0 shadow-none focus-visible:ring-0"
-        disabled={disabled || isUploadingFile || !!busyAttachmentId}
+        disabled={disabled || isExecuting || !!busyAttachmentId}
       />
       <input
         type="file"
         ref={fileInputRef}
         onChange={handleFileSelect}
         className="hidden"
-        disabled={isUploadingFile || !!busyAttachmentId}
+        disabled={isExecuting || !!busyAttachmentId}
         multiple
       />
       <div className="space-y-3">
@@ -178,11 +160,11 @@ export function TaskBody({
               variant="ghost"
               size="icon"
               onClick={triggerFileInput}
-              disabled={isUploadingFile || !!busyAttachmentId}
+              disabled={isExecuting || !!busyAttachmentId}
               className="text-muted-foreground hover:text-foreground flex h-7 w-7 items-center justify-center"
               aria-label="Add attachment"
             >
-              {isUploadingFile ? (
+              {isExecuting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Paperclip className="h-4 w-4" />
@@ -202,13 +184,13 @@ export function TaskBody({
                   onClickFilename={handleDownloadClick}
                   onDelete={handleDeleteAttachment}
                   isBusy={isBusy}
-                  isParentBusy={isUploadingFile}
+                  isParentBusy={isExecuting}
                 />
               );
             })}
           </div>
         ) : (
-          !isUploadingFile && (
+          !isExecuting && (
             <p className="text-muted-foreground pt-1 text-sm italic">
               No attachments yet. Click the <Paperclip className="inline h-4 w-4" /> icon above to
               add one.
@@ -220,11 +202,11 @@ export function TaskBody({
           <Button
             variant="outline"
             onClick={triggerFileInput}
-            disabled={isUploadingFile || !!busyAttachmentId}
+            disabled={isExecuting || !!busyAttachmentId}
             className="mt-2 w-full justify-center gap-2"
             aria-label="Add attachment"
           >
-            {isUploadingFile ? (
+            {isExecuting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <Plus className="h-4 w-4" />
