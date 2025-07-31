@@ -1,9 +1,10 @@
 'use client';
 
 import { useStreamableText } from '@/hooks/use-streamable-text';
+import { type StreamableValue } from '@ai-sdk/rsc';
 import { cn } from '@comp/ui/cn';
 import type { UIMessage } from 'ai';
-import type { StreamableValue } from 'ai/rsc';
+
 import equal from 'fast-deep-equal';
 import { ChevronDownIcon, ChevronUpIcon } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
