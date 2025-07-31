@@ -1,4 +1,3 @@
-import type { modelID } from '@/hooks/ai/providers';
 import { Icons } from '@comp/ui/icons';
 import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
 import { Textarea as ShadcnTextarea } from '@comp/ui/textarea';
@@ -10,8 +9,6 @@ interface InputProps {
   isLoading: boolean;
   status: string;
   stop: () => void;
-  selectedModel: modelID;
-  setSelectedModel: (model: modelID) => void;
 }
 
 export const ChatTextarea = ({ input, handleInputChange, isLoading }: InputProps) => {

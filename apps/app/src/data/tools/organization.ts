@@ -1,6 +1,5 @@
 import { auth } from '@/utils/auth';
 import { db } from '@db';
-import { tool } from 'ai';
 import { headers } from 'next/headers';
 import { z } from 'zod';
 
@@ -10,9 +9,9 @@ export function getOrganizationTools() {
   };
 }
 
-export const findOrganization = tool({
+export const findOrganization = {
   description: "Find the users organization and it's details",
-  parameters: z.object({}),
+  inputSchema: z.object({}),
   execute: async () => {
     const session = await auth.api.getSession({
       headers: await headers(),
@@ -40,4 +39,4 @@ export const findOrganization = tool({
       organization: org,
     };
   },
-});
+};

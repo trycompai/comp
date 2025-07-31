@@ -2,7 +2,7 @@
 
 import { useStreamableText } from '@/hooks/use-streamable-text';
 import { cn } from '@comp/ui/cn';
-import type { Message as TMessage } from 'ai';
+import type { UIMessage } from 'ai';
 import type { StreamableValue } from 'ai/rsc';
 import equal from 'fast-deep-equal';
 import { ChevronDownIcon, ChevronUpIcon } from 'lucide-react';
@@ -26,8 +26,8 @@ interface ExtendedToolInvocation extends ToolInvocation {
 
 interface ReasoningPart {
   type: 'reasoning';
-  reasoning: string;
-  details: Array<{ type: 'text'; text: string }>;
+  text: string;
+  details?: Array<{ type: 'text'; text: string }>;
 }
 
 interface ReasoningMessagePartProps {
@@ -117,13 +117,13 @@ export function ReasoningMessagePart({ part, isReasoning }: ReasoningMessagePart
             variants={variants}
             transition={{ duration: 0.2, ease: 'easeInOut' }}
           >
-            {part.details.map((detail) =>
+            {part.details?.map((detail) =>
               detail.type === 'text' ? (
                 <StreamableMarkdown key={detail.text} text={detail.text} />
               ) : (
                 '<redacted>'
               ),
-            )}
+            ) || <StreamableMarkdown text={part.text} />}
           </motion.div>
         )}
       </AnimatePresence>
@@ -159,7 +159,7 @@ const PurePreviewMessage = ({
   isLatestMessage,
   status,
 }: {
-  message: TMessage;
+  message: UIMessage;
   isLoading: boolean;
   status: 'error' | 'submitted' | 'streaming' | 'ready';
   isLatestMessage: boolean;
@@ -180,7 +180,12 @@ const PurePreviewMessage = ({
           )}
         >
           <div className="flex w-full flex-col space-y-4">
-            {message.parts?.map((part, i) => {
+            {message.parts?.map((part: any, i: number) => {
+              // Skip invalid parts
+              if (!part || !part.type) {
+                return null;
+              }
+
               switch (part.type) {
                 case 'text':
                   return message.role === 'user' ? (
@@ -196,7 +201,7 @@ const PurePreviewMessage = ({
                             message.role === 'user',
                         })}
                       >
-                        <StreamableMarkdown text={part.text} />
+                        <StreamableMarkdown text={part.text || ''} />
                       </div>
                     </motion.div>
                   ) : (
@@ -207,7 +212,7 @@ const PurePreviewMessage = ({
                       className="flex w-full flex-row items-start gap-2 pb-2"
                     >
                       <BotCard key={`message-${message.id}-part-${i}`}>
-                        <StreamableMarkdown text={part.text} />
+                        <StreamableMarkdown text={part.text || ''} />
                       </BotCard>
                     </motion.div>
                   );
@@ -216,8 +221,7 @@ const PurePreviewMessage = ({
                   return (
                     <ReasoningMessagePart
                       key={`message-${message.id}-${i}`}
-                      // @ts-expect-error part
-                      part={part}
+                      part={part as ReasoningPart}
                       isReasoning={
                         (message.parts &&
                           status === 'streaming' &&
@@ -227,7 +231,9 @@ const PurePreviewMessage = ({
                     />
                   );
                 }
+
                 default:
+                  // Skip tool parts - only show final text response
                   return null;
               }
             })}
@@ -302,8 +308,6 @@ export function UserMessage({ content }: { content: string }) {
 
 export const Message = memo(PurePreviewMessage, (prevProps, nextProps) => {
   if (prevProps.status !== nextProps.status) return false;
-
-  if (prevProps.message.annotations !== nextProps.message.annotations) return false;
 
   if (!equal(prevProps.message.parts, nextProps.message.parts)) return false;
 

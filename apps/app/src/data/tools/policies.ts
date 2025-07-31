@@ -1,6 +1,5 @@
 import { auth } from '@/utils/auth';
 import { db } from '@db';
-import { tool } from 'ai';
 import { headers } from 'next/headers';
 import { z } from 'zod';
 
@@ -11,12 +10,12 @@ export function getPolicyTools() {
   };
 }
 
-export const getPolicies = tool({
+export const getPolicies = {
   description: 'Get all policies for the organization',
-  parameters: z.object({
+  inputSchema: z.object({
     status: z.enum(['draft', 'published']).optional(),
   }),
-  execute: async ({ status }) => {
+  execute: async ({ status }: { status?: 'draft' | 'published' }) => {
     const session = await auth.api.getSession({
       headers: await headers(),
     });
@@ -49,15 +48,15 @@ export const getPolicies = tool({
       policies,
     };
   },
-});
+};
 
-export const getPolicyContent = tool({
+export const getPolicyContent = {
   description:
     'Get the content of a specific policy by id. We can only acquire the policy id by running the getPolicies tool first.',
-  parameters: z.object({
+  inputSchema: z.object({
     id: z.string(),
   }),
-  execute: async ({ id }) => {
+  execute: async ({ id }: { id: string }) => {
     const session = await auth.api.getSession({
       headers: await headers(),
     });
@@ -84,4 +83,4 @@ export const getPolicyContent = tool({
       content: policy?.content,
     };
   },
-});
+};
