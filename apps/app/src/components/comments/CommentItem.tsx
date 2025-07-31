@@ -66,7 +66,8 @@ export function CommentItem({ comment }: { comment: CommentWithAuthor }) {
       }
     },
     onError: ({ error }) => {
-      toast.error(error.serverError || 'Failed to upload file.');
+      console.error('File upload failed:', error);
+      toast.error(error.serverError || 'Failed to upload file. Check console for details.');
     },
     onSettled: () => {
       if (fileInputRef.current) {
