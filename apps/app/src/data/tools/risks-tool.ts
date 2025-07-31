@@ -1,6 +1,5 @@
 import { auth } from '@/utils/auth';
 import { db, Departments, RiskCategory, RiskStatus } from '@db';
-import { tool } from 'ai';
 import { headers } from 'next/headers';
 import { z } from 'zod';
 
@@ -11,15 +10,25 @@ export function getRiskTools() {
   };
 }
 
-export const getRisks = tool({
+export const getRisks = {
   description: 'Get risks for the organization',
-  parameters: z.object({
+  inputSchema: z.object({
     status: z.enum(Object.values(RiskStatus) as [RiskStatus, ...RiskStatus[]]).optional(),
     department: z.enum(Object.values(Departments) as [Departments, ...Departments[]]).optional(),
     category: z.enum(Object.values(RiskCategory) as [RiskCategory, ...RiskCategory[]]).optional(),
     owner: z.string().optional(),
   }),
-  execute: async ({ status, department, category, owner }) => {
+  execute: async ({
+    status,
+    department,
+    category,
+    owner,
+  }: {
+    status?: RiskStatus;
+    department?: Departments;
+    category?: RiskCategory;
+    owner?: string;
+  }) => {
     const session = await auth.api.getSession({
       headers: await headers(),
     });
@@ -54,14 +63,14 @@ export const getRisks = tool({
       risks,
     };
   },
-});
+};
 
-export const getRiskById = tool({
+export const getRiskById = {
   description: 'Get a risk by id',
-  parameters: z.object({
+  inputSchema: z.object({
     id: z.string(),
   }),
-  execute: async ({ id }) => {
+  execute: async ({ id }: { id: string }) => {
     const session = await auth.api.getSession({
       headers: await headers(),
     });
@@ -85,4 +94,4 @@ export const getRiskById = tool({
       risk,
     };
   },
-});
+};

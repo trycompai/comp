@@ -1,9 +1,9 @@
 'use client';
 
-import type { modelID } from '@/hooks/ai/providers';
 import { useSession } from '@/utils/auth-client';
 import { useChat } from '@ai-sdk/react';
 import { ScrollArea } from '@comp/ui/scroll-area';
+import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls } from 'ai';
 import { useState } from 'react';
 import { ChatEmpty } from './chat-empty';
 import { ChatTextarea } from './chat-text-area';
@@ -12,13 +12,15 @@ import { Messages } from './messages';
 export default function Chat() {
   const { data: session } = useSession();
 
-  const [selectedModel, setSelectedModel] = useState<modelID>('deepseek-r1-distill-llama-70b');
+  const [input, setInput] = useState('');
 
-  const { messages, input, handleInputChange, handleSubmit, error, status, stop } = useChat({
-    maxSteps: 5,
-    body: {
-      selectedModel,
-    },
+  const { messages, sendMessage, addToolResult, error, status, stop } = useChat({
+    transport: new DefaultChatTransport({
+      api: '/api/chat',
+    }),
+
+    // Automatically submit when all server-side tool calls are complete
+    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
   });
 
   const isLoading = status === 'streaming' || status === 'submitted';
@@ -37,11 +39,17 @@ export default function Chat() {
         )}
       </ScrollArea>
 
-      <form onSubmit={handleSubmit}>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (input.trim()) {
+            sendMessage({ text: input });
+            setInput('');
+          }
+        }}
+      >
         <ChatTextarea
-          selectedModel={selectedModel}
-          setSelectedModel={setSelectedModel}
-          handleInputChange={handleInputChange}
+          handleInputChange={(e) => setInput(e.target.value)}
           input={input}
           isLoading={isLoading}
           status={status}

@@ -1,5 +1,4 @@
 import { auth } from '@/utils/auth';
-import { tool } from 'ai';
 import { headers } from 'next/headers';
 import { z } from 'zod';
 
@@ -9,9 +8,9 @@ export function getUserTools() {
   };
 }
 
-export const getUser = tool({
+export const getUser = {
   description: "Get the user's id and organization id",
-  parameters: z.object({}),
+  inputSchema: z.object({}),
   execute: async () => {
     const session = await auth.api.getSession({
       headers: await headers(),
@@ -26,4 +25,4 @@ export const getUser = tool({
       organizationId: session.session.activeOrganizationId,
     };
   },
-});
+};
