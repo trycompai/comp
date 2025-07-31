@@ -68,16 +68,13 @@ export const authActionClient = actionClientWithMeta
       },
     });
 
-    if (process.env.NODE_ENV === 'development') {
-      logger.info('Input ->', JSON.stringify(clientInput, null, 2));
-      logger.info('Result ->', JSON.stringify(result.data, null, 2));
+    const { fileData: _, ...inputForLog } = clientInput as any;
+    logger.info('Input ->', JSON.stringify(inputForLog, null, 2));
+    logger.info('Result ->', JSON.stringify(result.data, null, 2));
 
-      // Also log validation errors if they exist
-      if (result.validationErrors) {
-        logger.warn('Validation Errors ->', JSON.stringify(result.validationErrors, null, 2));
-      }
-
-      return result;
+    // Also log validation errors if they exist
+    if (result.validationErrors) {
+      logger.warn('Validation Errors ->', JSON.stringify(result.validationErrors, null, 2));
     }
 
     return result;
@@ -275,16 +272,13 @@ export const authActionClientWithoutOrg = actionClientWithMeta
       },
     });
 
-    if (process.env.NODE_ENV === 'development') {
-      logger.info('Input ->', JSON.stringify(clientInput, null, 2));
-      logger.info('Result ->', JSON.stringify(result.data, null, 2));
+    const { fileData: _, ...inputForLog } = clientInput as any;
+    logger.info('Input ->', JSON.stringify(inputForLog, null, 2));
+    logger.info('Result ->', JSON.stringify(result.data, null, 2));
 
-      // Also log validation errors if they exist
-      if (result.validationErrors) {
-        logger.warn('Validation Errors ->', JSON.stringify(result.validationErrors, null, 2));
-      }
-
-      return result;
+    // Also log validation errors if they exist
+    if (result.validationErrors) {
+      logger.warn('Validation Errors ->', JSON.stringify(result.validationErrors, null, 2));
     }
 
     return result;
