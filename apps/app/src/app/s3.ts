@@ -6,33 +6,44 @@ const APP_AWS_SECRET_ACCESS_KEY = process.env.APP_AWS_SECRET_ACCESS_KEY;
 
 export const BUCKET_NAME = process.env.APP_AWS_BUCKET_NAME;
 
-if (!APP_AWS_ACCESS_KEY_ID || !APP_AWS_SECRET_ACCESS_KEY || !BUCKET_NAME || !APP_AWS_REGION) {
-  // Log the error in production environments
-  if (process.env.NODE_ENV === 'production') {
-    console.error('AWS S3 credentials or configuration missing in environment variables.');
-  } else {
-    // Throw in development for immediate feedback
+let s3ClientInstance: S3Client;
+
+const redact = (value?: string) => {
+  if (!value) return 'undefined';
+  return `${value.substring(0, 4)}****`;
+};
+
+try {
+  if (!APP_AWS_ACCESS_KEY_ID || !APP_AWS_SECRET_ACCESS_KEY || !BUCKET_NAME || !APP_AWS_REGION) {
     throw new Error('AWS S3 credentials or configuration missing. Check environment variables.');
   }
-  // Optionally, you could export a dummy/error client or null here
-  // depending on how you want consuming code to handle the missing config.
+
+  s3ClientInstance = new S3Client({
+    region: APP_AWS_REGION,
+    credentials: {
+      accessKeyId: APP_AWS_ACCESS_KEY_ID,
+      secretAccessKey: APP_AWS_SECRET_ACCESS_KEY,
+    },
+  });
+} catch (error) {
+  console.error('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+  console.error('!!! FAILED TO INITIALIZE S3 CLIENT !!!');
+  console.error('!!! This is likely due to missing or invalid environment variables. !!!');
+  console.error('--- Provided Configuration ---');
+  console.error(`APP_AWS_REGION: ${APP_AWS_REGION}`);
+  console.error(`APP_AWS_ACCESS_KEY_ID: ${redact(APP_AWS_ACCESS_KEY_ID)}`);
+  console.error(`APP_AWS_SECRET_ACCESS_KEY: ${redact(APP_AWS_SECRET_ACCESS_KEY)}`);
+  console.error(`APP_AWS_BUCKET_NAME: ${BUCKET_NAME}`);
+  console.error('-----------------------------');
+  console.error('Error:', error);
+  console.error('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+  // Prevent the app from continuing without a valid S3 client
+  // In a real-world scenario, you might have a fallback or a dummy client.
+  // For now, we re-throw to make the crash explicit.
+  throw error;
 }
 
-// Create a single S3 client instance
-// Add null checks or assertions if the checks above don't guarantee non-null values
-
-export const s3Client = new S3Client({
-  region: APP_AWS_REGION!,
-  credentials: {
-    accessKeyId: APP_AWS_ACCESS_KEY_ID!,
-    secretAccessKey: APP_AWS_SECRET_ACCESS_KEY!,
-  },
-});
-
-// Ensure BUCKET_NAME is exported and non-null checked if needed elsewhere explicitly
-if (!BUCKET_NAME && process.env.NODE_ENV === 'production') {
-  console.error('AWS_BUCKET_NAME is not defined.');
-}
+export const s3Client = s3ClientInstance;
 
 /**
  * Validates if a hostname is a valid AWS S3 endpoint
