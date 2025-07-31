@@ -1,7 +1,7 @@
 import { StatusType } from '@/components/status-indicator';
 // Import base types explicitly
-import type { Control, PolicyStatus } from '@comp/db/types';
-import { Task } from '@comp/db/types';
+import type { Control, PolicyStatus } from '@db';
+import { Task } from '@db';
 
 // Define the expected structure for policies passed to getControlStatus
 // This should match the data structure provided by the calling code (e.g., from a Prisma select)

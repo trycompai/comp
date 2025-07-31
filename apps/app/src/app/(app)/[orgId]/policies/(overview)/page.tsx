@@ -1,5 +1,5 @@
 import { auth } from '@/utils/auth';
-import { db } from '@comp/db';
+import { db } from '@db';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { Suspense } from 'react';

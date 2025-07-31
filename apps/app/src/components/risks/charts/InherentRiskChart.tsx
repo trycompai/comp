@@ -1,7 +1,7 @@
 'use client';
 
 import { updateInherentRiskAction } from '@/actions/risk/update-inherent-risk-action';
-import type { Risk } from '@comp/db/types';
+import type { Risk } from '@db';
 import { RiskMatrixChart } from './RiskMatrixChart';
 
 interface InherentRiskChartProps {

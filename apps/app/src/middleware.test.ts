@@ -7,7 +7,7 @@ vi.mock('@/utils/auth', async () => {
 });
 
 // Mock db module
-vi.mock('@comp/db', async () => {
+vi.mock('@db', async () => {
   const { mockDb } = await import('@/test-utils/mocks/db');
   return { db: mockDb };
 });

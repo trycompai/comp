@@ -2,8 +2,7 @@
 
 import { appErrors } from '@/lib/errors';
 import type { ActionResponse } from '@/types/actions';
-import { db } from '@comp/db';
-import { Impact, Likelihood } from '@prisma/client';
+import { db, Impact, Likelihood } from '@db';
 import { createSafeActionClient } from 'next-safe-action';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';

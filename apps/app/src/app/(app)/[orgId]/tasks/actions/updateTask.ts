@@ -1,8 +1,7 @@
 'use server';
 
 import { auth } from '@/utils/auth';
-import { db } from '@comp/db';
-import { Task } from '@comp/db/types';
+import { db, Task } from '@db';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 

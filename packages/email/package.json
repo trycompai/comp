@@ -14,7 +14,7 @@
     "responsive-react-email": "^0.0.5"
   },
   "devDependencies": {
-    "react": "^19.1.0",
+    "react": "^19.1.1",
     "react-dom": "^19.1.0",
     "tsup": "^8.5.0",
     "typescript": "^5.8.3"
@@ -41,7 +41,7 @@
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "peerDependencies": {
-    "react": "^19.1.0",
+    "react": "^19.1.1",
     "react-dom": "^19.1.0"
   },
   "publishConfig": {

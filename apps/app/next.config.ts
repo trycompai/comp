@@ -4,6 +4,7 @@ import './src/env.mjs';
 const config: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
+  transpilePackages: ['@trycompai/db'],
   turbopack: {
     resolveAlias: {
       underscore: 'lodash',
@@ -17,7 +18,6 @@ const config: NextConfig = {
       },
     ],
   },
-  transpilePackages: ['@comp/ui'],
   logging: {
     fetches: {
       fullUrl: process.env.LOG_FETCHES === 'true',
@@ -28,6 +28,9 @@ const config: NextConfig = {
       bodySizeLimit: '15mb',
     },
     authInterrupts: true,
+  },
+  outputFileTracingIncludes: {
+    '/api/**/*': ['./node_modules/.prisma/client/**/*'],
   },
   async rewrites() {
     return [

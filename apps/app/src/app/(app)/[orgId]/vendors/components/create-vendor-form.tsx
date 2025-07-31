@@ -3,14 +3,14 @@
 import { researchVendorAction } from '@/actions/research-vendor';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
-import type { GlobalVendors } from '@comp/db/types';
-import { type Member, type User, VendorCategory, VendorStatus } from '@comp/db/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
 import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Input } from '@comp/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Textarea } from '@comp/ui/textarea';
+import type { GlobalVendors } from '@db';
+import { type Member, type User, VendorCategory, VendorStatus } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRightIcon } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';

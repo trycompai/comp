@@ -5,7 +5,7 @@ import { DataTableToolbar } from '@/components/data-table/data-table-toolbar';
 import { CreateRiskSheet } from '@/components/sheets/create-risk-sheet';
 import { useDataTable } from '@/hooks/use-data-table';
 import { useSession } from '@/utils/auth-client';
-import type { Member, Risk, User } from '@comp/db/types';
+import type { Member, Risk, User } from '@db';
 import { ColumnDef } from '@tanstack/react-table';
 import { useQueryState } from 'nuqs';
 import { useMemo } from 'react';

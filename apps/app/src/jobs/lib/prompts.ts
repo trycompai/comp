@@ -1,4 +1,4 @@
-import { Policy } from '@comp/db/types';
+import { Policy } from '@db';
 import type { JSONContent } from '@tiptap/react';
 import { logger } from '@trigger.dev/sdk/v3';
 

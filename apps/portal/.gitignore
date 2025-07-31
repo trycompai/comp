@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Generated Prisma Client
+prisma/generated
+# Copied schema from @trycompai/db package - always generate fresh
+prisma/schema.prisma

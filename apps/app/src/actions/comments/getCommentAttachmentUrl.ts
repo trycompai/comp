@@ -4,8 +4,7 @@ import { BUCKET_NAME, extractS3KeyFromUrl, s3Client } from '@/app/s3';
 import { auth } from '@/utils/auth';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { db } from '@comp/db';
-import { AttachmentEntityType } from '@comp/db/types';
+import { AttachmentEntityType, db } from '@db';
 import { headers } from 'next/headers';
 import { z } from 'zod';
 

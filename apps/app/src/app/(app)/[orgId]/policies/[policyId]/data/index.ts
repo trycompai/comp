@@ -2,16 +2,16 @@
 
 import { CommentWithAuthor } from '@/components/comments/Comments';
 import { auth } from '@/utils/auth';
-import { db } from '@comp/db';
 import {
   AttachmentEntityType,
   AuditLog,
   AuditLogEntityType,
   CommentEntityType,
+  db,
   Member,
   Organization,
   User,
-} from '@comp/db/types';
+} from '@db';
 import { headers } from 'next/headers';
 
 // Define the type for AuditLog with its relations

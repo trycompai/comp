@@ -1,4 +1,4 @@
-import { Control, Member, Policy, User } from '@comp/db/types';
+import { Control, Member, Policy, User } from '@db';
 import type { JSONContent } from '@tiptap/react';
 import { Comments, CommentWithAuthor } from '../../../../../../components/comments/Comments';
 import { AuditLogWithRelations } from '../data';

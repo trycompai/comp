@@ -1,6 +1,6 @@
-import type { Attachment, Comment, Member, User } from '@comp/db/types';
-import { CommentEntityType } from '@comp/db/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
+import type { Attachment, Comment, Member, User } from '@db';
+import { CommentEntityType } from '@db';
 import { CommentForm } from './CommentForm';
 import { CommentList } from './CommentList';
 

@@ -1,4 +1,4 @@
-import { db } from '@comp/db';
+import { db } from '@db';
 import { logger, schedules } from '@trigger.dev/sdk/v3';
 import { sendIntegrationResults } from './integration-results';
 

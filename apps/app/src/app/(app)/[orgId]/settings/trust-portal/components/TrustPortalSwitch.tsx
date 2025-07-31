@@ -86,9 +86,12 @@ export function TrustPortalSwitch({
     },
   });
 
-  const onSubmit = async (data: z.infer<typeof trustPortalSwitchSchema>) => {
-    await trustPortalSwitch.execute(data);
-  };
+  const onSubmit = useCallback(
+    async (data: z.infer<typeof trustPortalSwitchSchema>) => {
+      await trustPortalSwitch.execute(data);
+    },
+    [trustPortalSwitch],
+  );
 
   const portalUrl = domainVerified ? `https://${domain}` : `https://trust.inc/${slug}`;
 
@@ -121,7 +124,7 @@ export function TrustPortalSwitch({
       form.setValue('contactEmail', debouncedContactEmail);
       autoSave('contactEmail', debouncedContactEmail);
     }
-  }, [debouncedContactEmail]);
+  }, [debouncedContactEmail, autoSave, form]);
 
   const handleContactEmailBlur = useCallback(
     (e: React.FocusEvent<HTMLInputElement>) => {
@@ -145,7 +148,7 @@ export function TrustPortalSwitch({
     }
     setFriendlyUrlStatus('checking');
     checkFriendlyUrl.execute({ friendlyUrl: debouncedFriendlyUrl, orgId });
-  }, [debouncedFriendlyUrl, orgId, friendlyUrl]);
+  }, [debouncedFriendlyUrl, orgId, friendlyUrl, checkFriendlyUrl]);
   useEffect(() => {
     if (checkFriendlyUrl.status === 'executing') return;
     if (checkFriendlyUrl.result?.data?.isAvailable === true) {
@@ -158,7 +161,7 @@ export function TrustPortalSwitch({
     } else if (checkFriendlyUrl.result?.data?.isAvailable === false) {
       setFriendlyUrlStatus('unavailable');
     }
-  }, [checkFriendlyUrl.status, checkFriendlyUrl.result]);
+  }, [checkFriendlyUrl.status, checkFriendlyUrl.result, autoSave, form, debouncedFriendlyUrl]);
 
   const handleFriendlyUrlBlur = useCallback(
     (e: React.FocusEvent<HTMLInputElement>) => {

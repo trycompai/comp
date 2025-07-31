@@ -1,7 +1,7 @@
 'use client';
 
 import { RiskMatrixChart } from '@/components/risks/charts/RiskMatrixChart';
-import type { Vendor } from '@comp/db/types';
+import type { Vendor } from '@db';
 import { updateVendorResidualRisk } from '../actions/update-vendor-residual-risk';
 
 interface ResidualRiskChartProps {

@@ -1,6 +1,5 @@
 import { auth } from '@/utils/auth';
-import { db } from '@comp/db';
-import { Departments } from '@prisma/client';
+import { db, Departments } from '@db';
 import { NextRequest, NextResponse } from 'next/server';
 
 // Force dynamic rendering for this route

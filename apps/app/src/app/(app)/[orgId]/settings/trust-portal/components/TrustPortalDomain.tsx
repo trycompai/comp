@@ -58,7 +58,7 @@ export function TrustPortalDomain({
     setIsCnameVerified(isCnameVerified === 'true');
     setIsTxtVerified(isTxtVerified === 'true');
     setIsVercelTxtVerified(isVercelTxtVerified === 'true');
-  }, []);
+  }, [initialDomain]);
 
   const updateCustomDomain = useAction(customDomainAction, {
     onSuccess: (data) => {

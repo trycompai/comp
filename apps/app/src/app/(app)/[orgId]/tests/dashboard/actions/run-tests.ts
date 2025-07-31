@@ -2,7 +2,7 @@
 
 import { sendIntegrationResults } from '@/jobs/tasks/integration/integration-results';
 import { auth } from '@/utils/auth';
-import { db } from '@comp/db';
+import { db } from '@db';
 import { runs, tasks } from '@trigger.dev/sdk/v3';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';

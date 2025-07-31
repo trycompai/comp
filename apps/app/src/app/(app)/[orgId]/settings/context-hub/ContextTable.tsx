@@ -3,7 +3,7 @@ import { DataTable } from '@/components/data-table/data-table';
 import { DataTableToolbar } from '@/components/data-table/data-table-toolbar';
 import { useDataTable } from '@/hooks/use-data-table';
 import { Button } from '@comp/ui/button';
-import type { Context } from '@prisma/client';
+import type { Context } from '@db';
 import { Plus } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import { useMemo } from 'react';

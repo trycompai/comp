@@ -1,5 +1,4 @@
-import { db } from '@comp/db';
-import { Departments } from '@prisma/client';
+import { db, Departments } from '@db';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';

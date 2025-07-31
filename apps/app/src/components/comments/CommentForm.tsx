@@ -2,11 +2,11 @@
 
 import { createComment } from '@/actions/comments/createComment';
 import { authClient } from '@/utils/auth-client';
-import type { CommentEntityType } from '@comp/db/types';
 import { Button } from '@comp/ui/button';
 import { Input } from '@comp/ui/input';
 import { Label } from '@comp/ui/label';
 import { Textarea } from '@comp/ui/textarea';
+import type { CommentEntityType } from '@db';
 import clsx from 'clsx';
 import { ArrowUp, Loader2, Paperclip } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
@@ -62,68 +62,65 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
     fileInputRef.current?.click();
   };
 
-  const handleFileSelect = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      const files = event.target.files;
-      if (!files || files.length === 0) return;
+  const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
 
-      setIsUploading(true);
-      setIsLoading(true);
+    setIsUploading(true);
+    setIsLoading(true);
 
-      // Helper to process a single file
-      const processFile = (file: File) => {
-        return new Promise<void>((resolve) => {
-          // Add file size check here
-          const MAX_FILE_SIZE_MB = 5;
-          const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
-          if (file.size > MAX_FILE_SIZE_BYTES) {
-            toast.error(`File "${file.name}" exceeds the ${MAX_FILE_SIZE_MB}MB limit.`);
-            return resolve(); // Skip processing this file
+    // Helper to process a single file
+    const processFile = (file: File) => {
+      return new Promise<void>((resolve) => {
+        // Add file size check here
+        const MAX_FILE_SIZE_MB = 5;
+        const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+        if (file.size > MAX_FILE_SIZE_BYTES) {
+          toast.error(`File "${file.name}" exceeds the ${MAX_FILE_SIZE_MB}MB limit.`);
+          return resolve(); // Skip processing this file
+        }
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const dataUrlResult = reader.result as string;
+          const base64Data = dataUrlResult?.split(',')[1];
+          if (!base64Data) {
+            toast.error(`Failed to read file data for ${file.name}`);
+            return resolve();
           }
 
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            const dataUrlResult = reader.result as string;
-            const base64Data = dataUrlResult?.split(',')[1];
-            if (!base64Data) {
-              toast.error(`Failed to read file data for ${file.name}`);
-              return resolve();
-            }
+          // Store file in memory instead of uploading
+          setPendingAttachments((prev) => [
+            ...prev,
+            {
+              id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Generate temporary ID
+              name: file.name,
+              fileType: file.type,
+              fileData: base64Data,
+            },
+          ]);
+          toast.success(`File "${file.name}" ready for attachment.`);
+          setIsLoading(false);
+          resolve();
+        };
+        reader.onerror = () => {
+          toast.error(`Error reading file: ${file.name}`);
+          setIsLoading(false);
+          resolve();
+        };
+        reader.readAsDataURL(file);
+      });
+    };
 
-            // Store file in memory instead of uploading
-            setPendingAttachments((prev) => [
-              ...prev,
-              {
-                id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Generate temporary ID
-                name: file.name,
-                fileType: file.type,
-                fileData: base64Data,
-              },
-            ]);
-            toast.success(`File "${file.name}" ready for attachment.`);
-            setIsLoading(false);
-            resolve();
-          };
-          reader.onerror = () => {
-            toast.error(`Error reading file: ${file.name}`);
-            setIsLoading(false);
-            resolve();
-          };
-          reader.readAsDataURL(file);
-        });
-      };
-
-      // Process all files sequentially
-      (async () => {
-        for (const file of Array.from(files)) {
-          await processFile(file);
-        }
-        setIsUploading(false);
-        if (fileInputRef.current) fileInputRef.current.value = '';
-      })();
-    },
-    [entityId, entityType, pendingAttachments.length],
-  );
+    // Process all files sequentially
+    (async () => {
+      for (const file of Array.from(files)) {
+        await processFile(file);
+      }
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    })();
+  }, []);
 
   const handleRemovePendingAttachment = (attachmentIdToRemove: string) => {
     setPendingAttachments((prev) => prev.filter((att) => att.id !== attachmentIdToRemove));
@@ -219,7 +216,9 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
             placeholder="Leave a comment..."
             className="resize-none border-none p-4 shadow-none"
             value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
+            onChange={(e: { target: { value: React.SetStateAction<string> } }) =>
+              setNewComment(e.target.value)
+            }
             disabled={isLoading}
             onKeyDown={handleKeyDown}
             rows={2}

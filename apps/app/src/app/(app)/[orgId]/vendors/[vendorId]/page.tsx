@@ -2,8 +2,7 @@
 
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { auth } from '@/utils/auth';
-import { db } from '@comp/db';
-import { AttachmentEntityType, CommentEntityType } from '@comp/db/types';
+import { AttachmentEntityType, CommentEntityType, db } from '@db';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';

@@ -35,6 +35,26 @@ const CHART_COLORS = {
 };
 
 export function PolicyAssigneeChart({ data }: PolicyAssigneeChartProps) {
+  // Sort assignees by total policies (descending)
+  const sortedData = React.useMemo(() => {
+    if (!data || data.length === 0) return [];
+    return [...data]
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 4)
+      .reverse();
+  }, [data]);
+
+  // Calculate total policies and top assignee
+  const totalPolicies = React.useMemo(() => {
+    if (!data || data.length === 0) return 0;
+    return data.reduce((sum, item) => sum + item.total, 0);
+  }, [data]);
+
+  const topAssignee = React.useMemo(() => {
+    if (!data || data.length === 0) return null;
+    return data.reduce((prev, current) => (prev.total > current.total ? prev : current));
+  }, [data]);
+
   if (!data || data.length === 0) {
     return (
       <Card className="flex flex-col overflow-hidden border">
@@ -64,14 +84,6 @@ export function PolicyAssigneeChart({ data }: PolicyAssigneeChartProps) {
     );
   }
 
-  // Sort assignees by total policies (descending)
-  const sortedData = React.useMemo(() => {
-    return [...data]
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 4)
-      .reverse();
-  }, [data]);
-
   const chartData = sortedData.map((item) => ({
     name: item.name,
     published: item.published,
@@ -98,17 +110,6 @@ export function PolicyAssigneeChart({ data }: PolicyAssigneeChartProps) {
       color: CHART_COLORS.needs_review,
     },
   } satisfies ChartConfig;
-
-  // Calculate total policies and top assignee
-  const totalPolicies = React.useMemo(() => {
-    if (!data.length) return 0;
-    return data.reduce((sum, item) => sum + item.total, 0);
-  }, [data]);
-
-  const topAssignee = React.useMemo(() => {
-    if (!data.length) return null;
-    return data.reduce((prev, current) => (prev.total > current.total ? prev : current));
-  }, [data]);
 
   return (
     <Card className="flex flex-col overflow-hidden border">

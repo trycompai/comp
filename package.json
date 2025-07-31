@@ -39,7 +39,7 @@
     "react-dnd": "^16.0.1",
     "react-dnd-html5-backend": "^16.0.1",
     "react-email": "^4.0.15",
-    "react-hook-form": "^7.58.1",
+    "react-hook-form": "^7.61.1",
     "semantic-release": "^24.2.5",
     "semantic-release-discord": "^1.2.0",
     "semantic-release-discord-notifier": "^1.0.11",
@@ -63,11 +63,6 @@
     "build": "turbo build",
     "clean": "git clean -xdf node_modules",
     "clean:workspaces": "turbo clean",
-    "db:generate": "bun run -F @comp/db db:generate",
-    "db:migrate": "bun run -F @comp/db db:migrate",
-    "db:push": "bun run -F @comp/db db:push",
-    "db:seed": "bun run -F @comp/db db:seed",
-    "db:studio": "bun run -F @comp/db db:studio",
     "deploy:trigger-prod": "npx trigger.dev@latest deploy",
     "deps:check": "syncpack list-mismatches",
     "deps:dedupe": "syncpack fix-mismatches && bun install",
@@ -89,6 +84,12 @@
   },
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/analytics",
+    "packages/email",
+    "packages/integrations",
+    "packages/kv",
+    "packages/tsconfig",
+    "packages/ui",
+    "packages/utils"
   ]
 }

@@ -1,6 +1,6 @@
 'use server';
 
-import { db } from '@comp/db';
+import { db } from '@db';
 // Remove unused Role import if not needed elsewhere
 // import { Role } from "@comp/db/types";
 import { revalidatePath, revalidateTag } from 'next/cache';

@@ -1,11 +1,11 @@
 'use client';
 
 import { uploadFile } from '@/actions/files/upload-file';
-import type { Attachment } from '@comp/db/types';
-import { AttachmentEntityType } from '@comp/db/types';
 import { Button } from '@comp/ui/button';
 import { Label } from '@comp/ui/label';
 import { Textarea } from '@comp/ui/textarea';
+import type { Attachment } from '@db';
+import { AttachmentEntityType } from '@db';
 import { Loader2, Paperclip, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import type React from 'react';
@@ -106,7 +106,7 @@ export function TaskBody({
         setIsUploading(false);
       }
     },
-    [taskId, uploadFile, onAttachmentsChange, router],
+    [taskId, onAttachmentsChange, router],
   );
 
   const triggerFileInput = () => {
@@ -141,7 +141,7 @@ export function TaskBody({
       onAttachmentsChange?.();
       router.refresh();
     },
-    [deleteTaskAttachment, onAttachmentsChange, router],
+    [onAttachmentsChange, router],
   );
 
   const isUploadingFile = isUploading;

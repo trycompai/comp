@@ -29,7 +29,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@comp/ui/dialog';
-import type { Context } from '@prisma/client';
+import type { Context } from '@db';
 import { Pencil, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';

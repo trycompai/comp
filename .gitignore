@@ -56,8 +56,9 @@ tailwind.css
 # Trigger
 .trigger
 
-# Playground (for local testing)
-/playground
+# Playground
+playground/
+.playground/
 .venv
 
 # Ignore lock files to prevent conflicts between different package managers
@@ -76,6 +77,7 @@ playwright-report/
 playwright/.cache/
 debug-setup-page.png
 
-.playground/
-
 packages/*/dist
+
+# Generated Prisma Client
+**/src/db/generated/

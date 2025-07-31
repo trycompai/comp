@@ -3,8 +3,8 @@
 import { changeOrganizationAction } from '@/actions/change-organization';
 import { MinimalOrganizationSwitcher } from '@/components/layout/MinimalOrganizationSwitcher';
 import { MinimalUserMenu } from '@/components/layout/MinimalUserMenu';
-import type { Organization } from '@comp/db/types';
 import { Icons } from '@comp/ui/icons';
+import type { Organization } from '@db';
 import type { User } from 'better-auth';
 import { ArrowLeft } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';

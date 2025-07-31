@@ -1,6 +1,5 @@
-import { db } from '@comp/db';
-import { PolicyStatus } from '@comp/db/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
+import { db, PolicyStatus } from '@db';
 import type { CSSProperties } from 'react';
 
 interface Props {

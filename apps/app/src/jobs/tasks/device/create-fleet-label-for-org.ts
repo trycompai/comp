@@ -1,5 +1,5 @@
 import { getFleetInstance } from '@/lib/fleet';
-import { db } from '@comp/db';
+import { db } from '@db';
 import { logger, task } from '@trigger.dev/sdk/v3';
 
 export const createFleetLabelForOrg = task({

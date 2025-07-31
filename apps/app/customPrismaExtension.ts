@@ -1,217 +1,140 @@
 import { binaryForRuntime, BuildContext, BuildExtension, BuildManifest } from '@trigger.dev/build';
 import assert from 'node:assert';
-import { existsSync, statSync } from 'node:fs';
-import { cp, readdir } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { cp } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 
 export type PrismaExtensionOptions = {
-  schema: string;
-  migrate?: boolean;
   version?: string;
-  /**
-   * Adds the `--sql` flag to the `prisma generate` command. This will generate the SQL files for the Prisma schema. Requires the `typedSql preview feature and prisma 5.19.0 or later.
-   */
-  typedSql?: boolean;
-  /**
-   * The client generator to use. Set this param to prevent all generators in the prisma schema from being generated.
-   *
-   * @example
-   *
-   * ### Prisma schema
-   *
-   * ```prisma
-   * generator client {
-   *  provider = "prisma-client-js"
-   * }
-   *
-   * generator typegraphql {
-   *  provider = "typegraphql-prisma"
-   *  output = "./generated/type-graphql"
-   * }
-   * ```
-   *
-   * ### PrismaExtension
-   *
-   * ```ts
-   * prismaExtension({
-   *  schema: "./prisma/schema.prisma",
-   *  clientGenerator: "client"
-   * });
-   * ```
-   */
-  clientGenerator?: string;
+  migrate?: boolean;
   directUrlEnvVarName?: string;
-  isUsingSchemaFolder?: boolean;
+  /**
+   * The version of the @trycompai/db package to use
+   */
+  dbPackageVersion?: string;
 };
-const BINARY_TARGET = 'linux-arm64-openssl-3.0.x';
-export function prismaExtension(options: PrismaExtensionOptions): PrismaExtension {
+
+export function prismaExtension(options: PrismaExtensionOptions = {}): PrismaExtension {
   return new PrismaExtension(options);
 }
+
 export class PrismaExtension implements BuildExtension {
   moduleExternals: string[];
   public readonly name = 'PrismaExtension';
   private _resolvedSchemaPath?: string;
+
   constructor(private options: PrismaExtensionOptions) {
-    this.moduleExternals = ['@prisma/client', '@prisma/engines'];
+    this.moduleExternals = [
+      '@prisma/client',
+      '@prisma/engines',
+      '@trycompai/db', // Add the published package to externals
+    ];
   }
+
   externalsForTarget(target: any) {
     if (target === 'dev') {
       return [];
     }
     return this.moduleExternals;
   }
+
   async onBuildStart(context: BuildContext) {
     if (context.target === 'dev') {
       return;
     }
-    // Resolve the path to the prisma schema, relative to the config.directory
-    let resolvedPath = resolve(context.workingDir, this.options.schema);
 
-    // Check if it's a directory; if so, look for schema.prisma inside
-    if (statSync(resolvedPath).isDirectory()) {
-      resolvedPath = join(resolvedPath, 'schema.prisma');
-      this.options.isUsingSchemaFolder = true;
+    // Resolve the path to the schema from the published @trycompai/db package
+    // In a monorepo, node_modules are typically hoisted to the workspace root
+    // Walk up the directory tree to find the workspace root (where node_modules/@trycompai/db exists)
+    let workspaceRoot = context.workingDir;
+    let dbPackagePath = resolve(workspaceRoot, 'node_modules/@trycompai/db/dist/schema.prisma');
+
+    // If not found in working dir, try parent directories
+    while (!existsSync(dbPackagePath) && workspaceRoot !== dirname(workspaceRoot)) {
+      workspaceRoot = dirname(workspaceRoot);
+      dbPackagePath = resolve(workspaceRoot, 'node_modules/@trycompai/db/dist/schema.prisma');
     }
-    this._resolvedSchemaPath = resolvedPath;
-    context.logger.debug(`Resolved the prisma schema to: ${this._resolvedSchemaPath}`);
-    // Check that the prisma schema exists
+
+    this._resolvedSchemaPath = dbPackagePath;
+
+    context.logger.debug(`Workspace root: ${workspaceRoot}`);
+    context.logger.debug(
+      `Resolved the prisma schema from @trycompai/db package to: ${this._resolvedSchemaPath}`,
+    );
+
+    // Debug: List contents of the @trycompai/db package directory
+    const dbPackageDir = resolve(workspaceRoot, 'node_modules/@trycompai/db');
+    const dbDistDir = resolve(workspaceRoot, 'node_modules/@trycompai/db/dist');
+
+    try {
+      const { readdirSync } = require('node:fs');
+      context.logger.debug(`@trycompai/db package directory contents:`, readdirSync(dbPackageDir));
+      context.logger.debug(`@trycompai/db/dist directory contents:`, readdirSync(dbDistDir));
+    } catch (err) {
+      context.logger.debug(`Failed to list directory contents:`, err);
+    }
+
+    // Check that the prisma schema exists in the published package
     if (!existsSync(this._resolvedSchemaPath)) {
       throw new Error(
-        `PrismaExtension could not find the prisma schema at ${this._resolvedSchemaPath}. Make sure the path is correct: ${this.options.schema}, relative to the working dir ${context.workingDir}`,
+        `PrismaExtension could not find the prisma schema at ${this._resolvedSchemaPath}. Make sure @trycompai/db package is installed with version ${this.options.dbPackageVersion || 'latest'}`,
       );
     }
   }
+
   async onBuildComplete(context: BuildContext, manifest: BuildManifest) {
     if (context.target === 'dev') {
       return;
     }
+
     assert(this._resolvedSchemaPath, 'Resolved schema path is not set');
+
     context.logger.debug('Looking for @prisma/client in the externals', {
       externals: manifest.externals,
     });
+
     const prismaExternal = manifest.externals?.find(
       (external) => external.name === '@prisma/client',
     );
     const version = prismaExternal?.version ?? this.options.version;
+
     if (!version) {
       throw new Error(
         `PrismaExtension could not determine the version of @prisma/client. It's possible that the @prisma/client was not used in the project. If this isn't the case, please provide a version in the PrismaExtension options.`,
       );
     }
-    context.logger.debug(`PrismaExtension is generating the Prisma client for version ${version}`);
-    const usingSchemaFolder = this.options.isUsingSchemaFolder;
+
+    context.logger.debug(
+      `PrismaExtension is generating the Prisma client for version ${version} from @trycompai/db package`,
+    );
+
     const commands: string[] = [];
-    let prismaDir: string | undefined;
-    const generatorFlags: string[] = [];
-    if (this.options.clientGenerator) {
-      generatorFlags.push(`--generator=${this.options.clientGenerator}`);
-    }
-    if (this.options.typedSql) {
-      generatorFlags.push('--sql');
-      const prismaDir = usingSchemaFolder
-        ? dirname(dirname(this._resolvedSchemaPath))
-        : dirname(this._resolvedSchemaPath);
-      context.logger.debug('Using typedSql');
-      // Find all the files prisma/sql/*.sql
-      const sqlFiles = await readdir(join(prismaDir, 'sql')).then((files) =>
-        files.filter((file) => file.endsWith('.sql')),
-      );
-      context.logger.debug('Found sql files', {
-        sqlFiles,
-      });
-      const sqlDestinationPath = join(manifest.outputPath, 'prisma', 'sql');
-      for (const file of sqlFiles) {
-        const destination = join(sqlDestinationPath, file);
-        const source = join(prismaDir, 'sql', file);
-        context.logger.debug(`Copying the sql from ${source} to ${destination}`);
-        await cp(source, destination);
-      }
-    }
-    if (usingSchemaFolder) {
-      const schemaDir = dirname(this._resolvedSchemaPath);
-      prismaDir = dirname(schemaDir);
-      context.logger.debug(`Using the schema folder: ${schemaDir}`);
-      // Find all the files in schemaDir that end with .prisma (excluding the schema.prisma file)
-      const prismaFiles = await readdir(schemaDir).then((files) =>
-        files.filter((file) => file.endsWith('.prisma')),
-      );
-      context.logger.debug('Found prisma files in the schema folder', {
-        prismaFiles,
-      });
-      const schemaDestinationPath = join(manifest.outputPath, 'prisma', 'schema');
-      const allPrismaFiles = [...prismaFiles];
-
-      // --- NEW: Look for a 'schema' subfolder and collect .prisma files from it ---
-      const schemaSubDir = join(schemaDir, 'schema');
-      let subDirPrismaFiles: string[] = [];
-      try {
-        const filesInSubDir = await readdir(schemaSubDir);
-        subDirPrismaFiles = filesInSubDir.filter((file) => file.endsWith('.prisma'));
-        context.logger.debug('Found prisma files in the schema subfolder', {
-          subDirPrismaFiles,
-        });
-      } catch (err) {
-        // Ignore if the subdirectory does not exist
-        context.logger.debug(`No 'schema' subfolder found in ${schemaDir}`);
-      }
-
-      // Copy top-level .prisma files
-      for (const file of allPrismaFiles) {
-        const destination = join(schemaDestinationPath, file);
-        const source = join(schemaDir, file);
-        context.logger.debug(`Copying the prisma schema from ${source} to ${destination}`);
-        await cp(source, destination);
-      }
-      // Copy .prisma files from schema subdirectory
-      for (const file of subDirPrismaFiles) {
-        const destination = join(schemaDestinationPath, file);
-        const source = join(schemaSubDir, file);
-        context.logger.debug(`Copying the prisma schema from ${source} to ${destination}`);
-        await cp(source, destination);
-      }
-      commands.push(
-        `${binaryForRuntime(
-          manifest.runtime,
-        )} node_modules/prisma/build/index.js generate --schema=./prisma/schema ${generatorFlags.join(
-          ' ',
-        )}`,
-      );
-    } else {
-      prismaDir = dirname(this._resolvedSchemaPath);
-      // Now we need to add a layer that:
-      // Copies the prisma schema to the build outputPath
-      // Adds the `prisma` CLI dependency to the dependencies
-      // Adds the `prisma generate` command, which generates the Prisma client
-      const schemaDestinationPath = join(manifest.outputPath, 'prisma', 'schema.prisma');
-      // Copy the prisma schema to the build output path
-      context.logger.debug(
-        `Copying the prisma schema from ${this._resolvedSchemaPath} to ${schemaDestinationPath}`,
-      );
-      await cp(this._resolvedSchemaPath, schemaDestinationPath);
-      commands.push(
-        `${binaryForRuntime(
-          manifest.runtime,
-        )} node_modules/prisma/build/index.js generate --schema=./prisma/schema ${generatorFlags.join(
-          ' ',
-        )}`,
-      );
-    }
     const env: Record<string, string | undefined> = {};
+
+    // Copy the prisma schema from the published package to the build output path
+    const schemaDestinationPath = join(manifest.outputPath, 'prisma', 'schema.prisma');
+    context.logger.debug(
+      `Copying the prisma schema from ${this._resolvedSchemaPath} to ${schemaDestinationPath}`,
+    );
+    await cp(this._resolvedSchemaPath, schemaDestinationPath);
+
+    // Add prisma generate command to generate the client from the copied schema
+    commands.push(
+      `${binaryForRuntime(manifest.runtime)} node_modules/prisma/build/index.js generate --schema=./prisma/schema.prisma`,
+    );
+
+    // Only handle migrations if requested
     if (this.options.migrate) {
-      // Copy the migrations directory to the build output path
-      const migrationsDir = join(prismaDir, 'migrations');
-      const migrationsDestinationPath = join(manifest.outputPath, 'prisma', 'migrations');
       context.logger.debug(
-        `Copying the prisma migrations from ${migrationsDir} to ${migrationsDestinationPath}`,
+        'Migration support not implemented for published package - please handle migrations separately',
       );
-      await cp(migrationsDir, migrationsDestinationPath, {
-        recursive: true,
-      });
-      commands.push(
-        `${binaryForRuntime(manifest.runtime)} node_modules/prisma/build/index.js migrate deploy`,
-      );
+      // You could add migration commands here if needed
+      // commands.push(`${binaryForRuntime(manifest.runtime)} npx prisma migrate deploy`);
     }
+
+    // Set up environment variables
     env.DATABASE_URL = manifest.deploy.env?.DATABASE_URL;
+
     if (this.options.directUrlEnvVarName) {
       env[this.options.directUrlEnvVarName] =
         manifest.deploy.env?.[this.options.directUrlEnvVarName] ??
@@ -225,23 +148,28 @@ export class PrismaExtension implements BuildExtension {
       env.DIRECT_URL = manifest.deploy.env?.DIRECT_URL;
       env.DIRECT_DATABASE_URL = manifest.deploy.env?.DIRECT_DATABASE_URL;
     }
+
     if (!env.DATABASE_URL) {
       context.logger.warn(
         'prismaExtension could not resolve the DATABASE_URL environment variable. Make sure you add it to your environment variables. See our docs for more info: https://trigger.dev/docs/deploy-environment-variables',
       );
     }
+
     context.logger.debug('Adding the prisma layer with the following commands', {
       commands,
       env,
       dependencies: {
         prisma: version,
+        '@trycompai/db': this.options.dbPackageVersion || 'latest',
       },
     });
+
     context.addLayer({
       id: 'prisma',
       commands,
       dependencies: {
         prisma: version,
+        '@trycompai/db': this.options.dbPackageVersion || 'latest',
       },
       build: {
         env,
