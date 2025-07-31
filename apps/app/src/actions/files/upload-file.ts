@@ -2,6 +2,10 @@
 
 import { BUCKET_NAME, s3Client } from '@/app/s3';
 import { logger } from '@/utils/logger';
+
+// This log will run as soon as the module is loaded.
+logger.info('[uploadFile] Module loaded.');
+
 import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { AttachmentEntityType, AttachmentType, db } from '@db';
