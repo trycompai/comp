@@ -1,4 +1,4 @@
-import { type StreamableValue, readStreamableValue } from 'ai/rsc';
+import { type StreamableValue, readStreamableValue } from '@ai-sdk/rsc';
 import { useEffect, useState, useTransition } from 'react';
 
 function useDebounce<T>(value: T, delay: number): T {

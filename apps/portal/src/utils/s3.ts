@@ -21,23 +21,13 @@ if (!APP_AWS_ACCESS_KEY_ID || !APP_AWS_SECRET_ACCESS_KEY || !BUCKET_NAME || !APP
 
 // Create a single S3 client instance
 // Add null checks or assertions if the checks above don't guarantee non-null values
-export const s3Client = new S3Client(
-  // If we are on Vercel, we MUST provide explicit credentials.
-  process.env.VERCEL === '1'
-    ? {
-        region: APP_AWS_REGION!,
-        credentials: {
-          accessKeyId: APP_AWS_ACCESS_KEY_ID!,
-          secretAccessKey: APP_AWS_SECRET_ACCESS_KEY!,
-        },
-      }
-    : // For any other environment (like AWS ECS or local dev),
-      // we only need to provide the region. The AWS SDK will
-      // automatically find the credentials from the environment.
-      {
-        region: APP_AWS_REGION!,
-      },
-);
+export const s3Client = new S3Client({
+  region: APP_AWS_REGION!,
+  credentials: {
+    accessKeyId: APP_AWS_ACCESS_KEY_ID!,
+    secretAccessKey: APP_AWS_SECRET_ACCESS_KEY!,
+  },
+});
 
 // Ensure BUCKET_NAME is exported and non-null checked if needed elsewhere explicitly
 if (!BUCKET_NAME && process.env.NODE_ENV === 'production') {

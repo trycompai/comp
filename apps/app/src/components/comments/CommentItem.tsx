@@ -24,7 +24,6 @@ import {
   Plus,
   Trash2,
 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
 import type React from 'react';
 import { useCallback, useRef, useState } from 'react';
@@ -46,35 +45,10 @@ export function CommentItem({ comment }: { comment: CommentWithAuthor }) {
   const [currentAttachments, setCurrentAttachments] = useState([...comment.attachments]);
   const [attachmentsToRemove, setAttachmentsToRemove] = useState<string[]>([]);
   const [pendingAttachmentsToAdd, setPendingAttachmentsToAdd] = useState<PendingAttachment[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const [deletingAttachmentIds, setDeletingAttachmentIds] = useState<string[]>([]);
-
-  const { execute: executeUpload, isExecuting: isUploading } = useAction(uploadFile, {
-    onSuccess: ({ data }) => {
-      if (data) {
-        setPendingAttachmentsToAdd((prev) => [
-          ...prev,
-          {
-            id: data.id,
-            name: data.name,
-            fileType: data.type,
-            signedUrl: data.signedUrl,
-          },
-        ]);
-        toast.success(`File "${data.name}" ready for attachment.`);
-      }
-    },
-    onError: ({ error }) => {
-      console.error('File upload failed:', error);
-      toast.error(error.serverError || 'Failed to upload file. Check console for details.');
-    },
-    onSettled: () => {
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    },
-  });
 
   const handleEditToggle = () => {
     if (!isEditing) {
@@ -152,40 +126,70 @@ export function CommentItem({ comment }: { comment: CommentWithAuthor }) {
   };
 
   const handleFileSelect = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
       const files = event.target.files;
       if (!files || files.length === 0) return;
+      setIsUploading(true);
 
-      for (const file of Array.from(files)) {
-        const MAX_FILE_SIZE_MB = 10;
-        const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
-        if (file.size > MAX_FILE_SIZE_BYTES) {
-          toast.error(`File "${file.name}" exceeds the ${MAX_FILE_SIZE_MB}MB limit.`);
-          continue;
-        }
-
-        const reader = new FileReader();
-        reader.onloadend = async () => {
-          const base64Data = (reader.result as string)?.split(',')[1];
-          if (!base64Data) {
-            toast.error(`Failed to read file data for ${file.name}`);
-            return;
+      const uploadPromises = Array.from(files).map((file) => {
+        return new Promise((resolve) => {
+          const MAX_FILE_SIZE_MB = 10;
+          const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+          if (file.size > MAX_FILE_SIZE_BYTES) {
+            toast.error(`File "${file.name}" exceeds the ${MAX_FILE_SIZE_MB}MB limit.`);
+            return resolve(null);
           }
-          executeUpload({
-            fileName: file.name,
-            fileType: file.type,
-            fileData: base64Data,
-            entityId: comment.id,
-            entityType: AttachmentEntityType.comment,
-          });
-        };
-        reader.onerror = () => {
-          toast.error(`Error reading file: ${file.name}`);
-        };
-        reader.readAsDataURL(file);
+          const reader = new FileReader();
+          reader.onloadend = async () => {
+            try {
+              const base64Data = (reader.result as string)?.split(',')[1];
+              if (!base64Data) {
+                throw new Error('Failed to read file data.');
+              }
+              const result = await uploadFile({
+                fileName: file.name,
+                fileType: file.type,
+                fileData: base64Data,
+                entityId: comment.id,
+                entityType: AttachmentEntityType.comment,
+              });
+
+              if (result.success && result.data) {
+                setPendingAttachmentsToAdd((prev) => [
+                  ...prev,
+                  {
+                    id: result.data.id,
+                    name: result.data.name,
+                    fileType: result.data.type,
+                    signedUrl: result.data.signedUrl,
+                  },
+                ]);
+                toast.success(`File "${result.data.name}" ready for attachment.`);
+              } else {
+                throw new Error(result.error);
+              }
+              resolve(result);
+            } catch (error) {
+              console.error(`Failed to upload ${file.name}:`, error);
+              toast.error(`Failed to upload ${file.name}.`);
+              resolve(null);
+            }
+          };
+          reader.onerror = () => {
+            toast.error(`Error reading file "${file.name}".`);
+            resolve(null);
+          };
+          reader.readAsDataURL(file);
+        });
+      });
+
+      await Promise.all(uploadPromises);
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
       }
     },
-    [executeUpload, comment.id],
+    [comment.id],
   );
 
   const [busyAttachmentId, setBusyAttachmentId] = useState<string | null>(null);

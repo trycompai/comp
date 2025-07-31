@@ -1,5 +1,7 @@
+import { anthropic } from '@ai-sdk/anthropic';
 import { openai } from '@ai-sdk/openai';
 import {
+  CommentEntityType,
   db,
   Departments,
   Impact,
@@ -9,10 +11,11 @@ import {
   VendorCategory,
 } from '@db';
 import { logger, task, tasks } from '@trigger.dev/sdk/v3';
-import { generateObject } from 'ai';
+import { generateObject, generateText } from 'ai';
 import axios from 'axios';
 import z from 'zod';
 import type { researchVendor } from '../scrape/research';
+import { VENDOR_RISK_ASSESSMENT_PROMPT } from './prompts/vendor-risk-assessment';
 import { updatePolicies } from './update-policies';
 
 export const onboardOrganization = task({
@@ -71,6 +74,17 @@ export const onboardOrganization = task({
       answer: context.answer,
     }));
 
+    // Fetch policies early to provide context for vendor risk assessments
+    const policies = await db.policy.findMany({
+      where: {
+        organizationId: payload.organizationId,
+      },
+      select: {
+        name: true,
+        description: true,
+      },
+    });
+
     const extractVendors = await generateObject({
       model: openai('gpt-4.1-mini'),
       schema: z.object({
@@ -124,6 +138,54 @@ export const onboardOrganization = task({
       const handle = await tasks.trigger<typeof researchVendor>('research-vendor', {
         website: createdVendor.website ?? '',
       });
+
+      // Find an organization owner or admin to use as comment author
+      const commentAuthor = await db.member.findFirst({
+        where: {
+          organizationId: payload.organizationId,
+          OR: [{ role: { contains: 'owner' } }, { role: { contains: 'admin' } }],
+        },
+        orderBy: [
+          { role: 'desc' }, // Prefer owner over admin
+          { createdAt: 'asc' }, // Prefer earlier members
+        ],
+      });
+
+      if (commentAuthor) {
+        // Generate risk mitigation comment using AI
+        const policiesContext =
+          policies.length > 0
+            ? policies
+                .map((p) => `- ${p.name}: ${p.description || 'No description available'}`)
+                .join('\n')
+            : 'No specific policies available - use standard security policy guidance.';
+
+        const riskMitigationComment = await generateText({
+          model: anthropic('claude-sonnet-4-20250514'),
+          system: VENDOR_RISK_ASSESSMENT_PROMPT,
+          prompt: `Vendor: ${createdVendor.name} (${createdVendor.category}) - ${createdVendor.description}. Website: ${createdVendor.website}.
+
+Available Organization Policies:
+${policiesContext}
+
+Please perform a comprehensive vendor risk assessment for this vendor using the available policies listed above as context for your recommendations.`,
+        });
+
+        // Create the risk mitigation comment
+        await db.comment.create({
+          data: {
+            content: riskMitigationComment.text,
+            entityId: createdVendor.id,
+            entityType: CommentEntityType.vendor,
+            authorId: commentAuthor.id,
+            organizationId: payload.organizationId,
+          },
+        });
+
+        logger.info(
+          `Created risk mitigation comment for vendor: ${createdVendor.id} (${createdVendor.name})`,
+        );
+      }
 
       logger.info(
         `Created vendor: ${createdVendor.id} (${createdVendor.name}) with handle ${handle.id}`,
@@ -190,15 +252,16 @@ export const onboardOrganization = task({
       logger.info(`Created risk: ${createdRisk.id} (${createdRisk.title})`);
     }
 
-    const policies = await db.policy.findMany({
+    // Re-fetch policies with full data for policy updates
+    const fullPolicies = await db.policy.findMany({
       where: {
         organizationId: payload.organizationId,
       },
     });
 
-    if (policies.length > 0) {
+    if (fullPolicies.length > 0) {
       await updatePolicies.batchTriggerAndWait(
-        policies.map((policy) => ({
+        fullPolicies.map((policy) => ({
           payload: {
             organizationId: payload.organizationId,
             policyId: policy.id,

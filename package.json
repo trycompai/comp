@@ -24,7 +24,7 @@
     "@types/lodash": "^4.17.17",
     "@types/react": "^19.1.6",
     "@types/react-dom": "^19.1.1",
-    "ai": "^4.3.16",
+    "ai": "^5.0.0",
     "better-auth": "^1.2.8",
     "concurrently": "^9.1.2",
     "d3": "^7.9.0",

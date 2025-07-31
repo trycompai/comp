@@ -1,14 +1,13 @@
 import { tools } from '@/data/tools';
-import { model, type modelID } from '@/hooks/ai/providers';
 import { auth } from '@/utils/auth';
-import { type UIMessage, streamText } from 'ai';
+import { groq } from '@ai-sdk/groq';
+import { type UIMessage, convertToModelMessages, streamText } from 'ai';
 import { headers } from 'next/headers';
 
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
-  const { messages, selectedModel }: { messages: UIMessage[]; selectedModel: modelID } =
-    await req.json();
+  const { messages }: { messages: UIMessage[] } = await req.json();
 
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -31,11 +30,11 @@ export async function POST(req: Request) {
 `;
 
   const result = streamText({
-    model: model.languageModel(selectedModel),
+    model: groq('deepseek-r1-distill-llama-70b'),
     system: systemPrompt,
-    messages,
+    messages: convertToModelMessages(messages),
     tools,
   });
 
-  return result.toDataStreamResponse({ sendReasoning: true });
+  return result.toUIMessageStreamResponse();
 }
