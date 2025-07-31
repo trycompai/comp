@@ -154,13 +154,15 @@ export const authActionClient = actionClientWithMeta
       throw new Error('Member not found');
     }
 
+    const { fileData: _, ...inputForAuditLog } = clientInput as any;
+
     const data = {
       userId: session.user.id,
       email: session.user.email,
       name: session.user.name,
       organizationId: session.session.activeOrganizationId,
       action: metadata.name,
-      input: clientInput,
+      input: inputForAuditLog,
       ipAddress: headersList.get('x-forwarded-for') || null,
       userAgent: headersList.get('user-agent') || null,
     };
