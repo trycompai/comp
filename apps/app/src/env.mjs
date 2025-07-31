@@ -46,7 +46,6 @@ export const env = createEnv({
   client: {
     NEXT_PUBLIC_POSTHOG_KEY: z.string().optional(),
     NEXT_PUBLIC_POSTHOG_HOST: z.string().optional(),
-    NEXT_PUBLIC_VERCEL_URL: z.string().optional(),
     NEXT_PUBLIC_IS_DUB_ENABLED: z.string().optional(),
     NEXT_PUBLIC_GTM_ID: z.string().optional(),
     NEXT_PUBLIC_LINKEDIN_PARTNER_ID: z.string().optional(),
@@ -76,7 +75,6 @@ export const env = createEnv({
     VERCEL_TEAM_ID: process.env.VERCEL_TEAM_ID,
     VERCEL_PROJECT_ID: process.env.VERCEL_PROJECT_ID,
     TRUST_PORTAL_PROJECT_ID: process.env.TRUST_PORTAL_PROJECT_ID,
-    NEXT_PUBLIC_VERCEL_URL: process.env.NEXT_PUBLIC_VERCEL_URL,
     NODE_ENV: process.env.NODE_ENV,
     APP_AWS_ACCESS_KEY_ID: process.env.APP_AWS_ACCESS_KEY_ID,
     APP_AWS_SECRET_ACCESS_KEY: process.env.APP_AWS_SECRET_ACCESS_KEY,
