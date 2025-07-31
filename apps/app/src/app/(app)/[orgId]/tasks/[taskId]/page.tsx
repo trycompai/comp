@@ -6,16 +6,24 @@ import { redirect } from 'next/navigation';
 import { CommentWithAuthor } from '../../../../../components/comments/Comments';
 import { SingleTask } from './components/SingleTask';
 
+type Session = Awaited<ReturnType<typeof auth.api.getSession>>;
+
 export default async function TaskPage({
   params,
 }: {
   params: Promise<{ taskId: string; orgId: string; locale: string }>;
 }) {
   const { taskId, orgId } = await params;
-  const task = await getTask(taskId);
-  const members = await getMembers(orgId);
-  const comments = await getComments(taskId);
-  const attachments = await getAttachments(taskId);
+  const session = await auth.api.getSession({
+    headers: headers(),
+  });
+
+  const [task, members, comments, attachments] = await Promise.all([
+    getTask(taskId, session),
+    getMembers(orgId, session),
+    getComments(taskId, session),
+    getAttachments(taskId, session),
+  ]);
 
   if (!task) {
     redirect(`/${orgId}/tasks`);
@@ -24,11 +32,7 @@ export default async function TaskPage({
   return <SingleTask task={task} members={members} comments={comments} attachments={attachments} />;
 }
 
-const getTask = async (taskId: string) => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
+const getTask = async (taskId: string, session: Session) => {
   const activeOrgId = session?.session.activeOrganizationId;
 
   if (!activeOrgId) {
@@ -46,11 +50,7 @@ const getTask = async (taskId: string) => {
   return task;
 };
 
-const getComments = async (taskId: string): Promise<CommentWithAuthor[]> => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
+const getComments = async (taskId: string, session: Session): Promise<CommentWithAuthor[]> => {
   const activeOrgId = session?.session.activeOrganizationId;
 
   if (!activeOrgId) {
@@ -95,11 +95,7 @@ const getComments = async (taskId: string): Promise<CommentWithAuthor[]> => {
   return commentsWithAttachments;
 };
 
-const getAttachments = async (taskId: string): Promise<Attachment[]> => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
+const getAttachments = async (taskId: string, session: Session): Promise<Attachment[]> => {
   const activeOrgId = session?.session.activeOrganizationId;
 
   if (!activeOrgId) {
@@ -119,11 +115,7 @@ const getAttachments = async (taskId: string): Promise<Attachment[]> => {
   return attachments;
 };
 
-const getMembers = async (orgId: string) => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
+const getMembers = async (orgId: string, session: Session) => {
   const activeOrgId = orgId ?? session?.session.activeOrganizationId;
   if (!activeOrgId) {
     console.warn('Could not determine active organization ID in getMembers');

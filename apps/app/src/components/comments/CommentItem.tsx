@@ -16,7 +16,6 @@ import {
 } from '@comp/ui/dropdown-menu';
 import { Label } from '@comp/ui/label';
 import { Textarea } from '@comp/ui/textarea';
-import type { AttachmentType } from '@db';
 import { AttachmentEntityType } from '@db'; // Import AttachmentEntityType
 import {
   Loader2, // Import Loader2
@@ -25,6 +24,7 @@ import {
   Plus,
   Trash2,
 } from 'lucide-react';
+import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
 import type React from 'react';
 import { useCallback, useRef, useState } from 'react';
@@ -33,45 +33,48 @@ import { AttachmentItem } from '../../app/(app)/[orgId]/tasks/[taskId]/component
 import { formatRelativeTime } from '../../app/(app)/[orgId]/tasks/[taskId]/components/commentUtils'; // Revert import path
 import type { CommentWithAuthor } from './Comments';
 
-// Local helper to map fileType to AttachmentType
-function mapFileTypeToAttachmentType(fileType: string): AttachmentType {
-  const type = fileType.split('/')[0];
-  switch (type) {
-    case 'image':
-      return 'image' as AttachmentType;
-    case 'video':
-      return 'video' as AttachmentType;
-    case 'audio':
-      return 'audio' as AttachmentType;
-    case 'application':
-      if (fileType === 'application/pdf') return 'document' as AttachmentType;
-      return 'document' as AttachmentType;
-    default:
-      return 'other' as AttachmentType;
-  }
-}
+type PendingAttachment = {
+  id: string;
+  name: string;
+  fileType: string;
+  signedUrl: string;
+};
 
 export function CommentItem({ comment }: { comment: CommentWithAuthor }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(comment.content);
-  const [currentAttachments, setCurrentAttachments] = useState(
-    [...comment.attachments], // Create a mutable copy
-  );
+  const [currentAttachments, setCurrentAttachments] = useState([...comment.attachments]);
   const [attachmentsToRemove, setAttachmentsToRemove] = useState<string[]>([]);
-  // Minimal type for pending attachments during editing.
-  type PendingAttachment = {
-    id: string;
-    name: string;
-    fileType: string;
-    signedUrl: string;
-  };
-  // Store pending attachments including fileType and signedUrl
   const [pendingAttachmentsToAdd, setPendingAttachmentsToAdd] = useState<PendingAttachment[]>([]);
-  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
-
   const [deletingAttachmentIds, setDeletingAttachmentIds] = useState<string[]>([]);
+
+  const { execute: executeUpload, isExecuting: isUploading } = useAction(uploadFile, {
+    onSuccess: ({ data }) => {
+      if (data) {
+        setPendingAttachmentsToAdd((prev) => [
+          ...prev,
+          {
+            id: data.id,
+            name: data.name,
+            fileType: data.type,
+            signedUrl: data.signedUrl,
+          },
+        ]);
+        toast.success(`File "${data.name}" ready for attachment.`);
+      }
+    },
+    onError: ({ error }) => {
+      console.error('File upload failed:', error);
+      toast.error(error.serverError || 'Failed to upload file. Check console for details.');
+    },
+    onSettled: () => {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    },
+  });
 
   const handleEditToggle = () => {
     if (!isEditing) {
@@ -98,72 +101,35 @@ export function CommentItem({ comment }: { comment: CommentWithAuthor }) {
       return;
     }
 
-    // Call the update action
     try {
-      // --- Deletion Phase ---
-      // Call the delete action for all attachments marked for removal
       if (attachmentsToRemove.length > 0) {
         await Promise.all(
           attachmentsToRemove.map((attachmentId) => deleteCommentAttachment({ attachmentId })),
         );
-        // Optionally: Add error handling for individual deletions if needed
       }
 
-      // --- Update Phase ---
-      const { success, error } = await updateComment({
+      await updateComment({
         commentId: comment.id,
         content: contentChanged ? editedContent : undefined,
         attachmentIdsToAdd: attachmentsAdded ? pendingAttachmentsToAdd.map((a) => a.id) : undefined,
-        attachmentIdsToRemove: attachmentsRemoved ? attachmentsToRemove : undefined,
       });
 
-      if (success) {
-        toast.success('Comment updated successfully.');
-
-        // Optimistically add new attachments to currentAttachments for immediate UI update
-        setCurrentAttachments((prev) => [
-          // Remove attachments marked for removal
-          ...prev.filter((att) => !attachmentsToRemove.includes(att.id)),
-          // Add new attachments (promote PendingAttachment to minimal Attachment shape)
-          ...pendingAttachmentsToAdd.map((pending) => ({
-            id: pending.id,
-            name: pending.name,
-            fileType: pending.fileType,
-            url: pending.signedUrl, // Use signedUrl as url for now
-            type: mapFileTypeToAttachmentType(pending.fileType),
-            entityId: comment.entityId,
-            entityType: AttachmentEntityType.comment,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            organizationId: comment.organizationId,
-            commentId: comment.id,
-          })),
-        ]);
-
-        setEditedContent(contentChanged ? editedContent : comment.content);
-        setPendingAttachmentsToAdd([]);
-        setAttachmentsToRemove([]);
-        router.refresh();
-      } else {
-        toast.error(String(error || 'Failed to update comment.'));
-      }
+      toast.success('Comment updated successfully.');
+      router.refresh();
+      setIsEditing(false);
     } catch (error) {
       toast.error('Failed to save comment changes.');
       console.error('Save changes error:', error);
-    } finally {
-      setIsEditing(false);
     }
   };
 
   const handleDeleteComment = async () => {
     if (window.confirm('Are you sure you want to delete this comment?')) {
-      console.log('Deleting comment:', comment.id);
       await deleteComment({ commentId: comment.id });
       router.refresh();
     }
   };
 
-  // Handler for AttachmentItem to mark for removal
   const handleMarkForRemoval = (attachmentId: string) => {
     setAttachmentsToRemove((prev) => [...prev, attachmentId]);
     setCurrentAttachments((prev) => prev.filter((att) => att.id !== attachmentId));
@@ -190,78 +156,37 @@ export function CommentItem({ comment }: { comment: CommentWithAuthor }) {
       const files = event.target.files;
       if (!files || files.length === 0) return;
 
-      setIsUploading(true);
-
-      // Helper to process a single file
-      const processFile = (file: File) => {
-        return new Promise<void>((resolve) => {
-          // Add file size check here
-          const MAX_FILE_SIZE_MB = 5;
-          const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
-          if (file.size > MAX_FILE_SIZE_BYTES) {
-            toast.error(`File "${file.name}" exceeds the ${MAX_FILE_SIZE_MB}MB limit.`);
-            return resolve(); // Skip processing this file
-          }
-
-          if (!file.type.startsWith('image/')) {
-            toast.info('Only image previews are shown before submitting.');
-          }
-          const reader = new FileReader();
-          reader.onloadend = async () => {
-            const dataUrlResult = reader.result as string;
-            const base64Data = dataUrlResult?.split(',')[1];
-            if (!base64Data) {
-              toast.error(`Failed to read file data for ${file.name}`);
-              return resolve();
-            }
-            const { success, data, error } = await uploadFile({
-              fileName: file.name,
-              fileType: file.type,
-              fileData: base64Data,
-              entityId: comment.entityId,
-              entityType: 'comment',
-            });
-            if (error) {
-              console.error('Upload file action error occurred:', error);
-              toast.error(`Failed to upload "${file.name}": ${error}`);
-            } else if (success && data?.id && data.signedUrl) {
-              setPendingAttachmentsToAdd((prev) => [
-                ...prev,
-                {
-                  id: data?.id ?? '',
-                  name: data?.name ?? '',
-                  fileType: file.type,
-                  signedUrl: data.signedUrl,
-                } as PendingAttachment,
-              ]);
-              toast.success(`File "${data?.name ?? 'unknown'}" ready for attachment.`);
-            } else {
-              console.error('Upload succeeded but missing data:', data);
-              toast.error(`Failed to process "${file.name}" after upload.`);
-            }
-            resolve();
-          };
-          reader.onerror = () => {
-            toast.error(`Error reading file: ${file.name}`);
-            resolve();
-          };
-          reader.readAsDataURL(file);
-        });
-      };
-
-      // Process all files sequentially
-      (async () => {
-        for (const file of Array.from(files)) {
-          await processFile(file);
+      for (const file of Array.from(files)) {
+        const MAX_FILE_SIZE_MB = 10;
+        const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+        if (file.size > MAX_FILE_SIZE_BYTES) {
+          toast.error(`File "${file.name}" exceeds the ${MAX_FILE_SIZE_MB}MB limit.`);
+          continue;
         }
-        setIsUploading(false);
-        if (fileInputRef.current) fileInputRef.current.value = '';
-      })();
-    },
-    [comment.entityId],
-  );
 
-  const isProcessing = isUploading;
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const base64Data = (reader.result as string)?.split(',')[1];
+          if (!base64Data) {
+            toast.error(`Failed to read file data for ${file.name}`);
+            return;
+          }
+          executeUpload({
+            fileName: file.name,
+            fileType: file.type,
+            fileData: base64Data,
+            entityId: comment.id,
+            entityType: AttachmentEntityType.comment,
+          });
+        };
+        reader.onerror = () => {
+          toast.error(`Error reading file: ${file.name}`);
+        };
+        reader.readAsDataURL(file);
+      }
+    },
+    [executeUpload, comment.id],
+  );
 
   const [busyAttachmentId, setBusyAttachmentId] = useState<string | null>(null);
 
@@ -284,19 +209,15 @@ export function CommentItem({ comment }: { comment: CommentWithAuthor }) {
     }
   };
 
-  // Handler to open pre-signed URL for PENDING attachments (already available)
   const handlePendingAttachmentClick = (attachmentId: string) => {
     const pendingAttachment = pendingAttachmentsToAdd.find((att) => att.id === attachmentId);
     if (pendingAttachment?.signedUrl) {
-      // Use signedUrl
-      window.open(pendingAttachment.signedUrl, '_blank'); // Use signedUrl
+      window.open(pendingAttachment.signedUrl, '_blank');
     } else {
       toast.error('Preview URL not available for this pending attachment.');
-      console.warn('Could not find pending attachment or signedUrl for ID:', attachmentId); // Use signedUrl
     }
   };
 
-  // Handler to remove a PENDING attachment from the list before saving
   const handleRemovePendingAttachment = (attachmentId: string) => {
     setPendingAttachmentsToAdd((prev) => prev.filter((att) => att.id !== attachmentId));
   };
@@ -372,20 +293,17 @@ export function CommentItem({ comment }: { comment: CommentWithAuthor }) {
                   <div className="flex flex-col gap-2">
                     <Label className="block text-xs font-medium">Attachments</Label>
                     <div className="flex flex-col gap-2">
-                      {/* Combined attachments row */}
                       <div className="flex flex-wrap gap-2">
-                        {/* Pending attachments first */}
                         {pendingAttachmentsToAdd.map((att: PendingAttachment) => (
                           <AttachmentItem
                             key={att.id}
                             pendingAttachment={att}
                             onClickFilename={handlePendingAttachmentClick}
                             onDelete={handleRemovePendingAttachment}
-                            isParentBusy={isProcessing}
+                            isParentBusy={isUploading}
                             canDelete={true}
                           />
                         ))}
-                        {/* Existing attachments second */}
                         {currentAttachments.map((att) => (
                           <AttachmentItem
                             key={att.id}
@@ -435,7 +353,6 @@ export function CommentItem({ comment }: { comment: CommentWithAuthor }) {
                     </div>
                   </div>
                 ) : (
-                  // Display mode: only show attachments if not editing
                   <div className="flex flex-wrap gap-2">
                     {currentAttachments.map((att) => (
                       <AttachmentItem
@@ -456,19 +373,13 @@ export function CommentItem({ comment }: { comment: CommentWithAuthor }) {
               </div>
             )}
 
-            {/* Edit Mode Buttons */}
             {isEditing && (
               <div className="flex justify-end gap-2 pt-3">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleCancelEdit}
-                  disabled={isProcessing} // Disable only when saving
-                >
+                <Button variant="ghost" size="sm" onClick={handleCancelEdit} disabled={isUploading}>
                   Cancel
                 </Button>
-                <Button size="sm" onClick={handleSaveEdit} disabled={isProcessing}>
-                  {isProcessing ? 'Saving...' : 'Save Changes'}
+                <Button size="sm" onClick={handleSaveEdit} disabled={isUploading}>
+                  {isUploading ? 'Saving...' : 'Save Changes'}
                 </Button>
               </div>
             )}
