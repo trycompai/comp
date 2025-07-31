@@ -12,10 +12,11 @@ import { type NextRequest, NextResponse } from 'next/server';
  *
  * Body:
  * - userId: string - The ID of the user to delete.
+ * - email: string - The email of the user to delete.
  *
  * Returns:
  * - 200: { success: true, message: "User deleted successfully", userId: string }
- * - 400: { success: false, error: "Missing userId in request body" }
+ * - 400: { success: false, error: "Missing userId or email in request body" }
  * - 401: { success: false, error: "Unauthorized" }
  * - 500: { success: false, error: "Failed to delete user" }
  */
@@ -59,22 +60,25 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { userId } = body;
+  const { userId, email } = body;
 
-  if (!userId) {
+  if (!userId || !email) {
     return NextResponse.json(
       {
         success: false,
-        error: 'Missing userId in request body',
+        error: 'Missing userId or email in request body',
       },
       { status: 400 },
     );
   }
 
   try {
-    // Check if user exists
+    // Check if user exists with matching id and email
     const existingUser = await db.user.findUnique({
-      where: { id: userId },
+      where: {
+        id: userId,
+        email: email,
+      },
     });
 
     if (!existingUser) {
@@ -89,7 +93,10 @@ export async function POST(request: NextRequest) {
 
     // Delete the user (cascading deletes will handle related records)
     await db.user.delete({
-      where: { id: userId },
+      where: {
+        id: userId,
+        email: email,
+      },
     });
 
     console.log(`QA: User ${userId} deleted successfully`);
