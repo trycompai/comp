@@ -1,6 +1,7 @@
 'use server';
 
 import { BUCKET_NAME, s3Client } from '@/app/s3';
+import { auth } from '@/utils/auth';
 import { logger } from '@/utils/logger';
 
 // This log will run as soon as the module is loaded.
@@ -10,8 +11,8 @@ import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { AttachmentEntityType, AttachmentType, db } from '@db';
 import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
 import { z } from 'zod';
-import { authActionClient } from '../safe-action';
 
 function mapFileTypeToAttachmentType(fileType: string): AttachmentType {
   const type = fileType.split('/')[0];
@@ -38,19 +39,18 @@ const uploadAttachmentSchema = z.object({
   pathToRevalidate: z.string().optional(),
 });
 
-export const uploadFile = authActionClient
-  .inputSchema(uploadAttachmentSchema)
-  .metadata({
-    name: 'uploadFile',
-    track: {
-      event: 'File Uploaded',
-      channel: 'server',
-    },
-  })
-  .action(async ({ parsedInput, ctx }) => {
-    const { fileName, fileType, fileData, entityId, entityType, pathToRevalidate } = parsedInput;
-    const { session } = ctx;
-    const organizationId = session.activeOrganizationId;
+export const uploadFile = async (input: z.infer<typeof uploadAttachmentSchema>) => {
+  logger.info(`[uploadFile] Starting upload for ${input.fileName}`);
+  try {
+    const { fileName, fileType, fileData, entityId, entityType, pathToRevalidate } =
+      uploadAttachmentSchema.parse(input);
+
+    const session = await auth.api.getSession({ headers: await headers() });
+    const organizationId = session?.session.activeOrganizationId;
+
+    if (!organizationId) {
+      throw new Error('Not authorized - no organization found');
+    }
 
     logger.info(`[uploadFile] Starting upload for ${fileName} in org ${organizationId}`);
 
@@ -66,51 +66,55 @@ export const uploadFile = authActionClient
     const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
     const key = `${organizationId}/attachments/${entityType}/${entityId}/${timestamp}-${sanitizedFileName}`;
 
-    try {
-      logger.info(`[uploadFile] Uploading to S3 with key: ${key}`);
-      const putCommand = new PutObjectCommand({
-        Bucket: BUCKET_NAME,
-        Key: key,
-        Body: fileBuffer,
-        ContentType: fileType,
-      });
-      await s3Client.send(putCommand);
-      logger.info(`[uploadFile] S3 upload successful for key: ${key}`);
+    logger.info(`[uploadFile] Uploading to S3 with key: ${key}`);
+    const putCommand = new PutObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: key,
+      Body: fileBuffer,
+      ContentType: fileType,
+    });
+    await s3Client.send(putCommand);
+    logger.info(`[uploadFile] S3 upload successful for key: ${key}`);
 
-      logger.info(`[uploadFile] Creating attachment record in DB for key: ${key}`);
-      const attachment = await db.attachment.create({
-        data: {
-          name: fileName,
-          url: key,
-          type: mapFileTypeToAttachmentType(fileType),
-          entityId: entityId,
-          entityType: entityType,
-          organizationId: organizationId,
-        },
-      });
-      logger.info(`[uploadFile] DB record created with id: ${attachment.id}`);
+    logger.info(`[uploadFile] Creating attachment record in DB for key: ${key}`);
+    const attachment = await db.attachment.create({
+      data: {
+        name: fileName,
+        url: key,
+        type: mapFileTypeToAttachmentType(fileType),
+        entityId: entityId,
+        entityType: entityType,
+        organizationId: organizationId,
+      },
+    });
+    logger.info(`[uploadFile] DB record created with id: ${attachment.id}`);
 
-      logger.info(`[uploadFile] Generating signed URL for key: ${key}`);
-      const getCommand = new GetObjectCommand({
-        Bucket: BUCKET_NAME,
-        Key: key,
-      });
-      const signedUrl = await getSignedUrl(s3Client, getCommand, {
-        expiresIn: 900,
-      });
-      logger.info(`[uploadFile] Signed URL generated for key: ${key}`);
+    logger.info(`[uploadFile] Generating signed URL for key: ${key}`);
+    const getCommand = new GetObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: key,
+    });
+    const signedUrl = await getSignedUrl(s3Client, getCommand, {
+      expiresIn: 900,
+    });
+    logger.info(`[uploadFile] Signed URL generated for key: ${key}`);
 
-      if (pathToRevalidate) {
-        revalidatePath(pathToRevalidate);
-      }
+    if (pathToRevalidate) {
+      revalidatePath(pathToRevalidate);
+    }
 
-      return {
+    return {
+      success: true,
+      data: {
         ...attachment,
         signedUrl,
-      };
-    } catch (error) {
-      logger.error(`[uploadFile] Error during upload process for key ${key}:`, error);
-      // Re-throw the error to be handled by the safe action client
-      throw error;
-    }
-  });
+      },
+    } as const;
+  } catch (error) {
+    logger.error(`[uploadFile] Error during upload process:`, error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'An unknown error occurred.',
+    } as const;
+  }
+};
