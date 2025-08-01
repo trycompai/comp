@@ -45,7 +45,11 @@ export const auth = betterAuth({
   database: prismaAdapter(db, {
     provider: 'postgresql',
   }),
-  trustedOrigins: ['http://localhost:3000', 'https://app.trycomp.ai', 'https://dev.trycomp.ai'],
+  trustedOrigins: [
+    'http://localhost:3000',
+    'https://app.trycomp.ai',
+    'https://app.staging.trycomp.ai',
+  ],
   emailAndPassword: {
     enabled: true,
   },
