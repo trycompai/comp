@@ -6,7 +6,7 @@ FROM oven/bun:1.2.8 AS deps
 WORKDIR /app
 
 # Copy workspace configuration
-COPY package.json bun.lock bunfig.toml ./
+COPY package.json bun.lock ./
 
 # Copy package.json files for all packages
 COPY packages/db/package.json ./packages/db/
