@@ -13,10 +13,14 @@ export default async function TaskPage({
 }: {
   params: Promise<{ taskId: string; orgId: string; locale: string }>;
 }) {
+  console.log('[TaskPage] Starting page render');
   const { taskId, orgId } = await params;
+  console.log('[TaskPage] Params extracted:', { taskId, orgId });
+  console.log('[TaskPage] Getting session');
   const session = await auth.api.getSession({
     headers: headers(),
   });
+  console.log('[TaskPage] Session obtained, fetching data');
 
   const [task, members, comments, attachments] = await Promise.all([
     getTask(taskId, session),
