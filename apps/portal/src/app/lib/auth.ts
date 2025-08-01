@@ -16,16 +16,21 @@ export const auth = betterAuth({
     generateId: false,
   },
   trustedOrigins: [
-    'http://localhost:3000',
+    // 'http://localhost:3000',
     'https://app.trycomp.ai',
-    'https://app.staging.trycomp.ai',
-    'https://portal.trycomp.ai',
-    'https://portal.staging.trycomp.ai',
+    // 'https://app.staging.trycomp.ai',
+    // 'https://portal.trycomp.ai',
+    // 'https://portal.staging.trycomp.ai',
   ],
   secret: process.env.AUTH_SECRET!,
   plugins: [
     organization({
       async sendInvitationEmail(data) {
+        console.log(
+          'process.env.NEXT_PUBLIC_BETTER_AUTH_URL',
+          process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
+        );
+
         const isLocalhost = process.env.NODE_ENV === 'development';
         const protocol = isLocalhost ? 'http' : 'https';
         const domain = isLocalhost ? 'localhost:3000' : process.env.NEXT_PUBLIC_BETTER_AUTH_URL!;
