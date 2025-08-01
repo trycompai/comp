@@ -15,6 +15,13 @@ export const auth = betterAuth({
     // It's important so we can use custom IDs specified in Prisma Schema.
     generateId: false,
   },
+  trustedOrigins: [
+    'http://localhost:3000',
+    'https://app.trycomp.ai',
+    'https://app.staging.trycomp.ai',
+    'https://portal.trycomp.ai',
+    'https://portal.staging.trycomp.ai',
+  ],
   secret: process.env.AUTH_SECRET!,
   plugins: [
     organization({
