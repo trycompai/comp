@@ -52,7 +52,7 @@ export const updatePolicies = schemaTask({
 
       try {
         const { text } = await generateText({
-          model: openai('o4-mini'),
+          model: openai('gpt-4o-mini'),
           system: 'You are an expert at writing security policies in TipTap JSON.',
           prompt: `Update the following policy to be strictly aligned with SOC 2 standards and controls. Only include JSON content as your output.
 
@@ -64,13 +64,31 @@ export const updatePolicies = schemaTask({
           return;
         }
 
+        // Define TipTap JSON schema
+        const tipTapNodeSchema: z.ZodType<any> = z.lazy(() =>
+          z.object({
+            type: z.string(),
+            attrs: z.record(z.any()).optional(),
+            content: z.array(tipTapNodeSchema).optional(),
+            text: z.string().optional(),
+            marks: z
+              .array(
+                z.object({
+                  type: z.string(),
+                  attrs: z.record(z.any()).optional(),
+                }),
+              )
+              .optional(),
+          }),
+        );
+
         const { object } = await generateObject({
-          model: openai('gpt-4.1-mini'),
+          model: openai('gpt-4o-mini'),
           mode: 'json',
           system: 'You are an expert at writing security policies in TipTap JSON.',
           prompt: `Convert the following text into TipTap JSON. Do not include any other text in your output: ${JSON.stringify(text)}`,
           schema: z.object({
-            json: z.array(z.any()),
+            json: z.array(tipTapNodeSchema),
           }),
         });
 
