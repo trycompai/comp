@@ -37,6 +37,7 @@ export default async function TaskPage({
 }
 
 const getTask = async (taskId: string, session: Session) => {
+  console.log('[getTask] Starting task fetch for:', taskId);
   const activeOrgId = session?.session.activeOrganizationId;
 
   if (!activeOrgId) {
@@ -44,14 +45,21 @@ const getTask = async (taskId: string, session: Session) => {
     return null;
   }
 
-  const task = await db.task.findUnique({
-    where: {
-      id: taskId,
-      organizationId: activeOrgId,
-    },
-  });
+  console.log('[getTask] Querying database for task');
+  try {
+    const task = await db.task.findUnique({
+      where: {
+        id: taskId,
+        organizationId: activeOrgId,
+      },
+    });
 
-  return task;
+    console.log('[getTask] Database query successful');
+    return task;
+  } catch (error) {
+    console.error('[getTask] Database query failed:', error);
+    throw error;
+  }
 };
 
 const getComments = async (taskId: string, session: Session): Promise<CommentWithAuthor[]> => {

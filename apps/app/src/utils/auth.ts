@@ -50,6 +50,8 @@ export const auth = betterAuth({
     'http://localhost:3000',
     'https://app.trycomp.ai',
     'https://app.staging.trycomp.ai',
+    'https://portal.trycomp.ai',
+    'https://portal.staging.trycomp.ai',
   ],
   emailAndPassword: {
     enabled: true,
