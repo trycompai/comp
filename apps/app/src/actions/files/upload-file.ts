@@ -1,18 +1,28 @@
 'use server';
 
+console.log('[uploadFile] Upload action module is being loaded...');
+
+console.log('[uploadFile] Importing auth and logger...');
 import { BUCKET_NAME, s3Client } from '@/app/s3';
 import { auth } from '@/utils/auth';
 import { logger } from '@/utils/logger';
-
-// This log will run as soon as the module is loaded.
-logger.info('[uploadFile] Module loaded.');
-
 import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { AttachmentEntityType, AttachmentType, db } from '@db';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { z } from 'zod';
+
+console.log('[uploadFile] Importing S3 client...');
+
+console.log('[uploadFile] Importing AWS SDK...');
+
+console.log('[uploadFile] Importing database...');
+
+console.log('[uploadFile] All imports successful');
+
+// This log will run as soon as the module is loaded.
+logger.info('[uploadFile] Module loaded.');
 
 function mapFileTypeToAttachmentType(fileType: string): AttachmentType {
   const type = fileType.split('/')[0];
@@ -40,7 +50,10 @@ const uploadAttachmentSchema = z.object({
 });
 
 export const uploadFile = async (input: z.infer<typeof uploadAttachmentSchema>) => {
+  console.log('[uploadFile] Function called - starting execution');
   logger.info(`[uploadFile] Starting upload for ${input.fileName}`);
+
+  console.log('[uploadFile] Checking S3 client availability');
   try {
     // Check if S3 client is available
     if (!s3Client) {
@@ -59,9 +72,11 @@ export const uploadFile = async (input: z.infer<typeof uploadAttachmentSchema>) 
       } as const;
     }
 
+    console.log('[uploadFile] Parsing input schema');
     const { fileName, fileType, fileData, entityId, entityType, pathToRevalidate } =
       uploadAttachmentSchema.parse(input);
 
+    console.log('[uploadFile] Getting user session');
     const session = await auth.api.getSession({ headers: await headers() });
     const organizationId = session?.session.activeOrganizationId;
 
@@ -75,6 +90,7 @@ export const uploadFile = async (input: z.infer<typeof uploadAttachmentSchema>) 
 
     logger.info(`[uploadFile] Starting upload for ${fileName} in org ${organizationId}`);
 
+    console.log('[uploadFile] Converting file data to buffer');
     const fileBuffer = Buffer.from(fileData, 'base64');
 
     const MAX_FILE_SIZE_MB = 10;
