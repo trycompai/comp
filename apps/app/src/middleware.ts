@@ -110,8 +110,6 @@ export async function middleware(request: NextRequest) {
 
       const hasAccess = foundOrg?.hasAccess;
 
-      console.log(`[MIDDLEWARE] Checking access for org ${orgId}: ${hasAccess}`);
-
       if (!hasAccess) {
         const url = new URL(`/upgrade/${orgId}`, request.url);
         // Preserve existing search params
