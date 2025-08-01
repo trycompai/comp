@@ -50,7 +50,10 @@ const uploadAttachmentSchema = z.object({
 });
 
 export const uploadFile = async (input: z.infer<typeof uploadAttachmentSchema>) => {
+  console.log('[uploadFile] Function called - starting execution');
   logger.info(`[uploadFile] Starting upload for ${input.fileName}`);
+
+  console.log('[uploadFile] Checking S3 client availability');
   try {
     // Check if S3 client is available
     if (!s3Client) {
@@ -69,9 +72,11 @@ export const uploadFile = async (input: z.infer<typeof uploadAttachmentSchema>) 
       } as const;
     }
 
+    console.log('[uploadFile] Parsing input schema');
     const { fileName, fileType, fileData, entityId, entityType, pathToRevalidate } =
       uploadAttachmentSchema.parse(input);
 
+    console.log('[uploadFile] Getting user session');
     const session = await auth.api.getSession({ headers: await headers() });
     const organizationId = session?.session.activeOrganizationId;
 
@@ -85,6 +90,7 @@ export const uploadFile = async (input: z.infer<typeof uploadAttachmentSchema>) 
 
     logger.info(`[uploadFile] Starting upload for ${fileName} in org ${organizationId}`);
 
+    console.log('[uploadFile] Converting file data to buffer');
     const fileBuffer = Buffer.from(fileData, 'base64');
 
     const MAX_FILE_SIZE_MB = 10;

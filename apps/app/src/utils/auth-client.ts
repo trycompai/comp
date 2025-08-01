@@ -9,6 +9,7 @@ import { auth } from './auth';
 import { ac, allRoles } from './permissions';
 
 export const authClient = createAuthClient({
+  baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
   plugins: [
     organizationClient({
       ac,
