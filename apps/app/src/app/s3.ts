@@ -14,9 +14,20 @@ const redact = (value?: string) => {
 };
 
 try {
+  console.log('[S3] Initializing S3 Client');
+  console.error('--- Provided Configuration ---');
+  console.error(`APP_AWS_REGION: ${APP_AWS_REGION}`);
+  console.error(`APP_AWS_ACCESS_KEY_ID: ${redact(APP_AWS_ACCESS_KEY_ID)}`);
+  console.error(`APP_AWS_SECRET_ACCESS_KEY: ${redact(APP_AWS_SECRET_ACCESS_KEY)}`);
+  console.error(`APP_AWS_BUCKET_NAME: ${BUCKET_NAME}`);
+  console.error('-----------------------------');
+
   if (!APP_AWS_ACCESS_KEY_ID || !APP_AWS_SECRET_ACCESS_KEY || !BUCKET_NAME || !APP_AWS_REGION) {
+    console.error('[S3] AWS S3 credentials or configuration missing. Check environment variables.');
     throw new Error('AWS S3 credentials or configuration missing. Check environment variables.');
   }
+
+  console.log('[S3] AWS S3 credentials or configuration found. Initializing S3 Client');
 
   s3ClientInstance = new S3Client({
     region: APP_AWS_REGION,
@@ -25,22 +36,20 @@ try {
       secretAccessKey: APP_AWS_SECRET_ACCESS_KEY,
     },
   });
+
+  console.log('[S3] S3 Client initialized successfully');
 } catch (error) {
   console.error('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
   console.error('!!! FAILED TO INITIALIZE S3 CLIENT !!!');
   console.error('!!! This is likely due to missing or invalid environment variables. !!!');
-  console.error('--- Provided Configuration ---');
-  console.error(`APP_AWS_REGION: ${APP_AWS_REGION}`);
-  console.error(`APP_AWS_ACCESS_KEY_ID: ${redact(APP_AWS_ACCESS_KEY_ID)}`);
-  console.error(`APP_AWS_SECRET_ACCESS_KEY: ${redact(APP_AWS_SECRET_ACCESS_KEY)}`);
-  console.error(`APP_AWS_BUCKET_NAME: ${BUCKET_NAME}`);
-  console.error('-----------------------------');
   console.error('Error:', error);
   console.error('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-  // Prevent the app from continuing without a valid S3 client
-  // In a real-world scenario, you might have a fallback or a dummy client.
-  // For now, we re-throw to make the crash explicit.
-  throw error;
+
+  // Create a dummy client that will fail gracefully at runtime instead of crashing during initialization
+  s3ClientInstance = null as any;
+  console.error(
+    '[S3] Creating dummy S3 client - file uploads will fail until credentials are fixed',
+  );
 }
 
 export const s3Client = s3ClientInstance;
