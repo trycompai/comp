@@ -35,7 +35,7 @@ const config: NextConfig = {
   async headers() {
     return [
       {
-        // Apply CORS headers to all API routes
+        // Super permissive CORS for all API routes
         source: '/api/:path*',
         headers: [
           {
@@ -51,12 +51,8 @@ const config: NextConfig = {
             value: 'Content-Type, Authorization, X-Requested-With, Accept, Origin, x-pathname',
           },
           {
-            key: 'Access-Control-Allow-Credentials',
-            value: 'true',
-          },
-          {
             key: 'Access-Control-Max-Age',
-            value: '86400', // 24 hours
+            value: '86400',
           },
         ],
       },
