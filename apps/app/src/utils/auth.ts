@@ -41,17 +41,19 @@ if (env.AUTH_GITHUB_ID && env.AUTH_GITHUB_SECRET) {
   };
 }
 
+console.log('process.env.BETTER_AUTH_URL', process.env.BETTER_AUTH_URL);
+
 export const auth = betterAuth({
   database: prismaAdapter(db, {
     provider: 'postgresql',
   }),
   baseURL: process.env.BETTER_AUTH_URL,
   trustedOrigins: [
-    'http://localhost:3000',
+    // 'http://localhost:3000',
     'https://app.trycomp.ai',
-    'https://app.staging.trycomp.ai',
-    'https://portal.trycomp.ai',
-    'https://portal.staging.trycomp.ai',
+    // 'https://app.staging.trycomp.ai',
+    // 'https://portal.trycomp.ai',
+    // 'https://portal.staging.trycomp.ai',
   ],
   emailAndPassword: {
     enabled: true,
