@@ -53,7 +53,7 @@
     "@tiptap/extension-typography": "2.14.0",
     "@tiptap/extension-underline": "2.22.3",
     "@tiptap/pm": "2.22.3",
-    "@tiptap/react": "2.14.0",
+    "@tiptap/react": "3.0.8",
     "@tiptap/starter-kit": "2.14.0",
     "@tiptap/suggestion": "2.14.0",
     "@uidotdev/usehooks": "^2.4.1",
