@@ -1,18 +1,28 @@
 'use server';
 
+console.log('[uploadFile] Upload action module is being loaded...');
+
+console.log('[uploadFile] Importing auth and logger...');
 import { BUCKET_NAME, s3Client } from '@/app/s3';
 import { auth } from '@/utils/auth';
 import { logger } from '@/utils/logger';
-
-// This log will run as soon as the module is loaded.
-logger.info('[uploadFile] Module loaded.');
-
 import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { AttachmentEntityType, AttachmentType, db } from '@db';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { z } from 'zod';
+
+console.log('[uploadFile] Importing S3 client...');
+
+console.log('[uploadFile] Importing AWS SDK...');
+
+console.log('[uploadFile] Importing database...');
+
+console.log('[uploadFile] All imports successful');
+
+// This log will run as soon as the module is loaded.
+logger.info('[uploadFile] Module loaded.');
 
 function mapFileTypeToAttachmentType(fileType: string): AttachmentType {
   const type = fileType.split('/')[0];

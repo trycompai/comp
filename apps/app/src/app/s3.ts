@@ -1,5 +1,7 @@
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 
+console.log('[S3] S3 module is being loaded...');
+
 const APP_AWS_REGION = process.env.APP_AWS_REGION;
 const APP_AWS_ACCESS_KEY_ID = process.env.APP_AWS_ACCESS_KEY_ID;
 const APP_AWS_SECRET_ACCESS_KEY = process.env.APP_AWS_SECRET_ACCESS_KEY;
