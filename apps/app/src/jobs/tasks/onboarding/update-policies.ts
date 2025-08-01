@@ -2,7 +2,7 @@ import { openai } from '@ai-sdk/openai';
 import { db } from '@db';
 import type { JSONContent } from '@tiptap/react';
 import { logger, schemaTask } from '@trigger.dev/sdk/v3';
-import { generateObject, generateText, NoObjectGeneratedError } from 'ai';
+import { generateObject, NoObjectGeneratedError } from 'ai';
 import { z } from 'zod';
 import { generatePrompt } from '../../lib/prompts';
 
@@ -51,44 +51,32 @@ export const updatePolicies = schemaTask({
       });
 
       try {
-        const { text } = await generateText({
-          model: openai('gpt-4o-mini'),
-          system: 'You are an expert at writing security policies in TipTap JSON.',
-          prompt: `Update the following policy to be strictly aligned with SOC 2 standards and controls. Only include JSON content as your output.
-
-					${prompt.replace(/\\n/g, '\n')}`,
-        });
-
-        if (!text) {
-          logger.error(`Failed generating policy for ${policyId}`);
-          return;
-        }
-
-        // Define TipTap JSON schema
-        const tipTapNodeSchema: z.ZodType<any> = z.lazy(() =>
-          z.object({
-            type: z.string(),
-            attrs: z.record(z.any()).optional(),
-            content: z.array(tipTapNodeSchema).optional(),
-            text: z.string().optional(),
-            marks: z
-              .array(
-                z.object({
-                  type: z.string(),
-                  attrs: z.record(z.any()).optional(),
-                }),
-              )
-              .optional(),
-          }),
-        );
-
+        // Generate TipTap JSON directly in one step to avoid malformed JSON issues
         const { object } = await generateObject({
           model: openai('gpt-4o-mini'),
           mode: 'json',
-          system: 'You are an expert at writing security policies in TipTap JSON.',
-          prompt: `Convert the following text into TipTap JSON. Do not include any other text in your output: ${JSON.stringify(text)}`,
+          system: `You are an expert at writing security policies. Generate content directly as TipTap JSON format.
+
+TipTap JSON structure:
+- Root: {"type": "document", "content": [array of nodes]}
+- Paragraphs: {"type": "paragraph", "content": [text nodes]}
+- Headings: {"type": "heading", "attrs": {"level": 1-6}, "content": [text nodes]}
+- Lists: {"type": "orderedList"/"bulletList", "content": [listItem nodes]}
+- List items: {"type": "listItem", "content": [paragraph nodes]}
+- Text: {"type": "text", "text": "content", "marks": [formatting]}
+- Bold: {"type": "bold"} in marks array
+- Italic: {"type": "italic"} in marks array
+
+IMPORTANT: Follow ALL formatting instructions in the prompt, implementing them as proper TipTap JSON structures.`,
+          prompt: `Generate a SOC 2 compliant security policy as a complete TipTap JSON document.
+
+INSTRUCTIONS TO IMPLEMENT IN TIPTAP JSON:
+${prompt.replace(/\\n/g, '\n')}
+
+Return the complete TipTap document following ALL the above requirements using proper TipTap JSON structure.`,
           schema: z.object({
-            json: z.array(tipTapNodeSchema),
+            type: z.literal('document'),
+            content: z.array(z.record(z.unknown())),
           }),
         });
 
@@ -98,7 +86,7 @@ export const updatePolicies = schemaTask({
               id: policyId,
             },
             data: {
-              content: object.json as JSONContent[],
+              content: object.content as JSONContent[],
             },
           });
 
@@ -106,7 +94,7 @@ export const updatePolicies = schemaTask({
             policyId,
             contextHub,
             policy,
-            updatedContent: text,
+            updatedContent: object,
           };
         } catch (dbError) {
           logger.error(`Failed to update policy in database: ${dbError}`);
@@ -128,7 +116,7 @@ export const updatePolicies = schemaTask({
         throw aiError;
       }
     } catch (error) {
-      logger.error(`Unexpected error in populatePolicyWithAI: ${error}`);
+      logger.error(`Unexpected error in updatePolicies: ${error}`);
       throw error;
     }
   },
