@@ -32,22 +32,17 @@ const getFriendlyStatusName = (status: string): string => {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 };
 
-export const OnboardingTracker = ({
-  onboarding,
-  publicAccessToken,
-}: {
-  onboarding: Onboarding;
-  publicAccessToken: string;
-}) => {
+export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) => {
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
   const triggerJobId = onboarding.triggerJobId;
 
+  // useRealtimeRun will automatically get the token from TriggerProvider context
   const { run, error } = useRealtimeRun(triggerJobId || '', {
-    accessToken: publicAccessToken,
+    enabled: !!triggerJobId,
   });
 
   useEffect(() => {
-    if (!triggerJobId || !publicAccessToken) return;
+    if (!triggerJobId) return;
 
     let interval: NodeJS.Timeout;
     if (run && IN_PROGRESS_STATUSES.includes(run.status)) {
@@ -58,9 +53,9 @@ export const OnboardingTracker = ({
       setCurrentMessageIndex(0); // Reset when not in progress
     }
     return () => clearInterval(interval);
-  }, [run, triggerJobId, publicAccessToken]);
+  }, [run, triggerJobId]);
 
-  if (!triggerJobId || !publicAccessToken) {
+  if (!triggerJobId) {
     return <div className="text-muted-foreground text-sm">Unable to load onboarding tracker.</div>;
   }
 
