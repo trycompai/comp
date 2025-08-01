@@ -42,6 +42,23 @@ const uploadAttachmentSchema = z.object({
 export const uploadFile = async (input: z.infer<typeof uploadAttachmentSchema>) => {
   logger.info(`[uploadFile] Starting upload for ${input.fileName}`);
   try {
+    // Check if S3 client is available
+    if (!s3Client) {
+      logger.error('[uploadFile] S3 client not initialized - check environment variables');
+      return {
+        success: false,
+        error: 'File upload service is currently unavailable. Please contact support.',
+      } as const;
+    }
+
+    if (!BUCKET_NAME) {
+      logger.error('[uploadFile] S3 bucket name not configured');
+      return {
+        success: false,
+        error: 'File upload service is not properly configured.',
+      } as const;
+    }
+
     const { fileName, fileType, fileData, entityId, entityType, pathToRevalidate } =
       uploadAttachmentSchema.parse(input);
 
@@ -49,7 +66,11 @@ export const uploadFile = async (input: z.infer<typeof uploadAttachmentSchema>) 
     const organizationId = session?.session.activeOrganizationId;
 
     if (!organizationId) {
-      throw new Error('Not authorized - no organization found');
+      logger.error('[uploadFile] Not authorized - no organization found');
+      return {
+        success: false,
+        error: 'Not authorized - no organization found',
+      } as const;
     }
 
     logger.info(`[uploadFile] Starting upload for ${fileName} in org ${organizationId}`);
@@ -59,7 +80,13 @@ export const uploadFile = async (input: z.infer<typeof uploadAttachmentSchema>) 
     const MAX_FILE_SIZE_MB = 10;
     const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
     if (fileBuffer.length > MAX_FILE_SIZE_BYTES) {
-      throw new Error(`File exceeds the ${MAX_FILE_SIZE_MB}MB limit.`);
+      logger.warn(
+        `[uploadFile] File size ${fileBuffer.length} exceeds the ${MAX_FILE_SIZE_MB}MB limit.`,
+      );
+      return {
+        success: false,
+        error: `File exceeds the ${MAX_FILE_SIZE_MB}MB limit.`,
+      } as const;
     }
 
     const timestamp = Date.now();
