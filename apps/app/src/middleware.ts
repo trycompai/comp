@@ -1,3 +1,4 @@
+import { addCorsHeaders } from '@/lib/cors';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
 import { headers } from 'next/headers';
@@ -6,8 +7,8 @@ import { NextRequest, NextResponse } from 'next/server';
 export const config = {
   runtime: 'nodejs',
   matcher: [
-    // Skip auth-related routes (removed onboarding from exclusions)
-    '/((?!api|_next/static|_next/image|favicon.ico|monitoring|ingest|research).*)',
+    // Include API routes for CORS handling, exclude static assets
+    '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 };
 
@@ -19,6 +20,17 @@ function isUnprotectedRoute(pathname: string): boolean {
 }
 
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Handle CORS for API routes
+  if (pathname.startsWith('/api/')) {
+    // Handle preflight OPTIONS requests
+    if (request.method === 'OPTIONS') {
+      const response = new NextResponse(null, { status: 200 });
+      return addCorsHeaders(response, request.headers.get('origin'));
+    }
+  }
+
   // E2E Test Mode: Check for test auth header
   if (process.env.E2E_TEST_MODE === 'true') {
     const testAuthHeader = request.headers.get('x-e2e-test-auth');
@@ -29,6 +41,10 @@ export async function middleware(request: NextRequest) {
           // Allow the request to proceed without auth checks
           const response = NextResponse.next();
           response.headers.set('x-pathname', request.nextUrl.pathname);
+          // Add CORS headers for API routes
+          if (pathname.startsWith('/api/')) {
+            return addCorsHeaders(response, request.headers.get('origin'));
+          }
           return response;
         }
       } catch (e) {
@@ -175,6 +191,11 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(url);
       }
     }
+  }
+
+  // Add CORS headers for API routes
+  if (pathname.startsWith('/api/')) {
+    return addCorsHeaders(response, request.headers.get('origin'));
   }
 
   return response;
