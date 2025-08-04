@@ -22,7 +22,7 @@ const config: NextConfig = {
     ],
   },
   async rewrites() {
-    return [
+    const rewrites = [
       {
         source: '/ingest/static/:path*',
         destination: 'https://us-assets.i.posthog.com/static/:path*',
@@ -36,6 +36,17 @@ const config: NextConfig = {
         destination: 'https://us.i.posthog.com/decide',
       },
     ];
+
+    // In production, redirect public assets to S3
+    if (process.env.NODE_ENV === 'production' && process.env.STATIC_ASSETS_BUCKET) {
+      rewrites.push({
+        source:
+          '/:path((?!api|_next).*\\.(ico|png|jpg|jpeg|gif|svg|webp|woff|woff2|ttf|eot|otf|mp3|mp4|webm|pdf))',
+        destination: `https://${process.env.STATIC_ASSETS_BUCKET}.s3.amazonaws.com/:path`,
+      });
+    }
+
+    return rewrites;
   },
   skipTrailingSlashRedirect: true,
 };

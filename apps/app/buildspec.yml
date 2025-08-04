@@ -61,14 +61,15 @@ phases:
           echo "⚠️ No .next/static directory found"
         fi
 
-      # Upload public assets
+      # Upload public assets to bucket root (not /public/ prefix)
       - |
         if [ -d "public" ]; then
-          echo "📦 Uploading public/ files..."
-          aws s3 sync public/ s3://$STATIC_ASSETS_BUCKET/public/ \
+          echo "📦 Uploading public/ files to bucket root..."
+          aws s3 sync public/ s3://$STATIC_ASSETS_BUCKET/ \
             --cache-control "public, max-age=86400" \
-            --exclude "*.map"
-          echo "✅ Uploaded public assets to S3"
+            --exclude "*.map" \
+            --exclude "_next/*"
+          echo "✅ Uploaded public assets to S3 root"
         else
           echo "⚠️ No public directory found"
         fi
@@ -86,23 +87,43 @@ phases:
       - echo "DEBUG - Copying standalone files (excluding static assets)..."
       - cp -r .next/standalone/apps/$APP_NAME/* container-build/ || echo "Standalone copy failed"
 
+      # Copy node_modules from standalone build (contains minimal required dependencies)
+      - echo "Copying standalone node_modules..."
+      - cp -r .next/standalone/node_modules container-build/ || echo "No standalone node_modules"
+
       # Copy package.json and other necessary files
       - cp package.json container-build/ || echo "No package.json"
       - cp Dockerfile container-build/ || echo "No Dockerfile"
 
-      # Copy Prisma client to container
-      - echo "Copying Prisma client..."
+      # Ensure Prisma client is available (override standalone if needed)
+      - echo "Ensuring Prisma client is available..."
       - mkdir -p container-build/node_modules/.prisma container-build/node_modules/@prisma
-      - if [ -d "../../node_modules/.prisma/client" ]; then
-        cp -r ../../node_modules/.prisma/client container-build/node_modules/.prisma/;
+      - |
+        if [ -d "../../node_modules/.prisma/client" ]; then
+          echo "Copying Prisma client from monorepo root..."
+          cp -r ../../node_modules/.prisma/client container-build/node_modules/.prisma/
         elif [ -d "node_modules/.prisma/client" ]; then
-        cp -r node_modules/.prisma/client container-build/node_modules/.prisma/;
+          echo "Copying Prisma client from app directory..."
+          cp -r node_modules/.prisma/client container-build/node_modules/.prisma/
+        else
+          echo "Warning: No Prisma client found"
         fi
-      - if [ -d "../../node_modules/@prisma/client" ]; then
-        cp -r "../../node_modules/@prisma/client" "container-build/node_modules/@prisma/";
+      - |
+        if [ -d "../../node_modules/@prisma/client" ]; then
+          echo "Copying @prisma/client from monorepo root..."
+          cp -r "../../node_modules/@prisma/client" "container-build/node_modules/@prisma/"
         elif [ -d "node_modules/@prisma/client" ]; then
-        cp -r "node_modules/@prisma/client" "container-build/node_modules/@prisma/";
+          echo "Copying @prisma/client from app directory..."
+          cp -r "node_modules/@prisma/client" "container-build/node_modules/@prisma/"
+        else
+          echo "Warning: No @prisma/client found"
         fi
+
+      # Debug: Verify container build contents
+      - echo "DEBUG - Verifying container build directory..."
+      - ls -la container-build/
+      - ls -la container-build/node_modules/next/ || echo "❌ Next.js module not found"
+      - ls -la container-build/node_modules/.prisma/ || echo "❌ Prisma client not found"
 
       # Build Docker image (static assets now served from S3)
       - echo "Building Docker image..."
