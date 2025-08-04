@@ -77,20 +77,63 @@ phases:
       - echo "DEBUG - Checking what Next.js built..."
       - ls -la .next/
       - ls -la .next/standalone/ || echo "No standalone directory"
+      - echo "DEBUG - Checking app's own .next build structure..."
+      - ls -la .next/server/ || echo "No .next/server directory"
+      - echo "DEBUG - Checking for server.js in various locations..."
+      - test -f .next/standalone/server.js && echo "✅ Standalone server.js exists" || echo "❌ No standalone server.js"
+      - find .next -name "server.js" | head -5 || echo "No server.js found anywhere"
 
       # Create container build directory
       - mkdir -p container-build
 
-      # Copy standalone app (without static files)
-      - echo "DEBUG - Copying standalone files (excluding static assets)..."
-      - cp -r .next/standalone/apps/$APP_NAME/* container-build/ || echo "Standalone copy failed"
+      # Use the standalone build properly: copy from .next/standalone + app's own build
+      - echo "DEBUG - Building container from standalone + app build..."
 
-      # Copy node_modules from standalone build (contains minimal required dependencies)
-      - echo "Copying standalone node_modules..."
-      - cp -r .next/standalone/node_modules container-build/ || echo "No standalone node_modules"
+      # Copy the app's own built files (server.js, etc.)
+      - echo "Copying app's own .next build..."
+      - cp -r .next container-build/ || echo "App .next copy failed"
 
-      # Copy package.json and other necessary files
-      - cp package.json container-build/ || echo "No package.json"
+      # Copy shared node_modules from standalone (minimal runtime deps)
+      - echo "Copying standalone node_modules (runtime dependencies)..."
+      - cp -r .next/standalone/node_modules container-build/ || echo "Standalone node_modules copy failed"
+
+      # Copy or create server.js for standalone
+      - |
+        if [ -f ".next/standalone/server.js" ]; then
+          echo "Using standalone server.js..."
+          cp .next/standalone/server.js container-build/
+        else
+          echo "Creating minimal standalone server.js..."
+          cat > container-build/server.js << 'EOF'
+        const { createServer } = require('http')
+        const next = require('next')
+
+        const dev = false
+        const hostname = process.env.HOSTNAME || '0.0.0.0'
+        const port = process.env.PORT || 3000
+
+        // Use the current directory as the Next.js app
+        const app = next({ dev, hostname, port, dir: __dirname })
+        const handle = app.getRequestHandler()
+
+        app.prepare().then(() => {
+          createServer(async (req, res) => {
+            await handle(req, res)
+          }).listen(port, hostname, () => {
+            console.log(`> Ready on http://${hostname}:${port}`)
+          })
+        })
+        EOF
+        fi
+
+      # Verify the standalone build
+      - echo "DEBUG - Verifying standalone build..."
+      - ls -la container-build/
+      - test -f container-build/server.js && echo "✅ Server.js exists" || echo "❌ Server.js missing"
+      - test -d container-build/.next && echo "✅ .next directory exists" || echo "❌ .next directory missing"
+      - test -d container-build/node_modules && echo "✅ node_modules exists" || echo "❌ node_modules missing"
+
+      # Add Dockerfile to the standalone build
       - cp Dockerfile container-build/ || echo "No Dockerfile"
 
       # Ensure Prisma client is available (override standalone if needed)
@@ -118,10 +161,13 @@ phases:
         fi
 
       # Debug: Verify container build contents
-      - echo "DEBUG - Verifying container build directory..."
+      - echo "DEBUG - Verifying app-specific container build..."
       - ls -la container-build/
+      - ls -la container-build/.next/ || echo "❌ .next directory not found"
       - ls -la container-build/node_modules/next/ || echo "❌ Next.js module not found"
       - ls -la container-build/node_modules/.prisma/ || echo "❌ Prisma client not found"
+      - test -f container-build/server.js && echo "✅ App-specific server.js found" || echo "❌ App-specific server.js not found"
+      - head -10 container-build/server.js || echo "❌ Cannot read server.js"
 
       # Build Docker image (static assets now served from S3)
       - echo "Building Docker image..."
