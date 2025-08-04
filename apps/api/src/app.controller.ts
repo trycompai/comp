@@ -1,8 +1,8 @@
-import { Controller, Get, Redirect } from '@nestjs/common';
+import { Controller, Get, Redirect, VERSION_NEUTRAL } from '@nestjs/common';
 import { ApiExcludeEndpoint } from '@nestjs/swagger';
 import { AppService } from './app.service';
 
-@Controller()
+@Controller({ version: VERSION_NEUTRAL })
 export class AppController {
   constructor(private readonly appService: AppService) {}
 

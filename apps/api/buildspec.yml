@@ -46,19 +46,9 @@ phases:
       # Copy built application
       - cp -r dist/* ../docker-build/
 
-      # Copy only the necessary node_modules for runtime
-      - echo "Bundling runtime dependencies..."
-      - mkdir -p ../docker-build/node_modules
-      - cp -r node_modules/@nestjs ../docker-build/node_modules/ 2>/dev/null || echo "No @nestjs modules"
-      - cp -r node_modules/reflect-metadata ../docker-build/node_modules/ 2>/dev/null || echo "No reflect-metadata"
-      - cp -r node_modules/rxjs ../docker-build/node_modules/ 2>/dev/null || echo "No rxjs"
-      - cp -r node_modules/class-transformer ../docker-build/node_modules/ 2>/dev/null || echo "No class-transformer"
-      - cp -r node_modules/class-validator ../docker-build/node_modules/ 2>/dev/null || echo "No class-validator"
-      - cp -r node_modules/zod ../docker-build/node_modules/ 2>/dev/null || echo "No zod"
-
-      # Copy Prisma client
-      - cp -r ../../node_modules/.prisma ../docker-build/node_modules/ 2>/dev/null || echo "No .prisma"
-      - cp -r ../../node_modules/@prisma ../docker-build/node_modules/ 2>/dev/null || echo "No @prisma"
+        # Copy entire node_modules for runtime (simpler and comprehensive)
+      - echo "Bundling all runtime dependencies..."
+      - cp -r ../../node_modules ../docker-build/
 
       # Copy @trycompai/db package
       - mkdir -p ../docker-build/node_modules/@trycompai
