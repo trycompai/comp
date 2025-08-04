@@ -47,29 +47,29 @@ phases:
       - cd apps/$APP_NAME
       - NODE_TLS_REJECT_UNAUTHORIZED=0 bun run build
 
-      # Upload static assets to S3 (solves chunk drift issue)
-      - echo "Uploading static assets to S3..."
+      # Upload Next.js chunks and CSS to S3 for CDN performance
+      - echo "Uploading Next.js static assets to S3..."
       - |
         if [ -d ".next/static" ]; then
-          echo "📦 Uploading .next/static/ files..."
+          echo "📦 Uploading .next/static/ files to CDN..."
           aws s3 sync .next/static/ s3://$STATIC_ASSETS_BUCKET/_next/static/ \
             --cache-control "public, max-age=31536000, immutable" \
             --exclude "*.map" \
             --delete
-          echo "✅ Uploaded static assets to S3"
+          echo "✅ Uploaded Next.js static assets to S3"
         else
           echo "⚠️ No .next/static directory found"
         fi
 
-      # Upload public assets to bucket root (not /public/ prefix)
+      # Upload public assets to S3 for CDN serving
       - |
         if [ -d "public" ]; then
-          echo "📦 Uploading public/ files to bucket root..."
+          echo "📦 Uploading public/ files to S3..."
           aws s3 sync public/ s3://$STATIC_ASSETS_BUCKET/ \
             --cache-control "public, max-age=86400" \
             --exclude "*.map" \
             --exclude "_next/*"
-          echo "✅ Uploaded public assets to S3 root"
+          echo "✅ Uploaded public assets to S3"
         else
           echo "⚠️ No public directory found"
         fi
