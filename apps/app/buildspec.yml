@@ -52,7 +52,7 @@ phases:
       - |
         if [ -d ".next/static" ]; then
           echo "📦 Uploading .next/static/ files to CDN..."
-          aws s3 sync .next/static/ s3://$STATIC_ASSETS_BUCKET/_next/static/ \
+          aws s3 sync .next/static/ s3://$STATIC_ASSETS_BUCKET/app/_next/static/ \
             --cache-control "public, max-age=31536000, immutable" \
             --exclude "*.map"
           echo "✅ Uploaded Next.js static assets to S3"
@@ -64,7 +64,7 @@ phases:
       - |
         if [ -d "public" ]; then
           echo "📦 Uploading public/ files to S3..."
-          aws s3 sync public/ s3://$STATIC_ASSETS_BUCKET/ \
+          aws s3 sync public/ s3://$STATIC_ASSETS_BUCKET/app/ \
             --cache-control "public, max-age=86400" \
             --exclude "*.map" \
             --exclude "_next/*"
