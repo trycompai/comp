@@ -47,12 +47,7 @@
       },
       {
         "tab": "API",
-        "groups": [
-          {
-            "group": "API Reference",
-            "pages": ["api-reference/v1/index", "api-reference/v1/people"]
-          }
-        ]
+        "openapi": "https://api.trycomp.ai/api/docs-json"
       }
     ],
     "global": {
