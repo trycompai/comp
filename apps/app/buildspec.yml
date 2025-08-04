@@ -16,6 +16,7 @@ phases:
       # Environment setup
       - export PATH="/root/.bun/bin:$PATH"
       - export PGSSLMODE=require
+      - export NODE_ENV=production
       - export NEXT_TELEMETRY_DISABLED=1
       - export UV_THREADPOOL_SIZE=36
       - export NODE_OPTIONS="--max-old-space-size=65536"
@@ -35,6 +36,7 @@ phases:
       # Validate environment variables
       - echo "Validating environment variables..."
       - '[ -n "$NEXT_PUBLIC_PORTAL_URL" ] || { echo "❌ NEXT_PUBLIC_PORTAL_URL is not set"; exit 1; }'
+      - '[ -n "$STATIC_ASSETS_BUCKET" ] || { echo "❌ STATIC_ASSETS_BUCKET is not set"; exit 1; }'
 
       # Type check
       - echo "Type checking..."
@@ -45,38 +47,66 @@ phases:
       - cd apps/$APP_NAME
       - NODE_TLS_REJECT_UNAUTHORIZED=0 bun run build
 
-      # Prepare standalone build
+      # Upload static assets to S3 (solves chunk drift issue)
+      - echo "Uploading static assets to S3..."
+      - |
+        if [ -d ".next/static" ]; then
+          echo "📦 Uploading .next/static/ files..."
+          aws s3 sync .next/static/ s3://$STATIC_ASSETS_BUCKET/_next/static/ \
+            --cache-control "public, max-age=31536000, immutable" \
+            --exclude "*.map" \
+            --delete
+          echo "✅ Uploaded static assets to S3"
+        else
+          echo "⚠️ No .next/static directory found"
+        fi
+
+      # Upload public assets
+      - |
+        if [ -d "public" ]; then
+          echo "📦 Uploading public/ files..."
+          aws s3 sync public/ s3://$STATIC_ASSETS_BUCKET/public/ \
+            --cache-control "public, max-age=86400" \
+            --exclude "*.map"
+          echo "✅ Uploaded public assets to S3"
+        else
+          echo "⚠️ No public directory found"
+        fi
+
+      # Prepare standalone build for container
       - echo "Preparing standalone build..."
       - echo "DEBUG - Checking what Next.js built..."
       - ls -la .next/
       - ls -la .next/standalone/ || echo "No standalone directory"
-      - echo "DEBUG - Checking if static files exist..."
-      - ls -la .next/static/ || echo "No static directory found"
-      - echo "DEBUG - Copying static files to standalone..."
-      - cp -r public .next/standalone/apps/$APP_NAME/ || echo "No public folder"
-      - cp -r .next/static .next/standalone/apps/$APP_NAME/.next/ || echo "No .next/static directory"
-      - echo "DEBUG - Final verification..."
-      - ls -la .next/standalone/ || echo "Standalone empty"
-      - find .next/standalone -name "*.css" | head -3 || echo "No CSS files found"
-      - find .next/standalone -name "*.js" | head -3 || echo "No JS files found"
 
-      # Copy Prisma client
+      # Create container build directory
+      - mkdir -p container-build
+
+      # Copy standalone app (without static files)
+      - echo "DEBUG - Copying standalone files (excluding static assets)..."
+      - cp -r .next/standalone/apps/$APP_NAME/* container-build/ || echo "Standalone copy failed"
+
+      # Copy package.json and other necessary files
+      - cp package.json container-build/ || echo "No package.json"
+      - cp Dockerfile container-build/ || echo "No Dockerfile"
+
+      # Copy Prisma client to container
       - echo "Copying Prisma client..."
-      - mkdir -p .next/standalone/node_modules/.prisma .next/standalone/node_modules/@prisma
+      - mkdir -p container-build/node_modules/.prisma container-build/node_modules/@prisma
       - if [ -d "../../node_modules/.prisma/client" ]; then
-        cp -r ../../node_modules/.prisma/client .next/standalone/node_modules/.prisma/;
+        cp -r ../../node_modules/.prisma/client container-build/node_modules/.prisma/;
         elif [ -d "node_modules/.prisma/client" ]; then
-        cp -r node_modules/.prisma/client .next/standalone/node_modules/.prisma/;
+        cp -r node_modules/.prisma/client container-build/node_modules/.prisma/;
         fi
       - if [ -d "../../node_modules/@prisma/client" ]; then
-        cp -r "../../node_modules/@prisma/client" ".next/standalone/node_modules/@prisma/";
+        cp -r "../../node_modules/@prisma/client" "container-build/node_modules/@prisma/";
         elif [ -d "node_modules/@prisma/client" ]; then
-        cp -r "node_modules/@prisma/client" ".next/standalone/node_modules/@prisma/";
+        cp -r "node_modules/@prisma/client" "container-build/node_modules/@prisma/";
         fi
 
-      # Build Docker image
+      # Build Docker image (static assets now served from S3)
       - echo "Building Docker image..."
-      - docker build --build-arg BUILDKIT_INLINE_CACHE=1 -f ${DOCKERFILE_PATH:-Dockerfile} -t $ECR_REPOSITORY_URI:$IMAGE_TAG .
+      - docker build --build-arg BUILDKIT_INLINE_CACHE=1 -f container-build/Dockerfile -t $ECR_REPOSITORY_URI:$IMAGE_TAG container-build/
       - docker tag $ECR_REPOSITORY_URI:$IMAGE_TAG $ECR_REPOSITORY_URI:latest
 
   post_build:
