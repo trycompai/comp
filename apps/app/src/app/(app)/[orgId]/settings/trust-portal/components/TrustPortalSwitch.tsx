@@ -17,7 +17,7 @@ import { z } from 'zod';
 import { isFriendlyAvailable } from '../actions/is-friendly-available';
 import { trustPortalSwitchAction } from '../actions/trust-portal-switch';
 import { updateTrustPortalFrameworks } from '../actions/update-trust-portal-frameworks';
-import { GDPR, ISO27001, SOC2 } from './logos';
+import { GDPR, HIPAA, ISO27001, SOC2 } from './logos';
 
 const trustPortalSwitchSchema = z.object({
   enabled: z.boolean(),
@@ -26,9 +26,11 @@ const trustPortalSwitchSchema = z.object({
   soc2: z.boolean(),
   iso27001: z.boolean(),
   gdpr: z.boolean(),
+  hipaa: z.boolean(),
   soc2Status: z.enum(['started', 'in_progress', 'compliant']),
   iso27001Status: z.enum(['started', 'in_progress', 'compliant']),
   gdprStatus: z.enum(['started', 'in_progress', 'compliant']),
+  hipaaStatus: z.enum(['started', 'in_progress', 'compliant']),
 });
 
 export function TrustPortalSwitch({
@@ -41,9 +43,11 @@ export function TrustPortalSwitch({
   soc2,
   iso27001,
   gdpr,
+  hipaa,
   soc2Status,
   iso27001Status,
   gdprStatus,
+  hipaaStatus,
   friendlyUrl,
 }: {
   enabled: boolean;
@@ -55,9 +59,11 @@ export function TrustPortalSwitch({
   soc2: boolean;
   iso27001: boolean;
   gdpr: boolean;
+  hipaa: boolean;
   soc2Status: 'started' | 'in_progress' | 'compliant';
   iso27001Status: 'started' | 'in_progress' | 'compliant';
   gdprStatus: 'started' | 'in_progress' | 'compliant';
+  hipaaStatus: 'started' | 'in_progress' | 'compliant';
   friendlyUrl: string | null;
 }) {
   const trustPortalSwitch = useAction(trustPortalSwitchAction, {
@@ -79,9 +85,11 @@ export function TrustPortalSwitch({
       soc2: soc2 ?? false,
       iso27001: iso27001 ?? false,
       gdpr: gdpr ?? false,
+      hipaa: hipaa ?? false,
       soc2Status: soc2Status ?? 'started',
       iso27001Status: iso27001Status ?? 'started',
       gdprStatus: gdprStatus ?? 'started',
+      hipaaStatus: hipaaStatus ?? 'started',
       friendlyUrl: friendlyUrl ?? undefined,
     },
   });
@@ -393,6 +401,35 @@ export function TrustPortalSwitch({
                         }
                       }}
                     />
+                    {/* HIPAA */}
+                    <ComplianceFramework
+                      title="HIPAA"
+                      description="A US regulation that protects sensitive patient health information and medical data."
+                      isEnabled={hipaa}
+                      status={hipaaStatus}
+                      onStatusChange={async (value) => {
+                        try {
+                          await updateTrustPortalFrameworks({
+                            orgId,
+                            hipaaStatus: value as 'started' | 'in_progress' | 'compliant',
+                          });
+                          toast.success('HIPAA status updated');
+                        } catch (error) {
+                          toast.error('Failed to update HIPAA status');
+                        }
+                      }}
+                      onToggle={async (checked) => {
+                        try {
+                          await updateTrustPortalFrameworks({
+                            orgId,
+                            hipaa: checked,
+                          });
+                          toast.success('HIPAA status updated');
+                        } catch (error) {
+                          toast.error('Failed to update HIPAA status');
+                        }
+                      }}
+                    />
                   </div>
                 </div>
               </div>
@@ -422,12 +459,22 @@ function ComplianceFramework({
 }) {
   const logo =
     title === 'SOC 2' ? (
-      <SOC2 className="h-16 w-16" />
+      <div className="h-16 w-16 flex items-center justify-center">
+        <SOC2 className="max-h-full max-w-full" />
+      </div>
     ) : title === 'ISO 27001' ? (
-      <ISO27001 className="h-16 w-16" />
-    ) : (
-      <GDPR className="h-16 w-16" />
-    );
+      <div className="h-16 w-16 flex items-center justify-center">
+        <ISO27001 className="max-h-full max-w-full" />
+      </div>
+    ) : title === 'GDPR' ? (
+      <div className="h-16 w-16 flex items-center justify-center">
+        <GDPR className="max-h-full max-w-full" />
+      </div>
+    ) : title === 'HIPAA' ? (
+      <div className="h-16 w-16 flex items-center justify-center">
+        <HIPAA className="max-h-full max-w-full" />
+      </div>
+    ) : null;
 
   return (
     <>
