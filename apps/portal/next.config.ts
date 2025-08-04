@@ -4,10 +4,7 @@ import './src/env.mjs';
 
 const config: NextConfig = {
   // Use S3 bucket for static assets
-  assetPrefix:
-    process.env.NODE_ENV === 'production'
-      ? `https://${process.env.STATIC_ASSETS_BUCKET}.s3.amazonaws.com`
-      : '',
+  assetPrefix: process.env.NODE_ENV === 'production' ? process.env.STATIC_ASSETS_URL : '',
   transpilePackages: ['@trycompai/db'],
   outputFileTracingRoot: path.join(__dirname, '../../'),
   outputFileTracingIncludes: {
