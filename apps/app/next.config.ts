@@ -5,6 +5,8 @@ import './src/env.mjs';
 const config: NextConfig = {
   // Use S3 bucket for static assets with app-specific path
   assetPrefix: process.env.NODE_ENV === 'production' ? `${process.env.STATIC_ASSETS_URL}/app` : '',
+  // Ensure fallback to local assets if CDN fails
+  generateEtags: false,
   poweredByHeader: false,
   reactStrictMode: true,
   transpilePackages: ['@trycompai/db'],
@@ -29,12 +31,23 @@ const config: NextConfig = {
   experimental: {
     serverActions: {
       bodySizeLimit: '15mb',
+      // Ensure server actions are stable across builds
+      allowedOrigins:
+        process.env.NODE_ENV === 'production'
+          ? ([process.env.NEXT_PUBLIC_PORTAL_URL, 'https://app.trycomp.ai'].filter(
+              Boolean,
+            ) as string[])
+          : undefined,
     },
     authInterrupts: true,
+    // Improve build stability
+    optimizePackageImports: ['@trycompai/db', '@trycompai/ui'],
   },
   outputFileTracingRoot: path.join(__dirname, '../../'),
   outputFileTracingIncludes: {
     '/api/**/*': ['./node_modules/.prisma/client/**/*'],
+    // Ensure server actions are properly traced
+    '/**/*': ['./src/actions/**/*', './node_modules/.prisma/client/**/*'],
   },
   async headers() {
     return [
@@ -57,6 +70,30 @@ const config: NextConfig = {
           {
             key: 'Access-Control-Max-Age',
             value: '86400',
+          },
+        ],
+      },
+      {
+        // Prevent caching of server action POST requests
+        source: '/(.*)',
+        has: [
+          {
+            type: 'header',
+            key: 'Next-Action',
+          },
+        ],
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-cache, no-store, must-revalidate',
+          },
+          {
+            key: 'Pragma',
+            value: 'no-cache',
+          },
+          {
+            key: 'Expires',
+            value: '0',
           },
         ],
       },

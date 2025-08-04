@@ -26,6 +26,21 @@ interface TaskBodyProps {
   onAttachmentsChange?: () => void;
 }
 
+// Helper function to provide user-friendly error messages
+function getErrorMessage(errorMessage: string, errorCode?: string): string {
+  switch (errorCode) {
+    case 'FILE_TOO_LARGE':
+      return 'The file is too large. Please choose a file smaller than 10MB.';
+    case 'S3_CLIENT_UNAVAILABLE':
+    case 'S3_BUCKET_NOT_CONFIGURED':
+      return 'File upload service is temporarily unavailable. Please try again later.';
+    case 'UNAUTHORIZED':
+      return 'You are not authorized to upload files. Please refresh the page and try again.';
+    default:
+      return errorMessage || 'Failed to upload file. Please try again.';
+  }
+}
+
 export function TaskBody({
   taskId,
   title,
@@ -84,8 +99,11 @@ export function TaskBody({
               onAttachmentsChange?.();
               router.refresh();
             } else {
-              console.error('File upload failed:', result.error);
-              toast.error(result.error || 'Failed to upload file. Check console for details.');
+              console.error('File upload failed:', result.error, result.code);
+
+              // Provide user-friendly error messages based on error codes
+              const userFriendlyMessage = getErrorMessage(result.error, result.code);
+              toast.error(userFriendlyMessage);
             }
           };
           reader.onerror = () => {
@@ -135,11 +153,14 @@ export function TaskBody({
                 toast.success(`File "${file.name}" uploaded successfully.`);
                 resolve(result);
               } else {
-                throw new Error(result.error);
+                const userFriendlyMessage = getErrorMessage(result.error, result.code);
+                throw new Error(userFriendlyMessage);
               }
             } catch (error) {
               console.error(`Failed to upload ${file.name}:`, error);
-              toast.error(`Failed to upload ${file.name}.`);
+              toast.error(
+                `Failed to upload ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+              );
               resolve(null); // Resolve even if there's an error to not break Promise.all
             }
           };
