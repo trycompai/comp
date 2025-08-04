@@ -1,0 +1,103 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo "Logging in to Amazon ECR..."
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - REPOSITORY_URI=$ECR_REPOSITORY_URI
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - IMAGE_TAG=${COMMIT_HASH:=latest}
+      - echo "Installing dependencies..."
+      - curl -fsSL https://bun.sh/install | bash
+
+  build:
+    commands:
+      # Environment setup
+      - export PATH="/root/.bun/bin:$PATH"
+      - export PGSSLMODE=require
+      - export UV_THREADPOOL_SIZE=36
+      - export NODE_OPTIONS="--max-old-space-size=65536"
+
+      # Navigate to API directory
+      - cd apps/$APP_NAME
+
+      # Install dependencies
+      - echo "Installing dependencies..."
+      - SKIP_ENV_VALIDATION=true bun install --frozen-lockfile --concurrent 36 || SKIP_ENV_VALIDATION=true bun install --concurrent 36
+      - cd ../../
+
+      # Generate Prisma client
+      - echo "Generating Prisma client..."
+      - cd packages/db && bun x prisma generate && cd ../../
+
+      # Validate environment variables for API
+      - echo "Validating environment variables..."
+      - '[ -n "$DATABASE_URL" ] || { echo "❌ DATABASE_URL is not set"; exit 1; }'
+      - '[ -n "$PORT" ] || { echo "⚠️  PORT is not set, will use default 3333"; }'
+
+      # Type check and lint
+      - echo "Type checking and linting..."
+      - cd apps/$APP_NAME
+      - bun run build
+      - cd ../../
+
+      # Run tests (optional - uncomment if you have tests)
+      # - echo "Running tests..."
+      # - cd apps/$APP_NAME && bun run test && cd ../../
+
+      # Prepare build artifacts
+      - echo "Preparing build artifacts..."
+      - cd apps/$APP_NAME
+      - echo "DEBUG - Checking NestJS build output..."
+      - ls -la dist/ || echo "No dist directory found"
+      - echo "DEBUG - Checking node_modules..."
+      - ls -la node_modules/ | head -5 || echo "No node_modules found"
+
+      # Copy Prisma client for runtime
+      - echo "Copying Prisma client..."
+      - mkdir -p dist/node_modules/.prisma dist/node_modules/@prisma
+      - if [ -d "../../node_modules/.prisma/client" ]; then
+        cp -r ../../node_modules/.prisma/client dist/node_modules/.prisma/;
+        elif [ -d "node_modules/.prisma/client" ]; then
+        cp -r node_modules/.prisma/client dist/node_modules/.prisma/;
+        fi
+      - if [ -d "../../node_modules/@prisma/client" ]; then
+        cp -r "../../node_modules/@prisma/client" "dist/node_modules/@prisma/";
+        elif [ -d "node_modules/@prisma/client" ]; then
+        cp -r "node_modules/@prisma/client" "dist/node_modules/@prisma/";
+        fi
+
+      # Copy package.json for production dependencies
+      - echo "Copying package.json..."
+      - cp package.json dist/
+      - echo "DEBUG - Final verification..."
+      - ls -la dist/ || echo "Dist empty"
+      - find dist -name "*.js" | head -5 || echo "No JS files found"
+
+      # Build Docker image
+      - echo "Building Docker image..."
+      - docker build --build-arg BUILDKIT_INLINE_CACHE=1 -f ${DOCKERFILE_PATH:-Dockerfile} -t $ECR_REPOSITORY_URI:$IMAGE_TAG .
+      - docker tag $ECR_REPOSITORY_URI:$IMAGE_TAG $ECR_REPOSITORY_URI:latest
+
+  post_build:
+    commands:
+      - echo "Pushing images to ECR..."
+      - docker push $ECR_REPOSITORY_URI:$IMAGE_TAG
+      - docker push $ECR_REPOSITORY_URI:latest
+      - echo "Updating ECS service..."
+      - aws ecs update-service --cluster $ECS_CLUSTER_NAME --service $ECS_SERVICE_NAME --force-new-deployment
+      - 'printf "[{\"name\":\"%s-container\",\"imageUri\":\"%s\"}]" $APP_NAME $ECR_REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json'
+
+cache:
+  paths:
+    - 'node_modules/**/*'
+    - 'packages/db/node_modules/**/*'
+    - '/root/.bun/install/cache/**/*'
+    - 'dist/**/*'
+    - 'bun.lock'
+
+artifacts:
+  files:
+    - imagedefinitions.json
+  name: ${APP_NAME}-build
