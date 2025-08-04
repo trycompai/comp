@@ -105,10 +105,30 @@ const config: NextConfig = {
 
     // In production, redirect public assets to S3
     if (process.env.NODE_ENV === 'production' && process.env.STATIC_ASSETS_BUCKET) {
-      rewrites.push({
-        source:
-          '/:path((?!api|_next).*\\.(ico|png|jpg|jpeg|gif|svg|webp|woff|woff2|ttf|eot|otf|mp3|mp4|webm|pdf))',
-        destination: `https://${process.env.STATIC_ASSETS_BUCKET}.s3.amazonaws.com/:path`,
+      // Add individual rewrites for common static file types
+      const staticExtensions = [
+        'ico',
+        'png',
+        'jpg',
+        'jpeg',
+        'gif',
+        'svg',
+        'webp',
+        'woff',
+        'woff2',
+        'ttf',
+        'eot',
+        'otf',
+        'mp3',
+        'mp4',
+        'webm',
+        'pdf',
+      ];
+      staticExtensions.forEach((ext) => {
+        rewrites.push({
+          source: `/:path*.${ext}`,
+          destination: `https://${process.env.STATIC_ASSETS_BUCKET}.s3.amazonaws.com/:path*.${ext}`,
+        });
       });
     }
 
