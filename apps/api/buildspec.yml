@@ -1,0 +1,95 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo "Logging in to Amazon ECR..."
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - REPOSITORY_URI=$ECR_REPOSITORY_URI
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - IMAGE_TAG=${COMMIT_HASH:=latest}
+      - echo "Installing dependencies..."
+      - curl -fsSL https://bun.sh/install | bash
+
+  build:
+    commands:
+      # Environment setup
+      - export PATH="/root/.bun/bin:$PATH"
+      - export PGSSLMODE=require
+      - export NODE_ENV=production
+      - export NEXT_TELEMETRY_DISABLED=1
+      - export UV_THREADPOOL_SIZE=36
+      - export NODE_OPTIONS="--max-old-space-size=65536"
+
+      # Validate environment variables
+      - echo "Validating environment variables..."
+      - '[ -n "$DATABASE_URL" ] || { echo "❌ DATABASE_URL is not set"; exit 1; }'
+      - '[ -n "$BASE_URL" ] || { echo "❌ BASE_URL is not set"; exit 1; }'
+
+      # Install dependencies
+      - echo "Installing dependencies..."
+      - bun install --frozen-lockfile
+
+      # Generate Prisma client
+      - echo "Generating Prisma client..."
+      - cd packages/db && bun x prisma generate && cd ../../
+
+      # Build NestJS application
+      - echo "Building NestJS application..."
+      - cd apps/$APP_NAME && bun run build && cd ../../
+
+      # Create self-contained bundle for Docker
+      - echo "Creating self-contained bundle..."
+      - cd apps/$APP_NAME
+      - mkdir -p ../docker-build
+
+      # Copy built application
+      - cp -r dist/* ../docker-build/
+
+      # Copy only the necessary node_modules for runtime
+      - echo "Bundling runtime dependencies..."
+      - mkdir -p ../docker-build/node_modules
+      - cp -r node_modules/@nestjs ../docker-build/node_modules/ 2>/dev/null || echo "No @nestjs modules"
+      - cp -r node_modules/reflect-metadata ../docker-build/node_modules/ 2>/dev/null || echo "No reflect-metadata"
+      - cp -r node_modules/rxjs ../docker-build/node_modules/ 2>/dev/null || echo "No rxjs"
+      - cp -r node_modules/class-transformer ../docker-build/node_modules/ 2>/dev/null || echo "No class-transformer"
+      - cp -r node_modules/class-validator ../docker-build/node_modules/ 2>/dev/null || echo "No class-validator"
+      - cp -r node_modules/zod ../docker-build/node_modules/ 2>/dev/null || echo "No zod"
+
+      # Copy Prisma client
+      - cp -r ../../node_modules/.prisma ../docker-build/node_modules/ 2>/dev/null || echo "No .prisma"
+      - cp -r ../../node_modules/@prisma ../docker-build/node_modules/ 2>/dev/null || echo "No @prisma"
+
+      # Copy @trycompai/db package
+      - mkdir -p ../docker-build/node_modules/@trycompai
+      - cp -r ../../packages/db ../docker-build/node_modules/@trycompai/
+
+      # Copy Dockerfile
+      - cp Dockerfile ../docker-build/
+
+      # Build Docker image
+      - echo "Building Docker image..."
+      - docker build --build-arg BUILDKIT_INLINE_CACHE=1 -t $ECR_REPOSITORY_URI:$IMAGE_TAG ../docker-build/
+      - docker tag $ECR_REPOSITORY_URI:$IMAGE_TAG $ECR_REPOSITORY_URI:latest
+
+  post_build:
+    commands:
+      - echo "Pushing images to ECR..."
+      - docker push $ECR_REPOSITORY_URI:$IMAGE_TAG
+      - docker push $ECR_REPOSITORY_URI:latest
+      - echo "Updating ECS service..."
+      - aws ecs update-service --cluster $ECS_CLUSTER_NAME --service $ECS_SERVICE_NAME --force-new-deployment
+      - 'printf "[{\"name\":\"%s-container\",\"imageUri\":\"%s\"}]" $APP_NAME $ECR_REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json'
+
+cache:
+  paths:
+    - 'node_modules/**/*'
+    - 'packages/db/node_modules/**/*'
+    - 'apps/api/node_modules/**/*'
+    - '/root/.bun/install/cache/**/*'
+    - 'bun.lock'
+
+artifacts:
+  files:
+    - imagedefinitions.json
+  name: ${APP_NAME}-build
