@@ -64,7 +64,7 @@ phases:
       - |
         if [ -d "public" ]; then
           echo "📦 Uploading public/ files to S3..."
-          aws s3 sync public/ s3://$STATIC_ASSETS_BUCKET/ \
+          aws s3 sync public/ s3://$STATIC_ASSETS_BUCKET/app/ \
             --cache-control "public, max-age=86400" \
             --exclude "*.map" \
             --exclude "_next/*"
