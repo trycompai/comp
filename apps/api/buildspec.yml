@@ -26,10 +26,50 @@ phases:
       - '[ -n "$DATABASE_URL" ] || { echo "❌ DATABASE_URL is not set"; exit 1; }'
       - '[ -n "$BASE_URL" ] || { echo "❌ BASE_URL is not set"; exit 1; }'
 
-      # Build Docker image from monorepo root
-      # The Dockerfile handles all building, dependency installation, and Prisma generation
+      # Install dependencies
+      - echo "Installing dependencies..."
+      - bun install --frozen-lockfile
+
+      # Generate Prisma client
+      - echo "Generating Prisma client..."
+      - cd packages/db && bun x prisma generate && cd ../../
+
+      # Build NestJS application
+      - echo "Building NestJS application..."
+      - cd apps/$APP_NAME && bun run build && cd ../../
+
+      # Create self-contained bundle for Docker
+      - echo "Creating self-contained bundle..."
+      - cd apps/$APP_NAME
+      - mkdir -p ../docker-build
+
+      # Copy built application
+      - cp -r dist/* ../docker-build/
+
+      # Copy only the necessary node_modules for runtime
+      - echo "Bundling runtime dependencies..."
+      - mkdir -p ../docker-build/node_modules
+      - cp -r node_modules/@nestjs ../docker-build/node_modules/ 2>/dev/null || echo "No @nestjs modules"
+      - cp -r node_modules/reflect-metadata ../docker-build/node_modules/ 2>/dev/null || echo "No reflect-metadata"
+      - cp -r node_modules/rxjs ../docker-build/node_modules/ 2>/dev/null || echo "No rxjs"
+      - cp -r node_modules/class-transformer ../docker-build/node_modules/ 2>/dev/null || echo "No class-transformer"
+      - cp -r node_modules/class-validator ../docker-build/node_modules/ 2>/dev/null || echo "No class-validator"
+      - cp -r node_modules/zod ../docker-build/node_modules/ 2>/dev/null || echo "No zod"
+
+      # Copy Prisma client
+      - cp -r ../../node_modules/.prisma ../docker-build/node_modules/ 2>/dev/null || echo "No .prisma"
+      - cp -r ../../node_modules/@prisma ../docker-build/node_modules/ 2>/dev/null || echo "No @prisma"
+
+      # Copy @trycompai/db package
+      - mkdir -p ../docker-build/node_modules/@trycompai
+      - cp -r ../../packages/db ../docker-build/node_modules/@trycompai/
+
+      # Copy Dockerfile
+      - cp Dockerfile ../docker-build/
+
+      # Build Docker image
       - echo "Building Docker image..."
-      - docker build --build-arg BUILDKIT_INLINE_CACHE=1 -f apps/$APP_NAME/Dockerfile -t $ECR_REPOSITORY_URI:$IMAGE_TAG .
+      - docker build --build-arg BUILDKIT_INLINE_CACHE=1 -t $ECR_REPOSITORY_URI:$IMAGE_TAG ../docker-build/
       - docker tag $ECR_REPOSITORY_URI:$IMAGE_TAG $ECR_REPOSITORY_URI:latest
 
   post_build:
