@@ -54,8 +54,7 @@ phases:
           echo "📦 Uploading .next/static/ files to CDN..."
           aws s3 sync .next/static/ s3://$STATIC_ASSETS_BUCKET/_next/static/ \
             --cache-control "public, max-age=31536000, immutable" \
-            --exclude "*.map" \
-            --delete
+            --exclude "*.map"
           echo "✅ Uploaded Next.js static assets to S3"
         else
           echo "⚠️ No .next/static directory found"
