@@ -99,8 +99,11 @@ phases:
 
       # Copy or create server.js for standalone
       - |
-        if [ -f ".next/standalone/server.js" ]; then
-          echo "Using standalone server.js..."
+        if [ -f ".next/standalone/apps/$APP_NAME/server.js" ]; then
+          echo "Using app-specific standalone server.js..."
+          cp .next/standalone/apps/$APP_NAME/server.js container-build/
+        elif [ -f ".next/standalone/server.js" ]; then
+          echo "Using global standalone server.js..."
           cp .next/standalone/server.js container-build/
         else
           echo "Creating minimal standalone server.js..."
