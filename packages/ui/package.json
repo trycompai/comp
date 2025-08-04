@@ -40,7 +40,7 @@
     "@tiptap/extension-character-count": "2.14.0",
     "@tiptap/extension-code-block-lowlight": "2.14.0",
     "@tiptap/extension-highlight": "2.22.3",
-    "@tiptap/extension-image": "2.14.0",
+    "@tiptap/extension-image": "3.0.9",
     "@tiptap/extension-link": "2.14.0",
     "@tiptap/extension-placeholder": "2.14.0",
     "@tiptap/extension-table": "^2.22.3",
