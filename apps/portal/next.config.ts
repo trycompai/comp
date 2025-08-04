@@ -3,8 +3,9 @@ import path from 'path';
 import './src/env.mjs';
 
 const config: NextConfig = {
-  // Use S3 bucket for static assets
-  assetPrefix: process.env.NODE_ENV === 'production' ? process.env.STATIC_ASSETS_URL : '',
+  // Use S3 bucket for static assets with portal-specific path
+  assetPrefix:
+    process.env.NODE_ENV === 'production' ? `${process.env.STATIC_ASSETS_URL}/portal` : '',
   transpilePackages: ['@trycompai/db'],
   outputFileTracingRoot: path.join(__dirname, '../../'),
   outputFileTracingIncludes: {
