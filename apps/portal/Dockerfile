@@ -13,8 +13,8 @@ ENV PORT=3001
 ENV HOSTNAME="0.0.0.0"
 ENV NODE_TLS_REJECT_UNAUTHORIZED=0
 
-# Copy the complete standalone build from CodeBuild
-COPY .next/standalone ./
+# Copy the standalone build files (already prepared in container-build/)
+COPY . ./
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
@@ -25,5 +25,5 @@ USER nextjs
 
 EXPOSE 3001
 
-# Use node to run the standalone server - handle monorepo structure
-CMD ["sh", "-c", "if [ -f apps/portal/server.js ]; then node apps/portal/server.js; elif [ -f server.js ]; then node server.js; elif [ -f index.js ]; then node index.js; else echo 'No entry point found' && exit 1; fi"] 
+# Use node to run the standalone server
+CMD ["node", "server.js"] 
