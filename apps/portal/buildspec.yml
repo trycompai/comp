@@ -81,16 +81,27 @@ phases:
       # Create container build directory
       - mkdir -p container-build
 
-      # Copy standalone app (without static files)
-      - echo "DEBUG - Copying standalone files (excluding static assets)..."
-      - cp -r .next/standalone/apps/$APP_NAME/* container-build/ || echo "Standalone copy failed"
+        # For monorepo standalone: copy only THIS app's server files
+      - echo "DEBUG - Creating app-specific standalone build..."
+      - test -f .next/standalone/apps/$APP_NAME/server.js && echo "✅ App-specific server.js found" || echo "❌ App-specific server.js missing"
 
-      # Copy node_modules from standalone build (contains minimal required dependencies)
-      - echo "Copying standalone node_modules..."
-      - cp -r .next/standalone/node_modules container-build/ || echo "No standalone node_modules"
+      # Copy the app-specific server and build artifacts
+      - cp -r .next/standalone/apps/$APP_NAME/* container-build/ || echo "App standalone copy failed"
 
-      # Copy package.json and other necessary files
-      - cp package.json container-build/ || echo "No package.json"
+      # Copy shared node_modules from monorepo standalone
+      - cp -r .next/standalone/node_modules container-build/ || echo "Shared node_modules copy failed"
+
+      # Copy shared .next build artifacts
+      - cp -r .next/standalone/.next container-build/ || echo "Shared .next copy failed"
+
+      # Verify the app-specific standalone build
+      - echo "DEBUG - Verifying app-specific standalone build..."
+      - ls -la container-build/
+      - test -f container-build/server.js && echo "✅ App server.js exists" || echo "❌ App server.js missing"
+      - test -d container-build/.next && echo "✅ .next directory exists" || echo "❌ .next directory missing"
+      - test -d container-build/node_modules && echo "✅ node_modules exists" || echo "❌ node_modules missing"
+
+      # Add Dockerfile to the standalone build
       - cp Dockerfile container-build/ || echo "No Dockerfile"
 
       # Ensure Prisma client is available (override standalone if needed)
@@ -118,10 +129,13 @@ phases:
         fi
 
       # Debug: Verify container build contents
-      - echo "DEBUG - Verifying container build directory..."
+      - echo "DEBUG - Verifying app-specific container build..."
       - ls -la container-build/
+      - ls -la container-build/.next/ || echo "❌ .next directory not found"
       - ls -la container-build/node_modules/next/ || echo "❌ Next.js module not found"
       - ls -la container-build/node_modules/.prisma/ || echo "❌ Prisma client not found"
+      - test -f container-build/server.js && echo "✅ App-specific server.js found" || echo "❌ App-specific server.js not found"
+      - head -10 container-build/server.js || echo "❌ Cannot read server.js"
 
       # Build Docker image (static assets now served from S3)
       - echo "Building Docker image..."
