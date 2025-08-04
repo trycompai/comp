@@ -84,6 +84,33 @@ const config: NextConfig = {
       },
     ];
   },
+  async redirects() {
+    if (process.env.NODE_ENV === 'production' && process.env.STATIC_ASSETS_URL) {
+      return [
+        {
+          source: '/favicon.ico',
+          destination: `${process.env.STATIC_ASSETS_URL}/app/favicon.ico`,
+          permanent: true,
+        },
+        {
+          source: '/favicon-96x96.png',
+          destination: `${process.env.STATIC_ASSETS_URL}/app/favicon-96x96.png`,
+          permanent: true,
+        },
+        {
+          source: '/apple-touch-icon.png',
+          destination: `${process.env.STATIC_ASSETS_URL}/app/apple-touch-icon.png`,
+          permanent: true,
+        },
+        {
+          source: '/site.webmanifest',
+          destination: `${process.env.STATIC_ASSETS_URL}/app/site.webmanifest`,
+          permanent: true,
+        },
+      ];
+    }
+    return [];
+  },
   async rewrites() {
     return [
       {
