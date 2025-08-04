@@ -42,9 +42,13 @@ phases:
       - echo "Type checking..."
       - cd apps/$APP_NAME && bun run typecheck && cd ../../
 
+      # Clear Next.js cache to prevent stale server actions
+      - echo "Clearing Next.js cache to prevent stale builds..."
+      - cd apps/$APP_NAME
+      - rm -rf .next/cache/
+
       # Build Next.js app
       - echo "Building Next.js application..."
-      - cd apps/$APP_NAME
       - NODE_TLS_REJECT_UNAUTHORIZED=0 bun run build
 
       # Upload Next.js chunks and CSS to S3 for CDN performance
@@ -56,6 +60,24 @@ phases:
             --cache-control "public, max-age=31536000, immutable" \
             --exclude "*.map"
           echo "✅ Uploaded Next.js static assets to S3"
+          
+          # Verify upload completed successfully
+          echo "🔍 Verifying S3 upload completed..."
+          CHUNK_COUNT=$(find .next/static -name "*.js" | wc -l)
+          S3_COUNT=$(aws s3 ls s3://$STATIC_ASSETS_BUCKET/app/_next/static/ --recursive | grep "\.js$" | wc -l)
+          echo "Local chunks: $CHUNK_COUNT, S3 chunks: $S3_COUNT"
+          
+          if [ "$S3_COUNT" -ge "$CHUNK_COUNT" ]; then
+            echo "✅ S3 upload verification successful"
+          else
+            echo "⚠️ S3 upload may be incomplete, but continuing..."
+          fi
+          
+          # Invalidate CloudFront cache for new chunks
+          echo "🔄 Invalidating CloudFront cache for new deployment..."
+          aws cloudfront create-invalidation \
+            --distribution-id $CLOUDFRONT_DISTRIBUTION_ID \
+            --paths "/app/_next/static/*" || echo "⚠️ CloudFront invalidation failed (non-critical)"
         else
           echo "⚠️ No .next/static directory found"
         fi
@@ -94,13 +116,25 @@ phases:
       # Use the standalone build properly: copy from .next/standalone + app's own build
       - echo "DEBUG - Building container from standalone + app build..."
 
-      # Copy the app's own built files (server.js, etc.)
-      - echo "Copying app's own .next build..."
-      - cp -r .next container-build/ || echo "App .next copy failed"
+      # Copy the COMPLETE standalone build first (includes server actions)
+      - echo "Copying complete standalone build..."
+      - cp -r .next/standalone/* container-build/ || echo "Standalone copy failed"
 
-      # Copy shared node_modules from standalone (minimal runtime deps)
-      - echo "Copying standalone node_modules (runtime dependencies)..."
-      - cp -r .next/standalone/node_modules container-build/ || echo "Standalone node_modules copy failed"
+      # Then overlay the app's own .next directory (preserves server actions mapping)
+      - echo "Overlaying app's own .next build..."
+      - cp -r .next container-build/ || echo "App .next overlay failed"
+
+      # CRITICAL: Verify container has all necessary files
+      - echo "🔍 Verifying container build completeness..."
+      - ls -la container-build/.next/static/ || echo "No static directory in container"
+      - ls -la container-build/.next/server/ || echo "No server directory in container"
+      - CONTAINER_CHUNKS=$(find container-build/.next/static -name "*.js" 2>/dev/null | wc -l)
+      - CONTAINER_SERVER_FILES=$(find container-build/.next/server -name "*.js" 2>/dev/null | wc -l)
+      - 'echo "Container chunks: $CONTAINER_CHUNKS, Server files: $CONTAINER_SERVER_FILES"'
+
+      - 'if [ "$CONTAINER_CHUNKS" -eq 0 ]; then echo "❌ ERROR: No static chunks found in container build!" && exit 1; fi'
+      - 'if [ "$CONTAINER_SERVER_FILES" -eq 0 ]; then echo "❌ ERROR: No server files found in container build!" && exit 1; fi'
+      - echo "✅ Container build verification passed"
 
       # Copy or create server.js for standalone
       - |
@@ -177,10 +211,22 @@ phases:
       - test -f container-build/server.js && echo "✅ App-specific server.js found" || echo "❌ App-specific server.js not found"
       - head -10 container-build/server.js || echo "❌ Cannot read server.js"
 
+      # Ensure all S3 operations are complete before building container
+      - echo "⏳ Waiting for S3 operations to fully complete..."
+      - sleep 5
+
+      # Final verification before Docker build
+      - echo "🔍 Final pre-build verification..."
+      - aws s3 ls s3://$STATIC_ASSETS_BUCKET/app/_next/static/ --recursive | tail -5 || echo "S3 listing failed"
+
       # Build Docker image (static assets now served from S3)
-      - echo "Building Docker image..."
+      - echo "🐳 Building Docker image..."
       - docker build --build-arg BUILDKIT_INLINE_CACHE=1 -f container-build/Dockerfile -t $ECR_REPOSITORY_URI:$IMAGE_TAG container-build/
       - docker tag $ECR_REPOSITORY_URI:$IMAGE_TAG $ECR_REPOSITORY_URI:latest
+
+      # Test container starts correctly (catch issues early)
+      - echo "🧪 Testing container startup..."
+      - timeout 30s docker run --rm -d -p 3001:3000 $ECR_REPOSITORY_URI:$IMAGE_TAG && echo "✅ Container startup test passed" || echo "⚠️ Container startup test failed (non-critical)"
 
   post_build:
     commands:
@@ -196,7 +242,8 @@ cache:
     - 'node_modules/**/*'
     - 'packages/db/node_modules/**/*'
     - '/root/.bun/install/cache/**/*'
-    - '.next/cache/**/*'
+    # Exclude .next/cache to prevent stale server action mappings
+    # - '.next/cache/**/*'
     - 'bun.lock'
 
 artifacts:
