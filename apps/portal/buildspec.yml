@@ -77,27 +77,59 @@ phases:
       - echo "DEBUG - Checking what Next.js built..."
       - ls -la .next/
       - ls -la .next/standalone/ || echo "No standalone directory"
+      - echo "DEBUG - Checking app's own .next build structure..."
+      - ls -la .next/server/ || echo "No .next/server directory"
+      - echo "DEBUG - Checking for server.js in various locations..."
+      - test -f .next/standalone/server.js && echo "✅ Standalone server.js exists" || echo "❌ No standalone server.js"
+      - find .next -name "server.js" | head -5 || echo "No server.js found anywhere"
 
       # Create container build directory
       - mkdir -p container-build
 
-        # For monorepo standalone: copy only THIS app's server files
-      - echo "DEBUG - Creating app-specific standalone build..."
-      - test -f .next/standalone/apps/$APP_NAME/server.js && echo "✅ App-specific server.js found" || echo "❌ App-specific server.js missing"
+      # Use the standalone build properly: copy from .next/standalone + app's own build
+      - echo "DEBUG - Building container from standalone + app build..."
 
-      # Copy the app-specific server and build artifacts
-      - cp -r .next/standalone/apps/$APP_NAME/* container-build/ || echo "App standalone copy failed"
+      # Copy the app's own built files (server.js, etc.)
+      - echo "Copying app's own .next build..."
+      - cp -r .next container-build/ || echo "App .next copy failed"
 
-      # Copy shared node_modules from monorepo standalone
-      - cp -r .next/standalone/node_modules container-build/ || echo "Shared node_modules copy failed"
+      # Copy shared node_modules from standalone (minimal runtime deps)
+      - echo "Copying standalone node_modules (runtime dependencies)..."
+      - cp -r .next/standalone/node_modules container-build/ || echo "Standalone node_modules copy failed"
 
-      # Copy shared .next build artifacts
-      - cp -r .next/standalone/.next container-build/ || echo "Shared .next copy failed"
+      # Copy or create server.js for standalone
+      - |
+        if [ -f ".next/standalone/server.js" ]; then
+          echo "Using standalone server.js..."
+          cp .next/standalone/server.js container-build/
+        else
+          echo "Creating minimal standalone server.js..."
+          cat > container-build/server.js << 'EOF'
+        const { createServer } = require('http')
+        const next = require('next')
 
-      # Verify the app-specific standalone build
-      - echo "DEBUG - Verifying app-specific standalone build..."
+        const dev = false
+        const hostname = process.env.HOSTNAME || '0.0.0.0'
+        const port = process.env.PORT || 3000
+
+        // Use the current directory as the Next.js app
+        const app = next({ dev, hostname, port, dir: __dirname })
+        const handle = app.getRequestHandler()
+
+        app.prepare().then(() => {
+          createServer(async (req, res) => {
+            await handle(req, res)
+          }).listen(port, hostname, () => {
+            console.log(`> Ready on http://${hostname}:${port}`)
+          })
+        })
+        EOF
+        fi
+
+      # Verify the standalone build
+      - echo "DEBUG - Verifying standalone build..."
       - ls -la container-build/
-      - test -f container-build/server.js && echo "✅ App server.js exists" || echo "❌ App server.js missing"
+      - test -f container-build/server.js && echo "✅ Server.js exists" || echo "❌ Server.js missing"
       - test -d container-build/.next && echo "✅ .next directory exists" || echo "❌ .next directory missing"
       - test -d container-build/node_modules && echo "✅ node_modules exists" || echo "❌ node_modules missing"
 
