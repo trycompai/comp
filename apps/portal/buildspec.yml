@@ -43,6 +43,7 @@ phases:
       # Build Next.js portal app
       - echo "Building Next.js portal application..."
       - cd apps/$APP_NAME
+      - rm -rf .next/cache/
       - NODE_TLS_REJECT_UNAUTHORIZED=0 bun run build
 
       # Upload Next.js chunks and CSS to S3 for CDN performance
@@ -50,10 +51,26 @@ phases:
       - |
         if [ -d ".next/static" ]; then
           echo "📦 Uploading .next/static/ files to CDN..."
+          LOCAL_CHUNK_COUNT=$(find .next/static -name "*.js" | wc -l)
+          echo "Local chunks: $LOCAL_CHUNK_COUNT"
           aws s3 sync .next/static/ s3://$STATIC_ASSETS_BUCKET/portal/_next/static/ \
             --cache-control "public, max-age=31536000, immutable" \
             --exclude "*.map"
           echo "✅ Uploaded Next.js static assets to S3"
+          
+          # Verify upload
+          S3_CHUNK_COUNT=$(aws s3 ls s3://$STATIC_ASSETS_BUCKET/portal/_next/static/ --recursive | grep ".js$" | wc -l)
+          echo "S3 chunks: $S3_CHUNK_COUNT"
+          if [ "$S3_CHUNK_COUNT" -lt "$LOCAL_CHUNK_COUNT" ]; then
+            echo "❌ S3 upload verification failed: Missing chunks"
+            exit 1
+          fi
+          
+          # Invalidate CloudFront cache for static assets
+          if [ -n "$CLOUDFRONT_DISTRIBUTION_ID" ]; then
+            echo "Invalidating CloudFront cache..."
+            aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_DISTRIBUTION_ID --paths "/portal/_next/static/*"
+          fi
         else
           echo "⚠️ No .next/static directory found"
         fi
@@ -88,13 +105,13 @@ phases:
       # Use the standalone build properly: copy from .next/standalone + app's own build
       - echo "DEBUG - Building container from standalone + app build..."
 
-      # Copy the app's own built files (server.js, etc.)
+      # Copy standalone build first (includes server actions)
+      - echo "Copying standalone build..."
+      - cp -r .next/standalone/* container-build/ || echo "Standalone copy failed"
+      
+      # Then copy app's own .next build to ensure server actions are included
       - echo "Copying app's own .next build..."
       - cp -r .next container-build/ || echo "App .next copy failed"
-
-      # Copy shared node_modules from standalone (minimal runtime deps)
-      - echo "Copying standalone node_modules (runtime dependencies)..."
-      - cp -r .next/standalone/node_modules container-build/ || echo "Standalone node_modules copy failed"
 
       # Copy or create server.js for standalone
       - |
@@ -134,6 +151,19 @@ phases:
       - test -f container-build/server.js && echo "✅ Server.js exists" || echo "❌ Server.js missing"
       - test -d container-build/.next && echo "✅ .next directory exists" || echo "❌ .next directory missing"
       - test -d container-build/node_modules && echo "✅ node_modules exists" || echo "❌ node_modules missing"
+      
+      # Critical: Verify static files and server files exist
+      - |
+        if [ ! -d "container-build/.next/static" ]; then
+          echo "❌ Missing .next/static directory in container build"
+          exit 1
+        fi
+      - |
+        if [ ! -d "container-build/.next/server" ]; then
+          echo "❌ Missing .next/server directory in container build"
+          exit 1
+        fi
+      - echo "✅ Container build verification passed"
 
       # Add Dockerfile to the standalone build
       - cp Dockerfile container-build/ || echo "No Dockerfile"
@@ -173,8 +203,13 @@ phases:
 
       # Build Docker image (static assets now served from S3)
       - echo "Building Docker image..."
+      - sleep 5
       - docker build --build-arg BUILDKIT_INLINE_CACHE=1 -f container-build/Dockerfile -t $ECR_REPOSITORY_URI:$IMAGE_TAG container-build/
       - docker tag $ECR_REPOSITORY_URI:$IMAGE_TAG $ECR_REPOSITORY_URI:latest
+      
+      # Test container startup
+      - echo "Testing container startup..."
+      - timeout 30 docker run --rm -e NODE_ENV=production $ECR_REPOSITORY_URI:$IMAGE_TAG node --version || echo "Container test completed"
 
   post_build:
     commands:
@@ -190,7 +225,6 @@ cache:
     - 'node_modules/**/*'
     - 'packages/db/node_modules/**/*'
     - '/root/.bun/install/cache/**/*'
-    - '.next/cache/**/*'
     - 'bun.lock'
 
 artifacts:

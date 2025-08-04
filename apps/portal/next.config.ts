@@ -9,7 +9,16 @@ const config: NextConfig = {
   transpilePackages: ['@trycompai/db'],
   outputFileTracingRoot: path.join(__dirname, '../../'),
   outputFileTracingIncludes: {
-    '/api/**/*': ['./prisma/**/*'],
+    '/**/*': ['./src/actions/**/*', './node_modules/.prisma/client/**/*'],
+  },
+  generateEtags: false,
+  experimental: {
+    serverActions: {
+      allowedOrigins: process.env.NODE_ENV === 'production' 
+        ? [process.env.NEXT_PUBLIC_BETTER_AUTH_URL].filter(Boolean) as string[]
+        : undefined,
+    },
+    optimizePackageImports: ['@trycompai/db'],
   },
   images: {
     remotePatterns: [
@@ -59,6 +68,33 @@ const config: NextConfig = {
       {
         source: '/ingest/decide',
         destination: 'https://us.i.posthog.com/decide',
+      },
+    ];
+  },
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        has: [
+          {
+            type: 'header',
+            key: 'Next-Action',
+          },
+        ],
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-cache, no-store, must-revalidate',
+          },
+          {
+            key: 'Pragma',
+            value: 'no-cache',
+          },
+          {
+            key: 'Expires',
+            value: '0',
+          },
+        ],
       },
     ];
   },
