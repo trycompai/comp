@@ -98,7 +98,7 @@ export function TrustPortalSwitch({
     async (data: z.infer<typeof trustPortalSwitchSchema>) => {
       await trustPortalSwitch.execute(data);
     },
-    [trustPortalSwitch],
+    [], // Remove trustPortalSwitch from dependencies to prevent infinite loop
   );
 
   const portalUrl = domainVerified ? `https://${domain}` : `https://trust.inc/${slug}`;
@@ -156,7 +156,7 @@ export function TrustPortalSwitch({
     }
     setFriendlyUrlStatus('checking');
     checkFriendlyUrl.execute({ friendlyUrl: debouncedFriendlyUrl, orgId });
-  }, [debouncedFriendlyUrl, orgId, friendlyUrl, checkFriendlyUrl]);
+  }, [debouncedFriendlyUrl, orgId, friendlyUrl]);
   useEffect(() => {
     if (checkFriendlyUrl.status === 'executing') return;
     if (checkFriendlyUrl.result?.data?.isAvailable === true) {
@@ -169,7 +169,7 @@ export function TrustPortalSwitch({
     } else if (checkFriendlyUrl.result?.data?.isAvailable === false) {
       setFriendlyUrlStatus('unavailable');
     }
-  }, [checkFriendlyUrl.status, checkFriendlyUrl.result, autoSave, form, debouncedFriendlyUrl]);
+  }, [checkFriendlyUrl.status, checkFriendlyUrl.result, debouncedFriendlyUrl, form, autoSave]);
 
   const handleFriendlyUrlBlur = useCallback(
     (e: React.FocusEvent<HTMLInputElement>) => {
