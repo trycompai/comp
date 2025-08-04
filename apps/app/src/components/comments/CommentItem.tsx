@@ -39,6 +39,27 @@ type PendingAttachment = {
   signedUrl: string;
 };
 
+function renderContentWithLinks(text: string): React.ReactNode[] {
+  const regex = /(https?:\/\/[^\s]+|www\.[^\s]+|(?<!@)(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/[^\s]*)?)/gi;
+  return text.split(regex).map((part, index) => {
+    if (/^(https?:\/\/[^\s]+|www\.[^\s]+|(?<!@)(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/[^\s]*)?)$/i.test(part)) {
+      const href = /^https?:\/\//i.test(part) ? part : `https://${part}`;
+      return (
+        <a
+          key={index}
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary underline"
+        >
+          {part}
+        </a>
+      );
+    }
+    return part;
+  });
+}
+
 export function CommentItem({ comment }: { comment: CommentWithAuthor }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(comment.content);
@@ -279,7 +300,9 @@ export function CommentItem({ comment }: { comment: CommentWithAuthor }) {
             </div>
 
             {!isEditing ? (
-              <p className="whitespace-pre-wrap">{comment.content}</p>
+              <p className="whitespace-pre-wrap break-words">
+                {renderContentWithLinks(comment.content)}
+              </p>
             ) : (
               <Textarea
                 value={editedContent}
