@@ -1,8 +1,15 @@
 import type { NextConfig } from 'next';
+import path from 'path';
 import './src/env.mjs';
 
 const config: NextConfig = {
+  // Use S3 bucket for static assets
+  assetPrefix:
+    process.env.NODE_ENV === 'production'
+      ? `https://${process.env.STATIC_ASSETS_BUCKET}.s3.amazonaws.com`
+      : '',
   transpilePackages: ['@trycompai/db'],
+  outputFileTracingRoot: path.join(__dirname, '../../'),
   outputFileTracingIncludes: {
     '/api/**/*': ['./prisma/**/*'],
   },
@@ -33,8 +40,7 @@ const config: NextConfig = {
   skipTrailingSlashRedirect: true,
 };
 
-if (process.env.VERCEL !== '1') {
-  config.output = 'standalone';
-}
+// Always use standalone output
+config.output = 'standalone';
 
 export default config;
