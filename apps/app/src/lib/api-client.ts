@@ -1,6 +1,7 @@
 'use client';
 
 import { env } from '@/env.mjs';
+import { getJwtToken } from '@/utils/auth-client';
 
 interface ApiCallOptions extends Omit<RequestInit, 'headers'> {
   organizationId?: string;
@@ -42,11 +43,18 @@ export class ApiClient {
       headers['X-Organization-Id'] = organizationId;
     }
 
-    // Add Bearer token from localStorage for authentication
-    if (typeof localStorage !== 'undefined') {
-      const token = localStorage.getItem('bearer_token');
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+    // Add JWT token for authentication
+    if (typeof window !== 'undefined') {
+      try {
+        const token = await getJwtToken();
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+          console.log('🎯 Using JWT token for API authentication');
+        } else {
+          console.log('⚠️ No JWT token available for API authentication');
+        }
+      } catch (error) {
+        console.error('❌ Error getting JWT token for API call:', error);
       }
     }
 

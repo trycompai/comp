@@ -9,7 +9,7 @@ import { dubAnalytics } from '@dub/better-auth';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { nextCookies } from 'better-auth/next-js';
-import { bearer, emailOTP, magicLink, organization } from 'better-auth/plugins';
+import { bearer, emailOTP, jwt, magicLink, organization } from 'better-auth/plugins';
 import { Dub } from 'dub';
 import { ac, allRoles } from './permissions';
 
@@ -175,6 +175,7 @@ export const auth = betterAuth({
         });
       },
     }),
+    jwt(),
     bearer(),
     nextCookies(),
     ...(dub ? [dubAnalytics({ dubClient: dub })] : []),
