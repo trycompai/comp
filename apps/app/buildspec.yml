@@ -51,11 +51,11 @@ phases:
       - echo "Building Next.js application..."
       - NODE_TLS_REJECT_UNAUTHORIZED=0 bun run build
 
-      # Upload Next.js chunks and CSS to S3 for CDN performance
+      # Upload Next.js chunks and CSS to S3 for direct access
       - echo "Uploading Next.js static assets to S3..."
       - |
         if [ -d ".next/static" ]; then
-          echo "📦 Uploading .next/static/ files to CDN..."
+          echo "📦 Uploading .next/static/ files to S3..."
           aws s3 sync .next/static/ s3://$STATIC_ASSETS_BUCKET/app/_next/static/ \
             --cache-control "public, max-age=31536000, immutable" \
             --exclude "*.map"
@@ -73,16 +73,13 @@ phases:
             echo "⚠️ S3 upload may be incomplete, but continuing..."
           fi
           
-          # Invalidate CloudFront cache for new chunks
-          echo "🔄 Invalidating CloudFront cache for new deployment..."
-          aws cloudfront create-invalidation \
-            --distribution-id $CLOUDFRONT_DISTRIBUTION_ID \
-            --paths "/app/_next/static/*" || echo "⚠️ CloudFront invalidation failed (non-critical)"
+          # CloudFront invalidation no longer needed - using direct S3 access
+          echo "✅ Static assets uploaded to S3 for direct access"
         else
           echo "⚠️ No .next/static directory found"
         fi
 
-      # Upload public assets to S3 for CDN serving
+      # Upload public assets to S3 for direct serving
       - |
         if [ -d "public" ]; then
           echo "📦 Uploading public/ files to S3..."
@@ -219,7 +216,7 @@ phases:
       - echo "🔍 Final pre-build verification..."
       - aws s3 ls s3://$STATIC_ASSETS_BUCKET/app/_next/static/ --recursive | tail -5 || echo "S3 listing failed"
 
-      # Build Docker image (static assets now served from S3)
+      # Build Docker image (static assets served directly from S3)
       - echo "🐳 Building Docker image..."
       - docker build --build-arg BUILDKIT_INLINE_CACHE=1 -f container-build/Dockerfile -t $ECR_REPOSITORY_URI:$IMAGE_TAG container-build/
       - docker tag $ECR_REPOSITORY_URI:$IMAGE_TAG $ECR_REPOSITORY_URI:latest

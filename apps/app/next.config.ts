@@ -1,5 +1,4 @@
 import type { NextConfig } from 'next';
-import path from 'path';
 import './src/env.mjs';
 
 const config: NextConfig = {
@@ -8,16 +7,8 @@ const config: NextConfig = {
     process.env.NODE_ENV === 'production' && process.env.STATIC_ASSETS_URL
       ? `${process.env.STATIC_ASSETS_URL}/app`
       : '',
-  // Ensure fallback to local assets if CDN fails
-  generateEtags: false,
-  poweredByHeader: false,
   reactStrictMode: true,
   transpilePackages: ['@trycompai/db'],
-  turbopack: {
-    resolveAlias: {
-      underscore: 'lodash',
-    },
-  },
   images: {
     remotePatterns: [
       {
@@ -26,15 +17,10 @@ const config: NextConfig = {
       },
     ],
   },
-  logging: {
-    fetches: {
-      fullUrl: process.env.LOG_FETCHES === 'true',
-    },
-  },
+
   experimental: {
     serverActions: {
       bodySizeLimit: '15mb',
-      // Ensure server actions are stable across builds
       allowedOrigins:
         process.env.NODE_ENV === 'production'
           ? ([process.env.NEXT_PUBLIC_PORTAL_URL, 'https://app.trycomp.ai'].filter(
@@ -43,114 +29,10 @@ const config: NextConfig = {
           : undefined,
     },
     authInterrupts: true,
-    // Improve build stability
     optimizePackageImports: ['@trycompai/db', '@trycompai/ui'],
   },
-  outputFileTracingRoot: path.join(__dirname, '../../'),
-  outputFileTracingIncludes: {
-    '/api/**/*': ['./node_modules/.prisma/client/**/*'],
-    // Ensure server actions are properly traced
-    '/**/*': ['./src/actions/**/*', './node_modules/.prisma/client/**/*'],
-  },
-  async headers() {
-    return [
-      {
-        // Super permissive CORS for all API routes
-        source: '/api/:path*',
-        headers: [
-          {
-            key: 'Access-Control-Allow-Origin',
-            value: '*',
-          },
-          {
-            key: 'Access-Control-Allow-Methods',
-            value: 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
-          },
-          {
-            key: 'Access-Control-Allow-Headers',
-            value: 'Content-Type, Authorization, X-Requested-With, Accept, Origin, x-pathname',
-          },
-          {
-            key: 'Access-Control-Max-Age',
-            value: '86400',
-          },
-        ],
-      },
-      {
-        // Prevent caching of server action POST requests
-        source: '/(.*)',
-        has: [
-          {
-            type: 'header',
-            key: 'Next-Action',
-          },
-        ],
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'no-cache, no-store, must-revalidate',
-          },
-          {
-            key: 'Pragma',
-            value: 'no-cache',
-          },
-          {
-            key: 'Expires',
-            value: '0',
-          },
-        ],
-      },
-      {
-        // Apply security headers to all routes
-        source: '/(.*)',
-        headers: [
-          {
-            key: 'X-DNS-Prefetch-Control',
-            value: 'on',
-          },
-          {
-            key: 'X-Frame-Options',
-            value: 'SAMEORIGIN',
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'origin-when-cross-origin',
-          },
-        ],
-      },
-    ];
-  },
-  async redirects() {
-    if (process.env.NODE_ENV === 'production' && process.env.STATIC_ASSETS_URL) {
-      return [
-        {
-          source: '/favicon.ico',
-          destination: `${process.env.STATIC_ASSETS_URL}/app/favicon.ico`,
-          permanent: true,
-        },
-        {
-          source: '/favicon-96x96.png',
-          destination: `${process.env.STATIC_ASSETS_URL}/app/favicon-96x96.png`,
-          permanent: true,
-        },
-        {
-          source: '/apple-touch-icon.png',
-          destination: `${process.env.STATIC_ASSETS_URL}/app/apple-touch-icon.png`,
-          permanent: true,
-        },
-        {
-          source: '/site.webmanifest',
-          destination: `${process.env.STATIC_ASSETS_URL}/app/site.webmanifest`,
-          permanent: true,
-        },
-      ];
-    }
-    return [];
-  },
+
+  // PostHog proxy for better tracking
   async rewrites() {
     return [
       {
@@ -167,10 +49,6 @@ const config: NextConfig = {
       },
     ];
   },
-  skipTrailingSlashRedirect: true,
 };
-
-// Always use standalone output
-config.output = 'standalone';
 
 export default config;
