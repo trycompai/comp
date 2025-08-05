@@ -30,6 +30,7 @@
     "@trycompai/db": "file:../../packages/db",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
+    "jose": "^6.0.12",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "swagger-ui-express": "^5.0.1",

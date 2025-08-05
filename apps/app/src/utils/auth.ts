@@ -9,7 +9,7 @@ import { dubAnalytics } from '@dub/better-auth';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { nextCookies } from 'better-auth/next-js';
-import { emailOTP, magicLink, organization } from 'better-auth/plugins';
+import { bearer, emailOTP, jwt, magicLink, organization } from 'better-auth/plugins';
 import { Dub } from 'dub';
 import { ac, allRoles } from './permissions';
 
@@ -53,10 +53,6 @@ export const auth = betterAuth({
     enabled: true,
   },
   advanced: {
-    crossSubDomainCookies: {
-      enabled: true,
-      domain: '.trycomp.ai', // This allows cookies to work across all *.trycomp.ai subdomains
-    },
     database: {
       // This will enable us to fall back to DB for ID generation.
       // It's important so we can use custom IDs specified in Prisma Schema.
@@ -179,6 +175,8 @@ export const auth = betterAuth({
         });
       },
     }),
+    jwt(),
+    bearer(),
     nextCookies(),
     ...(dub ? [dubAnalytics({ dubClient: dub })] : []),
   ],

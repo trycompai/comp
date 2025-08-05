@@ -71,6 +71,17 @@ model Verification {
     updatedAt  DateTime @updatedAt
 }
 
+// JWT Plugin - Required by Better Auth JWT plugin
+// https://www.better-auth.com/docs/plugins/jwt
+model Jwks {
+    id         String   @id @default(dbgenerated("generate_prefixed_cuid('jwk'::text)"))
+    publicKey  String
+    privateKey String
+    createdAt  DateTime @default(now())
+
+    @@map("jwks")
+}
+
 model Member {
     id             String       @id @default(dbgenerated("generate_prefixed_cuid('mem'::text)"))
     organizationId String

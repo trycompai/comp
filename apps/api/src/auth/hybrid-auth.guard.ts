@@ -5,8 +5,9 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { db } from '@trycompai/db';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { ApiKeyService } from './api-key.service';
-import { AuthenticatedRequest, BetterAuthSessionResponse } from './types';
+import { AuthenticatedRequest } from './types';
 
 @Injectable()
 export class HybridAuthGuard implements CanActivate {
@@ -21,14 +22,14 @@ export class HybridAuthGuard implements CanActivate {
       return this.handleApiKeyAuth(request, apiKey);
     }
 
-    // Try Better Auth Session authentication (for internal frontend)
-    const cookies = request.headers['cookie'] as string | undefined;
-    if (cookies) {
-      return this.handleSessionAuth(request, cookies);
+    // Try JWT Bearer authentication (for internal frontend with JWT tokens)
+    const authHeader = request.headers['authorization'] as string;
+    if (authHeader?.startsWith('Bearer ')) {
+      return this.handleJwtAuth(request, authHeader);
     }
 
     throw new UnauthorizedException(
-      'Authentication required: Provide either X-API-Key or valid session',
+      'Authentication required: Provide X-API-Key or Authorization Bearer JWT token',
     );
   }
 
@@ -55,75 +56,63 @@ export class HybridAuthGuard implements CanActivate {
     return true;
   }
 
-  private async handleSessionAuth(
+  private async handleJwtAuth(
     request: AuthenticatedRequest,
-    cookies: string,
+    authHeader: string,
   ): Promise<boolean> {
-    // Validate Better Auth session
-    const session = await this.validateBetterAuthSession(cookies);
-    if (!session?.user) {
-      throw new UnauthorizedException('Invalid or expired session');
-    }
-
-    // Get organization ID from explicit header OR session fallback
-    const explicitOrgId = request.headers['x-organization-id'] as string;
-    const sessionOrgId = session.session.activeOrganizationId;
-
-    const organizationId = explicitOrgId || sessionOrgId;
-
-    if (!organizationId) {
-      throw new UnauthorizedException(
-        'Organization context required: Provide X-Organization-Id header or ensure session has active organization',
-      );
-    }
-
-    // Critical: Verify user has access to the requested organization
-    const hasAccess = await this.verifyUserOrgAccess(
-      session.user.id,
-      organizationId,
-    );
-    if (!hasAccess) {
-      throw new UnauthorizedException(
-        `User does not have access to organization: ${organizationId}`,
-      );
-    }
-
-    // Set request context for session auth
-    request.userId = session.user.id;
-    request.userEmail = session.user.email;
-    request.organizationId = organizationId;
-    request.authType = 'session';
-    request.isApiKey = false;
-
-    return true;
-  }
-
-  /**
-   * Validate Better Auth session by calling the auth API
-   */
-  private async validateBetterAuthSession(
-    cookies: string,
-  ): Promise<BetterAuthSessionResponse | null> {
     try {
-      // Call Better Auth session endpoint
-      const response = await fetch(
-        `${process.env.BETTER_AUTH_URL}/api/auth/get-session`,
-        {
-          headers: {
-            Cookie: cookies,
-          },
-        },
+      // Extract JWT token from Bearer header
+      const token = authHeader.replace('Bearer ', '');
+
+      // Verify JWT using Better Auth JWKS endpoint
+      const JWKS = createRemoteJWKSet(
+        new URL(`${process.env.BETTER_AUTH_URL}/api/auth/jwks`),
       );
 
-      if (!response.ok) {
-        return null;
+      const { payload } = await jwtVerify(token, JWKS, {
+        issuer: process.env.BETTER_AUTH_URL,
+        audience: process.env.BETTER_AUTH_URL,
+      });
+
+      // Extract user information from JWT payload
+      // By default, Better Auth includes the entire user object in the payload
+      const user = payload.user as { id: string; email: string };
+      if (!user?.id) {
+        throw new UnauthorizedException(
+          'Invalid JWT payload: missing user information',
+        );
       }
 
-      const sessionData = (await response.json()) as BetterAuthSessionResponse;
-      return sessionData;
+      // Require explicit organization ID via header for JWT auth
+      const organizationId = request.headers['x-organization-id'] as string;
+      if (!organizationId) {
+        throw new UnauthorizedException(
+          'Organization context required: Provide X-Organization-Id header for JWT authentication',
+        );
+      }
+
+      // Critical: Verify user has access to the requested organization
+      const hasAccess = await this.verifyUserOrgAccess(user.id, organizationId);
+      if (!hasAccess) {
+        throw new UnauthorizedException(
+          `User does not have access to organization: ${organizationId}`,
+        );
+      }
+
+      // Set request context for JWT auth
+      request.userId = user.id;
+      request.userEmail = user.email;
+      request.organizationId = organizationId;
+      request.authType = 'jwt';
+      request.isApiKey = false;
+
+      return true;
     } catch (error: unknown) {
-      console.error('Error validating Better Auth session:', error);
-      return null;
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      console.error('JWT verification failed:', error);
+      throw new UnauthorizedException('Invalid or expired JWT token');
     }
   }
 

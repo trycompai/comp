@@ -1,6 +1,7 @@
 'use client';
 
 import { env } from '@/env.mjs';
+import { getJwtToken } from '@/utils/auth-client';
 
 interface ApiCallOptions extends Omit<RequestInit, 'headers'> {
   organizationId?: string;
@@ -15,7 +16,7 @@ export interface ApiResponse<T = unknown> {
 
 /**
  * API client for calling our internal NestJS API
- * Automatically includes Better Auth session cookies and organization context
+ * Uses Better Auth Bearer tokens for authentication with organization context
  */
 export class ApiClient {
   private baseUrl: string;
@@ -26,7 +27,7 @@ export class ApiClient {
 
   /**
    * Make an authenticated API call
-   * Uses session cookies for auth + explicit org context
+   * Uses Bearer token authentication + explicit org context
    */
   async call<T = unknown>(endpoint: string, options: ApiCallOptions = {}): Promise<ApiResponse<T>> {
     const { organizationId, headers: customHeaders, ...fetchOptions } = options;
@@ -42,9 +43,24 @@ export class ApiClient {
       headers['X-Organization-Id'] = organizationId;
     }
 
+    // Add JWT token for authentication
+    if (typeof window !== 'undefined') {
+      try {
+        const token = await getJwtToken();
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+          console.log('🎯 Using JWT token for API authentication');
+        } else {
+          console.log('⚠️ No JWT token available for API authentication');
+        }
+      } catch (error) {
+        console.error('❌ Error getting JWT token for API call:', error);
+      }
+    }
+
     try {
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
-        credentials: 'include', // Include session cookies
+        credentials: 'include',
         ...fetchOptions,
         headers,
       });
