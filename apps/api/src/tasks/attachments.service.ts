@@ -5,12 +5,12 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { AttachmentEntityType, AttachmentType } from '@db';
 import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { AttachmentEntityType, AttachmentType } from '@prisma/client';
 import { db } from '@trycompai/db';
 import { randomBytes } from 'crypto';
 import { AttachmentResponseDto } from './dto/task-responses.dto';

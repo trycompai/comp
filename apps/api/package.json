@@ -19,7 +19,10 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:generate": "bun run db:getschema && prisma generate",
+    "db:getschema": "cp ../../node_modules/@trycompai/db/dist/schema.prisma prisma/schema.prisma",
+    "prebuild": "bun run db:generate"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -27,7 +30,7 @@
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.1.5",
     "@nestjs/swagger": "^11.2.0",
-    "@trycompai/db": "file:../../packages/db",
+    "@trycompai/db": "^1.3.2",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
     "jose": "^6.0.12",

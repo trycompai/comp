@@ -1,9 +1,9 @@
+import { AttachmentEntityType, CommentEntityType } from '@db';
 import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { AttachmentEntityType, CommentEntityType } from '@prisma/client';
 import { db } from '@trycompai/db';
 import { AttachmentsService } from '../attachments/attachments.service';
 import {

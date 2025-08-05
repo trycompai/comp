@@ -1,3 +1,4 @@
+import { CommentEntityType } from '@db';
 import {
   BadRequestException,
   Body,
@@ -21,7 +22,6 @@ import {
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
-import { CommentEntityType } from '@prisma/client';
 import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import type { AuthContext as AuthContextType } from '../auth/types';
