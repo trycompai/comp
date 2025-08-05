@@ -50,18 +50,15 @@ phases:
       - echo "Creating self-contained bundle..."
       - mkdir -p ../docker-build
 
-      # Copy built application
+      # Copy built application (preserves NestJS structure)
       - echo "Copying built application..."
       - cp -r dist/* ../docker-build/
-
-      # Copy main.js to root for Dockerfile (expects "node main.js")
-      - echo "Copying main.js to root for Docker..."
-      - cp dist/src/main.js ../docker-build/main.js
 
       # Verify files were copied correctly
       - echo "Verifying copied files..."
       - ls -la ../docker-build/
-      - '[ -f "../docker-build/main.js" ] || { echo "❌ main.js not found in docker-build root"; exit 1; }'
+      - ls -la ../docker-build/src/
+      - '[ -f "../docker-build/src/main.js" ] || { echo "❌ main.js not found in docker-build/src"; exit 1; }'
 
       # Copy entire node_modules for runtime (includes @trycompai/db from npm)
       - echo "Bundling all runtime dependencies..."
