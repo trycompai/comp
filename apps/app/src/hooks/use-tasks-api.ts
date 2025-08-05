@@ -145,15 +145,15 @@ export function useTaskAttachmentActions(taskId: string) {
 }
 
 /**
- * Enhanced hook with optimistic updates for task attachments
+ * Enhanced hooks with optimistic updates following official SWR patterns
  */
 export function useOptimisticTaskAttachments(taskId: string) {
   const { data, error, isLoading, mutate } = useTaskAttachments(taskId);
-  const api = useApi();
+  const { uploadAttachment, deleteAttachment } = useTaskAttachmentActions(taskId);
 
   const optimisticUpload = useCallback(
     async (file: File) => {
-      // Create optimistic attachment
+      // Create optimistic attachment data
       const optimisticAttachment: Attachment = {
         id: `temp-${Date.now()}`,
         name: file.name,
@@ -161,111 +161,51 @@ export function useOptimisticTaskAttachments(taskId: string) {
         url: '',
         entityId: taskId,
         entityType: 'task' as any,
-        organizationId: '', 
+        organizationId: '',
         commentId: null,
         description: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
 
-      // Optimistically add to cache
-      await mutate(
-        (currentData) => {
-          if (!currentData?.data) return currentData;
-          return {
-            ...currentData,
-            data: [...currentData.data, optimisticAttachment]
-          };
+      return mutate(
+        async () => {
+          const result = await uploadAttachment(file);
+          return { data: [result], status: 200 }; // Wrap in expected API response format
         },
-        { revalidate: false }
-      );
-
-      try {
-        // Perform actual upload
-        const reader = new FileReader();
-        const base64Data = await new Promise<string>((resolve, reject) => {
-          reader.onload = () => {
-            const result = reader.result as string;
-            const base64 = result.split(',')[1];
-            resolve(base64);
-          };
-          reader.onerror = () => reject(new Error('Failed to read file'));
-          reader.readAsDataURL(file);
-        });
-
-        const response = await api.post<Attachment>(`/v1/tasks/${taskId}/attachments`, {
-          fileName: file.name,
-          fileType: file.type || 'application/octet-stream',
-          fileData: base64Data,
-        });
-
-        if (response.error) {
-          throw new Error(response.error);
+        {
+          optimisticData: data ? {
+            ...data,
+            data: [...(data.data || []), optimisticAttachment]
+          } : undefined,
+          populateCache: true,
+          revalidate: false,
+          rollbackOnError: true,
         }
-
-        // Replace optimistic with real data
-        await mutate(
-          (currentData) => {
-            if (!currentData?.data) return currentData;
-            return {
-              ...currentData,
-              data: currentData.data.map(att => 
-                att.id === optimisticAttachment.id ? response.data! : att
-              )
-            };
-          },
-          { revalidate: false }
-        );
-
-        return response.data!;
-      } catch (error) {
-        // Remove optimistic attachment on error
-        await mutate(
-          (currentData) => {
-            if (!currentData?.data) return currentData;
-            return {
-              ...currentData,
-              data: currentData.data.filter(att => att.id !== optimisticAttachment.id)
-            };
-          },
-          { revalidate: false }
-        );
-        throw error;
-      }
+      );
     },
-    [api, taskId, mutate],
+    [mutate, uploadAttachment, data, taskId],
   );
 
   const optimisticDelete = useCallback(
     async (attachmentId: string) => {
-      // Store original data for rollback
-      const originalData = data;
-
-      // Optimistically remove attachment
-      await mutate(
-        (currentData) => {
-          if (!currentData?.data) return currentData;
-          return {
-            ...currentData,
-            data: currentData.data.filter(att => att.id !== attachmentId)
-          };
+      return mutate(
+        async () => {
+          await deleteAttachment(attachmentId);
+          return data; // Return current data without the deleted item
         },
-        { revalidate: false }
-      );
-
-      try {
-        const response = await api.delete(`/v1/tasks/${taskId}/attachments/${attachmentId}`);
-        if (response.error) {
-          throw new Error(response.error);
+        {
+          optimisticData: data ? {
+            ...data,
+            data: (data.data || []).filter(att => att.id !== attachmentId)
+          } : undefined,
+          populateCache: false,
+          revalidate: false,
+          rollbackOnError: true,
         }
-        return { success: true, status: response.status };
-      } catch (error) {
-        // Rollback on error
-        await mutate(originalData, { revalidate: false });
-        throw error;
-      }
+      );
     },
-    [api, taskId, mutate, data],
+    [mutate, deleteAttachment, data],
   );
 
   return {

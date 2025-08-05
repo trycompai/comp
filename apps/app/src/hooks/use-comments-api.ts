@@ -153,6 +153,101 @@ export function useCommentWithAttachments() {
   };
 }
 
+/**
+ * Enhanced hooks with optimistic updates following official SWR patterns
+ */
+export function useOptimisticComments(entityId: string, entityType: CommentEntityType) {
+  const { data, error, isLoading, mutate } = useComments(entityId, entityType);
+  const { createComment, updateComment, deleteComment } = useCommentActions();
+
+  const optimisticCreate = useCallback(
+    async (content: string, attachments?: { fileName: string; fileType: string; fileData: string }[]) => {
+      // Create optimistic comment data (simplified - let API handle full structure)
+      const optimisticComment = {
+        id: `temp-${Date.now()}`,
+        content,
+        organizationId: '',
+        authorId: '',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      return mutate(
+        async () => {
+          const result = await createComment({ content, entityId, entityType, attachments });
+          return { data: [result], status: 200 }; // Wrap in expected API response format
+        },
+        {
+          optimisticData: data ? { 
+            ...data, 
+            data: [...(data.data || []), optimisticComment] 
+          } : undefined,
+          populateCache: true,
+          revalidate: false,
+          rollbackOnError: true,
+        }
+      );
+    },
+    [mutate, createComment, data, entityId, entityType],
+  );
+
+  const optimisticUpdate = useCallback(
+    async (commentId: string, content: string) => {
+      return mutate(
+        async () => {
+          const result = await updateComment(commentId, { content });
+          return { data: [result], status: 200 };
+        },
+        {
+          optimisticData: data ? {
+            ...data,
+            data: (data.data || []).map((comment: any) => 
+              comment.id === commentId 
+                ? { ...comment, content, updatedAt: new Date().toISOString() }
+                : comment
+            )
+          } : undefined,
+          populateCache: true,
+          revalidate: false,
+          rollbackOnError: true,
+        }
+      );
+    },
+    [mutate, updateComment, data],
+  );
+
+  const optimisticDelete = useCallback(
+    async (commentId: string) => {
+      return mutate(
+        async () => {
+          await deleteComment(commentId);
+          return data; // Return current data without the deleted item
+        },
+        {
+          optimisticData: data ? {
+            ...data,
+            data: (data.data || []).filter((comment: any) => comment.id !== commentId)
+          } : undefined,
+          populateCache: false,
+          revalidate: false,
+          rollbackOnError: true,
+        }
+      );
+    },
+    [mutate, deleteComment, data],
+  );
+
+  return {
+    data,
+    error,
+    isLoading,
+    mutate,
+    optimisticCreate,
+    optimisticUpdate,
+    optimisticDelete,
+  };
+}
+
 // ==================== ENTITY-SPECIFIC CONVENIENCE HOOKS ====================
 
 /**
