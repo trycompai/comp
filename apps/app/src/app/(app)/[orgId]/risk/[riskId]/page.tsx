@@ -115,8 +115,21 @@ const getComments = async (riskId: string): Promise<CommentWithAuthor[]> => {
         },
       });
       return {
-        ...comment,
-        attachments,
+        id: comment.id,
+        content: comment.content,
+        author: {
+          id: comment.author.user.id,
+          name: comment.author.user.name,
+          email: comment.author.user.email,
+        },
+        attachments: attachments.map((att) => ({
+          id: att.id,
+          name: att.name,
+          type: att.type,
+          downloadUrl: att.url || '', // assuming url maps to downloadUrl
+          createdAt: att.createdAt.toISOString(),
+        })),
+        createdAt: comment.createdAt.toISOString(),
       };
     }),
   );

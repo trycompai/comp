@@ -378,3 +378,34 @@ export const updateContextEntrySchema = z.object({
 export const deleteContextEntrySchema = z.object({
   id: z.string().min(1, 'ID is required'),
 });
+
+// Comment schemas for the new generic comments API
+export const createCommentSchema = z.object({
+  content: z.string().min(1, 'Comment content is required'),
+  entityId: z.string(),
+  entityType: z.nativeEnum(CommentEntityType),
+  attachments: z
+    .array(
+      z.object({
+        fileName: z.string(),
+        fileType: z.string(),
+        fileData: z.string(), // base64
+      }),
+    )
+    .optional(),
+});
+
+export type CreateCommentSchema = z.infer<typeof createCommentSchema>;
+
+export const updateCommentSchema = z.object({
+  commentId: z.string(),
+  content: z.string().min(1, 'Comment content is required'),
+});
+
+export type UpdateCommentSchema = z.infer<typeof updateCommentSchema>;
+
+export const deleteCommentSchema = z.object({
+  commentId: z.string(),
+});
+
+export type DeleteCommentSchema = z.infer<typeof deleteCommentSchema>;

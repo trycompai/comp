@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -6,223 +7,252 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  Patch,
   Post,
-  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
+  ApiHeader,
   ApiOperation,
   ApiParam,
-  ApiQuery,
   ApiResponse,
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
-import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
-import type {
-  CreateTaskDto,
-  PaginatedTasksResponseDto,
-  TaskQueryDto,
+import { AttachmentEntityType } from '@prisma/client';
+import { AttachmentsService } from '../attachments/attachments.service';
+import { UploadAttachmentDto } from '../attachments/upload-attachment.dto';
+import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
+import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
+import type { AuthContext as AuthContextType } from '../auth/types';
+import {
+  AttachmentResponseDto,
   TaskResponseDto,
-  UpdateTaskDto,
-} from './schemas/task.schemas';
-import {
-  CreateTaskSchema,
-  TaskQuerySchema,
-  UpdateTaskSchema,
-} from './schemas/task.schemas';
+} from './dto/task-responses.dto';
 import { TasksService } from './tasks.service';
-// Import DTOs for Swagger decorators
-import { ApiKeyGuard } from '../auth/api-key.guard';
-import { Organization } from '../auth/organization.decorator';
-import {
-  PaginatedTasksResponseDto as PaginatedTasksSwagger,
-  TaskQueryDto as TaskQuerySwagger,
-  TaskResponseDto as TaskResponseSwagger,
-} from './dto/swagger.dto';
 
 @ApiTags('Tasks')
 @Controller({ path: 'tasks', version: '1' })
-@UseGuards(ApiKeyGuard)
+@UseGuards(HybridAuthGuard)
 @ApiSecurity('apikey')
+@ApiHeader({
+  name: 'X-Organization-Id',
+  description:
+    'Organization ID (required for session auth, optional for API key auth)',
+  required: false,
+})
 export class TasksController {
-  constructor(private readonly tasksService: TasksService) {}
+  constructor(
+    private readonly tasksService: TasksService,
+    private readonly attachmentsService: AttachmentsService,
+  ) {}
 
-  @Post()
-  @ApiOperation({
-    summary: 'Create a new task',
-    description: 'Creates a new task for the authenticated organization',
-  })
-  @ApiResponse({
-    status: 201,
-    description: 'Task created successfully',
-    type: TaskResponseSwagger,
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Invalid task data provided',
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Invalid or missing API key',
-  })
-  async create(
-    @Body(new ZodValidationPipe(CreateTaskSchema)) createTaskDto: CreateTaskDto,
-    @Organization() organizationId: string,
-  ): Promise<TaskResponseDto> {
-    return this.tasksService.create(createTaskDto, organizationId);
-  }
+  // ==================== TASKS ====================
 
   @Get()
   @ApiOperation({
-    summary: 'List tasks with pagination and filtering',
-    description:
-      'Retrieves a paginated list of tasks for the authenticated organization with optional filtering',
+    summary: 'Get all tasks',
+    description: 'Retrieve all tasks for the authenticated organization',
   })
-  @ApiQuery({ type: TaskQuerySwagger })
   @ApiResponse({
     status: 200,
     description: 'Tasks retrieved successfully',
-    type: PaginatedTasksSwagger,
+    type: [TaskResponseDto],
   })
   @ApiResponse({
     status: 401,
-    description: 'Unauthorized - Invalid or missing API key',
+    description: 'Unauthorized - Invalid authentication',
   })
-  async findAll(
-    @Query(new ZodValidationPipe(TaskQuerySchema)) query: TaskQueryDto,
-    @Organization() organizationId: string,
-  ): Promise<PaginatedTasksResponseDto> {
-    return this.tasksService.findAll(query, organizationId);
+  async getTasks(
+    @OrganizationId() organizationId: string,
+  ): Promise<TaskResponseDto[]> {
+    return await this.tasksService.getTasks(organizationId);
   }
 
-  @Get(':id')
+  @Get(':taskId')
   @ApiOperation({
-    summary: 'Get a specific task',
-    description:
-      'Retrieves a specific task by ID for the authenticated organization',
+    summary: 'Get task by ID',
+    description: 'Retrieve a specific task by its ID',
   })
   @ApiParam({
-    name: 'id',
-    description: 'Task ID',
+    name: 'taskId',
+    description: 'Unique task identifier',
     example: 'tsk_abc123def456',
   })
   @ApiResponse({
     status: 200,
     description: 'Task retrieved successfully',
-    type: TaskResponseSwagger,
+    type: TaskResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'Task not found',
   })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Invalid or missing API key',
-  })
-  async findOne(
-    @Param('id') id: string,
-    @Organization() organizationId: string,
+  async getTask(
+    @OrganizationId() organizationId: string,
+    @Param('taskId') taskId: string,
   ): Promise<TaskResponseDto> {
-    return this.tasksService.findOne(id, organizationId);
+    return await this.tasksService.getTask(organizationId, taskId);
   }
 
-  @Patch(':id')
+  // ==================== TASK ATTACHMENTS ====================
+
+  @Get(':taskId/attachments')
   @ApiOperation({
-    summary: 'Update a task',
-    description:
-      'Updates a specific task by ID for the authenticated organization',
+    summary: 'Get task attachments',
+    description: 'Retrieve all attachments for a specific task',
   })
   @ApiParam({
-    name: 'id',
-    description: 'Task ID',
+    name: 'taskId',
+    description: 'Unique task identifier',
     example: 'tsk_abc123def456',
   })
   @ApiResponse({
     status: 200,
-    description: 'Task updated successfully',
-    type: TaskResponseSwagger,
+    description: 'Attachments retrieved successfully',
+    type: [AttachmentResponseDto],
+  })
+  async getTaskAttachments(
+    @OrganizationId() organizationId: string,
+    @Param('taskId') taskId: string,
+  ): Promise<AttachmentResponseDto[]> {
+    // Verify task access
+    await this.tasksService.verifyTaskAccess(organizationId, taskId);
+
+    return await this.attachmentsService.getAttachments(
+      organizationId,
+      taskId,
+      AttachmentEntityType.task,
+    );
+  }
+
+  @Post(':taskId/attachments')
+  @ApiOperation({
+    summary: 'Upload attachment to task',
+    description: 'Upload a file attachment to a specific task',
+  })
+  @ApiParam({
+    name: 'taskId',
+    description: 'Unique task identifier',
+    example: 'tsk_abc123def456',
   })
   @ApiResponse({
-    status: 404,
-    description: 'Task not found',
+    status: 201,
+    description: 'Attachment uploaded successfully',
+    type: AttachmentResponseDto,
   })
   @ApiResponse({
     status: 400,
-    description: 'Invalid task data provided',
+    description: 'Invalid file data or file too large',
   })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Invalid or missing API key',
-  })
-  async update(
-    @Param('id') id: string,
-    @Body(new ZodValidationPipe(UpdateTaskSchema)) updateTaskDto: UpdateTaskDto,
-    @Organization() organizationId: string,
-  ): Promise<TaskResponseDto> {
-    return this.tasksService.update(id, updateTaskDto, organizationId);
+  async uploadTaskAttachment(
+    @AuthContext() authContext: AuthContextType,
+    @Param('taskId') taskId: string,
+    @Body() uploadDto: UploadAttachmentDto,
+  ): Promise<AttachmentResponseDto> {
+    // Verify task access
+    await this.tasksService.verifyTaskAccess(
+      authContext.organizationId,
+      taskId,
+    );
+
+    // Ensure userId is present for attachment upload
+    if (!authContext.userId) {
+      throw new BadRequestException('User ID is required for file upload');
+    }
+
+    return await this.attachmentsService.uploadAttachment(
+      authContext.organizationId,
+      taskId,
+      AttachmentEntityType.task,
+      uploadDto,
+      authContext.userId,
+    );
   }
 
-  @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
+  @Get(':taskId/attachments/:attachmentId/download')
   @ApiOperation({
-    summary: 'Delete a task',
-    description:
-      'Deletes a specific task by ID for the authenticated organization',
+    summary: 'Get attachment download URL',
+    description: 'Generate a signed URL for downloading a task attachment',
   })
   @ApiParam({
-    name: 'id',
-    description: 'Task ID',
+    name: 'taskId',
+    description: 'Unique task identifier',
     example: 'tsk_abc123def456',
-  })
-  @ApiResponse({
-    status: 204,
-    description: 'Task deleted successfully',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Task not found',
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Invalid or missing API key',
-  })
-  async remove(
-    @Param('id') id: string,
-    @Organization() organizationId: string,
-  ): Promise<void> {
-    return this.tasksService.remove(id, organizationId);
-  }
-
-  @Patch(':id/complete')
-  @ApiOperation({
-    summary: 'Mark a task as complete',
-    description:
-      'Marks a specific task as done and sets the completion timestamp',
   })
   @ApiParam({
-    name: 'id',
-    description: 'Task ID',
-    example: 'tsk_abc123def456',
+    name: 'attachmentId',
+    description: 'Unique attachment identifier',
+    example: 'att_abc123def456',
   })
   @ApiResponse({
     status: 200,
-    description: 'Task marked as complete successfully',
-    type: TaskResponseSwagger,
+    description: 'Download URL generated successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        downloadUrl: {
+          type: 'string',
+          description: 'Signed URL for downloading the file',
+          example:
+            'https://bucket.s3.amazonaws.com/path/to/file.pdf?signature=...',
+        },
+        expiresIn: {
+          type: 'number',
+          description: 'URL expiration time in seconds',
+          example: 900,
+        },
+      },
+    },
+  })
+  async getTaskAttachmentDownloadUrl(
+    @OrganizationId() organizationId: string,
+    @Param('taskId') taskId: string,
+    @Param('attachmentId') attachmentId: string,
+  ): Promise<{ downloadUrl: string; expiresIn: number }> {
+    // Verify task access
+    await this.tasksService.verifyTaskAccess(organizationId, taskId);
+
+    return await this.attachmentsService.getAttachmentDownloadUrl(
+      organizationId,
+      attachmentId,
+    );
+  }
+
+  @Delete(':taskId/attachments/:attachmentId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Delete task attachment',
+    description: 'Delete a specific attachment from a task',
+  })
+  @ApiParam({
+    name: 'taskId',
+    description: 'Unique task identifier',
+    example: 'tsk_abc123def456',
+  })
+  @ApiParam({
+    name: 'attachmentId',
+    description: 'Unique attachment identifier',
+    example: 'att_abc123def456',
+  })
+  @ApiResponse({
+    status: 204,
+    description: 'Attachment deleted successfully',
   })
   @ApiResponse({
     status: 404,
-    description: 'Task not found',
+    description: 'Task or attachment not found',
   })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Invalid or missing API key',
-  })
-  async markComplete(
-    @Param('id') id: string,
-    @Organization() organizationId: string,
-  ): Promise<TaskResponseDto> {
-    return this.tasksService.markComplete(id, organizationId);
+  async deleteTaskAttachment(
+    @OrganizationId() organizationId: string,
+    @Param('taskId') taskId: string,
+    @Param('attachmentId') attachmentId: string,
+  ): Promise<void> {
+    // Verify task access
+    await this.tasksService.verifyTaskAccess(organizationId, taskId);
+
+    await this.attachmentsService.deleteAttachment(
+      organizationId,
+      attachmentId,
+    );
   }
 }

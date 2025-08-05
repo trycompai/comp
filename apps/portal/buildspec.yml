@@ -108,7 +108,7 @@ phases:
       # Copy standalone build first (includes server actions)
       - echo "Copying standalone build..."
       - cp -r .next/standalone/* container-build/ || echo "Standalone copy failed"
-      
+
       # Then copy app's own .next build to ensure server actions are included
       - echo "Copying app's own .next build..."
       - cp -r .next container-build/ || echo "App .next copy failed"
@@ -151,7 +151,7 @@ phases:
       - test -f container-build/server.js && echo "✅ Server.js exists" || echo "❌ Server.js missing"
       - test -d container-build/.next && echo "✅ .next directory exists" || echo "❌ .next directory missing"
       - test -d container-build/node_modules && echo "✅ node_modules exists" || echo "❌ node_modules missing"
-      
+
       # Critical: Verify static files and server files exist
       - |
         if [ ! -d "container-build/.next/static" ]; then
@@ -164,7 +164,6 @@ phases:
           exit 1
         fi
       - echo "✅ Container build verification passed"
-
       # Add Dockerfile to the standalone build
       - cp Dockerfile container-build/ || echo "No Dockerfile"
 
@@ -206,7 +205,7 @@ phases:
       - sleep 5
       - docker build --build-arg BUILDKIT_INLINE_CACHE=1 -f container-build/Dockerfile -t $ECR_REPOSITORY_URI:$IMAGE_TAG container-build/
       - docker tag $ECR_REPOSITORY_URI:$IMAGE_TAG $ECR_REPOSITORY_URI:latest
-      
+
       # Test container startup
       - echo "Testing container startup..."
       - timeout 30 docker run --rm -e NODE_ENV=production $ECR_REPOSITORY_URI:$IMAGE_TAG node --version || echo "Container test completed"
