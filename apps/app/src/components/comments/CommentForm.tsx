@@ -1,7 +1,6 @@
 'use client';
 
-import { createComment } from '@/actions/comments/createComment';
-import { useComments } from '@/hooks/use-comments-api';
+import { useComments, useCommentWithAttachments } from '@/hooks/use-comments-api';
 import { authClient } from '@/utils/auth-client';
 import { Button } from '@comp/ui/button';
 import { Label } from '@comp/ui/label';
@@ -20,12 +19,7 @@ interface CommentFormProps {
   entityType: CommentEntityType;
 }
 
-interface PendingAttachment {
-  id: string; // Temporary ID for UI tracking
-  name: string;
-  fileType: string;
-  fileData: string; // base64 encoded file data
-}
+// Removed PendingAttachment interface - using File objects directly with API hooks
 
 export function CommentForm({ entityId, entityType }: CommentFormProps) {
   const session = authClient.useSession();
@@ -38,7 +32,7 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
 
   // Use SWR hooks for generic comments
   const { mutate: refreshComments } = useComments(entityId, entityType);
-  // Removed useCommentWithAttachments - now using server actions
+  const { createCommentWithFiles } = useCommentWithAttachments();
 
   useEffect(() => {
     setHasMounted(true);
@@ -103,48 +97,17 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
     setIsSubmitting(true);
 
     try {
-      // Convert files to base64 for server action
-      const attachments = await Promise.all(
-        pendingFiles.map(async (file) => {
-          const base64 = await new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onload = () => {
-              const result = reader.result as string;
-              // Remove data:type;base64, prefix
-              const base64Data = result.split(',')[1];
-              resolve(base64Data);
-            };
-            reader.readAsDataURL(file);
-          });
+      // Use direct API call instead of server action
+      await createCommentWithFiles(newComment, entityId, entityType, pendingFiles);
 
-          return {
-            fileName: file.name,
-            fileType: file.type,
-            fileData: base64,
-          };
-        }),
-      );
+      toast.success('Comment added!');
 
-      // Use server action for comment creation
-      const result = await createComment({
-        content: newComment,
-        entityId,
-        entityType,
-        attachments: attachments.length > 0 ? attachments : undefined,
-      });
+      // Refresh comments via SWR
+      refreshComments();
 
-      if (result?.data?.success) {
-        toast.success('Comment added!');
-
-        // Refresh comments via SWR
-        refreshComments();
-
-        // Reset form
-        setNewComment('');
-        setPendingFiles([]);
-      } else {
-        throw new Error('Failed to create comment');
-      }
+      // Reset form
+      setNewComment('');
+      setPendingFiles([]);
     } catch (error) {
       console.error('Error creating comment:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to add comment');
@@ -153,7 +116,7 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
     }
   };
 
-    // Always show the actual form - no loading gate
+  // Always show the actual form - no loading gate
   // Users can start typing immediately, authentication is checked on submit
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {

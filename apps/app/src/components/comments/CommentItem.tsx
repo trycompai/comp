@@ -1,7 +1,6 @@
 'use client';
 
-import { deleteComment } from '@/actions/comments/deleteComment';
-import { updateComment } from '@/actions/comments/updateComment';
+import { useCommentActions } from '@/hooks/use-comments-api';
 import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent } from '@comp/ui/card';
@@ -11,57 +10,52 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
-// Removed Label import - not needed for simplified comment editing
 import { Textarea } from '@comp/ui/textarea';
-// Removed AttachmentEntityType import - not needed for basic comment editing
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
-// Removed useRouter since we're using SWR for data refresh
 import type React from 'react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-// Removed AttachmentItem import - simplified comment editing
-import { formatRelativeTime } from '../../app/(app)/[orgId]/tasks/[taskId]/components/commentUtils'; // Revert import path
+import { formatRelativeTime } from '../../app/(app)/[orgId]/tasks/[taskId]/components/commentUtils';
 import type { CommentWithAuthor } from './Comments';
 
-// Removed PendingAttachment type - simplified comment editing
+// Helper function to render content with clickable links
+function renderContentWithLinks(text: string): React.ReactNode[] {
+  const regex =
+    /(https?:\/\/[^\s]+|www\.[^\s]+|(?<!@)(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/[^\s]*)?)/gi;
+  return text.split(regex).map((part, index) => {
+    if (
+      /^(https?:\/\/[^\s]+|www\.[^\s]+|(?<!@)(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/[^\s]*)?)$/i.test(
+        part,
+      )
+    ) {
+      const href = /^https?:\/\//i.test(part) ? part : `https://${part}`;
+      return (
+        <a
+          key={index}
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary underline"
+        >
+          {part}
+        </a>
+      );
+    }
+    return part;
+  });
+}
 
-export function CommentItem({
-  comment,
-  refreshComments,
-}: {
+interface CommentItemProps {
   comment: CommentWithAuthor;
   refreshComments: () => void;
-}) {
-  function renderContentWithLinks(text: string): React.ReactNode[] {
-    const regex =
-      /(https?:\/\/[^\s]+|www\.[^\s]+|(?<!@)(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/[^\s]*)?)/gi;
-    return text.split(regex).map((part, index) => {
-      if (
-        /^(https?:\/\/[^\s]+|www\.[^\s]+|(?<!@)(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/[^\s]*)?)$/i.test(
-          part,
-        )
-      ) {
-        const href = /^https?:\/\//i.test(part) ? part : `https://${part}`;
-        return (
-          <a
-            key={index}
-            href={href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary underline"
-          >
-            {part}
-          </a>
-        );
-      }
-      return part;
-    });
-  }
+}
 
+export function CommentItem({ comment, refreshComments }: CommentItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(comment.content);
-
-  // Server actions will handle revalidation automatically via safe-action middleware
+  
+  // Use API hooks instead of server actions
+  const { updateComment, deleteComment } = useCommentActions();
 
   const handleEditToggle = () => {
     if (!isEditing) {
@@ -79,24 +73,17 @@ export function CommentItem({
 
     if (!contentChanged) {
       toast.info('No changes detected.');
-      setIsEditing(false); // Exit edit mode if no changes
+      setIsEditing(false);
       return;
     }
 
     try {
-      // Use server action for comment update
-      const result = await updateComment({
-        commentId: comment.id,
-        content: editedContent,
-      });
-
-      if (result?.data?.success) {
-        toast.success('Comment updated successfully.');
-        refreshComments();
-        setIsEditing(false);
-      } else {
-        throw new Error('Failed to update comment');
-      }
+      // Use API hook directly instead of server action
+      await updateComment(comment.id, { content: editedContent });
+      
+      toast.success('Comment updated successfully.');
+      refreshComments();
+      setIsEditing(false);
     } catch (error) {
       toast.error('Failed to save comment changes.');
       console.error('Save changes error:', error);
@@ -106,24 +93,17 @@ export function CommentItem({
   const handleDeleteComment = async () => {
     if (window.confirm('Are you sure you want to delete this comment?')) {
       try {
-        const result = await deleteComment({
-          commentId: comment.id,
-        });
-
-        if (result?.data?.success) {
-          toast.success('Comment deleted successfully.');
-          refreshComments();
-        } else {
-          throw new Error('Failed to delete comment');
-        }
+        // Use API hook directly instead of server action
+        await deleteComment(comment.id);
+        
+        toast.success('Comment deleted successfully.');
+        refreshComments();
       } catch (error) {
         toast.error('Failed to delete comment.');
         console.error('Delete comment error:', error);
       }
     }
   };
-
-  // Simplified comment editing - attachment functionality removed for now
 
   return (
     <Card className="bg-foreground/5 rounded-lg">

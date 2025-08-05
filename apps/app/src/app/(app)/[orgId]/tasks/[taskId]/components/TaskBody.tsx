@@ -176,8 +176,8 @@ export function TaskBody({
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <Label className="flex-1 text-sm font-medium">Attachments</Label>
-          {/* Show loading state while fetching attachments */}
-          {attachmentsLoading ? (
+          {/* Show loading state while fetching attachments or when data hasn't loaded yet */}
+          {attachmentsLoading || attachmentsData === undefined ? (
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           ) : (
             attachments.length === 0 && (
@@ -204,25 +204,16 @@ export function TaskBody({
           <p className="text-destructive text-sm">Failed to load attachments. Please try again.</p>
         )}
 
-        {attachmentsLoading && (
+        {(attachmentsLoading || attachmentsData === undefined) && (
           <div className="space-y-2 pt-1">
-            {/* Loading skeleton for attachments */}
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="flex items-center gap-3 p-2 bg-muted/50 rounded-md animate-pulse"
-              >
-                <div className="h-4 w-4 bg-muted-foreground/30 rounded"></div>
-                <div className="flex-1">
-                  <div className="h-4 bg-muted-foreground/30 rounded w-3/4 mb-1"></div>
-                  <div className="h-3 bg-muted-foreground/20 rounded w-1/2"></div>
-                </div>
-              </div>
+            {/* Simplified loading skeleton for attachments */}
+            {[1, 2].map((i) => (
+              <div key={i} className="bg-muted/20 rounded-lg h-12 animate-pulse"></div>
             ))}
           </div>
         )}
 
-        {!attachmentsLoading && attachments.length > 0 ? (
+        {!attachmentsLoading && attachmentsData !== undefined && attachments.length > 0 ? (
           <div className="space-y-2 pt-1">
             {attachments.map((attachment) => {
               const isBusy = busyAttachmentId === attachment.id;
@@ -248,6 +239,7 @@ export function TaskBody({
           </div>
         ) : (
           !attachmentsLoading &&
+          attachmentsData !== undefined &&
           !attachmentsError &&
           !isUploading &&
           attachmentsData && (
@@ -258,7 +250,7 @@ export function TaskBody({
           )
         )}
 
-        {!attachmentsLoading && attachments.length > 0 && (
+        {!attachmentsLoading && attachmentsData !== undefined && attachments.length > 0 && (
           <Button
             variant="outline"
             onClick={triggerFileInput}

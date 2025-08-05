@@ -47,11 +47,30 @@ export class ApiClient {
         headers,
       });
 
-      const data = await response.json();
+      let data = null;
+
+      // Handle different response types based on status and content
+      if (response.status === 204) {
+        // 204 No Content - DELETE operations return empty body
+        data = null;
+      } else {
+        // All other responses should have JSON content
+        const text = await response.text();
+        if (text) {
+          try {
+            data = JSON.parse(text);
+          } catch (parseError) {
+            // If JSON parsing fails but we have text, use it as error message
+            data = { message: text };
+          }
+        }
+      }
 
       return {
         data: response.ok ? data : undefined,
-        error: !response.ok ? data.message || 'API request failed' : undefined,
+        error: !response.ok
+          ? data?.message || `HTTP ${response.status}: ${response.statusText}`
+          : undefined,
         status: response.status,
       };
     } catch (error) {

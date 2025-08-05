@@ -93,7 +93,8 @@ export function useCommentActions() {
       if (response.error) {
         throw new Error(response.error);
       }
-      return response;
+      // DELETE returns 204 No Content - success if no error
+      return { success: true, status: response.status };
     },
     [api],
   );
