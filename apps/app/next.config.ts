@@ -4,7 +4,10 @@ import './src/env.mjs';
 
 const config: NextConfig = {
   // Use S3 bucket for static assets with app-specific path
-  assetPrefix: process.env.NODE_ENV === 'production' ? `${process.env.STATIC_ASSETS_URL}/app` : '',
+  assetPrefix:
+    process.env.NODE_ENV === 'production' && process.env.STATIC_ASSETS_URL
+      ? `${process.env.STATIC_ASSETS_URL}/app`
+      : '',
   // Ensure fallback to local assets if CDN fails
   generateEtags: false,
   poweredByHeader: false,
