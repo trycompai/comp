@@ -53,6 +53,10 @@ export const auth = betterAuth({
     enabled: true,
   },
   advanced: {
+    crossSubDomainCookies: {
+      enabled: true,
+      domain: '.trycomp.ai', // This allows cookies to work across all *.trycomp.ai subdomains
+    },
     database: {
       // This will enable us to fall back to DB for ID generation.
       // It's important so we can use custom IDs specified in Prisma Schema.
