@@ -26,9 +26,9 @@ phases:
       - '[ -n "$DATABASE_URL" ] || { echo "❌ DATABASE_URL is not set"; exit 1; }'
       - '[ -n "$BASE_URL" ] || { echo "❌ BASE_URL is not set"; exit 1; }'
 
-      # Install dependencies
-      - echo "Installing dependencies..."
-      - bun install --frozen-lockfile
+      # Install only API workspace dependencies (not frontend TipTap deps)
+      - echo "Installing API dependencies only..."
+      - bun install --filter=@comp/api --frozen-lockfile
 
       # Build NestJS application (prebuild automatically handles Prisma)
       - echo "Building NestJS application..."
