@@ -26,7 +26,7 @@ phases:
       - '[ -n "$DATABASE_URL" ] || { echo "❌ DATABASE_URL is not set"; exit 1; }'
       - '[ -n "$BASE_URL" ] || { echo "❌ BASE_URL is not set"; exit 1; }'
 
-      # Install only API workspace dependencies (not frontend TipTap deps)
+      # Install only API workspace dependencies
       - echo "Installing API dependencies only..."
       - bun install --filter=@comp/api --frozen-lockfile
 
