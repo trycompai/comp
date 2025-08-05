@@ -1,3 +1,4 @@
+import { AttachmentEntityType } from '@db';
 import {
   BadRequestException,
   Body,
@@ -18,7 +19,6 @@ import {
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
-import { AttachmentEntityType } from '@prisma/client';
 import { AttachmentsService } from '../attachments/attachments.service';
 import { UploadAttachmentDto } from '../attachments/upload-attachment.dto';
 import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
