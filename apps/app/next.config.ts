@@ -2,10 +2,13 @@ import type { NextConfig } from 'next';
 import './src/env.mjs';
 
 const config: NextConfig = {
-  poweredByHeader: false,
+  // Use S3 bucket for static assets with app-specific path
+  assetPrefix:
+    process.env.NODE_ENV === 'production' && process.env.STATIC_ASSETS_URL
+      ? `${process.env.STATIC_ASSETS_URL}/app`
+      : '',
   reactStrictMode: true,
   transpilePackages: ['@trycompai/db'],
-
   images: {
     remotePatterns: [
       {

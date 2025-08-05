@@ -1,9 +1,8 @@
 'use client';
 
 import { Card } from '@comp/ui/card';
-import type { Attachment, Member, Task, User } from '@db';
+import type { Member, Task, User } from '@db';
 import { useMemo, useState } from 'react';
-import { CommentWithAuthor } from '../../../../../../components/comments/Comments';
 import { updateTask } from '../../actions/updateTask';
 import { TaskDeleteDialog } from './TaskDeleteDialog';
 import { TaskMainContent } from './TaskMainContent';
@@ -12,11 +11,9 @@ import { TaskPropertiesSidebar } from './TaskPropertiesSidebar';
 interface SingleTaskProps {
   task: Task & { fileUrls?: string[] };
   members?: (Member & { user: User })[];
-  comments: CommentWithAuthor[];
-  attachments: Attachment[];
 }
 
-export function SingleTask({ task, members, comments, attachments }: SingleTaskProps) {
+export function SingleTask({ task, members }: SingleTaskProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const assignedMember = useMemo(() => {
@@ -50,7 +47,7 @@ export function SingleTask({ task, members, comments, attachments }: SingleTaskP
 
   return (
     <Card className="flex h-full flex-col overflow-hidden p-4 lg:flex-row lg:gap-16">
-      <TaskMainContent task={task} comments={comments} attachments={attachments} />
+      <TaskMainContent task={task} />
       <TaskPropertiesSidebar
         task={task}
         members={members}

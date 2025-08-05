@@ -1,14 +1,25 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
-import type { Attachment, Comment, Member, User } from '@db';
+// Removed unused database model imports
 import { CommentEntityType } from '@db';
 import { CommentForm } from './CommentForm';
 import { CommentList } from './CommentList';
 
-export type CommentWithAuthor = Comment & {
-  author: Member & {
-    user: User;
+export type CommentWithAuthor = {
+  id: string;
+  content: string;
+  author: {
+    id: string;
+    name: string;
+    email: string;
   };
-  attachments: Attachment[];
+  attachments: Array<{
+    id: string;
+    name: string;
+    type: string;
+    downloadUrl: string;
+    createdAt: string;
+  }>;
+  createdAt: string;
 };
 
 export const Comments = ({
@@ -27,7 +38,7 @@ export const Comments = ({
         <CardDescription>Leave a comment on this {entityType}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <CommentList comments={comments} />
+        <CommentList comments={comments} refreshComments={() => {}} />
         <CommentForm entityId={entityId} entityType={entityType} />
       </CardContent>
     </Card>

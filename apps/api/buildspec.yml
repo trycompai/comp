@@ -26,35 +26,50 @@ phases:
       - '[ -n "$DATABASE_URL" ] || { echo "❌ DATABASE_URL is not set"; exit 1; }'
       - '[ -n "$BASE_URL" ] || { echo "❌ BASE_URL is not set"; exit 1; }'
 
-      # Install dependencies
-      - echo "Installing dependencies..."
-      - bun install --frozen-lockfile
+      # Install only API workspace dependencies
+      - echo "Installing API dependencies only..."
+      - bun install --filter=@comp/api --frozen-lockfile
 
-      # Generate Prisma client
-      - echo "Generating Prisma client..."
-      - cd packages/db && bun x prisma generate && cd ../../
-
-      # Build NestJS application
+      # Build NestJS application (prebuild automatically handles Prisma)
       - echo "Building NestJS application..."
-      - cd apps/$APP_NAME && bun run build && cd ../../
+      - echo "APP_NAME is set to $APP_NAME"
+      - echo "Current directory $(pwd)"
+      - echo "Available apps $(ls -la apps/)"
+      - cd apps/api
+      - echo "Changed to $(pwd)"
+      - echo "Running build (includes automatic prebuild db:generate)..."
+      - bun run build
 
-      # Create self-contained bundle for Docker
+      # Verify build output exists
+      - echo "Checking build output..."
+      - ls -la dist/
+      - ls -la dist/src/
+      - '[ -f "dist/src/main.js" ] || { echo "❌ main.js not found in dist/src"; exit 1; }'
+
+      # Create self-contained bundle for Docker (stay in apps/api)
       - echo "Creating self-contained bundle..."
-      - cd apps/$APP_NAME
       - mkdir -p ../docker-build
 
-      # Copy built application
+      # Copy built application (preserves NestJS structure)
+      - echo "Copying built application..."
       - cp -r dist/* ../docker-build/
 
-        # Copy entire node_modules for runtime (simpler and comprehensive)
+      # Copy prisma folder (needed for runtime imports)
+      - echo "Copying prisma folder..."
+      - cp -r prisma ../docker-build/
+
+      # Verify files were copied correctly
+      - echo "Verifying copied files..."
+      - ls -la ../docker-build/
+      - ls -la ../docker-build/src/
+      - '[ -f "../docker-build/src/main.js" ] || { echo "❌ main.js not found in docker-build/src"; exit 1; }'
+
+      # Copy entire node_modules for runtime (includes @trycompai/db from npm)
       - echo "Bundling all runtime dependencies..."
       - cp -r ../../node_modules ../docker-build/
 
-      # Copy @trycompai/db package
-      - mkdir -p ../docker-build/node_modules/@trycompai
-      - cp -r ../../packages/db ../docker-build/node_modules/@trycompai/
-
       # Copy Dockerfile
+      - echo "Copying Dockerfile..."
       - cp Dockerfile ../docker-build/
 
       # Build Docker image
@@ -69,7 +84,7 @@ phases:
       - docker push $ECR_REPOSITORY_URI:latest
       - echo "Updating ECS service..."
       - aws ecs update-service --cluster $ECS_CLUSTER_NAME --service $ECS_SERVICE_NAME --force-new-deployment
-      - 'printf "[{\"name\":\"%s-container\",\"imageUri\":\"%s\"}]" $APP_NAME $ECR_REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json'
+      - 'printf "[{\"name\":\"%s-container\",\"imageUri\":\"%s\"}]" api $ECR_REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json'
 
 cache:
   paths:
