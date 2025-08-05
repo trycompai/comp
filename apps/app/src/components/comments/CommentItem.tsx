@@ -53,7 +53,7 @@ interface CommentItemProps {
 export function CommentItem({ comment, refreshComments }: CommentItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(comment.content);
-  
+
   // Use API hooks instead of server actions
   const { updateComment, deleteComment } = useCommentActions();
 
@@ -80,7 +80,7 @@ export function CommentItem({ comment, refreshComments }: CommentItemProps) {
     try {
       // Use API hook directly instead of server action
       await updateComment(comment.id, { content: editedContent });
-      
+
       toast.success('Comment updated successfully.');
       refreshComments();
       setIsEditing(false);
@@ -95,7 +95,7 @@ export function CommentItem({ comment, refreshComments }: CommentItemProps) {
       try {
         // Use API hook directly instead of server action
         await deleteComment(comment.id);
-        
+
         toast.success('Comment deleted successfully.');
         refreshComments();
       } catch (error) {

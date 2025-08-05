@@ -7,7 +7,7 @@ import { Textarea } from '@comp/ui/textarea';
 import type { AttachmentEntityType } from '@db';
 import { Loader2, Paperclip, Plus } from 'lucide-react';
 import type React from 'react';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { AttachmentItem } from './AttachmentItem';
 
@@ -37,8 +37,28 @@ export function TaskBody({
   disabled,
 }: TaskBodyProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [busyAttachmentId, setBusyAttachmentId] = useState<string | null>(null);
+
+  // Auto-resize function for textarea
+  const autoResizeTextarea = useCallback(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = `${Math.max(80, textarea.scrollHeight)}px`;
+    }
+  }, []);
+
+  // Auto-resize on mount and when description changes
+  useEffect(() => {
+    // Use requestAnimationFrame to ensure the DOM is ready
+    const resizeTimeout = requestAnimationFrame(() => {
+      autoResizeTextarea();
+    });
+
+    return () => cancelAnimationFrame(resizeTimeout);
+  }, [description, autoResizeTextarea]);
 
   // Use SWR to fetch attachments with real-time updates
   const {
@@ -150,19 +170,19 @@ export function TaskBody({
         disabled={disabled || isUploading || !!busyAttachmentId}
       />
       <Textarea
+        ref={textareaRef}
         value={description}
-        onChange={onDescriptionChange}
+        onChange={(e) => {
+          onDescriptionChange(e);
+          // Auto-resize after onChange to handle programmatic changes
+          setTimeout(autoResizeTextarea, 0);
+        }}
         placeholder="Add description..."
-        className="text-muted-foreground text-md min-h-[80px] resize-none border-none p-0 shadow-none focus-visible:ring-0"
+        className="text-muted-foreground text-md min-h-[80px] resize-none border-none p-2 shadow-none focus-visible:ring-0"
         disabled={disabled || isUploading || !!busyAttachmentId}
         style={{
           height: 'auto',
           minHeight: '80px',
-        }}
-        onInput={(e) => {
-          const target = e.target as HTMLTextAreaElement;
-          target.style.height = 'auto';
-          target.style.height = `${Math.max(80, target.scrollHeight)}px`;
         }}
       />
       <input
