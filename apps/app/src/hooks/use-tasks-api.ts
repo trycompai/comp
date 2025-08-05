@@ -153,12 +153,12 @@ export function useOptimisticTaskAttachments(taskId: string) {
 
   const optimisticUpload = useCallback(
     async (file: File) => {
-      // Create optimistic attachment data
+      // Create optimistic attachment matching full Attachment type
       const optimisticAttachment: Attachment = {
         id: `temp-${Date.now()}`,
         name: file.name,
-        type: file.type as any,
-        url: '',
+        type: file.type.startsWith('image/') ? ('image' as any) : ('document' as any),
+        url: '', // Will be populated by real response
         entityId: taskId,
         entityType: 'task' as any,
         organizationId: '',
@@ -170,39 +170,66 @@ export function useOptimisticTaskAttachments(taskId: string) {
 
       return mutate(
         async () => {
-          const result = await uploadAttachment(file);
-          return { data: [result], status: 200 }; // Wrap in expected API response format
+          // Call the API and transform single item response to array format for SWR cache
+          const newAttachment = await uploadAttachment(file);
+          const currentAttachments = data?.data || [];
+
+          // Replace optimistic attachment with real one, or add if not found
+          const optimisticIndex = currentAttachments.findIndex(
+            (att) => att.id === optimisticAttachment.id,
+          );
+          const updatedAttachments =
+            optimisticIndex >= 0
+              ? currentAttachments.map((att) =>
+                  att.id === optimisticAttachment.id ? newAttachment : att,
+                )
+              : [...currentAttachments, newAttachment];
+
+          return {
+            data: updatedAttachments,
+            status: 200,
+          };
         },
         {
-          optimisticData: data ? {
-            ...data,
-            data: [...(data.data || []), optimisticAttachment]
-          } : undefined,
+          optimisticData: data
+            ? {
+                ...data,
+                data: [...(data.data || []), optimisticAttachment],
+              }
+            : { data: [optimisticAttachment], status: 200 },
           populateCache: true,
           revalidate: false,
           rollbackOnError: true,
-        }
+        },
       );
     },
-    [mutate, uploadAttachment, data, taskId],
+    [mutate, uploadAttachment, data],
   );
 
   const optimisticDelete = useCallback(
     async (attachmentId: string) => {
       return mutate(
         async () => {
+          // Call the API and return updated cache data
           await deleteAttachment(attachmentId);
-          return data; // Return current data without the deleted item
+          const updatedAttachments = (data?.data || []).filter((att) => att.id !== attachmentId);
+
+          return {
+            data: updatedAttachments,
+            status: 200,
+          };
         },
         {
-          optimisticData: data ? {
-            ...data,
-            data: (data.data || []).filter(att => att.id !== attachmentId)
-          } : undefined,
-          populateCache: false,
+          optimisticData: data
+            ? {
+                ...data,
+                data: (data.data || []).filter((att) => att.id !== attachmentId),
+              }
+            : undefined,
+          populateCache: true,
           revalidate: false,
           rollbackOnError: true,
-        }
+        },
       );
     },
     [mutate, deleteAttachment, data],

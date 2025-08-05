@@ -161,31 +161,56 @@ export function useOptimisticComments(entityId: string, entityType: CommentEntit
   const { createComment, updateComment, deleteComment } = useCommentActions();
 
   const optimisticCreate = useCallback(
-    async (content: string, attachments?: { fileName: string; fileType: string; fileData: string }[]) => {
-      // Create optimistic comment data (simplified - let API handle full structure)
-      const optimisticComment = {
+    async (
+      content: string,
+      attachments?: { fileName: string; fileType: string; fileData: string }[],
+    ) => {
+      // Create optimistic comment matching Comment type structure
+      const optimisticComment: Comment = {
         id: `temp-${Date.now()}`,
         content,
-        organizationId: '',
-        authorId: '',
+        author: {
+          id: 'temp-user',
+          name: 'You', // Will be replaced with real author data
+          email: '',
+        },
+        attachments: [], // Will be populated by real response
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
       };
 
       return mutate(
         async () => {
-          const result = await createComment({ content, entityId, entityType, attachments });
-          return { data: [result], status: 200 }; // Wrap in expected API response format
+          // Call the API and transform single item response to array format for SWR cache
+          const newComment = await createComment({ content, entityId, entityType, attachments });
+          const currentComments = data?.data || [];
+
+          // Replace optimistic comment with real one, or add if not found
+          const optimisticIndex = currentComments.findIndex(
+            (comment) => comment.id === optimisticComment.id,
+          );
+          const updatedComments =
+            optimisticIndex >= 0
+              ? currentComments.map((comment) =>
+                  comment.id === optimisticComment.id ? newComment : comment,
+                )
+              : [newComment, ...currentComments]; // Add to beginning (newest first)
+
+          return {
+            data: updatedComments,
+            status: 200,
+          };
         },
         {
-          optimisticData: data ? { 
-            ...data, 
-            data: [...(data.data || []), optimisticComment] 
-          } : undefined,
+          optimisticData: data
+            ? {
+                ...data,
+                data: [optimisticComment, ...(data.data || [])], // Add to beginning (newest first)
+              }
+            : { data: [optimisticComment], status: 200 },
           populateCache: true,
           revalidate: false,
           rollbackOnError: true,
-        }
+        },
       );
     },
     [mutate, createComment, data, entityId, entityType],
@@ -195,22 +220,33 @@ export function useOptimisticComments(entityId: string, entityType: CommentEntit
     async (commentId: string, content: string) => {
       return mutate(
         async () => {
-          const result = await updateComment(commentId, { content });
-          return { data: [result], status: 200 };
+          // Call the API and transform response to array format for SWR cache
+          const updatedComment = await updateComment(commentId, { content });
+          const currentComments = data?.data || [];
+
+          // Replace updated comment with real one
+          const updatedComments = currentComments.map((comment: any) =>
+            comment.id === commentId ? updatedComment : comment,
+          );
+
+          return {
+            data: updatedComments,
+            status: 200,
+          };
         },
         {
-          optimisticData: data ? {
-            ...data,
-            data: (data.data || []).map((comment: any) => 
-              comment.id === commentId 
-                ? { ...comment, content, updatedAt: new Date().toISOString() }
-                : comment
-            )
-          } : undefined,
+          optimisticData: data
+            ? {
+                ...data,
+                data: (data.data || []).map((comment: any) =>
+                  comment.id === commentId ? { ...comment, content } : comment,
+                ),
+              }
+            : undefined,
           populateCache: true,
           revalidate: false,
           rollbackOnError: true,
-        }
+        },
       );
     },
     [mutate, updateComment, data],
@@ -220,18 +256,28 @@ export function useOptimisticComments(entityId: string, entityType: CommentEntit
     async (commentId: string) => {
       return mutate(
         async () => {
+          // Call the API and return updated cache data
           await deleteComment(commentId);
-          return data; // Return current data without the deleted item
+          const updatedComments = (data?.data || []).filter(
+            (comment: any) => comment.id !== commentId,
+          );
+
+          return {
+            data: updatedComments,
+            status: 200,
+          };
         },
         {
-          optimisticData: data ? {
-            ...data,
-            data: (data.data || []).filter((comment: any) => comment.id !== commentId)
-          } : undefined,
-          populateCache: false,
+          optimisticData: data
+            ? {
+                ...data,
+                data: (data.data || []).filter((comment: any) => comment.id !== commentId),
+              }
+            : undefined,
+          populateCache: true,
           revalidate: false,
           rollbackOnError: true,
-        }
+        },
       );
     },
     [mutate, deleteComment, data],
