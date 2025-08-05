@@ -1,12 +1,12 @@
 import { db } from '@db';
 import { logger, task } from '@trigger.dev/sdk/v3';
 import {
-  extractVendorsFromContext,
+  createRisks,
+  createVendorRiskMitigation,
+  createVendors,
   getOrganizationContext,
-  processPolicyUpdates,
-  processRisks,
-  processVendors,
   revalidateOrganizationPath,
+  updateOrganizationPolicies,
 } from './onboard-organization-helpers';
 
 export const onboardOrganization = task({
@@ -23,20 +23,22 @@ export const onboardOrganization = task({
     logger.info(`Start onboarding organization ${payload.organizationId}`);
 
     try {
-      // Get organization context and data
+      // Get organization context
       const { organization, questionsAndAnswers, policies } = await getOrganizationContext(
         payload.organizationId,
       );
 
-      // Extract and process vendors
-      const vendorData = await extractVendorsFromContext(questionsAndAnswers);
-      await processVendors(vendorData, payload.organizationId, policies);
+      // Create vendors
+      const vendors = await createVendors(questionsAndAnswers, payload.organizationId);
 
-      // Extract and process risks
-      await processRisks(questionsAndAnswers, payload.organizationId, organization.name);
+      // Create risk mitigation for vendors
+      await createVendorRiskMitigation(vendors, policies, payload.organizationId);
 
-      // Update policies with context
-      await processPolicyUpdates(payload.organizationId, questionsAndAnswers);
+      // Create risks
+      await createRisks(questionsAndAnswers, payload.organizationId, organization.name);
+
+      // Update policies
+      await updateOrganizationPolicies(payload.organizationId, questionsAndAnswers);
 
       // Mark onboarding as completed
       await db.onboarding.update({
@@ -44,7 +46,7 @@ export const onboardOrganization = task({
         data: { triggerJobCompleted: true },
       });
 
-      logger.info(`Created ${vendorData.length} vendors`);
+      logger.info(`Created ${vendors.length} vendors`);
       logger.info(`Onboarding completed for organization ${payload.organizationId}`);
     } catch (error) {
       logger.error(`Error during onboarding for organization ${payload.organizationId}:`, {

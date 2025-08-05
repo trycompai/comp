@@ -177,14 +177,10 @@ Please perform a comprehensive vendor risk assessment for this vendor using the 
 }
 
 /**
- * Processes and creates vendors with all related operations
+ * Finds a comment author (owner or admin) for the organization
  */
-export async function processVendors(
-  vendorData: VendorData[],
-  organizationId: string,
-  policies: PolicyContext[],
-): Promise<void> {
-  const commentAuthor = await db.member.findFirst({
+export async function findCommentAuthor(organizationId: string) {
+  return await db.member.findFirst({
     where: {
       organizationId,
       OR: [{ role: { contains: 'owner' } }, { role: { contains: 'admin' } }],
@@ -194,6 +190,16 @@ export async function processVendors(
       { createdAt: 'asc' }, // Prefer earlier members
     ],
   });
+}
+
+/**
+ * Creates vendors from extracted data
+ */
+export async function createVendorsFromData(
+  vendorData: VendorData[],
+  organizationId: string,
+): Promise<any[]> {
+  const createdVendors = [];
 
   for (const vendor of vendorData) {
     const existingVendor = await db.vendor.findMany({
@@ -222,19 +228,36 @@ export async function processVendors(
       },
     });
 
-    // Trigger vendor research
+    createdVendors.push(createdVendor);
+    logger.info(`Created vendor: ${createdVendor.id} (${createdVendor.name})`);
+  }
+
+  return createdVendors;
+}
+
+/**
+ * Triggers research tasks for created vendors
+ */
+export async function triggerVendorResearch(vendors: any[]): Promise<void> {
+  for (const vendor of vendors) {
     const handle = await tasks.trigger<typeof researchVendor>('research-vendor', {
-      website: createdVendor.website ?? '',
+      website: vendor.website ?? '',
     });
+    logger.info(`Triggered research for vendor ${vendor.name} with handle ${handle.id}`);
+  }
+}
 
-    // Create risk mitigation comment if we have a comment author
-    if (commentAuthor) {
-      await createVendorRiskComment(createdVendor, policies, organizationId, commentAuthor.id);
-    }
-
-    logger.info(
-      `Created vendor: ${createdVendor.id} (${createdVendor.name}) with handle ${handle.id}`,
-    );
+/**
+ * Creates risk mitigation comments for all vendors
+ */
+export async function createVendorRiskComments(
+  vendors: any[],
+  policies: PolicyContext[],
+  organizationId: string,
+  authorId: string,
+): Promise<void> {
+  for (const vendor of vendors) {
+    await createVendorRiskComment(vendor, policies, organizationId, authorId);
   }
 }
 
@@ -282,24 +305,22 @@ export async function extractRisksFromContext(
 }
 
 /**
- * Processes and creates risks
+ * Gets existing risks to avoid duplicates
  */
-export async function processRisks(
-  questionsAndAnswers: ContextItem[],
-  organizationId: string,
-  organizationName: string,
-): Promise<void> {
-  const existingRisks = await db.risk.findMany({
+export async function getExistingRisks(organizationId: string) {
+  return await db.risk.findMany({
     where: { organizationId },
     select: { title: true, department: true },
   });
+}
 
-  const riskData = await extractRisksFromContext(
-    questionsAndAnswers,
-    organizationName,
-    existingRisks,
-  );
-
+/**
+ * Creates risks from extracted data
+ */
+export async function createRisksFromData(
+  riskData: RiskData[],
+  organizationId: string,
+): Promise<void> {
   for (const risk of riskData) {
     const createdRisk = await db.risk.create({
       data: {
@@ -322,19 +343,26 @@ export async function processRisks(
 }
 
 /**
- * Processes policy updates
+ * Gets all policies for an organization
  */
-export async function processPolicyUpdates(
+export async function getOrganizationPolicies(organizationId: string) {
+  return await db.policy.findMany({
+    where: { organizationId },
+  });
+}
+
+/**
+ * Triggers policy update tasks
+ */
+export async function triggerPolicyUpdates(
   organizationId: string,
   questionsAndAnswers: ContextItem[],
 ): Promise<void> {
-  const fullPolicies = await db.policy.findMany({
-    where: { organizationId },
-  });
+  const policies = await getOrganizationPolicies(organizationId);
 
-  if (fullPolicies.length > 0) {
+  if (policies.length > 0) {
     await updatePolicies.batchTriggerAndWait(
-      fullPolicies.map((policy) => ({
+      policies.map((policy) => ({
         payload: {
           organizationId,
           policyId: policy.id,
@@ -348,4 +376,72 @@ export async function processPolicyUpdates(
       })),
     );
   }
+}
+
+// HIGH-LEVEL ORCHESTRATION FUNCTIONS
+
+/**
+ * Complete vendor creation workflow
+ */
+export async function createVendors(
+  questionsAndAnswers: ContextItem[],
+  organizationId: string,
+): Promise<any[]> {
+  // Extract vendors using AI
+  const vendorData = await extractVendorsFromContext(questionsAndAnswers);
+
+  // Create vendor records in database
+  const createdVendors = await createVendorsFromData(vendorData, organizationId);
+
+  // Trigger background research for each vendor
+  await triggerVendorResearch(createdVendors);
+
+  return createdVendors;
+}
+
+/**
+ * Create risk mitigation comments for vendors
+ */
+export async function createVendorRiskMitigation(
+  vendors: any[],
+  policies: PolicyContext[],
+  organizationId: string,
+): Promise<void> {
+  const commentAuthor = await findCommentAuthor(organizationId);
+
+  if (commentAuthor && vendors.length > 0) {
+    await createVendorRiskComments(vendors, policies, organizationId, commentAuthor.id);
+  }
+}
+
+/**
+ * Complete risk creation workflow
+ */
+export async function createRisks(
+  questionsAndAnswers: ContextItem[],
+  organizationId: string,
+  organizationName: string,
+): Promise<void> {
+  // Get existing risks to avoid duplicates
+  const existingRisks = await getExistingRisks(organizationId);
+
+  // Extract risks using AI
+  const riskData = await extractRisksFromContext(
+    questionsAndAnswers,
+    organizationName,
+    existingRisks,
+  );
+
+  // Create risk records in database
+  await createRisksFromData(riskData, organizationId);
+}
+
+/**
+ * Update organization policies with context
+ */
+export async function updateOrganizationPolicies(
+  organizationId: string,
+  questionsAndAnswers: ContextItem[],
+): Promise<void> {
+  await triggerPolicyUpdates(organizationId, questionsAndAnswers);
 }
