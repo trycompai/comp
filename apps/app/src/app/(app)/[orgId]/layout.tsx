@@ -3,6 +3,7 @@ import { CheckoutCompleteDialog } from '@/components/dialogs/checkout-complete-d
 import { Header } from '@/components/header';
 import { AssistantSheet } from '@/components/sheets/assistant-sheet';
 import { Sidebar } from '@/components/sidebar';
+import { TriggerTokenProvider } from '@/components/trigger-token-provider';
 import { SidebarProvider } from '@/context/sidebar-context';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
@@ -27,7 +28,7 @@ export default async function Layout({
 
   const cookieStore = await cookies();
   const isCollapsed = cookieStore.get('sidebar-collapsed')?.value === 'true';
-  const publicAccessToken = cookieStore.get('publicAccessToken')?.value;
+  let publicAccessToken = cookieStore.get('publicAccessToken')?.value || undefined;
 
   // Check if user has access to this organization
   const session = await auth.api.getSession({
@@ -75,24 +76,27 @@ export default async function Layout({
   const pixelsOffset = isOnboardingRunning ? navbarHeight + onboardingHeight : navbarHeight;
 
   return (
-    <SidebarProvider initialIsCollapsed={isCollapsed}>
-      <AnimatedLayout sidebar={<Sidebar organization={organization} />} isCollapsed={isCollapsed}>
-        {onboarding?.triggerJobId && (
-          <OnboardingTracker onboarding={onboarding} publicAccessToken={publicAccessToken ?? ''} />
-        )}
-        <Header />
-        <div
-          className="textured-background mx-auto px-4 py-4"
-          style={{ minHeight: `calc(100vh - ${pixelsOffset}px)` }}
-        >
-          {children}
-        </div>
-        <AssistantSheet />
-        <Suspense fallback={null}>
-          <CheckoutCompleteDialog orgId={organization.id} />
-        </Suspense>
-      </AnimatedLayout>
-      <HotKeys />
-    </SidebarProvider>
+    <TriggerTokenProvider
+      triggerJobId={onboarding?.triggerJobId || undefined}
+      initialToken={publicAccessToken || undefined}
+    >
+      <SidebarProvider initialIsCollapsed={isCollapsed}>
+        <AnimatedLayout sidebar={<Sidebar organization={organization} />} isCollapsed={isCollapsed}>
+          {onboarding?.triggerJobId && <OnboardingTracker onboarding={onboarding} />}
+          <Header />
+          <div
+            className="textured-background mx-auto px-4 py-4"
+            style={{ minHeight: `calc(100vh - ${pixelsOffset}px)` }}
+          >
+            {children}
+          </div>
+          <AssistantSheet />
+          <Suspense fallback={null}>
+            <CheckoutCompleteDialog orgId={organization.id} />
+          </Suspense>
+        </AnimatedLayout>
+        <HotKeys />
+      </SidebarProvider>
+    </TriggerTokenProvider>
   );
 }
