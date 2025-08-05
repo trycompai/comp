@@ -14,9 +14,10 @@ const config: NextConfig = {
   generateEtags: false,
   experimental: {
     serverActions: {
-      allowedOrigins: process.env.NODE_ENV === 'production' 
-        ? [process.env.NEXT_PUBLIC_BETTER_AUTH_URL].filter(Boolean) as string[]
-        : undefined,
+      allowedOrigins:
+        process.env.NODE_ENV === 'production'
+          ? ([process.env.NEXT_PUBLIC_BETTER_AUTH_URL].filter(Boolean) as string[])
+          : undefined,
     },
     optimizePackageImports: ['@trycompai/db'],
   },
