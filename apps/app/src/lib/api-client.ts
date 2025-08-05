@@ -1,5 +1,7 @@
 'use client';
 
+import { env } from '@/env.mjs';
+
 interface ApiCallOptions extends Omit<RequestInit, 'headers'> {
   organizationId?: string;
   headers?: Record<string, string>;
@@ -19,7 +21,7 @@ export class ApiClient {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
+    this.baseUrl = env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
   }
 
   /**

@@ -51,7 +51,8 @@
         "FLEET_DEVICE_PATH_WINDOWS",
         "LOGO_DEV",
         "DUB_API_KEY",
-        "DUB_PROGRAM_ID"
+        "DUB_PROGRAM_ID",
+        "NEXT_PUBLIC_API_URL"
       ],
       "inputs": ["$TURBO_DEFAULT$", ".env"],
       "dependsOn": ["^build"],
