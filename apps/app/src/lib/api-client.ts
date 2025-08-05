@@ -15,7 +15,7 @@ export interface ApiResponse<T = unknown> {
 
 /**
  * API client for calling our internal NestJS API
- * Automatically includes Better Auth session cookies and organization context
+ * Uses Better Auth Bearer tokens for authentication with organization context
  */
 export class ApiClient {
   private baseUrl: string;
@@ -26,7 +26,7 @@ export class ApiClient {
 
   /**
    * Make an authenticated API call
-   * Uses session cookies for auth + explicit org context
+   * Uses Bearer token authentication + explicit org context
    */
   async call<T = unknown>(endpoint: string, options: ApiCallOptions = {}): Promise<ApiResponse<T>> {
     const { organizationId, headers: customHeaders, ...fetchOptions } = options;
@@ -42,9 +42,17 @@ export class ApiClient {
       headers['X-Organization-Id'] = organizationId;
     }
 
+    // Add Bearer token from localStorage for authentication
+    if (typeof localStorage !== 'undefined') {
+      const token = localStorage.getItem('bearer_token');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+    }
+
     try {
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
-        credentials: 'include', // Include session cookies
+        credentials: 'include',
         ...fetchOptions,
         headers,
       });
