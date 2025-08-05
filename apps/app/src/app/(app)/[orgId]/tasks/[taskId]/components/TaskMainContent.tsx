@@ -1,24 +1,33 @@
 'use client';
 
+import { useTaskComments } from '@/hooks/use-comments-api';
 import { Separator } from '@comp/ui/separator';
-import { CommentEntityType, type Attachment, type Task } from '@db';
+import { CommentEntityType, type Task } from '@db';
 import { useEffect, useState } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 import { CommentForm } from '../../../../../../components/comments/CommentForm';
 import { CommentList } from '../../../../../../components/comments/CommentList';
-import { CommentWithAuthor } from '../../../../../../components/comments/Comments';
 import { updateTask } from '../../actions/updateTask';
 import { TaskBody } from './TaskBody';
 
 interface TaskMainContentProps {
   task: Task & { fileUrls?: string[] };
-  comments: CommentWithAuthor[];
-  attachments: Attachment[];
 }
 
-export function TaskMainContent({ task, comments, attachments }: TaskMainContentProps) {
+export function TaskMainContent({ task }: TaskMainContentProps) {
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description ?? '');
+
+  // Use SWR to fetch comments with real-time updates
+  const {
+    data: commentsData,
+    error: commentsError,
+    isLoading: commentsLoading,
+    mutate: refreshComments,
+  } = useTaskComments(task.id);
+
+  // Extract comments from SWR response
+  const comments = commentsData?.data || [];
 
   const debouncedUpdateTask = useDebouncedCallback(
     (field: 'title' | 'description', value: string) => {
@@ -50,7 +59,6 @@ export function TaskMainContent({ task, comments, attachments }: TaskMainContent
         taskId={task.id}
         title={title}
         description={description}
-        attachments={attachments}
         onTitleChange={handleTitleChange}
         onDescriptionChange={handleDescriptionChange}
       />
@@ -63,7 +71,23 @@ export function TaskMainContent({ task, comments, attachments }: TaskMainContent
       <div className="space-y-4">
         <h3 className="text-lg font-medium">Comments</h3>
         <CommentForm entityId={task.id} entityType={CommentEntityType.task} />
-        <CommentList comments={comments} />
+
+                {commentsLoading && (
+          <div className="space-y-3">
+            {/* Simple comment skeletons */}
+            {[1, 2].map((i) => (
+              <div key={i} className="bg-muted/20 rounded-lg h-16 animate-pulse"></div>
+            ))}
+          </div>
+        )}
+
+        {commentsError && (
+          <div className="text-destructive text-sm">Failed to load comments. Please try again.</div>
+        )}
+
+        {!commentsLoading && !commentsError && (
+          <CommentList comments={comments} refreshComments={refreshComments} />
+        )}
       </div>
     </div>
   );

@@ -151,9 +151,10 @@ export function getDueDateStatus(dueDate: string): string {
   return `${diffMonths} month${diffMonths === 1 ? '' : 's'} ago`;
 }
 
-export function formatRelativeTime(date: Date): string {
+export function formatRelativeTime(date: Date | string): string {
   const now = new Date();
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  const diffInSeconds = Math.floor((now.getTime() - dateObj.getTime()) / 1000);
 
   if (diffInSeconds < 60) {
     return 'just now';

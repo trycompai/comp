@@ -1,15 +1,15 @@
 'use client';
 
 import { createComment } from '@/actions/comments/createComment';
+import { useComments } from '@/hooks/use-comments-api';
 import { authClient } from '@/utils/auth-client';
 import { Button } from '@comp/ui/button';
-import { Input } from '@comp/ui/input';
 import { Label } from '@comp/ui/label';
 import { Textarea } from '@comp/ui/textarea';
 import type { CommentEntityType } from '@db';
 import clsx from 'clsx';
 import { ArrowUp, Loader2, Paperclip } from 'lucide-react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -29,34 +29,20 @@ interface PendingAttachment {
 
 export function CommentForm({ entityId, entityType }: CommentFormProps) {
   const session = authClient.useSession();
-  const router = useRouter();
   const params = useParams();
   const [newComment, setNewComment] = useState('');
-  const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
-  const [isUploading, setIsUploading] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [hasMounted, setHasMounted] = useState(false);
+
+  // Use SWR hooks for generic comments
+  const { mutate: refreshComments } = useComments(entityId, entityType);
+  // Removed useCommentWithAttachments - now using server actions
 
   useEffect(() => {
     setHasMounted(true);
   }, []);
-
-  let pathToRevalidate = '';
-  switch (entityType) {
-    case 'policy':
-      pathToRevalidate = `/${params.orgId}/policies/${entityId}`;
-      break;
-    case 'task':
-      pathToRevalidate = `/${params.orgId}/tasks/${entityId}`;
-      break;
-    case 'vendor':
-      pathToRevalidate = `/${params.orgId}/vendors/${entityId}`;
-      break;
-    case 'risk':
-      pathToRevalidate = `/${params.orgId}/risks/${entityId}`;
-      break;
-  }
 
   const triggerFileInput = () => {
     fileInputRef.current?.click();
@@ -66,81 +52,43 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
-    setIsUploading(true);
-    setIsLoading(true);
+    const newFiles = Array.from(files);
 
-    // Helper to process a single file
-    const processFile = (file: File) => {
-      return new Promise<void>((resolve) => {
-        // Add file size check here
-        const MAX_FILE_SIZE_MB = 5;
-        const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
-        if (file.size > MAX_FILE_SIZE_BYTES) {
-          toast.error(`File "${file.name}" exceeds the ${MAX_FILE_SIZE_MB}MB limit.`);
-          return resolve(); // Skip processing this file
-        }
+    // Validate file sizes
+    const MAX_FILE_SIZE_MB = 10;
+    const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const dataUrlResult = reader.result as string;
-          const base64Data = dataUrlResult?.split(',')[1];
-          if (!base64Data) {
-            toast.error(`Failed to read file data for ${file.name}`);
-            return resolve();
-          }
-
-          // Store file in memory instead of uploading
-          setPendingAttachments((prev) => [
-            ...prev,
-            {
-              id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Generate temporary ID
-              name: file.name,
-              fileType: file.type,
-              fileData: base64Data,
-            },
-          ]);
-          toast.success(`File "${file.name}" ready for attachment.`);
-          setIsLoading(false);
-          resolve();
-        };
-        reader.onerror = () => {
-          toast.error(`Error reading file: ${file.name}`);
-          setIsLoading(false);
-          resolve();
-        };
-        reader.readAsDataURL(file);
-      });
-    };
-
-    // Process all files sequentially
-    (async () => {
-      for (const file of Array.from(files)) {
-        await processFile(file);
+    for (const file of newFiles) {
+      if (file.size > MAX_FILE_SIZE_BYTES) {
+        toast.error(`File "${file.name}" exceeds the ${MAX_FILE_SIZE_MB}MB limit.`);
+        return;
       }
-      setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    })();
+    }
+
+    // Add files to pending list
+    setPendingFiles((prev) => [...prev, ...newFiles]);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+
+    newFiles.forEach((file) => {
+      toast.success(`File "${file.name}" ready for attachment.`);
+    });
   }, []);
 
-  const handleRemovePendingAttachment = (attachmentIdToRemove: string) => {
-    setPendingAttachments((prev) => prev.filter((att) => att.id !== attachmentIdToRemove));
-    toast.info('Attachment removed from comment draft.');
+  const handleRemovePendingFile = (fileIndexToRemove: number) => {
+    setPendingFiles((prev) => prev.filter((_, index) => index !== fileIndexToRemove));
+    toast.info('File removed from comment draft.');
   };
 
-  const handlePendingAttachmentClick = (attachmentId: string) => {
-    const pendingAttachment = pendingAttachments.find((att) => att.id === attachmentId);
-    if (!pendingAttachment) {
-      console.error('Could not find pending attachment for ID:', attachmentId);
-      toast.error('Could not find attachment data.');
+  const handlePendingFileClick = (fileIndex: number) => {
+    const file = pendingFiles[fileIndex];
+    if (!file) {
+      console.error('Could not find pending file for index:', fileIndex);
+      toast.error('Could not find file data.');
       return;
     }
 
-    // Convert base64 back to blob for preview
-    const blob = new Blob(
-      [Uint8Array.from(atob(pendingAttachment.fileData), (c) => c.charCodeAt(0))],
-      { type: pendingAttachment.fileType },
-    );
-    const url = URL.createObjectURL(blob);
+    // Create object URL for preview
+    const url = URL.createObjectURL(file);
 
     // Open in new tab
     window.open(url, '_blank', 'noopener,noreferrer');
@@ -150,50 +98,70 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
   };
 
   const handleCommentSubmit = async () => {
-    setIsLoading(true);
-    if (!newComment.trim() && pendingAttachments.length === 0) return;
+    if (!newComment.trim() && pendingFiles.length === 0) return;
 
-    const { success, data, error } = await createComment({
-      content: newComment,
-      entityId,
-      entityType,
-      attachments: pendingAttachments,
-      pathToRevalidate,
-    });
+    setIsSubmitting(true);
 
-    if (success && data) {
-      toast.success('Comment added!');
-      setNewComment('');
-      setPendingAttachments([]);
+    try {
+      // Convert files to base64 for server action
+      const attachments = await Promise.all(
+        pendingFiles.map(async (file) => {
+          const base64 = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              const result = reader.result as string;
+              // Remove data:type;base64, prefix
+              const base64Data = result.split(',')[1];
+              resolve(base64Data);
+            };
+            reader.readAsDataURL(file);
+          });
+
+          return {
+            fileName: file.name,
+            fileType: file.type,
+            fileData: base64,
+          };
+        }),
+      );
+
+      // Use server action for comment creation
+      const result = await createComment({
+        content: newComment,
+        entityId,
+        entityType,
+        attachments: attachments.length > 0 ? attachments : undefined,
+      });
+
+      if (result?.data?.success) {
+        toast.success('Comment added!');
+
+        // Refresh comments via SWR
+        refreshComments();
+
+        // Reset form
+        setNewComment('');
+        setPendingFiles([]);
+      } else {
+        throw new Error('Failed to create comment');
+      }
+    } catch (error) {
+      console.error('Error creating comment:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to add comment');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    if (error) {
-      toast.error(error);
-    }
-    setIsLoading(false);
   };
 
-  if (!hasMounted || session.isPending) {
-    return (
-      <div className="animate-pulse space-y-3 rounded-sm border p-3">
-        <div className="flex items-start gap-3">
-          <div className="bg-muted h-8 w-8 shrink-0 rounded-full" />
-          <div className="flex-1 space-y-2">
-            <div className="bg-muted h-4 w-1/4 rounded-sm" />
-            <div className="bg-muted h-20 w-full rounded-sm" />
-          </div>
-        </div>
-        <div className="bg-muted h-8 w-full rounded-sm" />
-      </div>
-    );
-  }
+    // Always show the actual form - no loading gate
+  // Users can start typing immediately, authentication is checked on submit
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (
       (event.metaKey || event.ctrlKey) &&
       event.key === 'Enter' &&
-      !isLoading &&
-      (newComment.trim() || pendingAttachments.length > 0)
+      !isSubmitting &&
+      (newComment.trim() || pendingFiles.length > 0)
     ) {
       event.preventDefault(); // Prevent default newline behavior
       handleCommentSubmit();
@@ -203,13 +171,13 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
   return (
     <div className="bg-foreground/5 rounded-sm border p-0">
       <div className="flex items-start gap-3">
-        <Input
+        <input
           type="file"
           multiple
           ref={fileInputRef}
           className="hidden"
           onChange={handleFileSelect}
-          disabled={isLoading}
+          disabled={isSubmitting}
         />
         <div className="flex-1 space-y-3">
           <Textarea
@@ -219,25 +187,25 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
             onChange={(e: { target: { value: React.SetStateAction<string> } }) =>
               setNewComment(e.target.value)
             }
-            disabled={isLoading}
+            disabled={isSubmitting}
             onKeyDown={handleKeyDown}
             rows={2}
           />
 
-          {pendingAttachments.length > 0 && (
+          {pendingFiles.length > 0 && (
             <div className="space-y-2 px-4 pt-2">
-              <Label className="text-muted-foreground text-xs">Pending Attachments:</Label>
-              {pendingAttachments.map((pendingAttachment) => (
+              <Label className="text-muted-foreground text-xs">Pending Files:</Label>
+              {pendingFiles.map((file, index) => (
                 <AttachmentItem
-                  key={pendingAttachment.id}
+                  key={`${file.name}-${index}`}
                   pendingAttachment={{
-                    id: pendingAttachment.id,
-                    name: pendingAttachment.name,
-                    fileType: pendingAttachment.fileType,
+                    id: `temp-${index}`,
+                    name: file.name,
+                    fileType: file.type,
                   }}
-                  onClickFilename={handlePendingAttachmentClick} // Pass the correct handler
-                  onDelete={handleRemovePendingAttachment}
-                  isParentBusy={isLoading} // Disable if form is loading/uploading
+                  onClickFilename={() => handlePendingFileClick(index)}
+                  onDelete={() => handleRemovePendingFile(index)}
+                  isParentBusy={isSubmitting}
                 />
               ))}
               {/* Button to add more attachments */}
@@ -246,14 +214,10 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
                 size="sm"
                 className="mt-2 w-full justify-center gap-2"
                 onClick={triggerFileInput}
-                disabled={isLoading}
+                disabled={isSubmitting}
                 aria-label="Add another attachment"
               >
-                {isUploading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Paperclip className="h-4 w-4" />
-                )}
+                <Paperclip className="h-4 w-4" />
                 Add attachment
               </Button>
             </div>
@@ -262,23 +226,19 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
           <div
             className={clsx(
               'flex items-center px-4 pt-1 pb-4',
-              pendingAttachments.length === 0 ? 'justify-between' : 'justify-end',
+              pendingFiles.length === 0 ? 'justify-between' : 'justify-end',
             )}
           >
-            {pendingAttachments.length === 0 && (
+            {pendingFiles.length === 0 && (
               <Button
                 variant="ghost"
                 size="icon"
                 className="text-muted-foreground h-8 w-8 rounded-full"
                 onClick={triggerFileInput}
-                disabled={isLoading}
+                disabled={isSubmitting}
                 aria-label="Add attachment"
               >
-                {isUploading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Paperclip className="h-4 w-4" />
-                )}
+                <Paperclip className="h-4 w-4" />
               </Button>
             )}
 
@@ -287,10 +247,10 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
               variant="outline"
               className="border-muted-foreground/50 cursor-pointer rounded-full px-2"
               onClick={handleCommentSubmit}
-              disabled={isLoading || (!newComment.trim() && pendingAttachments.length === 0)}
+              disabled={isSubmitting || (!newComment.trim() && pendingFiles.length === 0)}
               aria-label="Submit comment"
             >
-              {isLoading ? (
+              {isSubmitting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <ArrowUp className="h-4 w-4" />

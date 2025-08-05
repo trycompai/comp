@@ -1,6 +1,6 @@
 {
   "extends": "../tsconfig/base.json",
-  "include": ["emails/**/*", "components/**/*", "lib/**/*", "index.ts"],
+  "include": ["emails", "components", "lib"],
   "exclude": ["node_modules"],
   "compilerOptions": {
     "baseUrl": ".",
