@@ -23,7 +23,7 @@
     "noFallthroughCasesInSwitch": false,
     "paths": {
       "@/*": ["./src/*"],
-      "@db": ["./prisma/index.ts"]
+      "@db": ["./prisma/index"]
     }
   }
 }

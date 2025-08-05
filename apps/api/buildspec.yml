@@ -54,6 +54,10 @@ phases:
       - echo "Copying built application..."
       - cp -r dist/* ../docker-build/
 
+      # Copy prisma folder (needed for runtime imports)
+      - echo "Copying prisma folder..."
+      - cp -r prisma ../docker-build/
+
       # Verify files were copied correctly
       - echo "Verifying copied files..."
       - ls -la ../docker-build/
