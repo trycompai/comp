@@ -51,6 +51,8 @@ export const env = createEnv({
     NEXT_PUBLIC_LINKEDIN_PARTNER_ID: z.string().optional(),
     NEXT_PUBLIC_LINKEDIN_CONVERSION_ID: z.string().optional(),
     NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL: z.string().optional(),
+    NEXT_PUBLIC_API_URL: z.string().optional(),
+    NEXT_PUBLIC_BETTER_AUTH_URL: z.string().optional(),
   },
 
   runtimeEnv: {
@@ -99,6 +101,8 @@ export const env = createEnv({
     NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL: process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL,
     SLACK_SALES_WEBHOOK: process.env.SLACK_SALES_WEBHOOK,
     HUBSPOT_ACCESS_TOKEN: process.env.HUBSPOT_ACCESS_TOKEN,
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+    NEXT_PUBLIC_BETTER_AUTH_URL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
   },
 
   skipValidation: !!process.env.CI || !!process.env.SKIP_ENV_VALIDATION,

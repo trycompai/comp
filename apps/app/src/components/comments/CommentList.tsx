@@ -1,11 +1,17 @@
 import { CommentItem } from './CommentItem';
 import { CommentWithAuthor } from './Comments';
 
-export function CommentList({ comments }: { comments: CommentWithAuthor[] }) {
+export function CommentList({
+  comments,
+  refreshComments,
+}: {
+  comments: CommentWithAuthor[];
+  refreshComments: () => void;
+}) {
   return (
     <div className="space-y-4">
       {comments.map((comment) => (
-        <CommentItem key={comment.id} comment={comment} />
+        <CommentItem key={comment.id} comment={comment} refreshComments={refreshComments} />
       ))}
     </div>
   );
