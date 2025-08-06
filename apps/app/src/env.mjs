@@ -9,6 +9,7 @@ export const env = createEnv({
     AUTH_GITHUB_SECRET: z.string().optional(),
     AUTH_SECRET: z.string(),
     DATABASE_URL: z.string().min(1),
+    BETTER_AUTH_URL: z.string(),
     OPENAI_API_KEY: z.string().optional(),
     RESEND_API_KEY: z.string(),
     UPSTASH_REDIS_REST_URL: z.string().optional(),
@@ -52,6 +53,7 @@ export const env = createEnv({
     NEXT_PUBLIC_LINKEDIN_CONVERSION_ID: z.string().optional(),
     NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL: z.string().optional(),
     NEXT_PUBLIC_API_URL: z.string().optional(),
+    NEXT_PUBLIC_BETTER_AUTH_URL: z.string(),
   },
 
   runtimeEnv: {
@@ -61,6 +63,7 @@ export const env = createEnv({
     AUTH_GITHUB_SECRET: process.env.AUTH_GITHUB_SECRET,
     AUTH_SECRET: process.env.AUTH_SECRET,
     DATABASE_URL: process.env.DATABASE_URL,
+    BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
     UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
@@ -101,6 +104,7 @@ export const env = createEnv({
     SLACK_SALES_WEBHOOK: process.env.SLACK_SALES_WEBHOOK,
     HUBSPOT_ACCESS_TOKEN: process.env.HUBSPOT_ACCESS_TOKEN,
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+    NEXT_PUBLIC_BETTER_AUTH_URL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
   },
 
   skipValidation: !!process.env.CI || !!process.env.SKIP_ENV_VALIDATION,

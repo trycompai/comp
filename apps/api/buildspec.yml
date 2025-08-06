@@ -25,6 +25,7 @@ phases:
       - echo "Validating environment variables..."
       - '[ -n "$DATABASE_URL" ] || { echo "❌ DATABASE_URL is not set"; exit 1; }'
       - '[ -n "$BASE_URL" ] || { echo "❌ BASE_URL is not set"; exit 1; }'
+      - '[ -n "$BETTER_AUTH_URL" ] || { echo "❌ BETTER_AUTH_URL is not set"; exit 1; }'
 
       # Install only API workspace dependencies
       - echo "Installing API dependencies only..."
