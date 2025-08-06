@@ -81,13 +81,17 @@
   "devDependencies": {
     "@tailwindcss/cli": "^4.1.10",
     "@tailwindcss/postcss": "^4.1.10",
+    "@vitejs/plugin-react": "^4.3.3",
     "autoprefixer": "^10.4.21",
+    "jsdom": "^26.1.0",
     "postcss": "^8.5.4",
     "react": "^19.1.1",
     "react-dom": "^19.1.0",
     "tailwindcss": "^4.1.8",
     "tsup": "^8.5.0",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.2.4"
   },
   "exports": {
     ".": {
@@ -443,6 +447,11 @@
     "dev": "tsup --format esm --watch --dts",
     "format": "prettier --write .",
     "lint": "prettier --check .",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui",
+    "test:watch": "vitest --watch",
     "typecheck": "tsc --noEmit"
   },
   "sideEffects": false,

@@ -9,6 +9,7 @@ import { defaultExtensions } from './extensions';
 import { LinkSelector } from './selectors/link-selector';
 import { NodeSelector } from './selectors/node-selector';
 import { TextButtons } from './selectors/text-buttons';
+import { validateAndFixTipTapContent } from './utils/validate-content';
 
 export interface EditorProps {
   initialContent?: JSONContent | JSONContent[];
@@ -45,14 +46,8 @@ export const Editor = ({
   const [openNode, setOpenNode] = useState(false);
   const [openLink, setOpenLink] = useState(false);
 
-  // Ensure content is properly structured with a doc type
-  const formattedContent = initialContent
-    ? Array.isArray(initialContent)
-      ? { type: 'doc', content: initialContent }
-      : initialContent.type === 'doc'
-        ? initialContent
-        : { type: 'doc', content: [initialContent] }
-    : null;
+  // Ensure content is properly structured with a doc type and fix any schema issues
+  const formattedContent = initialContent ? validateAndFixTipTapContent(initialContent) : null;
 
   const editor = useEditor({
     extensions: defaultExtensions(placeholder),
@@ -144,3 +139,8 @@ export const Editor = ({
 // Export types and utilities
 export { useEditor } from '@tiptap/react';
 export type { JSONContent } from '@tiptap/react';
+export {
+  debugTipTapContent,
+  isValidTipTapContent,
+  validateAndFixTipTapContent,
+} from './utils/validate-content';
