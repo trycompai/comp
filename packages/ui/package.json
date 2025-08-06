@@ -48,7 +48,7 @@
     "@tiptap/extension-table-header": "^2.22.3",
     "@tiptap/extension-table-row": "^2.22.3",
     "@tiptap/extension-task-item": "2.22.3",
-    "@tiptap/extension-task-list": "2.14.0",
+    "@tiptap/extension-task-list": "3.0.9",
     "@tiptap/extension-text-align": "2.22.3",
     "@tiptap/extension-typography": "2.14.0",
     "@tiptap/extension-underline": "2.22.3",
