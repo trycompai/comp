@@ -22,14 +22,14 @@ export class HybridAuthGuard implements CanActivate {
       return this.handleApiKeyAuth(request, apiKey);
     }
 
-    // Try JWT Bearer authentication (for internal frontend with JWT tokens)
+    // Try Bearer JWT token authentication (for internal frontend)
     const authHeader = request.headers['authorization'] as string;
     if (authHeader?.startsWith('Bearer ')) {
       return this.handleJwtAuth(request, authHeader);
     }
 
     throw new UnauthorizedException(
-      'Authentication required: Provide X-API-Key or Authorization Bearer JWT token',
+      'Authentication required: Provide either X-API-Key or Bearer JWT token',
     );
   }
 
@@ -61,56 +61,56 @@ export class HybridAuthGuard implements CanActivate {
     authHeader: string,
   ): Promise<boolean> {
     try {
-      // Extract JWT token from Bearer header
-      const token = authHeader.replace('Bearer ', '');
+      // Extract token from "Bearer <token>"
+      const token = authHeader.substring(7);
 
-      // Verify JWT using Better Auth JWKS endpoint
+      // Create JWKS for token verification using Better Auth endpoint
       const JWKS = createRemoteJWKSet(
         new URL(`${process.env.BETTER_AUTH_URL}/api/auth/jwks`),
       );
 
+      // Verify JWT token
       const { payload } = await jwtVerify(token, JWKS, {
         issuer: process.env.BETTER_AUTH_URL,
         audience: process.env.BETTER_AUTH_URL,
       });
 
-      // Extract user information from JWT payload
-      // By default, Better Auth includes the entire user object in the payload
-      const user = payload.user as { id: string; email: string };
-      if (!user?.id) {
+      // Extract user information from JWT payload (user data is directly in payload for Better Auth JWT)
+      const userId = payload.id as string;
+      const userEmail = payload.email as string;
+
+      if (!userId) {
         throw new UnauthorizedException(
           'Invalid JWT payload: missing user information',
         );
       }
 
-      // Require explicit organization ID via header for JWT auth
-      const organizationId = request.headers['x-organization-id'] as string;
-      if (!organizationId) {
+      // JWT authentication REQUIRES explicit X-Organization-Id header
+      const explicitOrgId = request.headers['x-organization-id'] as string;
+
+      if (!explicitOrgId) {
         throw new UnauthorizedException(
-          'Organization context required: Provide X-Organization-Id header for JWT authentication',
+          'Organization context required: X-Organization-Id header is mandatory for JWT authentication',
         );
       }
 
-      // Critical: Verify user has access to the requested organization
-      const hasAccess = await this.verifyUserOrgAccess(user.id, organizationId);
+      // Verify user has access to the requested organization
+      const hasAccess = await this.verifyUserOrgAccess(userId, explicitOrgId);
       if (!hasAccess) {
         throw new UnauthorizedException(
-          `User does not have access to organization: ${organizationId}`,
+          `User does not have access to organization: ${explicitOrgId}`,
         );
       }
 
       // Set request context for JWT auth
-      request.userId = user.id;
-      request.userEmail = user.email;
-      request.organizationId = organizationId;
+      request.userId = userId;
+      request.userEmail = userEmail;
+      request.organizationId = explicitOrgId;
       request.authType = 'jwt';
       request.isApiKey = false;
 
       return true;
-    } catch (error: unknown) {
-      if (error instanceof UnauthorizedException) {
-        throw error;
-      }
+    } catch (error) {
       console.error('JWT verification failed:', error);
       throw new UnauthorizedException('Invalid or expired JWT token');
     }
