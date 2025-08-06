@@ -7,13 +7,12 @@ import type { Context } from '@prisma/client';
 import { T, useGT } from 'gt-next';
 import { Plus } from 'lucide-react';
 import { useQueryState } from 'nuqs';
-import { useMemo } from 'react';
 import { CreateContextSheet } from './components/CreateContextSheet';
-import { columns as getColumns } from './components/table/ContextColumns'; // This requires a t function to be passed into it
+import { useColumns } from './components/table/ContextColumns';
 
 export const ContextTable = ({ entries, pageCount }: { entries: Context[]; pageCount: number }) => {
   const t = useGT();
-  const columns = useMemo(() => getColumns(t), [t]);
+  const columns = useColumns(t);
   const { table } = useDataTable({
     data: entries,
     columns,

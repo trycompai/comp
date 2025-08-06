@@ -67,7 +67,7 @@ function ApiKeyActionsCell({ apiKey }: { apiKey: ApiKey }) {
   );
 }
 
-export const columns = (t: (key: string) => string): ColumnDef<ApiKey>[] => [
+export const useColumns = (t: (key: string) => string): ColumnDef<ApiKey>[] => [
   {
     id: 'name',
     accessorKey: 'name',

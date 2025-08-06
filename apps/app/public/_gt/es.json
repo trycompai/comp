@@ -2935,28 +2935,17 @@
   "1c47511afef4d6ae": "Resumen de Tareas",
   "37991603abeba431": "Revocar Clave API",
   "35dd0d7bf99b8a1e": "¿Está seguro de que desea revocar esta clave de API? Esta acción no se puede deshacer.",
+  "4e745dee79a5b94b": "Revocando...",
+  "224e9839195b63b2": "Revocar",
+  "fc36a21e5cc53b73": "Nunca",
+  "c55dcb8c0cd7cb3e": "Creado",
+  "b6d4f8c301c67fb6": "Vence",
+  "9977688d38424e1a": "Último Uso",
+  "177000bd1643352a": "Acciones",
   "50dabb0a1d3ad5b1": "Agregar Clave API",
-  "5c8772e727c04218": "Pregunta",
-  "29ea79cb3aeabe1a": "Respuesta",
   "482cd570aa1b2713": "Eliminar Entrada",
   "b03da6e8c7a5bfaa": "¿Está seguro de que desea eliminar esta entrada? Esta acción no se puede deshacer.",
-  "c58ce397fc3e22f0": {
-    "i": 1,
-    "c": "Eliminar",
-    "d": {
-      "t": "b",
-      "b": {
-        "true": {
-          "i": 2,
-          "c": "Eliminando..."
-        },
-        "false": {
-          "i": 2,
-          "c": "Eliminar"
-        }
-      }
-    }
-  },
+  "20217495d08d5a3b": "Eliminando...",
   "4109fa880275dedc": "El ID del proveedor es obligatorio",
   "05a9a111421ebabb": "La fecha de vencimiento es obligatoria",
   "df0e1a07797cc68c": "Proveedor actualizado exitosamente",
@@ -3055,7 +3044,6 @@
   "1719f7091d606c2f": "Detalles de la Tarea",
   "279b0dc45b250e2f": "Ingrese el título",
   "63028840be654541": "Ingrese descripción",
-  "fc36a21e5cc53b73": "Nunca",
-  "224e9839195b63b2": "Revocar",
-  "4e745dee79a5b94b": "Revocando..."
+  "5c8772e727c04218": "Pregunta",
+  "29ea79cb3aeabe1a": "Respuesta"
 }

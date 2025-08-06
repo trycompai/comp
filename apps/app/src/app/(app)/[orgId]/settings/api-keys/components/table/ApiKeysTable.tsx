@@ -7,13 +7,12 @@ import { Button } from '@comp/ui/button';
 import { T, useGT } from 'gt-next';
 import { Plus } from 'lucide-react';
 import { useQueryState } from 'nuqs';
-import { useMemo } from 'react';
 import { CreateApiKeyDialog } from '../CreateApiKeyDialog';
-import { columns as getColumns } from './ApiKeysColumns';
+import { useColumns } from './ApiKeysColumns';
 
 export function ApiKeysTable({ apiKeys }: { apiKeys: ApiKey[] }) {
   const t = useGT();
-  const columns = useMemo(() => getColumns(t), [t]);
+  const columns = useColumns(t);
   const { table } = useDataTable({
     data: apiKeys,
     columns,

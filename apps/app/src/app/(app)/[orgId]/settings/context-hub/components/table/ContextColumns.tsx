@@ -67,7 +67,7 @@ function ContextDeleteCell({ context }: { context: Context }) {
   );
 }
 
-export const columns = (t: (key: string) => string): ColumnDef<Context>[] => [
+export const useColumns = (t: (key: string) => string): ColumnDef<Context>[] => [
   {
     id: 'question',
     accessorKey: 'question',
