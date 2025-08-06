@@ -1,27 +1,4 @@
-export interface BetterAuthUser {
-  id: string;
-  email: string;
-  name: string;
-  emailVerified: boolean;
-  image?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface BetterAuthSession {
-  id: string;
-  userId: string;
-  activeOrganizationId?: string;
-  expiresAt: Date;
-  token: string;
-  ipAddress?: string;
-  userAgent?: string;
-}
-
-export interface BetterAuthSessionResponse {
-  user: BetterAuthUser;
-  session: BetterAuthSession;
-}
+// Types for API authentication - supports API keys and JWT tokens only
 
 export interface AuthenticatedRequest extends Request {
   organizationId: string;
