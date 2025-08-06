@@ -1,7 +1,7 @@
 'use client';
 
 import { env } from '@/env.mjs';
-import { getJwtToken } from '@/utils/auth-client';
+import { jwtManager } from '@/utils/jwt-manager';
 
 interface ApiCallOptions extends Omit<RequestInit, 'headers'> {
   organizationId?: string;
@@ -46,10 +46,12 @@ export class ApiClient {
     // Add JWT token for authentication
     if (typeof window !== 'undefined') {
       try {
-        const token = await getJwtToken();
+        // Get a valid (non-stale) JWT token
+        const token = await jwtManager.getValidToken();
+
         if (token) {
           headers['Authorization'] = `Bearer ${token}`;
-          console.log('🎯 Using JWT token for API authentication');
+          console.log('🎯 Using fresh JWT token for API authentication');
         } else {
           console.log('⚠️ No JWT token available for API authentication');
         }
