@@ -41,7 +41,7 @@ export function FrameworkSelection({ value, onChange, onLoadingChange }: Framewo
     }
 
     fetchFrameworks();
-  }, []); // Only run once on mount
+  }, [onLoadingChange]); // Only run once on mount
 
   // Separate effect for auto-selection - only when frameworks first load
   useEffect(() => {

@@ -9,11 +9,12 @@ import { headers } from 'next/headers';
 import { z } from 'zod';
 import { getAppErrors } from '../types';
 
-const getSchema = (t: Awaited<ReturnType<typeof getGT>>) => z.object({
-  employeeId: z.string(),
-  name: z.string().min(1, t('Name is required')),
-  email: z.string().email(t('Invalid email address')),
-});
+const getSchema = (t: Awaited<ReturnType<typeof getGT>>) =>
+  z.object({
+    employeeId: z.string(),
+    name: z.string().min(1, t('Name is required')),
+    email: z.string().email(t('Invalid email address')),
+  });
 
 export const updateEmployeeDetails = authActionClient
   .metadata({
@@ -31,7 +32,7 @@ export const updateEmployeeDetails = authActionClient
       const t = await getGT();
       const schema = getSchema(t);
       const appErrors = getAppErrors(t);
-      
+
       const parseResult = schema.safeParse(parsedInput);
       if (!parseResult.success) {
         return {
@@ -39,7 +40,7 @@ export const updateEmployeeDetails = authActionClient
           error: parseResult.error.errors[0]?.message || t('Invalid input'),
         };
       }
-      
+
       const { employeeId, name, email } = parseResult.data;
 
       const session = await auth.api.getSession({

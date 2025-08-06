@@ -1,8 +1,8 @@
 import { getTools } from '@/data/tools';
-import { getGT } from 'gt-next/server';
 import { auth } from '@/utils/auth';
 import { groq } from '@ai-sdk/groq';
 import { type UIMessage, convertToModelMessages, streamText } from 'ai';
+import { getGT } from 'gt-next/server';
 import { headers } from 'next/headers';
 
 export const maxDuration = 30;

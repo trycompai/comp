@@ -65,14 +65,16 @@ export const TestsLayout = ({
       const hours = Math.floor(diff / (1000 * 60 * 60));
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
 
-      setTimeToNextRun(t('Next scheduled run in {hours}h {minutes}m (daily at 5:00 AM UTC)', { hours, minutes }));
+      setTimeToNextRun(
+        t('Next scheduled run in {hours}h {minutes}m (daily at 5:00 AM UTC)', { hours, minutes }),
+      );
     };
 
     calculateTimeToNextRun(); // Initial calculation
     const intervalId = setInterval(calculateTimeToNextRun, 60000); // Update every minute
 
     return () => clearInterval(intervalId); // Cleanup interval on component unmount
-  }, []);
+  }, [t]);
 
   const hasAws = cloudProviders.some((integration) => integration.integrationId === 'aws');
   const hasGcp = cloudProviders.some((integration) => integration.integrationId === 'gcp');
@@ -162,9 +164,21 @@ export const TestsLayout = ({
       {activeProvidersCount > 1 ? (
         <Tabs defaultValue={hasAws ? 'AWS' : hasGcp ? 'GCP' : 'Azure'}>
           <TabsList className={`grid w-full grid-cols-${activeProvidersCount}`}>
-            {hasAws && <TabsTrigger value="AWS"><T>AWS</T></TabsTrigger>}
-            {hasGcp && <TabsTrigger value="GCP"><T>GCP</T></TabsTrigger>}
-            {hasAzure && <TabsTrigger value="Azure"><T>Azure</T></TabsTrigger>}
+            {hasAws && (
+              <TabsTrigger value="AWS">
+                <T>AWS</T>
+              </TabsTrigger>
+            )}
+            {hasGcp && (
+              <TabsTrigger value="GCP">
+                <T>GCP</T>
+              </TabsTrigger>
+            )}
+            {hasAzure && (
+              <TabsTrigger value="Azure">
+                <T>Azure</T>
+              </TabsTrigger>
+            )}
           </TabsList>
           {hasAws && (
             <TabsContent value="AWS" className="mt-4">
@@ -299,9 +313,11 @@ function TestProviderTabContent({
         <div className="text-muted-foreground rounded-lg border border-dashed p-10 text-center">
           <p>
             {selectedStatus !== 'all'
-              ? t('No {providerName} test results found with status "{status}"', { providerName, status: selectedStatus })
-              : t('No {providerName} test results found', { providerName })
-            }
+              ? t('No {providerName} test results found with status "{status}"', {
+                  providerName,
+                  status: selectedStatus,
+                })
+              : t('No {providerName} test results found', { providerName })}
           </p>
         </div>
       )}

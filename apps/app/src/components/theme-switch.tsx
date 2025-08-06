@@ -1,8 +1,8 @@
 'use client';
 
+import { useGT } from 'gt-next';
 import { Monitor, Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { useGT } from 'gt-next';
 
 import {
   Select,

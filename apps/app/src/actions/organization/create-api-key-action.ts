@@ -21,7 +21,7 @@ export const createApiKeyAction = authActionClient
   })
   .action(async ({ parsedInput, ctx }) => {
     const t = await getGT();
-    
+
     try {
       const { name, expiresAt } = parsedInput;
       console.log(`Creating API key "${name}" with expiration: ${expiresAt}`);

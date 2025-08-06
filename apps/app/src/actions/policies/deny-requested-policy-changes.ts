@@ -1,9 +1,9 @@
 'use server';
 
 import { db, PolicyStatus } from '@db';
+import { getGT } from 'gt-next/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
-import { getGT } from 'gt-next/server';
 import { authActionClient } from '../safe-action';
 
 const denyRequestedPolicyChangesSchema = z.object({

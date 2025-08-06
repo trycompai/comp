@@ -24,7 +24,7 @@ export function UpdateSecondaryFieldsForm({
   assignees: (Member & { user: User })[];
 }) {
   const t = useGT();
-  
+
   const updateVendor = useAction(updateVendorAction, {
     onSuccess: () => {
       toast.success(t('Vendor updated successfully'));

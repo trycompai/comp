@@ -5,11 +5,11 @@ import { Suspense } from 'react';
 
 import { cn } from '@comp/ui/cn';
 import { Table, TableBody, TableCell, TableRow } from '@comp/ui/table';
+import { T } from 'gt-next';
 import { type RiskTaskType, useColumns as getColumns } from './columns';
 import { DataTableHeader } from './data-table-header';
 import { DataTablePagination } from './data-table-pagination';
 import { Loading } from './loading';
-import { T } from 'gt-next';
 
 interface DataTableProps<TData, TValue> {
   columnHeaders: {

@@ -123,7 +123,9 @@ export function TestCard({
         <span className="flex-grow" />
       </CardContent>
       <CardFooter className="flex items-center justify-between py-4">
-        <div className="text-muted-foreground text-xs">{t('Status: {status}', { status: test.status })}</div>
+        <div className="text-muted-foreground text-xs">
+          {t('Status: {status}', { status: test.status })}
+        </div>
         <T>
           <Button size="sm" variant="outline" onClick={() => setShowRemediation(true)}>
             Remediate <ArrowRight className="ml-2 h-4 w-4" />

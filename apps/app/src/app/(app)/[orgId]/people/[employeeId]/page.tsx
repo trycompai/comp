@@ -1,10 +1,7 @@
 import { auth } from '@/utils/auth';
 
 import { getPostHogClient } from '@/app/posthog';
-import {
-  type TrainingVideo,
-  getTrainingVideos,
-} from '@/lib/data/training-videos';
+import { type TrainingVideo, getTrainingVideos } from '@/lib/data/training-videos';
 import { getFleetInstance } from '@/lib/fleet';
 import type { EmployeeTrainingVideoCompletion, Member } from '@db';
 import { db } from '@db';

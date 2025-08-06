@@ -1,7 +1,7 @@
 import { auth } from '@/utils/auth';
+import { getGT } from 'gt-next/server';
 import { headers } from 'next/headers';
 import { cache } from 'react';
-import { getGT } from 'gt-next/server';
 
 import PageCore from '@/components/pages/PageCore.tsx';
 import { db } from '@db';
@@ -20,7 +20,7 @@ export default async function ApiKeysPage() {
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getGT();
-  
+
   return {
     title: t('API'),
   };

@@ -11,7 +11,7 @@ interface InherentRiskChartProps {
 
 export function VendorInherentRiskChart({ vendor }: InherentRiskChartProps) {
   const t = useGT();
-  
+
   return (
     <RiskMatrixChart
       title={t('Inherent Risk')}

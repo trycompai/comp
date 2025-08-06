@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import { updateResidualRiskEnumAction } from '@/actions/risk/update-residual-risk-enum-action';
 import { getUpdateResidualRiskEnumSchema } from '@/actions/schema';
 import { Button } from '@comp/ui/button';
@@ -8,14 +7,15 @@ import { Form, FormControl, FormField, FormItem, FormLabel } from '@comp/ui/form
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Impact, Likelihood } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { T, useGT } from 'gt-next';
+import { useGT } from 'gt-next';
+import type { InlineTranslationOptions } from 'gt-next/types';
 import { Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useQueryState } from 'nuqs';
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
-import type { InlineTranslationOptions } from 'gt-next/types';
 
 interface ResidualRiskFormProps {
   riskId: string;
@@ -24,7 +24,9 @@ interface ResidualRiskFormProps {
   onSuccess?: () => void;
 }
 
-const getLikelihoodLabels = (t: (content: string, options?: InlineTranslationOptions) => string): Record<Likelihood, string> => ({
+const getLikelihoodLabels = (
+  t: (content: string, options?: InlineTranslationOptions) => string,
+): Record<Likelihood, string> => ({
   [Likelihood.very_unlikely]: t('Very Unlikely'),
   [Likelihood.unlikely]: t('Unlikely'),
   [Likelihood.possible]: t('Possible'),
@@ -32,7 +34,9 @@ const getLikelihoodLabels = (t: (content: string, options?: InlineTranslationOpt
   [Likelihood.very_likely]: t('Very Likely'),
 });
 
-const getImpactLabels = (t: (content: string, options?: InlineTranslationOptions) => string): Record<Impact, string> => ({
+const getImpactLabels = (
+  t: (content: string, options?: InlineTranslationOptions) => string,
+): Record<Impact, string> => ({
   [Impact.insignificant]: t('Insignificant'),
   [Impact.minor]: t('Minor'),
   [Impact.moderate]: t('Moderate'),

@@ -23,7 +23,8 @@ const AdvancedEditor = ({
   saveDebounceMs = 500,
 }: AdvancedEditorProps) => {
   const t = useGT();
-  const translatedPlaceholder = placeholder === 'Start writing...' ? t('Start writing...') : placeholder;
+  const translatedPlaceholder =
+    placeholder === 'Start writing...' ? t('Start writing...') : placeholder;
   return (
     <Editor
       initialContent={initialContent}

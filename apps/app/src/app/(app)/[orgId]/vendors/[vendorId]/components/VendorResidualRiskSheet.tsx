@@ -39,7 +39,9 @@ export function VendorResidualRiskSheet({
                 <X className="h-5 w-5" />
               </Button>
             </div>
-            <SheetDescription>{t('Select the residual risk level for this vendor')}</SheetDescription>
+            <SheetDescription>
+              {t('Select the residual risk level for this vendor')}
+            </SheetDescription>
           </SheetHeader>
 
           <ScrollArea className="h-full p-0 pb-[100px]" hideScrollbar>

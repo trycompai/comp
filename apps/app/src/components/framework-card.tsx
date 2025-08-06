@@ -50,7 +50,9 @@ export function FrameworkCard({
                     : 'bg-muted text-muted-foreground',
                 )}
               >
-<T>v<Var>{framework.version}</Var></T>
+                <T>
+                  v<Var>{framework.version}</Var>
+                </T>
               </span>
             </div>
           </div>

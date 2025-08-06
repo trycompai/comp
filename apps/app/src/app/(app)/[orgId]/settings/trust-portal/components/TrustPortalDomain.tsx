@@ -13,8 +13,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@comp/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { AlertCircle, CheckCircle, ClipboardCopy, Loader2 } from 'lucide-react';
 import { T, useGT } from 'gt-next';
+import { AlertCircle, CheckCircle, ClipboardCopy, Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -228,10 +228,18 @@ export function TrustPortalDomain({
                         <table className="hidden w-full lg:table">
                           <thead>
                             <tr className="[&_th]:px-3 [&_th]:py-2 [&_th]:text-left">
-                              <T><th>Verified</th></T>
-                              <T><th>Type</th></T>
-                              <T><th>Name</th></T>
-                              <T><th>Value</th></T>
+                              <T>
+                                <th>Verified</th>
+                              </T>
+                              <T>
+                                <th>Type</th>
+                              </T>
+                              <T>
+                                <th>Name</th>
+                              </T>
+                              <T>
+                                <th>Value</th>
+                              </T>
                             </tr>
                           </thead>
                           <tbody>
@@ -334,7 +342,9 @@ export function TrustPortalDomain({
                                       variant="ghost"
                                       size="icon"
                                       type="button"
-                                      onClick={() => handleCopy(vercelVerification || '', t('Name'))}
+                                      onClick={() =>
+                                        handleCopy(vercelVerification || '', t('Name'))
+                                      }
                                       className="h-6 w-6 shrink-0"
                                     >
                                       <ClipboardCopy className="h-4 w-4" />
@@ -350,7 +360,9 @@ export function TrustPortalDomain({
                                       variant="ghost"
                                       size="icon"
                                       type="button"
-                                      onClick={() => handleCopy(vercelVerification || '', t('Value'))}
+                                      onClick={() =>
+                                        handleCopy(vercelVerification || '', t('Value'))
+                                      }
                                       className="h-6 w-6 shrink-0"
                                     >
                                       <ClipboardCopy className="h-4 w-4" />
@@ -364,11 +376,15 @@ export function TrustPortalDomain({
 
                         <div className="space-y-4 p-4 lg:hidden">
                           <div>
-                            <T><div className="mb-1 font-medium">Type:</div></T>
+                            <T>
+                              <div className="mb-1 font-medium">Type:</div>
+                            </T>
                             <div>CNAME</div>
                           </div>
                           <div>
-                            <T><div className="mb-1 font-medium">Name:</div></T>
+                            <T>
+                              <div className="mb-1 font-medium">Name:</div>
+                            </T>
                             <div className="flex items-center justify-between gap-2">
                               <span className="min-w-0 break-words">{form.watch('domain')}</span>
                               <Button
@@ -383,7 +399,9 @@ export function TrustPortalDomain({
                             </div>
                           </div>
                           <div>
-                            <T><div className="mb-1 font-medium">Value:</div></T>
+                            <T>
+                              <div className="mb-1 font-medium">Value:</div>
+                            </T>
                             <div className="flex items-center justify-between gap-2">
                               <span className="min-w-0 break-words">cname.vercel-dns.com.</span>
                               <Button
@@ -399,11 +417,15 @@ export function TrustPortalDomain({
                           </div>
                           <div className="border-b" />
                           <div>
-                            <T><div className="mb-1 font-medium">Type:</div></T>
+                            <T>
+                              <div className="mb-1 font-medium">Type:</div>
+                            </T>
                             <div>TXT</div>
                           </div>
                           <div>
-                            <T><div className="mb-1 font-medium">Name:</div></T>
+                            <T>
+                              <div className="mb-1 font-medium">Name:</div>
+                            </T>
                             <div className="flex items-center justify-between gap-2">
                               <span className="min-w-0 break-words">@</span>
                               <Button
@@ -420,7 +442,9 @@ export function TrustPortalDomain({
                             </div>
                           </div>
                           <div>
-                            <T><div className="mb-1 font-medium">Value:</div></T>
+                            <T>
+                              <div className="mb-1 font-medium">Value:</div>
+                            </T>
                             <div className="flex items-center justify-between gap-2">
                               <span className="min-w-0 break-words">
                                 compai-domain-verification={orgId}
@@ -442,11 +466,15 @@ export function TrustPortalDomain({
                             <>
                               <div className="border-b" />
                               <div>
-                                <T><div className="mb-1 font-medium">Type:</div></T>
+                                <T>
+                                  <div className="mb-1 font-medium">Type:</div>
+                                </T>
                                 <div>TXT</div>
                               </div>
                               <div>
-                                <T><div className="mb-1 font-medium">Name:</div></T>
+                                <T>
+                                  <div className="mb-1 font-medium">Name:</div>
+                                </T>
                                 <div className="flex items-center justify-between gap-2">
                                   <span className="min-w-0 break-words">_vercel</span>
                                   <Button
@@ -461,7 +489,9 @@ export function TrustPortalDomain({
                                 </div>
                               </div>
                               <div>
-                                <T><div className="mb-1 font-medium">Value:</div></T>
+                                <T>
+                                  <div className="mb-1 font-medium">Value:</div>
+                                </T>
                                 <div className="flex items-center justify-between gap-2">
                                   <span className="min-w-0 break-words">{vercelVerification}</span>
                                   <Button

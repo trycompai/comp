@@ -2,10 +2,10 @@
 
 import { Button } from '@comp/ui/button';
 import { TableHead, TableHeader, TableRow } from '@comp/ui/table';
+import { useGT } from 'gt-next';
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback } from 'react';
-import { useGT } from 'gt-next';
 
 type Props = {
   table?: {

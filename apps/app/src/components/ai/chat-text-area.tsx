@@ -1,8 +1,8 @@
 import { Icons } from '@comp/ui/icons';
 import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
 import { Textarea as ShadcnTextarea } from '@comp/ui/textarea';
-import { useRouter } from 'next/navigation';
 import { T, useGT } from 'gt-next';
+import { useRouter } from 'next/navigation';
 
 interface InputProps {
   input: string;
@@ -61,7 +61,9 @@ export const ChatTextarea = ({ input, handleInputChange, isLoading }: InputProps
                   onClick={() => handleOpenUrl('https://x.com/compai')}
                 >
                   <Icons.X className="h-[16px] w-[16px]" />
-                  <T><span>Follow Comp AI</span></T>
+                  <T>
+                    <span>Follow Comp AI</span>
+                  </T>
                 </button>
               </li>
               <li>
@@ -71,7 +73,9 @@ export const ChatTextarea = ({ input, handleInputChange, isLoading }: InputProps
                   onClick={() => handleOpenUrl('https://discord.gg/compai')}
                 >
                   <Icons.Discord className="h-[16px] w-[16px]" />
-                  <T><span>Join our Discord</span></T>
+                  <T>
+                    <span>Join our Discord</span>
+                  </T>
                 </button>
               </li>
 
@@ -82,7 +86,9 @@ export const ChatTextarea = ({ input, handleInputChange, isLoading }: InputProps
                   onClick={() => handleOpenUrl('https://git.new/compai')}
                 >
                   <Icons.GithubOutline className="h-[16px] w-[16px]" />
-                  <T><span>GitHub</span></T>
+                  <T>
+                    <span>GitHub</span>
+                  </T>
                 </button>
               </li>
             </ul>
@@ -91,7 +97,9 @@ export const ChatTextarea = ({ input, handleInputChange, isLoading }: InputProps
 
         <div className="ml-auto flex space-x-4">
           <button className="flex items-center space-x-2 text-xs" type="submit">
-            <T><span>Submit</span></T>
+            <T>
+              <span>Submit</span>
+            </T>
             <kbd className="bg-accent pointer-events-none h-5 items-center gap-1 rounded-sm border px-1.5 font-mono text-[10px] font-medium select-none">
               <span>↵</span>
             </kbd>

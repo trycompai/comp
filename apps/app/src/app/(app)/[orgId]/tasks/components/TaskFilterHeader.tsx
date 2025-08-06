@@ -1,17 +1,18 @@
 'use client';
 
 import { Button } from '@comp/ui/button';
+import { useGT } from 'gt-next';
 import { Check, Circle, List, Loader2 } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import React from 'react';
-import { useGT } from 'gt-next';
 
 // Configuration for task statuses and their display order.
-const getStatuses = (t: (content: string) => string) => [
-  { id: 'in_progress', title: t('In Progress') },
-  { id: 'todo', title: t('Todo') },
-  { id: 'done', title: t('Done') },
-] as const;
+const getStatuses = (t: (content: string) => string) =>
+  [
+    { id: 'in_progress', title: t('In Progress') },
+    { id: 'todo', title: t('Todo') },
+    { id: 'done', title: t('Done') },
+  ] as const;
 type StatusId = 'in_progress' | 'todo' | 'done';
 
 /**
@@ -21,7 +22,7 @@ type StatusId = 'in_progress' | 'todo' | 'done';
 export function TaskFilterHeader() {
   const t = useGT();
   const statuses = getStatuses(t);
-  
+
   // State for the status filter, synced with the 'status' URL query parameter.
   const [statusFilter, setStatusFilter] = useQueryState('status', {
     shallow: false, // Ensures full page reload on change to refetch server data.

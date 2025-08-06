@@ -3,10 +3,10 @@
 import { CreateRiskSheet } from '@/components/sheets/create-risk-sheet';
 import { Button } from '@comp/ui/button';
 import { Icons } from '@comp/ui/icons';
+import { T, useGT } from 'gt-next';
 import { Plus } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQueryState } from 'nuqs';
-import { T, useGT } from 'gt-next';
 
 type Props = {
   hasFilters?: boolean;

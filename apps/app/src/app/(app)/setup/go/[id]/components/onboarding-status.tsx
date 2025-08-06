@@ -1,8 +1,8 @@
 'use client';
 
 import type { onboardOrganization } from '@/jobs/tasks/onboarding/onboard-organization';
-import { T } from 'gt-next';
 import { useRun } from '@trigger.dev/react-hooks';
+import { T } from 'gt-next';
 import { CheckCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';

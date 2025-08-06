@@ -2,7 +2,7 @@
 
 import { AiWorkPreviewAuthentic } from '@/components/ai-work-preview-authentic';
 import { Button } from '@comp/ui/button';
-import { T, useGT, Branch } from 'gt-next';
+import { Branch, T, useGT } from 'gt-next';
 import { ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';

@@ -5,7 +5,7 @@ import { Button } from '@comp/ui/button';
 import { Label } from '@comp/ui/label';
 import { Textarea } from '@comp/ui/textarea';
 import type { AttachmentEntityType } from '@db';
-import { T, useGT, Var, Branch } from 'gt-next';
+import { Branch, T, useGT } from 'gt-next';
 import { Loader2, Paperclip, Plus } from 'lucide-react';
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -95,7 +95,12 @@ export function TaskBody({
           const MAX_FILE_SIZE_MB = 10;
           const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
           if (file.size > MAX_FILE_SIZE_BYTES) {
-            toast.error(t('File "{filename}" exceeds the {sizeLimit}MB limit.', { filename: file.name, sizeLimit: MAX_FILE_SIZE_MB }));
+            toast.error(
+              t('File "{filename}" exceeds the {sizeLimit}MB limit.', {
+                filename: file.name,
+                sizeLimit: MAX_FILE_SIZE_MB,
+              }),
+            );
             return resolve(null); // Resolve to skip this file
           }
 
@@ -111,9 +116,14 @@ export function TaskBody({
               console.error(`Failed to upload ${file.name}:`, error);
               const userFriendlyMessage = getErrorMessage(
                 error instanceof Error ? error.message : 'Unknown error',
-                t
+                t,
               );
-              toast.error(t('Failed to upload {filename}: {errorMessage}', { filename: file.name, errorMessage: userFriendlyMessage }));
+              toast.error(
+                t('Failed to upload {filename}: {errorMessage}', {
+                  filename: file.name,
+                  errorMessage: userFriendlyMessage,
+                }),
+              );
               resolve(null); // Resolve even if there's an error to not break Promise.all
             });
         });
@@ -125,7 +135,7 @@ export function TaskBody({
       refreshAttachments();
       resetState();
     },
-    [uploadAttachment, refreshAttachments],
+    [uploadAttachment, refreshAttachments, t],
   );
 
   const triggerFileInput = () => {
@@ -160,7 +170,7 @@ export function TaskBody({
         setBusyAttachmentId(null);
       }
     },
-    [deleteAttachment, refreshAttachments],
+    [deleteAttachment, refreshAttachments, t],
   );
 
   return (
@@ -227,7 +237,9 @@ export function TaskBody({
         {/* Show error state if attachments failed to load */}
         {attachmentsError && (
           <T>
-            <p className="text-destructive text-sm">Failed to load attachments. Please try again.</p>
+            <p className="text-destructive text-sm">
+              Failed to load attachments. Please try again.
+            </p>
           </T>
         )}
 

@@ -7,9 +7,9 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@comp/ui/chart';
-import { T, useGT } from 'gt-next';
-import { Cell, Pie, PieChart } from 'recharts';
+import { useGT } from 'gt-next';
 import type { InlineTranslationOptions } from 'gt-next/types';
+import { Cell, Pie, PieChart } from 'recharts';
 
 interface PolicyOverviewProps {
   data: {
@@ -20,7 +20,9 @@ interface PolicyOverviewProps {
   };
 }
 
-const getChartConfig = (t: (content: string, options?: InlineTranslationOptions) => string): ChartConfig => ({
+const getChartConfig = (
+  t: (content: string, options?: InlineTranslationOptions) => string,
+): ChartConfig => ({
   draft: {
     label: t('Draft'),
     color: 'hsl(var(--chart-1))',

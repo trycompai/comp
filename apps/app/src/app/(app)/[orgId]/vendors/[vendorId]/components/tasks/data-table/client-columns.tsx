@@ -1,7 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
 import { Badge } from '@comp/ui/badge';
-import { Task, TaskStatus } from '@db';
-import type { ColumnDef } from '@tanstack/react-table';
+import { TaskStatus } from '@db';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -18,7 +17,7 @@ export interface VendorTaskType {
   };
 }
 
-export const getUseGetColumnHeaders = (t: (content: string) => string) => {
+export const useGetColumnHeaders = (t: (content: string) => string) => {
   const { vendorId, orgId } = useParams<{
     vendorId: string;
     orgId: string;

@@ -5,7 +5,9 @@ import { T, useGT } from 'gt-next';
 import type { Control } from 'react-hook-form';
 import type { EmployeeFormValues } from '../EmployeeDetails';
 
-const getDepartments = (t: (content: string) => string): { value: Departments; label: string }[] => [
+const getDepartments = (
+  t: (content: string) => string,
+): { value: Departments; label: string }[] => [
   { value: 'admin', label: t('Admin') },
   { value: 'gov', label: t('Governance') },
   { value: 'hr', label: t('HR') },

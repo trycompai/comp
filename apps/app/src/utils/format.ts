@@ -127,7 +127,10 @@ export function formatDateRange(dates: TZDate[]): string {
   return `${formatFullDate(startDate)} - ${formatFullDate(endDate)}`;
 }
 
-export function getDueDateStatus(dueDate: string, t: (content: string, options?: any) => string): string {
+export function getDueDateStatus(
+  dueDate: string,
+  t: (content: string, options?: any) => string,
+): string {
   const now = new Date();
   const due = new Date(dueDate);
 
@@ -144,15 +147,28 @@ export function getDueDateStatus(dueDate: string, t: (content: string, options?:
 
   if (diffDays > 0) {
     if (diffMonths < 1) return t('in {diffDays} days', { diffDays });
-    return t('in {diffMonths} month{monthSuffix}', { diffMonths, monthSuffix: diffMonths === 1 ? '' : 's' });
+    return t('in {diffMonths} month{monthSuffix}', {
+      diffMonths,
+      monthSuffix: diffMonths === 1 ? '' : 's',
+    });
   }
 
   const absDiffDays = Math.abs(diffDays);
-  if (diffMonths < 1) return t('{absDiffDays} day{daySuffix} ago', { absDiffDays, daySuffix: absDiffDays === 1 ? '' : 's' });
-  return t('{diffMonths} month{monthSuffix} ago', { diffMonths: Math.abs(diffMonths), monthSuffix: Math.abs(diffMonths) === 1 ? '' : 's' });
+  if (diffMonths < 1)
+    return t('{absDiffDays} day{daySuffix} ago', {
+      absDiffDays,
+      daySuffix: absDiffDays === 1 ? '' : 's',
+    });
+  return t('{diffMonths} month{monthSuffix} ago', {
+    diffMonths: Math.abs(diffMonths),
+    monthSuffix: Math.abs(diffMonths) === 1 ? '' : 's',
+  });
 }
 
-export const getFormatRelativeTime = (date: Date | string, t: (content: string, options?: any) => string) => {
+export const getFormatRelativeTime = (
+  date: Date | string,
+  t: (content: string, options?: any) => string,
+) => {
   const now = new Date();
   const dateObj = typeof date === 'string' ? new Date(date) : date;
   const diffInSeconds = Math.floor((now.getTime() - dateObj.getTime()) / 1000);

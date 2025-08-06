@@ -8,7 +8,7 @@ import {
   CommandList,
 } from '@comp/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
-import { T, useGT } from 'gt-next';
+import { useGT } from 'gt-next';
 import { Check } from 'lucide-react';
 import { ReactNode, useState } from 'react';
 

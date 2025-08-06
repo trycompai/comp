@@ -13,7 +13,14 @@ import { useQueryState } from 'nuqs';
 // Dynamically import the UpdateTaskSheet component
 const UpdateTaskSheet = dynamic(
   () => import('./update-task-sheet').then((mod) => mod.UpdateTaskSheet),
-  { ssr: false, loading: () => <T><div>Loading...</div></T> },
+  {
+    ssr: false,
+    loading: () => (
+      <T>
+        <div>Loading...</div>
+      </T>
+    ),
+  },
 );
 
 interface TitleProps {

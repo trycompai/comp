@@ -9,7 +9,7 @@ import { z } from 'zod';
 
 const createSchemas = async () => {
   const t = await getGT();
-  
+
   const emailSchema = z.string().email({ message: t('Invalid email format') });
 
   const schema = z.object({

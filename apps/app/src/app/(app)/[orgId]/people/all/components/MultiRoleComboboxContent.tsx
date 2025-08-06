@@ -12,7 +12,7 @@ import type { Role } from '@db'; // Assuming Role is from prisma
 import { Check } from 'lucide-react';
 
 import { cn } from '@comp/ui/cn';
-import { useGT, T } from 'gt-next';
+import { useGT } from 'gt-next';
 
 interface MultiRoleComboboxContentProps {
   searchTerm: string;
@@ -34,7 +34,7 @@ export function MultiRoleComboboxContent({
   onCloseDialog,
 }: MultiRoleComboboxContentProps) {
   const t = useGT();
-  
+
   const getRoleDisplayLabel = (roleValue: Role) => {
     switch (roleValue) {
       case 'owner':

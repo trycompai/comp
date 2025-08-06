@@ -18,10 +18,10 @@ import type {
   RequirementMap,
   Task,
 } from '@db';
+import { T, useGT } from 'gt-next';
 import { MoreVertical, Trash2 } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
-import { T, useGT } from 'gt-next';
 import type { ControlProgressResponse } from '../data/getOrganizationControlProgress';
 import { ControlDeleteDialog } from './ControlDeleteDialog';
 import { PoliciesTable } from './PoliciesTable';
@@ -113,19 +113,25 @@ export function SingleControl({
       <Tabs defaultValue="requirements" className="space-y-4">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="requirements" className="flex items-center gap-2">
-            <T><span>Requirements</span></T>
+            <T>
+              <span>Requirements</span>
+            </T>
             <span className="bg-muted/50 rounded-xs px-1.5 py-0.5 text-xs tabular-nums">
               {control.requirementsMapped.length}
             </span>
           </TabsTrigger>
           <TabsTrigger value="policies" className="flex items-center gap-2">
-            <T><span>Policies</span></T>
+            <T>
+              <span>Policies</span>
+            </T>
             <span className="bg-muted/50 rounded-xs px-1.5 py-0.5 text-xs tabular-nums">
               {relatedPolicies.length}
             </span>
           </TabsTrigger>
           <TabsTrigger value="tasks" className="flex items-center gap-2">
-            <T><span>Tasks</span></T>
+            <T>
+              <span>Tasks</span>
+            </T>
             <span className="bg-muted/50 rounded-xs px-1.5 py-0.5 text-xs tabular-nums">
               {relatedTasks.length}
             </span>

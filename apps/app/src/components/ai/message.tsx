@@ -6,6 +6,7 @@ import { cn } from '@comp/ui/cn';
 import type { UIMessage } from 'ai';
 
 import equal from 'fast-deep-equal';
+import { T, useGT } from 'gt-next';
 import { ChevronDownIcon, ChevronUpIcon } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { ErrorBoundary } from 'next/dist/client/components/error-boundary';
@@ -14,7 +15,6 @@ import { ErrorFallback } from '../error-fallback';
 import { LogoSpinner } from '../logo-spinner';
 import { MemoizedReactMarkdown } from '../markdown';
 import { ChatAvatar } from './chat-avatar';
-import { T, useGT } from 'gt-next';
 
 interface ToolInvocation {
   toolName: string;
@@ -72,7 +72,9 @@ export function ReasoningMessagePart({ part, isReasoning }: ReasoningMessagePart
             <ChatAvatar participantType="assistant" aria-label={t('Assistant')} />
           </div>
           <div className="ml-4 flex-1 overflow-hidden pl-2 text-xs">
-            <T><div className="font-medium">Reasoning</div></T>
+            <T>
+              <div className="font-medium">Reasoning</div>
+            </T>
             <div className="mt-2 animate-spin">
               <LogoSpinner size={16} />
             </div>
@@ -85,7 +87,9 @@ export function ReasoningMessagePart({ part, isReasoning }: ReasoningMessagePart
           </div>
           <div className="ml-4 flex-1 overflow-hidden pl-2 text-xs">
             <div className="flex items-center gap-2">
-              <T><div className="font-medium">Reasoned for a few seconds</div></T>
+              <T>
+                <div className="font-medium">Reasoned for a few seconds</div>
+              </T>
               <button
                 type="button"
                 className={cn(

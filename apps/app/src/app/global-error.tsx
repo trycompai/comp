@@ -1,17 +1,16 @@
 'use client';
 
 import { Button } from '@comp/ui/button';
+import { T, useGT } from 'gt-next';
 import NextError from 'next/error';
 import Link from 'next/link';
-import { getLocale, getGT } from "gt-next/server";
-import { GTProvider, T } from "gt-next";
 
-export default async function GlobalError({ error, reset }: {error: Error;reset: () => void;}) {
-  const t = await getGT();
-  
+export default function GlobalError({ error, reset }: { error: Error; reset: () => void }) {
+  const t = useGT();
+
   return (
-  <html lang={await getLocale()}>
-      <body><GTProvider>
+    <html>
+      <body>
         <div className="h-[calc(100vh-200px)] w-full">
           <div className="flex h-full flex-col items-center justify-center">
             <div className="mt-8 mb-8 flex flex-col items-center justify-between text-center">
@@ -37,7 +36,7 @@ export default async function GlobalError({ error, reset }: {error: Error;reset:
             <NextError statusCode={0} />
           </div>
         </div>
-      </GTProvider></body>
+      </body>
     </html>
   );
 }

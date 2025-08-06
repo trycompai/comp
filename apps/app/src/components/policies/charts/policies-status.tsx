@@ -3,7 +3,7 @@
 import { PieChart } from '@/components/ui/pie-chart';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { cn } from '@comp/ui/cn';
-import { T, useGT } from 'gt-next';
+import { useGT } from 'gt-next';
 import type { InlineTranslationOptions } from 'gt-next/types';
 
 interface Props {
@@ -14,7 +14,10 @@ interface Props {
   needsReviewPolicies: number;
 }
 
-const getPolicyStatusData = (t: (content: string, options?: InlineTranslationOptions) => string, statusCounts: any) => [
+const getPolicyStatusData = (
+  t: (content: string, options?: InlineTranslationOptions) => string,
+  statusCounts: any,
+) => [
   {
     name: t('Published'),
     value: statusCounts.published,

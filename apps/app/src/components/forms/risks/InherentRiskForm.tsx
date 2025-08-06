@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import { updateInherentRiskAction } from '@/actions/risk/update-inherent-risk-action';
 import { getUpdateInherentRiskSchema } from '@/actions/schema';
 import { Button } from '@comp/ui/button';
@@ -8,14 +7,15 @@ import { Form, FormControl, FormField, FormItem, FormLabel } from '@comp/ui/form
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Impact, Likelihood } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { T, useGT } from 'gt-next';
+import { useGT } from 'gt-next';
+import type { InlineTranslationOptions } from 'gt-next/types';
 import { Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useQueryState } from 'nuqs';
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
-import type { InlineTranslationOptions } from 'gt-next/types';
 
 interface InherentRiskFormProps {
   riskId: string;
@@ -24,7 +24,9 @@ interface InherentRiskFormProps {
 }
 
 // Map for displaying readable labels
-const getLikelihoodLabels = (t: (content: string, options?: InlineTranslationOptions) => string): Record<Likelihood, string> => ({
+const getLikelihoodLabels = (
+  t: (content: string, options?: InlineTranslationOptions) => string,
+): Record<Likelihood, string> => ({
   [Likelihood.very_unlikely]: t('Very Unlikely'),
   [Likelihood.unlikely]: t('Unlikely'),
   [Likelihood.possible]: t('Possible'),
@@ -33,7 +35,9 @@ const getLikelihoodLabels = (t: (content: string, options?: InlineTranslationOpt
 });
 
 // Map for displaying readable labels
-const getImpactLabels = (t: (content: string, options?: InlineTranslationOptions) => string): Record<Impact, string> => ({
+const getImpactLabels = (
+  t: (content: string, options?: InlineTranslationOptions) => string,
+): Record<Impact, string> => ({
   [Impact.insignificant]: t('Insignificant'),
   [Impact.minor]: t('Minor'),
   [Impact.moderate]: t('Moderate'),

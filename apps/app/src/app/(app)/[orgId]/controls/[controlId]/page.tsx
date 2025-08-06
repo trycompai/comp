@@ -1,8 +1,8 @@
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { auth } from '@/utils/auth';
+import { getGT } from 'gt-next/server';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { getGT } from 'gt-next/server';
 import { SingleControl } from './components/SingleControl';
 import { getControl } from './data/getControl';
 import type { ControlProgressResponse } from './data/getOrganizationControlProgress';

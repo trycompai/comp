@@ -11,7 +11,7 @@ export const columns = (orgId: string, t: (content: string) => string): ColumnDe
   {
     id: 'title',
     accessorKey: 'title',
-    header: ({ column }) => <DataTableColumnHeader column={column} title={t("Risk")} />,
+    header: ({ column }) => <DataTableColumnHeader column={column} title={t('Risk')} />,
     cell: ({ row }) => {
       return (
         <Link href={`/${orgId}/risk/${row.original.id}`}>
@@ -33,7 +33,7 @@ export const columns = (orgId: string, t: (content: string) => string): ColumnDe
   {
     id: 'status',
     accessorKey: 'status',
-    header: ({ column }) => <DataTableColumnHeader column={column} title={t("Status")} />,
+    header: ({ column }) => <DataTableColumnHeader column={column} title={t('Status')} />,
     cell: ({ row }) => {
       return <StatusIndicator status={row.original.status} />;
     },
@@ -46,7 +46,7 @@ export const columns = (orgId: string, t: (content: string) => string): ColumnDe
   {
     id: 'department',
     accessorKey: 'department',
-    header: ({ column }) => <DataTableColumnHeader column={column} title={t("Department")} />,
+    header: ({ column }) => <DataTableColumnHeader column={column} title={t('Department')} />,
     cell: ({ row }) => {
       return (
         <Badge variant="marketing" className="w-fit uppercase">
@@ -63,7 +63,7 @@ export const columns = (orgId: string, t: (content: string) => string): ColumnDe
   {
     id: 'assignee',
     accessorKey: 'assignee.name',
-    header: ({ column }) => <DataTableColumnHeader column={column} title={t("Assignee")} />,
+    header: ({ column }) => <DataTableColumnHeader column={column} title={t('Assignee')} />,
     enableSorting: false,
     cell: ({ row }) => {
       if (!row.original.assignee) {
@@ -72,7 +72,7 @@ export const columns = (orgId: string, t: (content: string) => string): ColumnDe
             <div className="bg-muted flex h-8 w-8 items-center justify-center rounded-full">
               <UserIcon className="text-muted-foreground h-4 w-4" />
             </div>
-            <p className="text-muted-foreground text-sm font-medium">{t("None")}</p>
+            <p className="text-muted-foreground text-sm font-medium">{t('None')}</p>
           </div>
         );
       }

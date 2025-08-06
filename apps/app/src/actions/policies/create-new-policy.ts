@@ -1,8 +1,8 @@
 'use server';
 
 import { db, Departments, Frequency } from '@db';
-import { revalidatePath, revalidateTag } from 'next/cache';
 import { getGT } from 'gt-next/server';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { authActionClient } from '../safe-action';
 import { getCreatePolicySchema } from '../schema';
 

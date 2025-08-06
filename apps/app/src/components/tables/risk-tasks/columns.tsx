@@ -5,9 +5,9 @@ import { StatusIndicator } from '@/components/status-indicator';
 import { Button } from '@comp/ui/button';
 import type { RiskStatus } from '@db';
 import type { ColumnDef } from '@tanstack/react-table';
+import { useGT } from 'gt-next';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useGT } from 'gt-next';
 
 export type RiskTaskType = {
   id: string;

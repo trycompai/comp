@@ -2,8 +2,8 @@
 
 import { db } from '@db';
 import { logger } from '@trigger.dev/sdk/v3';
-import { revalidatePath, revalidateTag } from 'next/cache';
 import { getGT } from 'gt-next/server';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { authActionClient } from '../safe-action';
 import { getUpdatePolicySchema } from '../schema';
 

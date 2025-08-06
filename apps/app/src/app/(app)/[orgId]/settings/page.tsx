@@ -3,10 +3,10 @@ import { UpdateOrganizationName } from '@/components/forms/organization/update-o
 import { UpdateOrganizationWebsite } from '@/components/forms/organization/update-organization-website';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
+import { getGT } from 'gt-next/server';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { cache } from 'react';
-import { getGT } from 'gt-next/server';
 
 export default async function OrganizationSettings() {
   const organization = await organizationDetails();

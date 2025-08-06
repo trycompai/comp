@@ -12,44 +12,44 @@ export function getPolicyTools(t: (content: string) => string) {
 
 export const getGetPolicies = (t: (content: string) => string) => {
   return {
-  description: 'Get all policies for the organization',
-  inputSchema: z.object({
-    status: z.enum(['draft', 'published']).optional(),
-  }),
-  execute: async ({ status }: { status?: 'draft' | 'published' }) => {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    description: 'Get all policies for the organization',
+    inputSchema: z.object({
+      status: z.enum(['draft', 'published']).optional(),
+    }),
+    execute: async ({ status }: { status?: 'draft' | 'published' }) => {
+      const session = await auth.api.getSession({
+        headers: await headers(),
+      });
 
-    if (!session?.session.activeOrganizationId) {
-      return { error: 'Unauthorized' };
-    }
+      if (!session?.session.activeOrganizationId) {
+        return { error: 'Unauthorized' };
+      }
 
-    const policies = await db.policy.findMany({
-      where: {
-        organizationId: session.session.activeOrganizationId,
-        status,
-      },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        department: true,
-      },
-    });
+      const policies = await db.policy.findMany({
+        where: {
+          organizationId: session.session.activeOrganizationId,
+          status,
+        },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          department: true,
+        },
+      });
 
-    if (policies.length === 0) {
+      if (policies.length === 0) {
+        return {
+          policies: [],
+          message: 'No policies found',
+        };
+      }
+
       return {
-        policies: [],
-        message: 'No policies found',
+        policies,
       };
-    }
-
-    return {
-      policies,
-    };
-  },
-};
+    },
+  };
 };
 
 export const getPolicyContent = {

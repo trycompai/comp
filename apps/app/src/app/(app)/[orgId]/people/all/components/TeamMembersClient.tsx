@@ -7,13 +7,13 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { authClient } from '@/utils/auth-client';
-import { T, useGT } from 'gt-next';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent } from '@comp/ui/card';
 import { Input } from '@comp/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Separator } from '@comp/ui/separator';
 import type { Invitation, Role } from '@db';
+import { T, useGT } from 'gt-next';
 
 import { MemberRow } from './MemberRow';
 import { PendingInvitationRow } from './PendingInvitationRow';
@@ -222,11 +222,21 @@ export function TeamMembersClient({
             <SelectValue placeholder={t('All Roles')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all"><T>All Roles</T></SelectItem>
-            <SelectItem value="owner"><T>Owner</T></SelectItem>
-            <SelectItem value="admin"><T>Admin</T></SelectItem>
-            <SelectItem value="auditor"><T>Auditor</T></SelectItem>
-            <SelectItem value="employee"><T>Employee</T></SelectItem>
+            <SelectItem value="all">
+              <T>All Roles</T>
+            </SelectItem>
+            <SelectItem value="owner">
+              <T>Owner</T>
+            </SelectItem>
+            <SelectItem value="admin">
+              <T>Admin</T>
+            </SelectItem>
+            <SelectItem value="auditor">
+              <T>Auditor</T>
+            </SelectItem>
+            <SelectItem value="employee">
+              <T>Employee</T>
+            </SelectItem>
           </SelectContent>
         </Select>
         <Button onClick={() => setIsInviteModalOpen(true)}>
@@ -265,7 +275,9 @@ export function TeamMembersClient({
           {activeMembers.length === 0 && pendingInvites.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <Mail className="text-muted-foreground/30 h-12 w-12" />
-              <h3 className="mt-4 text-lg font-medium"><T>No employees yet</T></h3>
+              <h3 className="mt-4 text-lg font-medium">
+                <T>No employees yet</T>
+              </h3>
               <p className="text-muted-foreground mt-2 max-w-xs text-sm">
                 <T>Get started by inviting your first team member.</T>
               </p>

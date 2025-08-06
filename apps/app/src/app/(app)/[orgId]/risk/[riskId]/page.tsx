@@ -4,11 +4,11 @@ import { ResidualRiskChart } from '@/components/risks/charts/ResidualRiskChart';
 import { RiskOverview } from '@/components/risks/risk-overview';
 import { auth } from '@/utils/auth';
 import { AttachmentEntityType, CommentEntityType, db } from '@db';
+import { getGT } from 'gt-next/server';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
-import { getGT } from 'gt-next/server';
 import { Comments, CommentWithAuthor } from '../../../../../components/comments/Comments';
 
 interface PageProps {

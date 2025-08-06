@@ -6,15 +6,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import type { Member, Task, User } from '@db';
-import { T, useGT } from 'gt-next';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { T, useGT } from 'gt-next';
 import { ArrowRightIcon, Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 import { getUpdateVendorTaskSchema } from '../../../../actions/schema';
-import React from 'react';
 import { updateVendorTaskAction } from '../../../../actions/task/update-task-action';
 
 export default function SecondaryFields({
@@ -53,7 +53,7 @@ function TaskSecondaryFieldsForm({
 }) {
   const t = useGT();
   const updateVendorTaskSchema = React.useMemo(() => getUpdateVendorTaskSchema(t), [t]);
-  
+
   const updateTask = useAction(updateVendorTaskAction, {
     onSuccess: () => {
       toast.success(t('Task updated successfully'));

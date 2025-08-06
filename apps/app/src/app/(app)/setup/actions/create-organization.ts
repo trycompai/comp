@@ -10,8 +10,8 @@ import { createFleetLabelForOrg } from '@/jobs/tasks/device/create-fleet-label-f
 import { onboardOrganization as onboardOrganizationTask } from '@/jobs/tasks/onboarding/onboard-organization';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
-import { getGT } from 'gt-next/server';
 import { tasks } from '@trigger.dev/sdk/v3';
+import { getGT } from 'gt-next/server';
 import { revalidatePath } from 'next/cache';
 import { cookies, headers } from 'next/headers';
 import { getCompanyDetailsSchema, getSteps } from '../lib/constants';

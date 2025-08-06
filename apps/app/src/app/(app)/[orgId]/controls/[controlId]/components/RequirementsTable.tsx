@@ -12,8 +12,8 @@ import type {
   RequirementMap,
 } from '@db';
 import { ColumnDef } from '@tanstack/react-table';
-import { useMemo, useState } from 'react';
 import { useGT } from 'gt-next';
+import { useMemo, useState } from 'react';
 
 interface RequirementsTableProps {
   requirements: (RequirementMap & {
@@ -81,7 +81,7 @@ export function RequirementsTable({ requirements, orgId }: RequirementsTableProp
         },
       },
     ],
-    [],
+    [t],
   );
 
   // Filter requirements data based on search term

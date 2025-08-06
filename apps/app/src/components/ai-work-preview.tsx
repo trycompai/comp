@@ -3,6 +3,7 @@
 import { cn } from '@comp/ui/cn';
 import { Separator } from '@comp/ui/separator';
 import { AnimatePresence, motion } from 'framer-motion';
+import { T, useGT } from 'gt-next';
 import {
   AlertTriangle,
   CheckCircle2,
@@ -16,7 +17,6 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { MiniDataStream } from './mini-data-stream';
-import { T, useGT } from 'gt-next';
 
 interface WorkItem {
   id: string;

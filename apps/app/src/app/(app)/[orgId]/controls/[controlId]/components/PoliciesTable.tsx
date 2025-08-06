@@ -8,8 +8,8 @@ import { Icons } from '@comp/ui/icons';
 import { Input } from '@comp/ui/input';
 import { Policy } from '@db';
 import { ColumnDef } from '@tanstack/react-table';
-import { useMemo, useState } from 'react';
 import { useGT } from 'gt-next';
+import { useMemo, useState } from 'react';
 
 interface PoliciesTableProps {
   policies: Policy[];
@@ -57,7 +57,7 @@ export function PoliciesTable({ policies, orgId, controlId }: PoliciesTableProps
         },
       },
     ],
-    [],
+    [t],
   );
 
   const filteredPolicies = useMemo(() => {

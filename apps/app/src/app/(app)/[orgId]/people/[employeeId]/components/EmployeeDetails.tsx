@@ -132,7 +132,9 @@ export const EmployeeDetails = ({
               {!(form.formState.isSubmitting || actionStatus === 'executing') && (
                 <Save className="h-4 w-4" />
               )}
-              {form.formState.isSubmitting || actionStatus === 'executing' ? t('Saving...') : t('Save')}
+              {form.formState.isSubmitting || actionStatus === 'executing'
+                ? t('Saving...')
+                : t('Save')}
             </Button>
           </CardFooter>
         </form>

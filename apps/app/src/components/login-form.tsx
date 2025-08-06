@@ -39,8 +39,10 @@ export function LoginForm({ inviteCode, showGoogle, showGithub }: LoginFormProps
             <CardDescription className="text-sm text-muted-foreground">
               <T>
                 Check your inbox at{' '}
-                <span className="font-semibold text-foreground"><Var>{magicLinkState.email}</Var></span> for a
-                magic link to sign in.
+                <span className="font-semibold text-foreground">
+                  <Var>{magicLinkState.email}</Var>
+                </span>{' '}
+                for a magic link to sign in.
               </T>
             </CardDescription>
           </div>

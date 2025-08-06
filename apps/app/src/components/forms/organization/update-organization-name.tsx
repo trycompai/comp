@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import { updateOrganizationNameAction } from '@/actions/organization/update-organization-name-action';
 import { getOrganizationNameSchema } from '@/actions/schema';
 import { Button } from '@comp/ui/button';
@@ -14,10 +13,11 @@ import {
 } from '@comp/ui/card';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@comp/ui/form';
 import { Input } from '@comp/ui/input';
-import { T, useGT } from 'gt-next';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { T, useGT } from 'gt-next';
 import { Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
@@ -25,7 +25,7 @@ import type { z } from 'zod';
 export function UpdateOrganizationName({ organizationName }: { organizationName: string }) {
   const t = useGT();
   const organizationNameSchema = React.useMemo(() => getOrganizationNameSchema(t), [t]);
-  
+
   const updateOrganizationName = useAction(updateOrganizationNameAction, {
     onSuccess: () => {
       toast.success(t('Organization name updated'));
@@ -58,7 +58,8 @@ export function UpdateOrganizationName({ organizationName }: { organizationName:
             <T>
               <CardDescription>
                 <div className="max-w-[600px]">
-                  This is your organizations visible name. You should use the legal name of your organization.
+                  This is your organizations visible name. You should use the legal name of your
+                  organization.
                 </div>
               </CardDescription>
             </T>

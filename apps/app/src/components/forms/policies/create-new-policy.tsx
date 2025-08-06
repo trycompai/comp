@@ -1,21 +1,21 @@
 'use client';
 
-import React from 'react';
 import { createPolicyAction } from '@/actions/policies/create-new-policy';
 import { getCreatePolicySchema } from '@/actions/schema';
-import type { z } from 'zod';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
 import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Input } from '@comp/ui/input';
 import { Textarea } from '@comp/ui/textarea';
-import { T, useGT } from 'gt-next';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { T, useGT } from 'gt-next';
 import { ArrowRightIcon } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useQueryState } from 'nuqs';
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import type { z } from 'zod';
 
 export function CreateNewPolicyForm() {
   const t = useGT();
@@ -51,7 +51,9 @@ export function CreateNewPolicyForm() {
           <div>
             <Accordion type="multiple" defaultValue={['policy']}>
               <AccordionItem value="policy">
-                <T><AccordionTrigger>Policy Details</AccordionTrigger></T>
+                <T>
+                  <AccordionTrigger>Policy Details</AccordionTrigger>
+                </T>
                 <AccordionContent>
                   <div className="space-y-4">
                     <FormField
@@ -59,7 +61,9 @@ export function CreateNewPolicyForm() {
                       name="title"
                       render={({ field }) => (
                         <FormItem>
-                          <T><FormLabel>Title</FormLabel></T>
+                          <T>
+                            <FormLabel>Title</FormLabel>
+                          </T>
                           <FormControl>
                             <Input
                               {...field}
@@ -78,7 +82,9 @@ export function CreateNewPolicyForm() {
                       name="description"
                       render={({ field }) => (
                         <FormItem>
-                          <T><FormLabel>Description</FormLabel></T>
+                          <T>
+                            <FormLabel>Description</FormLabel>
+                          </T>
                           <FormControl>
                             <Textarea
                               {...field}
@@ -98,7 +104,7 @@ export function CreateNewPolicyForm() {
           <div className="mt-4 flex justify-end">
             <Button type="submit" variant="default" disabled={createPolicy.status === 'executing'}>
               <div className="flex items-center justify-center">
-{t('Create')}
+                {t('Create')}
                 <ArrowRightIcon className="ml-2 h-4 w-4" />
               </div>
             </Button>

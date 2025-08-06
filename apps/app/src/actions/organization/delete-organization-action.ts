@@ -3,10 +3,10 @@
 'use server';
 
 import { db } from '@db';
+import { getGT } from 'gt-next/server';
 import { revalidatePath } from 'next/cache';
 import { authActionClient } from '../safe-action';
 import { getDeleteOrganizationSchema } from '../schema';
-import { getGT } from 'gt-next/server';
 
 type DeleteOrganizationResult = {
   success: boolean;

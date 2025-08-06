@@ -1,14 +1,14 @@
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { auth } from '@/utils/auth';
 import { db, Role, TaskStatus } from '@db';
+import { getGT } from 'gt-next/server';
 import { Metadata } from 'next';
 import { headers } from 'next/headers';
-import { getGT } from 'gt-next/server';
 import { TaskList } from './components/TaskList';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getGT();
-  
+
   return {
     title: t('Tasks'),
   };

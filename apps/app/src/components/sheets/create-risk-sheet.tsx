@@ -5,8 +5,8 @@ import { Drawer, DrawerContent, DrawerTitle } from '@comp/ui/drawer';
 import { useMediaQuery } from '@comp/ui/hooks';
 import { ScrollArea } from '@comp/ui/scroll-area';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@comp/ui/sheet';
-import { T } from 'gt-next';
 import { Member, User } from '@db';
+import { T } from 'gt-next';
 import { X } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import { CreateRisk } from '../forms/risks/create-risk-form';
@@ -25,7 +25,9 @@ export function CreateRiskSheet({ assignees }: { assignees: (Member & { user: Us
       <Sheet open={isOpen} onOpenChange={handleOpenChange}>
         <SheetContent stack>
           <SheetHeader className="mb-8 flex flex-row items-center justify-between">
-            <T><SheetTitle>Create New Risk</SheetTitle></T>
+            <T>
+              <SheetTitle>Create New Risk</SheetTitle>
+            </T>
             <Button
               size="icon"
               variant="ghost"
@@ -46,7 +48,9 @@ export function CreateRiskSheet({ assignees }: { assignees: (Member & { user: Us
 
   return (
     <Drawer open={isOpen} onOpenChange={handleOpenChange}>
-      <T><DrawerTitle hidden>Create New Risk</DrawerTitle></T>
+      <T>
+        <DrawerTitle hidden>Create New Risk</DrawerTitle>
+      </T>
       <DrawerContent className="p-6">
         <CreateRisk assignees={assignees} />
       </DrawerContent>

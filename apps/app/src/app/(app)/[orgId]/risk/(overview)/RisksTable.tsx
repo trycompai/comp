@@ -50,7 +50,7 @@ export const RisksTable = ({
   return (
     <>
       <DataTable table={table} getRowId={(row) => row.id} rowClickBasePath={`/${orgId}/risk`}>
-        <DataTableToolbar table={table} sheet="create-risk-sheet" action={t("Create Risk")} />
+        <DataTableToolbar table={table} sheet="create-risk-sheet" action={t('Create Risk')} />
       </DataTable>
       <CreateRiskSheet assignees={assignees} />
     </>

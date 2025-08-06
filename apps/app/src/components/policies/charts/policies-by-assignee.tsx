@@ -1,8 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { db, PolicyStatus } from '@db';
 import { getGT } from 'gt-next/server';
-import type { CSSProperties } from 'react';
 import type { InlineTranslationOptions } from 'gt-next/types';
+import type { CSSProperties } from 'react';
 
 interface Props {
   organizationId: string;
@@ -29,12 +29,14 @@ const policyStatus = {
   needs_review: 'bg-[hsl(var(--destructive))]',
 } as const;
 
-const getPolicyStatusLabels = (t: (content: string, options?: InlineTranslationOptions) => string) => ([
+const getPolicyStatusLabels = (
+  t: (content: string, options?: InlineTranslationOptions) => string,
+) => [
   { key: 'published', label: t('Published') },
   { key: 'draft', label: t('Draft') },
   { key: 'archived', label: t('Archived') },
   { key: 'needs_review', label: t('Needs Review') },
-]);
+];
 
 export async function PoliciesByAssignee({ organizationId }: Props) {
   const [userStats, policies, t] = await Promise.all([
@@ -42,7 +44,7 @@ export async function PoliciesByAssignee({ organizationId }: Props) {
     policiesByUser(organizationId),
     getGT(),
   ]);
-  
+
   const policyStatusLabels = getPolicyStatusLabels(t);
 
   const stats: UserPolicyStats[] = userStats.map((user) => {
@@ -120,7 +122,13 @@ export async function PoliciesByAssignee({ organizationId }: Props) {
   );
 }
 
-function RiskBarChart({ stat, t }: { stat: UserPolicyStats; t: (content: string, options?: InlineTranslationOptions) => string }) {
+function RiskBarChart({
+  stat,
+  t,
+}: {
+  stat: UserPolicyStats;
+  t: (content: string, options?: InlineTranslationOptions) => string;
+}) {
   const data = [
     ...(stat.publishedPolicies && stat.publishedPolicies > 0
       ? [

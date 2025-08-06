@@ -11,7 +11,6 @@ import { z } from 'zod';
 
 import type { ActionResponse } from '@/actions/types';
 import { authClient } from '@/utils/auth-client';
-import { T, useGT } from 'gt-next';
 import { Button } from '@comp/ui/button';
 import {
   Dialog,
@@ -32,6 +31,7 @@ import {
 } from '@comp/ui/form';
 import { Input } from '@comp/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
+import { T, useGT } from 'gt-next';
 import { addEmployeeWithoutInvite } from '../actions/addEmployeeWithoutInvite';
 import { MultiRoleCombobox } from './MultiRoleCombobox';
 
@@ -148,7 +148,9 @@ export function InviteMembersModal({
             `Manual mode validation failed: No roles selected for: ${invalidInvites.map((i) => i.email || 'invite').join(', ')}`,
           );
           toast.error(
-            t('Please select at least one role for: {emails}', { emails: invalidInvites.map((i) => i.email || 'invite').join(', ') }),
+            t('Please select at least one role for: {emails}', {
+              emails: invalidInvites.map((i) => i.email || 'invite').join(', '),
+            }),
           );
           setIsLoading(false);
           return;
@@ -200,7 +202,10 @@ export function InviteMembersModal({
 
         if (failedInvites.length > 0) {
           toast.error(
-            t('Failed to invite {count} member(s): {emails}', { count: failedInvites.length, emails: failedInvites.map((f) => f.email).join(', ') }),
+            t('Failed to invite {count} member(s): {emails}', {
+              count: failedInvites.length,
+              emails: failedInvites.map((f) => f.email).join(', '),
+            }),
           );
         }
       } else if (values.mode === 'csv') {
@@ -314,7 +319,10 @@ export function InviteMembersModal({
             if (validRoles.length === 0) {
               failedInvites.push({
                 email,
-                error: t('Invalid role(s): {roles}. Must be one of: {validRoles}', { roles: roleValue, validRoles: selectableRoles.join(', ') }),
+                error: t('Invalid role(s): {roles}. Must be one of: {validRoles}', {
+                  roles: roleValue,
+                  validRoles: selectableRoles.join(', '),
+                }),
               });
               continue;
             }
@@ -359,7 +367,10 @@ export function InviteMembersModal({
 
           if (failedInvites.length > 0) {
             toast.error(
-              t('Failed to invite {count} member(s): {emails}', { count: failedInvites.length, emails: failedInvites.map((f) => f.email).join(', ') }),
+              t('Failed to invite {count} member(s): {emails}', {
+                count: failedInvites.length,
+                emails: failedInvites.map((f) => f.email).join(', '),
+              }),
             );
           }
         } catch (csvError) {
@@ -411,16 +422,24 @@ mike@company.com,admin`;
         }}
       >
         <DialogHeader>
-          <DialogTitle><T>Add User</T></DialogTitle>
-          <DialogDescription><T>Add an employee to your organization.</T></DialogDescription>
+          <DialogTitle>
+            <T>Add User</T>
+          </DialogTitle>
+          <DialogDescription>
+            <T>Add an employee to your organization.</T>
+          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <Tabs value={mode} onValueChange={handleModeChange}>
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="manual"><T>Manual</T></TabsTrigger>
-                <TabsTrigger value="csv"><T>CSV</T></TabsTrigger>
+                <TabsTrigger value="manual">
+                  <T>Manual</T>
+                </TabsTrigger>
+                <TabsTrigger value="csv">
+                  <T>CSV</T>
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="manual" className="space-y-4 pt-4">
@@ -431,7 +450,11 @@ mike@company.com,admin`;
                       name={`manualInvites.${index}.email`}
                       render={({ field }) => (
                         <FormItem className="flex-1">
-                          {index === 0 && <FormLabel><T>Email</T></FormLabel>}
+                          {index === 0 && (
+                            <FormLabel>
+                              <T>Email</T>
+                            </FormLabel>
+                          )}
                           <FormControl>
                             <Input
                               className="h-10"
@@ -449,7 +472,11 @@ mike@company.com,admin`;
                       name={`manualInvites.${index}.roles`}
                       render={({ field: { onChange, value }, fieldState: { error } }) => (
                         <FormItem className="w-[200px]">
-                          {index === 0 && <FormLabel><T>Role</T></FormLabel>}
+                          {index === 0 && (
+                            <FormLabel>
+                              <T>Role</T>
+                            </FormLabel>
+                          )}
                           <MultiRoleCombobox
                             selectedRoles={value || []}
                             onSelectedRolesChange={onChange}
@@ -487,7 +514,9 @@ mike@company.com,admin`;
                   <PlusCircle className="mr-2 h-4 w-4" />
                   <T>Add Another</T>
                 </Button>
-                <FormDescription><T>Add an employee to your organization.</T></FormDescription>
+                <FormDescription>
+                  <T>Add an employee to your organization.</T>
+                </FormDescription>
               </TabsContent>
 
               <TabsContent value="csv" className="space-y-4 pt-4">
@@ -496,7 +525,9 @@ mike@company.com,admin`;
                   name="csvFile"
                   render={({ field: { onChange, value, ...fieldProps } }) => (
                     <FormItem>
-                      <FormLabel><T>CSV File</T></FormLabel>
+                      <FormLabel>
+                        <T>CSV File</T>
+                      </FormLabel>
                       <div className="flex items-center gap-2">
                         <Button
                           type="button"
@@ -524,7 +555,10 @@ mike@company.com,admin`;
                         />
                       </FormControl>
                       <FormDescription>
-                        <T>Upload a CSV file with 'email' and 'role' columns. Use pipe (|) to separate multiple roles (e.g., employee|admin).</T>
+                        <T>
+                          Upload a CSV file with 'email' and 'role' columns. Use pipe (|) to
+                          separate multiple roles (e.g., employee|admin).
+                        </T>
                       </FormDescription>
                       <a
                         href={csvTemplateDataUri}

@@ -5,7 +5,7 @@ import { auth } from '@/utils/auth';
 import { db } from '@db';
 import { getGT } from 'gt-next/server';
 import { headers } from 'next/headers';
-import { type AppError, getAppErrors, employeeDetailsInputSchema } from '../types';
+import { type AppError, employeeDetailsInputSchema, getAppErrors } from '../types';
 
 // Type-safe action response
 export type ActionResponse<T> = Promise<

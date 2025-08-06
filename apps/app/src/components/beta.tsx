@@ -13,7 +13,7 @@ export function Beta({ className }: Props) {
         className,
       )}
     >
-<T>Beta</T>
+      <T>Beta</T>
     </span>
   );
 }

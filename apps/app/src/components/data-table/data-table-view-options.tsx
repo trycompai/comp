@@ -49,7 +49,9 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
         <Command>
           <CommandInput placeholder={t('Search columns...')} />
           <CommandList>
-            <CommandEmpty><T>No columns found.</T></CommandEmpty>
+            <CommandEmpty>
+              <T>No columns found.</T>
+            </CommandEmpty>
             <CommandGroup>
               {columns.map((column) => (
                 <CommandItem

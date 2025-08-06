@@ -6,7 +6,9 @@ import { T, useGT } from 'gt-next';
 import type { Control } from 'react-hook-form';
 import type { EmployeeFormValues } from '../EmployeeDetails';
 
-const getStatusOptions = (t: (key: string) => string): { value: EmployeeStatusType; label: string }[] => [
+const getStatusOptions = (
+  t: (key: string) => string,
+): { value: EmployeeStatusType; label: string }[] => [
   { value: 'active', label: t('Active') },
   { value: 'inactive', label: t('Inactive') },
 ];
@@ -20,7 +22,7 @@ export const EMPLOYEE_STATUS_HEX_COLORS: Record<EmployeeStatusType, string> = {
 export const Status = ({ control }: { control: Control<EmployeeFormValues> }) => {
   const t = useGT();
   const statusOptions = getStatusOptions(t);
-  
+
   return (
     <FormField
       control={control}

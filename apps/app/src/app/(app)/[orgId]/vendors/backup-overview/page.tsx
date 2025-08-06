@@ -25,7 +25,7 @@ export default async function VendorManagement() {
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getGT();
-  
+
   return {
     title: t('Vendors'),
   };

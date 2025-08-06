@@ -54,7 +54,8 @@ export function DeleteOrganization({ organizationId }: { organizationId: string 
         <T>
           <CardDescription>
             <div className="max-w-[600px]">
-              Permanently remove your organization and all of its contents from the Comp AI platform. This action is not reversible - please continue with caution.
+              Permanently remove your organization and all of its contents from the Comp AI
+              platform. This action is not reversible - please continue with caution.
             </div>
           </CardDescription>
         </T>
@@ -78,7 +79,8 @@ export function DeleteOrganization({ organizationId }: { organizationId: string 
               </T>
               <T>
                 <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete your organization and remove your data from our servers.
+                  This action cannot be undone. This will permanently delete your organization and
+                  remove your data from our servers.
                 </AlertDialogDescription>
               </T>
             </AlertDialogHeader>

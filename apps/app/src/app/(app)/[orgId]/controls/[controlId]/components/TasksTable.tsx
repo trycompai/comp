@@ -8,8 +8,8 @@ import { Icons } from '@comp/ui/icons';
 import { Input } from '@comp/ui/input';
 import { Task } from '@db';
 import { ColumnDef } from '@tanstack/react-table';
-import { useMemo, useState } from 'react';
 import { useGT } from 'gt-next';
+import { useMemo, useState } from 'react';
 
 interface TasksTableProps {
   tasks: Task[];
@@ -57,7 +57,7 @@ export function TasksTable({ tasks, orgId, controlId }: TasksTableProps) {
         },
       },
     ],
-    [],
+    [t],
   );
 
   // Filter tasks data based on search term

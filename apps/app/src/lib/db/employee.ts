@@ -2,8 +2,8 @@ import { env } from '@/env.mjs';
 import { getTrainingVideos } from '@/lib/data/training-videos';
 import { InvitePortalEmail, sendEmail } from '@comp/email';
 import { db, type Departments, type Member, type Role } from '@db';
-import { revalidatePath } from 'next/cache';
 import { getGT } from 'gt-next/server';
+import { revalidatePath } from 'next/cache';
 
 if (!env.NEXT_PUBLIC_PORTAL_URL) {
   throw new Error('NEXT_PUBLIC_PORTAL_URL is not set');

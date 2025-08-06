@@ -53,7 +53,10 @@ export const STATUS_COLORS: Record<StatusType, string> = {
 } as const;
 
 // Updated status translation mapping
-export const getStatusTranslation = (status: StatusType, t: (content: string, options?: InlineTranslationOptions) => string) => {
+export const getStatusTranslation = (
+  status: StatusType,
+  t: (content: string, options?: InlineTranslationOptions) => string,
+) => {
   switch (status) {
     case 'draft':
       return t('Draft');
@@ -94,7 +97,7 @@ interface StatusIndicatorProps {
 
 export function StatusIndicator({ status, className, withLabel = true }: StatusIndicatorProps) {
   const t = useGT();
-  
+
   // Handle null or undefined status
   if (!status) {
     const defaultColor = '#808080'; // Gray color for unknown/null status

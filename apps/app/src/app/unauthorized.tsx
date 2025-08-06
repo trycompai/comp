@@ -13,7 +13,8 @@ export default async function UnauthorizedPage() {
           </T>
           <T>
             <p className="text-muted-foreground">
-              You don't have permission to access this resource. Please contact your administrator if you believe this is a mistake.
+              You don't have permission to access this resource. Please contact your administrator
+              if you believe this is a mistake.
             </p>
           </T>
         </div>

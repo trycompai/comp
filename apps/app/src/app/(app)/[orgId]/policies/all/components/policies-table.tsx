@@ -37,7 +37,7 @@ export function PoliciesTable({ promises }: PoliciesTableProps) {
   return (
     <>
       <DataTable table={table} getRowId={(row) => row.id} rowClickBasePath={`/${orgId}/policies`}>
-        <DataTableToolbar table={table} sheet="create-policy-sheet" action={t("Create Policy")}>
+        <DataTableToolbar table={table} sheet="create-policy-sheet" action={t('Create Policy')}>
           {/* <DataTableSortList table={table} align="end" /> */}
         </DataTableToolbar>
       </DataTable>

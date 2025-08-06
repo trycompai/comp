@@ -1,14 +1,14 @@
 import { AppOnboarding } from '@/components/app-onboarding';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
+import { getGT } from 'gt-next/server';
 import { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { getGT } from 'gt-next/server';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getGT();
-  
+
   return {
     title: t('Cloud Compliance'),
   };
@@ -30,7 +30,7 @@ export default async function CloudTests({ params }: { params: Promise<{ orgId: 
       <AppOnboarding
         title={t('Cloud Compliance')}
         description={t(
-          'Test and validate your cloud infrastructure security with automated tests and reports.'
+          'Test and validate your cloud infrastructure security with automated tests and reports.',
         )}
         imageSrcLight="/onboarding/cloud-light.webp"
         imageSrcDark="/onboarding/cloud-dark.webp"
@@ -42,19 +42,19 @@ export default async function CloudTests({ params }: { params: Promise<{ orgId: 
           {
             questionKey: t('What are cloud compliance tests?'),
             answerKey: t(
-              'Cloud compliance tests are automated checks that verify your cloud environment against security best practices and compliance standards.'
+              'Cloud compliance tests are automated checks that verify your cloud environment against security best practices and compliance standards.',
             ),
           },
           {
             questionKey: t('Why are they important?'),
             answerKey: t(
-              'They help ensure your cloud infrastructure is secure, identify misconfigurations, and provide evidence for audits like SOC 2 and ISO 27001.'
+              'They help ensure your cloud infrastructure is secure, identify misconfigurations, and provide evidence for audits like SOC 2 and ISO 27001.',
             ),
           },
           {
             questionKey: t('How do I get started?'),
             answerKey: t(
-              "Connect your cloud provider (AWS, GCP, Azure) in the Integrations page, and we'll automatically start running tests and generating reports."
+              "Connect your cloud provider (AWS, GCP, Azure) in the Integrations page, and we'll automatically start running tests and generating reports.",
             ),
           },
         ]}

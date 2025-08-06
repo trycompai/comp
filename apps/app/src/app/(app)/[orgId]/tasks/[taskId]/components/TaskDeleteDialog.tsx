@@ -11,8 +11,8 @@ import {
 } from '@comp/ui/dialog';
 import { Form } from '@comp/ui/form';
 import { Task } from '@db';
-import { T, useGT, Branch } from 'gt-next';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Branch, T, useGT } from 'gt-next';
 import { Trash2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
@@ -88,7 +88,12 @@ export function TaskDeleteDialog({ isOpen, onClose, task }: TaskDeleteDialogProp
                 </Button>
               </T>
               <T>
-                <Button type="submit" variant="destructive" disabled={isSubmitting} className="gap-2">
+                <Button
+                  type="submit"
+                  variant="destructive"
+                  disabled={isSubmitting}
+                  className="gap-2"
+                >
                   <Branch
                     branch={isSubmitting.toString()}
                     true={

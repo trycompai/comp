@@ -8,12 +8,12 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from '@comp/ui/fo
 import { Textarea } from '@comp/ui/textarea';
 import { CommentEntityType } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { T, useGT } from 'gt-next';
 import { ArrowRightIcon } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { useGT, T } from 'gt-next';
 
 export function CreateCommentForm({
   entityId,
@@ -59,7 +59,9 @@ export function CreateCommentForm({
           <div>
             <Accordion type="multiple" defaultValue={['comment']}>
               <AccordionItem value="comment">
-                <AccordionTrigger><T>Comment</T></AccordionTrigger>
+                <AccordionTrigger>
+                  <T>Comment</T>
+                </AccordionTrigger>
                 <AccordionContent>
                   <div className="space-y-4">
                     <FormField

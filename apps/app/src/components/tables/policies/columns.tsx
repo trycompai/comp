@@ -3,7 +3,6 @@
 import { StatusIndicator } from '@/components/status-indicator';
 import { formatDate } from '@/utils/format';
 import { Button } from '@comp/ui/button';
-import type { ColumnDef } from '@tanstack/react-table';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
@@ -20,7 +19,7 @@ export type PolicyType = {
   updatedAt: string;
 };
 
-export const getUseColumns = (t: (content: string) => string) => {
+export const useColumns = (t: (content: string) => string) => {
   const { orgId } = useParams<{ orgId: string }>();
 
   return [

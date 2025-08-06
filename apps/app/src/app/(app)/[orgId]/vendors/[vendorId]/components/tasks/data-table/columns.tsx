@@ -5,8 +5,8 @@ import { Badge } from '@comp/ui/badge';
 import { VendorStatus } from '@db';
 import type { ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
-import Link from 'next/link';
 import { useGT } from 'gt-next';
+import Link from 'next/link';
 
 export interface VendorTaskType {
   id: string;

@@ -1,18 +1,18 @@
 'use client';
 
-import React from 'react';
 import { updateTaskAction } from '@/actions/risk/task/update-task-action';
 import { getUpdateTaskSchema } from '@/actions/schema';
 import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Input } from '@comp/ui/input';
 import { Textarea } from '@comp/ui/textarea';
-import { T, useGT } from 'gt-next';
 import type { Task } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { T, useGT } from 'gt-next';
 import { Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useQueryState } from 'nuqs';
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
@@ -62,7 +62,9 @@ export function UpdateTaskOverviewForm({ task }: { task: Task }) {
             name="title"
             render={({ field }) => (
               <FormItem>
-                <T><FormLabel>Task Title</FormLabel></T>
+                <T>
+                  <FormLabel>Task Title</FormLabel>
+                </T>
                 <FormControl>
                   <Input
                     {...field}
@@ -81,7 +83,9 @@ export function UpdateTaskOverviewForm({ task }: { task: Task }) {
             name="description"
             render={({ field }) => (
               <FormItem>
-                <T><FormLabel>Description</FormLabel></T>
+                <T>
+                  <FormLabel>Description</FormLabel>
+                </T>
                 <FormControl>
                   <Textarea
                     {...field}

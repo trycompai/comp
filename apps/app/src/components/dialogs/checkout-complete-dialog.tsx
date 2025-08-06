@@ -10,12 +10,12 @@ import {
   DialogTitle,
 } from '@comp/ui/dialog';
 import confetti from 'canvas-confetti';
+import { useGT } from 'gt-next';
 import { ArrowRight, CheckCircle2 } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import { usePostHog } from 'posthog-js/react';
 import { useEffect, useState } from 'react';
 import { zaraz } from 'zaraz-ts';
-import { useGT } from 'gt-next';
 
 type PlanType = 'starter' | 'done-for-you';
 
@@ -103,8 +103,9 @@ export function CheckoutCompleteDialog({ orgId }: { orgId: string }) {
   const content: Record<PlanType, PlanContent> = {
     'done-for-you': {
       title: t('Payment Successful! 🎉'),
-      description:
-        t('Your invoice has been paid. To get started, please continue with the onboarding so our AI can get to work.'),
+      description: t(
+        'Your invoice has been paid. To get started, please continue with the onboarding so our AI can get to work.',
+      ),
       badge: t('Invoice Paid'),
       badgeClass: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
       iconClass: 'bg-green-100 dark:bg-green-900/30',

@@ -25,7 +25,7 @@ export const revokeInvitation = authActionClient
   .inputSchema(revokeInvitationSchema)
   .action(async ({ parsedInput, ctx }): Promise<ActionResponse<{ revoked: boolean }>> => {
     const t = await getGT();
-    
+
     if (!ctx.session.activeOrganizationId) {
       return {
         success: false,

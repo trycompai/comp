@@ -4,10 +4,10 @@ import { cn } from '@comp/ui/cn';
 import { Input } from '@comp/ui/input';
 import { Skeleton } from '@comp/ui/skeleton';
 import type { Member, User } from '@db';
+import { useGT } from 'gt-next';
 import { Search } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import { useTransition } from 'react';
-import { useGT } from 'gt-next';
 
 type Props = {
   isEmpty?: boolean;

@@ -36,9 +36,9 @@ import {
 import { Label } from '@comp/ui/label';
 import type { Role } from '@db';
 
+import { T, useGT, Var } from 'gt-next';
 import { MultiRoleCombobox } from './MultiRoleCombobox';
 import type { MemberWithUser } from './TeamMembers';
-import { useGT, T, Var } from 'gt-next';
 
 interface MemberRowProps {
   member: MemberWithUser;
@@ -47,7 +47,11 @@ interface MemberRowProps {
 }
 
 // Helper to get initials
-function getInitials(name: string | null | undefined, email: string | null | undefined, t: (content: string) => string): string {
+function getInitials(
+  name: string | null | undefined,
+  email: string | null | undefined,
+  t: (content: string) => string,
+): string {
   if (name) {
     return name
       .split(' ')
@@ -280,7 +284,8 @@ export function MemberRow({ member, onRemove, onUpdateRole }: MemberRowProps) {
             <AlertDialogTitle>{t('Remove Team Member')}</AlertDialogTitle>
             <AlertDialogDescription>
               <T>
-                Are you sure you want to remove <Var>{memberName}</Var>? They will no longer have access to this organization.
+                Are you sure you want to remove <Var>{memberName}</Var>? They will no longer have
+                access to this organization.
               </T>
             </AlertDialogDescription>
           </AlertDialogHeader>

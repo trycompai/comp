@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import { createRiskAction } from '@/actions/risk/create-risk-action';
 import { getCreateRiskSchema } from '@/actions/schema';
 import { SelectAssignee } from '@/components/SelectAssignee';
@@ -10,13 +9,14 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@comp/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Textarea } from '@comp/ui/textarea';
-import { T, useGT } from 'gt-next';
 import type { Member, RiskStatus, User } from '@db';
 import { Departments, RiskCategory } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { T, useGT } from 'gt-next';
 import { ArrowRightIcon } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useQueryState } from 'nuqs';
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
@@ -81,7 +81,9 @@ export function CreateRisk({ assignees }: { assignees: (Member & { user: User })
           <div>
             <Accordion type="multiple" defaultValue={['risk']}>
               <AccordionItem value="risk">
-                <T><AccordionTrigger>Risk Details</AccordionTrigger></T>
+                <T>
+                  <AccordionTrigger>Risk Details</AccordionTrigger>
+                </T>
                 <AccordionContent>
                   <div className="space-y-4">
                     <FormField
@@ -89,7 +91,9 @@ export function CreateRisk({ assignees }: { assignees: (Member & { user: User })
                       name="title"
                       render={({ field }) => (
                         <FormItem>
-                          <T><FormLabel>Risk Title</FormLabel></T>
+                          <T>
+                            <FormLabel>Risk Title</FormLabel>
+                          </T>
                           <FormControl>
                             <Input
                               {...field}
@@ -108,12 +112,16 @@ export function CreateRisk({ assignees }: { assignees: (Member & { user: User })
                       name="description"
                       render={({ field }) => (
                         <FormItem>
-                          <T><FormLabel>Description</FormLabel></T>
+                          <T>
+                            <FormLabel>Description</FormLabel>
+                          </T>
                           <FormControl>
                             <Textarea
                               {...field}
                               className="mt-3 min-h-[80px]"
-                              placeholder={t('A detailed description of the risk, its potential impact, and its causes.')}
+                              placeholder={t(
+                                'A detailed description of the risk, its potential impact, and its causes.',
+                              )}
                             />
                           </FormControl>
                           <FormMessage />
@@ -125,7 +133,9 @@ export function CreateRisk({ assignees }: { assignees: (Member & { user: User })
                       name="category"
                       render={({ field }) => (
                         <FormItem>
-                          <T><FormLabel>Category</FormLabel></T>
+                          <T>
+                            <FormLabel>Category</FormLabel>
+                          </T>
                           <FormControl>
                             <div className="mt-3">
                               <Select {...field} value={field.value} onValueChange={field.onChange}>
@@ -158,7 +168,9 @@ export function CreateRisk({ assignees }: { assignees: (Member & { user: User })
                       name="department"
                       render={({ field }) => (
                         <FormItem>
-                          <T><FormLabel>Department</FormLabel></T>
+                          <T>
+                            <FormLabel>Department</FormLabel>
+                          </T>
                           <FormControl>
                             <div className="mt-3">
                               <Select {...field} value={field.value} onValueChange={field.onChange}>
@@ -188,7 +200,9 @@ export function CreateRisk({ assignees }: { assignees: (Member & { user: User })
                       name="assigneeId"
                       render={({ field }) => (
                         <FormItem>
-                          <T><FormLabel>Assignee</FormLabel></T>
+                          <T>
+                            <FormLabel>Assignee</FormLabel>
+                          </T>
                           <FormControl>
                             <div className="mt-3">
                               <SelectAssignee
@@ -213,7 +227,7 @@ export function CreateRisk({ assignees }: { assignees: (Member & { user: User })
           <div className="mt-4 flex justify-end">
             <Button type="submit" variant="default" disabled={createRisk.status === 'executing'}>
               <div className="flex items-center justify-center">
-{t('Create')}
+                {t('Create')}
                 <ArrowRightIcon className="ml-2 h-4 w-4" />
               </div>
             </Button>

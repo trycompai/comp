@@ -2,7 +2,7 @@
 
 import { ClientTooltip } from '@comp/ui/chart-tooltip';
 import { format, max, scaleBand, scaleLinear } from 'd3';
-import { T, useGT } from 'gt-next';
+import { T } from 'gt-next';
 import { type CSSProperties } from 'react';
 
 interface CategoryData {

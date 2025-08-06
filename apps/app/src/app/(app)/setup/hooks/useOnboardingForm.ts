@@ -97,7 +97,7 @@ export function useOnboardingForm({
         formData: savedAnswers as Record<string, any>,
       });
     }
-  }, [setupId, stepIndex, savedAnswers, mounted]);
+  }, [setupId, stepIndex, savedAnswers, mounted, prePaymentSteps]);
 
   const step = prePaymentSteps[stepIndex];
   const companyDetailsSchema = getCompanyDetailsSchema(t);

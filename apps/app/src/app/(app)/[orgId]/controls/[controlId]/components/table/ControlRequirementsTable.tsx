@@ -4,8 +4,8 @@ import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-tabl
 
 import { Table, TableBody, TableCell, TableRow } from '@comp/ui/table';
 import type { FrameworkEditorRequirement, Policy, Task } from '@db';
-import { useParams, useRouter } from 'next/navigation';
 import { useGT } from 'gt-next';
+import { useParams, useRouter } from 'next/navigation';
 import { ControlRequirementsTableColumns } from './ControlRequirementsTableColumns';
 import { ControlRequirementsTableHeader } from './ControlRequirementsTableHeader';
 

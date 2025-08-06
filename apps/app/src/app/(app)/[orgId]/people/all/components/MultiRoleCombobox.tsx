@@ -4,9 +4,9 @@ import type { Role } from '@db';
 import * as React from 'react';
 
 import { Dialog, DialogContent } from '@comp/ui/dialog';
+import { useGT } from 'gt-next';
 import { MultiRoleComboboxContent } from './MultiRoleComboboxContent';
 import { MultiRoleComboboxTrigger } from './MultiRoleComboboxTrigger';
-import { useGT } from 'gt-next';
 
 // Define the selectable roles explicitly (exclude owner)
 const selectableRoles: {
@@ -103,7 +103,9 @@ export function MultiRoleCombobox({
   };
 
   const triggerText =
-    selectedRoles.length > 0 ? t('{count} selected', { count: selectedRoles.length }) : placeholder || t('Select role(s)');
+    selectedRoles.length > 0
+      ? t('{count} selected', { count: selectedRoles.length })
+      : placeholder || t('Select role(s)');
 
   const filteredRoles = availableRoles.filter((role) => {
     const label = (() => {

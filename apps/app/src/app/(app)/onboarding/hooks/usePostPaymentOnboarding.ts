@@ -56,7 +56,9 @@ export function usePostPaymentOnboarding({
   useEffect(() => {
     // Use saved step index, but also verify it makes sense
     // (e.g., don't jump to step 7 if steps 4-6 aren't answered)
-    const firstUnansweredIndex = postPaymentSteps.findIndex((step) => !(savedAnswers as any)[step.key]);
+    const firstUnansweredIndex = postPaymentSteps.findIndex(
+      (step) => !(savedAnswers as any)[step.key],
+    );
 
     // Use the saved step index if it's valid, otherwise use first unanswered
     const initialStep =
@@ -68,7 +70,7 @@ export function usePostPaymentOnboarding({
 
     setStepIndex(initialStep);
     setIsLoading(false);
-  }, [savedAnswers, savedStepIndex]);
+  }, [savedAnswers, savedStepIndex, postPaymentSteps]);
 
   const step = postPaymentSteps[stepIndex];
   const stepSchema = z.object({
@@ -190,7 +192,11 @@ export function usePostPaymentOnboarding({
       // Save current form values before going back
       const currentValues = form.getValues();
       if ((currentValues as any)[step.key]) {
-        setSavedAnswers({ ...savedAnswers, [step.key]: (currentValues as any)[step.key], organizationName });
+        setSavedAnswers({
+          ...savedAnswers,
+          [step.key]: (currentValues as any)[step.key],
+          organizationName,
+        });
       }
 
       // Clear form errors

@@ -19,7 +19,7 @@ export const getApiKeysAction = async (): Promise<
   >
 > => {
   const t = await getGT();
-  
+
   try {
     const session = await auth.api.getSession({
       headers: await headers(),

@@ -7,11 +7,11 @@ import { Input } from '@comp/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Skeleton } from '@comp/ui/skeleton';
 import { User } from 'better-auth';
+import { useGT } from 'gt-next';
 import { Plus, Search, X } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useQueryState } from 'nuqs';
 import { useCallback, useEffect, useState, useTransition } from 'react';
-import { useGT } from 'gt-next';
 
 interface FilterToolbarProps {
   isEmpty?: boolean;

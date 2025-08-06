@@ -139,7 +139,10 @@ export const SelectAssignee = ({
                 </Avatar>
                 <span className="truncate">
                   {assignee.user.name || assignee.user.email || t('Unknown User')}{' '}
-                  {assignee.id === activeMember?.id && t('(You)', { $context: 'Parenthetical indicator for the current user in a dropdown' })}
+                  {assignee.id === activeMember?.id &&
+                    t('(You)', {
+                      $context: 'Parenthetical indicator for the current user in a dropdown',
+                    })}
                 </span>
               </div>
             </SelectItem>

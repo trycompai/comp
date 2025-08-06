@@ -3,9 +3,9 @@
 import { integrations } from '@comp/integrations';
 import { Button } from '@comp/ui/button';
 import { Integration } from '@db';
+import { T, useGT } from 'gt-next';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { IntegrationsCard } from './integrations-card';
-import { T, useGT } from 'gt-next';
 
 // Update the type to include lastRunAt and nextRunAt
 type ExtendedOrganizationIntegrations = Integration & {

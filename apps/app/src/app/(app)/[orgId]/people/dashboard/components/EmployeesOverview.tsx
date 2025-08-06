@@ -29,7 +29,7 @@ export async function EmployeesOverview() {
   const { getGT } = await import('gt-next/server');
   const t = await getGT();
   const trainingVideosData = getTrainingVideos(t);
-  
+
   const session = await auth.api.getSession({
     headers: await headers(),
   });

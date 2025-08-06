@@ -1,6 +1,8 @@
 'use client';
 
+import { getDataTableConfig } from '@/lib/data-table-config';
 import type { Column, ColumnMeta, Table } from '@tanstack/react-table';
+import { Branch, T, useGT } from 'gt-next';
 import {
   CalendarIcon,
   Check,
@@ -11,26 +13,13 @@ import {
 } from 'lucide-react';
 import { parseAsStringEnum, useQueryState } from 'nuqs';
 import * as React from 'react';
-import { T, Branch, useGT } from 'gt-next';
-import { getDataTableConfig } from '@/lib/data-table-config';
 
 import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
 import { getDefaultFilterOperator, getFilterOperators } from '@/lib/data-table';
-import { DataTableConfig } from '@/lib/data-table-config';
 import { formatDate } from '@/lib/format';
 import { generateId } from '@/lib/id';
 import { getFiltersStateParser } from '@/lib/parsers';
 import type { ExtendedColumnFilter, FilterOperator, JoinOperator } from '@/types/data-table';
-
-// Type guard for filter values
-const asString = (value: unknown): string => {
-  return typeof value === 'string' ? value : String(value || '');
-};
-
-const asStringArray = (value: unknown): string[] => {
-  if (Array.isArray(value)) return value.map(asString);
-  return [asString(value)];
-};
 import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
 import { Calendar } from '@comp/ui/calendar';
@@ -65,6 +54,16 @@ import {
   SortableItemHandle,
   SortableOverlay,
 } from './sortable';
+
+// Type guard for filter values
+const asString = (value: unknown): string => {
+  return typeof value === 'string' ? value : String(value || '');
+};
+
+const asStringArray = (value: unknown): string[] => {
+  if (Array.isArray(value)) return value.map(asString);
+  return [asString(value)];
+};
 
 const FILTERS_KEY = 'filters';
 const JOIN_OPERATOR_KEY = 'joinOperator';
@@ -134,7 +133,7 @@ export function DataTableFilterList<TData>({
         filterId: generateId({ length: 8 }),
       },
     ]);
-  }, [columns, filters, debouncedSetFilters]);
+  }, [columns, filters, debouncedSetFilters, t]);
 
   const onFilterUpdate = React.useCallback(
     (filterId: string, updates: Partial<Omit<ExtendedColumnFilter<TData>, 'filterId'>>) => {

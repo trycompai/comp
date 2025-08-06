@@ -205,7 +205,11 @@ export function TaskPropertiesSidebar({
             renderOption={(dept) => {
               if (dept === 'none') {
                 // Render 'none' as plain text
-                return <T><span className="text-muted-foreground">None</span></T>;
+                return (
+                  <T>
+                    <span className="text-muted-foreground">None</span>
+                  </T>
+                );
               }
               // Render other departments as colored badges
               const mainColor = DEPARTMENT_COLORS[dept] ?? DEPARTMENT_COLORS.none;
@@ -238,7 +242,11 @@ export function TaskPropertiesSidebar({
                   const currentDept = task.department ?? 'none';
                   if (currentDept === 'none') {
                     // Render 'None' as plain text for the trigger
-                    return <T><span className="text-muted-foreground px-1">None</span></T>;
+                    return (
+                      <T>
+                        <span className="text-muted-foreground px-1">None</span>
+                      </T>
+                    );
                   }
                   // Render other departments as colored badges
                   const mainColor = DEPARTMENT_COLORS[currentDept] ?? DEPARTMENT_COLORS.none; // Fallback

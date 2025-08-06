@@ -16,7 +16,7 @@ import { Icons } from '@comp/ui/icons';
 import type { Member, Policy, User } from '@db';
 import { Control } from '@db';
 import { format } from 'date-fns';
-import { T, useGT, Var, Branch } from 'gt-next';
+import { Branch, T, useGT, Var } from 'gt-next';
 import {
   ArchiveIcon,
   ArchiveRestoreIcon,
@@ -138,7 +138,8 @@ export function PolicyOverview({
                     true={<>you</>}
                     false={
                       <>
-                        <Var>{policy?.approver?.user?.name}</Var> (<Var>{policy?.approver?.user?.email}</Var>)
+                        <Var>{policy?.approver?.user?.name}</Var> (
+                        <Var>{policy?.approver?.user?.email}</Var>)
                       </>
                     }
                   />
@@ -182,7 +183,8 @@ export function PolicyOverview({
                 branch={policy?.isArchived?.toString() ?? 'false'}
                 true={
                   <>
-                    Archived on <Var>{format(new Date(policy?.updatedAt ?? new Date()), 'PPP')}</Var>
+                    Archived on{' '}
+                    <Var>{format(new Date(policy?.updatedAt ?? new Date()), 'PPP')}</Var>
                   </>
                 }
                 false={<></>}
@@ -285,7 +287,9 @@ export function PolicyOverview({
             onClose={() => setApproveDialogOpen(false)}
             onConfirm={handleApprove}
             title={t('Approve Policy Changes')}
-            description={t('Are you sure you want to approve these policy changes? You can optionally add a comment that will be visible in the policy history.')}
+            description={t(
+              'Are you sure you want to approve these policy changes? You can optionally add a comment that will be visible in the policy history.',
+            )}
             confirmText={t('Approve')}
             confirmIcon={<ShieldCheck className="h-4 w-4" />}
           />
@@ -296,7 +300,9 @@ export function PolicyOverview({
             onClose={() => setDenyDialogOpen(false)}
             onConfirm={handleDeny}
             title={t('Deny Policy Changes')}
-            description={t('Are you sure you want to deny these policy changes? You can optionally add a comment explaining your decision that will be visible in the policy history.')}
+            description={t(
+              'Are you sure you want to deny these policy changes? You can optionally add a comment explaining your decision that will be visible in the policy history.',
+            )}
             confirmText={t('Deny')}
             confirmIcon={<ShieldX className="h-4 w-4" />}
             confirmVariant="destructive"

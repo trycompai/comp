@@ -3,10 +3,10 @@
 'use server';
 
 import { db } from '@db';
+import { getGT } from 'gt-next/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { authActionClient } from '../safe-action';
 import { getUpdateRiskSchema } from '../schema';
-import { getGT } from 'gt-next/server';
 
 export const updateRiskAction = authActionClient
   .inputSchema(async () => {

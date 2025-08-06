@@ -12,7 +12,7 @@ import {
 import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
 import type { Attachment, AttachmentType } from '@db';
-import { T, Branch, useGT } from 'gt-next';
+import { Branch, T, useGT } from 'gt-next';
 import { Loader2, Trash2 } from 'lucide-react';
 import React from 'react';
 import { getAttachmentIconAndColor } from '../utils/attachmentUtils';
@@ -146,8 +146,12 @@ export function AttachmentItem({
                 <AlertDialogDescription>
                   <Branch
                     branch={isExisting}
-                    true={'This action cannot be undone. This will permanently delete the attachment.'}
-                    false={"This will remove the attachment from your pending list. It won't be included when you submit."}
+                    true={
+                      'This action cannot be undone. This will permanently delete the attachment.'
+                    }
+                    false={
+                      "This will remove the attachment from your pending list. It won't be included when you submit."
+                    }
                   >
                     <></>
                   </Branch>

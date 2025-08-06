@@ -26,7 +26,7 @@ export function DataTableColumnHeader<TData, TValue>({
   ...props
 }: DataTableColumnHeaderProps<TData, TValue>) {
   const t = useGT();
-  
+
   if (!column.getCanSort()) {
     return <div className={cn(className)}>{title}</div>;
   }

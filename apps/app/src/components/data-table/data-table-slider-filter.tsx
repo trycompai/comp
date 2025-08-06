@@ -1,8 +1,8 @@
 'use client';
 
 import type { Column } from '@tanstack/react-table';
-import * as React from 'react';
 import { T, useGT } from 'gt-next';
+import * as React from 'react';
 
 import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
@@ -205,7 +205,12 @@ export function DataTableSliderFilter<TData>({ column, title }: DataTableSliderF
             onValueChange={onSliderValueChange}
           />
         </div>
-        <Button aria-label={t('Clear {title} filter', { title })} variant="outline" size="sm" onClick={onReset}>
+        <Button
+          aria-label={t('Clear {title} filter', { title })}
+          variant="outline"
+          size="sm"
+          onClick={onReset}
+        >
           <T>Clear</T>
         </Button>
       </PopoverContent>

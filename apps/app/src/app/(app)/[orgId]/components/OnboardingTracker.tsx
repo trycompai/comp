@@ -3,9 +3,9 @@
 import { LogoSpinner } from '@/components/logo-spinner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import type { Onboarding } from '@db';
-import { T, useGT, Var } from 'gt-next';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { AnimatePresence, motion } from 'framer-motion';
+import { T, useGT, Var } from 'gt-next';
 import { AlertTriangle, Rocket, ShieldAlert, Zap } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -70,7 +70,9 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
     return (
       <Card className="bg-card text-card-foreground mx-auto my-2 w-full max-w-2xl shadow-xl">
         <CardHeader className="p-4 text-center">
-          <CardTitle className="text-foreground text-xl font-semibold">{t('Onboarding Status')}</CardTitle>
+          <CardTitle className="text-foreground text-xl font-semibold">
+            {t('Onboarding Status')}
+          </CardTitle>
           <CardDescription className="text-muted-foreground mt-0.5 text-xs">
             {t('Organization setup has not started yet.')}
           </CardDescription>

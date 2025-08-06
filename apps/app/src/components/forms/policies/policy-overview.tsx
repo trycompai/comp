@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import { updatePolicyFormAction } from '@/actions/policies/update-policy-form-action';
 import { getUpdatePolicyFormSchema } from '@/actions/schema';
 import { StatusIndicator } from '@/components/status-indicator';
@@ -13,11 +12,12 @@ import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Switch } from '@comp/ui/switch';
 import { Departments, Frequency, type Policy, type PolicyStatus } from '@db';
-import { T, useGT } from 'gt-next';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
+import { T, useGT } from 'gt-next';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
@@ -186,7 +186,13 @@ export function UpdatePolicyOverview({ policy }: { policy: Policy }) {
                             !field.value && 'text-muted-foreground',
                           )}
                         >
-                          {field.value ? format(field.value, 'PPP') : <T><span>Pick a date</span></T>}
+                          {field.value ? (
+                            format(field.value, 'PPP')
+                          ) : (
+                            <T>
+                              <span>Pick a date</span>
+                            </T>
+                          )}
                           <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                         </Button>
                       </div>

@@ -182,7 +182,7 @@ const LogItem = ({ log }: { log: AuditLogWithRelations }) => {
 };
 export const RecentAuditLogs = ({ logs }: { logs: AuditLogWithRelations[] }) => {
   const t = useGT();
-  
+
   return (
     <Card className="overflow-hidden">
       <CardHeader>

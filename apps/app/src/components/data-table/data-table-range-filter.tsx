@@ -4,6 +4,8 @@ import type { Column } from '@tanstack/react-table';
 import * as React from 'react';
 
 import type { ExtendedColumnFilter } from '@/types/data-table';
+import { cn } from '@comp/ui/cn';
+import { Input } from '@comp/ui/input';
 
 // Type guard for filter values
 const asString = (value: unknown): string => {
@@ -14,8 +16,6 @@ const asStringArray = (value: unknown): string[] => {
   if (Array.isArray(value)) return value.map(asString);
   return [asString(value)];
 };
-import { cn } from '@comp/ui/cn';
-import { Input } from '@comp/ui/input';
 
 interface DataTableRangeFilterProps<TData> extends React.ComponentProps<'div'> {
   filter: ExtendedColumnFilter<TData>;
@@ -58,7 +58,8 @@ export function DataTableRangeFilter<TData>({
   }, []);
 
   const value = React.useMemo(() => {
-    if (Array.isArray(filter.value)) return filter.value.map((v) => formatValue(v as string | number));
+    if (Array.isArray(filter.value))
+      return filter.value.map((v) => formatValue(v as string | number));
     return [formatValue(filter.value as string | number), ''];
   }, [filter.value, formatValue]);
 

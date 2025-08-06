@@ -40,7 +40,9 @@ export const Comments = ({
           <CardTitle>Comments</CardTitle>
         </T>
         <T>
-          <CardDescription>Leave a comment on this <Var>{entityType}</Var></CardDescription>
+          <CardDescription>
+            Leave a comment on this <Var>{entityType}</Var>
+          </CardDescription>
         </T>
       </CardHeader>
       <CardContent className="space-y-4">

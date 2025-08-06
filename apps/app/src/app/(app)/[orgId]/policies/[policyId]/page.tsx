@@ -49,7 +49,7 @@ export default async function PolicyDetails({
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getGT();
-  
+
   return {
     title: t('Policy Overview'),
   };

@@ -5,9 +5,9 @@ import { isPolicyCompleted } from '@/lib/control-compliance';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import type { Control, Policy, Task } from '@db';
 import type { ColumnDef } from '@tanstack/react-table';
+import { useGT } from 'gt-next';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useGT } from 'gt-next';
 import { getControlStatus } from '../../../../../lib/utils';
 
 export type OrganizationControlType = Control & {
@@ -60,9 +60,16 @@ export function RequirementControlsTableColumns({
               </TooltipTrigger>
               <TooltipContent>
                 <div className="text-sm">
-                  <p>{t('Progress: {progress}%', { progress: Math.round((completedPolicies / totalPolicies) * 100) || 0 })}</p>
                   <p>
-                    {t('Completed: {completed}/{total} policies', { completed: completedPolicies, total: totalPolicies })}
+                    {t('Progress: {progress}%', {
+                      progress: Math.round((completedPolicies / totalPolicies) * 100) || 0,
+                    })}
+                  </p>
+                  <p>
+                    {t('Completed: {completed}/{total} policies', {
+                      completed: completedPolicies,
+                      total: totalPolicies,
+                    })}
                   </p>
                 </div>
               </TooltipContent>

@@ -4,9 +4,9 @@ import { StatusIndicator, StatusType } from '@/components/status-indicator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import type { Policy } from '@db';
 import type { ColumnDef } from '@tanstack/react-table';
+import { useGT } from 'gt-next';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useGT } from 'gt-next';
 
 export type OrganizationControlType = {
   id: string;
@@ -85,9 +85,16 @@ export function FrameworkControlsTableColumns(): ColumnDef<OrganizationControlTy
               </TooltipTrigger>
               <TooltipContent>
                 <div className="text-sm">
-                  <p>{t('Progress: {progress}%', { progress: Math.round((completedPolicies / totalPolicies) * 100) || 0 })}</p>
                   <p>
-                    {t('Completed: {completed}/{total} policies', { completed: completedPolicies, total: totalPolicies })}
+                    {t('Progress: {progress}%', {
+                      progress: Math.round((completedPolicies / totalPolicies) * 100) || 0,
+                    })}
+                  </p>
+                  <p>
+                    {t('Completed: {completed}/{total} policies', {
+                      completed: completedPolicies,
+                      total: totalPolicies,
+                    })}
                   </p>
                 </div>
               </TooltipContent>

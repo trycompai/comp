@@ -7,7 +7,7 @@ import type { Host } from '../types';
 
 export const HostDetails = ({ host, onClose }: { host: Host; onClose: () => void }) => {
   const t = useGT();
-  
+
   return (
     <div className="space-y-4">
       <T>

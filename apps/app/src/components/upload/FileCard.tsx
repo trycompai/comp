@@ -15,10 +15,10 @@ import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardFooter } from '@comp/ui/card';
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@comp/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
+import { T, useGT } from 'gt-next';
 import { ExternalLink, Loader2, Maximize2, Trash } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
-import { T, Var, useGT } from 'gt-next';
 import { FileIcon } from './FileIcon';
 
 interface FilePreviewState {
@@ -185,7 +185,9 @@ export function FileCard({
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p><T>Open File</T></p>
+              <p>
+                <T>Open File</T>
+              </p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -205,20 +207,28 @@ export function FileCard({
                 </AlertDialogTrigger>
               </TooltipTrigger>
               <TooltipContent>
-                <p><T>Delete File</T></p>
+                <p>
+                  <T>Delete File</T>
+                </p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle><T>Delete File</T></AlertDialogTitle>
+              <AlertDialogTitle>
+                <T>Delete File</T>
+              </AlertDialogTitle>
               <AlertDialogDescription>
                 <T>This action cannot be undone. The file will be permanently deleted.</T>
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel><T>Cancel</T></AlertDialogCancel>
-              <AlertDialogAction onClick={() => onDelete(url)}><T>Delete</T></AlertDialogAction>
+              <AlertDialogCancel>
+                <T>Cancel</T>
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={() => onDelete(url)}>
+                <T>Delete</T>
+              </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>

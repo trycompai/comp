@@ -3,6 +3,7 @@
 import { cn } from '@comp/ui/cn';
 import { Progress } from '@comp/ui/progress';
 import { AnimatePresence, motion } from 'framer-motion';
+import { T, useGT } from 'gt-next';
 import {
   AlertCircle,
   CheckCircle2,
@@ -15,7 +16,6 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { MiniDataStream } from './mini-data-stream';
-import { T, useGT } from 'gt-next';
 
 interface WorkItem {
   id: string;
@@ -198,7 +198,8 @@ export function AiWorkPreviewAuthentic() {
           </T>
           <T>
             <p className="text-xs text-muted-foreground/70 mt-1">
-              We're thoroughly analyzing your infrastructure to create accurate, personalized policies
+              We're thoroughly analyzing your infrastructure to create accurate, personalized
+              policies
             </p>
           </T>
         </div>
@@ -214,23 +215,27 @@ export function AiWorkPreviewAuthentic() {
         </div>
         <Progress value={overallProgress} className="h-2" />
         <p className="text-xs text-muted-foreground/70">
-          {t('{completedCount} of {totalTasks} tasks completed • Estimated time remaining: {timeRemaining}', {
-            completedCount,
-            totalTasks: workItems.length,
-            timeRemaining: overallProgress < 10
-              ? t('6-7 min')
-              : overallProgress < 20
-                ? t('5-6 min')
-                : overallProgress < 40
-                  ? t('4-5 min')
-                  : overallProgress < 60
-                    ? t('3-4 min')
-                    : overallProgress < 80
-                      ? t('2-3 min')
-                      : overallProgress < 90
-                        ? t('1-2 min')
-                        : t('Almost done...')
-          })}
+          {t(
+            '{completedCount} of {totalTasks} tasks completed • Estimated time remaining: {timeRemaining}',
+            {
+              completedCount,
+              totalTasks: workItems.length,
+              timeRemaining:
+                overallProgress < 10
+                  ? t('6-7 min')
+                  : overallProgress < 20
+                    ? t('5-6 min')
+                    : overallProgress < 40
+                      ? t('4-5 min')
+                      : overallProgress < 60
+                        ? t('3-4 min')
+                        : overallProgress < 80
+                          ? t('2-3 min')
+                          : overallProgress < 90
+                            ? t('1-2 min')
+                            : t('Almost done...'),
+            },
+          )}
         </p>
       </div>
 
@@ -303,7 +308,7 @@ export function AiWorkPreviewAuthentic() {
                           >
                             {t('{progress}% complete{finalizingText}', {
                               progress: Math.round(item.progress),
-                              finalizingText: isStuck ? t(' - Finalizing...') : ''
+                              finalizingText: isStuck ? t(' - Finalizing...') : '',
                             })}
                           </p>
                         </div>

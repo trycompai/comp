@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from '@comp/ui/dialog';
 import { Member, User } from '@db';
-import { T, useGT } from 'gt-next';
+import { useGT } from 'gt-next';
 import { Loader2 } from 'lucide-react';
 
 interface SubmitApprovalDialogProps {
@@ -34,7 +34,7 @@ export const SubmitApprovalDialog = ({
   isSubmitting,
 }: SubmitApprovalDialogProps) => {
   const t = useGT();
-  
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>

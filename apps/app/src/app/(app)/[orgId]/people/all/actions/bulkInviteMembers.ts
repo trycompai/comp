@@ -10,16 +10,19 @@ import { z } from 'zod';
 import type { ActionResponse } from '@/actions/types';
 
 // --- Schemas for Validation ---
-const getEmailSchema = (t: Awaited<ReturnType<typeof getGT>>) => z.string().email(t('Invalid email format'));
+const getEmailSchema = (t: Awaited<ReturnType<typeof getGT>>) =>
+  z.string().email(t('Invalid email format'));
 const availableRoles = ['admin', 'auditor', 'employee'] as const;
 type InviteRole = (typeof availableRoles)[number];
 const DEFAULT_ROLE: InviteRole = 'employee'; // Define default role here too
 
-const getManualInviteSchema = (t: Awaited<ReturnType<typeof getGT>>) => z.object({
-  email: getEmailSchema(t),
-  role: z.enum(availableRoles),
-});
-const getManualInvitesSchema = (t: Awaited<ReturnType<typeof getGT>>) => z.array(getManualInviteSchema(t));
+const getManualInviteSchema = (t: Awaited<ReturnType<typeof getGT>>) =>
+  z.object({
+    email: getEmailSchema(t),
+    role: z.enum(availableRoles),
+  });
+const getManualInvitesSchema = (t: Awaited<ReturnType<typeof getGT>>) =>
+  z.array(getManualInviteSchema(t));
 
 // --- Result Type ---
 interface BulkInviteResult {
@@ -35,7 +38,7 @@ export async function bulkInviteMembers(
   formData: FormData,
 ): Promise<ActionResponse<BulkInviteResult>> {
   const t = await getGT();
-  
+
   // Manually get session and check auth
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.session) {

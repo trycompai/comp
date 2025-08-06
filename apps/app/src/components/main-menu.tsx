@@ -6,7 +6,7 @@ import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
 import { Icons } from '@comp/ui/icons';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
-import { T, useGT } from 'gt-next';
+import { useGT } from 'gt-next';
 import {
   Blocks,
   FlaskConical,

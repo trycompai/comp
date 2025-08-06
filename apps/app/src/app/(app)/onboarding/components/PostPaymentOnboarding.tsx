@@ -1,6 +1,9 @@
 'use client';
 
-import { OnboardingStepInput, type OnboardingFormFields } from '@/app/(app)/setup/components/OnboardingStepInput';
+import {
+  OnboardingStepInput,
+  type OnboardingFormFields,
+} from '@/app/(app)/setup/components/OnboardingStepInput';
 import { LogoSpinner } from '@/components/logo-spinner';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@comp/ui/card';
@@ -21,7 +24,7 @@ export function PostPaymentOnboarding({
   initialData = {},
 }: PostPaymentOnboardingProps) {
   const t = useGT();
-  
+
   const {
     stepIndex,
     steps,

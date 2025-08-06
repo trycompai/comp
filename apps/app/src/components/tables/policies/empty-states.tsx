@@ -2,10 +2,10 @@
 
 import { Button } from '@comp/ui/button';
 import { Card, CardContent } from '@comp/ui/card';
+import { T } from 'gt-next';
 import { FileText } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { T } from 'gt-next';
 
 export function NoPolicies() {
   const { orgId } = useParams<{ orgId: string }>();

@@ -37,7 +37,7 @@ const CHART_COLORS = {
 
 export function PolicyAssigneeChart({ data }: PolicyAssigneeChartProps) {
   const t = useGT();
-  
+
   // Sort assignees by total policies (descending)
   const sortedData = React.useMemo(() => {
     if (!data || data.length === 0) return [];
@@ -148,8 +148,12 @@ export function PolicyAssigneeChart({ data }: PolicyAssigneeChartProps) {
       <CardContent className="flex-1">
         <div className="flex h-full flex-col">
           <div className="text-muted-foreground mb-1 flex items-center justify-between px-1 text-xs">
-            <T><span>Assignee</span></T>
-            <T><span>Policy Count</span></T>
+            <T>
+              <span>Assignee</span>
+            </T>
+            <T>
+              <span>Policy Count</span>
+            </T>
           </div>
           <ChartContainer config={chartConfig}>
             <ResponsiveContainer width="100%" height={250}>

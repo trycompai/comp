@@ -7,6 +7,7 @@ import { Input } from '@comp/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Switch } from '@comp/ui/switch';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { T, useGT } from 'gt-next';
 import { ExternalLink } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import Link from 'next/link';
@@ -14,7 +15,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { T, useGT } from 'gt-next';
 import { isFriendlyAvailable } from '../actions/is-friendly-available';
 import { trustPortalSwitchAction } from '../actions/trust-portal-switch';
 import { updateTrustPortalFrameworks } from '../actions/update-trust-portal-frameworks';
@@ -101,7 +101,7 @@ export function TrustPortalSwitch({
     async (data: z.infer<typeof trustPortalSwitchSchema>) => {
       await trustPortalSwitch.execute(data);
     },
-    [], // Remove trustPortalSwitch from dependencies to prevent infinite loop
+    [trustPortalSwitch],
   );
 
   const portalUrl = domainVerified ? `https://${domain}` : `https://trust.inc/${slug}`;
@@ -159,7 +159,7 @@ export function TrustPortalSwitch({
     }
     setFriendlyUrlStatus('checking');
     checkFriendlyUrl.execute({ friendlyUrl: debouncedFriendlyUrl, orgId });
-  }, [debouncedFriendlyUrl, orgId, friendlyUrl]);
+  }, [debouncedFriendlyUrl, orgId, friendlyUrl, checkFriendlyUrl]);
   useEffect(() => {
     if (checkFriendlyUrl.status === 'executing') return;
     if (checkFriendlyUrl.result?.data?.isAvailable === true) {
@@ -234,14 +234,18 @@ export function TrustPortalSwitch({
           <CardContent className="space-y-6 pt-0">
             {form.watch('enabled') && (
               <div className="pt-2">
-                <h3 className="mb-4 text-sm font-medium"><T>Trust Portal Settings</T></h3>
+                <h3 className="mb-4 text-sm font-medium">
+                  <T>Trust Portal Settings</T>
+                </h3>
                 <div className="grid grid-cols-1 gap-x-4 lg:grid-cols-2">
                   <FormField
                     control={form.control}
                     name="friendlyUrl"
                     render={({ field }) => (
                       <FormItem className="w-full">
-                        <FormLabel><T>Custom URL</T></FormLabel>
+                        <FormLabel>
+                          <T>Custom URL</T>
+                        </FormLabel>
                         <FormControl>
                           <div>
                             <div className="relative flex w-full items-center">
@@ -265,7 +269,9 @@ export function TrustPortalSwitch({
                               <div className="mt-1 min-h-[18px] text-xs">
                                 {friendlyUrlStatus === 'checking' && t('Checking availability...')}
                                 {friendlyUrlStatus === 'available' && (
-                                  <span className="text-green-600">{t('This URL is available!')}</span>
+                                  <span className="text-green-600">
+                                    {t('This URL is available!')}
+                                  </span>
                                 )}
                                 {friendlyUrlStatus === 'unavailable' && (
                                   <span className="text-red-600">
@@ -284,7 +290,9 @@ export function TrustPortalSwitch({
                     name="contactEmail"
                     render={({ field }) => (
                       <FormItem className="w-full">
-                        <FormLabel><T>Contact Email</T></FormLabel>
+                        <FormLabel>
+                          <T>Contact Email</T>
+                        </FormLabel>
                         <FormControl>
                           <Input
                             {...field}
@@ -312,15 +320,21 @@ export function TrustPortalSwitch({
               <div className="">
                 {/* Compliance Frameworks Section */}
                 <div>
-                  <h3 className="mb-2 text-sm font-medium"><T>Compliance Frameworks</T></h3>
+                  <h3 className="mb-2 text-sm font-medium">
+                    <T>Compliance Frameworks</T>
+                  </h3>
                   <p className="text-muted-foreground mb-4 text-sm">
-                    <T>Share the frameworks your organization is compliant with or working towards.</T>
+                    <T>
+                      Share the frameworks your organization is compliant with or working towards.
+                    </T>
                   </p>
                   <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
                     {/* SOC 2 */}
                     <ComplianceFramework
                       title="SOC 2"
-                      description={t('A compliance framework focused on data security, availability, and confidentiality.')}
+                      description={t(
+                        'A compliance framework focused on data security, availability, and confidentiality.',
+                      )}
                       isEnabled={soc2}
                       status={soc2Status}
                       onStatusChange={async (value) => {
@@ -349,7 +363,9 @@ export function TrustPortalSwitch({
                     {/* ISO 27001 */}
                     <ComplianceFramework
                       title="ISO 27001"
-                      description={t('An international standard for managing information security systems.')}
+                      description={t(
+                        'An international standard for managing information security systems.',
+                      )}
                       isEnabled={iso27001}
                       status={iso27001Status}
                       onStatusChange={async (value) => {
@@ -378,7 +394,9 @@ export function TrustPortalSwitch({
                     {/* GDPR */}
                     <ComplianceFramework
                       title="GDPR"
-                      description={t('A European regulation that governs personal data protection and user privacy.')}
+                      description={t(
+                        'A European regulation that governs personal data protection and user privacy.',
+                      )}
                       isEnabled={gdpr}
                       status={gdprStatus}
                       onStatusChange={async (value) => {
@@ -407,7 +425,9 @@ export function TrustPortalSwitch({
                     {/* HIPAA */}
                     <ComplianceFramework
                       title="HIPAA"
-                      description={t('A US regulation that protects sensitive patient health information and medical data.')}
+                      description={t(
+                        'A US regulation that protects sensitive patient health information and medical data.',
+                      )}
                       isEnabled={hipaa}
                       status={hipaaStatus}
                       onStatusChange={async (value) => {
@@ -527,7 +547,9 @@ function ComplianceFramework({
                 </Select>
               ) : (
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium"><T>Disabled</T></span>
+                  <span className="text-sm font-medium">
+                    <T>Disabled</T>
+                  </span>
                 </div>
               )}
             </div>

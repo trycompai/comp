@@ -30,7 +30,13 @@ export const JoinDate = ({ control }: { control: Control<EmployeeFormValues> }) 
                     !field.value && 'text-muted-foreground',
                   )}
                 >
-                  {field.value ? format(field.value, 'PPP') : <T><span>Pick a date</span></T>}
+                  {field.value ? (
+                    format(field.value, 'PPP')
+                  ) : (
+                    <T>
+                      <span>Pick a date</span>
+                    </T>
+                  )}
                   <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                 </Button>
               </FormControl>

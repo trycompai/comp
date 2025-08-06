@@ -7,10 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@comp/ui/use-toast';
 import { Impact, Likelihood } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { T, useGT } from 'gt-next';
 import { useQueryState } from 'nuqs';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { useGT, T } from 'gt-next';
 
 const formSchema = z.object({
   inherentProbability: z.nativeEnum(Likelihood),
@@ -74,7 +74,9 @@ export function InherentRiskForm({
           name="inherentProbability"
           render={({ field }) => (
             <FormItem>
-              <FormLabel><T>Inherent Probability</T></FormLabel>
+              <FormLabel>
+                <T>Inherent Probability</T>
+              </FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
@@ -82,11 +84,21 @@ export function InherentRiskForm({
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value={Likelihood.very_likely}><T>Very Likely</T></SelectItem>
-                  <SelectItem value={Likelihood.likely}><T>Likely</T></SelectItem>
-                  <SelectItem value={Likelihood.possible}><T>Possible</T></SelectItem>
-                  <SelectItem value={Likelihood.unlikely}><T>Unlikely</T></SelectItem>
-                  <SelectItem value={Likelihood.very_unlikely}><T>Very Unlikely</T></SelectItem>
+                  <SelectItem value={Likelihood.very_likely}>
+                    <T>Very Likely</T>
+                  </SelectItem>
+                  <SelectItem value={Likelihood.likely}>
+                    <T>Likely</T>
+                  </SelectItem>
+                  <SelectItem value={Likelihood.possible}>
+                    <T>Possible</T>
+                  </SelectItem>
+                  <SelectItem value={Likelihood.unlikely}>
+                    <T>Unlikely</T>
+                  </SelectItem>
+                  <SelectItem value={Likelihood.very_unlikely}>
+                    <T>Very Unlikely</T>
+                  </SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -99,7 +111,9 @@ export function InherentRiskForm({
           name="inherentImpact"
           render={({ field }) => (
             <FormItem>
-              <FormLabel><T>Inherent Impact</T></FormLabel>
+              <FormLabel>
+                <T>Inherent Impact</T>
+              </FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
@@ -107,11 +121,21 @@ export function InherentRiskForm({
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value={Impact.insignificant}><T>Insignificant</T></SelectItem>
-                  <SelectItem value={Impact.minor}><T>Minor</T></SelectItem>
-                  <SelectItem value={Impact.moderate}><T>Moderate</T></SelectItem>
-                  <SelectItem value={Impact.major}><T>Major</T></SelectItem>
-                  <SelectItem value={Impact.severe}><T>Severe</T></SelectItem>
+                  <SelectItem value={Impact.insignificant}>
+                    <T>Insignificant</T>
+                  </SelectItem>
+                  <SelectItem value={Impact.minor}>
+                    <T>Minor</T>
+                  </SelectItem>
+                  <SelectItem value={Impact.moderate}>
+                    <T>Moderate</T>
+                  </SelectItem>
+                  <SelectItem value={Impact.major}>
+                    <T>Major</T>
+                  </SelectItem>
+                  <SelectItem value={Impact.severe}>
+                    <T>Severe</T>
+                  </SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -120,7 +144,9 @@ export function InherentRiskForm({
         />
 
         <div className="flex justify-end">
-          <Button type="submit"><T>Save</T></Button>
+          <Button type="submit">
+            <T>Save</T>
+          </Button>
         </div>
       </form>
     </Form>

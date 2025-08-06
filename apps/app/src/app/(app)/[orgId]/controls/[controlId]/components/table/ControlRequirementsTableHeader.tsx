@@ -23,7 +23,9 @@ export function ControlRequirementsTableHeader({ table, loading }: Props) {
     <TableHeader>
       <TableRow className="hover:bg-transparent">
         {isVisible('type') && (
-          <TableHead className="h-11 px-4 text-left align-middle font-medium">{t('Type')}</TableHead>
+          <TableHead className="h-11 px-4 text-left align-middle font-medium">
+            {t('Type')}
+          </TableHead>
         )}
         {isVisible('description') && (
           <TableHead className="h-11 px-4 text-left align-middle font-medium">
@@ -31,7 +33,9 @@ export function ControlRequirementsTableHeader({ table, loading }: Props) {
           </TableHead>
         )}
         {isVisible('status') && (
-          <TableHead className="h-11 px-4 text-left align-middle font-medium">{t('Status')}</TableHead>
+          <TableHead className="h-11 px-4 text-left align-middle font-medium">
+            {t('Status')}
+          </TableHead>
         )}
       </TableRow>
     </TableHeader>

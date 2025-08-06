@@ -3,15 +3,15 @@
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
 import { StatusIndicator } from '@/components/status-indicator';
 import { formatDate } from '@/lib/format';
-import { Policy } from '@db';
-import { ColumnDef } from '@tanstack/react-table';
 
 export const getGetPolicyColumns = (t: (content: string) => string) => {
   return [
     {
       id: 'name',
       accessorKey: 'name',
-      header: ({ column }: { column: any }) => <DataTableColumnHeader column={column} title={t("Policy Name")} />,
+      header: ({ column }: { column: any }) => (
+        <DataTableColumnHeader column={column} title={t('Policy Name')} />
+      ),
       cell: ({ row }: { row: any }) => {
         return (
           <div className="flex items-center gap-2">
@@ -29,7 +29,9 @@ export const getGetPolicyColumns = (t: (content: string) => string) => {
     {
       id: 'status',
       accessorKey: 'status',
-      header: ({ column }: { column: any }) => <DataTableColumnHeader column={column} title={t("Status")} />,
+      header: ({ column }: { column: any }) => (
+        <DataTableColumnHeader column={column} title={t('Status')} />
+      ),
       cell: ({ row }: { row: any }) => {
         return <StatusIndicator status={row.original.status} />;
       },
@@ -42,7 +44,9 @@ export const getGetPolicyColumns = (t: (content: string) => string) => {
     {
       id: 'updatedAt',
       accessorKey: 'updatedAt',
-      header: ({ column }: { column: any }) => <DataTableColumnHeader column={column} title={t("Last Updated")} />,
+      header: ({ column }: { column: any }) => (
+        <DataTableColumnHeader column={column} title={t('Last Updated')} />
+      ),
       cell: ({ row }: { row: any }) => {
         return <div className="text-muted-foreground">{formatDate(row.getValue('updatedAt'))}</div>;
       },

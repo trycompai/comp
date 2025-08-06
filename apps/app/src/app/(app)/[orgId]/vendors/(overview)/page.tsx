@@ -1,8 +1,8 @@
 import { AppOnboarding } from '@/components/app-onboarding';
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import type { SearchParams } from '@/types';
-import type { Metadata } from 'next';
 import { getGT } from 'gt-next/server';
+import type { Metadata } from 'next';
 import { CreateVendorSheet } from '../components/create-vendor-sheet';
 import { VendorsTable } from './components/VendorsTable';
 import { getAssignees, getVendors } from './data/queries';
@@ -53,18 +53,21 @@ export default async function Page({
           faqs={[
             {
               questionKey: t('What is vendor management?'),
-              answerKey:
-                t('Vendor management is the process of managing, and controlling relationships and agreements with third-party suppliers of goods and services.'),
+              answerKey: t(
+                'Vendor management is the process of managing, and controlling relationships and agreements with third-party suppliers of goods and services.',
+              ),
             },
             {
               questionKey: t('Why is vendor management important?'),
-              answerKey:
-                t('It helps to ensure that you are getting the most value from your vendors, while also minimizing risks and maintaining compliance.'),
+              answerKey: t(
+                'It helps to ensure that you are getting the most value from your vendors, while also minimizing risks and maintaining compliance.',
+              ),
             },
             {
               questionKey: t('What are the key steps in vendor management?'),
-              answerKey:
-                t('The key steps include vendor selection, contract negotiation, performance monitoring, risk management, and relationship management.'),
+              answerKey: t(
+                'The key steps include vendor selection, contract negotiation, performance monitoring, risk management, and relationship management.',
+              ),
             },
           ]}
         />

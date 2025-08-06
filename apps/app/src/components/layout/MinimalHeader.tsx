@@ -6,11 +6,11 @@ import { MinimalUserMenu } from '@/components/layout/MinimalUserMenu';
 import { Icons } from '@comp/ui/icons';
 import type { Organization } from '@db';
 import type { User } from 'better-auth';
+import { Branch, T, Var, useGT } from 'gt-next';
 import { ArrowLeft } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { T, Branch, Var, useGT } from 'gt-next';
 
 interface MinimalHeaderProps {
   user: User;
@@ -66,7 +66,11 @@ export function MinimalHeader({
               <span className="hidden md:inline">
                 <Branch
                   branch={(organizations.length === 1).toString()}
-                  true={<>Continue with <Var>{organizations[0].name || t('your organization')}</Var></>}
+                  true={
+                    <>
+                      Continue with <Var>{organizations[0].name || t('your organization')}</Var>
+                    </>
+                  }
                   false={<>Back to your organizations</>}
                 />
               </span>

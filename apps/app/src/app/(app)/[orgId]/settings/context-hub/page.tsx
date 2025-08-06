@@ -1,6 +1,6 @@
 import PageCore from '@/components/pages/PageCore.tsx';
-import type { Metadata } from 'next';
 import { getGT } from 'gt-next/server';
+import type { Metadata } from 'next';
 import { ContextTable } from './ContextTable';
 import { getContextEntries } from './data/getContextEntries';
 

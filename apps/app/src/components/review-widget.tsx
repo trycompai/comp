@@ -1,6 +1,6 @@
 'use client';
 
-import { T, Var, Num } from 'gt-next';
+import { Num, T } from 'gt-next';
 
 interface ReviewWidgetProps {
   rating?: number;
@@ -69,7 +69,9 @@ export function ReviewWidget({
 
         {/* Review Count Text */}
         <T>
-          <div className="text-sm text-muted-foreground">Based on <Num>{reviewCount}</Num>+ reviews</div>
+          <div className="text-sm text-muted-foreground">
+            Based on <Num>{reviewCount}</Num>+ reviews
+          </div>
         </T>
       </div>
     </div>

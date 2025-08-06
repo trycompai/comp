@@ -26,7 +26,9 @@ export default async function Layout({ children }: { children: React.ReactNode }
           <div className="mt-8">
             <AppOnboarding
               title={t('Vendor Management')}
-              description={t("Manage your vendors and ensure your organization's supply chain is secure and compliant.")}
+              description={t(
+                "Manage your vendors and ensure your organization's supply chain is secure and compliant.",
+              )}
               cta={t('Add vendor')}
               imageSrcDark="/onboarding/vendor-management.webp"
               imageSrcLight="/onboarding/vendor-management-light.webp"
@@ -36,19 +38,19 @@ export default async function Layout({ children }: { children: React.ReactNode }
                 {
                   questionKey: t('What is vendor management?'),
                   answerKey: t(
-                    'Vendor management is the process of managing, and controlling relationships and agreements with third-party suppliers of goods and services.'
+                    'Vendor management is the process of managing, and controlling relationships and agreements with third-party suppliers of goods and services.',
                   ),
                 },
                 {
                   questionKey: t('Why is vendor management important?'),
                   answerKey: t(
-                    'It helps to ensure that you are getting the most value from your vendors, while also minimizing risks and maintaining compliance.'
+                    'It helps to ensure that you are getting the most value from your vendors, while also minimizing risks and maintaining compliance.',
                   ),
                 },
                 {
                   questionKey: t('What are the key steps in vendor management?'),
                   answerKey: t(
-                    'The key steps include vendor selection, contract negotiation, performance monitoring, risk management, and relationship management.'
+                    'The key steps include vendor selection, contract negotiation, performance monitoring, risk management, and relationship management.',
                   ),
                 },
               ]}

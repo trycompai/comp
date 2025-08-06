@@ -2,8 +2,8 @@
 
 import { healAndSetAccessToken } from '@/actions/trigger/heal-access-token';
 import { TriggerProvider } from '@/components/trigger-provider';
-import { useEffect, useState } from 'react';
 import { T } from 'gt-next';
+import { useEffect, useState } from 'react';
 
 interface TriggerTokenProviderProps {
   triggerJobId?: string;

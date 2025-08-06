@@ -1,8 +1,8 @@
 'use server';
 
 import { researchVendor } from '@/jobs/tasks/scrape/research';
-import { getGT } from 'gt-next/server';
 import { tasks } from '@trigger.dev/sdk/v3';
+import { getGT } from 'gt-next/server';
 import { z } from 'zod';
 import { authActionClient } from './safe-action';
 

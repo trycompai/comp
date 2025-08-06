@@ -24,7 +24,9 @@ export function CreatePolicySheet() {
       <Sheet open={isOpen} onOpenChange={handleOpenChange}>
         <SheetContent stack>
           <SheetHeader className="mb-8 flex flex-row items-center justify-between">
-            <T><SheetTitle>Create New Policy</SheetTitle></T>
+            <T>
+              <SheetTitle>Create New Policy</SheetTitle>
+            </T>
             <Button
               size="icon"
               variant="ghost"
@@ -45,7 +47,9 @@ export function CreatePolicySheet() {
 
   return (
     <Drawer open={isOpen} onOpenChange={handleOpenChange}>
-      <T><DrawerTitle hidden>Create New Policy</DrawerTitle></T>
+      <T>
+        <DrawerTitle hidden>Create New Policy</DrawerTitle>
+      </T>
       <DrawerContent className="p-6">
         <CreateNewPolicyForm />
       </DrawerContent>

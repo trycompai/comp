@@ -1,16 +1,17 @@
 'use client';
 
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
-import type { ColumnDef } from '@tanstack/react-table';
 import { CheckCircle2, XCircle } from 'lucide-react';
-import type { FleetPolicy, Host } from '../types';
+import type { FleetPolicy } from '../types';
 
 export const getGetEmployeeDevicesColumns = (t: (content: string) => string) => {
   return [
     {
       id: 'computer_name',
       accessorKey: 'computer_name',
-      header: ({ column }: { column: any }) => <DataTableColumnHeader column={column} title={t('Device Name')} />,
+      header: ({ column }: { column: any }) => (
+        <DataTableColumnHeader column={column} title={t('Device Name')} />
+      ),
       cell: ({ row }: { row: any }) => {
         return (
           <div className="flex items-center gap-2">
@@ -26,7 +27,9 @@ export const getGetEmployeeDevicesColumns = (t: (content: string) => string) => 
       accessorKey: 'policies',
       enableColumnFilter: false,
       enableSorting: false,
-      header: ({ column }: { column: any }) => <DataTableColumnHeader column={column} title={t('Is Compliant')} />,
+      header: ({ column }: { column: any }) => (
+        <DataTableColumnHeader column={column} title={t('Is Compliant')} />
+      ),
       cell: ({ row }: { row: any }) => {
         const policies = row.getValue('policies') as FleetPolicy[];
         const isCompliant = policies.every((policy) => policy.response === 'pass');

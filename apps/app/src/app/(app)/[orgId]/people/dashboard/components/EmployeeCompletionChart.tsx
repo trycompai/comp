@@ -1,9 +1,9 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
+import { T, useGT } from 'gt-next';
 import type { CSSProperties } from 'react';
 import * as React from 'react';
-import { T, useGT } from 'gt-next';
 
 // Use correct types from the database
 import { TrainingVideo } from '@/lib/data/training-videos';
@@ -104,7 +104,9 @@ export function EmployeeCompletionChart({
     return (
       <Card>
         <CardHeader>
-          <CardTitle><T>Employee Task Completion</T></CardTitle>
+          <CardTitle>
+            <T>Employee Task Completion</T>
+          </CardTitle>
         </CardHeader>
         <CardContent className="flex h-[300px] items-center justify-center">
           <p className="text-muted-foreground text-center text-sm">
@@ -120,7 +122,9 @@ export function EmployeeCompletionChart({
     return (
       <Card>
         <CardHeader>
-          <CardTitle><T>Employee Task Completion</T></CardTitle>
+          <CardTitle>
+            <T>Employee Task Completion</T>
+          </CardTitle>
         </CardHeader>
         <CardContent className="flex h-[300px] items-center justify-center">
           <p className="text-muted-foreground text-center text-sm">
@@ -139,7 +143,9 @@ export function EmployeeCompletionChart({
   return (
     <Card>
       <CardHeader>
-        <CardTitle><T>Employee Task Completion</T></CardTitle>
+        <CardTitle>
+          <T>Employee Task Completion</T>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-8">
@@ -148,7 +154,8 @@ export function EmployeeCompletionChart({
               <div className="flex items-center justify-between text-sm">
                 <p>{stat.name}</p>
                 <span className="text-muted-foreground">
-                  {stat.policiesCompleted + stat.trainingsCompleted} / {stat.totalTasks} <T>tasks</T>
+                  {stat.policiesCompleted + stat.trainingsCompleted} / {stat.totalTasks}{' '}
+                  <T>tasks</T>
                 </span>
               </div>
 
@@ -157,11 +164,15 @@ export function EmployeeCompletionChart({
               <div className="text-muted-foreground flex flex-wrap gap-3 text-xs">
                 <div className="flex items-center gap-1">
                   <div className="bg-primary size-2" />
-                  <span><T>Completed</T></span>
+                  <span>
+                    <T>Completed</T>
+                  </span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="size-2 bg-[var(--chart-open)]" />
-                  <span><T>Not Completed</T></span>
+                  <span>
+                    <T>Not Completed</T>
+                  </span>
                 </div>
               </div>
             </div>

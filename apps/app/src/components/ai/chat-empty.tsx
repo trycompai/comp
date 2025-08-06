@@ -1,5 +1,5 @@
-import { LogoSpinner } from '../logo-spinner';
 import { T, Var } from 'gt-next';
+import { LogoSpinner } from '../logo-spinner';
 
 type Props = {
   firstName: string;

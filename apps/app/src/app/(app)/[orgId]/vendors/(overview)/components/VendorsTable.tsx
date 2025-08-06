@@ -3,9 +3,9 @@
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTableToolbar } from '@/components/data-table/data-table-toolbar';
 import { useDataTable } from '@/hooks/use-data-table';
+import { useGT } from 'gt-next';
 import { useParams } from 'next/navigation';
 import * as React from 'react';
-import { useGT } from 'gt-next';
 import { CreateVendorSheet } from '../../components/create-vendor-sheet';
 import type { GetAssigneesResult, GetVendorsResult } from '../data/queries';
 import { getColumns } from './VendorColumns'; // This requires a t function to be passed into it

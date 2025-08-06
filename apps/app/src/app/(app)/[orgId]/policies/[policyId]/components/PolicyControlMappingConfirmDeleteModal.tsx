@@ -30,7 +30,12 @@ export const PolicyControlMappingConfirmDeleteModal = ({ control }: { control: C
         policyId,
         controlId: control.id,
       });
-      toast.success(t('Control: {controlName} unmapped successfully from policy {policyId}', { controlName: control.name, policyId }));
+      toast.success(
+        t('Control: {controlName} unmapped successfully from policy {policyId}', {
+          controlName: control.name,
+          policyId,
+        }),
+      );
     } catch (error) {
       console.error(error);
       toast.error(t('Failed to unlink control'));
@@ -54,8 +59,10 @@ export const PolicyControlMappingConfirmDeleteModal = ({ control }: { control: C
         <T>
           <DialogDescription>
             Are you sure you want to unlink{' '}
-            <span className="text-foreground font-semibold"><Var>{control.name}</Var></span> from this policy?{' '}
-            {'\n'} You can link it back again later.
+            <span className="text-foreground font-semibold">
+              <Var>{control.name}</Var>
+            </span>{' '}
+            from this policy? {'\n'} You can link it back again later.
           </DialogDescription>
         </T>
         <DialogFooter>

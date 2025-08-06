@@ -10,6 +10,7 @@ import { ScrollArea } from '@comp/ui/scroll-area';
 import { Sheet, SheetContent } from '@comp/ui/sheet';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import { format, formatDistanceToNow } from 'date-fns';
+import { Branch, T, useGT } from 'gt-next';
 import {
   Calendar,
   Check,
@@ -27,7 +28,6 @@ import { parseAsBoolean, parseAsString, useQueryStates } from 'nuqs';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { IntegrationSettings, type IntegrationSettingsItem } from './integration-settings';
-import { T, Branch, useGT } from 'gt-next';
 
 export function IntegrationsCard({
   id,
@@ -158,18 +158,21 @@ export function IntegrationsCard({
     }
 
     if (diffInHours === 0) {
-      return t('Runs in {minutes} minute{s}', { minutes: diffInMinutes, s: diffInMinutes !== 1 ? 's' : '' });
+      return t('Runs in {minutes} minute{s}', {
+        minutes: diffInMinutes,
+        s: diffInMinutes !== 1 ? 's' : '',
+      });
     }
 
     if (diffInMinutes === 0) {
       return t('Runs in {hours} hour{s}', { hours: diffInHours, s: diffInHours !== 1 ? 's' : '' });
     }
 
-    return t('Runs in {hours} hour{hourS} and {minutes} minute{minS}', { 
-      hours: diffInHours, 
+    return t('Runs in {hours} hour{hourS} and {minutes} minute{minS}', {
+      hours: diffInHours,
       hourS: diffInHours !== 1 ? 's' : '',
       minutes: diffInMinutes,
-      minS: diffInMinutes !== 1 ? 's' : ''
+      minS: diffInMinutes !== 1 ? 's' : '',
     });
   };
 
@@ -486,9 +489,7 @@ export function IntegrationsCard({
                               size="sm"
                               onClick={() => setIsEditingApiKey(true)}
                             >
-                              <T>
-                                Update
-                              </T>
+                              <T>Update</T>
                             </Button>
                           ) : null}
                         </div>

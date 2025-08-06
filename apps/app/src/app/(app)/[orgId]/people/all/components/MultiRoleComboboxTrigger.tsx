@@ -5,8 +5,8 @@ import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import type { Role } from '@db'; // Assuming Role is from prisma
+import { T, useGT } from 'gt-next';
 import { ChevronsUpDown, Lock, X } from 'lucide-react';
-import { useGT, T } from 'gt-next';
 
 interface MultiRoleComboboxTriggerProps {
   selectedRoles: Role[];

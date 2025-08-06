@@ -1,11 +1,11 @@
 'use client';
 
+import { getDataTableConfig } from '@/lib/data-table-config';
 import type { ColumnSort, SortDirection, Table } from '@tanstack/react-table';
+import { Branch, T, useGT } from 'gt-next';
 import { ArrowDownUp, ChevronsUpDown, GripVertical, Trash2 } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import * as React from 'react';
-import { T, Branch, useGT } from 'gt-next';
-import { getDataTableConfig } from '@/lib/data-table-config';
 
 import {
   Sortable,
@@ -14,7 +14,6 @@ import {
   SortableItemHandle,
   SortableOverlay,
 } from '@/components/data-table/sortable';
-import { DataTableConfig } from '@/lib/data-table-config';
 import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';

@@ -3,11 +3,11 @@ import { Button } from '@comp/ui/button';
 import { Input } from '@comp/ui/input';
 import { Label } from '@comp/ui/label';
 import { Switch } from '@comp/ui/switch';
+import { T, useGT } from 'gt-next';
 import { Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { T, useGT } from 'gt-next';
 
 export type IntegrationSettingsItem = {
   id: string;

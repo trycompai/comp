@@ -1,7 +1,7 @@
 import { LogoSpinner } from '@/components/logo-spinner';
 import { TriggerTokenProvider } from '@/components/trigger-token-provider';
-import { T } from 'gt-next';
 import { db } from '@db';
+import { T } from 'gt-next';
 import { cookies } from 'next/headers';
 import { OnboardingStatus } from './components/onboarding-status';
 

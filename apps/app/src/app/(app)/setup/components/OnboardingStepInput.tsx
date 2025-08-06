@@ -49,7 +49,7 @@ export function OnboardingStepInput({
         render={({ field }) => (
           <WebsiteInput
             {...field}
-            placeholder={t("example.com")}
+            placeholder={t('example.com')}
             autoFocus
             data-testid={`onboarding-input-${currentStep.key}`}
           />
@@ -62,7 +62,9 @@ export function OnboardingStepInput({
     return (
       <Textarea
         {...form.register(currentStep.key)}
-        placeholder={t('{organizationName} is a company that...', { organizationName: savedAnswers.organizationName || '' })}
+        placeholder={t('{organizationName} is a company that...', {
+          organizationName: savedAnswers.organizationName || '',
+        })}
         rows={2}
         maxLength={300}
         className="h-24 resize-none"
@@ -114,7 +116,9 @@ export function OnboardingStepInput({
           onValueChange={(values: string[]) => {
             form.setValue(currentStep.key, values.join(','));
           }}
-          placeholder={t('Search or add custom (press Enter) • {placeholder}', { placeholder: currentStep.placeholder })}
+          placeholder={t('Search or add custom (press Enter) • {placeholder}', {
+            placeholder: currentStep.placeholder,
+          })}
           data-testid={`onboarding-input-${currentStep.key}-search`}
         />
       </div>

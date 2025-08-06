@@ -31,7 +31,6 @@ export const StaticDataTableConfig = {
   joinOperators: ['and', 'or'] as const,
 } as const;
 
-
 export const getDataTableConfig = (t: (content: string) => string) => ({
   textOperators: [
     { label: t('Contains'), value: 'iLike' as const },

@@ -23,7 +23,7 @@ export const removeMember = authActionClient
   .inputSchema(removeMemberSchema)
   .action(async ({ parsedInput, ctx }): Promise<ActionResponse<{ removed: boolean }>> => {
     const t = await getGT();
-    
+
     if (!ctx.session.activeOrganizationId) {
       return {
         success: false,

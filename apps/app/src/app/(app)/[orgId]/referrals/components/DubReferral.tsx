@@ -1,8 +1,8 @@
 'use client';
 
 import { DubEmbed } from '@dub/embed-react';
-import { useTheme } from 'next-themes';
 import { T } from 'gt-next';
+import { useTheme } from 'next-themes';
 
 export const DubReferral = ({ publicToken }: { publicToken: string | null }) => {
   const theme = useTheme();

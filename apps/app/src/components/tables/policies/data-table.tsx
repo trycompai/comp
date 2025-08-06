@@ -1,8 +1,8 @@
 'use client';
 
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
-import { Suspense } from 'react';
 import { T, useGT } from 'gt-next';
+import { Suspense } from 'react';
 
 import { cn } from '@comp/ui/cn';
 import { Table, TableBody, TableCell, TableRow } from '@comp/ui/table';

@@ -1,7 +1,7 @@
 import { Button } from '@comp/ui/button';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import { T } from 'gt-next';
+import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 
 interface OnboardingFormActionsProps {
   onBack: () => void;

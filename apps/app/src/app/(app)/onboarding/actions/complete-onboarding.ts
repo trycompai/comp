@@ -5,8 +5,8 @@ import { getSteps } from '@/app/(app)/setup/lib/constants'; // This requires a t
 import { createFleetLabelForOrg } from '@/jobs/tasks/device/create-fleet-label-for-org';
 import { onboardOrganization as onboardOrganizationTask } from '@/jobs/tasks/onboarding/onboard-organization';
 import { db } from '@db';
-import { getGT } from 'gt-next/server';
 import { tasks } from '@trigger.dev/sdk/v3';
+import { getGT } from 'gt-next/server';
 import { revalidatePath } from 'next/cache';
 import { cookies, headers } from 'next/headers';
 import { z } from 'zod';

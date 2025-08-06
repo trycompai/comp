@@ -49,9 +49,9 @@ export const PolicyControlMappingModal = ({
       });
       setOpen(false);
       toast.success(
-        t('Controls {controlNames} mapped successfully to policy {policyId}', { 
-          controlNames: selectedControls.map((c) => c.label).join(', '), 
-          policyId 
+        t('Controls {controlNames} mapped successfully to policy {policyId}', {
+          controlNames: selectedControls.map((c) => c.label).join(', '),
+          policyId,
         }),
       );
     } catch (error) {

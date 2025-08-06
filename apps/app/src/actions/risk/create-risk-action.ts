@@ -3,8 +3,8 @@
 'use server';
 
 import { db, Impact, Likelihood } from '@db';
-import { revalidatePath, revalidateTag } from 'next/cache';
 import { getGT } from 'gt-next/server';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { authActionClient } from '../safe-action';
 import { getCreateRiskSchema } from '../schema';
 

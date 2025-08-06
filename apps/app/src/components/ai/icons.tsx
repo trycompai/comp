@@ -1,6 +1,6 @@
+import { T } from 'gt-next';
 import Link from 'next/link';
 import type { SVGProps } from 'react';
-import { T } from 'gt-next';
 
 export const VercelIcon = ({ size = 17 }) => {
   return (
@@ -107,7 +107,9 @@ export function StarButton() {
       className="flex items-center gap-2 text-sm text-zinc-600 hover:text-zinc-700 dark:text-zinc-300 dark:hover:text-zinc-300"
     >
       <Github className="size-4" />
-      <T><span className="hidden sm:inline">Star on GitHub</span></T>
+      <T>
+        <span className="hidden sm:inline">Star on GitHub</span>
+      </T>
     </Link>
   );
 }

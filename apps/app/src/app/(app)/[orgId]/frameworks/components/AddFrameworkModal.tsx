@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { T, useGT, Var, Branch } from 'gt-next';
+import { Branch, T, useGT, Var } from 'gt-next';
 import { Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
@@ -53,7 +53,7 @@ export function AddFrameworkModal({ onOpenChange, availableFrameworks, organizat
       toast.success(
         t('Successfully added {count} framework{plural}', {
           count,
-          plural: count > 1 ? 's' : ''
+          plural: count > 1 ? 's' : '',
         }),
       );
       onOpenChange(false);

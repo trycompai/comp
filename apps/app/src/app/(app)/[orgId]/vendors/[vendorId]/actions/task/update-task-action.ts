@@ -5,9 +5,9 @@
 import { authActionClient } from '@/actions/safe-action';
 import type { TaskStatus } from '@db';
 import { db } from '@db';
+import { getGT } from 'gt-next/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { getUpdateVendorTaskSchema } from '../schema';
-import { getGT } from 'gt-next/server';
 
 export const updateVendorTaskAction = authActionClient
   .inputSchema(async () => {

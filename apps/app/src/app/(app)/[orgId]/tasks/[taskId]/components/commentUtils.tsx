@@ -3,7 +3,9 @@ import { InlineTranslationOptions } from 'gt-next/types';
 import { FileAudio, FileQuestion, FileText, FileVideo } from 'lucide-react';
 
 // Formats a date (string or Date object) into relative time string (e.g., "5m ago")
-export function getFormatRelativeTime(t: (content: string, options?: InlineTranslationOptions) => string) {
+export function getFormatRelativeTime(
+  t: (content: string, options?: InlineTranslationOptions) => string,
+) {
   return function formatRelativeTime(date: Date | string): string {
     const now = new Date();
     const dateObj = typeof date === 'string' ? new Date(date) : date;

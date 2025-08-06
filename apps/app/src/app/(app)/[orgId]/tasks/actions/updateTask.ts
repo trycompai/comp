@@ -2,9 +2,9 @@
 
 import { auth } from '@/utils/auth';
 import { db, Task } from '@db';
+import { getGT } from 'gt-next/server';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
-import { getGT } from 'gt-next/server';
 
 export const updateTask = async (input: Partial<Task>) => {
   const session = await auth.api.getSession({

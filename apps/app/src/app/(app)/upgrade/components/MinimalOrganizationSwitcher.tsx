@@ -9,10 +9,10 @@ import {
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
 import type { Organization } from '@db';
+import { useGT } from 'gt-next';
 import { Check, ChevronsUpDown, Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
-import { useGT } from 'gt-next';
 
 interface MinimalOrganizationSwitcherProps {
   organizations: Organization[];

@@ -7,10 +7,10 @@ import { Input } from '@comp/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Skeleton } from '@comp/ui/skeleton';
 import { Departments, Member, RiskStatus, User } from '@db';
+import { useGT } from 'gt-next';
 import { Plus, Search, X } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import { useCallback, useTransition } from 'react';
-import { useGT } from 'gt-next';
 
 const riskStatuses = Object.values(RiskStatus);
 const departments = Object.values(Departments).filter((d) => d !== 'none');

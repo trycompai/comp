@@ -48,7 +48,10 @@ export function getFilterOperators(filterVariant: FilterVariant, t: (content: st
   return operatorMap[filterVariant] ?? dataTableConfig.textOperators;
 }
 
-export function getDefaultFilterOperator(filterVariant: FilterVariant, t: (content: string) => string) {
+export function getDefaultFilterOperator(
+  filterVariant: FilterVariant,
+  t: (content: string) => string,
+) {
   const operators = getFilterOperators(filterVariant, t);
 
   return operators[0]?.value ?? (filterVariant === 'text' ? 'iLike' : 'eq');

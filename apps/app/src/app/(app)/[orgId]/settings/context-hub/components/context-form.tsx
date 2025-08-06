@@ -2,13 +2,13 @@
 
 import { createContextEntryAction } from '@/actions/context-hub/create-context-entry-action';
 import { updateContextEntryAction } from '@/actions/context-hub/update-context-entry-action';
-import { T, useGT, Branch } from 'gt-next';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
 import { Button } from '@comp/ui/button';
 import { Input } from '@comp/ui/input';
 import { Label } from '@comp/ui/label';
 import { Textarea } from '@comp/ui/textarea';
 import type { Context } from '@db';
+import { Branch, T, useGT } from 'gt-next';
 import { Loader2 } from 'lucide-react';
 import { useTransition } from 'react';
 import { toast } from 'sonner';
@@ -78,7 +78,9 @@ export function ContextForm({ entry, onSuccess }: { entry?: Context; onSuccess?:
                   <Textarea
                     id="answer"
                     name="answer"
-                    placeholder={t('Our mission is to provide the best possible service to our customers.')}
+                    placeholder={t(
+                      'Our mission is to provide the best possible service to our customers.',
+                    )}
                     defaultValue={entry?.answer}
                     required
                   />
@@ -86,11 +88,7 @@ export function ContextForm({ entry, onSuccess }: { entry?: Context; onSuccess?:
               </div>
               <Button type="submit" disabled={isPending} className="justify-self-end">
                 <T>
-                  <Branch
-                    branch={Boolean(entry)}
-                    true={<>Update</>}
-                    false={<>Create</>}
-                  >
+                  <Branch branch={Boolean(entry)} true={<>Update</>} false={<>Create</>}>
                     Create
                   </Branch>
                 </T>{' '}

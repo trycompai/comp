@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import { updateRiskAction } from '@/actions/risk/update-risk-action';
 import { getUpdateRiskSchema } from '@/actions/schema';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
@@ -9,11 +8,12 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@comp/ui/input';
 import { Textarea } from '@comp/ui/textarea';
 import { Departments, type Risk } from '@db';
-import { useGT } from 'gt-next';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useGT } from 'gt-next';
 import { Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useQueryState } from 'nuqs';
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
@@ -96,9 +96,9 @@ export function UpdateRiskForm({ risk }: { risk: Risk }) {
                           <Textarea
                             {...field}
                             className="mt-3 min-h-[80px]"
-                            placeholder={
-                              t('A detailed description of the risk, its potential impact, and its causes.')
-                            }
+                            placeholder={t(
+                              'A detailed description of the risk, its potential impact, and its causes.',
+                            )}
                           />
                         </FormControl>
                         <FormMessage />

@@ -1,8 +1,8 @@
 'use client';
 
 import { cn } from '@comp/ui/cn';
+import { useGT } from 'gt-next';
 import { useQueryState } from 'nuqs';
-import { T, useGT } from 'gt-next';
 
 const getTabs = (t: (content: string) => string) => [
   {

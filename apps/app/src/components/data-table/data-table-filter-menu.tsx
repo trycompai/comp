@@ -1,10 +1,10 @@
 'use client';
 
 import type { Column, Table } from '@tanstack/react-table';
+import { T, useGT } from 'gt-next';
 import { BadgeCheck, CalendarIcon, Check, ListFilter, Text, X } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import * as React from 'react';
-import { T, useGT } from 'gt-next';
 
 import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
 import { getDefaultFilterOperator, getFilterOperators } from '@/lib/data-table';
@@ -12,16 +12,6 @@ import { formatDate } from '@/lib/format';
 import { generateId } from '@/lib/id';
 import { getFiltersStateParser } from '@/lib/parsers';
 import type { ExtendedColumnFilter, FilterOperator } from '@/types/data-table';
-
-// Type guard for filter values
-const asString = (value: unknown): string => {
-  return typeof value === 'string' ? value : String(value || '');
-};
-
-const asStringArray = (value: unknown): string[] => {
-  if (Array.isArray(value)) return value.map(asString);
-  return [asString(value)];
-};
 import { Button } from '@comp/ui/button';
 import { Calendar } from '@comp/ui/calendar';
 import { cn } from '@comp/ui/cn';
@@ -37,6 +27,16 @@ import { Input } from '@comp/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { DataTableRangeFilter } from './data-table-range-filter';
+
+// Type guard for filter values
+const asString = (value: unknown): string => {
+  return typeof value === 'string' ? value : String(value || '');
+};
+
+const asStringArray = (value: unknown): string[] => {
+  if (Array.isArray(value)) return value.map(asString);
+  return [asString(value)];
+};
 
 const FILTERS_KEY = 'filters';
 const DEBOUNCE_MS = 300;
@@ -133,7 +133,7 @@ export function DataTableFilterMenu<TData>({
         setInputValue('');
       }, 100);
     },
-    [filters, debouncedSetFilters],
+    [filters, debouncedSetFilters, t],
   );
 
   const onFilterRemove = React.useCallback(
@@ -274,6 +274,7 @@ export function DataTableFilterMenu<TData>({
                     column={selectedColumn}
                     value={inputValue}
                     onSelect={(value) => onFilterAdd(selectedColumn, value)}
+                    t={t}
                   />
                 </>
               ) : (
@@ -384,7 +385,9 @@ function DataTableFilterItem<TData>({
           <Command loop>
             <CommandInput placeholder={t('Search fields...')} />
             <CommandList>
-              <CommandEmpty><T>No fields found.</T></CommandEmpty>
+              <CommandEmpty>
+                <T>No fields found.</T>
+              </CommandEmpty>
               <CommandGroup>
                 {columns.map((column) => (
                   <CommandItem
@@ -454,6 +457,7 @@ function DataTableFilterItem<TData>({
         onFilterUpdate,
         showValueSelector,
         setShowValueSelector,
+        t,
       })}
       <Button
         aria-controls={filterItemId}
@@ -474,8 +478,12 @@ interface FilterValueSelectorProps<TData> {
   onSelect: (value: string) => void;
 }
 
-function FilterValueSelector<TData>({ column, value, onSelect }: FilterValueSelectorProps<TData>) {
-  const t = useGT();
+function FilterValueSelector<TData>({
+  column,
+  value,
+  onSelect,
+  t,
+}: FilterValueSelectorProps<TData> & { t: (content: string) => string }) {
   const variant = column.columnDef.meta?.variant ?? 'text';
 
   switch (variant) {
@@ -534,7 +542,7 @@ function FilterValueSelector<TData>({ column, value, onSelect }: FilterValueSele
             ) : (
               <>
                 <BadgeCheck />
-                <span className="truncate">{t('Filter by "{value}"', { value })}</span>
+                <span className="truncate">{t(`Filter by "${value}"`)}</span>
               </>
             )}
           </CommandItem>
@@ -551,6 +559,7 @@ function onFilterInputRender<TData>({
   onFilterUpdate,
   showValueSelector,
   setShowValueSelector,
+  t,
 }: {
   filter: ExtendedColumnFilter<TData>;
   column: Column<TData>;
@@ -561,8 +570,8 @@ function onFilterInputRender<TData>({
   ) => void;
   showValueSelector: boolean;
   setShowValueSelector: (value: boolean) => void;
+  t: (content: string) => string;
 }) {
-  const t = useGT();
   if (filter.operator === 'isEmpty' || filter.operator === 'isNotEmpty') {
     return (
       <div
@@ -681,7 +690,7 @@ function onFilterInputRender<TData>({
                   </div>
                   <span className="truncate">
                     {selectedOptions.length > 1
-                      ? t('{count} selected', { count: selectedOptions.length })
+                      ? t(`${selectedOptions.length} selected`)
                       : selectedOptions[0]?.label}
                   </span>
                 </>

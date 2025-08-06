@@ -1,9 +1,9 @@
 'use server';
 
 import { db } from '@db';
+import { getGT } from 'gt-next/server';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
-import { getGT } from 'gt-next/server';
 import { authActionClient } from '../safe-action';
 import { getCreateContextEntrySchema } from '../schema';
 

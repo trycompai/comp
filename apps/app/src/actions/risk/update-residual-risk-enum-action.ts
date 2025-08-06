@@ -1,10 +1,10 @@
 'use server';
 
 import { db } from '@db';
+import { getGT } from 'gt-next/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { authActionClient } from '../safe-action';
 import { getUpdateResidualRiskEnumSchema } from '../schema'; // Use the new enum schema
-import { getGT } from 'gt-next/server';
 
 export const updateResidualRiskEnumAction = authActionClient
   .inputSchema(async () => {

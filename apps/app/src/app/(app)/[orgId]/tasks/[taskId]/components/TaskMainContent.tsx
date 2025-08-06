@@ -75,7 +75,7 @@ export function TaskMainContent({ task }: TaskMainContentProps) {
         </T>
         <CommentForm entityId={task.id} entityType={CommentEntityType.task} />
 
-                {commentsLoading && (
+        {commentsLoading && (
           <div className="space-y-3">
             {/* Simple comment skeletons */}
             {[1, 2].map((i) => (
@@ -86,7 +86,9 @@ export function TaskMainContent({ task }: TaskMainContentProps) {
 
         {commentsError && (
           <T>
-            <div className="text-destructive text-sm">Failed to load comments. Please try again.</div>
+            <div className="text-destructive text-sm">
+              Failed to load comments. Please try again.
+            </div>
           </T>
         )}
 

@@ -29,7 +29,9 @@ export function RequirementControls({
       <div className="space-y-4">
         <div className="border-muted flex items-center justify-between border-b pb-3">
           <div className="flex items-center gap-2">
-            <T><h2 className="text-base font-medium">Controls</h2></T>
+            <T>
+              <h2 className="text-base font-medium">Controls</h2>
+            </T>
             <span className="text-muted-foreground bg-muted/50 rounded-xs px-2 py-1 text-xs tabular-nums">
               {relatedControls.length}
             </span>

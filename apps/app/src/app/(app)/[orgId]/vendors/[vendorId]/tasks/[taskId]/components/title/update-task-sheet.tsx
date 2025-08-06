@@ -8,17 +8,17 @@ import { Input } from '@comp/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Textarea } from '@comp/ui/textarea';
 import type { Member, Task, User } from '@db';
-import { T, useGT } from 'gt-next';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useGT } from 'gt-next';
 import { ArrowRightIcon } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useParams } from 'next/navigation';
 import { useQueryState } from 'nuqs';
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 import { getUpdateVendorTaskSchema } from '../../../../actions/schema';
-import React from 'react';
 import { updateVendorTaskAction } from '../../../../actions/task/update-task-action';
 
 interface UpdateTaskSheetProps {
@@ -134,7 +134,11 @@ export function UpdateTaskSheet({ task, assignees }: UpdateTaskSheetProps) {
                         <FormItem>
                           <FormLabel>{t('Description')}</FormLabel>
                           <FormControl>
-                            <Textarea {...field} className="mt-3" placeholder={t('Enter description')} />
+                            <Textarea
+                              {...field}
+                              className="mt-3"
+                              placeholder={t('Enter description')}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

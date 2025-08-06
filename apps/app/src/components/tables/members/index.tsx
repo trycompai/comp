@@ -10,5 +10,9 @@ export async function MembersTable() {
 
   const members = await getOrganizationUsersAction();
 
-  return <div><T>MembersTable</T></div>;
+  return (
+    <div>
+      <T>MembersTable</T>
+    </div>
+  );
 }

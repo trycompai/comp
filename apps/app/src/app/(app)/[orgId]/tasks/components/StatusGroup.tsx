@@ -2,9 +2,9 @@
 
 import type { Member, Task, User } from '@db';
 import clsx from 'clsx';
+import { T } from 'gt-next';
 import { useRef } from 'react';
 import { useDrop } from 'react-dnd';
-import { T } from 'gt-next';
 import { updateTaskOrder } from '../actions/updateTaskOrder';
 import { ItemTypes, TaskCard, type DragItem, type StatusId } from './TaskCard';
 

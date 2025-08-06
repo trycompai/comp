@@ -180,7 +180,9 @@ export function OrganizationSwitcher({
               />
             </div>
             <CommandList>
-              <CommandEmpty><T>No results found</T></CommandEmpty>
+              <CommandEmpty>
+                <T>No results found</T>
+              </CommandEmpty>
               <CommandGroup className="max-h-[300px] overflow-y-auto">
                 {organizations.map((org) => (
                   <CommandItem

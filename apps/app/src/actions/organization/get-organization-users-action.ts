@@ -17,7 +17,7 @@ export const getOrganizationUsersAction = authActionClient
   .action(
     async ({ parsedInput, ctx }): Promise<{ success: boolean; error?: string; data?: User[] }> => {
       const t = await getGT();
-      
+
       if (!ctx.session.activeOrganizationId) {
         return {
           success: false,

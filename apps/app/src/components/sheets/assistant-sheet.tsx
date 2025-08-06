@@ -30,7 +30,9 @@ export function AssistantSheet() {
 
   return (
     <Drawer open={isOpen ?? false} onOpenChange={setIsOpen}>
-      <T><DrawerTitle hidden>Assistant</DrawerTitle></T>
+      <T>
+        <DrawerTitle hidden>Assistant</DrawerTitle>
+      </T>
       <DrawerContent className="p-6">
         <Chat />
       </DrawerContent>

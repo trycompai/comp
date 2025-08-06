@@ -1,7 +1,6 @@
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { getValidFilters } from '@/lib/data-table';
 import type { SearchParams } from '@/types';
-import { T } from 'gt-next';
 import { getGT } from 'gt-next/server';
 import type { Metadata } from 'next';
 import { PoliciesTable } from './components/policies-table';
@@ -15,7 +14,7 @@ interface PolicyTableProps {
 export default async function PoliciesPage({ ...props }: PolicyTableProps) {
   const { getGT } = await import('gt-next/server');
   const t = await getGT();
-  
+
   const searchParams = await props.searchParams;
   const search = searchParamsCache.parse(searchParams);
   const validFilters = getValidFilters(search.filters);

@@ -1,9 +1,9 @@
 'use client';
 
 import { cn } from '@comp/ui/cn';
+import { motion } from 'framer-motion';
 import { useGT } from 'gt-next';
 import { InlineTranslationOptions } from 'gt-next/types';
-import { motion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 
 const LINE_LENGTH_TARGET = 85;
@@ -19,19 +19,23 @@ interface MiniDataStreamProps {
 const getReasoningTexts = (
   taskType: string,
   itemTitle: string,
-  t: (content: string, options?: InlineTranslationOptions) => string
+  t: (content: string, options?: InlineTranslationOptions) => string,
 ): string[] => {
   switch (taskType) {
     case 'policy':
       return [
-        t('Need to ensure {itemTitle} aligns with SOC 2 CC6.1 logical access controls...', { itemTitle }),
+        t('Need to ensure {itemTitle} aligns with SOC 2 CC6.1 logical access controls...', {
+          itemTitle,
+        }),
         t('Organization uses AWS and Okta, must incorporate cloud-specific requirements.'),
         t('NIST 800-53 suggests implementing AC-2 for account management procedures.'),
         t('Previous audit finding: lack of documented approval workflows. Adding section 4.2.'),
         t('Cross-referencing with ISO 27001 A.9.2.1 - User registration and deregistration.'),
         t('Policy must be actionable for DevOps team, avoiding overly restrictive language.'),
         t('Including specific AWS IAM role examples to make policy concrete and implementable.'),
-        t('Data classification levels: Public, Internal, Confidential, Restricted. Mapping access.'),
+        t(
+          'Data classification levels: Public, Internal, Confidential, Restricted. Mapping access.',
+        ),
         t('Legal team requires GDPR Article 32 compliance - adding encryption requirements.'),
         t('Considering zero-trust principles while maintaining operational efficiency.'),
         t('Section 3.1 needs clearer escalation path for access request approvals.'),
@@ -39,7 +43,9 @@ const getReasoningTexts = (
       ];
     case 'vendor':
       return [
-        t('Checking if {itemTitle} has valid SOC 2 Type II report dated within 12 months...', { itemTitle }),
+        t('Checking if {itemTitle} has valid SOC 2 Type II report dated within 12 months...', {
+          itemTitle,
+        }),
         t('Found security incident from 2023-Q3. Evaluating remediation measures taken.'),
         t('Vendor processes payment data - PCI DSS compliance verification required.'),
         t('Analyzing BAA terms: data deletion within 30 days, encryption at rest confirmed.'),
@@ -84,7 +90,9 @@ const getReasoningTexts = (
       ];
     case 'evidence':
       return [
-        t('Collecting {itemTitle} configuration baselines from production environment...', { itemTitle }),
+        t('Collecting {itemTitle} configuration baselines from production environment...', {
+          itemTitle,
+        }),
         t('Screenshot captured: MFA enforcement policy showing "Required for all users".'),
         t('Pulling 30 days of access logs. 1,247 unique authentication events found.'),
         t('Firewall rules exported: 47 rules total, 12 allow inbound, rest deny by default.'),
@@ -105,7 +113,7 @@ const getReasoningTexts = (
 const generateRelevantLine = (
   taskType: string,
   itemTitle: string,
-  t: (content: string, options?: InlineTranslationOptions) => string
+  t: (content: string, options?: InlineTranslationOptions) => string,
 ): { id: string; text: string; highlight: boolean } => {
   let highlight = Math.random() < 0.15;
 

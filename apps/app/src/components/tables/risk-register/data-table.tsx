@@ -3,10 +3,10 @@
 import { cn } from '@comp/ui/cn';
 import { Table, TableBody, TableCell, TableRow } from '@comp/ui/table';
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
+import { T } from 'gt-next';
 import { type RiskRegisterType, useColumns } from './columns';
 import { DataTableHeader } from './data-table-header';
 import { DataTablePagination } from './data-table-pagination';
-import { T } from 'gt-next';
 
 interface DataTableProps<TData, TValue> {
   columnHeaders: {

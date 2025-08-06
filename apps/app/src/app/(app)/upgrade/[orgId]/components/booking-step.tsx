@@ -2,9 +2,9 @@
 
 import { Button } from '@comp/ui/button';
 import { Card } from '@comp/ui/card';
+import { Branch, T, Var } from 'gt-next';
 import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
-import { T, Branch, Var } from 'gt-next';
 
 export function BookingStep({
   email,
@@ -21,7 +21,6 @@ export function BookingStep({
   complianceFrameworks: string[];
   hasAccess: boolean;
 }) {
-
   return (
     <div className="flex justify-center w-full animate-in fade-in-50 duration-500">
       <Card className="w-full max-w-xl border border-gray-100 dark:border-gray-800 shadow-lg shadow-gray-200/30 dark:shadow-black/20 bg-card">
@@ -33,7 +32,11 @@ export function BookingStep({
                 <Branch
                   branch={hasAccess.toString()}
                   true="Talk to us to upgrade"
-                  false={<>Let's get <Var>{company}</Var> approved</>}
+                  false={
+                    <>
+                      Let's get <Var>{company}</Var> approved
+                    </>
+                  }
                 />
               </h1>
             </T>
@@ -57,11 +60,8 @@ export function BookingStep({
             >
               <T>
                 <Button size="lg" className="min-w-[200px]">
-                  <Branch
-                    branch={hasAccess.toString()}
-                    true="Book a Call"
-                    false="Book Your Demo"
-                  /> <ArrowRight className="w-4 h-4" />
+                  <Branch branch={hasAccess.toString()} true="Book a Call" false="Book Your Demo" />{' '}
+                  <ArrowRight className="w-4 h-4" />
                 </Button>
               </T>
             </Link>

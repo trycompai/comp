@@ -4,10 +4,10 @@ import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import { Impact, Likelihood } from '@db';
 import { AnimatePresence, motion } from 'framer-motion';
-import { T, useGT } from 'gt-next';
+import { useGT } from 'gt-next';
+import type { InlineTranslationOptions } from 'gt-next/types';
 import { Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import type { InlineTranslationOptions } from 'gt-next/types';
 
 const LIKELIHOOD_SCORES: Record<Likelihood, number> = {
   very_unlikely: 1,
@@ -64,11 +64,13 @@ const getRiskColor = (level: string) => {
   }
 };
 
-const getProbabilityLevels = (t: (content: string, options?: InlineTranslationOptions) => string) => [
-  t('Very Likely'), t('Likely'), t('Possible'), t('Unlikely'), t('Very Unlikely')
-];
+const getProbabilityLevels = (
+  t: (content: string, options?: InlineTranslationOptions) => string,
+) => [t('Very Likely'), t('Likely'), t('Possible'), t('Unlikely'), t('Very Unlikely')];
 const probabilityNumbers = ['5', '4', '3', '2', '1'];
-const getProbabilityLabels = (t: (content: string, options?: InlineTranslationOptions) => string) => [
+const getProbabilityLabels = (
+  t: (content: string, options?: InlineTranslationOptions) => string,
+) => [
   t('Very Likely (5)'),
   t('Likely (4)'),
   t('Possible (3)'),
@@ -76,7 +78,11 @@ const getProbabilityLabels = (t: (content: string, options?: InlineTranslationOp
   t('Very Unlikely (1)'),
 ];
 const getImpactLevels = (t: (content: string, options?: InlineTranslationOptions) => string) => [
-  t('Insignificant'), t('Minor'), t('Moderate'), t('Major'), t('Severe')
+  t('Insignificant'),
+  t('Minor'),
+  t('Moderate'),
+  t('Major'),
+  t('Severe'),
 ];
 const impactNumbers = ['1', '2', '3', '4', '5'];
 

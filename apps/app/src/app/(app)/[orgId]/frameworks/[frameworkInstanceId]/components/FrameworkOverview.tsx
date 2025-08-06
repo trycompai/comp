@@ -125,9 +125,15 @@ export function FrameworkOverview({
               </div>
             </div>
             <div className="text-muted-foreground flex items-center gap-6 text-sm">
-              <span>{compliantControls} <T>completed</T></span>
-              <span>{inProgressControls} <T>remaining</T></span>
-              <span>{totalControls} <T>total</T></span>
+              <span>
+                {compliantControls} <T>completed</T>
+              </span>
+              <span>
+                {inProgressControls} <T>remaining</T>
+              </span>
+              <span>
+                {totalControls} <T>total</T>
+              </span>
             </div>
           </CardContent>
         </Card>

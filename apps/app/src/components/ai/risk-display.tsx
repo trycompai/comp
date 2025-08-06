@@ -18,7 +18,9 @@ interface RiskDisplayProps {
 export function RiskDisplay({ risks }: RiskDisplayProps) {
   if (!risks?.length) {
     return (
-      <T><div className="text-muted-foreground text-sm">No risks found for this organization.</div></T>
+      <T>
+        <div className="text-muted-foreground text-sm">No risks found for this organization.</div>
+      </T>
     );
   }
 

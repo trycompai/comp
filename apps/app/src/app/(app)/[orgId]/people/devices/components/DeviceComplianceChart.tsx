@@ -23,7 +23,7 @@ const CHART_COLORS = {
 
 export function DeviceComplianceChart({ devices }: DeviceComplianceChartProps) {
   const t = useGT();
-  
+
   const { pieDisplayData, legendDisplayData } = React.useMemo(() => {
     if (!devices || devices.length === 0) {
       return { pieDisplayData: [], legendDisplayData: [] };

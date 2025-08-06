@@ -2,10 +2,10 @@
 
 import { Cookies } from '@/utils/constants';
 import { addYears } from 'date-fns';
+import { getGT } from 'gt-next/server';
 import { cookies } from 'next/headers';
 import { authActionClient } from './safe-action';
 import { getUpdaterMenuSchema } from './schema';
-import { getGT } from 'gt-next/server';
 
 export const updateMenuAction = authActionClient
   .inputSchema(async () => {

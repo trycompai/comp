@@ -42,7 +42,10 @@ const StatusTooltip = ({ active, payload }: any) => {
         <p className="text-xs font-medium">{data.name}</p>
         <T>
           <p className="text-xs">
-            Count: <span className="font-medium"><Var>{data.value}</Var></span>
+            Count:{' '}
+            <span className="font-medium">
+              <Var>{data.value}</Var>
+            </span>
           </p>
         </T>
       </div>
@@ -53,7 +56,7 @@ const StatusTooltip = ({ active, payload }: any) => {
 
 export function PolicyStatusChart({ data }: PolicyStatusChartProps) {
   const t = useGT();
-  
+
   const chartData = React.useMemo(() => {
     if (!data) return [];
     const items = [

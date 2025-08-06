@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { cn } from '@comp/ui/cn';
 import { Progress } from '@comp/ui/progress';
 import type { Control, Task } from '@db';
-import { T, useGT, Var, Num } from 'gt-next';
+import { Num, T, useGT, Var } from 'gt-next';
 import { BarChart3, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -136,9 +136,15 @@ export function FrameworkCard({
           {/* Stats */}
           <T>
             <div className="text-muted-foreground flex items-center justify-between text-xs">
-              <span><Num>{compliantControlsCount}</Num> complete</span>
-              <span><Num>{inProgressCount}</Num> active</span>
-              <span><Num>{controlsCount}</Num> total</span>
+              <span>
+                <Num>{compliantControlsCount}</Num> complete
+              </span>
+              <span>
+                <Num>{inProgressCount}</Num> active
+              </span>
+              <span>
+                <Num>{controlsCount}</Num> total
+              </span>
             </div>
           </T>
 
@@ -146,7 +152,9 @@ export function FrameworkCard({
           <T>
             <div className="text-muted-foreground flex items-center border-t pt-2 text-xs">
               <Clock className="mr-1 h-3 w-3" />
-              <span>Updated <Var>{lastActivityDate}</Var></span>
+              <span>
+                Updated <Var>{lastActivityDate}</Var>
+              </span>
             </div>
           </T>
         </CardContent>

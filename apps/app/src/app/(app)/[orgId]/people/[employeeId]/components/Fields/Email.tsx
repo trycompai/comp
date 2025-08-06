@@ -16,7 +16,13 @@ export const Email = ({ control }: { control: Control<EmployeeFormValues> }) => 
             <T>EMAIL</T>
           </FormLabel>
           <FormControl>
-            <Input {...field} type="email" placeholder={t('Employee email')} className="h-10" disabled />
+            <Input
+              {...field}
+              type="email"
+              placeholder={t('Employee email')}
+              className="h-10"
+              disabled
+            />
           </FormControl>
           <FormMessage />
         </FormItem>

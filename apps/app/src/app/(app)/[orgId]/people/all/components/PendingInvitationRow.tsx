@@ -19,9 +19,9 @@ import {
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
 import type { Invitation } from '@db';
+import { T, Var, useGT } from 'gt-next';
 import { Clock, MoreHorizontal, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { T, Var, useGT } from 'gt-next';
 
 interface PendingInvitationRowProps {
   invitation: Invitation & {
@@ -110,7 +110,9 @@ export function PendingInvitationRow({ invitation, onCancel }: PendingInvitation
             <DropdownMenuTrigger ref={dropdownTriggerRef} asChild disabled={isCancelling}>
               <Button variant="ghost" className="data-[state=open]:bg-muted flex h-8 w-8 p-0">
                 <MoreHorizontal className="h-4 w-4" />
-                <span className="sr-only"><T>Open menu</T></span>
+                <span className="sr-only">
+                  <T>Open menu</T>
+                </span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
@@ -133,7 +135,9 @@ export function PendingInvitationRow({ invitation, onCancel }: PendingInvitation
                     }}
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
-                    <span><T>Cancel Invitation</T></span>
+                    <span>
+                      <T>Cancel Invitation</T>
+                    </span>
                   </DropdownMenuItem>
                 </DialogTrigger>
                 <DialogContent
@@ -142,9 +146,14 @@ export function PendingInvitationRow({ invitation, onCancel }: PendingInvitation
                   showCloseButton={false}
                 >
                   <DialogHeader>
-                    <DialogTitle><T>Cancel Invitation</T></DialogTitle>
+                    <DialogTitle>
+                      <T>Cancel Invitation</T>
+                    </DialogTitle>
                     <DialogDescription>
-                      <T>Are you sure you want to cancel the invitation for <Var>{invitation.email}</Var>?</T>
+                      <T>
+                        Are you sure you want to cancel the invitation for{' '}
+                        <Var>{invitation.email}</Var>?
+                      </T>
                     </DialogDescription>
                   </DialogHeader>
                   <p className="text-muted-foreground mt-1 text-xs">

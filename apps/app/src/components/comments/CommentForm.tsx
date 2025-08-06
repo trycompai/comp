@@ -6,8 +6,8 @@ import { Button } from '@comp/ui/button';
 import { Label } from '@comp/ui/label';
 import { Textarea } from '@comp/ui/textarea';
 import type { CommentEntityType } from '@db';
-import { T, useGT } from 'gt-next';
 import clsx from 'clsx';
+import { T, useGT } from 'gt-next';
 import { ArrowUp, Loader2, Paperclip } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import type React from 'react';
@@ -44,31 +44,39 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
     fileInputRef.current?.click();
   };
 
-  const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
+  const handleFileSelect = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const files = event.target.files;
+      if (!files || files.length === 0) return;
 
-    const newFiles = Array.from(files);
+      const newFiles = Array.from(files);
 
-    // Validate file sizes
-    const MAX_FILE_SIZE_MB = 10;
-    const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+      // Validate file sizes
+      const MAX_FILE_SIZE_MB = 10;
+      const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
-    for (const file of newFiles) {
-      if (file.size > MAX_FILE_SIZE_BYTES) {
-        toast.error(t('File "{fileName}" exceeds the {fileSize}MB limit.', { fileName: file.name, fileSize: MAX_FILE_SIZE_MB }));
-        return;
+      for (const file of newFiles) {
+        if (file.size > MAX_FILE_SIZE_BYTES) {
+          toast.error(
+            t('File "{fileName}" exceeds the {fileSize}MB limit.', {
+              fileName: file.name,
+              fileSize: MAX_FILE_SIZE_MB,
+            }),
+          );
+          return;
+        }
       }
-    }
 
-    // Add files to pending list
-    setPendingFiles((prev) => [...prev, ...newFiles]);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+      // Add files to pending list
+      setPendingFiles((prev) => [...prev, ...newFiles]);
+      if (fileInputRef.current) fileInputRef.current.value = '';
 
-    newFiles.forEach((file) => {
-      toast.success(t('File "{fileName}" ready for attachment.', { fileName: file.name }));
-    });
-  }, []);
+      newFiles.forEach((file) => {
+        toast.success(t('File "{fileName}" ready for attachment.', { fileName: file.name }));
+      });
+    },
+    [t],
+  );
 
   const handleRemovePendingFile = (fileIndexToRemove: number) => {
     setPendingFiles((prev) => prev.filter((_, index) => index !== fileIndexToRemove));

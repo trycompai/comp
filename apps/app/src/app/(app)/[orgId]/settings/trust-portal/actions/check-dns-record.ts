@@ -136,8 +136,9 @@ export const checkDnsRecordAction = authActionClient
         isCnameVerified,
         isTxtVerified,
         isVercelTxtVerified,
-        error:
-          t('Error verifying DNS records. Please ensure both CNAME and TXT records are correctly configured, or wait a few minutes and try again.'),
+        error: t(
+          'Error verifying DNS records. Please ensure both CNAME and TXT records are correctly configured, or wait a few minutes and try again.',
+        ),
       };
     }
 

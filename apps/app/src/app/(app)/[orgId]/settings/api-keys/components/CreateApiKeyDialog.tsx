@@ -15,11 +15,11 @@ import { Input } from '@comp/ui/input';
 import { ScrollArea } from '@comp/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@comp/ui/sheet';
+import { useGT } from 'gt-next';
 import { Check, Copy, X } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { useGT } from 'gt-next';
 
 interface CreateApiKeyDialogProps {
   open: boolean;
@@ -197,7 +197,9 @@ export function CreateApiKeyDialog({ open, onOpenChange, onSuccess }: CreateApiK
             </div>
             <SheetDescription>
               {createdApiKey
-                ? t("Your API key has been created. Make sure to copy it now as you won't be able to see it again.")
+                ? t(
+                    "Your API key has been created. Make sure to copy it now as you won't be able to see it again.",
+                  )
                 : t("Create a new API key for programmatic access to your organization's data.")}
             </SheetDescription>
           </SheetHeader>
@@ -215,7 +217,9 @@ export function CreateApiKeyDialog({ open, onOpenChange, onSuccess }: CreateApiK
           <DrawerTitle>{createdApiKey ? t('API Key Created') : t('New API Key')}</DrawerTitle>
           <DrawerDescription>
             {createdApiKey
-              ? t("Your API key has been created. Make sure to copy it now as you won't be able to see it again.")
+              ? t(
+                  "Your API key has been created. Make sure to copy it now as you won't be able to see it again.",
+                )
               : t("Create a new API key for programmatic access to your organization's data.")}
           </DrawerDescription>
         </DrawerHeader>

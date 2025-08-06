@@ -11,7 +11,7 @@ interface ResidualRiskChartProps {
 
 export function VendorResidualRiskChart({ vendor }: ResidualRiskChartProps) {
   const t = useGT();
-  
+
   return (
     <RiskMatrixChart
       title={t('Residual Risk')}

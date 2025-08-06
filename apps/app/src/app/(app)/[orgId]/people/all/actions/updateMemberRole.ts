@@ -52,7 +52,7 @@ export const updateMemberRole = authActionClient
   .inputSchema(updateMemberRoleSchema)
   .action(async ({ parsedInput, ctx }): Promise<ActionResponse<{ updated: boolean }>> => {
     const t = await getGT();
-    
+
     if (!ctx.session.activeOrganizationId) {
       return {
         success: false,

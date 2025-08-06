@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { db } from '@db';
-import type { CSSProperties } from 'react';
 import { getGT } from 'gt-next/server';
+import type { CSSProperties } from 'react';
 
 interface Props {
   organizationId: string;
@@ -75,7 +75,9 @@ export async function TestsByAssignee({ organizationId }: Props) {
             <div key={stat.user.id} className="space-y-2">
               <div className="flex items-center justify-between">
                 <p className="text-sm">{stat.user.name || stat.user.email || t('Unknown User')}</p>
-                <span className="text-muted-foreground text-sm">{t('{count} Tests', { count: stat.totalTests })}</span>
+                <span className="text-muted-foreground text-sm">
+                  {t('{count} Tests', { count: stat.totalTests })}
+                </span>
               </div>
 
               <TestBarChart stat={stat} />
@@ -95,7 +97,9 @@ export async function TestsByAssignee({ organizationId }: Props) {
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="size-2 bg-[hsl(var(--muted-foreground))]" />
-                  <span>{t('Unsupported')} ({stat.unsupportedTests})</span>
+                  <span>
+                    {t('Unsupported')} ({stat.unsupportedTests})
+                  </span>
                 </div>
               </div>
             </div>

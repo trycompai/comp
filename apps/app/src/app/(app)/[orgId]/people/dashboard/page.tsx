@@ -8,7 +8,7 @@ export default async function PeopleOverviewPage() {
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getGT();
-  
+
   return {
     title: t('People'),
   };

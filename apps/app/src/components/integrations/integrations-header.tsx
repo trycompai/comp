@@ -1,6 +1,6 @@
+import { useGT } from 'gt-next';
 import { SearchField } from '../search-field';
 import { AppsTabs } from './integrations-tabs';
-import { useGT } from 'gt-next';
 
 export function IntegrationsHeader() {
   const t = useGT();

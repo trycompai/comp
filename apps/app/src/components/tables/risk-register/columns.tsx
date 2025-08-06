@@ -5,9 +5,9 @@ import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
 import type { Departments, RiskStatus } from '@db';
 import type { ColumnDef } from '@tanstack/react-table';
+import { useGT } from 'gt-next';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useGT } from 'gt-next';
 
 export type RiskRegisterType = {
   id: string;

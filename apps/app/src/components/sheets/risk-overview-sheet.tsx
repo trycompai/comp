@@ -27,7 +27,9 @@ export function RiskOverviewSheet({ risk }: { risk: Risk }) {
         <SheetContent stack>
           <SheetHeader className="mb-8">
             <div className="flex flex-row items-center justify-between">
-              <T><SheetTitle>Update Risk</SheetTitle></T>
+              <T>
+                <SheetTitle>Update Risk</SheetTitle>
+              </T>
               <Button
                 size="icon"
                 variant="ghost"
@@ -37,7 +39,9 @@ export function RiskOverviewSheet({ risk }: { risk: Risk }) {
                 <X className="h-5 w-5" />
               </Button>
             </div>{' '}
-            <T><SheetDescription>Update risk details and metadata</SheetDescription></T>
+            <T>
+              <SheetDescription>Update risk details and metadata</SheetDescription>
+            </T>
           </SheetHeader>
 
           <ScrollArea className="h-full p-0 pb-[100px]" hideScrollbar>
@@ -50,7 +54,9 @@ export function RiskOverviewSheet({ risk }: { risk: Risk }) {
 
   return (
     <Drawer open={isOpen} onOpenChange={handleOpenChange}>
-      <T><DrawerTitle hidden>Update Risk</DrawerTitle></T>
+      <T>
+        <DrawerTitle hidden>Update Risk</DrawerTitle>
+      </T>
       <DrawerContent className="p-6">
         <UpdateRiskForm risk={risk} />
       </DrawerContent>

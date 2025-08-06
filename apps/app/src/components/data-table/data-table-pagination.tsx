@@ -1,8 +1,8 @@
 import type { Table } from '@tanstack/react-table';
+import { T, useGT } from 'gt-next';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import * as React from 'react';
-import { T, useGT } from 'gt-next';
 
 import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
@@ -95,7 +95,9 @@ export function DataTablePagination<TData>({
   return (
     <div className={cn('flex items-center justify-between px-2 py-4', className)} {...props}>
       <div className="text-muted-foreground flex items-center gap-4 text-sm">
-        <span className="hidden sm:inline">{t('{count} items', { count: table.getCoreRowModel().rows.length })}</span>
+        <span className="hidden sm:inline">
+          {t('{count} items', { count: table.getCoreRowModel().rows.length })}
+        </span>
         <div className="hidden items-center gap-2 sm:flex">
           <Select
             value={`${table.getState().pagination.pageSize}`}
@@ -112,13 +114,18 @@ export function DataTablePagination<TData>({
               ))}
             </SelectContent>
           </Select>
-          <T><span>per page</span></T>
+          <T>
+            <span>per page</span>
+          </T>
         </div>
       </div>
 
       <div className="flex items-center gap-1">
         <span className="text-muted-foreground mr-2 hidden text-sm sm:inline">
-          {t('Page {current} of {total}', { current: table.getState().pagination.pageIndex + 1, total: table.getPageCount() })}
+          {t('Page {current} of {total}', {
+            current: table.getState().pagination.pageIndex + 1,
+            total: table.getPageCount(),
+          })}
         </span>
         <Button
           variant="outline"
