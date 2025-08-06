@@ -49,8 +49,6 @@ export const Editor = ({
   // Ensure content is properly structured with a doc type and fix any schema issues
   const formattedContent = initialContent ? validateAndFixTipTapContent(initialContent) : null;
 
-  console.log('formattedContent', formattedContent);
-
   const editor = useEditor({
     extensions: defaultExtensions(placeholder),
     content: formattedContent || '',
@@ -98,8 +96,6 @@ export const Editor = ({
       setSaveStatus('Unsaved');
     }
   }, saveDebounceMs);
-
-  console.log('editor', editor);
 
   if (!initialContent && !editor) return null;
 
