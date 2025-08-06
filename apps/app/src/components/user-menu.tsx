@@ -25,7 +25,6 @@ export async function UserMenu({ onlySignOut }: { onlySignOut?: boolean }) {
               alt={session?.user?.name ?? session?.user?.email ?? ''}
               width={32}
               height={32}
-              quality={100}
             />
           )}
           <AvatarFallback>
