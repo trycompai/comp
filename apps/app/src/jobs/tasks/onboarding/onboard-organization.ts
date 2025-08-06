@@ -29,11 +29,11 @@ export const onboardOrganization = task({
     });
 
     try {
-      logger.info(`Revalidating path ${process.env.BETTER_AUTH_URL}/${organizationId}`);
+      logger.info(`Revalidating path ${process.env.NEXT_PUBLIC_BETTER_AUTH_URL}/${organizationId}`);
       const revalidateResponse = await axios.post(
-        `${process.env.BETTER_AUTH_URL}/api/revalidate/path`,
+        `${process.env.NEXT_PUBLIC_BETTER_AUTH_URL}/api/revalidate/path`,
         {
-          path: `${process.env.BETTER_AUTH_URL}/${organizationId}`,
+          path: `${process.env.NEXT_PUBLIC_BETTER_AUTH_URL}/${organizationId}`,
           secret: process.env.REVALIDATION_SECRET,
           type: 'layout',
         },
