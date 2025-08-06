@@ -38,6 +38,32 @@ export class AttachmentResponseDto {
   createdAt: Date;
 }
 
+export class AttachmentMetadataDto {
+  @ApiProperty({
+    description: 'Unique identifier for the attachment',
+    example: 'att_abc123def456',
+  })
+  id: string;
+
+  @ApiProperty({
+    description: 'Original filename',
+    example: 'document.pdf',
+  })
+  name: string;
+
+  @ApiProperty({
+    description: 'File type/MIME type',
+    example: 'application/pdf',
+  })
+  type: string;
+
+  @ApiProperty({
+    description: 'Upload timestamp',
+    example: '2024-01-15T10:30:00Z',
+  })
+  createdAt: Date;
+}
+
 export class AuthorResponseDto {
   @ApiProperty({
     description: 'User ID',
@@ -78,10 +104,10 @@ export class CommentResponseDto {
   author: AuthorResponseDto;
 
   @ApiProperty({
-    description: 'Attachments associated with this comment',
-    type: [AttachmentResponseDto],
+    description: 'Attachment metadata (URLs generated on-demand)',
+    type: [AttachmentMetadataDto],
   })
-  attachments: AttachmentResponseDto[];
+  attachments: AttachmentMetadataDto[];
 
   @ApiProperty({
     description: 'Comment creation timestamp',

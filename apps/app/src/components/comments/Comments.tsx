@@ -18,8 +18,8 @@ export type CommentWithAuthor = {
     id: string;
     name: string;
     type: string;
-    downloadUrl: string;
     createdAt: string;
+    // downloadUrl removed - now generated on-demand only
   }>;
   createdAt: string;
 };
@@ -38,16 +38,16 @@ interface CommentsProps {
 /**
  * Reusable Comments component that works with any entity type.
  * Automatically handles data fetching, real-time updates, loading states, and error handling.
- * 
+ *
  * @example
  * // Basic usage
  * <Comments entityId={taskId} entityType="task" />
- * 
+ *
  * @example
  * // Custom title and inline variant
- * <Comments 
- *   entityId={riskId} 
- *   entityType="risk" 
+ * <Comments
+ *   entityId={riskId}
+ *   entityType="risk"
  *   title="Risk Discussion"
  *   variant="inline"
  * />
@@ -76,7 +76,7 @@ export const Comments = ({
   const content = (
     <div className="space-y-4">
       <CommentForm entityId={entityId} entityType={entityType} />
-      
+
       {commentsLoading && (
         <div className="space-y-3">
           {/* Simple comment skeletons */}
@@ -114,9 +114,7 @@ export const Comments = ({
         <CardTitle>{title}</CardTitle>
         <CardDescription>{defaultDescription}</CardDescription>
       </CardHeader>
-      <CardContent>
-        {content}
-      </CardContent>
+      <CardContent>{content}</CardContent>
     </Card>
   );
 };

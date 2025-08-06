@@ -110,7 +110,7 @@ export class AttachmentsService {
   }
 
   /**
-   * Get all attachments for an entity
+   * Get all attachments for an entity WITH signed URLs (for backward compatibility)
    */
   async getAttachments(
     organizationId: string,
@@ -143,6 +143,33 @@ export class AttachmentsService {
     );
 
     return attachmentsWithUrls;
+  }
+
+  /**
+   * Get attachment metadata WITHOUT signed URLs (for on-demand URL generation)
+   */
+  async getAttachmentMetadata(
+    organizationId: string,
+    entityId: string,
+    entityType: AttachmentEntityType,
+  ): Promise<{ id: string; name: string; type: string; createdAt: Date }[]> {
+    const attachments = await db.attachment.findMany({
+      where: {
+        organizationId,
+        entityId,
+        entityType,
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+
+    return attachments.map((attachment) => ({
+      id: attachment.id,
+      name: attachment.name,
+      type: attachment.type,
+      createdAt: attachment.createdAt,
+    }));
   }
 
   /**
