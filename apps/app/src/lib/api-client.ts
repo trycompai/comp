@@ -1,7 +1,7 @@
 'use client';
 
 import { env } from '@/env.mjs';
-import { authClient } from '@/utils/auth-client';
+import { jwtManager } from '@/utils/jwt-manager';
 
 interface ApiCallOptions extends Omit<RequestInit, 'headers'> {
   organizationId?: string;
@@ -46,28 +46,12 @@ export class ApiClient {
     // Add JWT token for authentication
     if (typeof window !== 'undefined') {
       try {
-        // Get JWT token from Better Auth
-        let token = localStorage.getItem('bearer_token');
-        
-        // If no stored token, try to get one from the session
-        if (!token) {
-          const sessionResponse = await authClient.getSession({
-            fetchOptions: {
-              onSuccess: (ctx) => {
-                const jwtToken = ctx.response.headers.get('set-auth-jwt');
-                if (jwtToken) {
-                  localStorage.setItem('bearer_token', jwtToken);
-                  token = jwtToken;
-                  console.log('🎯 JWT token retrieved and stored from session');
-                }
-              }
-            }
-          });
-        }
-        
+        // Get a valid (non-stale) JWT token
+        const token = await jwtManager.getValidToken();
+
         if (token) {
           headers['Authorization'] = `Bearer ${token}`;
-          console.log('🎯 Using JWT token for API authentication');
+          console.log('🎯 Using fresh JWT token for API authentication');
         } else {
           console.log('⚠️ No JWT token available for API authentication');
         }
