@@ -17,7 +17,7 @@ export async function GET() {
         NODE_ENV: process.env.NODE_ENV,
         DATABASE_URL: process.env.DATABASE_URL ? 'set' : 'not set',
         AUTH_SECRET: process.env.AUTH_SECRET ? 'set' : 'not set',
-        BETTER_AUTH_URL: process.env.BETTER_AUTH_URL || 'not set',
+        NEXT_PUBLIC_BETTER_AUTH_URL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL || 'not set',
       },
     });
   } catch (error) {
