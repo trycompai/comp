@@ -1,5 +1,6 @@
 'use client';
 
+import { useApi } from '@/hooks/use-api';
 import { useCommentActions } from '@/hooks/use-comments-api';
 import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
 import { Button } from '@comp/ui/button';
@@ -56,6 +57,7 @@ export function CommentItem({ comment, refreshComments }: CommentItemProps) {
 
   // Use API hooks instead of server actions
   const { updateComment, deleteComment } = useCommentActions();
+  const { get: apiGet } = useApi();
 
   const handleEditToggle = () => {
     if (!isEditing) {
@@ -102,6 +104,33 @@ export function CommentItem({ comment, refreshComments }: CommentItemProps) {
         toast.error('Failed to delete comment.');
         console.error('Delete comment error:', error);
       }
+    }
+  };
+
+  const handleAttachmentClick = async (attachmentId: string, fileName: string) => {
+    try {
+      // Generate fresh download URL on-demand using the useApi hook (with org context)
+      const response = await apiGet<{ downloadUrl: string; expiresIn: number }>(
+        `/v1/attachments/${attachmentId}/download`,
+      );
+
+      if (response.error || !response.data?.downloadUrl) {
+        console.error('API Error Details:', {
+          status: response.status,
+          error: response.error,
+          data: response.data,
+        });
+        throw new Error(response.error || 'API response missing downloadUrl');
+      }
+
+      // Open the fresh URL in a new tab
+      window.open(response.data.downloadUrl, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      console.error('Error downloading attachment:', error);
+
+      // Since we no longer pre-generate URLs, show user error when API fails
+      console.error('No fallback available - URLs are only generated on-demand');
+      toast.error(`Failed to download ${fileName}`);
     }
   };
 
@@ -175,9 +204,12 @@ export function CommentItem({ comment, refreshComments }: CommentItemProps) {
                   {comment.attachments.map((att) => (
                     <div key={att.id} className="flex items-center gap-2 text-xs">
                       <span>📎</span>
-                      <span className="text-blue-600 hover:underline cursor-pointer">
+                      <button
+                        onClick={() => handleAttachmentClick(att.id, att.name)}
+                        className="text-blue-600 hover:underline cursor-pointer text-left"
+                      >
                         {att.name}
-                      </span>
+                      </button>
                     </div>
                   ))}
                 </div>

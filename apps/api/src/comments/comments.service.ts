@@ -98,14 +98,15 @@ export class CommentsService {
         },
       });
 
-      // Get attachments for each comment
+      // Get attachment metadata for each comment (WITHOUT signed URLs for on-demand generation)
       const commentsWithAttachments = await Promise.all(
         comments.map(async (comment) => {
-          const attachments = await this.attachmentsService.getAttachments(
-            organizationId,
-            comment.id,
-            AttachmentEntityType.comment,
-          );
+          const attachments =
+            await this.attachmentsService.getAttachmentMetadata(
+              organizationId,
+              comment.id,
+              AttachmentEntityType.comment,
+            );
 
           return {
             id: comment.id,

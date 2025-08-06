@@ -1,15 +1,16 @@
 'use client';
 
 import { api } from '@/lib/api-client';
-import { useActiveOrganization } from '@/utils/auth-client';
+import { useParams } from 'next/navigation';
 import { useCallback } from 'react';
 import { useApiSWR, UseApiSWROptions } from './use-api-swr';
 
 /**
- * Hook that provides API client with automatic organization context
+ * Hook that provides API client with automatic organization context from URL params
  */
 export function useApi() {
-  const activeOrg = useActiveOrganization();
+  const params = useParams();
+  const orgIdFromParams = params?.orgId as string;
 
   const apiCall = useCallback(
     <T = unknown>(
@@ -27,11 +28,11 @@ export function useApi() {
         organizationId =
           (typeof bodyOrOrgId === 'string' ? bodyOrOrgId : undefined) ||
           explicitOrgId ||
-          activeOrg.data?.id;
+          orgIdFromParams;
       } else {
         // For POST/PUT: second param is body, third is organizationId
         body = bodyOrOrgId;
-        organizationId = explicitOrgId || activeOrg.data?.id;
+        organizationId = explicitOrgId || orgIdFromParams;
       }
 
       if (!organizationId) {
@@ -52,12 +53,12 @@ export function useApi() {
           throw new Error(`Unsupported method: ${method}`);
       }
     },
-    [activeOrg.data?.id],
+    [orgIdFromParams],
   );
 
   return {
     // Organization context
-    organizationId: activeOrg.data?.id,
+    organizationId: orgIdFromParams,
 
     // Standard API methods (for mutations)
     get: useCallback(
@@ -87,7 +88,7 @@ export function useApi() {
     // SWR-based GET requests (recommended for data fetching)
     useSWR: <T = unknown>(endpoint: string | null, options?: UseApiSWROptions<T>) => {
       return useApiSWR<T>(endpoint, {
-        organizationId: activeOrg.data?.id,
+        organizationId: orgIdFromParams,
         ...options,
       });
     },
