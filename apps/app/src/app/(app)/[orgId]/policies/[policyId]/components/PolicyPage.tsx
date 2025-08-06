@@ -1,6 +1,6 @@
 import { Control, Member, Policy, User } from '@db';
 import type { JSONContent } from '@tiptap/react';
-import { Comments, CommentWithAuthor } from '../../../../../../components/comments/Comments';
+import { Comments } from '../../../../../../components/comments/Comments';
 import { AuditLogWithRelations } from '../data';
 import { PolicyPageEditor } from '../editor/components/PolicyDetails';
 import { PolicyOverview } from './PolicyOverview';
@@ -14,7 +14,6 @@ export default function PolicyPage({
   isPendingApproval,
   policyId,
   logs,
-  comments,
 }: {
   policy: (Policy & { approver: (Member & { user: User }) | null }) | null;
   assignees: (Member & { user: User })[];
@@ -23,7 +22,6 @@ export default function PolicyPage({
   isPendingApproval: boolean;
   policyId: string;
   logs: AuditLogWithRelations[];
-  comments: CommentWithAuthor[];
 }) {
   return (
     <>
@@ -42,7 +40,7 @@ export default function PolicyPage({
 
       <RecentAuditLogs logs={logs} />
 
-      <Comments entityId={policyId} comments={comments} entityType="policy" />
+      <Comments entityId={policyId} entityType="policy" />
     </>
   );
 }

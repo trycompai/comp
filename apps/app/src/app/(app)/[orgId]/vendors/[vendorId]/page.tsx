@@ -2,12 +2,12 @@
 
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { auth } from '@/utils/auth';
-import { AttachmentEntityType, CommentEntityType, db } from '@db';
+import { CommentEntityType, db } from '@db';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
-import { Comments, CommentWithAuthor } from '../../../../../components/comments/Comments';
+import { Comments } from '../../../../../components/comments/Comments';
 import { VendorInherentRiskChart } from './components/VendorInherentRiskChart';
 import { VendorResidualRiskChart } from './components/VendorResidualRiskChart';
 import { SecondaryFields } from './components/secondary-fields/secondary-fields';
@@ -20,7 +20,6 @@ export default async function VendorPage({ params }: PageProps) {
   const { vendorId, orgId } = await params;
   const vendor = await getVendor(vendorId);
   const assignees = await getAssignees();
-  const comments = await getComments(vendorId);
 
   if (!vendor || !vendor.vendor) {
     redirect('/');
@@ -43,7 +42,7 @@ export default async function VendorPage({ params }: PageProps) {
           <VendorInherentRiskChart vendor={vendor.vendor} />
           <VendorResidualRiskChart vendor={vendor.vendor} />
         </div>
-        <Comments entityId={vendorId} comments={comments} entityType={CommentEntityType.vendor} />
+        <Comments entityId={vendorId} entityType={CommentEntityType.vendor} />
       </div>
     </PageWithBreadcrumb>
   );
@@ -90,68 +89,6 @@ const getVendor = cache(async (vendorId: string) => {
     globalVendor: null,
   };
 });
-
-const getComments = async (vendorId: string): Promise<CommentWithAuthor[]> => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  const activeOrgId = session?.session.activeOrganizationId;
-
-  if (!activeOrgId) {
-    console.warn('Could not determine active organization ID in getComments');
-    return [];
-  }
-
-  const comments = await db.comment.findMany({
-    where: {
-      organizationId: activeOrgId,
-      entityId: vendorId,
-      entityType: CommentEntityType.vendor,
-    },
-    include: {
-      author: {
-        include: {
-          user: true,
-        },
-      },
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
-  });
-
-  const commentsWithAttachments = await Promise.all(
-    comments.map(async (comment) => {
-      const attachments = await db.attachment.findMany({
-        where: {
-          organizationId: activeOrgId,
-          entityId: comment.id,
-          entityType: AttachmentEntityType.comment,
-        },
-      });
-      return {
-        id: comment.id,
-        content: comment.content,
-        author: {
-          id: comment.author.user.id,
-          name: comment.author.user.name,
-          email: comment.author.user.email,
-        },
-        attachments: attachments.map((att) => ({
-          id: att.id,
-          name: att.name,
-          type: att.type,
-          downloadUrl: att.url || '', // assuming url maps to downloadUrl
-          createdAt: att.createdAt.toISOString(),
-        })),
-        createdAt: comment.createdAt.toISOString(),
-      };
-    }),
-  );
-
-  return commentsWithAttachments;
-};
 
 const getAssignees = cache(async () => {
   const session = await auth.api.getSession({
