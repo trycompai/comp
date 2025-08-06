@@ -25,10 +25,18 @@ export const authClient = createAuthClient({
   ],
   fetchOptions: {
     onSuccess: (ctx) => {
+      // Store Bearer token for session-based auth
       const authToken = ctx.response.headers.get('set-auth-token');
       if (authToken) {
         localStorage.setItem('bearer_token', authToken);
         console.log('🎯 Bearer token captured and stored');
+      }
+      
+      // Store JWT token for API authentication
+      const jwtToken = ctx.response.headers.get('set-auth-jwt');
+      if (jwtToken) {
+        localStorage.setItem('bearer_token', jwtToken); // Use same key for simplicity
+        console.log('🎯 JWT token captured and stored');
       }
     },
     auth: {
