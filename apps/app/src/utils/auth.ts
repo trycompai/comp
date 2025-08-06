@@ -86,33 +86,49 @@ export const auth = betterAuth({
     session: {
       create: {
         before: async (session) => {
-          // Get the user's most recent organization
-          const userOrg = await db.organization.findFirst({
-            where: {
-              members: {
-                some: {
-                  userId: session.userId,
+          console.log('[Better Auth] Session creation hook called for user:', session.userId);
+          try {
+            // Find the user's first organization to set as active
+            const userOrganization = await db.organization.findFirst({
+              where: {
+                members: {
+                  some: {
+                    userId: session.userId,
+                  },
                 },
               },
-            },
-            orderBy: {
-              createdAt: 'desc',
-            },
-          });
-
-          // Set the active organization if user has one
-          if (userOrg) {
-            return {
-              data: {
-                ...session,
-                activeOrganizationId: userOrg.id,
+              orderBy: {
+                createdAt: 'desc', // Get the most recently joined organization
               },
+              select: {
+                id: true,
+                name: true,
+              },
+            });
+
+            if (userOrganization) {
+              console.log(
+                `[Better Auth] Setting activeOrganizationId to ${userOrganization.id} (${userOrganization.name}) for user ${session.userId}`,
+              );
+              return {
+                data: {
+                  ...session,
+                  activeOrganizationId: userOrganization.id,
+                },
+              };
+            } else {
+              console.log(`[Better Auth] No organization found for user ${session.userId}`);
+              return {
+                data: session,
+              };
+            }
+          } catch (error) {
+            console.error('[Better Auth] Session creation hook error:', error);
+            // Fallback: create session without organization
+            return {
+              data: session,
             };
           }
-
-          return {
-            data: session,
-          };
         },
       },
     },
@@ -175,8 +191,21 @@ export const auth = betterAuth({
         });
       },
     }),
-    jwt(),
-    bearer(),
+    jwt({
+      jwt: {
+        definePayload: ({ user }) => {
+          // Only include essential user information for API authentication
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            emailVerified: user.emailVerified,
+          };
+        },
+        expirationTime: '1h', // Extend from default 15 minutes to 1 hour for better UX
+      },
+    }), // Enable JWT token generation and JWKS endpoints
+    bearer(), // Enable Bearer token authentication for client-side API calls
     nextCookies(),
     ...(dub ? [dubAnalytics({ dubClient: dub })] : []),
   ],
