@@ -2,6 +2,7 @@
 
 import { DubEmbed } from '@dub/embed-react';
 import { useTheme } from 'next-themes';
+import { T } from 'gt-next';
 
 export const DubReferral = ({ publicToken }: { publicToken: string | null }) => {
   const theme = useTheme();
@@ -9,9 +10,11 @@ export const DubReferral = ({ publicToken }: { publicToken: string | null }) => 
   if (!publicToken) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <p className="text-sm text-muted-foreground">
-          No token available. Please try refreshing the page.
-        </p>
+        <T>
+          <p className="text-sm text-muted-foreground">
+            No token available. Please try refreshing the page.
+          </p>
+        </T>
       </div>
     );
   }

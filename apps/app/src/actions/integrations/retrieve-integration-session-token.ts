@@ -3,10 +3,14 @@
 'use server';
 
 import { authActionClient } from '../safe-action';
-import { createIntegrationSchema } from '../schema';
+import { getCreateIntegrationSchema } from '../schema';
+import { getGT } from 'gt-next/server';
 
 export const retrieveIntegrationSessionTokenAction = authActionClient
-  .inputSchema(createIntegrationSchema)
+  .inputSchema(async () => {
+    const t = await getGT();
+    return getCreateIntegrationSchema(t);
+  })
   .metadata({
     name: 'retrieve-integration-session-token',
     track: {

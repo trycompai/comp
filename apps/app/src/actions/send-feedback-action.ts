@@ -3,10 +3,14 @@
 import { env } from '@/env.mjs';
 import axios from 'axios';
 import { authActionClient } from './safe-action';
-import { sendFeedbackSchema } from './schema';
+import { getSendFeedbackSchema } from './schema';
+import { getGT } from 'gt-next/server';
 
 export const sendFeebackAction = authActionClient
-  .inputSchema(sendFeedbackSchema)
+  .inputSchema(async () => {
+    const t = await getGT();
+    return getSendFeedbackSchema(t);
+  })
   .metadata({
     name: 'send-feedback',
   })

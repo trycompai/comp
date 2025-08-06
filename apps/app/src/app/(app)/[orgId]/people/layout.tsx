@@ -2,10 +2,12 @@ import { getPostHogClient } from '@/app/posthog';
 import { auth } from '@/utils/auth';
 import { SecondaryMenu } from '@comp/ui/secondary-menu';
 import { db } from '@db';
+import { getGT } from 'gt-next/server';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 export default async function Layout({ children }: { children: React.ReactNode }) {
+  const t = await getGT();
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -38,13 +40,13 @@ export default async function Layout({ children }: { children: React.ReactNode }
         items={[
           {
             path: `/${orgId}/people/all`,
-            label: 'People',
+            label: t('People'),
           },
           ...(employees.length > 0
             ? [
                 {
                   path: `/${orgId}/people/dashboard`,
-                  label: 'Employee Tasks',
+                  label: t('Employee Tasks'),
                 },
               ]
             : []),
@@ -52,7 +54,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
             ? [
                 {
                   path: `/${orgId}/people/devices`,
-                  label: 'Employee Devices',
+                  label: t('Employee Devices'),
                 },
               ]
             : []),

@@ -11,120 +11,120 @@ import {
 } from '@db';
 import { z } from 'zod';
 
-export const organizationSchema = z.object({
+export const getOrganizationSchema = (t: (content: string) => string) => z.object({
   frameworkIds: z
     .array(z.string())
-    .min(1, 'Please select at least one framework to get started with'),
+    .min(1, t('Please select at least one framework to get started with')),
 });
 
-export type OrganizationSchema = z.infer<typeof organizationSchema>;
+export type OrganizationSchema = z.infer<ReturnType<typeof getOrganizationSchema>>;
 
-export const organizationNameSchema = z.object({
+export const getOrganizationNameSchema = (t: (content: string) => string) => z.object({
   name: z
     .string()
-    .min(1, 'Organization name is required')
-    .max(255, 'Organization name cannot exceed 255 characters'),
+    .min(1, t('Organization name is required'))
+    .max(255, t('Organization name cannot exceed 255 characters')),
 });
 
-export const subdomainAvailabilitySchema = z.object({
+export const getSubdomainAvailabilitySchema = (t: (content: string) => string) => z.object({
   subdomain: z
     .string()
-    .min(1, 'Subdomain is required')
-    .max(255, 'Subdomain cannot exceed 255 characters')
+    .min(1, t('Subdomain is required'))
+    .max(255, t('Subdomain cannot exceed 255 characters'))
     .regex(/^[a-z0-9-]+$/, {
-      message: 'Subdomain can only contain lowercase letters, numbers, and hyphens',
+      message: t('Subdomain can only contain lowercase letters, numbers, and hyphens'),
     }),
 });
 
-export const deleteOrganizationSchema = z.object({
+export const getDeleteOrganizationSchema = (t: (content: string) => string) => z.object({
   id: z.string(),
   organizationId: z.string(),
 });
 
-export const sendFeedbackSchema = z.object({
+export const getSendFeedbackSchema = (t: (content: string) => string) => z.object({
   feedback: z.string(),
 });
 
-export const updaterMenuSchema = z.array(
+export const getUpdaterMenuSchema = (t: (content: string) => string) => z.array(
   z.object({
     path: z.string(),
     name: z.string(),
   }),
 );
 
-export const organizationWebsiteSchema = z.object({
+export const getOrganizationWebsiteSchema = (t: (content: string) => string) => z.object({
   website: z
     .string()
     .url({
-      message: 'Please enter a valid website that starts with https://',
+      message: t('Please enter a valid website that starts with https://'),
     })
-    .max(255, 'Website cannot exceed 255 characters'),
+    .max(255, t('Website cannot exceed 255 characters')),
 });
 
 // Risks
-export const createRiskSchema = z.object({
+export const getCreateRiskSchema = (t: (content: string) => string) => z.object({
   title: z
     .string({
-      required_error: 'Risk name is required',
+      required_error: t('Risk name is required'),
     })
     .min(1, {
-      message: 'Risk name should be at least 1 character',
+      message: t('Risk name should be at least 1 character'),
     })
     .max(100, {
-      message: 'Risk name should be at most 100 characters',
+      message: t('Risk name should be at most 100 characters'),
     }),
   description: z
     .string({
-      required_error: 'Risk description is required',
+      required_error: t('Risk description is required'),
     })
     .min(1, {
-      message: 'Risk description should be at least 1 character',
+      message: t('Risk description should be at least 1 character'),
     })
     .max(255, {
-      message: 'Risk description should be at most 255 characters',
+      message: t('Risk description should be at most 255 characters'),
     }),
   category: z.nativeEnum(RiskCategory, {
-    required_error: 'Risk category is required',
+    required_error: t('Risk category is required'),
   }),
   department: z.nativeEnum(Departments, {
-    required_error: 'Risk department is required',
+    required_error: t('Risk department is required'),
   }),
   assigneeId: z.string().optional().nullable(),
 });
 
-export const updateRiskSchema = z.object({
+export const getUpdateRiskSchema = (t: (content: string) => string) => z.object({
   id: z.string().min(1, {
-    message: 'Risk ID is required',
+    message: t('Risk ID is required'),
   }),
   title: z.string().min(1, {
-    message: 'Risk title is required',
+    message: t('Risk title is required'),
   }),
   description: z.string().min(1, {
-    message: 'Risk description is required',
+    message: t('Risk description is required'),
   }),
   category: z.nativeEnum(RiskCategory, {
-    required_error: 'Risk category is required',
+    required_error: t('Risk category is required'),
   }),
   department: z.nativeEnum(Departments, {
-    required_error: 'Risk department is required',
+    required_error: t('Risk department is required'),
   }),
   assigneeId: z.string().optional().nullable(),
   status: z.nativeEnum(RiskStatus, {
-    required_error: 'Risk status is required',
+    required_error: t('Risk status is required'),
   }),
 });
 
-export const createRiskCommentSchema = z.object({
+export const getCreateRiskCommentSchema = (t: (content: string) => string) => z.object({
   riskId: z.string().min(1, {
-    message: 'Risk ID is required',
+    message: t('Risk ID is required'),
   }),
   content: z
     .string()
     .min(1, {
-      message: 'Comment content is required',
+      message: t('Comment content is required'),
     })
     .max(1000, {
-      message: 'Comment content should be at most 1000 characters',
+      message: t('Comment content should be at most 1000 characters'),
     })
     .transform((val) => {
       // Remove any HTML tags by applying the replacement repeatedly until no changes occur
@@ -140,47 +140,47 @@ export const createRiskCommentSchema = z.object({
     }),
 });
 
-export const createTaskSchema = z.object({
+export const getCreateTaskSchema = (t: (content: string) => string) => z.object({
   riskId: z.string().min(1, {
-    message: 'Risk ID is required',
+    message: t('Risk ID is required'),
   }),
   title: z.string().min(1, {
-    message: 'Task title is required',
+    message: t('Task title is required'),
   }),
   description: z.string().min(1, {
-    message: 'Task description is required',
+    message: t('Task description is required'),
   }),
   dueDate: z.date().optional(),
   assigneeId: z.string().optional().nullable(),
 });
 
-export const updateTaskSchema = z.object({
+export const getUpdateTaskSchema = (t: (content: string) => string) => z.object({
   id: z.string().min(1, {
-    message: 'Task ID is required',
+    message: t('Task ID is required'),
   }),
   title: z.string().optional(),
   description: z.string().optional(),
   dueDate: z.date().optional(),
   status: z.nativeEnum(TaskStatus, {
-    required_error: 'Task status is required',
+    required_error: t('Task status is required'),
   }),
   assigneeId: z.string().optional().nullable(),
 });
 
-export const createTaskCommentSchema = z.object({
+export const getCreateTaskCommentSchema = (t: (content: string) => string) => z.object({
   riskId: z.string().min(1, {
-    message: 'Risk ID is required',
+    message: t('Risk ID is required'),
   }),
   taskId: z.string().min(1, {
-    message: 'Task ID is required',
+    message: t('Task ID is required'),
   }),
   content: z
     .string()
     .min(1, {
-      message: 'Comment content is required',
+      message: t('Comment content is required'),
     })
     .max(1000, {
-      message: 'Comment content should be at most 1000 characters',
+      message: t('Comment content should be at most 1000 characters'),
     })
     .transform((val) => {
       // Remove any HTML tags by applying the replacement repeatedly until no changes occur
@@ -196,25 +196,25 @@ export const createTaskCommentSchema = z.object({
     }),
 });
 
-export const uploadTaskFileSchema = z.object({
+export const getUploadTaskFileSchema = (t: (content: string) => string) => z.object({
   riskId: z.string().min(1, {
-    message: 'Risk ID is required',
+    message: t('Risk ID is required'),
   }),
   taskId: z.string().min(1, {
-    message: 'Task ID is required',
+    message: t('Task ID is required'),
   }),
 });
 
 // Integrations
-export const deleteIntegrationConnectionSchema = z.object({
+export const getDeleteIntegrationConnectionSchema = (t: (content: string) => string) => z.object({
   integrationName: z.string().min(1, {
-    message: 'Integration name is required',
+    message: t('Integration name is required'),
   }),
 });
 
-export const createIntegrationSchema = z.object({
+export const getCreateIntegrationSchema = (t: (content: string) => string) => z.object({
   integrationId: z.string().min(1, {
-    message: 'Integration ID is required',
+    message: t('Integration ID is required'),
   }),
 });
 
@@ -223,71 +223,72 @@ export const seedDataSchema = z.object({
   organizationId: z.string(),
 });
 
-export const updateInherentRiskSchema = z.object({
+export const getUpdateInherentRiskSchema = (t: (content: string) => string) => z.object({
   id: z.string().min(1, {
-    message: 'Risk ID is required',
+    message: t('Risk ID is required'),
   }),
   probability: z.nativeEnum(Likelihood),
   impact: z.nativeEnum(Impact),
 });
 
-export const updateResidualRiskSchema = z.object({
+export const getUpdateResidualRiskSchema = (t: (content: string) => string) => z.object({
   id: z.string().min(1, {
-    message: 'Risk ID is required',
+    message: t('Risk ID is required'),
   }),
   probability: z.number().min(1).max(10),
   impact: z.number().min(1).max(10),
 });
 
 // ADD START: Schema for enum-based residual risk update
-export const updateResidualRiskEnumSchema = z.object({
+export const getUpdateResidualRiskEnumSchema = (t: (content: string) => string) => z.object({
   id: z.string().min(1, {
-    message: 'Risk ID is required',
+    message: t('Risk ID is required'),
   }),
   probability: z.nativeEnum(Likelihood),
   impact: z.nativeEnum(Impact),
 });
+
 // ADD END
 
 // Policies
-export const createPolicySchema = z.object({
-  title: z.string({ required_error: 'Title is required' }).min(1, 'Title is required'),
+export const getCreatePolicySchema = (t: (content: string) => string) => z.object({
+  title: z.string({ required_error: t('Title is required') }).min(1, t('Title is required')),
   description: z
-    .string({ required_error: 'Description is required' })
-    .min(1, 'Description is required'),
+    .string({ required_error: t('Description is required') })
+    .min(1, t('Description is required')),
   frameworkIds: z.array(z.string()).optional(),
   controlIds: z.array(z.string()).optional(),
   entityId: z.string().optional(),
 });
 
-export type CreatePolicySchema = z.infer<typeof createPolicySchema>;
+export type CreatePolicySchema = z.infer<ReturnType<typeof getCreatePolicySchema>>;
 
-export const updatePolicySchema = z.object({
+export const getUpdatePolicySchema = (t: (content: string) => string) => z.object({
   id: z.string(),
   content: z.any(),
   entityId: z.string(),
 });
 
-export const addFrameworksSchema = z.object({
-  organizationId: z.string().min(1, 'Organization ID is required'),
-  frameworkIds: z.array(z.string()).min(1, 'Please select at least one framework to add'),
+export const getAddFrameworksSchema = (t: (content: string) => string) => z.object({
+  organizationId: z.string().min(1, t('Organization ID is required')),
+  frameworkIds: z.array(z.string()).min(1, t('Please select at least one framework to add')),
 });
 
 export const assistantSettingsSchema = z.object({
   enabled: z.boolean().optional(),
 });
 
-export const createEmployeeSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  email: z.string().email('Invalid email address'),
+export const getCreateEmployeeSchema = (t: (content: string) => string) => z.object({
+  name: z.string().min(1, t('Name is required')),
+  email: z.string().email(t('Invalid email address')),
   department: z.nativeEnum(Departments, {
-    required_error: 'Department is required',
+    required_error: t('Department is required'),
   }),
   externalEmployeeId: z.string().optional(),
   isActive: z.boolean().default(true),
 });
 
-export const updatePolicyOverviewSchema = z.object({
+export const getUpdatePolicyOverviewSchema = (t: (content: string) => string) => z.object({
   id: z.string(),
   title: z.string(),
   description: z.string(),
@@ -295,7 +296,7 @@ export const updatePolicyOverviewSchema = z.object({
   entityId: z.string(),
 });
 
-export const updatePolicyFormSchema = z.object({
+export const getUpdatePolicyFormSchema = (t: (content: string) => string) => z.object({
   id: z.string(),
   status: z.nativeEnum(PolicyStatus),
   assigneeId: z.string().optional().nullable(),
@@ -307,25 +308,25 @@ export const updatePolicyFormSchema = z.object({
   entityId: z.string(),
 });
 
-export const apiKeySchema = z.object({
+export const getApiKeySchema = (t: (content: string) => string) => z.object({
   name: z
     .string()
-    .min(1, { message: 'Name is required' })
-    .max(64, { message: 'Name must be less than 64 characters' }),
+    .min(1, { message: t('Name is required') })
+    .max(64, { message: t('Name must be less than 64 characters') }),
   expiresAt: z.enum(['30days', '90days', '1year', 'never']),
 });
 
-export const createPolicyCommentSchema = z.object({
+export const getCreatePolicyCommentSchema = (t: (content: string) => string) => z.object({
   policyId: z.string().min(1, {
-    message: 'Policy ID is required',
+    message: t('Policy ID is required'),
   }),
   content: z
     .string()
     .min(1, {
-      message: 'Comment content is required',
+      message: t('Comment content is required'),
     })
     .max(1000, {
-      message: 'Comment content should be at most 1000 characters',
+      message: t('Comment content should be at most 1000 characters'),
     })
     .transform((val) => {
       // Remove any HTML tags by applying the replacement repeatedly until no changes occur
@@ -341,11 +342,11 @@ export const createPolicyCommentSchema = z.object({
     }),
 });
 
-export const addCommentSchema = z.object({
+export const getAddCommentSchema = (t: (content: string) => string) => z.object({
   content: z
     .string()
-    .min(1, 'Comment content is required')
-    .max(1000, 'Comment content should be at most 1000 characters')
+    .min(1, t('Comment content is required'))
+    .max(1000, t('Comment content should be at most 1000 characters'))
     .transform((val) => {
       // Remove any HTML tags by applying the replacement repeatedly until no changes occur
       let sanitized = val;
@@ -358,30 +359,30 @@ export const addCommentSchema = z.object({
 
       return sanitized;
     }),
-  entityId: z.string().min(1, 'Entity ID is required'),
+  entityId: z.string().min(1, t('Entity ID is required')),
   entityType: z.nativeEnum(CommentEntityType),
 });
 
-export const createContextEntrySchema = z.object({
-  question: z.string().min(1, 'Question is required'),
-  answer: z.string().min(1, 'Answer is required'),
+export const getCreateContextEntrySchema = (t: (content: string) => string) => z.object({
+  question: z.string().min(1, t('Question is required')),
+  answer: z.string().min(1, t('Answer is required')),
   tags: z.string().optional(), // comma separated
 });
 
-export const updateContextEntrySchema = z.object({
-  id: z.string().min(1, 'ID is required'),
-  question: z.string().min(1, 'Question is required'),
-  answer: z.string().min(1, 'Answer is required'),
+export const getUpdateContextEntrySchema = (t: (content: string) => string) => z.object({
+  id: z.string().min(1, t('ID is required')),
+  question: z.string().min(1, t('Question is required')),
+  answer: z.string().min(1, t('Answer is required')),
   tags: z.string().optional(),
 });
 
-export const deleteContextEntrySchema = z.object({
-  id: z.string().min(1, 'ID is required'),
+export const getDeleteContextEntrySchema = (t: (content: string) => string) => z.object({
+  id: z.string().min(1, t('ID is required')),
 });
 
 // Comment schemas for the new generic comments API
-export const createCommentSchema = z.object({
-  content: z.string().min(1, 'Comment content is required'),
+export const getCreateCommentSchema = (t: (content: string) => string) => z.object({
+  content: z.string().min(1, t('Comment content is required')),
   entityId: z.string(),
   entityType: z.nativeEnum(CommentEntityType),
   attachments: z
@@ -395,14 +396,14 @@ export const createCommentSchema = z.object({
     .optional(),
 });
 
-export type CreateCommentSchema = z.infer<typeof createCommentSchema>;
+export type CreateCommentSchema = z.infer<ReturnType<typeof getCreateCommentSchema>>;
 
-export const updateCommentSchema = z.object({
+export const getUpdateCommentSchema = (t: (content: string) => string) => z.object({
   commentId: z.string(),
-  content: z.string().min(1, 'Comment content is required'),
+  content: z.string().min(1, t('Comment content is required')),
 });
 
-export type UpdateCommentSchema = z.infer<typeof updateCommentSchema>;
+export type UpdateCommentSchema = z.infer<ReturnType<typeof getUpdateCommentSchema>>;
 
 export const deleteCommentSchema = z.object({
   commentId: z.string(),

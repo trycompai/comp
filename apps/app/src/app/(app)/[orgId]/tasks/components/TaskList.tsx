@@ -6,6 +6,7 @@ import { parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useCallback, useMemo } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
+import { useGT } from 'gt-next';
 
 // updateTaskOrder is called directly within the StatusGroup component now.
 
@@ -15,10 +16,10 @@ import type { DragItem, StatusId } from './TaskCard';
 import { TaskFilterHeader } from './TaskFilterHeader';
 
 // Defines the standard task statuses and their display order.
-const statuses = [
-  { id: 'in_progress', title: 'In Progress' },
-  { id: 'todo', title: 'Todo' },
-  { id: 'done', title: 'Done' },
+const getStatuses = (t: (content: string) => string) => [
+  { id: 'in_progress', title: t('In Progress') },
+  { id: 'todo', title: t('Todo') },
+  { id: 'done', title: t('Done') },
 ] as const;
 
 // Parser for validating StatusId from URL query parameters.
@@ -36,6 +37,9 @@ export function TaskList({
   tasks: Task[];
   members: (Member & { user: User })[];
 }) {
+  const t = useGT();
+  const statuses = getStatuses(t);
+  
   // Hook to execute the server action for updating a task's status.
   const { execute: updateTaskExecute, status: updateTaskStatus } = useAction(updateTaskAction, {});
 

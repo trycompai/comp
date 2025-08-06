@@ -1,5 +1,6 @@
 'use server';
 
+import { getGT } from 'gt-next/server';
 import { isHubSpotConfigured } from './api-client';
 import { createContact, findContactByEmail } from './contacts';
 import type { CreateHubSpotContactResult } from './types';
@@ -25,13 +26,14 @@ import type { CreateHubSpotContactResult } from './types';
  */
 export async function createHubSpotContact(email: string): Promise<CreateHubSpotContactResult> {
   console.log('[HubSpot] Processing contact for email:', email);
+  const t = await getGT();
 
   try {
     if (!email || !email.includes('@')) {
       console.error('[HubSpot] Invalid email provided');
       return {
         success: false,
-        message: 'Valid email is required',
+        message: t('Valid email is required'),
       };
     }
 
@@ -39,7 +41,7 @@ export async function createHubSpotContact(email: string): Promise<CreateHubSpot
       console.error('[HubSpot] API key not configured');
       return {
         success: true,
-        message: 'Contact processed',
+        message: t('Contact processed'),
       };
     }
 
@@ -50,7 +52,7 @@ export async function createHubSpotContact(email: string): Promise<CreateHubSpot
       console.log('[HubSpot] Contact already exists with ID:', existingContact.contactId);
       return {
         success: true,
-        message: 'Contact already exists',
+        message: t('Contact already exists'),
         contactId: existingContact.contactId,
       };
     }
@@ -62,13 +64,13 @@ export async function createHubSpotContact(email: string): Promise<CreateHubSpot
       console.error('[HubSpot] Failed to create contact');
       return {
         success: false,
-        message: newContact.error || 'Failed to create contact',
+        message: newContact.error || t('Failed to create contact'),
       };
     }
 
     return {
       success: true,
-      message: 'Contact created successfully',
+      message: t('Contact created successfully'),
       contactId: newContact.contactId,
     };
   } catch (error) {
@@ -77,7 +79,7 @@ export async function createHubSpotContact(email: string): Promise<CreateHubSpot
     // Don't expose internal errors to the client
     return {
       success: true,
-      message: 'Contact processed',
+      message: t('Contact processed'),
     };
   }
 }

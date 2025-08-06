@@ -3,11 +3,12 @@ import { auth } from '@/utils/auth';
 import { getPostHogClient } from '@/app/posthog';
 import {
   type TrainingVideo,
-  trainingVideos as trainingVideosData,
+  getTrainingVideos,
 } from '@/lib/data/training-videos';
 import { getFleetInstance } from '@/lib/fleet';
 import type { EmployeeTrainingVideoCompletion, Member } from '@db';
 import { db } from '@db';
+import { getGT } from 'gt-next/server';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
@@ -31,7 +32,7 @@ export default async function EmployeeDetailsPage({
   }
 
   const policies = await getPoliciesTasks(employeeId);
-  const employeeTrainingVideos = await getTrainingVideos(employeeId);
+  const employeeTrainingVideos = await getEmployeeTrainingVideos(employeeId);
   const employee = await getEmployee(employeeId);
 
   // If employee doesn't exist, show 404 page
@@ -58,8 +59,9 @@ export default async function EmployeeDetailsPage({
 }
 
 export async function generateMetadata(): Promise<Metadata> {
+  const t = await getGT();
   return {
-    title: 'Employee Details',
+    title: t('Employee Details'),
   };
 }
 
@@ -110,7 +112,10 @@ const getPoliciesTasks = async (employeeId: string) => {
   return policies;
 };
 
-const getTrainingVideos = async (employeeId: string) => {
+const getEmployeeTrainingVideos = async (employeeId: string) => {
+  const { getGT } = await import('gt-next/server');
+  const t = await getGT();
+  const trainingVideosData = getTrainingVideos(t);
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -136,7 +141,7 @@ const getTrainingVideos = async (employeeId: string) => {
     .map((dbVideo) => {
       // Find the training video metadata with the matching ID
       const videoMetadata = trainingVideosData.find(
-        (metadataVideo) => metadataVideo.id === dbVideo.videoId,
+        (metadataVideo: TrainingVideo) => metadataVideo.id === dbVideo.videoId,
       );
 
       // Only return videos that have matching metadata

@@ -1,8 +1,8 @@
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-export function getErrorMessage(err: unknown) {
-  const unknownError = 'Something went wrong, please try again later.';
+export function getErrorMessage(err: unknown, t: (content: string) => string) {
+  const unknownError = t('Something went wrong, please try again later.');
 
   if (err instanceof z.ZodError) {
     const errors = err.issues.map((issue) => {
@@ -14,7 +14,7 @@ export function getErrorMessage(err: unknown) {
   return unknownError;
 }
 
-export function showErrorToast(err: unknown) {
-  const errorMessage = getErrorMessage(err);
+export function showErrorToast(err: unknown, t: (content: string) => string) {
+  const errorMessage = getErrorMessage(err, t);
   return toast.error(errorMessage);
 }

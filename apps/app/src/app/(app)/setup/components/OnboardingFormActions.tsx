@@ -1,6 +1,7 @@
 import { Button } from '@comp/ui/button';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
+import { T } from 'gt-next';
 
 interface OnboardingFormActionsProps {
   onBack: () => void;
@@ -38,7 +39,7 @@ export function OnboardingFormActions({
               disabled={isSubmitting || stepIndex === 0} // stepIndex === 0 check is redundant due to conditional rendering but good for safety
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back
+              <T>Back</T>
             </Button>
           </motion.div>
         )}
@@ -67,7 +68,7 @@ export function OnboardingFormActions({
               className="flex items-center gap-2"
             >
               {isOnboarding && <Loader2 className="h-4 w-4 animate-spin" />}
-              Finish
+              <T>Finish</T>
               <ArrowRight className="ml-2 h-4 w-4" />
             </motion.span>
           </Button>
@@ -87,7 +88,7 @@ export function OnboardingFormActions({
               transition={{ duration: 0.2 }}
               className="flex items-center"
             >
-              Next
+              <T>Next</T>
               <ArrowRight className="ml-2 h-4 w-4" />
             </motion.span>
           </Button>

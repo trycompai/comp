@@ -12,6 +12,7 @@ import {
 } from '@comp/ui/dialog';
 import { Form, FormControl, FormField, FormItem } from '@comp/ui/form';
 import { Textarea } from '@comp/ui/textarea';
+import { useGT } from 'gt-next';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -44,6 +45,7 @@ export function PolicyActionDialog({
   confirmIcon,
   confirmVariant = 'default',
 }: PolicyActionDialogProps) {
+  const t = useGT();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<FormValues>({
@@ -80,7 +82,7 @@ export function PolicyActionDialog({
                 <FormItem>
                   <FormControl>
                     <Textarea
-                      placeholder="Add optional comment or reason (will be added as a comment)"
+                      placeholder={t('Add optional comment or reason (will be added as a comment)')}
                       className="resize-none"
                       {...field}
                     />
@@ -90,7 +92,7 @@ export function PolicyActionDialog({
             />
             <DialogFooter className="gap-2">
               <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
-                Cancel
+                {t('Cancel')}
               </Button>
               <Button
                 type="submit"

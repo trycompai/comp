@@ -6,13 +6,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import type { Member, Task, User } from '@db';
+import { T, useGT } from 'gt-next';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRightIcon, Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
-import { updateVendorTaskSchema } from '../../../../actions/schema';
+import { getUpdateVendorTaskSchema } from '../../../../actions/schema';
+import React from 'react';
 import { updateVendorTaskAction } from '../../../../actions/task/update-task-action';
 
 export default function SecondaryFields({
@@ -27,7 +29,9 @@ export default function SecondaryFields({
       <Card>
         <CardHeader>
           <CardTitle>
-            <div className="flex items-center justify-between gap-2">Task Details</div>
+            <T>
+              <div className="flex items-center justify-between gap-2">Task Details</div>
+            </T>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -47,12 +51,15 @@ function TaskSecondaryFieldsForm({
   };
   assignees: (Member & { user: User })[];
 }) {
+  const t = useGT();
+  const updateVendorTaskSchema = React.useMemo(() => getUpdateVendorTaskSchema(t), [t]);
+  
   const updateTask = useAction(updateVendorTaskAction, {
     onSuccess: () => {
-      toast.success('Task updated successfully');
+      toast.success(t('Task updated successfully'));
     },
     onError: () => {
-      toast.error('Failed to update task');
+      toast.error(t('Failed to update task'));
     },
   });
 
@@ -67,7 +74,7 @@ function TaskSecondaryFieldsForm({
     },
   });
 
-  const onSubmit = (data: z.infer<typeof updateVendorTaskSchema>) => {
+  const onSubmit = (data: z.infer<ReturnType<typeof getUpdateVendorTaskSchema>>) => {
     updateTask.execute(data);
   };
 
@@ -88,13 +95,28 @@ function TaskSecondaryFieldsForm({
       }
     };
 
+    const getStatusText = (status: string) => {
+      switch (status) {
+        case 'open':
+          return t('open');
+        case 'in_progress':
+          return t('in progress');
+        case 'completed':
+          return t('completed');
+        case 'cancelled':
+          return t('cancelled');
+        default:
+          return status;
+      }
+    };
+
     return (
       <div className="flex items-center gap-2">
         <div
           className="size-2.5 rounded-full"
           style={{ backgroundColor: getStatusColor(status) }}
         />
-        <span>{status.replace('_', ' ')}</span>
+        <span>{getStatusText(status)}</span>
       </div>
     );
   };
@@ -108,7 +130,7 @@ function TaskSecondaryFieldsForm({
             name="assigneeId"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Assignee</FormLabel>
+                <FormLabel>{t('Assignee')}</FormLabel>
                 <FormControl>
                   <SelectAssignee
                     assigneeId={field.value}
@@ -128,7 +150,7 @@ function TaskSecondaryFieldsForm({
             name="status"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Status</FormLabel>
+                <FormLabel>{t('Status')}</FormLabel>
                 <FormControl>
                   <Select
                     value={field.value}
@@ -138,7 +160,7 @@ function TaskSecondaryFieldsForm({
                     }}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select status">
+                      <SelectValue placeholder={t('Select status')}>
                         {field.value && renderStatus(field.value)}
                       </SelectValue>
                     </SelectTrigger>
@@ -161,7 +183,7 @@ function TaskSecondaryFieldsForm({
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <div className="flex items-center">
-                Save
+                {t('Save')}
                 <ArrowRightIcon className="ml-2 h-4 w-4" />
               </div>
             )}

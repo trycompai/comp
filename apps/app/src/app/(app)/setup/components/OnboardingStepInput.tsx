@@ -2,6 +2,7 @@ import { Input } from '@comp/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { SelectPills } from '@comp/ui/select-pills';
 import { Textarea } from '@comp/ui/textarea';
+import { useGT } from 'gt-next';
 import type { UseFormReturn } from 'react-hook-form';
 import { Controller } from 'react-hook-form';
 import type { CompanyDetails, Step } from '../lib/types';
@@ -27,6 +28,7 @@ export function OnboardingStepInput({
   savedAnswers,
   onLoadingChange,
 }: OnboardingStepInputProps) {
+  const t = useGT();
   if (currentStep.key === 'frameworkIds') {
     return (
       <div data-testid={`onboarding-input-${currentStep.key}`}>
@@ -47,7 +49,7 @@ export function OnboardingStepInput({
         render={({ field }) => (
           <WebsiteInput
             {...field}
-            placeholder="example.com"
+            placeholder={t("example.com")}
             autoFocus
             data-testid={`onboarding-input-${currentStep.key}`}
           />
@@ -60,7 +62,7 @@ export function OnboardingStepInput({
     return (
       <Textarea
         {...form.register(currentStep.key)}
-        placeholder={`${savedAnswers.organizationName || ''} is a company that...`}
+        placeholder={t('{organizationName} is a company that...', { organizationName: savedAnswers.organizationName || '' })}
         rows={2}
         maxLength={300}
         className="h-24 resize-none"
@@ -112,7 +114,7 @@ export function OnboardingStepInput({
           onValueChange={(values: string[]) => {
             form.setValue(currentStep.key, values.join(','));
           }}
-          placeholder={`Search or add custom (press Enter) • ${currentStep.placeholder}`}
+          placeholder={t('Search or add custom (press Enter) • {placeholder}', { placeholder: currentStep.placeholder })}
           data-testid={`onboarding-input-${currentStep.key}-search`}
         />
       </div>

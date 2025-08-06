@@ -2,6 +2,7 @@
 
 import { AiWorkPreviewAuthentic } from '@/components/ai-work-preview-authentic';
 import { Button } from '@comp/ui/button';
+import { T, useGT, Branch } from 'gt-next';
 import { ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -11,6 +12,7 @@ interface SetupLoadingStepProps {
 }
 
 export function SetupLoadingStep({ organizationId }: SetupLoadingStepProps) {
+  const t = useGT();
   const router = useRouter();
   const [canContinue, setCanContinue] = useState(false);
 
@@ -57,16 +59,28 @@ export function SetupLoadingStep({ organizationId }: SetupLoadingStepProps) {
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between gap-6">
             <div className="flex-1">
-              <p className="text-sm font-medium text-foreground">
-                {canContinue
-                  ? 'AI is working in the background (this will take 2-7 minutes)'
-                  : 'AI workspace setup in progress... (2-7 minutes)'}
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {canContinue
-                  ? "You can safely continue - we'll notify you when everything is ready"
-                  : 'Analyzing your infrastructure and compliance requirements'}
-              </p>
+              <T>
+                <p className="text-sm font-medium text-foreground">
+                  <Branch
+                    branch={canContinue}
+                    true="AI is working in the background (this will take 2-7 minutes)"
+                    false="AI workspace setup in progress... (2-7 minutes)"
+                  >
+                    Setting up workspace...
+                  </Branch>
+                </p>
+              </T>
+              <T>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  <Branch
+                    branch={canContinue}
+                    true="You can safely continue - we'll notify you when everything is ready"
+                    false="Analyzing your infrastructure and compliance requirements"
+                  >
+                    Processing...
+                  </Branch>
+                </p>
+              </T>
             </div>
             <Button
               onClick={handleContinue}
@@ -78,7 +92,7 @@ export function SetupLoadingStep({ organizationId }: SetupLoadingStepProps) {
               }
             >
               <>
-                Continue to Plans
+                {t('Continue to Plans')}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </>
             </Button>

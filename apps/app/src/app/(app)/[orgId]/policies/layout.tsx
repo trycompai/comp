@@ -1,4 +1,5 @@
 import { SecondaryMenu } from '@comp/ui/secondary-menu';
+import { getGT } from 'gt-next/server';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -7,6 +8,7 @@ interface LayoutProps {
 
 export default async function Layout({ children, params }: LayoutProps) {
   const { orgId } = await params;
+  const t = await getGT();
 
   return (
     <div className="m-auto flex max-w-[1200px] flex-col">
@@ -14,11 +16,11 @@ export default async function Layout({ children, params }: LayoutProps) {
         items={[
           {
             path: `/${orgId}/policies`,
-            label: 'Overview',
+            label: t('Overview'),
           },
           {
             path: `/${orgId}/policies/all`,
-            label: 'Policies',
+            label: t('Policies'),
             activeOverrideIdPrefix: 'pol_',
           },
         ]}

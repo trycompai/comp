@@ -2,6 +2,7 @@
 
 import { authActionClient } from '@/actions/safe-action';
 import { db } from '@db';
+import { getGT } from 'gt-next/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
@@ -19,6 +20,7 @@ export const revokeApiKeyAction = authActionClient
     },
   })
   .action(async ({ parsedInput, ctx }) => {
+    const t = await getGT();
     try {
       const { id } = parsedInput;
 
@@ -35,7 +37,7 @@ export const revokeApiKeyAction = authActionClient
       if (result.count === 0) {
         return {
           success: false,
-          error: 'API key not found or not authorized to revoke',
+          error: t('API key not found or not authorized to revoke'),
         };
       }
 
@@ -43,13 +45,13 @@ export const revokeApiKeyAction = authActionClient
 
       return {
         success: true,
-        message: 'API key revoked successfully',
+        message: t('API key revoked successfully'),
       };
     } catch (error) {
       console.error('Error revoking API key:', error);
       return {
         success: false,
-        error: 'An error occurred while revoking the API key',
+        error: t('An error occurred while revoking the API key'),
       };
     }
   });

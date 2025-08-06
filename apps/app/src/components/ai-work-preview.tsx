@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { MiniDataStream } from './mini-data-stream';
+import { T, useGT } from 'gt-next';
 
 interface WorkItem {
   id: string;
@@ -25,90 +26,90 @@ interface WorkItem {
   detail?: string;
 }
 
-const INITIAL_WORK_ITEMS: WorkItem[] = [
+const getInitialWorkItems = (t: (content: string) => string): WorkItem[] => [
   {
     id: '1',
-    title: 'Drafting Information Security Policy',
+    title: t('Drafting Information Security Policy'),
     type: 'policy',
     status: 'pending',
-    detail: 'Customizing based on your AWS infrastructure and security controls',
+    detail: t('Customizing based on your AWS infrastructure and security controls'),
   },
   {
     id: '2',
-    title: 'Researching Stripe Compliance',
+    title: t('Researching Stripe Compliance'),
     type: 'vendor',
     status: 'pending',
-    detail: 'Analyzing PCI DSS compliance and payment security certifications',
+    detail: t('Analyzing PCI DSS compliance and payment security certifications'),
   },
   {
     id: '3',
-    title: 'Assessing Data Privacy Risks',
+    title: t('Assessing Data Privacy Risks'),
     type: 'risk',
     status: 'pending',
-    detail: 'Mapping personal data flows across your systems',
+    detail: t('Mapping personal data flows across your systems'),
   },
   {
     id: '4',
-    title: 'Writing Access Control Policy',
+    title: t('Writing Access Control Policy'),
     type: 'policy',
     status: 'pending',
-    detail: 'Incorporating your Okta SSO and role-based permissions',
+    detail: t('Incorporating your Okta SSO and role-based permissions'),
   },
   {
     id: '5',
-    title: 'Implementing Encryption Controls',
+    title: t('Implementing Encryption Controls'),
     type: 'control',
     status: 'pending',
-    detail: 'Configuring TLS, data-at-rest, and key management standards',
+    detail: t('Configuring TLS, data-at-rest, and key management standards'),
   },
   {
     id: '6',
-    title: 'Auditing GitHub Security',
+    title: t('Auditing GitHub Security'),
     type: 'vendor',
     status: 'pending',
-    detail: 'Reviewing branch protection, access controls, and audit logs',
+    detail: t('Reviewing branch protection, access controls, and audit logs'),
   },
   {
     id: '7',
-    title: 'Creating Incident Response Plan',
+    title: t('Creating Incident Response Plan'),
     type: 'policy',
     status: 'pending',
-    detail: 'Building runbooks for security events and data breaches',
+    detail: t('Building runbooks for security events and data breaches'),
   },
   {
     id: '8',
-    title: 'Collecting AWS Evidence',
+    title: t('Collecting AWS Evidence'),
     type: 'evidence',
     status: 'pending',
-    detail: 'Gathering CloudTrail logs, IAM policies, and security configurations',
+    detail: t('Gathering CloudTrail logs, IAM policies, and security configurations'),
   },
   {
     id: '9',
-    title: 'Evaluating Third-Party Risks',
+    title: t('Evaluating Third-Party Risks'),
     type: 'risk',
     status: 'pending',
-    detail: 'Scoring vendor security posture and compliance gaps',
+    detail: t('Scoring vendor security posture and compliance gaps'),
   },
   {
     id: '10',
-    title: 'Drafting Data Retention Policy',
+    title: t('Drafting Data Retention Policy'),
     type: 'policy',
     status: 'pending',
-    detail: 'Aligning with GDPR requirements and business needs',
+    detail: t('Aligning with GDPR requirements and business needs'),
   },
   {
     id: '11',
-    title: 'Monitoring Security Posture',
+    title: t('Monitoring Security Posture'),
     type: 'evidence',
     status: 'pending',
-    detail: 'Continuous compliance checks across cloud infrastructure',
+    detail: t('Continuous compliance checks across cloud infrastructure'),
   },
   {
     id: '12',
-    title: 'Building Vendor Management Program',
+    title: t('Building Vendor Management Program'),
     type: 'control',
     status: 'pending',
-    detail: 'Establishing review cycles and risk assessment workflows',
+    detail: t('Establishing review cycles and risk assessment workflows'),
   },
 ];
 
@@ -148,7 +149,8 @@ const getIcon = (type: WorkItem['type']) => {
 };
 
 export function AiWorkPreview() {
-  const [workItems, setWorkItems] = useState<WorkItem[]>(INITIAL_WORK_ITEMS);
+  const t = useGT();
+  const [workItems, setWorkItems] = useState<WorkItem[]>(getInitialWorkItems(t));
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
@@ -243,14 +245,20 @@ export function AiWorkPreview() {
           <Sparkles className="h-6 w-6 text-purple-600 dark:text-purple-400" />
         </div>
         <div className="flex flex-col gap-4">
-          <p className="text-2xl font-bold">Our AI is getting you audit-ready</p>
-          <p className="text-md">
-            We have begun drafting personalized policies, researching vendor compliance, and
-            assessing potential risks to get you audit-ready.
-          </p>
-          <p className="text-md">
-            Select a plan to gain access to your personalized compliance program.
-          </p>
+          <T>
+            <p className="text-2xl font-bold">Our AI is getting you audit-ready</p>
+          </T>
+          <T>
+            <p className="text-md">
+              We have begun drafting personalized policies, researching vendor compliance, and
+              assessing potential risks to get you audit-ready.
+            </p>
+          </T>
+          <T>
+            <p className="text-md">
+              Select a plan to gain access to your personalized compliance program.
+            </p>
+          </T>
         </div>
       </div>
       <Separator />

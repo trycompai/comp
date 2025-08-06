@@ -4,8 +4,9 @@
 
 import { db, PolicyStatus } from '@db';
 import { revalidatePath, revalidateTag } from 'next/cache';
+import { getGT } from 'gt-next/server';
 import { authActionClient } from '../safe-action';
-import { updatePolicyFormSchema } from '../schema';
+import { getUpdatePolicyFormSchema } from '../schema';
 
 // Helper function to calculate next review date based on frequency
 function calculateNextReviewDate(frequency: string, baseDate: Date = new Date()): Date {
@@ -30,7 +31,10 @@ function calculateNextReviewDate(frequency: string, baseDate: Date = new Date())
 }
 
 export const updatePolicyFormAction = authActionClient
-  .inputSchema(updatePolicyFormSchema)
+  .inputSchema(async () => {
+    const t = await getGT();
+    return getUpdatePolicyFormSchema(t);
+  })
   .metadata({
     name: 'update-policy-form',
     track: {
@@ -40,12 +44,13 @@ export const updatePolicyFormAction = authActionClient
     },
   })
   .action(async ({ parsedInput, ctx }) => {
+    const t = await getGT();
     const { id, status, assigneeId, department, review_frequency, review_date, isRequiredToSign } =
       parsedInput;
     const { user, session } = ctx;
 
     if (!user.id || !session.activeOrganizationId) {
-      throw new Error('Unauthorized');
+      throw new Error(t('Unauthorized'));
     }
 
     try {

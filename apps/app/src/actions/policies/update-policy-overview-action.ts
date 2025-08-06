@@ -4,11 +4,15 @@
 
 import { db } from '@db';
 import { revalidatePath } from 'next/cache';
+import { getGT } from 'gt-next/server';
 import { authActionClient } from '../safe-action';
-import { updatePolicyOverviewSchema } from '../schema';
+import { getUpdatePolicyOverviewSchema } from '../schema';
 
 export const updatePolicyOverviewAction = authActionClient
-  .inputSchema(updatePolicyOverviewSchema)
+  .inputSchema(async () => {
+    const t = await getGT();
+    return getUpdatePolicyOverviewSchema(t);
+  })
   .metadata({
     name: 'update-policy-overview',
     track: {
@@ -18,20 +22,21 @@ export const updatePolicyOverviewAction = authActionClient
     },
   })
   .action(async ({ parsedInput, ctx }) => {
+    const t = await getGT();
     const { id, title, description, isRequiredToSign } = parsedInput;
     const { user, session } = ctx;
 
     if (!user) {
       return {
         success: false,
-        error: 'Not authorized',
+        error: t('Not authorized'),
       };
     }
 
     if (!session.activeOrganizationId) {
       return {
         success: false,
-        error: 'Not authorized',
+        error: t('Not authorized'),
       };
     }
 
@@ -43,7 +48,7 @@ export const updatePolicyOverviewAction = authActionClient
       if (!policy) {
         return {
           success: false,
-          error: 'Policy not found',
+          error: t('Policy not found'),
         };
       }
 
@@ -72,7 +77,7 @@ export const updatePolicyOverviewAction = authActionClient
     } catch (error) {
       return {
         success: false,
-        error: 'Failed to update policy overview',
+        error: t('Failed to update policy overview'),
       };
     }
   });

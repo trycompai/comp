@@ -2,11 +2,15 @@
 
 import { db, Departments, Frequency } from '@db';
 import { revalidatePath, revalidateTag } from 'next/cache';
+import { getGT } from 'gt-next/server';
 import { authActionClient } from '../safe-action';
-import { createPolicySchema } from '../schema';
+import { getCreatePolicySchema } from '../schema';
 
 export const createPolicyAction = authActionClient
-  .inputSchema(createPolicySchema)
+  .inputSchema(async () => {
+    const t = await getGT();
+    return getCreatePolicySchema(t);
+  })
   .metadata({
     name: 'create-policy',
     track: {
@@ -16,6 +20,7 @@ export const createPolicyAction = authActionClient
     },
   })
   .action(async ({ parsedInput, ctx }) => {
+    const t = await getGT();
     const { title, description, controlIds } = parsedInput;
     const { activeOrganizationId } = ctx.session;
     const { user } = ctx;
@@ -23,14 +28,14 @@ export const createPolicyAction = authActionClient
     if (!activeOrganizationId) {
       return {
         success: false,
-        error: 'Not authorized',
+        error: t('Not authorized'),
       };
     }
 
     if (!user) {
       return {
         success: false,
-        error: 'Not authorized',
+        error: t('Not authorized'),
       };
     }
 
@@ -45,7 +50,7 @@ export const createPolicyAction = authActionClient
     if (!member) {
       return {
         success: false,
-        error: 'Not authorized',
+        error: t('Not authorized'),
       };
     }
 
@@ -68,7 +73,7 @@ export const createPolicyAction = authActionClient
           ...(controlIds &&
             controlIds.length > 0 && {
               controls: {
-                connect: controlIds.map((id) => ({ id })),
+                connect: controlIds.map((id: string) => ({ id })),
               },
             }),
         },
@@ -116,7 +121,7 @@ export const createPolicyAction = authActionClient
 
       return {
         success: false,
-        error: 'Failed to create policy',
+        error: t('Failed to create policy'),
       };
     }
   });

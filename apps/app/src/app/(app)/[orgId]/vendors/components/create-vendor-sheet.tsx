@@ -6,6 +6,7 @@ import { useMediaQuery } from '@comp/ui/hooks';
 import { ScrollArea } from '@comp/ui/scroll-area';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@comp/ui/sheet';
 import { Member, User } from '@db';
+import { T } from 'gt-next';
 import { X } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import { CreateVendorForm } from './create-vendor-form';
@@ -24,7 +25,9 @@ export function CreateVendorSheet({ assignees }: { assignees: (Member & { user: 
       <Sheet open={isOpen} onOpenChange={handleOpenChange}>
         <SheetContent stack>
           <SheetHeader className="mb-8 flex flex-row items-center justify-between">
-            <SheetTitle>{'Create Vendor'}</SheetTitle>
+            <SheetTitle>
+              <T>Create Vendor</T>
+            </SheetTitle>
             <Button
               size="icon"
               variant="ghost"
@@ -45,7 +48,9 @@ export function CreateVendorSheet({ assignees }: { assignees: (Member & { user: 
 
   return (
     <Drawer open={isOpen} onOpenChange={handleOpenChange}>
-      <DrawerTitle hidden>{'Create Vendor'}</DrawerTitle>
+      <DrawerTitle hidden>
+        <T>Create Vendor</T>
+      </DrawerTitle>
       <DrawerContent className="p-6">
         <CreateVendorForm assignees={assignees} />
       </DrawerContent>

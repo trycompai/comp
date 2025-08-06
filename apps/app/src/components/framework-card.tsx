@@ -3,6 +3,7 @@
 import { Checkbox } from '@comp/ui/checkbox';
 import { cn } from '@comp/ui/cn';
 import type { FrameworkEditorFramework } from '@db';
+import { T, Var } from 'gt-next';
 
 type FrameworkCardProps = {
   framework: Pick<FrameworkEditorFramework, 'id' | 'name' | 'description' | 'version' | 'visible'>;
@@ -49,7 +50,7 @@ export function FrameworkCard({
                     : 'bg-muted text-muted-foreground',
                 )}
               >
-                v{framework.version}
+<T>v<Var>{framework.version}</Var></T>
               </span>
             </div>
           </div>

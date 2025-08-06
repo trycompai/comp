@@ -2,10 +2,11 @@
 
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { Suspense } from 'react';
+import { T, useGT } from 'gt-next';
 
 import { cn } from '@comp/ui/cn';
 import { Table, TableBody, TableCell, TableRow } from '@comp/ui/table';
-import { type PolicyType, useColumns as getColumns } from './columns';
+import { type PolicyType, getUseColumns } from './columns';
 import { DataTableHeader } from './data-table-header';
 import { DataTablePagination } from './data-table-pagination';
 import { Loading } from './loading';
@@ -27,8 +28,9 @@ export function DataTable<TData, TValue>({
   pageCount,
   currentPage,
 }: DataTableProps<TData, TValue>) {
-  const clientColumns = getColumns();
-  const columns = clientColumns.map((col) => ({
+  const t = useGT();
+  const clientColumns = getUseColumns(t);
+  const columns = clientColumns.map((col: any) => ({
     ...col,
     header: columnHeaders[col.id as keyof typeof columnHeaders],
   }));
@@ -69,7 +71,7 @@ export function DataTable<TData, TValue>({
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No results.
+                  <T>No results.</T>
                 </TableCell>
               </TableRow>
             )}

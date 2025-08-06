@@ -4,11 +4,15 @@
 
 import { db, Impact, Likelihood } from '@db';
 import { revalidatePath, revalidateTag } from 'next/cache';
+import { getGT } from 'gt-next/server';
 import { authActionClient } from '../safe-action';
-import { createRiskSchema } from '../schema';
+import { getCreateRiskSchema } from '../schema';
 
 export const createRiskAction = authActionClient
-  .inputSchema(createRiskSchema)
+  .inputSchema(async () => {
+    const t = await getGT();
+    return getCreateRiskSchema(t);
+  })
   .metadata({
     name: 'create-risk',
     track: {
@@ -17,11 +21,12 @@ export const createRiskAction = authActionClient
     },
   })
   .action(async ({ parsedInput, ctx }) => {
+    const t = await getGT();
     const { title, description, category, department, assigneeId } = parsedInput;
     const { user, session } = ctx;
 
     if (!user.id || !session.activeOrganizationId) {
-      throw new Error('Invalid user input');
+      throw new Error(t('Invalid user input'));
     }
 
     try {

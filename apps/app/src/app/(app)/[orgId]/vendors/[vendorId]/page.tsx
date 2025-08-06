@@ -3,6 +3,7 @@
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { auth } from '@/utils/auth';
 import { AttachmentEntityType, CommentEntityType, db } from '@db';
+import { getGT } from 'gt-next/server';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -178,7 +179,8 @@ const getAssignees = cache(async () => {
 });
 
 export async function generateMetadata(): Promise<Metadata> {
+  const t = await getGT();
   return {
-    title: 'Vendors',
+    title: t('Vendors'),
   };
 }

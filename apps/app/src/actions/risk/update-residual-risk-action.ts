@@ -3,7 +3,8 @@
 import { db, Impact, Likelihood } from '@db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { authActionClient } from '../safe-action';
-import { updateResidualRiskSchema } from '../schema';
+import { getUpdateResidualRiskSchema } from '../schema';
+import { getGT } from 'gt-next/server';
 
 function mapNumericToImpact(value: number): Impact {
   if (value <= 2) return Impact.insignificant;
@@ -22,7 +23,10 @@ function mapNumericToLikelihood(value: number): Likelihood {
 }
 
 export const updateResidualRiskAction = authActionClient
-  .inputSchema(updateResidualRiskSchema)
+  .inputSchema(async () => {
+    const t = await getGT();
+    return getUpdateResidualRiskSchema(t);
+  })
   .metadata({
     name: 'update-residual-risk',
     track: {

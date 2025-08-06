@@ -5,7 +5,8 @@
 import { db } from '@db';
 import { revalidatePath } from 'next/cache';
 import { authActionClient } from '../safe-action';
-import { deleteOrganizationSchema } from '../schema';
+import { getDeleteOrganizationSchema } from '../schema';
+import { getGT } from 'gt-next/server';
 
 type DeleteOrganizationResult = {
   success: boolean;
@@ -13,7 +14,10 @@ type DeleteOrganizationResult = {
 };
 
 export const deleteOrganizationAction = authActionClient
-  .inputSchema(deleteOrganizationSchema)
+  .inputSchema(async () => {
+    const t = await getGT();
+    return getDeleteOrganizationSchema(t);
+  })
   .metadata({
     name: 'delete-organization',
     track: {

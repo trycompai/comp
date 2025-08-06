@@ -1,5 +1,6 @@
 import { getOrganizationUsersAction } from '@/actions/organization/get-organization-users-action';
 import { auth } from '@/utils/auth';
+import { T } from 'gt-next';
 import { headers } from 'next/headers';
 
 export async function MembersTable() {
@@ -9,5 +10,5 @@ export async function MembersTable() {
 
   const members = await getOrganizationUsersAction();
 
-  return <div>MembersTable</div>;
+  return <div><T>MembersTable</T></div>;
 }

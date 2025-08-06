@@ -5,6 +5,7 @@ import { Button } from '@comp/ui/button';
 import { Label } from '@comp/ui/label';
 import { Textarea } from '@comp/ui/textarea';
 import type { AttachmentEntityType } from '@db';
+import { T, useGT, Var, Branch } from 'gt-next';
 import { Loader2, Paperclip, Plus } from 'lucide-react';
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -23,9 +24,9 @@ interface TaskBodyProps {
 }
 
 // Helper function to provide user-friendly error messages
-function getErrorMessage(errorMessage: string): string {
+function getErrorMessage(errorMessage: string, t: (str: string) => string): string {
   // Simplified error handling since API errors are already user-friendly
-  return errorMessage || 'Failed to upload file. Please try again.';
+  return errorMessage || t('Failed to upload file. Please try again.');
 }
 
 export function TaskBody({
@@ -40,6 +41,7 @@ export function TaskBody({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [busyAttachmentId, setBusyAttachmentId] = useState<string | null>(null);
+  const t = useGT();
 
   // Auto-resize function for textarea
   const autoResizeTextarea = useCallback(() => {
@@ -93,14 +95,14 @@ export function TaskBody({
           const MAX_FILE_SIZE_MB = 10;
           const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
           if (file.size > MAX_FILE_SIZE_BYTES) {
-            toast.error(`File "${file.name}" exceeds the ${MAX_FILE_SIZE_MB}MB limit.`);
+            toast.error(t('File "{filename}" exceeds the {sizeLimit}MB limit.', { filename: file.name, sizeLimit: MAX_FILE_SIZE_MB }));
             return resolve(null); // Resolve to skip this file
           }
 
           // Use the API hook's uploadAttachment method
           uploadAttachment(file)
             .then((result) => {
-              toast.success(`File "${file.name}" uploaded successfully.`);
+              toast.success(t('File "{filename}" uploaded successfully.', { filename: file.name }));
               // Refresh attachments via SWR after successful upload
               refreshAttachments();
               resolve(result);
@@ -109,8 +111,9 @@ export function TaskBody({
               console.error(`Failed to upload ${file.name}:`, error);
               const userFriendlyMessage = getErrorMessage(
                 error instanceof Error ? error.message : 'Unknown error',
+                t
               );
-              toast.error(`Failed to upload ${file.name}: ${userFriendlyMessage}`);
+              toast.error(t('Failed to upload {filename}: {errorMessage}', { filename: file.name, errorMessage: userFriendlyMessage }));
               resolve(null); // Resolve even if there's an error to not break Promise.all
             });
         });
@@ -136,7 +139,7 @@ export function TaskBody({
       window.open(downloadUrl, '_blank');
     } catch (error) {
       console.error('Failed to get download URL:', error);
-      toast.error('Failed to get download URL. Please try again.');
+      toast.error(t('Failed to get download URL. Please try again.'));
     } finally {
       setBusyAttachmentId(null);
     }
@@ -147,12 +150,12 @@ export function TaskBody({
       setBusyAttachmentId(attachmentId);
       try {
         await deleteAttachment(attachmentId);
-        toast.success('Attachment deleted successfully.');
+        toast.success(t('Attachment deleted successfully.'));
         // Refresh attachments via SWR instead of manual router refresh
         refreshAttachments();
       } catch (error) {
         console.error('Failed to delete attachment:', error);
-        toast.error('Failed to delete attachment. Please try again.');
+        toast.error(t('Failed to delete attachment. Please try again.'));
       } finally {
         setBusyAttachmentId(null);
       }
@@ -166,7 +169,7 @@ export function TaskBody({
         value={title}
         onChange={onTitleChange}
         className="h-auto shrink-0 border-none bg-transparent p-0 md:text-lg font-semibold tracking-tight shadow-none focus-visible:ring-0"
-        placeholder="Task Title"
+        placeholder={t('Task Title')}
         disabled={disabled || isUploading || !!busyAttachmentId}
       />
       <Textarea
@@ -177,7 +180,7 @@ export function TaskBody({
           // Auto-resize after onChange to handle programmatic changes
           setTimeout(autoResizeTextarea, 0);
         }}
-        placeholder="Add description..."
+        placeholder={t('Add description...')}
         className="text-muted-foreground text-md min-h-[80px] resize-none border-none p-2 shadow-none focus-visible:ring-0"
         disabled={disabled || isUploading || !!busyAttachmentId}
         style={{
@@ -195,7 +198,9 @@ export function TaskBody({
       />
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <Label className="flex-1 text-sm font-medium">Attachments</Label>
+          <T>
+            <Label className="flex-1 text-sm font-medium">Attachments</Label>
+          </T>
           {/* Show loading state while fetching attachments or when data hasn't loaded yet */}
           {attachmentsLoading || attachmentsData === undefined ? (
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
@@ -207,7 +212,7 @@ export function TaskBody({
                 onClick={triggerFileInput}
                 disabled={isUploading || !!busyAttachmentId}
                 className="text-muted-foreground hover:text-foreground flex h-7 w-7 items-center justify-center"
-                aria-label="Add attachment"
+                aria-label={t('Add attachment')}
               >
                 {isUploading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -221,7 +226,9 @@ export function TaskBody({
 
         {/* Show error state if attachments failed to load */}
         {attachmentsError && (
-          <p className="text-destructive text-sm">Failed to load attachments. Please try again.</p>
+          <T>
+            <p className="text-destructive text-sm">Failed to load attachments. Please try again.</p>
+          </T>
         )}
 
         {(attachmentsLoading || attachmentsData === undefined) && (
@@ -263,28 +270,32 @@ export function TaskBody({
           !attachmentsError &&
           !isUploading &&
           attachmentsData && (
-            <p className="text-muted-foreground pt-1 text-sm italic">
-              No attachments yet. Click the <Paperclip className="inline h-4 w-4" /> icon above to
-              add one.
-            </p>
+            <T>
+              <p className="text-muted-foreground pt-1 text-sm italic">
+                No attachments yet. Click the <Paperclip className="inline h-4 w-4" /> icon above to
+                add one.
+              </p>
+            </T>
           )
         )}
 
         {!attachmentsLoading && attachmentsData !== undefined && attachments.length > 0 && (
-          <Button
-            variant="outline"
-            onClick={triggerFileInput}
-            disabled={isUploading || !!busyAttachmentId || attachmentsLoading}
-            className="mt-2 w-full justify-center gap-2"
-            aria-label="Add attachment"
-          >
-            {isUploading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Plus className="h-4 w-4" />
-            )}
-            Add Attachment
-          </Button>
+          <T>
+            <Button
+              variant="outline"
+              onClick={triggerFileInput}
+              disabled={isUploading || !!busyAttachmentId || attachmentsLoading}
+              className="mt-2 w-full justify-center gap-2"
+              aria-label={t('Add attachment')}
+            >
+              <Branch
+                branch={isUploading.toString()}
+                true={<Loader2 className="h-4 w-4 animate-spin" />}
+                false={<Plus className="h-4 w-4" />}
+              />
+              Add Attachment
+            </Button>
+          </T>
         )}
       </div>
     </div>

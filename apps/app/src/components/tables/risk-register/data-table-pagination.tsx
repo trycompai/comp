@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback } from 'react';
+import { useGT } from 'gt-next';
 
 interface DataTablePaginationProps {
   pageCount: number;
@@ -12,6 +13,7 @@ interface DataTablePaginationProps {
 }
 
 export function DataTablePagination({ pageCount, currentPage }: DataTablePaginationProps) {
+  const t = useGT();
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
@@ -61,7 +63,7 @@ export function DataTablePagination({ pageCount, currentPage }: DataTablePaginat
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <div className="flex w-[60px] items-center justify-center text-sm font-medium">
-          {currentPage} of {pageCount}
+          {currentPage} {t('of')} {pageCount}
         </div>
         <Button
           variant="outline"

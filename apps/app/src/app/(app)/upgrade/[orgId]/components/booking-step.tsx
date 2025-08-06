@@ -4,6 +4,7 @@ import { Button } from '@comp/ui/button';
 import { Card } from '@comp/ui/card';
 import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import { T, Branch, Var } from 'gt-next';
 
 export function BookingStep({
   email,
@@ -20,13 +21,6 @@ export function BookingStep({
   complianceFrameworks: string[];
   hasAccess: boolean;
 }) {
-  const title = !hasAccess ? `Let's get ${company} approved` : 'Talk to us to upgrade';
-
-  const description = !hasAccess
-    ? `A quick 20-minute call with our team to understand your compliance needs and approve your organization for access.`
-    : `A quick 20-minute call with our team to understand your compliance needs and upgrade your plan.`;
-
-  const cta = !hasAccess ? 'Book Your Demo' : 'Book a Call';
 
   return (
     <div className="flex justify-center w-full animate-in fade-in-50 duration-500">
@@ -34,8 +28,24 @@ export function BookingStep({
         <div className="p-8 space-y-8">
           {/* Header */}
           <div className="text-center space-y-3 mb-6">
-            <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-            <p className="text-muted-foreground text-base max-w-xl mx-auto">{description}</p>
+            <T>
+              <h1 className="text-2xl font-semibold tracking-tight">
+                <Branch
+                  branch={hasAccess.toString()}
+                  true="Talk to us to upgrade"
+                  false={<>Let's get <Var>{company}</Var> approved</>}
+                />
+              </h1>
+            </T>
+            <T>
+              <p className="text-muted-foreground text-base max-w-xl mx-auto">
+                <Branch
+                  branch={hasAccess.toString()}
+                  true="A quick 20-minute call with our team to understand your compliance needs and upgrade your plan."
+                  false="A quick 20-minute call with our team to understand your compliance needs and approve your organization for access."
+                />
+              </p>
+            </T>
           </div>
 
           {/* CTA Button */}
@@ -45,17 +55,25 @@ export function BookingStep({
               target="_blank"
               rel="noopener noreferrer"
             >
-              <Button size="lg" className="min-w-[200px]">
-                {cta} <ArrowRight className="w-4 h-4" />
-              </Button>
+              <T>
+                <Button size="lg" className="min-w-[200px]">
+                  <Branch
+                    branch={hasAccess.toString()}
+                    true="Book a Call"
+                    false="Book Your Demo"
+                  /> <ArrowRight className="w-4 h-4" />
+                </Button>
+              </T>
             </Link>
           </div>
 
           {/* Already spoke to us section */}
           <div className="border-gray-200 dark:border-gray-800">
-            <p className="text-center text-sm text-muted-foreground">
-              Already had a demo? Ask your point of contact to activate your account.
-            </p>
+            <T>
+              <p className="text-center text-sm text-muted-foreground">
+                Already had a demo? Ask your point of contact to activate your account.
+              </p>
+            </T>
           </div>
         </div>
       </Card>

@@ -4,11 +4,13 @@ import { cn } from '@comp/ui/cn';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
 import { format } from 'date-fns';
+import { T, useGT } from 'gt-next';
 import { CalendarIcon } from 'lucide-react';
 import type { Control } from 'react-hook-form';
 import type { EmployeeFormValues } from '../EmployeeDetails';
 
 export const JoinDate = ({ control }: { control: Control<EmployeeFormValues> }) => {
+  const t = useGT();
   return (
     <FormField
       control={control}
@@ -16,7 +18,7 @@ export const JoinDate = ({ control }: { control: Control<EmployeeFormValues> }) 
       render={({ field }) => (
         <FormItem className="flex flex-col">
           <FormLabel className="text-muted-foreground text-xs font-medium uppercase">
-            Join Date
+            <T>Join Date</T>
           </FormLabel>
           <Popover>
             <PopoverTrigger asChild>
@@ -28,7 +30,7 @@ export const JoinDate = ({ control }: { control: Control<EmployeeFormValues> }) 
                     !field.value && 'text-muted-foreground',
                   )}
                 >
-                  {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
+                  {field.value ? format(field.value, 'PPP') : <T><span>Pick a date</span></T>}
                   <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                 </Button>
               </FormControl>

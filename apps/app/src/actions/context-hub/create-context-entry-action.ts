@@ -3,16 +3,21 @@
 import { db } from '@db';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
+import { getGT } from 'gt-next/server';
 import { authActionClient } from '../safe-action';
-import { createContextEntrySchema } from '../schema';
+import { getCreateContextEntrySchema } from '../schema';
 
 export const createContextEntryAction = authActionClient
-  .inputSchema(createContextEntrySchema)
+  .inputSchema(async () => {
+    const t = await getGT();
+    return getCreateContextEntrySchema(t);
+  })
   .metadata({ name: 'create-context-entry' })
   .action(async ({ parsedInput, ctx }) => {
+    const t = await getGT();
     const { question, answer, tags } = parsedInput;
     const organizationId = ctx.session.activeOrganizationId;
-    if (!organizationId) throw new Error('No active organization');
+    if (!organizationId) throw new Error(t('No active organization'));
 
     await db.context.create({
       data: {
@@ -21,7 +26,7 @@ export const createContextEntryAction = authActionClient
         tags: tags
           ? tags
               .split(',')
-              .map((t) => t.trim())
+              .map((tag) => tag.trim())
               .filter(Boolean)
           : [],
         organizationId,

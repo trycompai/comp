@@ -3,10 +3,14 @@
 import { db } from '@db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { authActionClient } from '../safe-action';
-import { updateResidualRiskEnumSchema } from '../schema'; // Use the new enum schema
+import { getUpdateResidualRiskEnumSchema } from '../schema'; // Use the new enum schema
+import { getGT } from 'gt-next/server';
 
 export const updateResidualRiskEnumAction = authActionClient
-  .inputSchema(updateResidualRiskEnumSchema) // Use the new enum schema
+  .inputSchema(async () => {
+    const t = await getGT();
+    return getUpdateResidualRiskEnumSchema(t);
+  }) // Use the new enum schema
   .metadata({
     name: 'update-residual-risk-enum', // New name
     track: {

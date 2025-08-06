@@ -7,6 +7,7 @@ import { useMediaQuery } from '@comp/ui/hooks';
 import { ScrollArea } from '@comp/ui/scroll-area';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@comp/ui/sheet';
 import type { Vendor } from '@db';
+import { useGT } from 'gt-next';
 import { X } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 
@@ -20,6 +21,7 @@ export function VendorResidualRiskSheet({
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const [isOpen, setOpen] = useQueryState('residual-risk-sheet');
   const open = isOpen === 'true';
+  const t = useGT();
 
   if (isDesktop) {
     return (
@@ -27,7 +29,7 @@ export function VendorResidualRiskSheet({
         <SheetContent stack>
           <SheetHeader className="mb-8">
             <div className="flex flex-row items-center justify-between">
-              <SheetTitle>{'Update Residual Risk'}</SheetTitle>
+              <SheetTitle>{t('Update Residual Risk')}</SheetTitle>
               <Button
                 size="icon"
                 variant="ghost"
@@ -37,7 +39,7 @@ export function VendorResidualRiskSheet({
                 <X className="h-5 w-5" />
               </Button>
             </div>
-            <SheetDescription>{'Select the residual risk level for this vendor'}</SheetDescription>
+            <SheetDescription>{t('Select the residual risk level for this vendor')}</SheetDescription>
           </SheetHeader>
 
           <ScrollArea className="h-full p-0 pb-[100px]" hideScrollbar>
@@ -54,7 +56,7 @@ export function VendorResidualRiskSheet({
 
   return (
     <Drawer open={open}>
-      <DrawerTitle hidden>{'Update Residual Risk'}</DrawerTitle>
+      <DrawerTitle hidden>{t('Update Residual Risk')}</DrawerTitle>
       <DrawerContent className="p-6">
         <ResidualRiskForm
           vendorId={vendorId}

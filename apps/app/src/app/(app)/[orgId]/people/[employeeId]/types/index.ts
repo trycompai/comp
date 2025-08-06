@@ -42,6 +42,24 @@ export type AppError = {
   message: string;
 };
 
+import { InlineTranslationOptions } from 'gt-next/types';
+
+export const getAppErrors = (t: (content: string, options?: InlineTranslationOptions) => string) => ({
+  NOT_FOUND: {
+    code: 'NOT_FOUND' as const,
+    message: t('Employee not found'),
+  },
+  UNAUTHORIZED: {
+    code: 'UNAUTHORIZED' as const,
+    message: t('You are not authorized to view this employee'),
+  },
+  UNEXPECTED_ERROR: {
+    code: 'UNEXPECTED_ERROR' as const,
+    message: t('An unexpected error occurred'),
+  },
+} as const);
+
+// Legacy export for backward compatibility
 export const appErrors = {
   NOT_FOUND: {
     code: 'NOT_FOUND' as const,

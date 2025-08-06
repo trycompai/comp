@@ -6,6 +6,7 @@ import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
+import { getGT } from 'gt-next/server';
 interface PageProps {
   params: Promise<{ riskId: string; taskId: string }>;
 }
@@ -49,7 +50,9 @@ const getTask = cache(async (riskId: string, taskId: string) => {
 });
 
 export async function generateMetadata(): Promise<Metadata> {
+  const t = await getGT();
+
   return {
-    title: 'Task Overview',
+    title: t('Task Overview'),
   };
 }

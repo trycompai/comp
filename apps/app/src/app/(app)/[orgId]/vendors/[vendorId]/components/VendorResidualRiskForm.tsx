@@ -1,11 +1,13 @@
 'use client';
 
 import { updateResidualRiskAction } from '@/actions/risk/update-residual-risk-action';
-import { updateResidualRiskSchema } from '@/actions/schema';
+import { getUpdateResidualRiskSchema } from '@/actions/schema';
+import React from 'react';
 import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel } from '@comp/ui/form';
 import { Slider } from '@comp/ui/slider';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useGT } from 'gt-next';
 import { Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useQueryState } from 'nuqs';
@@ -31,6 +33,8 @@ export function VendorResidualRiskForm({
   initialImpact,
 }: ResidualRiskFormProps) {
   const [_, setOpen] = useQueryState('residual-risk-sheet');
+  const t = useGT();
+  const updateResidualRiskSchema = React.useMemo(() => getUpdateResidualRiskSchema(t), [t]);
 
   const form = useForm<z.infer<typeof updateResidualRiskSchema>>({
     resolver: zodResolver(updateResidualRiskSchema),
@@ -43,15 +47,15 @@ export function VendorResidualRiskForm({
 
   const updateResidualRisk = useAction(updateResidualRiskAction, {
     onSuccess: () => {
-      toast.success('Residual risk updated successfully');
+      toast.success(t('Residual risk updated successfully'));
       setOpen(null);
     },
     onError: () => {
-      toast.error('Failed to update residual risk');
+      toast.error(t('Failed to update residual risk'));
     },
   });
 
-  const onSubmit = (data: z.infer<typeof updateResidualRiskSchema>) => {
+  const onSubmit = (data: z.infer<ReturnType<typeof getUpdateResidualRiskSchema>>) => {
     updateResidualRisk.execute(data);
   };
 
@@ -63,7 +67,7 @@ export function VendorResidualRiskForm({
           name="probability"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>{'Probability'}</FormLabel>
+              <FormLabel>{t('Probability')}</FormLabel>
               <FormControl>
                 <Slider
                   min={1}
@@ -84,7 +88,7 @@ export function VendorResidualRiskForm({
           name="impact"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>{'Impact'}</FormLabel>
+              <FormLabel>{t('Impact')}</FormLabel>
               <FormControl>
                 <Slider
                   min={1}
@@ -109,7 +113,7 @@ export function VendorResidualRiskForm({
             {updateResidualRisk.status === 'executing' ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              'Save'
+              t('Save')
             )}
           </Button>
         </div>

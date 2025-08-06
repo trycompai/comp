@@ -8,6 +8,7 @@ import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
+import { getGT } from 'gt-next/server';
 import { Comments, CommentWithAuthor } from '../../../../../components/comments/Comments';
 
 interface PageProps {
@@ -23,6 +24,7 @@ interface PageProps {
 
 export default async function RiskPage({ searchParams, params }: PageProps) {
   const { riskId, orgId } = await params;
+  const t = await getGT();
   const risk = await getRisk(riskId);
   const comments = await getComments(riskId);
   const assignees = await getAssignees();
@@ -33,7 +35,7 @@ export default async function RiskPage({ searchParams, params }: PageProps) {
   return (
     <PageWithBreadcrumb
       breadcrumbs={[
-        { label: 'Risks', href: `/${orgId}/risk` },
+        { label: t('Risks'), href: `/${orgId}/risk` },
         { label: risk.title, current: true },
       ]}
     >
@@ -162,7 +164,8 @@ const getAssignees = cache(async () => {
 });
 
 export async function generateMetadata(): Promise<Metadata> {
+  const t = await getGT();
   return {
-    title: 'Risk Overview',
+    title: t('Risk Overview'),
   };
 }

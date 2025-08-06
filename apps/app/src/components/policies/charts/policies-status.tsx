@@ -3,6 +3,8 @@
 import { PieChart } from '@/components/ui/pie-chart';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { cn } from '@comp/ui/cn';
+import { T, useGT } from 'gt-next';
+import type { InlineTranslationOptions } from 'gt-next/types';
 
 interface Props {
   totalPolicies: number;
@@ -12,6 +14,33 @@ interface Props {
   needsReviewPolicies: number;
 }
 
+const getPolicyStatusData = (t: (content: string, options?: InlineTranslationOptions) => string, statusCounts: any) => [
+  {
+    name: t('Published'),
+    value: statusCounts.published,
+    color: 'var(--chart-closed)',
+    colorClass: 'bg-[var(--chart-closed)]',
+  },
+  {
+    name: t('Draft'),
+    value: statusCounts.draft,
+    color: 'var(--chart-open)',
+    colorClass: 'bg-[var(--chart-open)]',
+  },
+  {
+    name: t('Archived'),
+    value: statusCounts.archived,
+    color: 'var(--chart-pending)',
+    colorClass: 'bg-[var(--chart-pending)]',
+  },
+  {
+    name: t('Needs Review'),
+    value: statusCounts.needs_review,
+    color: 'hsl(var(--destructive))',
+    colorClass: 'bg-[hsl(var(--destructive))]',
+  },
+];
+
 export function PoliciesStatus({
   totalPolicies,
   publishedPolicies,
@@ -19,6 +48,7 @@ export function PoliciesStatus({
   archivedPolicies,
   needsReviewPolicies,
 }: Props) {
+  const t = useGT();
   const statusCounts = {
     published: publishedPolicies,
     draft: draftPolicies,
@@ -26,37 +56,12 @@ export function PoliciesStatus({
     needs_review: needsReviewPolicies,
   };
 
-  const data = [
-    {
-      name: 'Published',
-      value: statusCounts.published,
-      color: 'var(--chart-closed)',
-      colorClass: 'bg-[var(--chart-closed)]',
-    },
-    {
-      name: 'Draft',
-      value: statusCounts.draft,
-      color: 'var(--chart-open)',
-      colorClass: 'bg-[var(--chart-open)]',
-    },
-    {
-      name: 'Archived',
-      value: statusCounts.archived,
-      color: 'var(--chart-pending)',
-      colorClass: 'bg-[var(--chart-pending)]',
-    },
-    {
-      name: 'Needs Review',
-      value: statusCounts.needs_review,
-      color: 'hsl(var(--destructive))',
-      colorClass: 'bg-[hsl(var(--destructive))]',
-    },
-  ];
+  const data = getPolicyStatusData(t, statusCounts);
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{'Policy by Status'}</CardTitle>
+        <CardTitle>{t('Policy by Status')}</CardTitle>
       </CardHeader>
       <CardContent>
         <PieChart data={data} />

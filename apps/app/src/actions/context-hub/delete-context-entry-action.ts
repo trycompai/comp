@@ -3,16 +3,21 @@
 import { db } from '@db';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
+import { getGT } from 'gt-next/server';
 import { authActionClient } from '../safe-action';
-import { deleteContextEntrySchema } from '../schema';
+import { getDeleteContextEntrySchema } from '../schema';
 
 export const deleteContextEntryAction = authActionClient
-  .inputSchema(deleteContextEntrySchema)
+  .inputSchema(async () => {
+    const t = await getGT();
+    return getDeleteContextEntrySchema(t);
+  })
   .metadata({ name: 'delete-context-entry' })
   .action(async ({ parsedInput, ctx }) => {
+    const t = await getGT();
     const { id } = parsedInput;
     const organizationId = ctx.session.activeOrganizationId;
-    if (!organizationId) throw new Error('No active organization');
+    if (!organizationId) throw new Error(t('No active organization'));
 
     await db.context.delete({
       where: { id, organizationId },

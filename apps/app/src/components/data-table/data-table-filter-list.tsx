@@ -11,14 +11,26 @@ import {
 } from 'lucide-react';
 import { parseAsStringEnum, useQueryState } from 'nuqs';
 import * as React from 'react';
+import { T, Branch, useGT } from 'gt-next';
+import { getDataTableConfig } from '@/lib/data-table-config';
 
 import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
 import { getDefaultFilterOperator, getFilterOperators } from '@/lib/data-table';
-import { dataTableConfig } from '@/lib/data-table-config';
+import { DataTableConfig } from '@/lib/data-table-config';
 import { formatDate } from '@/lib/format';
 import { generateId } from '@/lib/id';
 import { getFiltersStateParser } from '@/lib/parsers';
 import type { ExtendedColumnFilter, FilterOperator, JoinOperator } from '@/types/data-table';
+
+// Type guard for filter values
+const asString = (value: unknown): string => {
+  return typeof value === 'string' ? value : String(value || '');
+};
+
+const asStringArray = (value: unknown): string[] => {
+  if (Array.isArray(value)) return value.map(asString);
+  return [asString(value)];
+};
 import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
 import { Calendar } from '@comp/ui/calendar';
@@ -75,6 +87,8 @@ export function DataTableFilterList<TData>({
   shallow = true,
   ...props
 }: DataTableFilterListProps<TData>) {
+  const t = useGT();
+  const dataTableConfig = React.useMemo(() => getDataTableConfig(t), [t]);
   const id = React.useId();
   const labelId = React.useId();
   const descriptionId = React.useId();
@@ -116,7 +130,7 @@ export function DataTableFilterList<TData>({
         id: column.id as Extract<keyof TData, string>,
         value: '',
         variant: column.columnDef.meta?.variant ?? 'text',
-        operator: getDefaultFilterOperator(column.columnDef.meta?.variant ?? 'text'),
+        operator: getDefaultFilterOperator(column.columnDef.meta?.variant ?? 'text', t),
         filterId: generateId({ length: 8 }),
       },
     ]);
@@ -198,7 +212,7 @@ export function DataTableFilterList<TData>({
         <PopoverTrigger asChild>
           <Button variant="outline" size="sm" onKeyDown={onTriggerKeyDown}>
             <ListFilter />
-            Filter
+            <T>Filter</T>
             {filters.length > 0 && (
               <Badge
                 variant="secondary"
@@ -216,17 +230,27 @@ export function DataTableFilterList<TData>({
           {...props}
         >
           <div className="relative flex flex-col gap-1">
-            <h4 id={labelId} className="leading-none font-medium">
-              {filters.length > 0 ? 'Filters' : 'No filters applied'}
-            </h4>
-            <p
-              id={descriptionId}
-              className={cn('text-muted-foreground text-sm', filters.length > 0 && 'sr-only')}
-            >
-              {filters.length > 0
-                ? 'Modify filters to refine your rows.'
-                : 'Add filters to refine your rows.'}
-            </p>
+            <T>
+              <h4 id={labelId} className="leading-none font-medium">
+                <Branch
+                  branch={(filters.length > 0).toString()}
+                  true="Filters"
+                  false="No filters applied"
+                />
+              </h4>
+            </T>
+            <T>
+              <p
+                id={descriptionId}
+                className={cn('text-muted-foreground text-sm', filters.length > 0 && 'sr-only')}
+              >
+                <Branch
+                  branch={(filters.length > 0).toString()}
+                  true="Modify filters to refine your rows."
+                  false="Add filters to refine your rows."
+                />
+              </p>
+            </T>
           </div>
           {filters.length > 0 ? (
             <SortableContent asChild>
@@ -249,11 +273,11 @@ export function DataTableFilterList<TData>({
           ) : null}
           <div className="flex w-full items-center gap-2">
             <Button size="sm" className="rounded-sm" ref={addButtonRef} onClick={onFilterAdd}>
-              Add filter
+              <T>Add filter</T>
             </Button>
             {filters.length > 0 ? (
               <Button variant="outline" size="sm" className="rounded-sm" onClick={onFiltersReset}>
-                Reset filters
+                <T>Reset filters</T>
               </Button>
             ) : null}
           </div>
@@ -297,6 +321,8 @@ function DataTableFilterItem<TData>({
   onFilterUpdate,
   onFilterRemove,
 }: DataTableFilterItemProps<TData>) {
+  const t = useGT();
+  const dataTableConfig = React.useMemo(() => getDataTableConfig(t), [t]);
   const [showFieldSelector, setShowFieldSelector] = React.useState(false);
   const [showOperatorSelector, setShowOperatorSelector] = React.useState(false);
   const [showValueSelector, setShowValueSelector] = React.useState(false);
@@ -328,7 +354,7 @@ function DataTableFilterItem<TData>({
   const inputId = `${filterItemId}-input`;
 
   const columnMeta = column.columnDef.meta;
-  const filterOperators = getFilterOperators(filter.variant);
+  const filterOperators = getFilterOperators(filter.variant, t);
 
   return (
     <SortableItem value={filter.filterId} asChild>
@@ -340,14 +366,16 @@ function DataTableFilterItem<TData>({
       >
         <div className="min-w-[72px] text-center">
           {index === 0 ? (
-            <span className="text-muted-foreground text-sm">Where</span>
+            <T>
+              <span className="text-muted-foreground text-sm">Where</span>
+            </T>
           ) : index === 1 ? (
             <Select
               value={joinOperator}
               onValueChange={(value: JoinOperator) => setJoinOperator(value)}
             >
               <SelectTrigger
-                aria-label="Select join operator"
+                aria-label={t('Select join operator')}
                 aria-controls={joinOperatorListboxId}
                 className="h-8 rounded-sm lowercase [&[data-size]]:h-8"
               >
@@ -358,7 +386,7 @@ function DataTableFilterItem<TData>({
                 position="popper"
                 className="min-w-(--radix-select-trigger-width) lowercase"
               >
-                {dataTableConfig.joinOperators.map((joinOperator) => (
+                {dataTableConfig.joinOperators.map((joinOperator: any) => (
                   <SelectItem key={joinOperator} value={joinOperator}>
                     {joinOperator}
                   </SelectItem>
@@ -379,7 +407,7 @@ function DataTableFilterItem<TData>({
             >
               <span className="truncate">
                 {columns.find((column) => column.id === filter.id)?.columnDef.meta?.label ??
-                  'Select field'}
+                  t('Select field')}
               </span>
               <ChevronsUpDown className="opacity-50" />
             </Button>
@@ -390,9 +418,9 @@ function DataTableFilterItem<TData>({
             className="w-40 origin-[var(--radix-popover-content-transform-origin)] p-0"
           >
             <Command>
-              <CommandInput placeholder="Search fields..." />
+              <CommandInput placeholder={t('Search fields...')} />
               <CommandList>
-                <CommandEmpty>No fields found.</CommandEmpty>
+                <CommandEmpty>{t('No fields found.')}</CommandEmpty>
                 <CommandGroup>
                   {columns.map((column) => (
                     <CommandItem
@@ -404,6 +432,7 @@ function DataTableFilterItem<TData>({
                           variant: column.columnDef.meta?.variant ?? 'text',
                           operator: getDefaultFilterOperator(
                             column.columnDef.meta?.variant ?? 'text',
+                            t,
                           ),
                           value: '',
                         });
@@ -464,6 +493,7 @@ function DataTableFilterItem<TData>({
             onFilterUpdate,
             showValueSelector,
             setShowValueSelector,
+            t,
           })}
         </div>
         <Button
@@ -493,6 +523,7 @@ function onFilterInputRender<TData>({
   onFilterUpdate,
   showValueSelector,
   setShowValueSelector,
+  t,
 }: {
   filter: ExtendedColumnFilter<TData>;
   inputId: string;
@@ -504,6 +535,7 @@ function onFilterInputRender<TData>({
   ) => void;
   showValueSelector: boolean;
   setShowValueSelector: (value: boolean) => void;
+  t: (content: string) => string;
 }) {
   if (filter.operator === 'isEmpty' || filter.operator === 'isNotEmpty') {
     return (
@@ -546,7 +578,7 @@ function onFilterInputRender<TData>({
           aria-label={`${columnMeta?.label} filter value`}
           aria-describedby={`${inputId}-description`}
           inputMode={isNumber ? 'numeric' : undefined}
-          placeholder={columnMeta?.placeholder ?? 'Enter a value...'}
+          placeholder={columnMeta?.placeholder ?? t('Enter a value...')}
           className="h-8 w-full rounded-sm"
           defaultValue={typeof filter.value === 'string' ? filter.value : undefined}
           onChange={(event) =>
@@ -580,11 +612,11 @@ function onFilterInputRender<TData>({
             aria-label={`${columnMeta?.label} boolean filter`}
             className="h-8 w-full rounded-sm [&[data-size]]:h-8"
           >
-            <SelectValue placeholder={filter.value ? 'True' : 'False'} />
+            <SelectValue placeholder={filter.value ? t('True') : t('False')} />
           </SelectTrigger>
           <SelectContent id={inputListboxId}>
-            <SelectItem value="true">True</SelectItem>
-            <SelectItem value="false">False</SelectItem>
+            <SelectItem value="true">{t('True')}</SelectItem>
+            <SelectItem value="false">{t('False')}</SelectItem>
           </SelectContent>
         </Select>
       );
@@ -626,7 +658,7 @@ function onFilterInputRender<TData>({
             >
               <FacetedBadgeList
                 options={columnMeta?.options}
-                placeholder={columnMeta?.placeholder ?? `Select option${multiple ? 's' : ''}...`}
+                placeholder={columnMeta?.placeholder ?? t(`Select option${multiple ? 's' : ''}...`)}
               />
             </Button>
           </FacetedTrigger>
@@ -636,10 +668,10 @@ function onFilterInputRender<TData>({
           >
             <FacetedInput
               aria-label={`Search ${columnMeta?.label} options`}
-              placeholder={columnMeta?.placeholder ?? 'Search options...'}
+              placeholder={columnMeta?.placeholder ?? t('Search options...')}
             />
             <FacetedList>
-              <FacetedEmpty>No options found.</FacetedEmpty>
+              <FacetedEmpty>{t('No options found.')}</FacetedEmpty>
               <FacetedGroup>
                 {columnMeta?.options?.map((option) => (
                   <FacetedItem key={option.value} value={option.value}>
@@ -672,7 +704,7 @@ function onFilterInputRender<TData>({
             )}`
           : dateValue[0]
             ? formatDate(new Date(Number(dateValue[0])))
-            : 'Pick a date';
+            : t('Pick a date');
 
       return (
         <Popover open={showValueSelector} onOpenChange={setShowValueSelector}>

@@ -1,8 +1,9 @@
 import { env } from '@/env.mjs';
-import { trainingVideos } from '@/lib/data/training-videos';
+import { getTrainingVideos } from '@/lib/data/training-videos';
 import { InvitePortalEmail, sendEmail } from '@comp/email';
 import { db, type Departments, type Member, type Role } from '@db';
 import { revalidatePath } from 'next/cache';
+import { getGT } from 'gt-next/server';
 
 if (!env.NEXT_PUBLIC_PORTAL_URL) {
   throw new Error('NEXT_PUBLIC_PORTAL_URL is not set');
@@ -64,7 +65,8 @@ export async function completeEmployeeCreation(params: {
   // });
 
   // Create training video entries for the employee
-  await createTrainingVideoEntries(employee.id);
+  const t = await getGT();
+  await createTrainingVideoEntries(employee.id, t);
 
   // Revalidate relevant paths to update UI
   revalidatePath(`/${organizationId}/people`);
@@ -102,8 +104,10 @@ async function inviteEmployeeToPortal({
 /**
  * Creates training video tracking entries for a new employee
  */
-async function createTrainingVideoEntries(employeeId: string) {
+async function createTrainingVideoEntries(employeeId: string, t: (content: string) => string) {
   console.log(`Creating training video entries for employee ${employeeId}`);
+
+  const trainingVideos = getTrainingVideos(t);
 
   // Create an entry for each video in the system
   const result = await db.employeeTrainingVideoCompletion.createMany({

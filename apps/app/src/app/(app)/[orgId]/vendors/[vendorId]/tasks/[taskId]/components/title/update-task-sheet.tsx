@@ -8,6 +8,7 @@ import { Input } from '@comp/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Textarea } from '@comp/ui/textarea';
 import type { Member, Task, User } from '@db';
+import { T, useGT } from 'gt-next';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRightIcon } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
@@ -16,7 +17,8 @@ import { useQueryState } from 'nuqs';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
-import { updateVendorTaskSchema } from '../../../../actions/schema';
+import { getUpdateVendorTaskSchema } from '../../../../actions/schema';
+import React from 'react';
 import { updateVendorTaskAction } from '../../../../actions/task/update-task-action';
 
 interface UpdateTaskSheetProps {
@@ -25,16 +27,18 @@ interface UpdateTaskSheetProps {
 }
 
 export function UpdateTaskSheet({ task, assignees }: UpdateTaskSheetProps) {
+  const t = useGT();
+  const updateVendorTaskSchema = React.useMemo(() => getUpdateVendorTaskSchema(t), [t]);
   const [_, setTaskOverviewSheet] = useQueryState('task-overview-sheet');
   const params = useParams<{ taskId: string }>();
 
   const updateTask = useAction(updateVendorTaskAction, {
     onSuccess: () => {
-      toast.success('Task updated successfully');
+      toast.success(t('Task updated successfully'));
       setTaskOverviewSheet(null);
     },
     onError: () => {
-      toast.error('Failed to update task');
+      toast.error(t('Failed to update task'));
     },
   });
 
@@ -49,7 +53,7 @@ export function UpdateTaskSheet({ task, assignees }: UpdateTaskSheetProps) {
     },
   });
 
-  const onSubmit = (data: z.infer<typeof updateVendorTaskSchema>) => {
+  const onSubmit = (data: z.infer<ReturnType<typeof getUpdateVendorTaskSchema>>) => {
     updateTask.execute(data);
   };
 
@@ -70,10 +74,25 @@ export function UpdateTaskSheet({ task, assignees }: UpdateTaskSheetProps) {
       }
     };
 
+    const getStatusText = (status: string) => {
+      switch (status) {
+        case 'open':
+          return t('open');
+        case 'in_progress':
+          return t('in progress');
+        case 'completed':
+          return t('completed');
+        case 'cancelled':
+          return t('cancelled');
+        default:
+          return status;
+      }
+    };
+
     return (
       <div className="flex items-center gap-2">
         <div className="size-2.5" style={{ backgroundColor: getStatusColor(status) }} />
-        <span>{status.replace('_', ' ')}</span>
+        <span>{getStatusText(status)}</span>
       </div>
     );
   };
@@ -85,7 +104,7 @@ export function UpdateTaskSheet({ task, assignees }: UpdateTaskSheetProps) {
           <div>
             <Accordion type="multiple" defaultValue={['task']}>
               <AccordionItem value="task">
-                <AccordionTrigger>Task Details</AccordionTrigger>
+                <AccordionTrigger>{t('Task Details')}</AccordionTrigger>
                 <AccordionContent>
                   <div className="space-y-4">
                     <FormField
@@ -93,13 +112,13 @@ export function UpdateTaskSheet({ task, assignees }: UpdateTaskSheetProps) {
                       name="title"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Title</FormLabel>
+                          <FormLabel>{t('Title')}</FormLabel>
                           <FormControl>
                             <Input
                               {...field}
                               autoFocus
                               className="mt-3"
-                              placeholder="Enter title"
+                              placeholder={t('Enter title')}
                               autoCorrect="off"
                             />
                           </FormControl>
@@ -113,9 +132,9 @@ export function UpdateTaskSheet({ task, assignees }: UpdateTaskSheetProps) {
                       name="description"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Description</FormLabel>
+                          <FormLabel>{t('Description')}</FormLabel>
                           <FormControl>
-                            <Textarea {...field} className="mt-3" placeholder="Enter description" />
+                            <Textarea {...field} className="mt-3" placeholder={t('Enter description')} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -127,7 +146,7 @@ export function UpdateTaskSheet({ task, assignees }: UpdateTaskSheetProps) {
                       name="status"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Status</FormLabel>
+                          <FormLabel>{t('Status')}</FormLabel>
                           <FormControl>
                             <Select
                               value={field.value}
@@ -137,7 +156,7 @@ export function UpdateTaskSheet({ task, assignees }: UpdateTaskSheetProps) {
                               }}
                             >
                               <SelectTrigger>
-                                <SelectValue placeholder="Select status">
+                                <SelectValue placeholder={t('Select status')}>
                                   {field.value && renderStatus(field.value)}
                                 </SelectValue>
                               </SelectTrigger>
@@ -165,7 +184,7 @@ export function UpdateTaskSheet({ task, assignees }: UpdateTaskSheetProps) {
                       name="assigneeId"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Assignee</FormLabel>
+                          <FormLabel>{t('Assignee')}</FormLabel>
                           <FormControl>
                             <SelectAssignee
                               assigneeId={field.value}
@@ -188,7 +207,7 @@ export function UpdateTaskSheet({ task, assignees }: UpdateTaskSheetProps) {
           <div className="mt-4 flex justify-end">
             <Button type="submit" variant="default" disabled={updateTask.status === 'executing'}>
               <div className="flex items-center justify-center">
-                Update
+                {t('Update')}
                 <ArrowRightIcon className="ml-2 h-4 w-4" />
               </div>
             </Button>

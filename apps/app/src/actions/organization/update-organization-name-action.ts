@@ -3,12 +3,16 @@
 'use server';
 
 import { db } from '@db';
+import { getGT } from 'gt-next/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { authActionClient } from '../safe-action';
-import { organizationNameSchema } from '../schema';
+import { getOrganizationNameSchema } from '../schema';
 
 export const updateOrganizationNameAction = authActionClient
-  .inputSchema(organizationNameSchema)
+  .inputSchema(async () => {
+    const t = await getGT();
+    return getOrganizationNameSchema(t);
+  })
   .metadata({
     name: 'update-organization-name',
     track: {
@@ -17,15 +21,16 @@ export const updateOrganizationNameAction = authActionClient
     },
   })
   .action(async ({ parsedInput, ctx }) => {
+    const t = await getGT();
     const { name } = parsedInput;
     const { activeOrganizationId } = ctx.session;
 
     if (!name) {
-      throw new Error('Invalid user input');
+      throw new Error(t('Invalid user input'));
     }
 
     if (!activeOrganizationId) {
-      throw new Error('No active organization');
+      throw new Error(t('No active organization'));
     }
 
     try {
@@ -44,6 +49,6 @@ export const updateOrganizationNameAction = authActionClient
       };
     } catch (error) {
       console.error(error);
-      throw new Error('Failed to update organization name');
+      throw new Error(t('Failed to update organization name'));
     }
   });

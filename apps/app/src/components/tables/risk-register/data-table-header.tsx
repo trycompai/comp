@@ -5,6 +5,7 @@ import { TableHead, TableHeader, TableRow } from '@comp/ui/table';
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback } from 'react';
+import { useGT } from 'gt-next';
 
 type Props = {
   table?: {
@@ -21,6 +22,7 @@ type Props = {
 };
 
 export function DataTableHeader({ table, loading }: Props) {
+  const t = useGT();
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
@@ -62,7 +64,7 @@ export function DataTableHeader({ table, loading }: Props) {
               variant="ghost"
               onClick={() => createSortQuery('title')}
             >
-              <span>{'Risk'}</span>
+              <span>{t('Risk')}</span>
               {'title' === column && value === 'asc' && <ArrowDown size={16} />}
               {'title' === column && value === 'desc' && <ArrowUp size={16} />}
             </Button>
@@ -76,7 +78,7 @@ export function DataTableHeader({ table, loading }: Props) {
               variant="ghost"
               onClick={() => createSortQuery('status')}
             >
-              <span>{'Status'}</span>
+              <span>{t('Status')}</span>
               {'status' === column && value === 'asc' && <ArrowDown size={16} />}
               {'status' === column && value === 'desc' && <ArrowUp size={16} />}
             </Button>
@@ -90,7 +92,7 @@ export function DataTableHeader({ table, loading }: Props) {
               variant="ghost"
               onClick={() => createSortQuery('department')}
             >
-              <span>{'Department'}</span>
+              <span>{t('Department')}</span>
               {'department' === column && value === 'asc' && <ArrowDown size={16} />}
               {'department' === column && value === 'desc' && <ArrowUp size={16} />}
             </Button>
@@ -104,7 +106,7 @@ export function DataTableHeader({ table, loading }: Props) {
               variant="ghost"
               onClick={() => createSortQuery('assigneeId')}
             >
-              <span>{'Assignee'}</span>
+              <span>{t('Assignee')}</span>
               {'assigneeId' === column && value === 'asc' && <ArrowDown size={16} />}
               {'assigneeId' === column && value === 'desc' && <ArrowUp size={16} />}
             </Button>

@@ -1,13 +1,15 @@
 'use client';
 
+import React from 'react';
 import { updateRiskAction } from '@/actions/risk/update-risk-action';
-import { updateRiskSchema } from '@/actions/schema';
+import { getUpdateRiskSchema } from '@/actions/schema';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { StatusIndicator } from '@/components/status-indicator';
 import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Departments, Member, type Risk, RiskCategory, RiskStatus, type User } from '@db';
+import { useGT } from 'gt-next';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
@@ -23,12 +25,14 @@ export function UpdateRiskOverview({
   risk: Risk;
   assignees: (Member & { user: User })[];
 }) {
+  const t = useGT();
+  const updateRiskSchema = React.useMemo(() => getUpdateRiskSchema(t), [t]);
   const updateRisk = useAction(updateRiskAction, {
     onSuccess: () => {
-      toast.success('Risk updated successfully');
+      toast.success(t('Risk updated successfully'));
     },
     onError: () => {
-      toast.error('Failed to update risk');
+      toast.error(t('Failed to update risk'));
     },
   });
 
@@ -45,7 +49,7 @@ export function UpdateRiskOverview({
     },
   });
 
-  const onSubmit = (data: z.infer<typeof updateRiskSchema>) => {
+  const onSubmit = (data: z.infer<ReturnType<typeof getUpdateRiskSchema>>) => {
     updateRisk.execute({
       id: data.id,
       title: data.title,
@@ -66,7 +70,7 @@ export function UpdateRiskOverview({
             name="assigneeId"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{'Assignee'}</FormLabel>
+                <FormLabel>{t('Assignee')}</FormLabel>
                 <FormControl>
                   <SelectAssignee
                     assigneeId={field.value ?? null}
@@ -85,11 +89,11 @@ export function UpdateRiskOverview({
             name="status"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{'Status'}</FormLabel>
+                <FormLabel>{t('Status')}</FormLabel>
                 <FormControl>
                   <Select value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger>
-                      <SelectValue placeholder={'Select a status'}>
+                      <SelectValue placeholder={t('Select a status')}>
                         {field.value && <StatusIndicator status={field.value as RiskStatus} />}
                       </SelectValue>
                     </SelectTrigger>
@@ -111,11 +115,11 @@ export function UpdateRiskOverview({
             name="category"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{'Category'}</FormLabel>
+                <FormLabel>{t('Category')}</FormLabel>
                 <FormControl>
                   <Select {...field} value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger>
-                      <SelectValue placeholder={'Select a category'} />
+                      <SelectValue placeholder={t('Select a category')} />
                     </SelectTrigger>
                     <SelectContent>
                       {Object.values(RiskCategory).map((category) => {
@@ -142,11 +146,11 @@ export function UpdateRiskOverview({
             name="department"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{'Department'}</FormLabel>
+                <FormLabel>{t('Department')}</FormLabel>
                 <FormControl>
                   <Select {...field} value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger>
-                      <SelectValue placeholder={'Select a department'} />
+                      <SelectValue placeholder={t('Select a department')} />
                     </SelectTrigger>
                     <SelectContent>
                       {Object.values(Departments).map((department) => {
@@ -171,7 +175,7 @@ export function UpdateRiskOverview({
             {updateRisk.status === 'executing' ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              'Save'
+              t('Save')
             )}
           </Button>
         </div>

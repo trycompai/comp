@@ -6,17 +6,19 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { UserIcon } from 'lucide-react';
 import Link from 'next/link';
 import type { GetVendorsResult } from '../data/queries';
+import type { InlineTranslationOptions } from 'gt-next/types';
 
 type VendorRow = GetVendorsResult['data'][number];
 
-export const columns: ColumnDef<VendorRow>[] = [
+export const getColumns = (t: (content: string, options?: InlineTranslationOptions) => string) => {
+  return [
   {
     id: 'name',
     accessorKey: 'name',
-    header: ({ column }) => {
-      return <DataTableColumnHeader column={column} title="Vendor Name" />;
+    header: ({ column }: { column: any }) => {
+      return <DataTableColumnHeader column={column} title={t('Vendor Name')} />;
     },
-    cell: ({ row }) => {
+    cell: ({ row }: { row: any }) => {
       return (
         <Link href={`/${row.original.organizationId}/vendors/${row.original.id}`}>
           {row.original.name}
@@ -24,9 +26,9 @@ export const columns: ColumnDef<VendorRow>[] = [
       );
     },
     meta: {
-      label: 'Vendor Name',
-      placeholder: 'Search for vendor name...',
-      variant: 'text',
+      label: t('Vendor Name'),
+      placeholder: t('Search for vendor name...'),
+      variant: 'text' as const,
     },
     size: 250,
     minSize: 200,
@@ -36,34 +38,34 @@ export const columns: ColumnDef<VendorRow>[] = [
   {
     id: 'status',
     accessorKey: 'status',
-    header: ({ column }) => {
-      return <DataTableColumnHeader column={column} title="Status" />;
+    header: ({ column }: { column: any }) => {
+      return <DataTableColumnHeader column={column} title={t('Status')} />;
     },
-    cell: ({ row }) => {
+    cell: ({ row }: { row: any }) => {
       return <VendorStatus status={row.original.status} />;
     },
     meta: {
-      label: 'Status',
-      placeholder: 'Search by status...',
-      variant: 'select',
+      label: t('Status'),
+      placeholder: t('Search by status...'),
+      variant: 'select' as const,
     },
   },
   {
     id: 'category',
     accessorKey: 'category',
-    header: ({ column }) => {
-      return <DataTableColumnHeader column={column} title="Category" />;
+    header: ({ column }: { column: any }) => {
+      return <DataTableColumnHeader column={column} title={t('Category')} />;
     },
-    cell: ({ row }) => {
+    cell: ({ row }: { row: any }) => {
       const categoryMap: Record<string, string> = {
-        cloud: 'Cloud',
-        infrastructure: 'Infrastructure',
-        software_as_a_service: 'SaaS',
-        finance: 'Finance',
-        marketing: 'Marketing',
-        sales: 'Sales',
-        hr: 'HR',
-        other: 'Other',
+        cloud: t('Cloud'),
+        infrastructure: t('Infrastructure'),
+        software_as_a_service: t('SaaS'),
+        finance: t('Finance'),
+        marketing: t('Marketing'),
+        sales: t('Sales'),
+        hr: t('HR'),
+        other: t('Other'),
       };
 
       return (
@@ -73,19 +75,19 @@ export const columns: ColumnDef<VendorRow>[] = [
       );
     },
     meta: {
-      label: 'Category',
-      placeholder: 'Search by category...',
-      variant: 'select',
+      label: t('Category'),
+      placeholder: t('Search by category...'),
+      variant: 'select' as const,
     },
   },
   {
     id: 'assignee',
     accessorKey: 'assignee',
-    header: ({ column }) => {
-      return <DataTableColumnHeader column={column} title="Assignee" />;
+    header: ({ column }: { column: any }) => {
+      return <DataTableColumnHeader column={column} title={t('Assignee')} />;
     },
     enableSorting: false,
-    cell: ({ row }) => {
+    cell: ({ row }: { row: any }) => {
       // Handle null assignee
       if (!row.original.assignee) {
         return (
@@ -93,7 +95,7 @@ export const columns: ColumnDef<VendorRow>[] = [
             <div className="bg-muted flex h-8 w-8 items-center justify-center rounded-full">
               <UserIcon className="text-muted-foreground h-4 w-4" />
             </div>
-            <p className="text-muted-foreground text-sm font-medium">None</p>
+            <p className="text-muted-foreground text-sm font-medium">{t('None')}</p>
           </div>
         );
       }
@@ -114,15 +116,16 @@ export const columns: ColumnDef<VendorRow>[] = [
           <p className="text-sm font-medium">
             {row.original.assignee.user?.name ||
               row.original.assignee.user?.email ||
-              'Unknown User'}
+              t('Unknown User')}
           </p>
         </div>
       );
     },
     meta: {
-      label: 'Assignee',
-      placeholder: 'Search by assignee...',
-      variant: 'select',
+      label: t('Assignee'),
+      placeholder: t('Search by assignee...'),
+      variant: 'select' as const,
     },
   },
 ];
+};

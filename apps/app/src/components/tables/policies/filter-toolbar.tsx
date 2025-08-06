@@ -11,6 +11,7 @@ import { Plus, Search, X } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useQueryState } from 'nuqs';
 import { useCallback, useEffect, useState, useTransition } from 'react';
+import { useGT } from 'gt-next';
 
 interface FilterToolbarProps {
   isEmpty?: boolean;
@@ -18,6 +19,7 @@ interface FilterToolbarProps {
 }
 
 export function FilterToolbar({ isEmpty = false, users }: FilterToolbarProps) {
+  const t = useGT();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -102,7 +104,7 @@ export function FilterToolbar({ isEmpty = false, users }: FilterToolbarProps) {
         <div className="relative flex-1 md:max-w-sm">
           <Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
           <Input
-            placeholder={'Search policies...'}
+            placeholder={t('Search policies...')}
             className="pl-8"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
@@ -112,7 +114,7 @@ export function FilterToolbar({ isEmpty = false, users }: FilterToolbarProps) {
         <div className="md:hidden">
           <Button onClick={() => setOpen('true')} variant="default">
             <Plus className="h-4 w-4" />
-            {'Add New'}
+            {t('Add New')}
           </Button>
         </div>
       </div>
@@ -120,20 +122,20 @@ export function FilterToolbar({ isEmpty = false, users }: FilterToolbarProps) {
       <div className="hidden items-center gap-2 md:flex">
         <Select value={status || 'all'} onValueChange={handleStatusChange}>
           <SelectTrigger className="w-auto min-w-[100px]">
-            <SelectValue placeholder={'Filter by status'} />
+            <SelectValue placeholder={t('Filter by status')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{'All statuses'}</SelectItem>
-            <SelectItem value="draft">{'Draft'}</SelectItem>
-            <SelectItem value="published">{'Published'}</SelectItem>
-            <SelectItem value="needs_review">{'Needs Review'}</SelectItem>
-            <SelectItem value="archived">{'Archived'}</SelectItem>
+            <SelectItem value="all">{t('All statuses')}</SelectItem>
+            <SelectItem value="draft">{t('Draft')}</SelectItem>
+            <SelectItem value="published">{t('Published')}</SelectItem>
+            <SelectItem value="needs_review">{t('Needs Review')}</SelectItem>
+            <SelectItem value="archived">{t('Archived')}</SelectItem>
           </SelectContent>
         </Select>
 
         <Select value={assigneeId || ''} onValueChange={(value) => setAssigneeId(value || null)}>
           <SelectTrigger className="w-[200px] min-w-[200px]">
-            <SelectValue placeholder={'Assignee'} />
+            <SelectValue placeholder={t('Assignee')} />
           </SelectTrigger>
           <SelectContent>
             {users.map((user) => (
@@ -147,13 +149,13 @@ export function FilterToolbar({ isEmpty = false, users }: FilterToolbarProps) {
         {hasFilters && (
           <Button variant="ghost" size="sm" onClick={handleReset} disabled={isPending}>
             <X className="mr-2 h-4 w-4" />
-            {'Clear'}
+            {t('Clear')}
           </Button>
         )}
 
         <Button variant="default" onClick={() => setOpen('true')}>
           <Plus className="h-4 w-4" />
-          {'Create New Policy'}
+          {t('Create New Policy')}
         </Button>
       </div>
 

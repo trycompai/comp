@@ -1,4 +1,5 @@
 import { cn } from '@comp/ui/cn';
+import { T } from 'gt-next';
 
 type Props = {
   className?: string;
@@ -12,7 +13,7 @@ export function Beta({ className }: Props) {
         className,
       )}
     >
-      Beta
+<T>Beta</T>
     </span>
   );
 }

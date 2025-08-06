@@ -4,6 +4,7 @@ import { auth } from '@/utils/auth';
 import { logger } from '@/utils/logger';
 import { client } from '@comp/kv';
 import { AuditLogEntityType, db } from '@db';
+import { getGT } from 'gt-next/server';
 import { Ratelimit } from '@upstash/ratelimit';
 import { DEFAULT_SERVER_ERROR_MESSAGE, createSafeActionClient } from 'next-safe-action';
 import { revalidatePath } from 'next/cache';
@@ -58,7 +59,8 @@ export const authActionClient = actionClientWithMeta
     const { session, user } = response ?? {};
 
     if (!session) {
-      throw new Error('Unauthorized');
+      const t = await getGT();
+      throw new Error(t('Unauthorized'));
     }
 
     const result = await next({
@@ -89,7 +91,8 @@ export const authActionClient = actionClientWithMeta
       );
 
       if (!success) {
-        throw new Error('Too many requests');
+        const t = await getGT();
+        throw new Error(t('Too many requests'));
       }
 
       remaining = rateLimitRemaining;
@@ -111,7 +114,8 @@ export const authActionClient = actionClientWithMeta
     });
 
     if (!session) {
-      throw new Error('Unauthorized');
+      const t = await getGT();
+      throw new Error(t('Unauthorized'));
     }
 
     if (metadata.track) {
@@ -140,15 +144,18 @@ export const authActionClient = actionClientWithMeta
     });
 
     if (!session) {
-      throw new Error('Unauthorized');
+      const t = await getGT();
+      throw new Error(t('Unauthorized'));
     }
 
     if (!session.session.activeOrganizationId) {
-      throw new Error('Organization not found');
+      const t = await getGT();
+      throw new Error(t('Organization not found'));
     }
 
     if (!member) {
-      throw new Error('Member not found');
+      const t = await getGT();
+      throw new Error(t('Member not found'));
     }
 
     const { fileData: _, ...inputForAuditLog } = clientInput as any;
@@ -229,7 +236,8 @@ export const authWithOrgAccessClient = authActionClient.use(async ({ next, clien
   const organizationId = (clientInput as { organizationId?: string })?.organizationId;
 
   if (!organizationId) {
-    throw new Error('Organization ID is required');
+    const t = await getGT();
+    throw new Error(t('Organization ID is required'));
   }
 
   // Check if user is a member of the organization
@@ -241,7 +249,8 @@ export const authWithOrgAccessClient = authActionClient.use(async ({ next, clien
   });
 
   if (!member) {
-    throw new Error('You do not have access to this organization');
+    const t = await getGT();
+    throw new Error(t('You do not have access to this organization'));
   }
 
   return next({
@@ -262,7 +271,8 @@ export const authActionClientWithoutOrg = actionClientWithMeta
     const { session, user } = response ?? {};
 
     if (!session) {
-      throw new Error('Unauthorized');
+      const t = await getGT();
+      throw new Error(t('Unauthorized'));
     }
 
     const result = await next({
@@ -293,7 +303,8 @@ export const authActionClientWithoutOrg = actionClientWithMeta
       );
 
       if (!success) {
-        throw new Error('Too many requests');
+        const t = await getGT();
+        throw new Error(t('Too many requests'));
       }
 
       remaining = rateLimitRemaining;
@@ -315,7 +326,8 @@ export const authActionClientWithoutOrg = actionClientWithMeta
     });
 
     if (!session) {
-      throw new Error('Unauthorized');
+      const t = await getGT();
+      throw new Error(t('Unauthorized'));
     }
 
     if (metadata.track) {

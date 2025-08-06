@@ -14,6 +14,7 @@ import { ErrorFallback } from '../error-fallback';
 import { LogoSpinner } from '../logo-spinner';
 import { MemoizedReactMarkdown } from '../markdown';
 import { ChatAvatar } from './chat-avatar';
+import { T, useGT } from 'gt-next';
 
 interface ToolInvocation {
   toolName: string;
@@ -38,6 +39,7 @@ interface ReasoningMessagePartProps {
 
 export function ReasoningMessagePart({ part, isReasoning }: ReasoningMessagePartProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const t = useGT();
 
   const variants = {
     collapsed: {
@@ -67,10 +69,10 @@ export function ReasoningMessagePart({ part, isReasoning }: ReasoningMessagePart
       {isReasoning ? (
         <div className="group relative flex items-start py-2">
           <div className="flex size-[25px] shrink-0 items-center justify-center select-none">
-            <ChatAvatar participantType="assistant" aria-label="Assistant" />
+            <ChatAvatar participantType="assistant" aria-label={t('Assistant')} />
           </div>
           <div className="ml-4 flex-1 overflow-hidden pl-2 text-xs">
-            <div className="font-medium">Reasoning</div>
+            <T><div className="font-medium">Reasoning</div></T>
             <div className="mt-2 animate-spin">
               <LogoSpinner size={16} />
             </div>
@@ -79,11 +81,11 @@ export function ReasoningMessagePart({ part, isReasoning }: ReasoningMessagePart
       ) : (
         <div className="group relative flex items-start py-2">
           <div className="flex size-[25px] shrink-0 items-center justify-center select-none">
-            <ChatAvatar participantType="assistant" aria-label="Assistant" />
+            <ChatAvatar participantType="assistant" aria-label={t('Assistant')} />
           </div>
           <div className="ml-4 flex-1 overflow-hidden pl-2 text-xs">
             <div className="flex items-center gap-2">
-              <div className="font-medium">Reasoned for a few seconds</div>
+              <T><div className="font-medium">Reasoned for a few seconds</div></T>
               <button
                 type="button"
                 className={cn(

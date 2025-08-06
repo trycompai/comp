@@ -1,4 +1,4 @@
-import { trainingVideos as trainingVideosData } from '@/lib/data/training-videos';
+import { getTrainingVideos } from '@/lib/data/training-videos';
 import { auth } from '@/utils/auth';
 import type { Member, Policy, User } from '@db';
 import { db } from '@db';
@@ -26,6 +26,10 @@ interface ProcessedTrainingVideo {
 }
 
 export async function EmployeesOverview() {
+  const { getGT } = await import('gt-next/server');
+  const t = await getGT();
+  const trainingVideosData = getTrainingVideos(t);
+  
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -74,7 +78,7 @@ export async function EmployeesOverview() {
 
       for (const dbVideo of employeeTrainingVideos) {
         const videoMetadata = trainingVideosData.find(
-          (metadataVideo) => metadataVideo.id === dbVideo.videoId,
+          (metadataVideo: any) => metadataVideo.id === dbVideo.videoId,
         );
 
         if (videoMetadata) {

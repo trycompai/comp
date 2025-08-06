@@ -4,20 +4,24 @@ import { Button } from '@comp/ui/button';
 import { Check, Circle, List, Loader2 } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import React from 'react';
+import { useGT } from 'gt-next';
 
 // Configuration for task statuses and their display order.
-const statuses = [
-  { id: 'in_progress', title: 'In Progress' },
-  { id: 'todo', title: 'Todo' },
-  { id: 'done', title: 'Done' },
+const getStatuses = (t: (content: string) => string) => [
+  { id: 'in_progress', title: t('In Progress') },
+  { id: 'todo', title: t('Todo') },
+  { id: 'done', title: t('Done') },
 ] as const;
-type StatusId = (typeof statuses)[number]['id'];
+type StatusId = 'in_progress' | 'todo' | 'done';
 
 /**
  * Renders the header section for filtering tasks by status.
  * Uses `nuqs` to manage filter state in the URL search parameters.
  */
 export function TaskFilterHeader() {
+  const t = useGT();
+  const statuses = getStatuses(t);
+  
   // State for the status filter, synced with the 'status' URL query parameter.
   const [statusFilter, setStatusFilter] = useQueryState('status', {
     shallow: false, // Ensures full page reload on change to refetch server data.
@@ -57,7 +61,7 @@ export function TaskFilterHeader() {
           onClick={() => setStatusFilter(null)}
         >
           <List className="h-3.5 w-3.5" />
-          <span>All</span>
+          <span>{t('All')}</span>
         </Button>
         {statuses.map((status) => {
           const Icon = statusIcons[status.id];
@@ -83,7 +87,7 @@ export function TaskFilterHeader() {
             onClick={clearFilters}
             className="text-muted-foreground"
           >
-            Clear filters
+            {t('Clear filters')}
           </Button>
         )}
       </div>

@@ -27,6 +27,7 @@ import { parseAsBoolean, parseAsString, useQueryStates } from 'nuqs';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { IntegrationSettings, type IntegrationSettingsItem } from './integration-settings';
+import { T, Branch, useGT } from 'gt-next';
 
 export function IntegrationsCard({
   id,
@@ -60,6 +61,7 @@ export function IntegrationsCard({
   nextRunAt?: Date | null;
 }) {
   const router = useRouter();
+  const t = useGT();
 
   // Add state to track if we're in edit mode for API key
   const [isEditingApiKey, setIsEditingApiKey] = useState(false);
@@ -74,20 +76,20 @@ export function IntegrationsCard({
 
   const deleteIntegrationConnection = useAction(deleteIntegrationConnectionAction, {
     onSuccess: () => {
-      toast.success('Integration disconnected successfully');
+      toast.success(t('Integration disconnected successfully'));
     },
     onError: () => {
-      toast.error('Failed to disconnect integration');
+      toast.error(t('Failed to disconnect integration'));
     },
   });
 
   const updateIntegrationSettings = useAction(updateIntegrationSettingsAction, {
     onSuccess: () => {
-      toast.success('Settings updated successfully');
+      toast.success(t('Settings updated successfully'));
       setIsEditingApiKey(false); // Exit edit mode on success
     },
     onError: () => {
-      toast.error('Failed to update settings');
+      toast.error(t('Failed to update settings'));
     },
   });
 
@@ -103,7 +105,7 @@ export function IntegrationsCard({
       // Use the API key from the state
       const keyToUse = apiKeyInput.trim();
       if (!keyToUse) {
-        toast.error('Please enter an API key');
+        toast.error(t('Please enter an API key'));
         setLoading(false);
         setIsSaving(false);
         return;
@@ -117,9 +119,9 @@ export function IntegrationsCard({
 
       // Show appropriate message based on whether we're updating or setting for first time
       if (isEditingApiKey) {
-        toast.success('API key updated successfully');
+        toast.success(t('API key updated successfully'));
       } else {
-        toast.success('API key saved successfully');
+        toast.success(t('API key saved successfully'));
       }
 
       // If not already installed (first time setup), then retrieve session token to complete connection
@@ -135,7 +137,7 @@ export function IntegrationsCard({
       router.refresh();
     } catch (error) {
       console.error('Connection error:', error);
-      toast.error('Failed to connect integration');
+      toast.error(t('Failed to connect integration'));
     } finally {
       setLoading(false);
       setIsSaving(false);
@@ -152,18 +154,23 @@ export function IntegrationsCard({
     const diffInMinutes = Math.floor((diffInMs % (1000 * 60 * 60)) / (1000 * 60));
 
     if (diffInHours <= 0 && diffInMinutes <= 0) {
-      return 'Running soon';
+      return t('Running soon');
     }
 
     if (diffInHours === 0) {
-      return `Runs in ${diffInMinutes} minute${diffInMinutes !== 1 ? 's' : ''}`;
+      return t('Runs in {minutes} minute{s}', { minutes: diffInMinutes, s: diffInMinutes !== 1 ? 's' : '' });
     }
 
     if (diffInMinutes === 0) {
-      return `Runs in ${diffInHours} hour${diffInHours !== 1 ? 's' : ''}`;
+      return t('Runs in {hours} hour{s}', { hours: diffInHours, s: diffInHours !== 1 ? 's' : '' });
     }
 
-    return `Runs in ${diffInHours} hour${diffInHours !== 1 ? 's' : ''} and ${diffInMinutes} minute${diffInMinutes !== 1 ? 's' : ''}`;
+    return t('Runs in {hours} hour{hourS} and {minutes} minute{minS}', { 
+      hours: diffInHours, 
+      hourS: diffInHours !== 1 ? 's' : '',
+      minutes: diffInMinutes,
+      minS: diffInMinutes !== 1 ? 's' : ''
+    });
   };
 
   return (
@@ -178,18 +185,29 @@ export function IntegrationsCard({
               <div className="flex flex-col gap-1">
                 <CardTitle className="mb-0 flex items-center gap-2">
                   <p className="text-md leading-none font-medium">{name}</p>
-                  {installed ? (
-                    <Badge
-                      variant="outline"
-                      className="border-green-600 px-2 py-0 text-[10px] text-green-600"
-                    >
-                      Connected
-                    </Badge>
-                  ) : !active ? (
-                    <Badge variant="outline" className="px-2 py-0 text-[10px]">
-                      Coming Soon
-                    </Badge>
-                  ) : null}
+                  <T>
+                    <Branch
+                      branch={installed.toString()}
+                      true={
+                        <Badge
+                          variant="outline"
+                          className="border-green-600 px-2 py-0 text-[10px] text-green-600"
+                        >
+                          Connected
+                        </Badge>
+                      }
+                      false={
+                        <Branch
+                          branch={active.toString()}
+                          false={
+                            <Badge variant="outline" className="px-2 py-0 text-[10px]">
+                              Coming Soon
+                            </Badge>
+                          }
+                        />
+                      }
+                    />
+                  </T>
                 </CardTitle>
                 <p className="text-muted-foreground text-xs">{category}</p>
               </div>
@@ -216,7 +234,7 @@ export function IntegrationsCard({
             disabled={!active}
             onClick={() => setParams({ app: id })}
           >
-            {installed ? 'Manage' : 'Install'}
+            {installed ? t('Manage') : t('Install')}
           </Button>
         </CardFooter>
 
@@ -231,12 +249,14 @@ export function IntegrationsCard({
                   <div className="flex items-center gap-2">
                     <h3 className="text-lg leading-none font-medium">{name}</h3>
                     {installed && (
-                      <Badge
-                        variant="outline"
-                        className="border-green-600 px-2 py-0 text-[10px] text-green-600"
-                      >
-                        Connected
-                      </Badge>
+                      <T>
+                        <Badge
+                          variant="outline"
+                          className="border-green-600 px-2 py-0 text-[10px] text-green-600"
+                        >
+                          Connected
+                        </Badge>
+                      </T>
                     )}
                   </div>
 
@@ -257,8 +277,8 @@ export function IntegrationsCard({
                     }}
                   >
                     {deleteIntegrationConnection.status === 'executing'
-                      ? 'Disconnecting...'
-                      : 'Disconnect'}
+                      ? t('Disconnecting...')
+                      : t('Disconnect')}
                   </Button>
                 )}
               </div>
@@ -278,7 +298,9 @@ export function IntegrationsCard({
                     <AccordionTrigger className="py-3 hover:no-underline">
                       <div className="flex items-center gap-2">
                         <InfoIcon className="mr-1 h-3.5 w-3.5" />
-                        <span className="text-sm font-medium">How to get credentials</span>
+                        <T>
+                          <span className="text-sm font-medium">How to get credentials</span>
+                        </T>
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="text-muted-foreground pb-4 text-sm">
@@ -298,7 +320,9 @@ export function IntegrationsCard({
                   <AccordionTrigger className="py-3 hover:no-underline">
                     <div className="flex items-center gap-2">
                       <InfoIcon className="mr-1 h-3.5 w-3.5" />
-                      <span className="text-sm font-medium">Information</span>
+                      <T>
+                        <span className="text-sm font-medium">Information</span>
+                      </T>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground pb-4 text-sm">
@@ -311,7 +335,9 @@ export function IntegrationsCard({
                     <AccordionTrigger className="py-3 hover:no-underline">
                       <div className="flex items-center gap-2">
                         <Clock className="mr-1 h-3.5 w-3.5" />
-                        <span className="text-sm font-medium">Sync Status</span>
+                        <T>
+                          <span className="text-sm font-medium">Sync Status</span>
+                        </T>
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="text-muted-foreground pb-4 text-sm">
@@ -320,14 +346,18 @@ export function IntegrationsCard({
                           <Calendar className="text-muted-foreground mt-0.5 h-3.5 w-3.5" />
                           <div>
                             <div className="flex items-center gap-1">
-                              <p className="text-foreground text-sm font-medium">Last Sync</p>
+                              <T>
+                                <p className="text-foreground text-sm font-medium">Last Sync</p>
+                              </T>
                               <TooltipProvider>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <Globe className="text-muted-foreground h-3 w-3 cursor-help" />
                                   </TooltipTrigger>
                                   <TooltipContent>
-                                    <p>Dates are shown in your local timezone</p>
+                                    <T>
+                                      <p>Dates are shown in your local timezone</p>
+                                    </T>
                                   </TooltipContent>
                                 </Tooltip>
                               </TooltipProvider>
@@ -344,7 +374,9 @@ export function IntegrationsCard({
                                 </span>
                               </p>
                             ) : (
-                              <p className="text-muted-foreground text-xs">Never run</p>
+                              <T>
+                                <p className="text-muted-foreground text-xs">Never run</p>
+                              </T>
                             )}
                           </div>
                         </div>
@@ -353,10 +385,14 @@ export function IntegrationsCard({
                           <Clock className="text-muted-foreground mt-0.5 h-3.5 w-3.5" />
                           <div>
                             <div className="flex items-center gap-1.5">
-                              <p className="text-foreground text-sm font-medium">Next Sync</p>
-                              <Badge variant="outline" className="h-4 text-[9px]">
-                                UTC 00:00
-                              </Badge>
+                              <T>
+                                <p className="text-foreground text-sm font-medium">Next Sync</p>
+                              </T>
+                              <T>
+                                <Badge variant="outline" className="h-4 text-[9px]">
+                                  UTC 00:00
+                                </Badge>
+                              </T>
                               <TooltipProvider>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
@@ -367,10 +403,12 @@ export function IntegrationsCard({
                                     align="start"
                                     className="max-w-[250px]"
                                   >
-                                    <p>
-                                      This integration runs at midnight UTC (00:00). Times are
-                                      converted to your local timezone for display.
-                                    </p>
+                                    <T>
+                                      <p>
+                                        This integration runs at midnight UTC (00:00). Times are
+                                        converted to your local timezone for display.
+                                      </p>
+                                    </T>
                                   </TooltipContent>
                                 </Tooltip>
                               </TooltipProvider>
@@ -393,19 +431,27 @@ export function IntegrationsCard({
                                 </p>
                               </div>
                             ) : (
-                              <p className="text-muted-foreground text-xs">
-                                {lastRunAt ? 'Calculating...' : 'Will run at the next midnight UTC'}
-                              </p>
+                              <T>
+                                <p className="text-muted-foreground text-xs">
+                                  <Branch
+                                    branch={lastRunAt ? 'true' : 'false'}
+                                    true={<>Calculating...</>}
+                                    false={<>Will run at the next midnight UTC</>}
+                                  />
+                                </p>
+                              </T>
                             )}
                           </div>
                         </div>
                       </div>
 
-                      <div className="mt-3 rounded-sm border p-3 text-xs">
-                        <p>
-                          This integration syncs automatically every day at midnight UTC (00:00).
-                        </p>
-                      </div>
+                      <T>
+                        <div className="mt-3 rounded-sm border p-3 text-xs">
+                          <p>
+                            This integration syncs automatically every day at midnight UTC (00:00).
+                          </p>
+                        </div>
+                      </T>
                     </AccordionContent>
                   </AccordionItem>
                 )}
@@ -414,7 +460,9 @@ export function IntegrationsCard({
                   <AccordionTrigger className="py-3 hover:no-underline">
                     <div className="flex items-center gap-2">
                       <Settings className="mr-1 h-3.5 w-3.5" />
-                      <span className="text-sm font-medium">Settings</span>
+                      <T>
+                        <span className="text-sm font-medium">Settings</span>
+                      </T>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground pb-4 text-sm">
@@ -438,7 +486,9 @@ export function IntegrationsCard({
                               size="sm"
                               onClick={() => setIsEditingApiKey(true)}
                             >
-                              Update
+                              <T>
+                                Update
+                              </T>
                             </Button>
                           ) : null}
                         </div>
@@ -453,18 +503,20 @@ export function IntegrationsCard({
                                 htmlFor={`${id}-api-key`}
                                 className="text-sm leading-none font-medium"
                               >
-                                {isEditingApiKey ? 'Update API Key' : 'Enter API Key'}
+                                {isEditingApiKey ? t('Update API Key') : t('Enter API Key')}
                               </label>
                               <Input
                                 id={`${id}-api-key`}
                                 type="password"
-                                placeholder="Enter your Deel API key"
+                                placeholder={t('Enter your Deel API key')}
                                 value={apiKeyInput}
                                 onChange={(e) => setApiKeyInput(e.target.value)}
                               />
-                              <p className="text-muted-foreground text-xs">
-                                You can find your API key in your Deel account settings.
-                              </p>
+                              <T>
+                                <p className="text-muted-foreground text-xs">
+                                  You can find your API key in your Deel account settings.
+                                </p>
+                              </T>
                             </div>
                             <div className="flex gap-2">
                               {isEditingApiKey && (
@@ -474,7 +526,7 @@ export function IntegrationsCard({
                                   className="flex-1"
                                   onClick={() => setIsEditingApiKey(false)}
                                 >
-                                  Cancel
+                                  {t('Cancel')}
                                 </Button>
                               )}
                               <Button
@@ -486,12 +538,12 @@ export function IntegrationsCard({
                                 {isSaving ? (
                                   <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Saving...
+                                    {t('Saving...')}
                                   </>
                                 ) : isEditingApiKey ? (
-                                  'Update'
+                                  t('Update')
                                 ) : (
-                                  'Save'
+                                  t('Save')
                                 )}
                               </Button>
                             </div>
@@ -506,7 +558,9 @@ export function IntegrationsCard({
                       />
                     ) : (
                       <div className="border p-4">
-                        <p className="text-muted-foreground text-sm">No settings available</p>
+                        <T>
+                          <p className="text-muted-foreground text-sm">No settings available</p>
+                        </T>
                       </div>
                     )}
                   </AccordionContent>
@@ -521,15 +575,19 @@ export function IntegrationsCard({
           {/* Footer positioned at the bottom */}
           <div className="border-border bg-muted/30 mt-auto border-t p-6">
             <div className="flex items-center justify-between">
-              <p className="text-muted-foreground text-[10px]">
-                All integrations on the Comp AI store are open-source and peer-reviewed.
-              </p>
+              <T>
+                <p className="text-muted-foreground text-[10px]">
+                  All integrations on the Comp AI store are open-source and peer-reviewed.
+                </p>
+              </T>
 
               <a
                 href="mailto:support@trycomp.ai"
                 className="text-primary flex items-center gap-1 text-[10px] hover:underline"
               >
-                <span>Report</span>
+                <T>
+                  <span>Report</span>
+                </T>
                 <ExternalLink className="h-3 w-3" />
               </a>
             </div>

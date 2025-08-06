@@ -6,6 +6,7 @@ import { VendorStatus } from '@db';
 import type { ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
 import Link from 'next/link';
+import { useGT } from 'gt-next';
 
 export interface VendorTaskType {
   id: string;
@@ -20,10 +21,11 @@ export interface VendorTaskType {
 }
 
 export function useColumns() {
+  const t = useGT();
   const columns: ColumnDef<VendorTaskType>[] = [
     {
       accessorKey: 'title',
-      header: 'Title',
+      header: t('Title'),
       cell: ({ row }) => {
         const title = row.getValue('title') as string;
         return <Link href={`/vendors/${row.original.id}/tasks/${row.original.id}`}>{title}</Link>;
@@ -31,11 +33,11 @@ export function useColumns() {
     },
     {
       accessorKey: 'description',
-      header: 'Description',
+      header: t('Description'),
     },
     {
       accessorKey: 'status',
-      header: 'Status',
+      header: t('Status'),
       cell: ({ row }) => {
         const status = row.getValue('status') as VendorStatus;
         return (
@@ -59,7 +61,7 @@ export function useColumns() {
     },
     {
       accessorKey: 'dueDate',
-      header: 'Due Date',
+      header: t('Due Date'),
       cell: ({ row }) => {
         const date = row.getValue('dueDate') as string;
         if (!date) return '-';
@@ -68,7 +70,7 @@ export function useColumns() {
     },
     {
       accessorKey: 'owner',
-      header: 'Owner',
+      header: t('Owner'),
       cell: ({ row }) => {
         const owner = row.getValue('owner') as {
           name: string;

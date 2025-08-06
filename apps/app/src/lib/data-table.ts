@@ -1,7 +1,7 @@
 import type { ExtendedColumnFilter, FilterOperator, FilterVariant } from '@/types/data-table';
 import type { Column } from '@tanstack/react-table';
 
-import { dataTableConfig } from './data-table-config';
+import { getDataTableConfig } from './data-table-config';
 
 export function getCommonPinningStyles<TData>({
   column,
@@ -32,7 +32,8 @@ export function getCommonPinningStyles<TData>({
   };
 }
 
-export function getFilterOperators(filterVariant: FilterVariant) {
+export function getFilterOperators(filterVariant: FilterVariant, t: (content: string) => string) {
+  const dataTableConfig = getDataTableConfig(t);
   const operatorMap: Record<FilterVariant, { label: string; value: FilterOperator }[]> = {
     text: dataTableConfig.textOperators,
     number: dataTableConfig.numericOperators,
@@ -47,8 +48,8 @@ export function getFilterOperators(filterVariant: FilterVariant) {
   return operatorMap[filterVariant] ?? dataTableConfig.textOperators;
 }
 
-export function getDefaultFilterOperator(filterVariant: FilterVariant) {
-  const operators = getFilterOperators(filterVariant);
+export function getDefaultFilterOperator(filterVariant: FilterVariant, t: (content: string) => string) {
+  const operators = getFilterOperators(filterVariant, t);
 
   return operators[0]?.value ?? (filterVariant === 'text' ? 'iLike' : 'eq');
 }

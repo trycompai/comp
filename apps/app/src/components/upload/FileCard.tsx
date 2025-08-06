@@ -18,6 +18,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/
 import { ExternalLink, Loader2, Maximize2, Trash } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
+import { T, Var, useGT } from 'gt-next';
 import { FileIcon } from './FileIcon';
 
 interface FilePreviewState {
@@ -42,6 +43,7 @@ export function FileCard({
   onPreviewClick,
   onDelete,
 }: FileCardProps) {
+  const t = useGT();
   const fileName = url.split('/').pop() || url;
   const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(fileName);
   const isPdf = /\.pdf$/i.test(fileName);
@@ -106,7 +108,7 @@ export function FileCard({
                     variant="ghost"
                     className="text-muted-foreground hover:text-foreground text-xs"
                   >
-                    {'Preview'}
+                    <T>Preview</T>
                   </Button>
                 </DialogTrigger>
               </div>
@@ -128,7 +130,7 @@ export function FileCard({
 
           <DialogContent className="w-full max-w-4xl">
             <DialogTitle className="mb-4 flex items-center justify-between">
-              <span>{`File Preview: ${fileName}`}</span>
+              <span>{t('File Preview: {fileName}', { fileName })}</span>
             </DialogTitle>
 
             {previewState.url ? (
@@ -148,7 +150,7 @@ export function FileCard({
                 ) : (
                   <div className="flex h-full items-center justify-center">
                     <p className="text-muted-foreground">
-                      {'Preview not available for this file type'}
+                      <T>Preview not available for this file type</T>
                     </p>
                   </div>
                 )}
@@ -183,7 +185,7 @@ export function FileCard({
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{'Open File'}</p>
+              <p><T>Open File</T></p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -203,20 +205,20 @@ export function FileCard({
                 </AlertDialogTrigger>
               </TooltipTrigger>
               <TooltipContent>
-                <p>{'Delete File'}</p>
+                <p><T>Delete File</T></p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>{'Delete File'}</AlertDialogTitle>
+              <AlertDialogTitle><T>Delete File</T></AlertDialogTitle>
               <AlertDialogDescription>
-                {'This action cannot be undone. The file will be permanently deleted.'}
+                <T>This action cannot be undone. The file will be permanently deleted.</T>
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>{'Cancel'}</AlertDialogCancel>
-              <AlertDialogAction onClick={() => onDelete(url)}>{'Delete'}</AlertDialogAction>
+              <AlertDialogCancel><T>Cancel</T></AlertDialogCancel>
+              <AlertDialogAction onClick={() => onDelete(url)}><T>Delete</T></AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>

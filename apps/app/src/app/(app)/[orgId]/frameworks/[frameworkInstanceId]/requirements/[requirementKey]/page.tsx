@@ -2,6 +2,7 @@ import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { auth } from '@/utils/auth';
 import type { FrameworkEditorRequirement } from '@db';
 import { db } from '@db';
+import { getGT } from 'gt-next/server';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getSingleFrameworkInstanceWithControls } from '../../../data/getSingleFrameworkInstanceWithControls';
@@ -15,6 +16,7 @@ interface PageProps {
 }
 
 export default async function RequirementPage({ params }: PageProps) {
+  const t = await getGT();
   const { frameworkInstanceId, requirementKey } = await params;
 
   const session = await auth.api.getSession({
@@ -95,7 +97,7 @@ export default async function RequirementPage({ params }: PageProps) {
   return (
     <PageWithBreadcrumb
       breadcrumbs={[
-        { label: 'Frameworks', href: `/${organizationId}/frameworks` },
+        { label: t('Frameworks'), href: `/${organizationId}/frameworks` },
         {
           label: frameworkName,
           href: `/${organizationId}/frameworks/${frameworkInstanceId}`,

@@ -4,6 +4,7 @@ import { Button } from '@comp/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
 import { Integration } from '@db';
+import { T, useGT } from 'gt-next';
 import { RefreshCw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -47,6 +48,7 @@ export const TestsLayout = ({
 }: TestsLayoutProps) => {
   const [executing, setExecuting] = useState(false);
   const [timeToNextRun, setTimeToNextRun] = useState('');
+  const t = useGT();
 
   useEffect(() => {
     const calculateTimeToNextRun = () => {
@@ -63,7 +65,7 @@ export const TestsLayout = ({
       const hours = Math.floor(diff / (1000 * 60 * 60));
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
 
-      setTimeToNextRun(`Next scheduled run in ${hours}h ${minutes}m (daily at 5:00 AM UTC)`);
+      setTimeToNextRun(t('Next scheduled run in {hours}h {minutes}m (daily at 5:00 AM UTC)', { hours, minutes }));
     };
 
     calculateTimeToNextRun(); // Initial calculation
@@ -84,7 +86,7 @@ export const TestsLayout = ({
       await runTests();
     } catch (error) {
       console.error(error);
-      toast.error('Failed to run tests, please try again later or contact support.');
+      toast.error(t('Failed to run tests, please try again later or contact support.'));
     } finally {
       setExecuting(false);
     }
@@ -100,7 +102,7 @@ export const TestsLayout = ({
             handleRunTests={handleRunTests}
             executing={executing}
             isSingleProviderView={true}
-            mainTitle="Cloud Tests Results"
+            mainTitle={t('Cloud Tests Results')}
             timeToNextRunInfo={timeToNextRun}
           />
         );
@@ -113,7 +115,7 @@ export const TestsLayout = ({
             handleRunTests={handleRunTests}
             executing={executing}
             isSingleProviderView={true}
-            mainTitle="Cloud Tests Results"
+            mainTitle={t('Cloud Tests Results')}
             timeToNextRunInfo={timeToNextRun}
           />
         );
@@ -126,7 +128,7 @@ export const TestsLayout = ({
             handleRunTests={handleRunTests}
             executing={executing}
             isSingleProviderView={true}
-            mainTitle="Cloud Tests Results"
+            mainTitle={t('Cloud Tests Results')}
             timeToNextRunInfo={timeToNextRun}
           />
         );
@@ -141,14 +143,18 @@ export const TestsLayout = ({
       {activeProvidersCount > 1 && (
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Cloud Tests Results</h1>
+            <T>
+              <h1 className="text-2xl font-semibold tracking-tight">Cloud Tests Results</h1>
+            </T>
             {timeToNextRun && <p className="text-muted-foreground mt-1 text-xs">{timeToNextRun}</p>}
           </div>
           <div className="flex flex-col items-end">
-            <Button onClick={() => handleRunTests()} disabled={executing}>
-              Run Tests Again{' '}
-              <RefreshCw className={`ml-2 h-4 w-4 ${executing ? 'animate-spin' : ''}`} />
-            </Button>
+            <T>
+              <Button onClick={() => handleRunTests()} disabled={executing}>
+                Run Tests Again{' '}
+                <RefreshCw className={`ml-2 h-4 w-4 ${executing ? 'animate-spin' : ''}`} />
+              </Button>
+            </T>
           </div>
         </div>
       )}
@@ -156,9 +162,9 @@ export const TestsLayout = ({
       {activeProvidersCount > 1 ? (
         <Tabs defaultValue={hasAws ? 'AWS' : hasGcp ? 'GCP' : 'Azure'}>
           <TabsList className={`grid w-full grid-cols-${activeProvidersCount}`}>
-            {hasAws && <TabsTrigger value="AWS">AWS</TabsTrigger>}
-            {hasGcp && <TabsTrigger value="GCP">GCP</TabsTrigger>}
-            {hasAzure && <TabsTrigger value="Azure">Azure</TabsTrigger>}
+            {hasAws && <TabsTrigger value="AWS"><T>AWS</T></TabsTrigger>}
+            {hasGcp && <TabsTrigger value="GCP"><T>GCP</T></TabsTrigger>}
+            {hasAzure && <TabsTrigger value="Azure"><T>Azure</T></TabsTrigger>}
           </TabsList>
           {hasAws && (
             <TabsContent value="AWS" className="mt-4">
@@ -192,7 +198,9 @@ export const TestsLayout = ({
         <div className="mt-4">{renderProviderContent()}</div>
       ) : (
         <div className="text-muted-foreground mt-4 rounded-lg border border-dashed p-10 text-center">
-          <p>No cloud providers configured. Please add an integration.</p>
+          <T>
+            <p>No cloud providers configured. Please add an integration.</p>
+          </T>
         </div>
       )}
     </div>
@@ -209,6 +217,7 @@ function TestProviderTabContent({
   timeToNextRunInfo,
 }: TestProviderTabContentProps) {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const t = useGT();
 
   const uniqueStatuses = Array.from(
     new Set(tests.map((test) => test.status).filter(Boolean) as string[]),
@@ -255,10 +264,10 @@ function TestProviderTabContent({
               {showFilter && (
                 <Select value={selectedStatus} onValueChange={setSelectedStatus}>
                   <SelectTrigger className="bg-background w-[180px]">
-                    <SelectValue placeholder="Filter by status" />
+                    <SelectValue placeholder={t('Filter by status')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="all">{t('All Statuses')}</SelectItem>
                     {uniqueStatuses.map((status) => (
                       <SelectItem key={status} value={status}>
                         {status}
@@ -268,10 +277,12 @@ function TestProviderTabContent({
                 </Select>
               )}
               {showRunButton && (
-                <Button onClick={handleRunTests!} disabled={executing!}>
-                  Run Tests Again{' '}
-                  <RefreshCw className={`ml-2 h-4 w-4 ${executing ? 'animate-spin' : ''}`} />
-                </Button>
+                <T>
+                  <Button onClick={handleRunTests!} disabled={executing!}>
+                    Run Tests Again{' '}
+                    <RefreshCw className={`ml-2 h-4 w-4 ${executing ? 'animate-spin' : ''}`} />
+                  </Button>
+                </T>
               )}
             </div>
           )}
@@ -287,8 +298,10 @@ function TestProviderTabContent({
       ) : (
         <div className="text-muted-foreground rounded-lg border border-dashed p-10 text-center">
           <p>
-            No {providerName} test results found
-            {selectedStatus !== 'all' && ` with status "${selectedStatus}"`}
+            {selectedStatus !== 'all'
+              ? t('No {providerName} test results found with status "{status}"', { providerName, status: selectedStatus })
+              : t('No {providerName} test results found', { providerName })
+            }
           </p>
         </div>
       )}

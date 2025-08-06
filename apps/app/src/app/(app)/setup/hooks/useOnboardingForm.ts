@@ -3,6 +3,7 @@
 import { trackEvent, trackOnboardingEvent } from '@/utils/tracking';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { sendGTMEvent } from '@next/third-parties/google';
+import { useGT } from 'gt-next';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -11,7 +12,7 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 import { createOrganizationMinimal } from '../actions/create-organization-minimal';
 import type { OnboardingFormFields } from '../components/OnboardingStepInput';
-import { companyDetailsSchema, steps } from '../lib/constants';
+import { getCompanyDetailsSchema, getSteps } from '../lib/constants';
 import { updateSetupSession } from '../lib/setup-session';
 import type { CompanyDetails } from '../lib/types';
 
@@ -21,8 +22,7 @@ interface UseOnboardingFormProps {
   currentStep?: string;
 }
 
-// Only use the first 3 steps for the minimal flow
-const prePaymentSteps = steps.slice(0, 3);
+// This line will be moved inside the hook
 
 export function useOnboardingForm({
   setupId,
@@ -31,6 +31,13 @@ export function useOnboardingForm({
 }: UseOnboardingFormProps = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const t = useGT();
+
+  // Get steps with translation function
+  const steps = getSteps(t);
+
+  // Only use the first 3 steps for the minimal flow
+  const prePaymentSteps = steps.slice(0, 3);
 
   // Helper to build URL with search params
   const buildUrlWithParams = (path: string, params?: Record<string, string>) => {
@@ -93,19 +100,20 @@ export function useOnboardingForm({
   }, [setupId, stepIndex, savedAnswers, mounted]);
 
   const step = prePaymentSteps[stepIndex];
+  const companyDetailsSchema = getCompanyDetailsSchema(t);
   const stepSchema = z.object({
-    [step.key]: companyDetailsSchema.shape[step.key],
+    [step.key]: (companyDetailsSchema.shape as any)[step.key],
   });
 
   const form = useForm<OnboardingFormFields>({
     resolver: zodResolver(stepSchema),
     mode: 'onSubmit',
-    defaultValues: { [step.key]: savedAnswers[step.key] || '' },
+    defaultValues: { [step.key]: (savedAnswers as any)[step.key] || '' },
   });
 
   // Reset form defaultValues when stepIndex or savedAnswers change for the current step
   useEffect(() => {
-    form.reset({ [step.key]: savedAnswers[step.key] || '' });
+    form.reset({ [step.key]: (savedAnswers as any)[step.key] || '' });
   }, [savedAnswers, step.key, form]);
 
   const createOrganizationAction = useAction(createOrganizationMinimal, {
@@ -127,13 +135,13 @@ export function useOnboardingForm({
         // Clear answers after successful creation
         setSavedAnswers({});
       } else {
-        toast.error('Failed to create organization');
+        toast.error(t('Failed to create organization'));
         setIsFinalizing(false);
         setIsOnboarding(false);
       }
     },
     onError: () => {
-      toast.error('Failed to create organization');
+      toast.error(t('Failed to create organization'));
       setIsFinalizing(false);
       setIsOnboarding(false);
     },
@@ -156,17 +164,17 @@ export function useOnboardingForm({
 
     for (const key of Object.keys(newAnswers)) {
       if (step.options && step.key === key && key !== 'frameworkIds') {
-        const customValue = newAnswers[`${key}Other`] || '';
-        const values = (newAnswers[key] || '').split(',').filter(Boolean);
+        const customValue = (newAnswers as any)[`${key}Other`] || '';
+        const values = ((newAnswers as any)[key] || '').split(',').filter(Boolean);
 
         if (customValue) {
           values.push(customValue);
         }
 
-        newAnswers[key] = values
+        (newAnswers as any)[key] = values
           .filter((v: string, i: number, arr: string[]) => arr.indexOf(v) === i && v !== '')
           .join(',');
-        delete newAnswers[`${key}Other`];
+        delete (newAnswers as any)[`${key}Other`];
       }
     }
 
@@ -174,7 +182,7 @@ export function useOnboardingForm({
 
     // Track step completion
     trackOnboardingEvent(step.key, stepIndex + 1, {
-      step_value: data[step.key],
+      step_value: (data as any)[step.key],
     });
 
     // Track framework selection specifically
@@ -197,8 +205,8 @@ export function useOnboardingForm({
     if (stepIndex > 0) {
       // Save current form values before going back
       const currentValues = form.getValues();
-      if (currentValues[step.key]) {
-        setSavedAnswers({ ...savedAnswers, [step.key]: currentValues[step.key] });
+      if ((currentValues as any)[step.key]) {
+        setSavedAnswers({ ...savedAnswers, [step.key]: (currentValues as any)[step.key] });
       }
 
       // Clear form errors

@@ -5,6 +5,7 @@ import { Button } from '@comp/ui/button';
 import { Icons } from '@comp/ui/icons';
 import { Sheet, SheetContent } from '@comp/ui/sheet';
 import type { Member, Task, User } from '@db';
+import { T, useGT } from 'gt-next';
 import { PencilIcon } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useQueryState } from 'nuqs';
@@ -12,7 +13,7 @@ import { useQueryState } from 'nuqs';
 // Dynamically import the UpdateTaskSheet component
 const UpdateTaskSheet = dynamic(
   () => import('./update-task-sheet').then((mod) => mod.UpdateTaskSheet),
-  { ssr: false, loading: () => <div>Loading...</div> },
+  { ssr: false, loading: () => <T><div>Loading...</div></T> },
 );
 
 interface TitleProps {
@@ -23,6 +24,7 @@ interface TitleProps {
 }
 
 export default function Title({ task, assignees }: TitleProps) {
+  const t = useGT();
   const [isOpen, setOpen] = useQueryState('task-overview-sheet');
   const open = isOpen === 'true';
 

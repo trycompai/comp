@@ -4,8 +4,10 @@ import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import { Impact, Likelihood } from '@db';
 import { AnimatePresence, motion } from 'framer-motion';
+import { T, useGT } from 'gt-next';
 import { Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import type { InlineTranslationOptions } from 'gt-next/types';
 
 const LIKELIHOOD_SCORES: Record<Likelihood, number> = {
   very_unlikely: 1,
@@ -62,16 +64,20 @@ const getRiskColor = (level: string) => {
   }
 };
 
-const probabilityLevels = ['Very Likely', 'Likely', 'Possible', 'Unlikely', 'Very Unlikely'];
-const probabilityNumbers = ['5', '4', '3', '2', '1'];
-const probabilityLabels = [
-  'Very Likely (5)',
-  'Likely (4)',
-  'Possible (3)',
-  'Unlikely (2)',
-  'Very Unlikely (1)',
+const getProbabilityLevels = (t: (content: string, options?: InlineTranslationOptions) => string) => [
+  t('Very Likely'), t('Likely'), t('Possible'), t('Unlikely'), t('Very Unlikely')
 ];
-const impactLevels = ['Insignificant', 'Minor', 'Moderate', 'Major', 'Severe'];
+const probabilityNumbers = ['5', '4', '3', '2', '1'];
+const getProbabilityLabels = (t: (content: string, options?: InlineTranslationOptions) => string) => [
+  t('Very Likely (5)'),
+  t('Likely (4)'),
+  t('Possible (3)'),
+  t('Unlikely (2)'),
+  t('Very Unlikely (1)'),
+];
+const getImpactLevels = (t: (content: string, options?: InlineTranslationOptions) => string) => [
+  t('Insignificant'), t('Minor'), t('Moderate'), t('Major'), t('Severe')
+];
 const impactNumbers = ['1', '2', '3', '4', '5'];
 
 interface RiskMatrixChartProps {
@@ -96,6 +102,10 @@ export function RiskMatrixChart({
   const [activeLikelihood, setActiveLikelihood] = useState<Likelihood>(initialLikelihoodProp);
   const [activeImpact, setActiveImpact] = useState<Impact>(initialImpactProp);
   const [loading, setLoading] = useState(false);
+  const t = useGT();
+  const probabilityLevels = getProbabilityLevels(t);
+  const probabilityLabels = getProbabilityLabels(t);
+  const impactLevels = getImpactLevels(t);
 
   useEffect(() => {
     setInitialLikelihood(initialLikelihoodProp);
@@ -175,7 +185,7 @@ export function RiskMatrixChart({
                 transition={{ duration: 0.15, ease: 'easeOut' }}
               >
                 <Button onClick={handleSave} variant="default" disabled={loading}>
-                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('Save')}
                 </Button>
               </motion.div>
             )}
@@ -231,7 +241,7 @@ export function RiskMatrixChart({
               ))}
             </div>
             <div className="mt-2 flex justify-center">
-              <span className="text-xs">{'Impact'}</span>
+              <span className="text-xs">{t('Impact')}</span>
             </div>
           </div>
         </div>

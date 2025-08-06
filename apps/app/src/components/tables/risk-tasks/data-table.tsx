@@ -9,6 +9,7 @@ import { type RiskTaskType, useColumns as getColumns } from './columns';
 import { DataTableHeader } from './data-table-header';
 import { DataTablePagination } from './data-table-pagination';
 import { Loading } from './loading';
+import { T } from 'gt-next';
 
 interface DataTableProps<TData, TValue> {
   columnHeaders: {
@@ -67,7 +68,7 @@ export function DataTable<TData, TValue>({
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  {'No results found'}
+                  <T>No results found</T>
                 </TableCell>
               </TableRow>
             )}

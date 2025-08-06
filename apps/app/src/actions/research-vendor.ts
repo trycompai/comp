@@ -1,6 +1,7 @@
 'use server';
 
 import { researchVendor } from '@/jobs/tasks/scrape/research';
+import { getGT } from 'gt-next/server';
 import { tasks } from '@trigger.dev/sdk/v3';
 import { z } from 'zod';
 import { authActionClient } from './safe-action';
@@ -19,9 +20,10 @@ export const researchVendorAction = authActionClient
       const { activeOrganizationId } = session;
 
       if (!activeOrganizationId) {
+        const t = await getGT();
         return {
           success: false,
-          error: 'Not authorized',
+          error: t('Not authorized'),
         };
       }
 
@@ -36,10 +38,11 @@ export const researchVendorAction = authActionClient
     } catch (error) {
       console.error('Error in researchVendorAction:', error);
 
+      const t = await getGT();
       return {
         success: false,
         error: {
-          message: error instanceof Error ? error.message : 'An unexpected error occurred.',
+          message: error instanceof Error ? error.message : t('An unexpected error occurred.'),
         },
       };
     }

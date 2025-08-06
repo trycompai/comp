@@ -1,6 +1,7 @@
 'use client';
 
 import type { Control, FrameworkEditorRequirement, RequirementMap, Task } from '@db';
+import { T } from 'gt-next';
 import { RequirementControlsTable } from './table/RequirementControlsTable';
 
 interface RequirementControlsProps {
@@ -28,7 +29,7 @@ export function RequirementControls({
       <div className="space-y-4">
         <div className="border-muted flex items-center justify-between border-b pb-3">
           <div className="flex items-center gap-2">
-            <h2 className="text-base font-medium">Controls</h2>
+            <T><h2 className="text-base font-medium">Controls</h2></T>
             <span className="text-muted-foreground bg-muted/50 rounded-xs px-2 py-1 text-xs tabular-nums">
               {relatedControls.length}
             </span>

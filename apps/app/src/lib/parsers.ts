@@ -1,7 +1,7 @@
 import { createParser } from 'nuqs/server';
 import { z } from 'zod';
 
-import { dataTableConfig } from '@/lib/data-table-config';
+import { StaticDataTableConfig as dataTableConfig } from '@/lib/data-table-config';
 
 import type { ExtendedColumnFilter, ExtendedColumnSort } from '@/types/data-table';
 
@@ -21,7 +21,7 @@ export const getSortingStateParser = <TData>(columnIds?: string[] | Set<string>)
 
         if (!result.success) return null;
 
-        if (validKeys && result.data.some((item) => !validKeys.has(item.id))) {
+        if (validKeys && result.data.some((item) => !validKeys.has(String(item.id)))) {
           return null;
         }
 
@@ -58,7 +58,7 @@ export const getFiltersStateParser = <TData>(columnIds?: string[] | Set<string>)
 
         if (!result.success) return null;
 
-        if (validKeys && result.data.some((item) => !validKeys.has(item.id))) {
+        if (validKeys && result.data.some((item) => !validKeys.has(String(item.id)))) {
           return null;
         }
 

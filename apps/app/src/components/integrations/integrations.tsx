@@ -5,6 +5,7 @@ import { Button } from '@comp/ui/button';
 import { Integration } from '@db';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { IntegrationsCard } from './integrations-card';
+import { T, useGT } from 'gt-next';
 
 // Update the type to include lastRunAt and nextRunAt
 type ExtendedOrganizationIntegrations = Integration & {
@@ -17,6 +18,7 @@ export function OrganizationIntegration({
 }: {
   installed: ExtendedOrganizationIntegrations[];
 }) {
+  const t = useGT();
   const searchParams = useSearchParams();
   const isInstalledPage = searchParams.get('tab') === 'installed';
   const search = searchParams.get('q');
@@ -59,29 +61,33 @@ export function OrganizationIntegration({
 
   if (search && Object.keys(integrationsByCategory).length === 0) {
     return (
-      <div className="flex h-[calc(100vh-400px)] flex-col items-center justify-center">
-        <h3 className="text-foreground text-lg font-semibold">No integrations found</h3>
-        <p className="text-muted-foreground mt-2 max-w-md text-center text-sm">
-          No integrations found for your search, let us know if you want to see a specific
-          integration.
-        </p>
+      <T>
+        <div className="flex h-[calc(100vh-400px)] flex-col items-center justify-center">
+          <h3 className="text-foreground text-lg font-semibold">No integrations found</h3>
+          <p className="text-muted-foreground mt-2 max-w-md text-center text-sm">
+            No integrations found for your search, let us know if you want to see a specific
+            integration.
+          </p>
 
-        <Button onClick={() => router.push('/integrations')} className="mt-4" variant="outline">
-          Clear search
-        </Button>
-      </div>
+          <Button onClick={() => router.push('/integrations')} className="mt-4" variant="outline">
+            Clear search
+          </Button>
+        </div>
+      </T>
     );
   }
 
   if (!search && Object.keys(integrationsByCategory).length === 0) {
     return (
-      <div className="flex h-[calc(100vh-400px)] flex-col items-center justify-center">
-        <h3 className="text-foreground text-lg font-semibold">No integrations installed</h3>
-        <p className="text-muted-foreground mt-2 max-w-md text-center text-sm">
-          You haven't installed any integrations yet. Go to the 'All Integrations' tab to browse
-          available integrations.
-        </p>
-      </div>
+      <T>
+        <div className="flex h-[calc(100vh-400px)] flex-col items-center justify-center">
+          <h3 className="text-foreground text-lg font-semibold">No integrations installed</h3>
+          <p className="text-muted-foreground mt-2 max-w-md text-center text-sm">
+            You haven't installed any integrations yet. Go to the 'All Integrations' tab to browse
+            available integrations.
+          </p>
+        </div>
+      </T>
     );
   }
 

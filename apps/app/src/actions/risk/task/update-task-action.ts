@@ -6,10 +6,14 @@ import type { TaskStatus } from '@db';
 import { db } from '@db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { authActionClient } from '../../safe-action';
-import { updateTaskSchema } from '../../schema';
+import { getUpdateTaskSchema } from '../../schema';
+import { getGT } from 'gt-next/server';
 
 export const updateTaskAction = authActionClient
-  .inputSchema(updateTaskSchema)
+  .inputSchema(async () => {
+    const t = await getGT();
+    return getUpdateTaskSchema(t);
+  })
   .metadata({
     name: 'update-task',
     track: {

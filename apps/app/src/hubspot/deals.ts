@@ -1,3 +1,4 @@
+import { getGT } from 'gt-next/server';
 import { makeHubSpotRequest } from './api-client';
 import type { CreateHubSpotDealResult } from './types';
 
@@ -115,6 +116,7 @@ export async function createDeal({
     dealStage,
     complianceNeeds,
   });
+  const t = await getGT();
 
   try {
     // Check if a deal already exists for this contact
@@ -124,7 +126,7 @@ export async function createDeal({
       console.log('[HubSpot] Deal already exists for this contact, skipping creation');
       return {
         success: true,
-        message: 'Deal already exists',
+        message: t('Deal already exists'),
         dealId: existingDealId,
       };
     }
@@ -175,7 +177,7 @@ export async function createDeal({
 
     return {
       success: true,
-      message: 'Deal created successfully',
+      message: t('Deal created successfully'),
       dealId,
     };
   } catch (error) {

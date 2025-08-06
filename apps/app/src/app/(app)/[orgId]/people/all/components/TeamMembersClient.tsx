@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { authClient } from '@/utils/auth-client';
+import { T, useGT } from 'gt-next';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent } from '@comp/ui/card';
 import { Input } from '@comp/ui/input';
@@ -49,6 +50,7 @@ export function TeamMembersClient({
   removeMemberAction,
   revokeInvitationAction,
 }: TeamMembersClientProps) {
+  const t = useGT();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useQueryState('search', parseAsString.withDefault(''));
   const [roleFilter, setRoleFilter] = useQueryState('role', parseAsString.withDefault('all'));
@@ -126,7 +128,7 @@ export function TeamMembersClient({
       router.refresh(); // Add client-side refresh as well
     } else {
       // Error case
-      const errorMessage = result?.serverError || 'Failed to add user';
+      const errorMessage = result?.serverError || t('Failed to add user');
       console.error('Cancel Invitation Error:', errorMessage);
     }
   };
@@ -135,11 +137,11 @@ export function TeamMembersClient({
     const result = await removeMemberAction({ memberId });
     if (result?.data) {
       // Success case
-      toast.success('has been removed from the organization');
+      toast.success(t('has been removed from the organization'));
       router.refresh(); // Add client-side refresh as well
     } else {
       // Error case
-      const errorMessage = result?.serverError || 'Failed to remove member';
+      const errorMessage = result?.serverError || t('Failed to remove member');
       console.error('Remove Member Error:', errorMessage);
       toast.error(errorMessage);
     }
@@ -153,13 +155,13 @@ export function TeamMembersClient({
     // Client-side check (optional, robust check should be server-side in authClient)
     if (member && member.role === 'owner' && !rolesArray.includes('owner')) {
       // Show toast error directly, no need to return an error object
-      toast.error('The Owner role cannot be removed.');
+      toast.error(t('The Owner role cannot be removed.'));
       return;
     }
 
     // Ensure at least one role is selected
     if (rolesArray.length === 0) {
-      toast.warning('Please select at least one role.');
+      toast.warning(t('Please select at least one role.'));
       return;
     }
 
@@ -169,7 +171,7 @@ export function TeamMembersClient({
         memberId: memberId,
         role: rolesArray, // Pass the array of roles
       });
-      toast.success('Member roles updated successfully.');
+      toast.success(t('Member roles updated successfully.'));
       router.refresh(); // Revalidate data
     } catch (error) {
       console.error('Update Role Error:', error);
@@ -179,7 +181,7 @@ export function TeamMembersClient({
         toast.error(error.message);
         return;
       }
-      toast.error('Failed to update member roles');
+      toast.error(t('Failed to update member roles'));
     }
   };
 
@@ -195,7 +197,7 @@ export function TeamMembersClient({
       <div className="mb-4 flex items-center justify-between gap-4">
         <div className="relative flex-1">
           <Input
-            placeholder={'Search people...'}
+            placeholder={t('Search people...')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value || null)}
             leftIcon={<Search size={14} />}
@@ -217,19 +219,19 @@ export function TeamMembersClient({
           onValueChange={(value) => setRoleFilter(value === 'all' ? null : value)}
         >
           <SelectTrigger className="hidden w-[180px] sm:flex">
-            <SelectValue placeholder={'All Roles'} />
+            <SelectValue placeholder={t('All Roles')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{'All Roles'}</SelectItem>
-            <SelectItem value="owner">{'Owner'}</SelectItem>
-            <SelectItem value="admin">{'Admin'}</SelectItem>
-            <SelectItem value="auditor">{'Auditor'}</SelectItem>
-            <SelectItem value="employee">{'Employee'}</SelectItem>
+            <SelectItem value="all"><T>All Roles</T></SelectItem>
+            <SelectItem value="owner"><T>Owner</T></SelectItem>
+            <SelectItem value="admin"><T>Admin</T></SelectItem>
+            <SelectItem value="auditor"><T>Auditor</T></SelectItem>
+            <SelectItem value="employee"><T>Employee</T></SelectItem>
           </SelectContent>
         </Select>
         <Button onClick={() => setIsInviteModalOpen(true)}>
           <UserPlus className="h-4 w-4" />
-          {'Add User'}
+          <T>Add User</T>
         </Button>
       </div>
       <Card className="border">
@@ -263,13 +265,13 @@ export function TeamMembersClient({
           {activeMembers.length === 0 && pendingInvites.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <Mail className="text-muted-foreground/30 h-12 w-12" />
-              <h3 className="mt-4 text-lg font-medium">{'No employees yet'}</h3>
+              <h3 className="mt-4 text-lg font-medium"><T>No employees yet</T></h3>
               <p className="text-muted-foreground mt-2 max-w-xs text-sm">
-                {'Get started by inviting your first team member.'}
+                <T>Get started by inviting your first team member.</T>
               </p>
               <Button className="mt-4" onClick={() => setIsInviteModalOpen(true)}>
                 <UserPlus className="mr-2 h-4 w-4" />
-                {'Add User'}
+                <T>Add User</T>
               </Button>
             </div>
           )}

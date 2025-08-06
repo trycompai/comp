@@ -5,6 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@comp/ui/c
 import { Form } from '@comp/ui/form';
 import type { Departments, Member, User } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { T, useGT } from 'gt-next';
 import { Save } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useForm } from 'react-hook-form';
@@ -17,7 +18,7 @@ import { JoinDate } from './Fields/JoinDate';
 import { Name } from './Fields/Name';
 import { Status } from './Fields/Status';
 
-// Define form schema with Zod
+// Define form schema with Zod - validation messages will be translated in the component
 const employeeFormSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.string().email('Invalid email address'),
@@ -35,6 +36,7 @@ export const EmployeeDetails = ({
     user: User;
   };
 }) => {
+  const t = useGT();
   const form = useForm<EmployeeFormValues>({
     resolver: zodResolver(employeeFormSchema),
     defaultValues: {
@@ -49,10 +51,10 @@ export const EmployeeDetails = ({
 
   const { execute, status: actionStatus } = useAction(updateEmployee, {
     onSuccess: () => {
-      toast.success('Employee details updated successfully');
+      toast.success(t('Employee details updated successfully'));
     },
     onError: (error) => {
-      toast.error(error?.error?.serverError || 'Failed to update employee details');
+      toast.error(error?.error?.serverError || t('Failed to update employee details'));
     },
   });
 
@@ -91,17 +93,21 @@ export const EmployeeDetails = ({
       await execute(updateData);
     } else {
       // No changes were made
-      toast.info('No changes to save');
+      toast.info(t('No changes to save'));
     }
   };
 
   return (
     <Card className="p-6">
       <CardHeader className="px-0 pt-0 pb-6">
-        <CardTitle className="text-2xl font-semibold">Employee Details</CardTitle>
-        <p className="text-muted-foreground">
-          Manage employee information and department assignment
-        </p>
+        <CardTitle className="text-2xl font-semibold">
+          <T>Employee Details</T>
+        </CardTitle>
+        <T>
+          <p className="text-muted-foreground">
+            Manage employee information and department assignment
+          </p>
+        </T>
       </CardHeader>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -126,7 +132,7 @@ export const EmployeeDetails = ({
               {!(form.formState.isSubmitting || actionStatus === 'executing') && (
                 <Save className="h-4 w-4" />
               )}
-              {form.formState.isSubmitting || actionStatus === 'executing' ? 'Saving...' : 'Save'}
+              {form.formState.isSubmitting || actionStatus === 'executing' ? t('Saving...') : t('Save')}
             </Button>
           </CardFooter>
         </form>

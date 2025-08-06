@@ -1,5 +1,6 @@
 import { LogoSpinner } from '@/components/logo-spinner';
 import { TriggerTokenProvider } from '@/components/trigger-token-provider';
+import { T } from 'gt-next';
 import { db } from '@db';
 import { cookies } from 'next/headers';
 import { OnboardingStatus } from './components/onboarding-status';
@@ -27,10 +28,14 @@ export default async function RunPage({ params }: PageProps) {
         <div className="bg-card relative w-full max-w-[440px] border p-8 shadow-lg">
           <div className="flex flex-col justify-center space-y-4">
             <div className="flex flex-col justify-center gap-2 text-center">
-              <h2 className="text-xl font-semibold tracking-tight">Onboarding Not Found</h2>
-              <p className="text-muted-foreground text-sm">
-                No onboarding process found for this organization.
-              </p>
+              <T>
+                <h2 className="text-xl font-semibold tracking-tight">Onboarding Not Found</h2>
+              </T>
+              <T>
+                <p className="text-muted-foreground text-sm">
+                  No onboarding process found for this organization.
+                </p>
+              </T>
             </div>
           </div>
         </div>
@@ -45,12 +50,16 @@ export default async function RunPage({ params }: PageProps) {
           <div className="animate-in fade-in slide-in-from-bottom-4 flex flex-col justify-center space-y-4 duration-300">
             <div className="flex flex-col justify-center gap-2">
               <LogoSpinner />
-              <h2 className="text-center text-xl font-semibold tracking-tight">
-                Onboarding in progress
-              </h2>
-              <p className="text-muted-foreground text-center text-sm">
-                This may take a few minutes.
-              </p>
+              <T>
+                <h2 className="text-center text-xl font-semibold tracking-tight">
+                  Onboarding in progress
+                </h2>
+              </T>
+              <T>
+                <p className="text-muted-foreground text-center text-sm">
+                  This may take a few minutes.
+                </p>
+              </T>
               <div className="flex flex-col items-center justify-center">
                 <OnboardingStatus runId={id} />
               </div>

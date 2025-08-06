@@ -2,6 +2,7 @@
 
 import { ClientTooltip } from '@comp/ui/chart-tooltip';
 import { format, max, scaleBand, scaleLinear } from 'd3';
+import { T, useGT } from 'gt-next';
 import { type CSSProperties } from 'react';
 
 interface CategoryData {
@@ -25,9 +26,11 @@ export function VendorCategoryChart({
 
   if (sortedData.length === 0) {
     return (
-      <div className="text-muted-foreground flex h-[300px] items-center justify-center">
-        No categories with risks found
-      </div>
+      <T>
+        <div className="text-muted-foreground flex h-[300px] items-center justify-center">
+          No categories with risks found
+        </div>
+      </T>
     );
   }
 

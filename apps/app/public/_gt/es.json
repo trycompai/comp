@@ -1,0 +1,3061 @@
+{
+  "740c728118e75062": "No autorizado",
+  "975483a69922af85": "Organización no encontrada",
+  "dec9bde15f2f8850": "Error al cambiar la organización",
+  "3fc6a8884ced0400": "No autorizado",
+  "4d5ecbb9f076fe6e": "Se produjo un error inesperado.",
+  "e728130d0e1f972d": "Demasiadas solicitudes",
+  "61d19c2f2b329848": "Miembro no encontrado",
+  "d3ef162509d76043": "Se requiere el ID de la organización",
+  "901feeda33e0d06a": "No tienes acceso a esta organización",
+  "fe8ed6127f1d8a28": "Intentar de nuevo",
+  "661f590ac8bf4c12": "Contáctanos",
+  "a3549d339504d412": [
+    {
+      "i": 1,
+      "c": "Algo salió mal"
+    },
+    {
+      "i": 2,
+      "c": [
+        "Ha ocurrido un error inesperado. Por favor, inténtelo de nuevo",
+        {
+          "i": 3
+        },
+        " o contacte al soporte técnico si el problema persiste."
+      ]
+    }
+  ],
+  "35a1feb2130a712d": "Comp AI | Automatiza el cumplimiento de SOC 2, ISO 27001 y GDPR con IA.",
+  "bb3d124093904892": "Automatiza el cumplimiento de SOC 2, ISO 27001 y GDPR con IA.",
+  "9504f1b4596c3aa4": [
+    {
+      "i": 1,
+      "c": "404 - Página no encontrada"
+    },
+    {
+      "i": 2,
+      "c": "La página que está buscando no existe."
+    },
+    {
+      "i": 3,
+      "c": "Regresar al panel de control"
+    }
+  ],
+  "3d881add2571492c": {
+    "i": 1,
+    "c": "Acceso No Autorizado"
+  },
+  "fae26e6024bab53c": {
+    "i": 1,
+    "c": "No tienes permisos para acceder a este recurso. Por favor, contacta a tu administrador si crees que esto es un error."
+  },
+  "43db39dd2edbe8d3": "Volver al Inicio",
+  "1ea978ddd129c39d": {
+    "i": 1,
+    "c": "Garantía de devolución del 100% del dinero • Cancela en cualquier momento"
+  },
+  "b41159357b2fc542": "Usuario Desconocido",
+  "f86d1b3defd75cea": "Ninguno",
+  "b98a45755fc28047": "(Tú)",
+  "136d5c823f7a2b04": {
+    "i": 1,
+    "c": "Asignado"
+  },
+  "921823d2710f0cea": "Analizando su stack tecnológico",
+  "e5ec62b46bf0162c": "AWS, GitHub, Stripe detectados",
+  "0ef15ba8f1c13bfd": "Investigando el cumplimiento del proveedor",
+  "a759ca99afbd59cb": "Verificando certificaciones de SOC 2 y seguridad",
+  "1730109fd84ea55b": "Redactando políticas de seguridad",
+  "75517b6b1237c41b": "Basado en su infraestructura",
+  "af7de767352d671d": "Identificando riesgos de cumplimiento",
+  "f57a749d9525e3d2": "Escaneando brechas y vulnerabilidades",
+  "7797799c48d1db67": "Configurando monitoreo",
+  "9c499c51fcbcdc68": "Seguimiento continuo de cumplimiento",
+  "b88e702dbaef0af4": "{completedCount} de {totalTasks} tareas completadas • Tiempo estimado restante: {timeRemaining}",
+  "be72aef821e2e6ed": "6-7 min",
+  "a6cdceda407c3317": "5-6 min",
+  "3a284a2c87fc3d10": "4-5 min",
+  "e0feb46352dfbeed": "3-4 min",
+  "cd1a33e3f01bcb43": "2-3 min",
+  "4b6c8714969fd747": "1-2 min",
+  "8e51c7064dacfb04": "Casi terminado...",
+  "b476049077f53672": "{progress}% completado{finalizingText}",
+  "3cce07a47aaecd1e": " - Finalizando...",
+  "b28df67f03ec4491": {
+    "i": 1,
+    "c": "La IA está construyendo tu programa de cumplimiento"
+  },
+  "df758aed564578d6": {
+    "i": 1,
+    "c": "Este proceso generalmente toma de 2 a 7 minutos en completarse"
+  },
+  "d9922fa69558da06": {
+    "i": 1,
+    "c": "Estamos analizando exhaustivamente su infraestructura para crear políticas precisas y personalizadas"
+  },
+  "586834ef482b8cb6": {
+    "i": 1,
+    "c": "Progreso del trabajo en segundo plano"
+  },
+  "0ecee0db45b29cb8": "Redactando Política de Seguridad de la Información",
+  "41eb5d2e0ac21481": "Personalizando según su infraestructura AWS y controles de seguridad",
+  "705ad1e9215891e8": "Investigando el Cumplimiento de Stripe",
+  "192f59e06cb05a89": "Analizando el cumplimiento de PCI DSS y las certificaciones de seguridad de pagos",
+  "43c0fc0b0765c229": "Evaluando Riesgos de Privacidad de Datos",
+  "1f4cda4f455396dc": "Mapeo de flujos de datos personales en sus sistemas",
+  "73c91b7f8448fee2": "Redactando Política de Control de Acceso",
+  "4c17cf0d2d77e685": "Incorporando su SSO de Okta y permisos basados en roles",
+  "76eadd3311d0f323": "Implementación de Controles de Cifrado",
+  "f387bc66ce7f1d67": "Configuración de estándares de TLS, datos en reposo y gestión de claves",
+  "c79f9d843b64606a": "Auditoría de Seguridad de GitHub",
+  "24b539d6c46ee952": "Revisando protección de ramas, controles de acceso y registros de auditoría",
+  "0e767dec0ac47b2e": "Creando Plan de Respuesta a Incidentes",
+  "b9b4315727ce98ac": "Creación de manuales de procedimientos para eventos de seguridad y violaciones de datos",
+  "6734e2ac39097884": "Recopilando Evidencia de AWS",
+  "8078cc4471f1190f": "Recopilando registros de CloudTrail, políticas de IAM y configuraciones de seguridad",
+  "be490db0e89674ea": "Evaluación de Riesgos de Terceros",
+  "3e2777d759c3b3ea": "Evaluando la postura de seguridad del proveedor y las brechas de cumplimiento",
+  "c48f9926af7bae34": "Redactando Política de Retención de Datos",
+  "7165542ad767c873": "Alineándose con los requisitos de GDPR y las necesidades empresariales",
+  "b2a0632a3aec87fb": "Monitoreo de la Postura de Seguridad",
+  "6c6cc1876cef4838": "Verificaciones continuas de cumplimiento en toda la infraestructura en la nube",
+  "ee2c96450c3ab873": "Construyendo Programa de Gestión de Proveedores",
+  "14f1e7c9da8d1177": "Estableciendo ciclos de revisión y flujos de trabajo de evaluación de riesgos",
+  "5809ba843c16e377": {
+    "i": 1,
+    "c": "Nuestra IA te está preparando para la auditoría"
+  },
+  "8427bf4f149f5a5b": {
+    "i": 1,
+    "c": "Hemos comenzado a redactar políticas personalizadas, investigar el cumplimiento de proveedores y evaluar riesgos potenciales para prepararte para la auditoría."
+  },
+  "ed08a01e762c7765": {
+    "i": 1,
+    "c": "Selecciona un plan para obtener acceso a tu programa de cumplimiento personalizado."
+  },
+  "2769ade1e5eccf30": "Nuevo",
+  "25f457f910ba96b7": "Recomendado",
+  "7cf477b54cbf9769": {
+    "i": 1,
+    "c": "Más información"
+  },
+  "f9e880ecfe39b966": "Beta",
+  "9d0c85d70bfa0721": {
+    "i": 1,
+    "c": "Algo salió mal"
+  },
+  "9d9ec53c2f6ea64e": {
+    "i": 1,
+    "c": "Intentar de nuevo"
+  },
+  "bcb78c262877e19c": "¡Gracias por sus comentarios!",
+  "f782f382eda43e85": "Error al enviar comentarios - ¿intentar de nuevo?",
+  "3526439d22b4696f": "Ideas para mejorar esta página o problemas que esté experimentando.",
+  "64f73192f64818f0": "Enviar Comentarios",
+  "3fdad70790a340de": {
+    "i": 1,
+    "c": "Comentarios"
+  },
+  "ccde12c7d155ce35": {
+    "i": 1,
+    "c": [
+      {
+        "i": 2,
+        "c": "¡Gracias por sus comentarios!"
+      },
+      {
+        "i": 3,
+        "c": "Nos pondremos en contacto con usted lo antes posible",
+        "t": "p"
+      }
+    ]
+  },
+  "f9d36d83a18e0bd5": "No se puede cargar más de 1 archivo a la vez",
+  "0d2bebe6b9b7ce80": "No se pueden cargar más archivos que el máximo permitido",
+  "ae8eb47da1dad13d": "No hay archivos seleccionados",
+  "9a4dad23ee4c833b": "El archivo {fileName} fue rechazado",
+  "179ef651bab441c9": "{count} archivos",
+  "c6e2b2d0996be976": "un archivo",
+  "98daadfd5e198286": "Subiendo {target}...",
+  "430ef2be0013bc62": "Archivos cargados",
+  "60a4205d70aa79b2": "Error al cargar archivos",
+  "fe6b742b4f127fbe": {
+    "i": 1,
+    "c": [
+      {
+        "i": 2,
+        "c": {
+          "t": "Upload",
+          "i": 3
+        }
+      },
+      {
+        "i": 4,
+        "c": "Suelta los archivos aquí"
+      }
+    ]
+  },
+  "c03965bbe59a4080": {
+    "i": 1,
+    "c": [
+      {
+        "i": 2,
+        "c": {
+          "t": "Upload",
+          "i": 3
+        }
+      },
+      {
+        "i": 4,
+        "c": [
+          {
+            "i": 5,
+            "c": "Suelta archivos aquí o haz clic para elegir archivos de tu dispositivo."
+          },
+          {
+            "i": 6,
+            "c": [
+              "Los archivos pueden tener hasta ",
+              {
+                "i": 7,
+                "k": "_gt_value_7",
+                "v": "v"
+              },
+              "."
+            ],
+            "t": "p"
+          }
+        ],
+        "t": "div"
+      }
+    ]
+  },
+  "5be3259dc52851fc": [
+    "v",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    }
+  ],
+  "1edad1fefd7df554": {
+    "i": 1,
+    "c": [
+      {
+        "i": 2
+      },
+      "Continuar con GitHub"
+    ]
+  },
+  "1e880b9a65472bca": {
+    "i": 1,
+    "c": [
+      {
+        "i": 2
+      },
+      "Continuar con Google"
+    ]
+  },
+  "f60cac73aa39ed39": "Enlace mágico enviado",
+  "f4f3595427a6949a": [
+    "Revisa tu bandeja de entrada en ",
+    {
+      "i": 1,
+      "c": {
+        "i": 2,
+        "k": "_gt_value_2",
+        "v": "v"
+      }
+    },
+    " para encontrar un enlace mágico para iniciar sesión."
+  ],
+  "71f67c3c3c85d78c": "Usar otro método",
+  "b242b18b1e0292fd": "Más opciones",
+  "881626e52856cf98": "Error al enviar el correo electrónico - ¿intentar de nuevo?",
+  "a78ed173cd68c144": "nombre@ejemplo.com",
+  "df7ef2aa0b99739a": "Continuar con correo electrónico",
+  "475b6babba755551": "Marcos de trabajo",
+  "2f66fab970291832": "Controles",
+  "52a43163cd17a362": "Políticas",
+  "fae3639874428042": "Tareas",
+  "ae844e9e87d50d26": "Personas",
+  "a57fa374fadbfa45": "Riesgos",
+  "0a4b18bbce20d8b8": "Proveedores",
+  "0d3f3a65c1686c1f": "Pruebas en la Nube",
+  "c37237fc8d425018": "Integraciones",
+  "45fa271ea0e1ac8e": "Beta",
+  "83ba12b529bef16e": "Referencias",
+  "0a75e464d833bca8": "Configuración",
+  "1a32674abce95535": "Próximamente",
+  "2b9fbbac40c37101": "Es necesario asegurar que {itemTitle} se alinee con los controles de acceso lógico SOC 2 CC6.1...",
+  "129d653a009388ac": "La organización utiliza AWS y Okta, debe incorporar requisitos específicos de la nube.",
+  "f23c067fee7bb793": "NIST 800-53 sugiere implementar AC-2 para los procedimientos de gestión de cuentas.",
+  "5e4e337077a12a87": "Hallazgo de auditoría anterior: falta de flujos de trabajo de aprobación documentados. Agregando sección 4.2.",
+  "35ee598510e2cb11": "Referencia cruzada con ISO 27001 A.9.2.1 - Registro y cancelación de registro de usuarios.",
+  "64148bf0eac8d3a5": "La política debe ser ejecutable para el equipo de DevOps, evitando un lenguaje excesivamente restrictivo.",
+  "9b389859fd57cf7a": "Incluyendo ejemplos específicos de roles de AWS IAM para hacer que la política sea concreta e implementable.",
+  "22592ea85ba402ae": "Niveles de clasificación de datos: Público, Interno, Confidencial, Restringido. Mapeando acceso.",
+  "87f03d1e1621e93e": "El equipo legal requiere cumplimiento del Artículo 32 de GDPR - agregando requisitos de cifrado.",
+  "846fa512ba420d44": "Considerando los principios de confianza cero mientras se mantiene la eficiencia operacional.",
+  "ae5bbf219cdeeb32": "La Sección 3.1 necesita una ruta de escalamiento más clara para las aprobaciones de solicitudes de acceso.",
+  "75dccab119eb6e72": "Agregando requisitos de revisión de acceso trimestral basados en las mejores prácticas de la industria.",
+  "f27207ad1e218172": "Verificando si {itemTitle} tiene un informe SOC 2 Tipo II válido con fecha dentro de los últimos 12 meses...",
+  "d6514386f8c3d26f": "Se encontró un incidente de seguridad del tercer trimestre de 2023. Evaluando las medidas de remediación implementadas.",
+  "e5ee41f02528b043": "El proveedor procesa datos de pago - se requiere verificación de cumplimiento de PCI DSS.",
+  "6fbd84f837cd18af": "Analizando términos del BAA: eliminación de datos dentro de 30 días, cifrado en reposo confirmado.",
+  "b569abc041153c55": "La lista de subprocesadores incluye AWS us-east-1. Verificando los requisitos de residencia de datos.",
+  "9eb26380d6d12818": "La autenticación de API utiliza OAuth 2.0 con tokens JWT. Revisando la expiración de tokens.",
+  "af670a0f23e7ba9d": "El proveedor obtuvo una puntuación de 89/100 en el último cuestionario de seguridad. Identificando áreas de mejora.",
+  "f91bae6a6e7c6105": "DPA de GDPR firmado el 2024-01-15. Las obligaciones del Artículo 28 parecen estar cumplidas.",
+  "e042a95c39abf2ea": "El informe de prueba de penetración muestra dos hallazgos de nivel medio - ambos remediados.",
+  "b62bb1387099e5fe": "El SLA garantiza un 99.9% de tiempo de actividad. Tiempo de respuesta a incidentes: 4 horas para críticos.",
+  "c845470f06a4fc92": "Cobertura de seguro: $10M responsabilidad cibernética. Adecuada para nuestro perfil de riesgo.",
+  "9e9830ffba816c49": "La integración requiere acceso de solo lectura a la API. Menor riesgo que los permisos de escritura.",
+  "0ea2933bc2458829": "{itemTitle} procesa aproximadamente 50K registros de clientes mensualmente...",
+  "3c1523c4cd8fb599": "Perfil del actor de amenaza: atacantes externos que se dirigen a credenciales de SaaS mediante phishing.",
+  "0e9e3ab055b8904f": "Adopción actual de MFA al 87%. Riesgo reducido pero no eliminado.",
+  "7e21aaa580f82098": "Probabilidad: Media (organizaciones similares sufren brechas 2 veces por año por encima del promedio de la industria).",
+  "aee31cdf32502440": "Impacto: Alto (potencial de exposición de PII, multas regulatorias de hasta $2M).",
+  "bc56a7b4768c2001": "Controles existentes: WAF, protección DDoS, detección de anomalías. Efectividad: 75%.",
+  "87bcd142c63687ea": "Riesgo residual después de controles: Medio-Bajo. Dentro del umbral de apetito de riesgo.",
+  "4a7731a6d4d5f897": "Riesgo de cadena de suministro: 3 proveedores críticos con acceso a sistemas de producción.",
+  "e5ed0062d5116cba": "Riesgo de cumplimiento: La aplicación del GDPR se está intensificando, multa reciente de €20M por una violación similar.",
+  "e1f3c9f17f422164": "Objetivo de tiempo de recuperación: 4 horas. Capacidad actual: 6 horas. Brecha identificada.",
+  "96225dcb30c456c4": "Tratamiento del riesgo: Aceptar con monitoreo, implementar controles adicionales de registro.",
+  "5984b63aa74924ac": "Ciclo de revisión trimestral establecido. KRI: Intentos de inicio de sesión fallidos > 1000/día.",
+  "5f34b7e28b939756": "Implementando {itemTitle} usando reglas de AWS Config y funciones Lambda...",
+  "16c74a7252f3d995": "Objetivo de control: Asegurar que todos los buckets de S3 tengan el cifrado habilitado por defecto.",
+  "36ec2ef6418208f8": "Estado actual: 67% conforme. El script de corrección automática solucionará las no conformidades.",
+  "1c31019eda7a46fb": "Metodología de pruebas: Escaneos automatizados diarios con alertas al equipo de seguridad.",
+  "ab04256d1fcbdaba": "Tasa de falsos positivos actualmente 12%. Ajustando lógica de detección para reducir ruido.",
+  "bf4e0a40e2532004": "Recopilación de evidencia: registros de CloudTrail agregados al SIEM central durante 90 días.",
+  "60c40abf51964aef": "El control se mapea a: SOC 2 CC6.7, ISO 27001 A.10.1.1, NIST 800-53 SC-28.",
+  "f9c6244d55a050ec": "Control compensatorio: Si falla el cifrado, el acceso se restringe únicamente a usuarios de VPN.",
+  "5dad1a33a09609c3": "Impacto en el rendimiento medido: <100ms de latencia añadida, aceptable para el caso de uso.",
+  "f908042093f47ebf": "Integración con sistema de tickets para seguimiento de excepciones y flujo de trabajo de aprobación.",
+  "f9953757d5392d19": "Revisión mensual de efectividad de controles programada. Métrica de éxito: 95% de cumplimiento.",
+  "a2c754145d58807e": "Registro de auditoría mantenido en almacenamiento inmutable durante 7 años según la política de retención.",
+  "8dddf07a80802343": "Recopilando líneas base de configuración de {itemTitle} del entorno de producción...",
+  "1415c9225dc34435": "Captura de pantalla tomada: Política de aplicación de MFA mostrando \"Requerido para todos los usuarios\".",
+  "01252cdbda19a7de": "Extrayendo registros de acceso de 30 días. Se encontraron 1,247 eventos de autenticación únicos.",
+  "97ca82efa410a7a8": "Reglas de firewall exportadas: 47 reglas en total, 12 permiten tráfico entrante, el resto deniega por defecto.",
+  "76f2f9f8ec2c6414": "Hoja de cálculo de revisión de acceso de usuarios generada. 234 usuarios activos, 18 requieren verificación.",
+  "f8126c811c3def47": "Tickets de gestión de cambios: 89 cambios de infraestructura, todos tienen registros de aprobación.",
+  "e3fe841e347e340e": "Informe de escaneo de vulnerabilidades: 2 hallazgos críticos, 5 altos, 23 medianos documentados.",
+  "9390e26e03e0ea15": "Resultados de prueba de respaldo: Última restauración exitosa 2024-11-28, RTO cumplido exitosamente.",
+  "a5e4bf9b25f6afdb": "Finalización de capacitación en seguridad: 96% de empleados, 4% tiene 7 días para completar.",
+  "7bcc0bd0dc78fa9b": "Prueba de respuesta a incidentes: Ejercicio de simulacro completado el 15-10-2024, informe adjunto.",
+  "81e51fda0ba12f00": "Evidencia de prueba de penetración: Resumen ejecutivo y cronograma de remediación incluidos.",
+  "eea6779588b6a0be": "Diagrama de arquitectura del sistema actualizado el 2024-11-01, refleja el estado actual con precisión.",
+  "081d0966b5c6fc72": "Seleccionar Organización",
+  "f1ad9915e45f9b87": "Buscar organización...",
+  "bf0d4657a8482f44": "No se encontraron resultados",
+  "2dcd8eb595a98922": "Crear Organización",
+  "b174a4971bd5a200": {
+    "i": 1,
+    "c": [
+      "Basado en ",
+      {
+        "i": 2,
+        "k": "_gt_n_2",
+        "v": "n"
+      },
+      "+ reseñas"
+    ]
+  },
+  "3ab928741d208f41": "Cargando...",
+  "a656dc69a38a3639": "Cerrar sesión",
+  "12c395f03d83798a": "-",
+  "e0b196715ec7a4a6": "Borrador",
+  "1f34e63fe8f8a0f1": "Pendiente",
+  "2538c2d97c9b5e23": "En Progreso",
+  "166661f94b300f5b": "Completado",
+  "ac9e0f68a7aae8e3": "Publicado",
+  "90585f4150afc7b3": "Archivado",
+  "81bcca9042fe2974": "Requiere Revisión",
+  "b2be70822d55f16a": "Abrir",
+  "353b08f4363dbb2c": "Pendiente",
+  "7f7f6116f1c8f3a9": "Cerrado",
+  "fe5ee6266a8106e0": "Tema",
+  "d604bc5cf3386f00": "Oscuro",
+  "8bf65a425f50d140": "Claro",
+  "a03e4c1348ad9ba8": "Sistema",
+  "ec8a07c2ad1276af": {
+    "i": 1,
+    "c": "Conectando..."
+  },
+  "a2d1b1e205f1f61e": {
+    "i": 1,
+    "c": "Error al establecer la conexión"
+  },
+  "2c1c93a646bbea6e": "Idioma",
+  "4b00a015a0eb6fe8": "Error al buscar contacto: {statusText}",
+  "6b490d1fe5ca4f8e": "Contacto no encontrado",
+  "ac946a2e22f9f500": "Error al crear el contacto: {statusText}",
+  "c5a929fac7a9e327": "Se requiere un correo electrónico válido",
+  "c6fcbccbdcba05d8": "Contacto procesado",
+  "34dd4d56798aa662": "El contacto ya existe",
+  "dc18ab7fc9a77c05": "Error al crear el contacto",
+  "2cd5c7e662870add": "Contacto creado exitosamente",
+  "08350d0b3f3b9cba": "El acuerdo ya existe",
+  "e384ed5082c5fa0d": "Acuerdo creado exitosamente",
+  "c8b06a21a22e464b": "El correo electrónico, nombre y empresa son obligatorios",
+  "f5fdbe73ae34d0a3": "Formato de correo electrónico inválido",
+  "e86e7954529d6eb3": "Contacto actualizado, falló la creación de la empresa",
+  "51f378aa252b777c": "Contacto actualizado y empresa creada",
+  "85cf98d240d27ef7": "La pregunta es obligatoria",
+  "2b7207717ccb0bf1": "La respuesta es obligatoria",
+  "61446b88120b01c9": "No hay organización activa",
+  "bcd0bb9513c37265": "Se requiere ID",
+  "4992c8d68cc1c713": "El servicio de carga de archivos no está disponible actualmente. Por favor, contacte al soporte técnico.",
+  "571229b690a8d4c0": "El servicio de carga de archivos no está configurado correctamente.",
+  "61530496d883f969": "No autorizado - no se encontró organización",
+  "19edc8b7b3d6337c": "El archivo excede el límite de {maxSize}MB.",
+  "b25b0d1a56fc7800": "Se produjo un error desconocido.",
+  "7608344f5e4d254e": "El nombre de la integración es obligatorio",
+  "f11a7b66655ca857": "Integración no encontrada",
+  "13d336d41ee4f94c": "El ID de integración es obligatorio",
+  "69d3b06ddf8561b6": "Organización del usuario no encontrada",
+  "e9ec339c7c9a3b15": "Configuración de usuario no encontrada",
+  "a035e1c9da459c41": "Error al actualizar la configuración de integración",
+  "5df1f59871a959d5": "Invitación ya utilizada o expirada",
+  "b4cc3df4bf1e23b7": "El rol de invitación es obligatorio",
+  "ff0219794718b7d4": "Por favor seleccione al menos un marco de trabajo para agregar",
+  "8d0ba06dcf0ad320": "No se encontraron marcos de trabajo válidos o visibles para los ID proporcionados.",
+  "7e8c8c600c1502b3": "Se requiere al menos un correo electrónico.",
+  "98d113f40aa32db9": "Organización no autorizada o inválida.",
+  "a6c923502d5c309e": "Error en la invitación",
+  "93800980cf3f9f21": "El nombre es obligatorio",
+  "1a6916f38d78c414": "El nombre debe tener menos de 64 caracteres",
+  "499a010da4572c1a": "Ya existe una clave de API con este nombre",
+  "7ae282f878f98072": "La organización no existe o no tienes acceso",
+  "ec27ab25b88e116c": "Ocurrió un error inesperado al crear la clave API",
+  "6681202b93fd74f4": "Debe iniciar sesión para realizar esta acción",
+  "081c69c8073ccfa5": "Ocurrió un error al obtener las claves de API",
+  "58bc1fbef04322d1": "El usuario no tiene una organización",
+  "3185753fd1448445": "Error al obtener los usuarios de la organización",
+  "9494a06ca07676bf": "Error al invitar al empleado",
+  "8644739438f720c5": "Error al invitar miembro",
+  "6b1a11d296cfcf61": "Permiso denegado: Solo los administradores o propietarios pueden eliminar empleados.",
+  "ee8d78fee0ce6998": "Empleado objetivo no encontrado en esta organización.",
+  "526a5c7b7db48955": "El miembro objetivo no tiene el rol de empleado.",
+  "b7a345e2e32364ee": "No se puede eliminar al propietario de la organización.",
+  "615343fbec2fa6d1": "No puedes eliminarte a ti mismo.",
+  "0829dcd63781362b": "Error al eliminar el rol de empleado o miembro.",
+  "c669cbd9279d4fa2": "Clave API no encontrada o no autorizada para revocar",
+  "8c24e7e5f9fb61dc": "Clave API revocada exitosamente",
+  "55e68651c83799e4": "Ocurrió un error al revocar la clave API",
+  "360ae5f19e5fa38e": "El nombre de la organización es obligatorio",
+  "af681662d1cd37e8": "El nombre de la organización no puede exceder 255 caracteres",
+  "6b83f8a22c316bc5": "Entrada de usuario inválida",
+  "dfa1845a2bddfa6b": "Error al actualizar el nombre de la organización",
+  "934abe779b34dd97": "Por favor, ingrese un sitio web válido que comience con https://",
+  "71a97db924310d8e": "El sitio web no puede exceder 255 caracteres",
+  "ff69eed15988f709": "Error al actualizar el sitio web de la organización",
+  "ec2acd6e3ff9caa4": "Dirección de correo electrónico inválida",
+  "9b9d11d0e2023ea6": "El departamento es obligatorio",
+  "f457eac38691be78": "Ya existe un empleado con este correo electrónico en su organización",
+  "093af350818af61f": "Error al crear empleado",
+  "7de570cd40b05815": "Se requiere aprobador",
+  "e4970c4911820cfc": "Política no encontrada",
+  "3729aeae40b658ca": "El aprobador no es el mismo",
+  "0a607533715b6c29": "Cambios de política aceptados: {comment}",
+  "44dd7cbb5abca72a": "Error al actualizar el estado del archivo de políticas",
+  "b6c98291dc1dabf7": "El título es obligatorio",
+  "8b306dec89ad5329": "La descripción es obligatoria",
+  "4c8a96386ac5cb37": "Error al crear la política",
+  "891046481444e709": "Error al eliminar la política",
+  "c7b6c0692baa72d5": "Cambios de política denegados: {comment}",
+  "02cbf0d6e14f4565": "Error al actualizar la política",
+  "8394a0e608c7352e": "Error al actualizar la descripción general de la política",
+  "44a2775a2cd098b3": "El nombre del riesgo es obligatorio",
+  "1bd3412348952e61": "El nombre del riesgo debe tener al menos 1 carácter",
+  "92e6ce61fd5a7646": "El nombre del riesgo debe tener como máximo 100 caracteres",
+  "700fc80de6771e54": "La descripción del riesgo es obligatoria",
+  "662df059a32ed512": "La descripción del riesgo debe tener al menos 1 carácter",
+  "48abbd85fbb8d42e": "La descripción del riesgo debe tener como máximo 255 caracteres",
+  "6a508138767ae01b": "La categoría de riesgo es obligatoria",
+  "6cb1344d7bb60805": "Se requiere el departamento de riesgos",
+  "2eb27f85f5fa3757": "El ID de riesgo es obligatorio",
+  "5f94faac8ca6b62a": "El título del riesgo es obligatorio",
+  "a93d8137d0c4250c": "El estado del riesgo es obligatorio",
+  "7744873797fa4f62": {
+    "i": 1,
+    "c": [
+      {
+        "i": 2,
+        "c": "Hacer una pregunta..."
+      },
+      {
+        "i": 3,
+        "c": [
+          {
+            "i": 4,
+            "c": "⌘"
+          },
+          "K"
+        ]
+      }
+    ]
+  },
+  "b550c0dd9f4f4013": {
+    "i": 1,
+    "c": [
+      "Hola ",
+      {
+        "i": 2,
+        "k": "_gt_value_2",
+        "v": "v"
+      },
+      ", ¿cómo puedo ayudarte ",
+      {
+        "i": 3
+      },
+      "hoy?"
+    ]
+  },
+  "e25f5cd6c48a18a3": "Pregúntale algo a Comp AI...",
+  "eabbb0cad6684a29": {
+    "i": 1,
+    "c": "Seguir a Comp AI"
+  },
+  "7381b05760ff4528": {
+    "i": 1,
+    "c": "Únete a nuestro Discord"
+  },
+  "69dc7bfcbe2128f6": {
+    "i": 1,
+    "c": "GitHub"
+  },
+  "b29583f46872d727": {
+    "i": 1,
+    "c": "Enviar"
+  },
+  "576f822d612df1ed": {
+    "i": 1,
+    "c": "Destacar en GitHub"
+  },
+  "649d1e2534341bbc": "Asistente",
+  "fe3092eea51ad000": {
+    "i": 1,
+    "c": "Razonamiento"
+  },
+  "678e022381819009": {
+    "i": 1,
+    "c": "Razonó durante unos segundos"
+  },
+  "5c7c6682db53c73d": "Un modelo de razonamiento",
+  "6f1348739b70bf49": "Seleccionar un modelo",
+  "49c99c1362eb67d8": {
+    "i": 1,
+    "c": "No se encontraron riesgos para esta organización."
+  },
+  "7631338167dd32ed": "El archivo \"{fileName}\" excede el límite de {fileSize}MB.",
+  "7ba76385c920f66c": "Archivo \"{fileName}\" listo para adjuntar.",
+  "e3c4e9c6ec5c9490": "Archivo eliminado del borrador de comentario.",
+  "f1223b968bbb9809": "No se pudieron encontrar los datos del archivo.",
+  "97128ea67529a4b3": "¡Comentario agregado!",
+  "f3bf69a47b45706d": "Error al agregar comentario",
+  "0527dd2978caa527": "Deja un comentario...",
+  "00d2def46b19915a": "Agregar otro archivo adjunto",
+  "584c3539b9524b9a": "Agregar adjunto",
+  "5a728cdfad4b49e7": "Enviar comentario",
+  "5a238640ebe37a35": {
+    "i": 1,
+    "c": "Archivos Pendientes:"
+  },
+  "8c65e0cfbe7c43cc": "hace {seconds}s",
+  "e5e7393da2286e73": "hace {minutes}m",
+  "c0fbd8a3ddfe25c2": "hace {hours}h",
+  "8eee7a642a02f5ca": "hace {days}d",
+  "b2b7df62dda45896": "No se detectaron cambios.",
+  "e1bc141381c02126": "Comentario actualizado exitosamente.",
+  "fcc6e922847b174f": "Error al guardar los cambios del comentario.",
+  "db8d6efdbe9a7393": "¿Está seguro de que desea eliminar este comentario?",
+  "6ea95fc2e598b2e2": "Comentario eliminado exitosamente.",
+  "869abcfdface0a9e": "Error al eliminar el comentario.",
+  "25680b5460511396": "Editando...",
+  "96f27adf6d8717a5": "Opciones de comentario",
+  "da137a49a07f55be": "Editar comentario...",
+  "c9ebab10d50bb311": {
+    "i": 1,
+    "c": [
+      {
+        "i": 2
+      },
+      "Editar"
+    ]
+  },
+  "426ca0db185f5926": {
+    "i": 1,
+    "c": [
+      {
+        "i": 2
+      },
+      "Eliminar"
+    ]
+  },
+  "62567f82e191e63a": {
+    "i": 1,
+    "c": "Archivos adjuntos:"
+  },
+  "078eb7f64edb1177": {
+    "i": 1,
+    "c": "Cancelar"
+  },
+  "0ce15b45d2c94267": {
+    "i": 1,
+    "c": "Guardar Cambios"
+  },
+  "8b77482b4eab1134": {
+    "i": 1,
+    "c": "Comentarios"
+  },
+  "aad7ea0629c4ad11": {
+    "i": 1,
+    "c": [
+      "Deja un comentario en este ",
+      {
+        "i": 2,
+        "k": "_gt_value_2",
+        "v": "v"
+      }
+    ]
+  },
+  "381802942652805d": "Ascend",
+  "4c5ff33870428bd4": "Descender",
+  "6d49999f19231b80": "Restablecer",
+  "b7f10562a5e40934": "Seleccionar rango de fechas",
+  "0d6d75c54cdde940": "Seleccionar fecha",
+  "dfbc7f4ecef8c63a": "Limpiar filtro de {title}",
+  "8d8aabc001c6ffc2": [
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    " seleccionado"
+  ],
+  "4fc1bbbd387f353d": "No se encontraron resultados.",
+  "3fe9728594a7340c": "Limpiar filtros",
+  "449fd5d15bf93047": "Contiene",
+  "6d8769baa1c5249d": "No contiene",
+  "65b9cc0a1d3c957e": "Es",
+  "dd0579dd7d27b66e": "No es",
+  "8895f4a5673d13b1": "Está vacío",
+  "a035cbd2cf175dca": "No está vacío",
+  "6fc14a93492c3831": "Es menor que",
+  "b9abca20d78a14d4": "Es menor o igual que",
+  "440338bfe6e21f9a": "Es mayor que",
+  "ae1e8b8dea981519": "Es mayor que o igual a",
+  "2db59c290cb161a5": "Está entre",
+  "2848493b2998ec02": "Es anterior a",
+  "421032cdc38ae5da": "Es después de",
+  "d10c483695eb36c2": "Es en o antes de",
+  "e2c961c4d6f84e38": "Es en o después de",
+  "ce01e6360cef71d8": "Es relativo a hoy",
+  "f6af6f6d703e087a": "¿Alguno de",
+  "651ae384b1363135": "No tiene ninguno de",
+  "f56519e5cd5d1b96": "Asc",
+  "cbc2349b0272b98b": "Desc",
+  "635b007acecacfb0": "Seleccionar operador de unión",
+  "312229757f6c2451": "Seleccionar campo",
+  "10b37fa1e1f1b5e2": "Buscar campos...",
+  "dc10cd9afcfbce60": "No se encontraron campos.",
+  "09e409a914e00842": "Filtrar",
+  "231876f4e3131d51": {
+    "i": 1,
+    "c": {
+      "i": 2,
+      "d": {
+        "t": "b",
+        "b": {
+          "false": "No se han aplicado filtros",
+          "true": "Filtros"
+        }
+      }
+    }
+  },
+  "9c90cf3672c82c6b": {
+    "i": 1,
+    "c": {
+      "i": 2,
+      "d": {
+        "t": "b",
+        "b": {
+          "true": "Modifica los filtros para refinar tus filas.",
+          "false": "Agregue filtros para refinar sus filas."
+        }
+      }
+    }
+  },
+  "1abe7fdace9bed26": "Agregar filtro",
+  "9d67576540538403": "Restablecer filtros",
+  "d796b60ce9483a56": {
+    "i": 1,
+    "c": "Donde"
+  },
+  "01da1181a33d4d8a": "Restablecer todos los filtros",
+  "c1803444cffc26a9": "Abrir menú de comandos de filtro",
+  "c5279ee546271b16": "No se encontraron opciones.",
+  "0ef0be291355927d": "Verdadero",
+  "a064adbe549976ce": "Falso",
+  "c7353e2d81aae187": "Escriba para agregar filtro...",
+  "b9973b758dc4bf48": "Filtrar por \"{value}\"",
+  "c5da7990ef2f009d": "Ingrese valor...",
+  "5df677862609f8e4": "Seleccionar opciones...",
+  "bbc784ba97dcb7d3": "Seleccionar opción...",
+  "02155a6c2ff34c49": "{count} seleccionado",
+  "720d54196c45c4d9": "Buscar opciones...",
+  "4109343a769931cc": "Seleccionar fecha...",
+  "c04bf99655977ace": "No se encontraron campos.",
+  "9a981833fab4b1af": "{count} elementos",
+  "f148ed5275b3ef02": "Página {current} de {total}",
+  "f9298317ca78df9e": {
+    "i": 1,
+    "c": "por página"
+  },
+  "4f113bb0bc732b3d": "Limpiar",
+  "ca2fbe7d996582c0": "Ordenar",
+  "a2100d559a1be5fc": {
+    "i": 1,
+    "c": {
+      "i": 2,
+      "d": {
+        "t": "b",
+        "b": {
+          "true": "Ordenar por",
+          "false": "Sin ordenamiento aplicado"
+        }
+      }
+    }
+  },
+  "5152c47f0f71e526": {
+    "i": 1,
+    "c": {
+      "i": 2,
+      "d": {
+        "t": "b",
+        "b": {
+          "false": "Agregue ordenamiento para organizar sus filas.",
+          "true": "Modifica la ordenación para organizar tus filas."
+        }
+      }
+    }
+  },
+  "2c87311c1d6334de": "Agregar ordenamiento",
+  "73c1ea24b39f4431": "Restablecer ordenación",
+  "01936d3df6fe9c73": {
+    "i": 1,
+    "c": "Restablecer"
+  },
+  "f0e2c30e6c995e01": "Alternar columnas",
+  "6d3fb684b4dcb478": "Buscar columnas...",
+  "00513a3b28638818": "Ver",
+  "02ef66777b107f17": "No se encontraron columnas.",
+  "135b07d7c6d7f96b": "Sin resultados.",
+  "8ecd1d75efba5973": "¡Pago Exitoso! 🎉",
+  "adfdc86a02a67b79": "Su factura ha sido pagada. Para comenzar, por favor continúe con la incorporación para que nuestra IA pueda ponerse a trabajar.",
+  "d02253d85cc0ad42": "Factura Pagada",
+  "2630e7b58f5f271b": "Continuar",
+  "346d6e30764bfc08": "Su suscripción Starter ya está activa.",
+  "a989702ea031ac0f": "Completar Incorporación",
+  "9cf577c8890f5192": "Comienza a escribir...",
+  "1dbfcccee2f41735": "El contenido del comentario es obligatorio",
+  "17c95d7bde7079d6": "El contenido del comentario debe tener como máximo 1000 caracteres",
+  "fc11ea376d8d263a": "El ID de entidad es obligatorio",
+  "430a9feec5c2f85a": "Comentario agregado exitosamente",
+  "3e2dda1a9354f4b4": "Error al agregar comentario",
+  "32ad6b9868508897": "Comentario",
+  "baaf07d893736ec8": "Crear",
+  "0c56aa61e7ca3a68": "Control",
+  "21d0ef064eefa159": "Estado",
+  "817047065121ef0c": "Artefactos",
+  "3b86d4676ea1a73d": "Configuración actualizada",
+  "12044995fed2a1f7": "Error al actualizar la configuración",
+  "a04f909aa23919f1": "Ingrese su {key}",
+  "182b96027decf5f9": "Guardar configuración",
+  "3f4688ea903c56a0": {
+    "i": 1,
+    "c": "No hay configuraciones disponibles"
+  },
+  "cfed4c336b385bd1": "Integración desconectada exitosamente",
+  "2ab078dd0d62306a": "Error al desconectar la integración",
+  "0e437fdfddcc151b": "Configuración actualizada exitosamente",
+  "90525fafec26e041": "Por favor, ingrese una clave de API",
+  "12b3af3da3ed9af3": "Clave API actualizada exitosamente",
+  "b917b9367d2548db": "Clave API guardada exitosamente",
+  "9847083891d48ecd": "Error al conectar la integración",
+  "ccf357d79dd190c0": "Ejecutándose pronto",
+  "dc4cea90f4c6f350": "Se ejecuta en {minutes} minuto{s}",
+  "92eeb1032fac1f0d": "Se ejecuta en {hours} hora{s}",
+  "96a63a2f4d195ea6": "Se ejecuta en {hours} hora{hourS} y {minutes} minuto{minS}",
+  "3d7cdab1909733c0": "Gestionar",
+  "5d973795984549fc": "Instalar",
+  "c420251537d9d5f0": "Desconectando...",
+  "c291bdeadbb22b96": "Desconectar",
+  "8d2eb5921047c347": "Actualizar Clave API",
+  "cce695cd20f84e9f": "Ingrese la Clave API",
+  "5de921252d2ab383": "Ingrese su clave API de Deel",
+  "00ad8aeed0a6c461": "Cancelar",
+  "3414b088dde8621b": "Guardando...",
+  "08f54865b364957d": "Actualizar",
+  "762fcce45b65eea9": "Guardar",
+  "fd5ce4511efb138c": {
+    "i": 1,
+    "d": {
+      "t": "b",
+      "b": {
+        "true": {
+          "i": 2,
+          "c": "Conectado"
+        },
+        "false": {
+          "i": 2,
+          "d": {
+            "t": "b"
+          }
+        }
+      }
+    }
+  },
+  "8e9d617e99bb1d59": {
+    "i": 1,
+    "c": "Conectado"
+  },
+  "d1a860782a64a1ce": {
+    "i": 1,
+    "c": "Cómo obtener credenciales"
+  },
+  "b8be7548baaa2f1a": {
+    "i": 1,
+    "c": "Información"
+  },
+  "26fb935cea964ddb": {
+    "i": 1,
+    "c": "Estado de Sincronización"
+  },
+  "23b9df9912a04011": {
+    "i": 1,
+    "c": "Última Sincronización"
+  },
+  "372351dac94cefcb": {
+    "i": 1,
+    "c": "Las fechas se muestran en su zona horaria local"
+  },
+  "b9d3f4f1354a2755": {
+    "i": 1,
+    "c": "Nunca ejecutar"
+  },
+  "d01d5f62b22c9884": {
+    "i": 1,
+    "c": "Próxima Sincronización"
+  },
+  "fd4311b736f2b65e": {
+    "i": 1,
+    "c": "UTC 00:00"
+  },
+  "b88cd8b450fdecc4": {
+    "i": 1,
+    "c": "Esta integración se ejecuta a medianoche UTC (00:00). Los horarios se convierten a su zona horaria local para su visualización."
+  },
+  "51e43283b5c6d9a5": {
+    "i": 1,
+    "c": {
+      "i": 2,
+      "d": {
+        "t": "b",
+        "b": {
+          "true": {
+            "i": 3,
+            "c": "Calculando..."
+          },
+          "false": {
+            "i": 3,
+            "c": "Se ejecutará a la próxima medianoche UTC"
+          }
+        }
+      }
+    }
+  },
+  "bb18b5e756a1fff8": {
+    "i": 1,
+    "c": {
+      "i": 2,
+      "c": "Esta integración se sincroniza automáticamente todos los días a medianoche UTC (00:00)."
+    }
+  },
+  "7f3f1617bd786b1a": {
+    "i": 1,
+    "c": "Configuración"
+  },
+  "6b1da89bf7daab6e": "Actualizar",
+  "cf321df2b8a4b9c1": {
+    "i": 1,
+    "c": "Puedes encontrar tu clave de API en la configuración de tu cuenta de Deel."
+  },
+  "8303f721ddd31eee": {
+    "i": 1,
+    "c": "Todas las integraciones en la tienda de Comp AI son de código abierto y revisadas por pares."
+  },
+  "be171400741ca722": {
+    "i": 1,
+    "c": "Informe"
+  },
+  "d09e927be9527f55": "Buscar integraciones",
+  "045741aa62df51f8": "Todos",
+  "f84879ada73428c9": "Instalado",
+  "5036ffda17a1fd59": {
+    "i": 1,
+    "c": [
+      {
+        "i": 2,
+        "c": "No se encontraron integraciones"
+      },
+      {
+        "i": 3,
+        "c": "No se encontraron integraciones para su búsqueda, háganoslo saber si desea ver una integración específica."
+      },
+      {
+        "i": 4,
+        "c": "Limpiar búsqueda"
+      }
+    ]
+  },
+  "76824883c3c1a8f5": {
+    "i": 1,
+    "c": [
+      {
+        "i": 2,
+        "c": "No hay integraciones instaladas"
+      },
+      {
+        "i": 3,
+        "c": "Aún no has instalado ninguna integración. Ve a la pestaña 'Todas las Integraciones' para explorar las integraciones disponibles."
+      }
+    ]
+  },
+  "44ee1d07a46cbc73": "su organización",
+  "ba52388b69e452f8": {
+    "i": 1,
+    "c": "Comp AI"
+  },
+  "b27b0340381fb1cf": {
+    "i": 1,
+    "c": {
+      "i": 2,
+      "d": {
+        "t": "b",
+        "b": {
+          "false": {
+            "i": 3,
+            "c": "Volver a sus organizaciones"
+          },
+          "true": {
+            "i": 3,
+            "c": [
+              "Continuar con ",
+              {
+                "i": 4,
+                "k": "_gt_value_4",
+                "v": "v"
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "94374ac393dcdf6e": {
+    "i": 1,
+    "c": "Atrás"
+  },
+  "831a5c1c57c96db0": {
+    "i": 1,
+    "c": [
+      {
+        "i": 2
+      },
+      "Crear Organización"
+    ]
+  },
+  "a1f8c2a2f8687542": "Cerrando sesión...",
+  "7053c5ede3a89e26": {
+    "i": 1,
+    "c": "Tema"
+  },
+  "f509cc6b2846e115": {
+    "i": 1,
+    "c": "Asistente"
+  },
+  "a7a31d42573cac7c": {
+    "i": 1,
+    "c": "Crear Nueva Política"
+  },
+  "39417513d6d882ad": {
+    "i": 1,
+    "c": "Crear Nuevo Riesgo"
+  },
+  "aad2ff24e992abad": {
+    "i": 1,
+    "c": "Actualizar Riesgo"
+  },
+  "6104cc04d1ac1b1c": {
+    "i": 1,
+    "c": "Actualizar detalles y metadatos del riesgo"
+  },
+  "cc907abfabc0fc5f": "Actualizar Tarea",
+  "f6b2f3d41c5c87ce": "Actualizar detalles y metadatos de la tarea",
+  "fb595704fdbe074f": "Actualizar Riesgo",
+  "d254b4e6e7d3e824": "Vista previa del archivo: {fileName}",
+  "fa7abddc6635a0c7": "Vista previa",
+  "8274eed7365bd5b7": "Vista previa no disponible para este tipo de archivo",
+  "928461cd6c4f3aeb": "Abrir Archivo",
+  "aa7ab7e425f84725": "Eliminar Archivo",
+  "6d50f14d5cde241c": "Esta acción no se puede deshacer. El archivo será eliminado permanentemente.",
+  "d15d4ce9981708e9": "Cancelar",
+  "aba29e77e52bca46": "Eliminar",
+  "2fd3dcae73edb555": "Capacitación en Concienciación de Seguridad - Parte 1",
+  "4ceb900ff4549a04": "Capacitación en Concienciación de Seguridad - Parte 2",
+  "8245671c8d083fab": "Capacitación en Concienciación de Seguridad - Parte 3",
+  "24908aa2bee25d40": "Capacitación en Concienciación de Seguridad - Parte 4",
+  "e03daad7ef5f1c59": "Capacitación en Concienciación de Seguridad - Parte 5",
+  "345c45b9e5a16595": "Se requiere el ID de tarea",
+  "701cd1ffc237a3e1": "El estado de la tarea es obligatorio",
+  "1624c4d0fd4f78a1": {
+    "i": 1,
+    "c": "Acceso Denegado"
+  },
+  "840744edc4a0ee10": {
+    "i": 1,
+    "c": [
+      "Los ",
+      {
+        "i": 2,
+        "c": "empleados"
+      },
+      " no tienen acceso a app.trycomp.ai, ¿querías ir a ",
+      {
+        "i": 3,
+        "c": "portal.trycomp.ai"
+      },
+      "?"
+    ]
+  },
+  "0009a40d430bf2c7": {
+    "i": 1,
+    "c": "Por favor, seleccione otra organización o contacte al administrador de su organización."
+  },
+  "24c8274e58f2c71d": {
+    "i": 1,
+    "c": "¡Algo salió mal!"
+  },
+  "ef76210f4825a1f3": "Iniciar sesión | Comp AI",
+  "da095f18d5389d85": {
+    "i": 1,
+    "c": "Comience con Comp AI"
+  },
+  "d6e1a9b25d836b5f": {
+    "i": 1,
+    "c": "Automatiza el cumplimiento de SOC 2, ISO 27001 y GDPR con IA."
+  },
+  "d41dc5c1b5633678": {
+    "i": 1,
+    "c": [
+      "Al hacer clic en continuar, reconoces que has leído y aceptas los ",
+      {
+        "i": 2,
+        "c": "Términos y Condiciones"
+      },
+      " y la ",
+      {
+        "i": 3,
+        "c": "Política de Privacidad",
+        "t": "Link"
+      },
+      "."
+    ]
+  },
+  "0adfba7b19447fbc": "Error al obtener marcos de trabajo",
+  "7ad8430955eb0da5": "Organización eliminada",
+  "3d3e3549b89579f3": "Error al eliminar la organización",
+  "0eed7bfc26aaf228": {
+    "i": 1,
+    "c": "Eliminar organización"
+  },
+  "785131ef1b25f3b7": {
+    "i": 1,
+    "c": {
+      "i": 2,
+      "c": "Eliminar permanentemente su organización y todo su contenido de la plataforma Comp AI. Esta acción no es reversible - por favor continúe con precaución."
+    }
+  },
+  "49f4d8412c2bb38a": {
+    "i": 1,
+    "c": "Eliminar"
+  },
+  "52448275282cc69d": {
+    "i": 1,
+    "c": "¿Está completamente seguro?"
+  },
+  "8497cc456ff119fe": {
+    "i": 1,
+    "c": "Esta acción no se puede deshacer. Esto eliminará permanentemente su organización y removerá sus datos de nuestros servidores."
+  },
+  "e1131e0039f11b24": {
+    "i": 1,
+    "c": "Escriba 'delete' para confirmar"
+  },
+  "1f8dee316c83968c": "Nombre de la organización actualizado",
+  "963a44e63f2e2cdc": "Error al actualizar el nombre de la organización",
+  "9be88615357a72ad": {
+    "i": 1,
+    "c": "Nombre de la organización"
+  },
+  "f194b3501d5b9c31": {
+    "i": 1,
+    "c": {
+      "i": 2,
+      "c": "Este es el nombre visible de su organización. Debe usar el nombre legal de su organización."
+    }
+  },
+  "a5fea9ab37808712": {
+    "i": 1,
+    "c": "Por favor, utilice un máximo de 32 caracteres."
+  },
+  "9eb2dbf6073def42": "Guardar",
+  "7499eb925aaf4410": "Sitio web de la organización actualizado",
+  "11c92ddd40fd858d": "Error al actualizar el sitio web de la organización",
+  "f97106541b6f524a": "https://example.com",
+  "59e7c49dfa4ca2f7": {
+    "i": 1,
+    "c": "Sitio Web de la Organización"
+  },
+  "ff492def2ef4fda3": {
+    "i": 1,
+    "c": {
+      "i": 2,
+      "c": "Este es el sitio web oficial de su organización. Incluya https:// en la URL."
+    }
+  },
+  "ffa9e1e0ab1ed157": {
+    "i": 1,
+    "c": "Por favor, ingrese una URL válida que incluya https://"
+  },
+  "c34dfd6509db4aa4": "Política creada exitosamente",
+  "c3ea24ac809a5ed5": "Título",
+  "c0d3dd0975eb2f22": "Descripción",
+  "bbecac783d914b1d": "Crear",
+  "1f4ac9f59db33dcf": {
+    "i": 1,
+    "c": "Detalles de la Política"
+  },
+  "a09c076df3c6fb05": {
+    "i": 1,
+    "c": "Título"
+  },
+  "83b7bf5f7dd25b5a": {
+    "i": 1,
+    "c": "Descripción"
+  },
+  "cee94a280b207444": "Política actualizada exitosamente",
+  "0dd6aa027c61a84e": "Seleccionar un estado",
+  "e5cd24a4faa039bf": "Seleccionar una frecuencia",
+  "16b37c89dad005cc": "Seleccionar un departamento",
+  "e0b4460d13982a86": {
+    "i": 1,
+    "c": "Estado"
+  },
+  "08a4592d8ac6f46d": {
+    "i": 1,
+    "c": "Frecuencia de Revisión"
+  },
+  "15c51f3205be03f7": {
+    "i": 1,
+    "c": "Departamento"
+  },
+  "ea602b6fe57b1a5e": {
+    "i": 1,
+    "c": "Fecha de Revisión"
+  },
+  "17deebad0588a9d6": {
+    "i": 1,
+    "c": "Seleccionar una fecha"
+  },
+  "8e98ba6e5b9a4950": {
+    "i": 1,
+    "c": "Requisito de Firma"
+  },
+  "b428d68cc6df1424": "Título de la Política",
+  "f62c5a67dc572245": "Un breve resumen del propósito de la política.",
+  "fe8b28f3f7797f15": "Seleccionar requisito de firma",
+  "19b1099378b97c94": {
+    "i": 1,
+    "c": "Política"
+  },
+  "6ea5518896ba60d9": {
+    "i": 1,
+    "c": "Título de la Política"
+  },
+  "452e423ef3b1caa4": {
+    "i": 1,
+    "c": "Obligatorio"
+  },
+  "543af7699033a35a": {
+    "i": 1,
+    "c": "No Requerido"
+  },
+  "5b374d8ac95407a1": "Muy Improbable",
+  "ddc9d4fdefecfc30": "Improbable",
+  "f7a915907975711a": "Posible",
+  "3812234f11f87b2e": "Probable",
+  "e3a71fbae1958029": "Muy Probable",
+  "33aee9cfb8429f58": "Insignificante",
+  "73d154f8ce68a76c": "Menor",
+  "b7614c51a9106906": "Moderado",
+  "b5077e9a87d6a611": "Mayor",
+  "f5a2fbf87cbc6882": "Grave",
+  "b66ceb2b175ed3ff": "Riesgo inherente actualizado exitosamente",
+  "6d23a43ccbc325ae": "Error al actualizar el riesgo inherente",
+  "0880b07a97426672": "Probabilidad",
+  "de229ed912476c1d": "Seleccionar una probabilidad",
+  "d03b9c7162592814": "Impacto",
+  "296eab7a34588461": "Seleccionar un impacto",
+  "2c026dc953650c86": "Riesgo residual actualizado exitosamente",
+  "cfe1af7de2f7e897": "Error al actualizar el riesgo residual",
+  "c0a26be534ec147a": "Riesgo creado exitosamente",
+  "c3be61741170e906": "Error al crear el riesgo",
+  "474f812397038a8c": "Un título breve y descriptivo para el riesgo.",
+  "af92901d4bdeb787": "Una descripción detallada del riesgo, su impacto potencial y sus causas.",
+  "1daed81aed823529": "Seleccionar una categoría",
+  "0579b2dbbb2fdb89": {
+    "i": 1,
+    "c": "Detalles del Riesgo"
+  },
+  "aed2b1d4ca4a0c82": {
+    "i": 1,
+    "c": "Título del Riesgo"
+  },
+  "91fc99c9c961902f": {
+    "i": 1,
+    "c": "Categoría"
+  },
+  "ca37c5921378d33e": "Riesgo actualizado exitosamente",
+  "9e70271886da2142": "Error al actualizar el riesgo",
+  "e15c1a5064076784": "Asignado",
+  "e44870bff2865e77": "Categoría",
+  "050846063baa10bc": "Departamento",
+  "f83687d6120a040c": "Riesgo",
+  "81fcd6a1464fb197": "Título del Riesgo",
+  "24f1d772b511c736": "Política por Estado",
+  "913610499506d15c": "Sin datos",
+  "cec2d2c5ec79a2d6": "Riesgo Inherente",
+  "57aa11e883f694b7": "Nivel de riesgo inicial antes de aplicar cualquier control",
+  "b45b5056e77fd53d": "Riesgo Residual",
+  "6d49e6d6bd8de31e": "Nivel de riesgo residual después de aplicar los controles",
+  "5d6c5af01d1c1615": "Muy Probable (5)",
+  "d22959e7888c99c4": "Probable (4)",
+  "556a0e50bbdce353": "Posible (3)",
+  "2c330a1ddd236199": "Improbable (2)",
+  "c842da92ac94aeba": "Muy Improbable (1)",
+  "d786931b34ba90a5": "Riesgos por Responsable",
+  "00f7eee3c4b54a8a": "riesgos",
+  "dc1162bb6d3eda32": "Ene",
+  "eb7b909d3ae68f60": "Feb",
+  "ae0c4d02f05f0e84": "Mar",
+  "7bbcf2d2dac3dcbc": "Abr",
+  "c98e8db24999ff4d": "Mayo",
+  "962ef73f590b4bac": "Jun",
+  "9b0078a37517f25a": "Evaluación de Riesgos",
+  "c869dfd76fe37206": "No se encontraron departamentos con riesgos",
+  "9f0d929f8cdaf6e4": "Riesgos por Departamento",
+  "ad65546404c8cae9": "Riesgos por Estado",
+  "165a2b6aa8dd1dc1": "No se encontraron estados con riesgos",
+  "29f0824614831f53": "Resumen",
+  "8d7d9b32d90faf5c": "TablaDeMiembros",
+  "370aa80e162adbf6": "Activo",
+  "8e589c76d9bd6f9a": "Inactivo",
+  "02e7306761f0fbf9": "Nombre de la Política",
+  "ab8a9d2b0781f78e": "Última Actualización",
+  "b0aaf84101bcbd44": "{currentPage} de {pageCount}",
+  "e2d79fce6935c853": {
+    "i": 1,
+    "c": "Aún no hay políticas"
+  },
+  "2cc118e7b7172e91": {
+    "i": 1,
+    "c": "Comience creando su primera política"
+  },
+  "6598bf2ab7593769": {
+    "i": 1,
+    "c": "Crear primera política"
+  },
+  "459babb2e8e622a8": {
+    "i": 1,
+    "c": "No se encontraron resultados"
+  },
+  "fbc10b887f49921a": {
+    "i": 1,
+    "c": "Intenta otra búsqueda o ajusta los filtros"
+  },
+  "5660de4bd8741f42": "Buscar políticas...",
+  "9d951b898dff2988": "Agregar Nuevo",
+  "47e8de45a3f55334": "Filtrar por estado",
+  "a499c791eb893aff": "Todos los estados",
+  "5d0c71caa8f328b0": "Limpiar",
+  "63d06637bba79431": "Crear Nueva Política",
+  "8fccb5dc828545da": "de",
+  "f1d3a4bf3c4655af": {
+    "i": 1,
+    "c": "Aún no hay riesgos"
+  },
+  "5cbaaaa55a691579": {
+    "i": 1,
+    "c": "Comience creando su primer riesgo"
+  },
+  "e1a353c384c700f1": "Buscar...",
+  "b125e6c1a265869f": "Filtrar por asignado",
+  "2e8be4c2763558d0": "Fecha de Vencimiento",
+  "91ab316b10fba806": "Asignado a",
+  "fb976abe5b22bbe6": "Tareas",
+  "204167c06dc9fb6e": "Estado",
+  "25e9479630195fcb": "Fecha de Vencimiento",
+  "bb9af02ac3d7e79e": "Asignado A",
+  "fb4e2a3ef3e189e9": "Limpiar filtros",
+  "80b0d46f4645688c": [
+    {
+      "i": 1,
+      "c": "No se encontraron resultados"
+    },
+    {
+      "i": 2,
+      "c": {
+        "i": 3,
+        "d": {
+          "t": "b",
+          "b": {
+            "false": {
+              "i": 4,
+              "c": "Crear una tarea para comenzar"
+            },
+            "true": {
+              "i": 4,
+              "c": "Intenta otra búsqueda o ajusta los filtros"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "49009f2a0b4d25b5": [
+    {
+      "i": 1,
+      "c": "No se encontraron tareas"
+    },
+    {
+      "i": 2,
+      "c": "Crea una tarea para comenzar"
+    }
+  ],
+  "1b86372aee9bfe20": "Pruebas por Asignado",
+  "14aa7708e8307f26": "{count} Pruebas",
+  "edb9bc067fe3638c": "Aprobado",
+  "d4d89c139de812a8": "Falló",
+  "d82511ccb6662fab": "No compatible",
+  "81a2234abad438f9": "Información",
+  "af3d81238e8baedd": "Bajo",
+  "b2ac3183408cf717": "Medio",
+  "31e4cd294be7530f": "Alto",
+  "1de36ca50e73ce0d": "Crítico",
+  "15e6350cc86327ae": "Distribución de Severidad de Pruebas",
+  "6c93d221af65a9b3": "No se encontraron datos.",
+  "af7eb4f9c7f0f575": "Filtros",
+  "e8f9d8610e636387": "Limpiar todos los filtros",
+  "e0e9858003517b37": "{count} {count, plural, one {elemento} other {elementos}}",
+  "bdea6c1c521ade55": "Página {page} de {totalPages}",
+  "d41deca9ff1e9db8": "Aprendiendo sobre su empresa...",
+  "24e246759b17530a": "Creando Riesgos...",
+  "116c9f0527f902ed": "Creando Proveedores...",
+  "bb657cc41552a031": "Personalizando Políticas...",
+  "255e48f78089ee59": "Estado de Incorporación",
+  "3b6716a52e102b26": "La configuración de la organización aún no ha comenzado.",
+  "7e259037b6105500": "Ocurrió un problema inesperado.",
+  "cf69675106e4bf46": "Configuración",
+  "bdd7ee2107a3511e": {
+    "i": 1,
+    "c": "No se pudo cargar el rastreador de incorporación."
+  },
+  "d83129a09341af16": [
+    {
+      "i": 1,
+      "c": "Esperando Inicio"
+    },
+    {
+      "i": 2,
+      "c": "No se ha iniciado ningún proceso de incorporación.",
+      "t": "p"
+    }
+  ],
+  "aaf571cedae7f727": [
+    {
+      "i": 1,
+      "c": "Inicializando Estado"
+    },
+    {
+      "i": 2,
+      "c": "Verificando el estado actual de incorporación...",
+      "t": "p"
+    }
+  ],
+  "7cb32bd872d0a718": [
+    {
+      "i": 1,
+      "c": "Estado No Disponible"
+    },
+    " ",
+    {
+      "i": 2,
+      "c": "No se pudo obtener el estado actual de incorporación.",
+      "t": "p"
+    }
+  ],
+  "2543628d6abae535": {
+    "i": 1,
+    "c": "Estamos configurando su organización. Esto puede tomar unos momentos."
+  },
+  "460e43a75a49cf3a": [
+    {
+      "i": 1,
+      "c": "Configuración Completada"
+    },
+    {
+      "i": 2,
+      "c": "Su organización está lista.",
+      "t": "p"
+    }
+  ],
+  "c2c98dd21de6b44c": [
+    {
+      "i": 1,
+      "c": "Estado Desconocido"
+    },
+    {
+      "i": 2,
+      "c": [
+        "Se recibió un estado no controlado: ",
+        {
+          "i": 3,
+          "k": "_gt_value_3",
+          "v": "v"
+        }
+      ],
+      "t": "p"
+    }
+  ],
+  "aac1baa16eee9388": {
+    "i": 1,
+    "c": [
+      {
+        "i": 2,
+        "c": "¡Algo salió mal!"
+      },
+      {
+        "i": 3,
+        "c": "Intentar de nuevo"
+      }
+    ]
+  },
+  "f50b0cccdb56b748": "Tareas de Empleados",
+  "43bf30fd45b98d16": "Dispositivos de Empleados",
+  "c83fb5e64f34fb1a": "Resumen",
+  "81d0d1e78b196630": "General",
+  "49ab0247cf08bc51": "Portal de Confianza",
+  "8fcd54ccbde728bd": "Contexto",
+  "6cdc3f32f802d98b": "API",
+  "2139f3a924c1e3f9": {
+    "i": 1,
+    "c": "Cargando..."
+  },
+  "3030c2f5c8b74986": "Cumplimiento en la Nube",
+  "2fb56915089207b1": "Pruebe y valide la seguridad de su infraestructura en la nube con pruebas automatizadas e informes.",
+  "54f1bd6e422167f1": "Gestión en la Nube",
+  "b1b2701c579cde29": "Conectar Nube",
+  "6e9619a12c1b7d1f": "¿Qué son las pruebas de cumplimiento en la nube?",
+  "a94b9ebe1c0b7df2": "Las pruebas de cumplimiento en la nube son verificaciones automatizadas que validan su entorno de nube contra las mejores prácticas de seguridad y estándares de cumplimiento.",
+  "221abd8fbf5e0ff2": "¿Por qué son importantes?",
+  "8a323db2d79b1452": "Ayudan a garantizar que su infraestructura en la nube sea segura, identifican configuraciones incorrectas y proporcionan evidencia para auditorías como SOC 2 e ISO 27001.",
+  "74208aa0a99c5e94": "¿Cómo empiezo?",
+  "65c722f981ac4d7e": "Conecte su proveedor de nube (AWS, GCP, Azure) en la página de Integraciones, y comenzaremos automáticamente a ejecutar pruebas y generar informes.",
+  "850705273bf8f8f0": "Discrepancia de organización",
+  "5767b3de281f2914": "Acceso denegado",
+  "83468cc3c415e656": "¿Qué marcos de cumplimiento necesita?",
+  "2fb479cfedf71ff8": "Seleccione los marcos de trabajo que se aplican a su negocio",
+  "2ed3f72fa5bd59b4": "¿Cuál es el nombre de su empresa?",
+  "f9b12e07d811daa7": "p. ej., Acme Inc.",
+  "68b398bbde98884b": "¿Cuál es el sitio web de su empresa?",
+  "b0195983bba2c1f6": "example.com",
+  "fd629eface765e5b": "Describe su empresa en unas pocas oraciones",
+  "6e0fe18f6d4a5028": "p. ej., Somos una empresa de software que desarrolla herramientas para que las empresas gestionen a sus empleados.",
+  "eb2c9533e5ce3d0d": "¿En qué industria opera su empresa?",
+  "6542a7eba5e7cfd2": "p. ej., SaaS",
+  "b003a30f37585307": "SaaS",
+  "b59fa0c75e198c6a": "FinTech",
+  "4d882c5aa86eee02": "Atención médica",
+  "d2668a105aa5a0ff": "Comercio electrónico",
+  "0ba4f8589e36ca76": "Educación",
+  "78344b60f407928e": "Otro",
+  "6d03085f5d52ac45": "¿Cuántos empleados tiene?",
+  "81612b13d1369c48": "p. ej., 11-50",
+  "69ea76204e65d7e2": "1-10",
+  "3abddd0e81bf5395": "11-50",
+  "c9da9b9fc508857f": "51-200",
+  "8a7ee8d5a8a8e26b": "201-500",
+  "22a6b84393e38a9a": "500+",
+  "4304f213930da3d8": "¿Qué dispositivos utilizan los miembros de su equipo?",
+  "af8d1e05f9f62a11": "p. ej., Laptops de la empresa",
+  "68d075529466d386": "Laptops proporcionadas por la empresa",
+  "76a65ca20b718bd0": "Laptops personales",
+  "7edc8196691dcef6": "Teléfonos de la empresa",
+  "b630fe86908c8b4e": "Teléfonos personales",
+  "6906cc67fff52eca": "Tabletas",
+  "e4239de2725cbaaf": "¿Cómo inician sesión los miembros de su equipo en las herramientas de trabajo?",
+  "e92b67416295e096": "p. ej., Google Workspace",
+  "d5b059f100aaa718": "Google Workspace",
+  "e5b23f2954cd9ba5": "Microsoft 365",
+  "c393f815e7b109ef": "Okta",
+  "8afb6397e4ba2c35": "Auth0",
+  "9ebeecd45cd6f477": "Correo electrónico/Contraseña",
+  "f39f5197138ae8a8": "¿Qué software utilizas?",
+  "aba1a9dd2af5ad69": "p. ej., Rippling",
+  "30a49a6185880451": "Rippling",
+  "e5db0944ce1865fd": "Gusto",
+  "ec1bb2356055bb7a": "Salesforce",
+  "639c662f4d1027ff": "HubSpot",
+  "3a2f1cc0b79c6e6d": "Slack",
+  "b3c7b7342f92fb6b": "Zoom",
+  "d99bfbc557fae743": "Notion",
+  "53b4ef4917317632": "Linear",
+  "5e6ec559838201ee": "Jira",
+  "8dc0fe8ee20d2129": "Confluence",
+  "28a45948473da7f8": "GitHub",
+  "91d3187705f84ca0": "GitLab",
+  "440c0c5050b2ca0f": "Figma",
+  "38f3ba97c2a10775": "Stripe",
+  "8637a479074e8bae": "¿Cómo trabaja su equipo?",
+  "a3c09f8b0d2f46d9": "p. ej., Remoto",
+  "a0ac713fe42e9726": "Completamente remoto",
+  "8f1146a8bd6f77a4": "Híbrido (oficina + remoto)",
+  "d437c7126c949aca": "Basado en oficina",
+  "15d169987dd8e7be": "¿Dónde aloja sus aplicaciones y datos?",
+  "733c8a624b10a18b": "p. ej., AWS",
+  "de6163810c24040e": "AWS",
+  "2a9203ffbfeb8ae4": "Google Cloud",
+  "1d7582c4d5ce2dbc": "Microsoft Azure",
+  "342e8805b3000ae6": "Heroku",
+  "df7a7366e8b8de84": "Vercel",
+  "d2e6b7fd699af7cf": "¿Qué tipos de datos manejan?",
+  "13be69efb27d7329": "p. ej., Información del cliente",
+  "1031ea9f5f405f70": "PII del Cliente",
+  "355e653719481e02": "Información de pago",
+  "54c67c1b205e67ee": "Datos de empleados",
+  "c1b295f4860e0404": "Registros de salud",
+  "0ee6edd73e7c1f8b": "Propiedad intelectual",
+  "1f85816d34cf4400": "Error al completar la incorporación",
+  "67a9f5d5f1bc5302": "Paso {stepIndex} de {totalSteps}",
+  "d894f6cb29f7a3ea": "Atrás",
+  "3261bdd5219e0d67": "Configurando...",
+  "baedcf3c90943f63": "Completar Configuración",
+  "7f8cb8174c6d288f": "Siguiente",
+  "f1745ecb9fcc5475": {
+    "i": 1,
+    "c": {
+      "i": 2,
+      "c": [
+        {
+          "i": 3,
+          "c": {
+            "t": "path",
+            "i": 4
+          }
+        },
+        {
+          "i": 5,
+          "c": "La IA personaliza tu plan basándose en tus respuestas"
+        }
+      ]
+    }
+  },
+  "8ffdbac510933fb1": "Por favor seleccione al menos un marco de trabajo",
+  "38cc8fb525636f32": "El nombre de la organización debe tener al menos 2 caracteres",
+  "bb73baacb058f369": "Por favor, ingrese una URL válida",
+  "b8b9932ac29ceec8": "Por favor, proporcione una descripción general breve de lo que hace su empresa",
+  "74008c49dd307563": "La descripción debe tener menos de 300 caracteres",
+  "8a12c1624aaf8b02": "Por favor seleccione su industria",
+  "821e74635406f83d": "Por favor, seleccione el tamaño de su equipo",
+  "114cfa56648e8d09": "Por favor seleccione el software que utiliza",
+  "c1177b795f58cf8f": "Por favor seleccione su infraestructura",
+  "fb60f25bc9674c75": "Por favor, seleccione los tipos de datos que maneja",
+  "8ac98bb3e5897e70": "Por favor seleccione los tipos de dispositivo",
+  "1531d3483c320ccd": "Por favor, seleccione los métodos de autenticación",
+  "10a18bf683920ec1": "Por favor seleccione el tipo de trabajo",
+  "45bc97dadbeaf5f6": "Configurar Su Organización | Comp AI",
+  "df0b9f31a64b209f": "No autorizado.",
+  "5d2fa23d2b62ab3a": "Error al crear la organización",
+  "54535efc190ac8a2": "Error al crear o actualizar la estructura organizacional",
+  "d6845667c3278af2": "No autenticado",
+  "32ad42fee0387dab": "Sesión de configuración inválida",
+  "9db16884c1c9d324": "Atrás",
+  "f6108edf33ab9122": "Finalizar",
+  "77b5f98f1f9a4ca7": "Siguiente",
+  "24799c7ffe906821": "{organizationName} es una empresa que...",
+  "3fccc23a353c649b": "Buscar o agregar personalizado (presiona Enter) • {placeholder}",
+  "12312d44ca61e89d": "Paso {current} de {total}",
+  "e20699daee977796": {
+    "i": 1,
+    "c": "La IA personaliza tu plan basándose en tus respuestas"
+  },
+  "7f6a31a97deccd72": "Continuar a Planes",
+  "aa5e50f6e39e8baa": {
+    "i": 1,
+    "c": {
+      "i": 2,
+      "c": "Configurando espacio de trabajo...",
+      "d": {
+        "t": "b",
+        "b": {
+          "false": "Configuración del espacio de trabajo de IA en progreso... (2-7 minutos)",
+          "true": "La IA está trabajando en segundo plano (esto tomará de 2 a 7 minutos)"
+        }
+      }
+    }
+  },
+  "2de12268251f2cb7": {
+    "i": 1,
+    "c": {
+      "i": 2,
+      "c": "Procesando...",
+      "d": {
+        "t": "b",
+        "b": {
+          "false": "Analizando su infraestructura y requisitos de cumplimiento",
+          "true": "Puedes continuar con seguridad - te notificaremos cuando todo esté listo"
+        }
+      }
+    }
+  },
+  "fa4d7d98f102845e": "Error al aceptar la invitación",
+  "58a4dcfea8d4fa0e": "una organización",
+  "5becae6d1423db34": "Aceptando...",
+  "245da6e5a718031d": "Aceptar Invitación",
+  "1646b4de052320f1": {
+    "i": 1,
+    "c": "Has sido invitado a unirte"
+  },
+  "74975d5107703da8": {
+    "i": 1,
+    "c": "Por favor, acepta la invitación para unirte a la organización."
+  },
+  "5e74581cc1f0344a": "Tarea actualizada exitosamente",
+  "6d5c21ba339d1de7": "Algo salió mal, por favor inténtelo de nuevo.",
+  "92e3632c2611b200": "Seleccionar responsable",
+  "e6d9dd453ace53ca": "Seleccionar una fecha",
+  "4bc83c8380fe06ac": "Un título breve y descriptivo para la tarea.",
+  "ed82f606aecb96d5": "Proporcione una descripción detallada de lo que necesita hacerse.",
+  "309159a7f2b7260d": {
+    "i": 1,
+    "c": "Título de la Tarea"
+  },
+  "df5bc46f3786b524": "Nombre del Control",
+  "9131eedb6ec4a42f": "Buscar un control...",
+  "de39b5fb3e51a5e8": "Buscar estado...",
+  "f705382c27dbd9c2": "Se agregó correctamente {count} marco{plural}",
+  "469a70952145255c": "Se produjo un error de validación",
+  "b71330c16213d5f9": "Error al agregar marcos de trabajo",
+  "781e9bcce5b9fcca": {
+    "i": 1,
+    "c": "Agregar Marcos de Trabajo"
+  },
+  "07161279615778df": {
+    "i": 1,
+    "c": {
+      "i": 2,
+      "d": {
+        "t": "b",
+        "b": {
+          "true": "Seleccione los marcos de cumplimiento para agregar a su organización.",
+          "false": "No hay nuevos marcos de trabajo disponibles para agregar en este momento."
+        }
+      }
+    }
+  },
+  "5501eb474caf51fc": {
+    "i": 1,
+    "c": "Marcos de Trabajo Disponibles"
+  },
+  "e5b8aa42c1792580": {
+    "i": 1,
+    "c": [
+      {
+        "i": 2,
+        "k": "_gt_value_2",
+        "v": "v"
+      },
+      "Agregar Seleccionados"
+    ]
+  },
+  "e1fc30c95f246c48": {
+    "i": 1,
+    "c": "Todos los marcos de trabajo disponibles ya están habilitados en su organización."
+  },
+  "daf080584b6c4e5f": {
+    "i": 1,
+    "c": "Cerrar"
+  },
+  "44601907f9d10a04": {
+    "i": 1,
+    "c": [
+      {
+        "i": 2
+      },
+      {
+        "i": 3,
+        "c": "Agregando marcos de trabajo..."
+      }
+    ]
+  },
+  "a08738990422f423": "Conforme",
+  "3ad7aa90a39e55ed": "Casi Conforme",
+  "3e4bc10ab2e86ea9": "Requiere Atención",
+  "a68dd8483e37c3de": {
+    "i": 1,
+    "c": [
+      {
+        "i": 2
+      },
+      {
+        "i": 3,
+        "c": "Progreso"
+      }
+    ]
+  },
+  "7e4ee78f467179c4": {
+    "i": 1,
+    "c": [
+      {
+        "i": 2,
+        "c": [
+          {
+            "i": 3,
+            "k": "_gt_n_3",
+            "v": "n"
+          },
+          " completadas"
+        ]
+      },
+      {
+        "i": 4,
+        "c": [
+          {
+            "i": 5,
+            "k": "_gt_n_5",
+            "v": "n"
+          },
+          " activas"
+        ],
+        "t": "span"
+      },
+      {
+        "i": 6,
+        "c": [
+          {
+            "i": 7,
+            "k": "_gt_n_7",
+            "v": "n"
+          },
+          " total"
+        ],
+        "t": "span"
+      }
+    ]
+  },
+  "8d06621440a9c59e": {
+    "i": 1,
+    "c": [
+      {
+        "i": 2
+      },
+      {
+        "i": 3,
+        "c": [
+          "Actualizado ",
+          {
+            "i": 4,
+            "k": "_gt_value_4",
+            "v": "v"
+          }
+        ]
+      }
+    ]
+  },
+  "1b7b3f38765c23cd": "Agregar Marco de Trabajo",
+  "41cdef95ef07d7ac": "Personas",
+  "ad8a4bea7e6ce80b": "Detalles del Empleado",
+  "762eae628c205496": "Política",
+  "76d1c8638f446afc": "Resumen de Políticas",
+  "684e119e379a1f6d": {
+    "i": 1,
+    "c": "No hay token disponible. Por favor, intente actualizar la página."
+  },
+  "c2c1d0917484258d": "Crear Riesgo",
+  "3385709b69f39695": "Gestión de Riesgos",
+  "3d23fd91b0e98dee": "Identifique, evalúe y mitigue riesgos para proteger los activos de su organización y garantizar el cumplimiento.",
+  "5415898707ecd028": "Crear riesgo",
+  "49a66c603c0ba374": "¿Qué es la gestión de riesgos?",
+  "17db514baaaf3491": "La gestión de riesgos es el proceso de identificar, evaluar y controlar las amenazas al capital y las ganancias de una organización.",
+  "95511573114a0343": "¿Por qué es importante la gestión de riesgos?",
+  "7c2420c9171e1d34": "Ayuda a las organizaciones a proteger sus activos, garantizar la estabilidad y lograr sus objetivos minimizando las posibles interrupciones.",
+  "1d6c6f44857d9daf": "¿Cuáles son los pasos clave en la gestión de riesgos?",
+  "944708d4741e8acd": "Los pasos clave son la identificación de riesgos, el análisis de riesgos, la evaluación de riesgos, el tratamiento de riesgos, y el monitoreo y revisión de riesgos.",
+  "f233f44e0dcc1bae": "Resumen de Riesgos",
+  "d658405ba21e48f1": "Agregar Entrada",
+  "ad1b5391919e9f78": "Error al actualizar la tarea",
+  "4a9496c30ba02e3b": "Error al actualizar el orden de las tareas",
+  "e760456be40a26ab": "Soltar tarea aquí",
+  "edaa0be7951d26a9": "15 abr",
+  "d8e24415e55bbff1": "Gestión de Proveedores",
+  "fcdac99e065446e7": "Gestione sus proveedores y asegure que su organización esté protegida.",
+  "efa02eb8a3f21d9e": "Agregar proveedor",
+  "8cb168ac0da534ac": "¿Qué es la gestión de proveedores?",
+  "4aed173b94f00d5a": "La gestión de proveedores es el proceso de administrar y controlar las relaciones y acuerdos con proveedores externos de bienes y servicios.",
+  "0a26ec0337f419d5": "¿Por qué es importante la gestión de proveedores?",
+  "e28738b0d97ec8d1": "Ayuda a garantizar que obtenga el máximo valor de sus proveedores, al mismo tiempo que minimiza los riesgos y mantiene el cumplimiento normativo.",
+  "acaeb06361f69866": "¿Cuáles son los pasos clave en la gestión de proveedores?",
+  "cd34404757675bd8": "Los pasos clave incluyen la selección de proveedores, negociación de contratos, monitoreo del desempeño, gestión de riesgos y gestión de relaciones.",
+  "084c640a56dbc2f5": "Debe ser una URL válida",
+  "e98f9fa86e22a4ca": "Error al crear el proveedor",
+  "af6c2787e681b839": "Error al buscar proveedores globales",
+  "833d725acc309572": "Gestione sus proveedores y asegure que la cadena de suministro de su organización sea segura y cumpla con las normativas.",
+  "04e9652c409230e5": "Proveedor creado exitosamente",
+  "1e4f18781f51e533": "Buscar o ingresar nombre del proveedor...",
+  "c34ec213fbfe6e8e": "Ingrese una descripción para el proveedor...",
+  "688ace37fa12f7b5": "Seleccionar una categoría...",
+  "8a0229de388b5c42": "Seleccionar un estado...",
+  "d53abb5663682a3c": "Detalles del Proveedor",
+  "af7d87845636137a": "Nombre del Proveedor",
+  "5cd89cfd9ef6a613": "Cargando...",
+  "e84c63c6805cf289": "Sugerencias",
+  "27c827064768bf37": [
+    "Crear \"",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    "\""
+  ],
+  "52ee190cc093eee9": "Sitio web",
+  "ab8222ce9132da09": "Descripción",
+  "d9da39b1e9b26f71": "Categoría",
+  "08247dd39b0c85ff": "Asignado",
+  "bda71051f48de641": "Crear Proveedor",
+  "a1f2a4dc17d26b98": {
+    "i": 1,
+    "c": "Incorporación No Encontrada"
+  },
+  "73ed17cbadf2bbde": {
+    "i": 1,
+    "c": "No se encontró ningún proceso de incorporación para esta organización."
+  },
+  "9114b5b0318105b8": {
+    "i": 1,
+    "c": "Incorporación en progreso"
+  },
+  "087f710f6a3b5219": {
+    "i": 1,
+    "c": "Esto puede tomar unos minutos."
+  },
+  "f7f2ca3ad83c9874": "La IA está analizando sus necesidades de cumplimiento",
+  "f43d6c285a35ffbe": "Personalizando su marco de seguridad",
+  "3319a243ebfbd937": "Construyendo su hoja de ruta de cumplimiento",
+  "b57715f5c68049fe": "Optimizando para los requisitos de su industria",
+  "8867e24157f4df51": {
+    "i": 1,
+    "c": {
+      "i": 2,
+      "d": {
+        "t": "b",
+        "b": {
+          "true": "Contáctanos para actualizar",
+          "false": {
+            "i": 3,
+            "c": [
+              "Aprobemos ",
+              {
+                "i": 4,
+                "k": "_gt_value_4",
+                "v": "v"
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "01fdd958afcf2cd0": {
+    "i": 1,
+    "c": {
+      "i": 2,
+      "d": {
+        "t": "b",
+        "b": {
+          "false": "Una llamada rápida de 20 minutos con nuestro equipo para entender sus necesidades de cumplimiento y aprobar el acceso de su organización.",
+          "true": "Una llamada rápida de 20 minutos con nuestro equipo para entender sus necesidades de cumplimiento y actualizar su plan."
+        }
+      }
+    }
+  },
+  "4fbe9105a34a656e": {
+    "i": 1,
+    "c": [
+      {
+        "i": 2,
+        "d": {
+          "t": "b",
+          "b": {
+            "true": "Reservar una Llamada",
+            "false": "Reserva tu Demo"
+          }
+        }
+      },
+      " ",
+      {
+        "i": 3
+      }
+    ]
+  },
+  "b4bcc883251843a2": {
+    "i": 1,
+    "c": "¿Ya tuviste una demostración? Solicita a tu punto de contacto que active tu cuenta."
+  },
+  "95a7958453487882": "¡Control eliminado! Redirigiendo a la lista de controles...",
+  "ad300274f72c5971": "Error al eliminar el control.",
+  "c4d1b302af837104": "Eliminando...",
+  "da49b8271b9dffa0": "Eliminar",
+  "2f10d97acacce7cc": {
+    "i": 1,
+    "c": "Eliminar Control"
+  },
+  "1a631abda5fe31a2": {
+    "i": 1,
+    "c": "¿Está seguro de que desea eliminar este control? Esta acción no se puede deshacer."
+  },
+  "3070a60b00ad489a": "Nombre",
+  "096224a4f82a6fa0": "Creado el",
+  "431e4fefe760f1fd": "Buscar requisitos...",
+  "4730f0952f7a36fe": {
+    "i": 1,
+    "c": "Requisitos"
+  },
+  "e17cd2600d6bf447": {
+    "i": 1,
+    "c": "Políticas"
+  },
+  "9a17d0f84193f9f9": {
+    "i": 1,
+    "c": "Tareas"
+  },
+  "52abe19223865f18": {
+    "i": 1,
+    "c": "Dominio"
+  },
+  "45b60762299b6873": "Buscar tareas...",
+  "0229a1299560addc": "Instancia de marco no encontrada",
+  "a0754deed725bac5": "Error al eliminar la instancia del marco de trabajo",
+  "1858a1e6f9e87941": "¡Marco de trabajo eliminado! Redirigiendo a la lista de marcos de trabajo...",
+  "fceb50a9d97c829c": "Error al eliminar el marco de trabajo.",
+  "ea8e47a73ceff762": "Eliminar Marco de Trabajo",
+  "192936817313e22a": "¿Está seguro de que desea eliminar este marco de trabajo? Esta acción no se puede deshacer.",
+  "e8f4f303cea351b7": {
+    "i": 1,
+    "c": [
+      {
+        "i": 2
+      },
+      "Eliminando..."
+    ]
+  },
+  "758907dc7a83633e": "Progreso de Cumplimiento",
+  "958749c7dd56e65a": "% completado",
+  "b66fd30986031831": "completado",
+  "6ba37274c0fe4a31": "restante",
+  "6902d6425b5bc22d": "total",
+  "65401fd9c2fc1158": "Estado del Control",
+  "04cfc0a0f896cfa6": "Completado",
+  "b901d8a75fdd232b": "En Progreso",
+  "7853bd9e23f25bb6": "Total",
+  "04475595e6bffc77": "Nombre del Requisito",
+  "992b8be3ef4a1e89": "Requisitos",
+  "da2ac3f4150be0d1": "Empleado no encontrado",
+  "29f28b94285537b4": "No está autorizado para ver este empleado",
+  "96bf710e86e123c5": "Se produjo un error inesperado",
+  "9605573953e7fa07": "ID de organización no encontrado",
+  "55d24da93ca92aef": "Entrada inválida",
+  "3d0b8b23bb19ee03": "La dirección de correo electrónico ya está en uso.",
+  "edf44df5be41e0a0": "Administrador",
+  "7c905f5c373b9d01": "Gobernanza",
+  "05627a3ce4ab4d79": "RRHH",
+  "995a54376f33210d": "TI",
+  "4722675ddbbe78d5": "Gestión de Servicios de TI",
+  "85f91c5713d08f3f": "Gestión de Calidad",
+  "7579efd3af57fd19": "Departamento actualizado exitosamente",
+  "21b4fcf54d1fe43f": "Error al actualizar el departamento",
+  "0bc3abd5590c867d": "Seleccionar departamento",
+  "e053ca7a2cd892db": {
+    "i": 1,
+    "c": "Nombre"
+  },
+  "0ef9464dc819731b": {
+    "i": 1,
+    "c": "Correo electrónico"
+  },
+  "706a44da30da06fa": "Estado del empleado actualizado exitosamente",
+  "ef8b54e1a1f5c9ef": "Error al actualizar el estado del empleado",
+  "fa07b2258f948afd": "Seleccionar estado",
+  "1da2bce8da9dc4c8": "Detalles del empleado actualizados exitosamente",
+  "02beae082fdfdb4e": "Error al actualizar los detalles del empleado",
+  "91cca38108b84e60": "No hay cambios que guardar",
+  "4abb13af9b3921ec": "Detalles del Empleado",
+  "196cea3ec2bc91aa": {
+    "i": 1,
+    "c": "Gestionar información de empleados y asignación de departamentos"
+  },
+  "665b4f6b6e9904ce": "'s Políticas",
+  "b9efda236d7237f7": {
+    "i": 1,
+    "c": "Tareas de Empleados"
+  },
+  "3f2d7004255baa67": {
+    "i": 1,
+    "c": "Ver y gestionar las tareas de los empleados y su estado"
+  },
+  "f389dd4aaef1c1c2": "Políticas",
+  "56049f09fd5af61b": "Videos de Capacitación",
+  "cdf1acc35d738b49": "Dispositivo",
+  "6171dd941937f9b9": {
+    "i": 1,
+    "c": "No hay políticas que requieran firma."
+  },
+  "0e7b83c61d4f8cde": {
+    "i": 1,
+    "c": "No hay videos de capacitación requeridos para ver."
+  },
+  "19f7dc6f1b1743e2": {
+    "i": 1,
+    "c": [
+      "Completado - ",
+      {
+        "i": 2,
+        "k": "_gt_date_2",
+        "v": "d"
+      }
+    ]
+  },
+  "77f239944bdf5f58": {
+    "i": 1,
+    "c": "Aprobado"
+  },
+  "580543c2d219a989": {
+    "i": 1,
+    "c": "Falla"
+  },
+  "5672ac39095692d7": {
+    "i": 1,
+    "c": "No se encontró ningún dispositivo."
+  },
+  "705c8aa755045b82": "Error al agregar empleado",
+  "11ccfacb48c741b7": "Autenticación requerida.",
+  "31c30ea43a1b15c2": "Archivo CSV no proporcionado o inválido.",
+  "b46040d0ab0b883a": "El tamaño del archivo CSV excede el límite de 5MB.",
+  "35819278bb7b3f97": "Tipo de archivo inválido. Solo se permite CSV.",
+  "e230e8c2516a0448": "El archivo CSV está vacío o contiene solo un encabezado.",
+  "a57737a31eaccf09": "Fila CSV: {email}, {role}",
+  "ef726f53ffd7c38d": "[missing]",
+  "12c2ddc621acda04": "Rol especificado inválido: {role}",
+  "5691d29b90421516": "Error en el procesamiento",
+  "4ef4780ecbf5aedb": "Datos de invitación manual no proporcionados.",
+  "27f722b76fa5e8e8": "Formato inválido para los datos de invitación manual.",
+  "0565e178454756cb": "No se enviaron invitaciones manuales.",
+  "fb1b36967048d9bd": "Error en la invitación",
+  "a13c62c26c5712e4": "Tipo de envío inválido.",
+  "171caeda50580ba0": "Todas las invitaciones fallaron.",
+  "54e5b7f520cfdda2": "Ocurrió un error inesperado del servidor al procesar las invitaciones.",
+  "3011a5c0dfc1151e": "No tienes permisos para eliminar miembros",
+  "b58b641907c274bd": "Miembro no encontrado en esta organización",
+  "3ea297e7fb1c4340": "No se puede eliminar al propietario de la organización",
+  "1b579c911ea11d62": "No puedes eliminarte a ti mismo de la organización",
+  "7c8b772c1a8a1828": "Error al eliminar miembro",
+  "7e8142c4f846be70": "Invitación no encontrada o ya aceptada",
+  "2bd3738ccdb61d40": "Error al revocar la invitación",
+  "fc5ef3d2a53ab94b": "No tienes permisos para actualizar los roles de los miembros",
+  "082fad64b81d71c3": "No se pueden cambiar los roles para el propietario de la organización.",
+  "4fc707159d98591e": "Error al actualizar el/los rol(es) del miembro",
+  "88fd5400a830ee7e": "Por favor, agregue al menos un miembro para invitar.",
+  "c2819a241f8b062a": "Por favor, seleccione al menos un rol para: {emails}",
+  "e7fc4a7a6b0af46c": "Se invitó exitosamente a {count} miembro(s).",
+  "6fa0293f3e53c4a5": "Error al invitar {count} miembro(s): {emails}",
+  "380de5f5e624547f": "Se requiere un archivo CSV válido.",
+  "9874fe4ddcdafd82": "El archivo debe ser un CSV.",
+  "ae0dce5c990ec64c": "El tamaño del archivo debe ser menor a 5MB.",
+  "652fbe55154f9887": "Formato CSV inválido. La primera fila debe incluir las columnas 'email' y 'role'.",
+  "e01e2a1ee232d656": "El CSV debe contener las columnas 'email' y 'role'.",
+  "f9390534897da70d": "El archivo CSV no contiene ninguna fila de datos.",
+  "e80ae0b3c233ad1c": "Rol(es) inválido(s): {roles}. Debe ser uno de: {validRoles}",
+  "77a6df47ea53202e": "Error al analizar el archivo CSV. Por favor, verifique el formato.",
+  "3086e2190f3835f0": "Ocurrió un error inesperado al procesar las invitaciones.",
+  "d4fe5f33acefa47a": "Ingrese dirección de correo electrónico",
+  "1153b531fd2dcd5e": "Seleccionar un rol",
+  "1025836e0c0b9576": "Eliminar invitación",
+  "135ce1648dc76499": "Ningún archivo seleccionado",
+  "0ab08f746265bc60": "Agregando Empleado...",
+  "853f2aeef0f1de98": "Invitar",
+  "7d4e0a8ae4fb8d67": "Agregar Usuario",
+  "7338cdd78153f034": "Agregar un empleado a su organización.",
+  "503855211a14e0ae": "Manual",
+  "b29f123c54cebb95": "CSV",
+  "effdcd633af15789": "Correo electrónico",
+  "882899ce03a4baa3": "Rol",
+  "f1e9d66591c78a34": "Agregar Otro",
+  "ea561bc7153d2e0e": "Archivo CSV",
+  "5006be3f38fec89d": "Elegir archivo",
+  "025cb89517dc7f04": "Sube un archivo CSV con las columnas 'email' y 'role'. Usa la barra vertical (|) para separar múltiples roles (ej., employee|admin).",
+  "2d97dc10cf7f8d3b": "Descargar plantilla CSV",
+  "6502097c2be1269b": "??",
+  "07e9a4c88da946a2": "Ver Perfil",
+  "e97e409bef7c68db": "Propietario",
+  "95b50799111c5781": "Auditor",
+  "736cee0ff2dc22bf": "Empleado",
+  "99a1e3accbba4a7e": "Editar Roles",
+  "4599a44a20334d8c": "Editar Roles de Miembros",
+  "3a8ffc4722287317": "Roles",
+  "21df418b12667c52": "Eliminar Miembro",
+  "35e65129e5dfd4f7": "Eliminar Miembro del Equipo",
+  "2c5674665579a329": "Eliminar",
+  "5b53f04b14512a66": [
+    "Cambiar roles para ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    }
+  ],
+  "c495bd7adae083cf": {
+    "i": 1,
+    "c": "El rol de propietario no se puede eliminar."
+  },
+  "0638680d454714b7": {
+    "i": 1,
+    "c": "Los miembros deben tener al menos un rol."
+  },
+  "32cf62366ecd3b38": [
+    "¿Está seguro de que desea eliminar a ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    "? Ya no tendrá acceso a esta organización."
+  ],
+  "0150cbf873be7714": "Seleccionar rol(es)",
+  "19296c088d2032f0": "Puede gestionar usuarios, políticas, tareas y configuraciones, y eliminar la organización.",
+  "0ce4041ea6bc76b8": "Puede gestionar usuarios, políticas, tareas y configuraciones.",
+  "c68efed9abce3d18": "Acceso de solo lectura para verificaciones de cumplimiento.",
+  "74e80634d6bd26d5": "Puede firmar políticas y completar capacitación.",
+  "3d9d54ce106919e8": "No se encontraron resultados",
+  "469aae33a5a5bc74": "Bloqueado",
+  "374dac09151d4578": "Pendiente",
+  "957a85ca76596fcd": "Abrir menú",
+  "d06b708e50a8ef11": "Cancelar Invitación",
+  "80c084fe3d0ae4a5": [
+    "¿Está seguro de que desea cancelar la invitación para ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    "?"
+  ],
+  "fc55702435f9adce": "Esta acción no se puede deshacer.",
+  "e74139c17fab1fa1": "Confirmar",
+  "84a40672baefdbd1": "Error al agregar usuario",
+  "491632b005f7b437": "ha sido eliminado de la organización",
+  "7cbe8f027db4796f": "El rol de Propietario no se puede eliminar.",
+  "9a52169a47e5813a": "Por favor, seleccione al menos un rol.",
+  "730a9463d948bf5c": "Roles de miembros actualizados exitosamente.",
+  "d88b7a4ffd327790": "Error al actualizar los roles de miembro",
+  "7ab50cb8a90419cd": "Buscar personas...",
+  "0451e2efa0e95403": "Todos los Roles",
+  "71676a695ec33aed": "Todos los Roles",
+  "5e0c0354a6c8b204": "Propietario",
+  "83d5f21bd2e8f44a": "Administrador",
+  "4cd6aabc43eb8a11": "Auditor",
+  "bf833ea7594cf25a": "Empleado",
+  "8f25fe65b4e2d152": "Aún no hay empleados",
+  "7006be19c2f64ed1": "Comience invitando a su primer miembro del equipo.",
+  "ba0192fdd891269f": "Completadas: {count}",
+  "1ae7bdd9e93a8ad9": "Incompleto: {count}",
+  "7d318286377920bd": "Finalización de Tareas de Empleados",
+  "c1987d3d0923fc6f": "No hay datos de empleados disponibles",
+  "4216d314e55d71ce": "No hay tareas disponibles para completar",
+  "9c1793838e258d8a": "tareas",
+  "496f4b9a48eba645": "Completado",
+  "d00ce138ed5abfab": "No Completado",
+  "79ee400a066192a6": "No Conforme",
+  "9cc48e5c9ee46026": "Dispositivos",
+  "cf19ed14b2b34058": {
+    "i": 1,
+    "c": "Cumplimiento de Dispositivos"
+  },
+  "a4d9225d52d1bdad": {
+    "i": 1,
+    "c": "No hay datos de dispositivos disponibles. Por favor, asegúrese de que sus empleados accedan al portal e instalen el agente de dispositivo."
+  },
+  "8907ed1203d36cec": "Nombre del Dispositivo",
+  "8ff705813edac77c": "Es Conforme",
+  "89595e69cb926a4c": "Políticas de {name}",
+  "e511a672455032e6": {
+    "i": 1,
+    "c": [
+      {
+        "i": 2
+      },
+      "Atrás"
+    ]
+  },
+  "3128dd9c0f40f364": {
+    "i": 1,
+    "c": "No se encontraron políticas para este dispositivo."
+  },
+  "4171d5c4fb58fcd3": {
+    "i": 1,
+    "c": "Políticas por Responsable"
+  },
+  "74e01763fc0c9940": {
+    "i": 1,
+    "c": "Distribución"
+  },
+  "ca6ff36c8d5ff187": {
+    "i": 1,
+    "c": "No hay políticas asignadas a usuarios"
+  },
+  "49b85d58db4c9123": {
+    "i": 1,
+    "c": [
+      "Superior: ",
+      {
+        "i": 2,
+        "k": "_gt_value_2",
+        "v": "v"
+      }
+    ]
+  },
+  "a6edc1e5fa4fec4e": {
+    "i": 1,
+    "c": "Cantidad de Políticas"
+  },
+  "65c1841897037bc0": "Recuento",
+  "c71cec3d156b0adc": {
+    "i": 1,
+    "c": [
+      "Cantidad: ",
+      {
+        "i": 2,
+        "c": {
+          "i": 3,
+          "k": "_gt_value_3",
+          "v": "v"
+        }
+      }
+    ]
+  },
+  "97e9a2ebdc3912e5": {
+    "i": 1,
+    "c": "Políticas por Estado"
+  },
+  "c8ec0af9da595356": {
+    "i": 1,
+    "c": "Resumen"
+  },
+  "e7230ceab152cf77": {
+    "i": 1,
+    "c": "No hay datos de políticas disponibles"
+  },
+  "95a7d24d35770dd3": {
+    "i": 1,
+    "c": [
+      "Máximo: ",
+      {
+        "i": 2,
+        "k": "_gt_value_2",
+        "v": "v"
+      }
+    ]
+  },
+  "2057c0147fe1aa60": "Agregar comentario o razón opcional (se agregará como comentario)",
+  "4dc2fec97b3c2d75": "Política archivada exitosamente",
+  "deef48194e077375": "Política restaurada exitosamente",
+  "9e8f2e41dc424ee0": "¿Está seguro de que desea restaurar esta política?",
+  "26cc0877673f89f1": "¿Está seguro de que desea archivar esta política?",
+  "90e19ab2fba5da15": "Restaurar",
+  "2a546119bf3879ee": "Archivar",
+  "a18b109d050bd5af": "Restaurar Política",
+  "c8faad822a32784b": "Archivar Política",
+  "9cd0be0c89f32a9f": "Control: {controlName} desvinculado exitosamente de la política {policyId}",
+  "f1fb56b9deb392b8": "Error al desvincular el control",
+  "2dfec7cc55776188": {
+    "i": 1,
+    "c": "Confirmar Desvinculación"
+  },
+  "d469f6fe80d55209": {
+    "i": 1,
+    "c": [
+      "¿Está seguro de que desea desvincular ",
+      {
+        "i": 2,
+        "c": {
+          "i": 3,
+          "k": "_gt_value_3",
+          "v": "v"
+        }
+      },
+      " de esta política? Puede vincularlo nuevamente más tarde."
+    ]
+  },
+  "c2f6f9b3e3e43357": {
+    "i": 1,
+    "c": "Desasignar"
+  },
+  "a7768d6211c8aa39": "Los controles {controlNames} se mapearon exitosamente a la política {policyId}",
+  "81dfee79a961b703": "Error al mapear controles",
+  "2828fc07c61a26bb": "Buscar o seleccionar controles...",
+  "09fcc17a28a0da3a": {
+    "i": 1,
+    "c": [
+      {
+        "i": 2
+      },
+      "Vincular Controles"
+    ]
+  },
+  "93cb69b30dbf2d57": {
+    "i": 1,
+    "c": "Vincular Nuevos Controles"
+  },
+  "bb0dd05e7c9fd180": {
+    "i": 1,
+    "c": "Seleccione los controles que desea vincular a esta política"
+  },
+  "32449c016322cf37": {
+    "i": 1,
+    "c": "Mapear"
+  },
+  "8b400aae6490f6a8": "Controles mapeados exitosamente",
+  "4281d2b727030f4e": "Controles desmapeados exitosamente",
+  "201f46ce6bc6ae5c": "Error al desasignar control",
+  "24eb06ffb1e875d1": "Error al actualizar los controles",
+  "4d1b2dd36a850c76": "Controles del Mapa",
+  "56ea37c9068c9dec": "Mapee los controles que son relevantes para esta política.",
+  "fbfd7cc76af0d1dd": "Buscar controles...",
+  "c5437eb43ede54ba": "¡Política eliminada! Redirigiendo a la lista de políticas...",
+  "7a2c947462260b1f": "Error al eliminar la política.",
+  "76cfb2deb26bfbe9": "Eliminar Política",
+  "8a63f70e3dc315d9": "¿Está seguro de que desea eliminar esta política? Esta acción no se puede deshacer.",
+  "f245e79bcfab1f84": "¡Cambios de política denegados!",
+  "c0853b2ec9df8f4b": "Error al denegar los cambios de política.",
+  "cc9a68c6954a09b1": "¡Cambios de política aceptados y publicados!",
+  "815385a22799580a": "Error al aceptar los cambios de política.",
+  "ad0a13150160c1e5": "Rechazar Cambios",
+  "ac48cc297029db41": "Aprobar",
+  "034b7fe9d2331125": "Editar política",
+  "5af1694d385ce51d": "Restaurar política",
+  "8b633b46e57db958": "Archivar política",
+  "b0a332f4cf888f64": "Aprobar Cambios de Políticas",
+  "7dbc6122a36cd10b": "¿Está seguro de que desea aprobar estos cambios de política? Opcionalmente puede agregar un comentario que será visible en el historial de la política.",
+  "89dceedb1ff1f474": "Denegar Cambios de Políticas",
+  "7e18ce8955f879b4": "¿Está seguro de que desea rechazar estos cambios de política? Opcionalmente puede agregar un comentario explicando su decisión que será visible en el historial de la política.",
+  "af63f05ed2f5eeb3": "Denegar",
+  "b5e58d41522e6f8d": {
+    "i": 1,
+    "c": {
+      "i": 2,
+      "d": {
+        "t": "b",
+        "b": {
+          "false": {
+            "i": 3,
+            "c": "Pendiente de Aprobación"
+          },
+          "true": {
+            "i": 3,
+            "c": "Acción Requerida de Su Parte"
+          }
+        }
+      }
+    }
+  },
+  "c7cdcd8295ffc276": {
+    "i": 1,
+    "c": [
+      "Esta política está esperando la aprobación de ",
+      {
+        "i": 2,
+        "c": {
+          "i": 3,
+          "d": {
+            "t": "b",
+            "b": {
+              "true": {
+                "i": 4,
+                "c": "usted"
+              },
+              "false": {
+                "i": 4,
+                "c": [
+                  {
+                    "i": 5,
+                    "k": "_gt_value_5",
+                    "v": "v"
+                  },
+                  " (",
+                  {
+                    "i": 6,
+                    "k": "_gt_value_6",
+                    "v": "v"
+                  },
+                  ")"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "."
+    ]
+  },
+  "e2a10b31faf09c9e": {
+    "i": 1,
+    "d": {
+      "t": "b",
+      "b": {
+        "true": {
+          "i": 2,
+          "c": "Por favor, revise los detalles y apruebe o rechace los cambios."
+        },
+        "false": {
+          "i": 2,
+          "c": " Todos los campos están deshabilitados hasta que se ejecute la política."
+        }
+      }
+    }
+  },
+  "09a58159a34fb404": {
+    "i": 1,
+    "c": "Esta política está archivada"
+  },
+  "e672216bacb316fa": {
+    "i": 1,
+    "c": {
+      "i": 2,
+      "d": {
+        "t": "b",
+        "b": {
+          "true": {
+            "i": 3,
+            "c": [
+              "Archivado el ",
+              {
+                "i": 4,
+                "k": "_gt_value_4",
+                "v": "v"
+              }
+            ]
+          },
+          "false": {
+            "i": 3
+          }
+        }
+      }
+    }
+  },
+  "209597041689fa1a": "Actualizar Política",
+  "cfd9df270d1ab870": "Actualizar detalles, contenido y metadatos de la política.",
+  "2d789753cc9093ef": "Actividad Reciente",
+  "0fb870258a5c11fa": {
+    "i": 1,
+    "c": "Cambios:"
+  },
+  "0a0f1759fd7d55b5": {
+    "i": 1,
+    "c": [
+      {
+        "i": 2
+      },
+      {
+        "i": 3,
+        "c": "Sin actividad reciente"
+      },
+      {
+        "i": 4,
+        "c": "La actividad aparecerá aquí cuando se realicen cambios en esta política",
+        "t": "p"
+      }
+    ]
+  },
+  "4a5a2d169cfa2e66": "Enviar para Aprobación",
+  "35eeeaac38859c2a": "Por favor, seleccione un aprobador para esta política.",
+  "e4c3331d3f6ca23f": "Confirmar y Enviar",
+  "67024d5cc3a2b238": "¡Política enviada para aprobación exitosamente!",
+  "c371b99a5cf1a514": "Error al enviar la política para aprobación.",
+  "e5db1ee627ea339d": "Se requiere un aprobador.",
+  "4f5d2ab132df784a": "Frecuencia de Revisión",
+  "6effd4a13cf948bc": "Seleccionar frecuencia de revisión",
+  "2749541e66817f9a": "Fecha de Revisión",
+  "d95420a0657189f5": "Seleccionar fecha de revisión",
+  "2aa1601a9da01659": "Confirmar Fecha",
+  "2008a148875696d1": "Requisito de Firma del Empleado",
+  "9314145c13cdff15": "Obligatorio",
+  "07082dd600bd971b": "No Requerido",
+  "c14dd32508155b52": "Buscar una política...",
+  "c898e6ae70f171b4": "Búsqueda actualizada por última vez...",
+  "8c21197a61c318a8": "Crear Política",
+  "a67aaf8e38d9b253": "Error al crear la clave API",
+  "18e2e29c59c39725": "Clave API copiada al portapapeles",
+  "afc8fb892e52f932": "Error",
+  "98bad2483621d390": "Clave de API",
+  "2cd247d0cc8a8ed9": "Ingrese un nombre para esta clave de API",
+  "18c1ab9df1956453": "Vencimiento",
+  "ef351828ad652b83": "Seleccionar vencimiento",
+  "d15f079ebaf277ae": "Nunca",
+  "53493056306708cf": "30 días",
+  "c719359d18d37ad3": "90 días",
+  "6f8d4d7274376cf6": "1 año",
+  "991114b9d655cc85": "Esta clave solo se mostrará una vez. Asegúrese de copiarla ahora.",
+  "463bb4910ba81579": "Clave de API Creada",
+  "bcb1fbddbee9eff8": "Nueva Clave de API",
+  "ea31e51a6647239b": "Su clave API ha sido creada. Asegúrese de copiarla ahora ya que no podrá verla nuevamente.",
+  "db360fd0a3ceb743": "Crear una nueva clave de API para acceso programático a los datos de su organización.",
+  "f3f36b8e1ef0fe71": "Agregar Entrada de Contexto",
+  "e28b38fdaf763781": "Proporciona contexto adicional a Comp AI sobre tu organización.",
+  "2c9aff0ef152c355": "Entrada de contexto actualizada",
+  "9c2bd23d4bdeb3b4": "Entrada de contexto creada",
+  "a380d1dccfc9f3b1": "Algo salió mal",
+  "2d213598fd05b6ed": "¿Cuál es la misión de la empresa?",
+  "8f2d31f8441ae9bf": "Nuestra misión es brindar el mejor servicio posible a nuestros clientes.",
+  "da28c1c64c40fe26": "Entrada de Contexto",
+  "6cb24609520cffac": "Pregunta",
+  "74a70575448e22cd": "Respuesta",
+  "c0c5b3c974c59ef0": {
+    "i": 1,
+    "c": "Crear",
+    "d": {
+      "t": "b",
+      "b": {
+        "true": {
+          "i": 2,
+          "c": "Actualizar"
+        },
+        "false": {
+          "i": 2,
+          "c": "Crear"
+        }
+      }
+    }
+  },
+  "84df5207349bf367": {
+    "i": 1,
+    "c": "Contexto"
+  },
+  "78fcb8d22c79db46": {
+    "i": 1,
+    "c": "Puedes agregar contexto a la plataforma Comp AI para ayudarla a comprender mejor tu organización/procesos."
+  },
+  "8b4eabdfc58b5fa0": "Editar",
+  "b8854093e1ea172c": "Entrada de contexto eliminada",
+  "7d00b78c04cbf13e": {
+    "i": 1,
+    "c": "Entradas de Contexto"
+  },
+  "239fae3b9217ef4b": {
+    "i": 1,
+    "c": "Agregue, edite o elimine entradas de contexto para su organización."
+  },
+  "4e91597e118b90b0": {
+    "i": 1,
+    "c": [
+      {
+        "i": 2
+      },
+      "Agregar Entrada"
+    ]
+  },
+  "59145c615002ac9a": {
+    "i": 1,
+    "c": "Agregar Nueva Entrada"
+  },
+  "c38590681d61f395": {
+    "i": 1,
+    "c": "Crear una nueva entrada de contexto"
+  },
+  "1ab7b22099bf8346": {
+    "i": 1,
+    "c": "Aún no hay entradas de contexto"
+  },
+  "c7cb8dd8116ca2ec": {
+    "i": 1,
+    "c": "Editar Entrada"
+  },
+  "f07e51a11732f730": {
+    "i": 1,
+    "c": "Actualiza tu entrada de contexto"
+  },
+  "db387260d0b1fd65": {
+    "i": 1,
+    "c": "¿Está seguro?"
+  },
+  "69aa87f10b8e94fb": {
+    "i": 1,
+    "c": "Esta acción no se puede deshacer."
+  },
+  "47ae9fafd2a74c0c": "La verificación del registro DNS falló, verifique que los registros sean válidos o intente nuevamente más tarde.",
+  "e609240795029b8d": "Error al verificar los registros DNS. Asegúrese de que tanto los registros CNAME como TXT estén configurados correctamente, o espere unos minutos e inténtelo de nuevo.",
+  "b36eefd49878b594": "El ID del proyecto de Vercel no está configurado.",
+  "b45d1d5ff18c8d3b": "El dominio ya está siendo utilizado por otra organización",
+  "0e8cb1c634ba3bb8": "Error al actualizar el dominio personalizado",
+  "314f351393f73336": "Error al actualizar la configuración del portal de confianza",
+  "56ba3cbad0eddcbe": "Actualización de dominio personalizado enviada, por favor verifique sus registros DNS.",
+  "02753d12f011fbbc": "Error al actualizar el dominio personalizado.",
+  "55013f5501b9ce4b": "{type} copiado al portapapeles",
+  "f171c153f7dfdb0e": "trust.example.com",
+  "f045efc0656c1a9f": "Valor",
+  "1eef65ec03649821": [
+    {
+      "i": 1,
+      "c": "Configurar Dominio Personalizado"
+    },
+    {
+      "i": 2,
+      "c": "Puedes usar un dominio personalizado (como trust.example.com) para personalizar la marca de tu portal de confianza."
+    }
+  ],
+  "bbc58bed17606f8f": "Dominio Personalizado",
+  "002915c4e8dffc7e": {
+    "i": 1,
+    "c": "El dominio está verificado"
+  },
+  "1e302a6e9966ab57": {
+    "i": 1,
+    "c": "El dominio aún no está verificado"
+  },
+  "d81797013ad75aa5": "Verificar registro DNS",
+  "d462eb430631e76d": {
+    "i": 1,
+    "c": "Verificado"
+  },
+  "2bc786a3e42f5520": {
+    "i": 1,
+    "c": "Tipo"
+  },
+  "90ce6a40bc073f6c": {
+    "i": 1,
+    "c": "Valor"
+  },
+  "8c1753cbe491136d": {
+    "i": 1,
+    "c": "Tipo:"
+  },
+  "5045e704be73bb8b": {
+    "i": 1,
+    "c": "Nombre:"
+  },
+  "dc78404d73f37576": {
+    "i": 1,
+    "c": "Valor:"
+  },
+  "6ab9c102b1981fa8": {
+    "i": 1,
+    "c": "Configure un dominio personalizado para su portal de confianza."
+  },
+  "1199aec0e16713bb": "Estado del portal de confianza actualizado",
+  "94e0e520c1ada9e0": "Error al actualizar el estado del portal de confianza",
+  "39250cf5c5e82116": "mi-org",
+  "f82c0ee66c808f7b": "Verificando disponibilidad...",
+  "c535df83edb370e4": "¡Esta URL está disponible!",
+  "016ef46f759d6287": "Esta URL ya está en uso.",
+  "9d40a0f05fd025a7": "contact@example.com",
+  "5cedf492c05531d2": "Un marco de cumplimiento enfocado en la seguridad, disponibilidad y confidencialidad de los datos.",
+  "4261c3bcb77da053": "Estado de SOC 2 actualizado",
+  "bf23afdcd60c6bda": "Error al actualizar el estado de SOC 2",
+  "bd28556c668275eb": "Un estándar internacional para la gestión de sistemas de seguridad de la información.",
+  "9492787876f15d73": "Estado de ISO 27001 actualizado",
+  "0ca88698b3832828": "Error al actualizar el estado de ISO 27001",
+  "30f5692d08629d3a": "Una regulación europea que gobierna la protección de datos personales y la privacidad del usuario.",
+  "7db16e49bfe473bc": "Estado de GDPR actualizado",
+  "4ae21dd1f976b3b3": "Error al actualizar el estado de GDPR",
+  "885ae33187be0420": "Una regulación estadounidense que protege la información confidencial de salud del paciente y los datos médicos.",
+  "d495d343f27c0394": "Estado de HIPAA actualizado",
+  "f4475aa5dabfa9a1": "Error al actualizar el estado de HIPAA",
+  "bc19f807949b8b85": "Portal de Confianza",
+  "ca5344fe4aa94b6c": "Cree un portal de confianza público para su organización.",
+  "29e50c0230810f14": "Configuración del Portal de Confianza",
+  "d8ae2c2dd6235793": "URL personalizada",
+  "a4da57c04cc78961": "Correo Electrónico de Contacto",
+  "02f843de63269080": "Marcos de Cumplimiento",
+  "a91a70a571a67a3a": "Comparte los marcos de cumplimiento con los que tu organización cumple o hacia los que está trabajando.",
+  "8f34226efbd18a89": "Iniciado",
+  "eee8c7213077d5c2": "Conforme",
+  "1c1ddbbd4567f2ab": "Deshabilitado",
+  "b42f6ad7f25a1114": "Eliminar archivo adjunto {name}",
+  "d912a5e4e58ab905": {
+    "i": 1,
+    "c": {
+      "i": 2,
+      "c": {
+        "i": 3
+      },
+      "d": {
+        "t": "b",
+        "b": {
+          "true": "Esta acción no se puede deshacer. Esto eliminará permanentemente el archivo adjunto.",
+          "false": "Esto eliminará el archivo adjunto de tu lista pendiente. No se incluirá cuando envíes."
+        }
+      }
+    }
+  },
+  "45c063246b34dde6": "No se encontraron resultados.",
+  "bd8e87512fd9bdf2": "Sin asignar",
+  "4e582f82f0d2be8a": "El archivo \"{filename}\" excede el límite de {sizeLimit}MB.",
+  "b2bc5e7fff4fb566": "Archivo \"{filename}\" cargado exitosamente.",
+  "25a2e65b37989d4a": "Error al cargar el archivo. Por favor, inténtelo de nuevo.",
+  "4979e41a8b2447f7": "Error al cargar {filename}: {errorMessage}",
+  "cd6f16d40f2c75aa": "Error al obtener la URL de descarga. Por favor, inténtelo de nuevo.",
+  "34c1980f6da9ac88": "Archivo adjunto eliminado exitosamente.",
+  "b3559ce71529fccf": "Error al eliminar el archivo adjunto. Por favor, inténtelo de nuevo.",
+  "5383bd14ef4ef0ec": "Título de la Tarea",
+  "6ba706fcdeb1ed9f": "Agregar descripción...",
+  "18a25ea6621be8f1": {
+    "i": 1,
+    "c": "Archivos adjuntos"
+  },
+  "6952fb82a00934a9": {
+    "i": 1,
+    "c": "Error al cargar los archivos adjuntos. Por favor, inténtelo de nuevo."
+  },
+  "92bd6ef0f835efd3": {
+    "i": 1,
+    "c": [
+      "Aún no hay archivos adjuntos. Haz clic en el ícono ",
+      {
+        "i": 2
+      },
+      " de arriba para agregar uno."
+    ]
+  },
+  "07f2f442713ef1d3": {
+    "i": 1,
+    "c": [
+      {
+        "i": 2,
+        "d": {
+          "t": "b",
+          "b": {
+            "false": {
+              "i": 3
+            },
+            "true": {
+              "i": 3
+            }
+          }
+        }
+      },
+      "Agregar Adjunto"
+    ],
+    "d": {
+      "arl": "t('Add attachment')"
+    }
+  },
+  "2652eba8913a8215": "¡Tarea eliminada! Redirigiendo a la lista de tareas...",
+  "60f3614885809992": "Error al eliminar la tarea.",
+  "10c490dc40e23d5f": {
+    "i": 1,
+    "c": "Eliminar Tarea"
+  },
+  "816aa1e2404312fe": {
+    "i": 1,
+    "c": "¿Está seguro de que desea eliminar esta tarea? Esta acción no se puede deshacer."
+  },
+  "9f884fe869bd505f": {
+    "i": 1,
+    "c": {
+      "i": 2,
+      "d": {
+        "t": "b",
+        "b": {
+          "true": {
+            "i": 3,
+            "c": [
+              {
+                "i": 4
+              },
+              "Eliminando..."
+            ]
+          },
+          "false": {
+            "i": 3,
+            "c": [
+              {
+                "i": 4
+              },
+              "Eliminar"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "08d0f390f574e468": {
+    "i": 1,
+    "c": "Error al cargar los comentarios. Por favor, inténtelo de nuevo."
+  },
+  "016cac202a0dc7c1": "Cambiar estado...",
+  "43189be83912423d": "No se encontró ningún estado.",
+  "446e0c2f4e0343a4": "Cambiar asignado...",
+  "66c7d029b8271817": "No se encontró ningún miembro.",
+  "dcae0a82dd1f6c7e": "Cambiar frecuencia...",
+  "36b9778b701af2bc": "No se encontró frecuencia.",
+  "43c874709ca55fa7": "Cambiar departamento...",
+  "aea5c10ba6e38f6b": "No se encontró ningún departamento.",
+  "682bc5dfaa20b284": {
+    "i": 1,
+    "c": "Propiedades"
+  },
+  "6fdd367d7ef140c0": {
+    "i": 1,
+    "c": "Sin asignar"
+  },
+  "08d8896274a9f8b6": {
+    "i": 1,
+    "c": "Frecuencia"
+  },
+  "c757594812e9faac": {
+    "i": 1,
+    "c": "Ninguno"
+  },
+  "29448d012f59eca0": "Última verificación: {date}",
+  "6dc02528f9e2338b": "Prueba Sin Título",
+  "42605ab1ed97886e": "Estado: {status}",
+  "897f03dc0e2b5227": {
+    "i": 1,
+    "c": "Remediación"
+  },
+  "220bde1fb25176c8": {
+    "i": 1,
+    "c": [
+      "Remediar ",
+      {
+        "i": 2
+      }
+    ]
+  },
+  "938a63a981945ed4": "Próxima ejecución programada en {hours}h {minutes}m (diariamente a las 5:00 AM UTC)",
+  "6ddfdd2d184effb9": "Error al ejecutar las pruebas, por favor inténtelo de nuevo más tarde o contacte al soporte técnico.",
+  "dd1d7b8154d1e7cb": "Resultados de Pruebas en la Nube",
+  "67b35f4fdf0210aa": "Todos los Estados",
+  "ce5547bfb43f614e": "No se encontraron resultados de prueba de {providerName} con estado \"{status}\"",
+  "e6a3a1c30eccbfe8": "No se encontraron resultados de prueba de {providerName}",
+  "7a27134aa10d07ed": {
+    "i": 1,
+    "c": "Resultados de Pruebas en la Nube"
+  },
+  "d1d897b858f8a82d": {
+    "i": 1,
+    "c": [
+      "Ejecutar Pruebas Nuevamente ",
+      {
+        "i": 2
+      }
+    ]
+  },
+  "e7921b06eca884c2": "AWS",
+  "215e519a98f88b0a": "GCP",
+  "503f8715b91fe2fb": "Azure",
+  "182b9e070e56d26f": {
+    "i": 1,
+    "c": "No hay proveedores de nube configurados. Por favor, agregue una integración."
+  },
+  "c9c75f60b6c15be4": "Nombre del Proveedor",
+  "773f5747de61e40e": "Buscar nombre del proveedor...",
+  "58b50e864a391838": "Buscar por estado...",
+  "c3bbd7411a2dc811": "Nube",
+  "43b1ff0da173f934": "Infraestructura",
+  "f879b14001421a68": "Finanzas",
+  "1fe9b13ddddb8238": "Marketing",
+  "0e42225378d411d1": "Ventas",
+  "cf472c2c77272c21": "Buscar por categoría...",
+  "bac7b72e4afdef23": "Buscar por responsable...",
+  "b88dc2936f589408": "Agregar Proveedor",
+  "4c6164973ee2af57": "Seleccione el nivel de riesgo inherente para este proveedor",
+  "1e4e175763ef2d9a": {
+    "i": 1,
+    "c": "Actualizar Riesgo Inherente"
+  },
+  "578f620a5d3ce432": {
+    "i": 1,
+    "c": "Seleccione el nivel de riesgo inherente para este proveedor"
+  },
+  "bf783f24128efb7e": "Seleccione el nivel de riesgo residual para este proveedor",
+  "00651fa87998893d": "Actualizar Riesgo Residual",
+  "774181ddb805dd85": {
+    "i": 1,
+    "c": "Redirigiendo"
+  },
+  "c88b4a4a9e24640d": "No se encontraron requisitos.",
+  "d3264cfb310b4030": "Tipo",
+  "0216959a95a6473a": "política",
+  "1c7eb0b7b3024ebd": "tarea",
+  "5e301665b8bb3b02": "No se encontraron controles.",
+  "02678b8c9459404c": "Progreso: {progress}%",
+  "e9a1e63b8eda1b8a": "Completadas: {completed}/{total} políticas",
+  "6948c952ed73ed5c": "Departamento",
+  "6162f0e0f91033b1": "Correo electrónico del empleado",
+  "5a5eeec8b2809c44": "CORREO ELECTRÓNICO",
+  "4c0d7b0ceb38cbdd": "Fecha de Incorporación",
+  "d14c5eaf4a1143dc": "Nombre del empleado",
+  "2248d69f935a18c4": "NOMBRE",
+  "f9ac5ca36bc7dec9": "No está autorizado para ver esta política",
+  "1c47511afef4d6ae": "Resumen de Tareas",
+  "37991603abeba431": "Revocar Clave API",
+  "35dd0d7bf99b8a1e": "¿Está seguro de que desea revocar esta clave de API? Esta acción no se puede deshacer.",
+  "50dabb0a1d3ad5b1": "Agregar Clave API",
+  "5c8772e727c04218": "Pregunta",
+  "29ea79cb3aeabe1a": "Respuesta",
+  "482cd570aa1b2713": "Eliminar Entrada",
+  "b03da6e8c7a5bfaa": "¿Está seguro de que desea eliminar esta entrada? Esta acción no se puede deshacer.",
+  "c58ce397fc3e22f0": {
+    "i": 1,
+    "c": "Eliminar",
+    "d": {
+      "t": "b",
+      "b": {
+        "true": {
+          "i": 2,
+          "c": "Eliminando..."
+        },
+        "false": {
+          "i": 2,
+          "c": "Eliminar"
+        }
+      }
+    }
+  },
+  "4109fa880275dedc": "El ID del proveedor es obligatorio",
+  "05a9a111421ebabb": "La fecha de vencimiento es obligatoria",
+  "df0e1a07797cc68c": "Proveedor actualizado exitosamente",
+  "25a10b11a993b306": "Error al actualizar el proveedor",
+  "47cc1e085a3174ae": "Tarea creada exitosamente",
+  "55342ab7a97ffbfe": "Error al crear la tarea",
+  "5e3517d29bec3e21": "Detalles de la Tarea",
+  "8b4593ffbe8f90d0": "Título de la Tarea",
+  "c775f9599f0eda2f": "Crear Tarea de Proveedor",
+  "1c169c5945a461d8": "Un nombre corto y descriptivo para el proveedor.",
+  "863f4c8e2939f0db": "Una descripción detallada del proveedor y sus servicios.",
+  "3dae548a2b4e4b45": "Proveedor",
+  "4614a422f1430cd7": "Nombre",
+  "6522ea4ccbbb997e": "Actualizar Proveedor",
+  "f81c412fd2c691d2": "Actualizar los detalles de su proveedor",
+  "0115c954700d4418": "Éxito",
+  "8c9eb95498b3fdbf": "Probabilidad Inherente",
+  "ccd7ef18ad932135": "Muy Probable",
+  "0c76cb57843615d1": "Probable",
+  "9ab8756337c8e8cf": "Posible",
+  "8f576fd8182fd55d": "Improbable",
+  "2475cdecc71231e4": "Muy Improbable",
+  "8bbd0df3cd3d180c": "Impacto Inherente",
+  "8bfe2f2ac1568adb": "Insignificante",
+  "aaab716cee2fcafa": "Menor",
+  "ba5f6120cdca2370": "Moderado",
+  "dcfc66f6d60d34bb": "Mayor",
+  "1d1a48b01d37d7bc": "Severo",
+  "f7102f88eb6338fe": "Probabilidad Residual",
+  "35c82a8ec6911300": "Impacto Residual",
+  "39a1b174cf523b9e": {
+    "i": 1,
+    "c": "No se encontraron categorías con riesgos"
+  },
+  "98f6c3ebe2e84d61": {
+    "i": 1,
+    "c": "No se encontraron estados con riesgos"
+  },
+  "9735eee043166dfa": "Proveedores por Categoría",
+  "f3debdcf93ceb149": {
+    "i": 1,
+    "c": "Estado del Proveedor"
+  },
+  "1c372fd54187d192": {
+    "i": 1,
+    "c": "Controles"
+  },
+  "f8d88331e2a1ec4c": "Sin resultados.",
+  "2d3ed639882b255f": {
+    "i": 1,
+    "c": [
+      {
+        "i": 2,
+        "c": "No se encontraron resultados"
+      },
+      {
+        "i": 3,
+        "c": {
+          "i": 4,
+          "d": {
+            "t": "b",
+            "b": {
+              "false": {
+                "i": 5,
+                "c": "Crear una tarea para comenzar"
+              },
+              "true": {
+                "i": 5,
+                "c": "Intenta otra búsqueda o ajusta los filtros"
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "c87be293f8b9abb7": {
+    "i": 1,
+    "c": "No se encontraron tareas"
+  },
+  "6eb7ab0dcaae01b3": {
+    "i": 1,
+    "c": "Crear una tarea para comenzar"
+  },
+  "65345f6829f01d2a": "No Iniciado",
+  "54002bf654ddbab1": "Completado",
+  "172683fc76b5e064": "Todos los Asignados",
+  "ac2c1a39608fc635": "abrir",
+  "6d9e50c042a3ee43": "en progreso",
+  "0dba9273844f718f": "completado",
+  "58d901bb0c6d37c6": "cancelado",
+  "ac2ac17bdfb977f6": {
+    "i": 1,
+    "c": "Detalles de la Tarea"
+  },
+  "1719f7091d606c2f": "Detalles de la Tarea",
+  "279b0dc45b250e2f": "Ingrese el título",
+  "63028840be654541": "Ingrese descripción",
+  "fc36a21e5cc53b73": "Nunca",
+  "224e9839195b63b2": "Revocar",
+  "4e745dee79a5b94b": "Revocando..."
+}

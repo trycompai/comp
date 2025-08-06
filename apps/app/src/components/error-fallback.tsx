@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@comp/ui/button';
+import { T } from 'gt-next';
 import { useRouter } from 'next/navigation';
 
 export function ErrorFallback() {
@@ -9,11 +10,15 @@ export function ErrorFallback() {
   return (
     <div className="flex h-full flex-col items-center justify-center space-y-4">
       <div>
-        <h2 className="text-md">Something went wrong</h2>
+        <T>
+          <h2 className="text-md">Something went wrong</h2>
+        </T>
       </div>
-      <Button onClick={() => router.refresh()} variant="outline">
-        Try again
-      </Button>
+      <T>
+        <Button onClick={() => router.refresh()} variant="outline">
+          Try again
+        </Button>
+      </T>
     </div>
   );
 }

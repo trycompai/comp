@@ -2,6 +2,7 @@
 
 import { useMediaQuery } from '@comp/ui/hooks';
 import { Sheet, SheetContent } from '@comp/ui/sheet';
+import { T } from 'gt-next';
 
 import { Drawer, DrawerContent, DrawerTitle } from '@comp/ui/drawer';
 import '@comp/ui/editor.css';
@@ -29,7 +30,7 @@ export function AssistantSheet() {
 
   return (
     <Drawer open={isOpen ?? false} onOpenChange={setIsOpen}>
-      <DrawerTitle hidden>Assistant</DrawerTitle>
+      <T><DrawerTitle hidden>Assistant</DrawerTitle></T>
       <DrawerContent className="p-6">
         <Chat />
       </DrawerContent>

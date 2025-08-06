@@ -11,6 +11,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@comp/ui/chart';
+import { T, useGT, Var } from 'gt-next';
 import { Info } from 'lucide-react';
 
 interface PolicyOverviewData {
@@ -39,9 +40,11 @@ const StatusTooltip = ({ active, payload }: any) => {
     return (
       <div className="bg-background rounded-sm border p-2 shadow-md">
         <p className="text-xs font-medium">{data.name}</p>
-        <p className="text-xs">
-          Count: <span className="font-medium">{data.value}</span>
-        </p>
+        <T>
+          <p className="text-xs">
+            Count: <span className="font-medium"><Var>{data.value}</Var></span>
+          </p>
+        </T>
       </div>
     );
   }
@@ -49,32 +52,34 @@ const StatusTooltip = ({ active, payload }: any) => {
 };
 
 export function PolicyStatusChart({ data }: PolicyStatusChartProps) {
+  const t = useGT();
+  
   const chartData = React.useMemo(() => {
     if (!data) return [];
     const items = [
       {
-        name: 'Published',
+        name: t('Published'),
         value: data.publishedPolicies,
         fill: CHART_COLORS.published,
       },
       {
-        name: 'Draft',
+        name: t('Draft'),
         value: data.draftPolicies,
         fill: CHART_COLORS.draft,
       },
       {
-        name: 'Needs Review',
+        name: t('Needs Review'),
         value: data.needsReviewPolicies,
         fill: CHART_COLORS.needs_review,
       },
       {
-        name: 'Archived',
+        name: t('Archived'),
         value: data.archivedPolicies,
         fill: CHART_COLORS.archived,
       },
     ];
     return items.filter((item) => item.value > 0);
-  }, [data]);
+  }, [data, t]);
 
   // Calculate most common status
   const mostCommonStatus = React.useMemo(() => {
@@ -87,10 +92,14 @@ export function PolicyStatusChart({ data }: PolicyStatusChartProps) {
       <Card className="flex flex-col overflow-hidden border">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">{'Policy by Status'}</CardTitle>
-            <Badge variant="outline" className="text-xs">
-              Overview
-            </Badge>
+            <T>
+              <CardTitle className="flex items-center gap-2">Policy by Status</CardTitle>
+            </T>
+            <T>
+              <Badge variant="outline" className="text-xs">
+                Overview
+              </Badge>
+            </T>
           </div>
         </CardHeader>
         <CardContent className="flex flex-1 items-center justify-center py-10">
@@ -98,7 +107,9 @@ export function PolicyStatusChart({ data }: PolicyStatusChartProps) {
             <div className="text-muted-foreground flex justify-center">
               <Info className="h-10 w-10 opacity-30" />
             </div>
-            <p className="text-muted-foreground text-center text-sm">No policy data available</p>
+            <T>
+              <p className="text-muted-foreground text-center text-sm">No policy data available</p>
+            </T>
           </div>
         </CardContent>
         <CardFooter className="bg-muted/30 border-t py-3">
@@ -110,7 +121,7 @@ export function PolicyStatusChart({ data }: PolicyStatusChartProps) {
 
   const chartConfig = {
     value: {
-      label: 'Count',
+      label: t('Count'),
     },
   } satisfies ChartConfig;
 
@@ -118,18 +129,21 @@ export function PolicyStatusChart({ data }: PolicyStatusChartProps) {
     <Card className="flex flex-col overflow-hidden border">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">{'Policy by Status'}</CardTitle>
-
+          <T>
+            <CardTitle className="flex items-center gap-2">Policy by Status</CardTitle>
+          </T>
           {data.totalPolicies > 0 && mostCommonStatus && (
-            <Badge
-              className="text-xs"
-              style={{
-                backgroundColor: `${mostCommonStatus.fill}20`,
-                color: mostCommonStatus.fill,
-              }}
-            >
-              Most: {mostCommonStatus.name}
-            </Badge>
+            <T>
+              <Badge
+                className="text-xs"
+                style={{
+                  backgroundColor: `${mostCommonStatus.fill}20`,
+                  color: mostCommonStatus.fill,
+                }}
+              >
+                Most: <Var>{mostCommonStatus.name}</Var>
+              </Badge>
+            </T>
           )}
         </div>
 
@@ -191,7 +205,7 @@ export function PolicyStatusChart({ data }: PolicyStatusChartProps) {
                             y={(viewBox.cy || 0) + 26}
                             className="fill-muted-foreground text-xs"
                           >
-                            Policies
+                            {t('Policies')}
                           </tspan>
                         </text>
                         <circle

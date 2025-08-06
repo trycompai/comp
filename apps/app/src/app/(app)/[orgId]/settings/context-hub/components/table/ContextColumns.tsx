@@ -12,14 +12,16 @@ import {
   AlertDialogTrigger,
 } from '@comp/ui/alert-dialog';
 import { Button } from '@comp/ui/button';
-import type { Context } from '@db';
+import type { Context } from '@prisma/client';
 import type { ColumnDef } from '@tanstack/react-table';
+import { T, useGT } from 'gt-next';
 import { Trash2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
 
 // Extract the cell content into a separate component
 function ContextDeleteCell({ context }: { context: Context }) {
+  const t = useGT();
   const [open, setOpen] = useState(false);
   const { execute, status } = useAction(deleteContextEntryAction, {
     onSuccess: () => {
@@ -41,19 +43,23 @@ function ContextDeleteCell({ context }: { context: Context }) {
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete Entry</AlertDialogTitle>
+          <AlertDialogTitle>
+            <T>Delete Entry</T>
+          </AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete this entry? This action cannot be undone.
+            <T>Are you sure you want to delete this entry? This action cannot be undone.</T>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel>
+            <T>Cancel</T>
+          </AlertDialogCancel>
           <AlertDialogAction
             onClick={() => execute({ id: context.id })}
             disabled={status === 'executing'}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {status === 'executing' ? 'Deleting...' : 'Delete'}
+            {status === 'executing' ? <T>Deleting...</T> : <T>Delete</T>}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -61,11 +67,11 @@ function ContextDeleteCell({ context }: { context: Context }) {
   );
 }
 
-export const columns = (): ColumnDef<Context>[] => [
+export const columns = (t: (key: string) => string): ColumnDef<Context>[] => [
   {
     id: 'question',
     accessorKey: 'question',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Question" />,
+    header: ({ column }) => <DataTableColumnHeader column={column} title={t('Question')} />,
     cell: ({ row }) => <span>{row.original.question}</span>,
     meta: { label: 'Question', variant: 'text' },
     size: 200,
@@ -77,7 +83,7 @@ export const columns = (): ColumnDef<Context>[] => [
   {
     id: 'answer',
     accessorKey: 'answer',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Answer" />,
+    header: ({ column }) => <DataTableColumnHeader column={column} title={t('Answer')} />,
     cell: ({ row }) => <span>{row.original.answer}</span>,
     meta: { label: 'Answer' },
     enableColumnFilter: true,
@@ -88,7 +94,11 @@ export const columns = (): ColumnDef<Context>[] => [
   },
   {
     id: 'delete',
-    header: () => <span>Delete</span>,
+    header: () => (
+      <span>
+        <T>Delete</T>
+      </span>
+    ),
     cell: ({ row }) => <ContextDeleteCell context={row.original} />,
     meta: { label: 'Delete' },
     enableColumnFilter: false,

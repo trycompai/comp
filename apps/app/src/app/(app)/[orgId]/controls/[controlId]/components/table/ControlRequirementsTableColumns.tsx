@@ -2,23 +2,27 @@
 
 import type { ColumnDef } from '@tanstack/react-table';
 import { CheckCircle2, XCircle } from 'lucide-react';
+import { useGT } from 'gt-next';
 import type { RequirementTableData } from './ControlRequirementsTable';
 
-export const ControlRequirementsTableColumns: ColumnDef<RequirementTableData>[] = [
+export function ControlRequirementsTableColumns(): ColumnDef<RequirementTableData>[] {
+  const t = useGT();
+
+  return [
   {
     id: 'type',
     accessorKey: 'type',
-    header: 'Type',
+    header: t('Type'),
     cell: ({ row }) => {
       const requirement = row.original;
-      return requirement.policy ? 'policy' : requirement.task ? 'task' : '';
+      return requirement.policy ? t('policy') : requirement.task ? t('task') : '';
     },
     size: 100,
   },
   {
     id: 'description',
     accessorKey: 'description',
-    header: 'Description',
+    header: t('Description'),
     size: 1000,
     cell: ({ row }) => {
       const description = row.original.description || ''; // Default to empty string if null
@@ -36,7 +40,7 @@ export const ControlRequirementsTableColumns: ColumnDef<RequirementTableData>[] 
   {
     id: 'status',
     accessorKey: 'status',
-    header: 'Status',
+    header: t('Status'),
     size: 80,
     cell: ({ row }) => {
       const requirement = row.original;
@@ -57,4 +61,5 @@ export const ControlRequirementsTableColumns: ColumnDef<RequirementTableData>[] 
       );
     },
   },
-];
+  ];
+}

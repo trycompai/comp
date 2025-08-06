@@ -3,8 +3,9 @@
 import { db } from '@db';
 import { logger } from '@trigger.dev/sdk/v3';
 import { revalidatePath, revalidateTag } from 'next/cache';
+import { getGT } from 'gt-next/server';
 import { authActionClient } from '../safe-action';
-import { updatePolicySchema } from '../schema';
+import { getUpdatePolicySchema } from '../schema';
 
 interface ContentNode {
   type: string;
@@ -52,7 +53,10 @@ function processContent(content: ContentNode | ContentNode[]): ContentNode | Con
 }
 
 export const updatePolicyAction = authActionClient
-  .inputSchema(updatePolicySchema)
+  .inputSchema(async () => {
+    const t = await getGT();
+    return getUpdatePolicySchema(t);
+  })
   .metadata({
     name: 'update-policy',
     track: {
@@ -62,6 +66,7 @@ export const updatePolicyAction = authActionClient
     },
   })
   .action(async ({ parsedInput, ctx }) => {
+    const t = await getGT();
     const { id, content } = parsedInput;
     const { activeOrganizationId } = ctx.session;
     const { user } = ctx;
@@ -69,14 +74,14 @@ export const updatePolicyAction = authActionClient
     if (!activeOrganizationId) {
       return {
         success: false,
-        error: 'Not authorized',
+        error: t('Not authorized'),
       };
     }
 
     if (!user) {
       return {
         success: false,
-        error: 'Not authorized',
+        error: t('Not authorized'),
       };
     }
 
@@ -88,7 +93,7 @@ export const updatePolicyAction = authActionClient
       if (!policy) {
         return {
           success: false,
-          error: 'Policy not found',
+          error: t('Policy not found'),
         };
       }
 
@@ -115,7 +120,7 @@ export const updatePolicyAction = authActionClient
       });
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to update policy',
+        error: error instanceof Error ? error.message : t('Failed to update policy'),
       };
     }
   });

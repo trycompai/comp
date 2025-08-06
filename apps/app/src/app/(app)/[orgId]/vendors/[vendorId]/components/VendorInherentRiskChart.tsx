@@ -2,6 +2,7 @@
 
 import { RiskMatrixChart } from '@/components/risks/charts/RiskMatrixChart';
 import type { Vendor } from '@db';
+import { useGT } from 'gt-next';
 import { updateVendorInherentRisk } from '../actions/update-vendor-inherent-risk';
 
 interface InherentRiskChartProps {
@@ -9,10 +10,12 @@ interface InherentRiskChartProps {
 }
 
 export function VendorInherentRiskChart({ vendor }: InherentRiskChartProps) {
+  const t = useGT();
+  
   return (
     <RiskMatrixChart
-      title={'Inherent Risk'}
-      description={'Select the inherent risk level for this vendor'}
+      title={t('Inherent Risk')}
+      description={t('Select the inherent risk level for this vendor')}
       riskId={vendor.id}
       activeLikelihood={vendor.inherentProbability}
       activeImpact={vendor.inherentImpact}

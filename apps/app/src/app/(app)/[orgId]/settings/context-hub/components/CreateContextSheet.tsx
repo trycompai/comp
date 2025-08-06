@@ -1,5 +1,6 @@
 'use client';
 import { Button } from '@comp/ui/button';
+import { T } from 'gt-next';
 import {
   Drawer,
   DrawerContent,
@@ -29,7 +30,9 @@ export function CreateContextSheet() {
         <SheetContent stack className="rounded-sm">
           <SheetHeader className="mb-8 flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <SheetTitle>Add Context Entry</SheetTitle>
+              <SheetTitle>
+                <T>Add Context Entry</T>
+              </SheetTitle>
               <Button
                 size="icon"
                 variant="ghost"
@@ -40,7 +43,7 @@ export function CreateContextSheet() {
               </Button>
             </div>
             <SheetDescription>
-              Provide extra context to Comp AI about your organization.
+              <T>Provide extra context to Comp AI about your organization.</T>
             </SheetDescription>
           </SheetHeader>
           <ScrollArea className="h-full p-0 pb-[100px]" hideScrollbar>
@@ -54,9 +57,11 @@ export function CreateContextSheet() {
     <Drawer open={isOpen} onOpenChange={handleOpenChange}>
       <DrawerContent className="rounded-sm p-6">
         <DrawerHeader>
-          <DrawerTitle>Add Context Entry</DrawerTitle>
+          <DrawerTitle>
+            <T>Add Context Entry</T>
+          </DrawerTitle>
           <DrawerDescription>
-            Provide extra context to Comp AI about your organization.
+            <T>Provide extra context to Comp AI about your organization.</T>
           </DrawerDescription>
         </DrawerHeader>
         <ContextForm onSuccess={() => setOpen(null)} />

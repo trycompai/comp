@@ -2,19 +2,22 @@
 
 import { cn } from '@comp/ui/cn';
 import { useQueryState } from 'nuqs';
+import { T, useGT } from 'gt-next';
 
-const tabs = [
+const getTabs = (t: (content: string) => string) => [
   {
-    name: 'All',
+    name: t('All'),
     value: 'all',
   },
   {
-    name: 'Installed',
+    name: t('Installed'),
     value: 'installed',
   },
 ];
 
 export function AppsTabs() {
+  const t = useGT();
+  const tabs = getTabs(t);
   const [currentTab, setTab] = useQueryState('tab', {
     shallow: false,
     defaultValue: 'all',
@@ -33,7 +36,7 @@ export function AppsTabs() {
             currentTab === tab.value ? 'text-foreground' : 'text-muted-foreground',
           )}
         >
-          <span>{tab.name}</span>
+          {tab.name}
           {currentTab === tab.value && (
             <span className="bg-primary absolute right-0 bottom-0 left-0 h-0.5" />
           )}

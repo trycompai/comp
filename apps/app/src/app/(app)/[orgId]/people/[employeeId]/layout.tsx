@@ -6,6 +6,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@comp/ui/breadcrumb';
+import { T } from 'gt-next';
 import { db } from '@db';
 
 export default async function Layout({
@@ -35,7 +36,7 @@ export default async function Layout({
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbLink href={`/${orgId}/people`}>{'People'}</BreadcrumbLink>
+              <BreadcrumbLink href={`/${orgId}/people`}><T>People</T></BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>

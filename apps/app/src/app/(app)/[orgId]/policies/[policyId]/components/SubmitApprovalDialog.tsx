@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from '@comp/ui/dialog';
 import { Member, User } from '@db';
+import { T, useGT } from 'gt-next';
 import { Loader2 } from 'lucide-react';
 
 interface SubmitApprovalDialogProps {
@@ -32,12 +33,14 @@ export const SubmitApprovalDialog = ({
   onConfirm,
   isSubmitting,
 }: SubmitApprovalDialogProps) => {
+  const t = useGT();
+  
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Submit for Approval</DialogTitle>
-          <DialogDescription>Please select an approver for this policy.</DialogDescription>
+          <DialogTitle>{t('Submit for Approval')}</DialogTitle>
+          <DialogDescription>{t('Please select an approver for this policy.')}</DialogDescription>
         </DialogHeader>
         <SelectAssignee
           assignees={assignees}
@@ -47,11 +50,11 @@ export const SubmitApprovalDialog = ({
         />
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t('Cancel')}
           </Button>
           <Button onClick={onConfirm} disabled={isSubmitting || !selectedApproverId}>
             {isSubmitting ? <Loader2 className="mr-2 animate-spin" /> : null}
-            Confirm & Submit
+            {t('Confirm & Submit')}
           </Button>
         </DialogFooter>
       </DialogContent>

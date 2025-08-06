@@ -7,6 +7,7 @@ import { Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { T, useGT } from 'gt-next';
 
 export type IntegrationSettingsItem = {
   id: string;
@@ -77,12 +78,13 @@ export function IntegrationSettings({
   integrationId: string;
   installedSettings: Record<string, any>;
 }) {
+  const t = useGT();
   const updateIntegrationSettings = useAction(updateIntegrationSettingsAction, {
     onSuccess: () => {
-      toast.success('Settings updated');
+      toast.success(t('Settings updated'));
     },
     onError: () => {
-      toast.error('Failed to update settings');
+      toast.error(t('Failed to update settings'));
     },
   });
 
@@ -93,11 +95,11 @@ export function IntegrationSettings({
       ? Object.entries(settings).map(([key, value]) => ({
           id: key,
           label: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '),
-          description: `Enter your ${key.replace(/_/g, ' ')}`,
+          description: t('Enter your {key}', { key: key.replace(/_/g, ' ') }),
           type: 'text',
           required: true,
           value: value,
-          placeholder: `Enter your ${key.replace(/_/g, ' ')}`,
+          placeholder: t('Enter your {key}', { key: key.replace(/_/g, ' ') }),
         }))
       : [];
 
@@ -125,7 +127,9 @@ export function IntegrationSettings({
   return (
     <div className="flex flex-col gap-2">
       {localSettings.length === 0 ? (
-        <p className="text-muted-foreground text-sm">No settings available</p>
+        <T>
+          <p className="text-muted-foreground text-sm">No settings available</p>
+        </T>
       ) : (
         localSettings.map((setting) => (
           <div key={setting.id} className="my-2 flex flex-col">
@@ -144,7 +148,7 @@ export function IntegrationSettings({
           {updateIntegrationSettings.isPending ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            'Save settings'
+            t('Save settings')
           )}
         </Button>
       )}

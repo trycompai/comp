@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@comp/ui/textarea';
 import type { GlobalVendors } from '@db';
 import { type Member, type User, VendorCategory, VendorStatus } from '@db';
+import { T, useGT, Var } from 'gt-next';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRightIcon } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
@@ -32,6 +33,7 @@ const createVendorSchema = z.object({
 });
 
 export function CreateVendorForm({ assignees }: { assignees: (Member & { user: User })[] }) {
+  const t = useGT();
   const [_, setCreateVendorSheet] = useQueryState('createVendorSheet');
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -41,11 +43,11 @@ export function CreateVendorForm({ assignees }: { assignees: (Member & { user: U
 
   const createVendor = useAction(createVendorAction, {
     onSuccess: async () => {
-      toast.success('Vendor created successfully');
+      toast.success(t('Vendor created successfully'));
       setCreateVendorSheet(null);
     },
     onError: () => {
-      toast.error('Failed to create vendor');
+      toast.error(t('Failed to create vendor'));
     },
   });
 
@@ -113,7 +115,9 @@ export function CreateVendorForm({ assignees }: { assignees: (Member & { user: U
           <div>
             <Accordion type="multiple" defaultValue={['vendor']}>
               <AccordionItem value="vendor">
-                <AccordionTrigger>{'Vendor Details'}</AccordionTrigger>
+                <AccordionTrigger>
+                  <T>Vendor Details</T>
+                </AccordionTrigger>
                 <AccordionContent>
                   <div className="space-y-4">
                     <FormField
@@ -121,11 +125,13 @@ export function CreateVendorForm({ assignees }: { assignees: (Member & { user: U
                       name="name"
                       render={({ field }) => (
                         <FormItem className="relative flex flex-col">
-                          <FormLabel>{'Vendor Name'}</FormLabel>
+                          <FormLabel>
+                            <T>Vendor Name</T>
+                          </FormLabel>
                           <FormControl>
                             <div className="relative">
                               <Input
-                                placeholder={'Search or enter vendor name...'}
+                                placeholder={t('Search or enter vendor name...')}
                                 value={searchQuery}
                                 onChange={(e) => {
                                   const val = e.target.value;
@@ -159,13 +165,13 @@ export function CreateVendorForm({ assignees }: { assignees: (Member & { user: U
                                   <div className="max-h-[300px] overflow-y-auto p-1">
                                     {isSearching && (
                                       <div className="text-muted-foreground p-2 text-sm">
-                                        {'Loading...'}...
+                                        <T>Loading...</T>
                                       </div>
                                     )}
                                     {!isSearching && searchResults.length > 0 && (
                                       <>
                                         <p className="text-muted-foreground px-2 py-1.5 text-xs font-medium">
-                                          {'Suggestions'}
+                                          <T>Suggestions</T>
                                         </p>
                                         {searchResults.map((vendor) => (
                                           <div
@@ -199,7 +205,9 @@ export function CreateVendorForm({ assignees }: { assignees: (Member & { user: U
                                             setPopoverOpen(false);
                                           }}
                                         >
-                                          {`Create "${searchQuery}"`}
+                                          <T>
+                                            Create "<Var>{searchQuery}</Var>"
+                                          </T>
                                         </div>
                                       )}
                                   </div>
@@ -216,12 +224,14 @@ export function CreateVendorForm({ assignees }: { assignees: (Member & { user: U
                       name="website"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{'Website'}</FormLabel>
+                          <FormLabel>
+                            <T>Website</T>
+                          </FormLabel>
                           <FormControl>
                             <Input
                               {...field}
                               className="mt-3"
-                              placeholder={'https://example.com'}
+                              placeholder={t('https://example.com')}
                             />
                           </FormControl>
                           <FormMessage />
@@ -233,12 +243,14 @@ export function CreateVendorForm({ assignees }: { assignees: (Member & { user: U
                       name="description"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{'Description'}</FormLabel>
+                          <FormLabel>
+                            <T>Description</T>
+                          </FormLabel>
                           <FormControl>
                             <Textarea
                               {...field}
                               className="mt-3 min-h-[80px]"
-                              placeholder={'Enter a description for the vendor...'}
+                              placeholder={t('Enter a description for the vendor...')}
                             />
                           </FormControl>
                           <FormMessage />
@@ -250,12 +262,14 @@ export function CreateVendorForm({ assignees }: { assignees: (Member & { user: U
                       name="category"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{'Category'}</FormLabel>
+                          <FormLabel>
+                            <T>Category</T>
+                          </FormLabel>
                           <FormControl>
                             <div className="mt-3">
                               <Select {...field} value={field.value} onValueChange={field.onChange}>
                                 <SelectTrigger>
-                                  <SelectValue placeholder={'Select a category...'} />
+                                  <SelectValue placeholder={t('Select a category...')} />
                                 </SelectTrigger>
                                 <SelectContent>
                                   {Object.values(VendorCategory).map((category) => {
@@ -283,12 +297,14 @@ export function CreateVendorForm({ assignees }: { assignees: (Member & { user: U
                       name="status"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{'Status'}</FormLabel>
+                          <FormLabel>
+                            <T>Status</T>
+                          </FormLabel>
                           <FormControl>
                             <div className="mt-3">
                               <Select {...field} value={field.value} onValueChange={field.onChange}>
                                 <SelectTrigger>
-                                  <SelectValue placeholder={'Select a status...'} />
+                                  <SelectValue placeholder={t('Select a status...')} />
                                 </SelectTrigger>
                                 <SelectContent>
                                   {Object.values(VendorStatus).map((status) => {
@@ -316,7 +332,9 @@ export function CreateVendorForm({ assignees }: { assignees: (Member & { user: U
                       name="assigneeId"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{'Assignee'}</FormLabel>
+                          <FormLabel>
+                            <T>Assignee</T>
+                          </FormLabel>
                           <FormControl>
                             <div className="mt-3">
                               <SelectAssignee
@@ -340,7 +358,7 @@ export function CreateVendorForm({ assignees }: { assignees: (Member & { user: U
           <div className="mt-4 flex justify-end">
             <Button type="submit" variant="default" disabled={createVendor.status === 'executing'}>
               <div className="flex items-center justify-center">
-                {'Create Vendor'}
+                <T>Create Vendor</T>
                 <ArrowRightIcon className="ml-2 h-4 w-4" />
               </div>
             </Button>

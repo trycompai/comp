@@ -6,6 +6,7 @@ import { MagicLinkSignIn } from '@/components/magic-link';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardDescription, CardTitle } from '@comp/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@comp/ui/collapsible';
+import { T, Var, useGT } from 'gt-next';
 import { CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
@@ -20,6 +21,7 @@ export function LoginForm({ inviteCode, showGoogle, showGithub }: LoginFormProps
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
   const [magicLinkState, setMagicLinkState] = useState({ sent: false, email: '' });
   const searchParams = useSearchParams();
+  const t = useGT();
 
   const handleMagicLinkSent = (email: string) => {
     setMagicLinkState({ sent: true, email });
@@ -32,16 +34,18 @@ export function LoginForm({ inviteCode, showGoogle, showGithub }: LoginFormProps
           <CheckCircle2 className="h-16 w-16 text-green-500 dark:text-green-400" />
           <div className="space-y-2">
             <CardTitle className="text-2xl font-semibold text-card-foreground">
-              Magic link sent
+              <T>Magic link sent</T>
             </CardTitle>
             <CardDescription className="text-sm text-muted-foreground">
-              Check your inbox at{' '}
-              <span className="font-semibold text-foreground">{magicLinkState.email}</span> for a
-              magic link to sign in.
+              <T>
+                Check your inbox at{' '}
+                <span className="font-semibold text-foreground"><Var>{magicLinkState.email}</Var></span> for a
+                magic link to sign in.
+              </T>
             </CardDescription>
           </div>
           <Button variant="link" onClick={() => setMagicLinkState({ sent: false, email: '' })}>
-            Use another method
+            <T>Use another method</T>
           </Button>
         </CardContent>
       </Card>
@@ -96,7 +100,7 @@ export function LoginForm({ inviteCode, showGoogle, showGithub }: LoginFormProps
                 size="sm"
                 className="relative px-4 text-sm text-muted-foreground bg-background hover:bg-muted"
               >
-                More options
+                <T>More options</T>
                 {isOptionsOpen ? (
                   <ChevronUp className="ml-1 h-4 w-4 transition-transform duration-200" />
                 ) : (

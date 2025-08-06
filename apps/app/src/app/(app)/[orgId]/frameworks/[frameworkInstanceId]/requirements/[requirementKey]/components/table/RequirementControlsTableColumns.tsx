@@ -7,6 +7,7 @@ import type { Control, Policy, Task } from '@db';
 import type { ColumnDef } from '@tanstack/react-table';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { useGT } from 'gt-next';
 import { getControlStatus } from '../../../../../lib/utils';
 
 export type OrganizationControlType = Control & {
@@ -19,12 +20,13 @@ export function RequirementControlsTableColumns({
   tasks: (Task & { controls: Control[] })[];
 }): ColumnDef<OrganizationControlType>[] {
   const { orgId } = useParams<{ orgId: string }>();
+  const t = useGT();
 
   return [
     {
       id: 'name',
       accessorKey: 'name',
-      header: 'Control',
+      header: t('Control'),
       cell: ({ row }) => {
         return (
           <div className="flex w-[300px] flex-col">
@@ -38,7 +40,7 @@ export function RequirementControlsTableColumns({
     {
       id: 'status',
       accessorKey: 'policies',
-      header: 'Status',
+      header: t('Status'),
       cell: ({ row }) => {
         const controlData = row.original;
         const policies = controlData.policies || [];
@@ -58,9 +60,9 @@ export function RequirementControlsTableColumns({
               </TooltipTrigger>
               <TooltipContent>
                 <div className="text-sm">
-                  <p>Progress: {Math.round((completedPolicies / totalPolicies) * 100) || 0}%</p>
+                  <p>{t('Progress: {progress}%', { progress: Math.round((completedPolicies / totalPolicies) * 100) || 0 })}</p>
                   <p>
-                    Completed: {completedPolicies}/{totalPolicies} policies
+                    {t('Completed: {completed}/{total} policies', { completed: completedPolicies, total: totalPolicies })}
                   </p>
                 </div>
               </TooltipContent>

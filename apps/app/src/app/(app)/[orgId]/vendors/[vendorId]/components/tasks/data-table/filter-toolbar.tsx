@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import type { TaskStatus, User } from '@db';
 import { XIcon } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useGT } from 'gt-next';
 
 interface FilterToolbarProps {
   isEmpty: boolean;
@@ -16,6 +17,7 @@ export function FilterToolbar({ isEmpty, users }: FilterToolbarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const t = useGT();
 
   const search = searchParams.get('search') ?? '';
   const status = searchParams.get('status') as TaskStatus | null;
@@ -64,7 +66,7 @@ export function FilterToolbar({ isEmpty, users }: FilterToolbarProps) {
     <div className="mb-4 flex flex-col gap-4">
       <div className="flex flex-col gap-4 sm:flex-row">
         <Input
-          placeholder={'Search tasks...'}
+          placeholder={t('Search tasks...')}
           value={search}
           onChange={(e) => handleSearch(e.target.value)}
           className="max-w-sm"
@@ -72,21 +74,21 @@ export function FilterToolbar({ isEmpty, users }: FilterToolbarProps) {
         <div className="flex gap-4">
           <Select value={status ?? 'all'} onValueChange={handleStatusChange}>
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder={'Filter by status'} />
+              <SelectValue placeholder={t('Filter by status')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{'All Statuses'}</SelectItem>
-              <SelectItem value="not_started">{'Not Started'}</SelectItem>
-              <SelectItem value="in_progress">{'In Progress'}</SelectItem>
-              <SelectItem value="completed">{'Completed'}</SelectItem>
+              <SelectItem value="all">{t('All Statuses')}</SelectItem>
+              <SelectItem value="not_started">{t('Not Started')}</SelectItem>
+              <SelectItem value="in_progress">{t('In Progress')}</SelectItem>
+              <SelectItem value="completed">{t('Completed')}</SelectItem>
             </SelectContent>
           </Select>
           <Select value={assigneeId ?? 'all'} onValueChange={handleAssigneeChange}>
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder={'Filter by assignee'} />
+              <SelectValue placeholder={t('Filter by assignee')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{'All Assignees'}</SelectItem>
+              <SelectItem value="all">{t('All Assignees')}</SelectItem>
               {users.map((user) => (
                 <SelectItem key={user.id} value={user.id}>
                   {user.name}
@@ -100,7 +102,7 @@ export function FilterToolbar({ isEmpty, users }: FilterToolbarProps) {
         <div className="flex justify-end">
           <Button variant="outline" onClick={handleClearFilters} className="gap-2">
             <XIcon className="h-4 w-4" />
-            {'Clear filters'}
+            {t('Clear filters')}
           </Button>
         </div>
       )}

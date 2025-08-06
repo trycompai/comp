@@ -3,10 +3,14 @@
 import { db } from '@db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { authActionClient } from '../safe-action';
-import { updateInherentRiskSchema } from '../schema';
+import { getUpdateInherentRiskSchema } from '../schema';
+import { getGT } from 'gt-next/server';
 
 export const updateInherentRiskAction = authActionClient
-  .inputSchema(updateInherentRiskSchema)
+  .inputSchema(async () => {
+    const t = await getGT();
+    return getUpdateInherentRiskSchema(t);
+  })
   .metadata({
     name: 'update-inherent-risk',
     track: {

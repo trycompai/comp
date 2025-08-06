@@ -7,6 +7,7 @@ import type { Departments, RiskStatus } from '@db';
 import type { ColumnDef } from '@tanstack/react-table';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { useGT } from 'gt-next';
 
 export type RiskRegisterType = {
   id: string;
@@ -23,13 +24,14 @@ export type RiskRegisterType = {
 };
 
 export function useColumns(): ColumnDef<RiskRegisterType>[] {
+  const t = useGT();
   const { orgId } = useParams<{ orgId: string }>();
 
   return [
     {
       id: 'name',
       accessorKey: 'name',
-      header: 'Risk',
+      header: t('Risk'),
       cell: ({ row }) => {
         const status = row.original.status;
 
@@ -50,7 +52,7 @@ export function useColumns(): ColumnDef<RiskRegisterType>[] {
     {
       id: 'status',
       accessorKey: 'status',
-      header: () => <span className="hidden md:table-cell">{'Status'}</span>,
+      header: () => <span className="hidden md:table-cell">{t('Status')}</span>,
       cell: ({ row }) => {
         const status = row.original.status;
 
@@ -64,7 +66,7 @@ export function useColumns(): ColumnDef<RiskRegisterType>[] {
     {
       id: 'department',
       accessorKey: 'department',
-      header: () => <span className="hidden md:table-cell">{'Department'}</span>,
+      header: () => <span className="hidden md:table-cell">{t('Department')}</span>,
       cell: ({ row }) => {
         const department = row.original.department;
 
@@ -82,7 +84,7 @@ export function useColumns(): ColumnDef<RiskRegisterType>[] {
     {
       id: 'assigneeId',
       accessorKey: 'assigneeId',
-      header: () => <span className="hidden md:table-cell">{'Assignee'}</span>,
+      header: () => <span className="hidden md:table-cell">{t('Assignee')}</span>,
       cell: ({ row }) => {
         return (
           <div className="hidden md:table-cell">

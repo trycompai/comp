@@ -3,6 +3,7 @@
 import { db } from '@db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
+import { getGT } from 'gt-next/server';
 import { authActionClient } from '../safe-action';
 
 const deletePolicySchema = z.object({
@@ -21,13 +22,14 @@ export const deletePolicyAction = authActionClient
     },
   })
   .action(async ({ parsedInput, ctx }) => {
+    const t = await getGT();
     const { id } = parsedInput;
     const { activeOrganizationId } = ctx.session;
 
     if (!activeOrganizationId) {
       return {
         success: false,
-        error: 'Not authorized',
+        error: t('Not authorized'),
       };
     }
 
@@ -42,7 +44,7 @@ export const deletePolicyAction = authActionClient
       if (!policy) {
         return {
           success: false,
-          error: 'Policy not found',
+          error: t('Policy not found'),
         };
       }
 
@@ -63,7 +65,7 @@ export const deletePolicyAction = authActionClient
       console.error(error);
       return {
         success: false,
-        error: 'Failed to delete policy',
+        error: t('Failed to delete policy'),
       };
     }
   });

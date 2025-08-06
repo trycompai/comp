@@ -21,6 +21,7 @@ import type {
 import { MoreVertical, Trash2 } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
+import { T, useGT } from 'gt-next';
 import type { ControlProgressResponse } from '../data/getOrganizationControlProgress';
 import { ControlDeleteDialog } from './ControlDeleteDialog';
 import { PoliciesTable } from './PoliciesTable';
@@ -50,6 +51,7 @@ export function SingleControl({
 }: SingleControlProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const t = useGT();
   const params = useParams<{ orgId: string; controlId: string }>();
   const orgIdFromParams = params.orgId;
   const controlIdFromParams = params.controlId;
@@ -100,7 +102,7 @@ export function SingleControl({
                 className="text-destructive focus:text-destructive"
               >
                 <Trash2 className="mr-2 h-4 w-4" />
-                Delete
+                <T>Delete</T>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -111,19 +113,19 @@ export function SingleControl({
       <Tabs defaultValue="requirements" className="space-y-4">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="requirements" className="flex items-center gap-2">
-            <span>Requirements</span>
+            <T><span>Requirements</span></T>
             <span className="bg-muted/50 rounded-xs px-1.5 py-0.5 text-xs tabular-nums">
               {control.requirementsMapped.length}
             </span>
           </TabsTrigger>
           <TabsTrigger value="policies" className="flex items-center gap-2">
-            <span>Policies</span>
+            <T><span>Policies</span></T>
             <span className="bg-muted/50 rounded-xs px-1.5 py-0.5 text-xs tabular-nums">
               {relatedPolicies.length}
             </span>
           </TabsTrigger>
           <TabsTrigger value="tasks" className="flex items-center gap-2">
-            <span>Tasks</span>
+            <T><span>Tasks</span></T>
             <span className="bg-muted/50 rounded-xs px-1.5 py-0.5 text-xs tabular-nums">
               {relatedTasks.length}
             </span>

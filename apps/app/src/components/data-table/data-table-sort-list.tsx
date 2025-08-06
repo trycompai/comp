@@ -4,6 +4,8 @@ import type { ColumnSort, SortDirection, Table } from '@tanstack/react-table';
 import { ArrowDownUp, ChevronsUpDown, GripVertical, Trash2 } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import * as React from 'react';
+import { T, Branch, useGT } from 'gt-next';
+import { getDataTableConfig } from '@/lib/data-table-config';
 
 import {
   Sortable,
@@ -12,7 +14,7 @@ import {
   SortableItemHandle,
   SortableOverlay,
 } from '@/components/data-table/sortable';
-import { dataTableConfig } from '@/lib/data-table-config';
+import { DataTableConfig } from '@/lib/data-table-config';
 import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
@@ -40,6 +42,8 @@ export function DataTableSortList<TData>({
   tableId,
   ...props
 }: DataTableSortListProps<TData>) {
+  const t = useGT();
+  const dataTableConfig = React.useMemo(() => getDataTableConfig(t), [t]);
   const id = React.useId();
   const labelId = React.useId();
   const descriptionId = React.useId();
@@ -243,7 +247,7 @@ export function DataTableSortList<TData>({
             className="items-center gap-1.5"
           >
             <ArrowDownUp className="hidden size-4 md:block" />
-            Sort
+            <T>Sort</T>
             {sorting.length > 0 && (
               <Badge
                 variant="secondary"
@@ -261,17 +265,27 @@ export function DataTableSortList<TData>({
           {...props}
         >
           <div className="relative flex flex-col gap-1">
-            <h4 id={labelId} className="leading-none font-medium">
-              {sorting.length > 0 ? 'Sort by' : 'No sorting applied'}
-            </h4>
-            <p
-              id={descriptionId}
-              className={cn('text-muted-foreground text-sm', sorting.length > 0 && 'sr-only')}
-            >
-              {sorting.length > 0
-                ? 'Modify sorting to organize your rows.'
-                : 'Add sorting to organize your rows.'}
-            </p>
+            <T>
+              <h4 id={labelId} className="leading-none font-medium">
+                <Branch
+                  branch={(sorting.length > 0).toString()}
+                  true="Sort by"
+                  false="No sorting applied"
+                />
+              </h4>
+            </T>
+            <T>
+              <p
+                id={descriptionId}
+                className={cn('text-muted-foreground text-sm', sorting.length > 0 && 'sr-only')}
+              >
+                <Branch
+                  branch={(sorting.length > 0).toString()}
+                  true="Modify sorting to organize your rows."
+                  false="Add sorting to organize your rows."
+                />
+              </p>
+            </T>
           </div>
           {sorting.length > 0 && (
             <SortableContent asChild>
@@ -297,11 +311,11 @@ export function DataTableSortList<TData>({
               onClick={onSortAdd}
               disabled={columns.length === 0}
             >
-              Add sort
+              <T>Add sort</T>
             </Button>
             {sorting.length > 0 && (
               <Button variant="outline" size="sm" onClick={onSortingReset}>
-                Reset sorting
+                <T>Reset sorting</T>
               </Button>
             )}
           </div>
@@ -336,6 +350,8 @@ function DataTableSortItem({
   onSortUpdate,
   onSortRemove,
 }: DataTableSortItemProps) {
+  const t = useGT();
+  const dataTableConfig = React.useMemo(() => getDataTableConfig(t), [t]);
   const fieldListboxId = `${sortItemId}-field-listbox`;
   const fieldTriggerId = `${sortItemId}-field-trigger`;
   const directionListboxId = `${sortItemId}-direction-listbox`;
@@ -389,9 +405,9 @@ function DataTableSortItem({
             className="w-[var(--radix-popover-trigger-width)] origin-[var(--radix-popover-content-transform-origin)] p-0"
           >
             <Command>
-              <CommandInput placeholder="Search fields..." />
+              <CommandInput placeholder={t('Search fields...')} />
               <CommandList>
-                <CommandEmpty>No fields found.</CommandEmpty>
+                <CommandEmpty>{t('No fields found.')}</CommandEmpty>
                 <CommandGroup>
                   {columns.map((column) => (
                     <CommandItem
@@ -426,7 +442,7 @@ function DataTableSortItem({
             id={directionListboxId}
             className="min-w-[var(--radix-select-trigger-width)] origin-[var(--radix-select-content-transform-origin)]"
           >
-            {dataTableConfig.sortOrders.map((order) => (
+            {dataTableConfig.sortOrders.map((order: any) => (
               <SelectItem key={order.value} value={order.value}>
                 {order.label}
               </SelectItem>

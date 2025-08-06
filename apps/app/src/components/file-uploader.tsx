@@ -11,6 +11,7 @@ import { Button } from '@comp/ui/button';
 import { cn, formatBytes } from '@comp/ui/cn';
 import { Progress } from '@comp/ui/progress';
 import { ScrollArea } from '@comp/ui/scroll-area';
+import { T, useGT, Var } from 'gt-next';
 
 interface FileUploaderProps extends React.HTMLAttributes<HTMLDivElement> {
   /**
@@ -108,6 +109,7 @@ export function FileUploader(props: FileUploaderProps) {
     ...dropzoneProps
   } = props;
 
+  const t = useGT();
   const [files, setFiles] = useControllableState({
     prop: valueProp,
     onChange: onValueChange,
@@ -116,17 +118,17 @@ export function FileUploader(props: FileUploaderProps) {
   const onDrop = React.useCallback(
     (acceptedFiles: File[], rejectedFiles: FileRejection[]) => {
       if (!multiple && maxFileCount === 1 && acceptedFiles.length > 1) {
-        toast.error('Cannot upload more than 1 file at a time');
+        toast.error(t('Cannot upload more than 1 file at a time'));
         return;
       }
 
       if ((files?.length ?? 0) + acceptedFiles.length > maxFileCount) {
-        toast.error('Cannot upload more files than the maximum allowed');
+        toast.error(t('Cannot upload more files than the maximum allowed'));
         return;
       }
 
       if (acceptedFiles.length === 0) {
-        toast.error('No files selected');
+        toast.error(t('No files selected'));
         return;
       }
 
@@ -142,25 +144,25 @@ export function FileUploader(props: FileUploaderProps) {
 
       if (rejectedFiles.length > 0) {
         for (const { file } of rejectedFiles) {
-          toast.error(`File ${file.name} was rejected`);
+          toast.error(t('File {fileName} was rejected', { fileName: file.name }));
         }
       }
 
       if (onUpload && updatedFiles.length > 0 && updatedFiles.length <= maxFileCount) {
-        const target = updatedFiles.length > 0 ? `${updatedFiles.length} files` : 'a file';
+        const target = updatedFiles.length > 0 ? t('{count} files', { count: updatedFiles.length }) : t('a file');
 
         toast.promise(onUpload(updatedFiles), {
-          loading: `Uploading ${target}...`,
+          loading: t('Uploading {target}...', { target }),
           success: () => {
             setFiles([]);
-            return 'Files uploaded';
+            return t('Files uploaded');
           },
-          error: 'Failed to upload files',
+          error: t('Failed to upload files'),
         });
       }
     },
 
-    [files, maxFileCount, multiple, onUpload, setFiles],
+    [files, maxFileCount, multiple, onUpload, setFiles, t],
   );
 
   function onRemove(index: number) {
@@ -208,26 +210,30 @@ export function FileUploader(props: FileUploaderProps) {
           >
             <input {...getInputProps()} />
             {isDragActive ? (
-              <div className="flex flex-col items-center justify-center gap-4 sm:px-5">
-                <div className="rounded-full border border-dashed p-3">
-                  <Upload className="text-muted-foreground size-7" aria-hidden="true" />
+              <T>
+                <div className="flex flex-col items-center justify-center gap-4 sm:px-5">
+                  <div className="rounded-full border border-dashed p-3">
+                    <Upload className="text-muted-foreground size-7" aria-hidden="true" />
+                  </div>
+                  <p className="text-muted-foreground font-medium">Drop the files here</p>
                 </div>
-                <p className="text-muted-foreground font-medium">{'Drop the files here'}</p>
-              </div>
+              </T>
             ) : (
-              <div className="flex flex-col items-center justify-center gap-4 sm:px-5">
-                <div className="rounded-full border border-dashed p-3">
-                  <Upload className="text-muted-foreground size-7" aria-hidden="true" />
+              <T>
+                <div className="flex flex-col items-center justify-center gap-4 sm:px-5">
+                  <div className="rounded-full border border-dashed p-3">
+                    <Upload className="text-muted-foreground size-7" aria-hidden="true" />
+                  </div>
+                  <div className="flex flex-col gap-px">
+                    <p className="text-muted-foreground font-medium">
+                      Drop files here or click to choose files from your device.
+                    </p>
+                    <p className="text-muted-foreground/70 text-sm">
+                      Files can be up to <Var>{formatBytes(maxSize)}</Var>.
+                    </p>
+                  </div>
                 </div>
-                <div className="flex flex-col gap-px">
-                  <p className="text-muted-foreground font-medium">
-                    {'Drop files here or click to choose files from your device.'}
-                  </p>
-                  <p className="text-muted-foreground/70 text-sm">
-                    {'Files can be up to '} {formatBytes(maxSize)}.
-                  </p>
-                </div>
-              </div>
+              </T>
             )}
           </div>
         )}

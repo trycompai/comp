@@ -2,6 +2,7 @@
 
 import { auth } from '@/utils/auth'; // Import main auth
 import { authClient } from '@/utils/auth-client';
+import { getGT } from 'gt-next/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { headers } from 'next/headers'; // Import headers
 import { z } from 'zod';
@@ -9,16 +10,16 @@ import { z } from 'zod';
 import type { ActionResponse } from '@/actions/types';
 
 // --- Schemas for Validation ---
-const emailSchema = z.string().email('Invalid email format');
+const getEmailSchema = (t: Awaited<ReturnType<typeof getGT>>) => z.string().email(t('Invalid email format'));
 const availableRoles = ['admin', 'auditor', 'employee'] as const;
 type InviteRole = (typeof availableRoles)[number];
 const DEFAULT_ROLE: InviteRole = 'employee'; // Define default role here too
 
-const manualInviteSchema = z.object({
-  email: emailSchema,
+const getManualInviteSchema = (t: Awaited<ReturnType<typeof getGT>>) => z.object({
+  email: getEmailSchema(t),
   role: z.enum(availableRoles),
 });
-const manualInvitesSchema = z.array(manualInviteSchema);
+const getManualInvitesSchema = (t: Awaited<ReturnType<typeof getGT>>) => z.array(getManualInviteSchema(t));
 
 // --- Result Type ---
 interface BulkInviteResult {
@@ -33,16 +34,18 @@ interface BulkInviteResult {
 export async function bulkInviteMembers(
   formData: FormData,
 ): Promise<ActionResponse<BulkInviteResult>> {
+  const t = await getGT();
+  
   // Manually get session and check auth
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.session) {
-    return { success: false, error: 'Authentication required.' };
+    return { success: false, error: t('Authentication required.') };
   }
   const organizationId = session.session.activeOrganizationId;
   const userId = session.session.userId;
 
   if (!organizationId) {
-    return { success: false, error: 'Organization not found' };
+    return { success: false, error: t('Organization not found') };
   }
 
   const results: BulkInviteResult = {
@@ -58,20 +61,20 @@ export async function bulkInviteMembers(
       if (!file || !(file instanceof File)) {
         return {
           success: false,
-          error: 'CSV file not provided or invalid.',
+          error: t('CSV file not provided or invalid.'),
         };
       }
       if (file.size > 5 * 1024 * 1024) {
         // 5MB check
         return {
           success: false,
-          error: 'CSV file size exceeds 5MB limit.',
+          error: t('CSV file size exceeds 5MB limit.'),
         };
       }
       if (file.type !== 'text/csv') {
         return {
           success: false,
-          error: 'Invalid file type. Only CSV is allowed.',
+          error: t('Invalid file type. Only CSV is allowed.'),
         };
       }
 
@@ -81,7 +84,7 @@ export async function bulkInviteMembers(
       if (rows.length === 0 || (rows.length === 1 && rows[0].trim() === '')) {
         return {
           success: false,
-          error: 'CSV file is empty or contains only a header.',
+          error: t('CSV file is empty or contains only a header.'),
         };
       }
 
@@ -90,11 +93,14 @@ export async function bulkInviteMembers(
         if (!trimmedRow) continue; // Skip empty lines
 
         const [emailStr, roleStr] = trimmedRow.split(',').map((s) => s.trim());
-        const rowInput = `CSV Row: ${emailStr || '[missing]'}, ${roleStr || '[missing]'}`;
+        const rowInput = t('CSV Row: {email}, {role}', {
+          email: emailStr || t('[missing]'),
+          role: roleStr || t('[missing]'),
+        });
 
         try {
           // Validate email
-          const email = emailSchema.parse(emailStr);
+          const email = getEmailSchema(t).parse(emailStr);
 
           // Validate or default role
           let role: InviteRole = DEFAULT_ROLE; // Use defined default
@@ -103,7 +109,7 @@ export async function bulkInviteMembers(
             if (parsedRole.success) {
               role = parsedRole.data;
             } else {
-              throw new Error(`Invalid role specified: ${roleStr}`);
+              throw new Error(t('Invalid role specified: {role}', { role: roleStr }));
             }
           }
 
@@ -113,7 +119,7 @@ export async function bulkInviteMembers(
           console.error(`Error processing CSV row ${rowInput}:`, error);
           results.failedItems.push({
             input: rowInput,
-            error: error instanceof Error ? error.message : 'Processing failed',
+            error: error instanceof Error ? error.message : t('Processing failed'),
           });
         }
       }
@@ -122,10 +128,11 @@ export async function bulkInviteMembers(
       if (!invitesJson) {
         return {
           success: false,
-          error: 'Manual invite data not provided.',
+          error: t('Manual invite data not provided.'),
         };
       }
 
+      const manualInvitesSchema = getManualInvitesSchema(t);
       let manualInvites: z.infer<typeof manualInvitesSchema>;
       try {
         manualInvites = manualInvitesSchema.parse(JSON.parse(invitesJson));
@@ -134,14 +141,14 @@ export async function bulkInviteMembers(
         // Don't include validationErrors field, just return a general error
         return {
           success: false,
-          error: 'Invalid format for manual invite data.',
+          error: t('Invalid format for manual invite data.'),
         };
       }
 
       if (manualInvites.length === 0) {
         return {
           success: false,
-          error: 'No manual invites submitted.',
+          error: t('No manual invites submitted.'),
         };
       }
 
@@ -154,12 +161,12 @@ export async function bulkInviteMembers(
           console.error(`Error inviting manual member ${invite.email}:`, error);
           results.failedItems.push({
             input: invite,
-            error: error instanceof Error ? error.message : 'Invite failed',
+            error: error instanceof Error ? error.message : t('Invite failed'),
           });
         }
       }
     } else {
-      return { success: false, error: 'Invalid submission type.' };
+      return { success: false, error: t('Invalid submission type.') };
     }
 
     // Revalidate only if changes were made
@@ -174,7 +181,7 @@ export async function bulkInviteMembers(
     }
     return {
       success: false,
-      error: 'All invitations failed.',
+      error: t('All invitations failed.'),
       data: results,
     };
   } catch (error) {
@@ -182,7 +189,7 @@ export async function bulkInviteMembers(
     console.error('Unexpected error in bulkInviteMembers:', error);
     return {
       success: false,
-      error: 'An unexpected server error occurred processing the invites.',
+      error: t('An unexpected server error occurred processing the invites.'),
     };
   }
 }

@@ -5,16 +5,16 @@ export interface AppError {
   message: string;
 }
 
-export const appErrors = {
+export const getAppErrors = (t: (content: string) => string) => ({
   UNAUTHORIZED: {
     code: 'UNAUTHORIZED',
-    message: 'You are not authorized to access this resource',
+    message: t('You are not authorized to access this resource'),
   },
   UNEXPECTED_ERROR: {
     code: 'UNEXPECTED_ERROR',
-    message: 'An unexpected error occurred',
+    message: t('An unexpected error occurred'),
   },
-};
+});
 
 export interface EmployeesInput {
   search?: string;

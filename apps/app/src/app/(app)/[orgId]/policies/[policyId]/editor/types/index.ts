@@ -30,6 +30,27 @@ export type AppError = {
   message: string;
 };
 
+import { getGT } from 'gt-next/server';
+
+export const getAppErrors = async () => {
+  const t = await getGT();
+  return {
+    NOT_FOUND: {
+      code: 'NOT_FOUND' as const,
+      message: t('Policy not found'),
+    },
+    UNAUTHORIZED: {
+      code: 'UNAUTHORIZED' as const,
+      message: t('You are not authorized to view this policy'),
+    },
+    UNEXPECTED_ERROR: {
+      code: 'UNEXPECTED_ERROR' as const,
+      message: t('An unexpected error occurred'),
+    },
+  } as const;
+};
+
+// For backwards compatibility, keep static version for non-async usage
 export const appErrors = {
   NOT_FOUND: {
     code: 'NOT_FOUND' as const,

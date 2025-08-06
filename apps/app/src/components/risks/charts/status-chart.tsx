@@ -2,6 +2,7 @@
 
 import { ClientTooltip } from '@comp/ui/chart-tooltip';
 import { format, max, scaleBand, scaleLinear } from 'd3';
+import { T } from 'gt-next';
 import { type CSSProperties } from 'react';
 
 const STATUS_COLORS = {
@@ -47,7 +48,7 @@ export function StatusChart({ data }: StatusChartProps) {
   if (sortedData.length === 0) {
     return (
       <div className="text-muted-foreground flex h-[300px] items-center justify-center">
-        No statuses with risks found
+        <T>No statuses with risks found</T>
       </div>
     );
   }

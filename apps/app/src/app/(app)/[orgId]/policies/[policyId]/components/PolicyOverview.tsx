@@ -16,6 +16,7 @@ import { Icons } from '@comp/ui/icons';
 import type { Member, Policy, User } from '@db';
 import { Control } from '@db';
 import { format } from 'date-fns';
+import { T, useGT, Var, Branch } from 'gt-next';
 import {
   ArchiveIcon,
   ArchiveRestoreIcon,
@@ -49,6 +50,7 @@ export function PolicyOverview({
   allControls: Control[];
   isPendingApproval: boolean;
 }) {
+  const t = useGT();
   const { data: activeMember } = authClient.useActiveMember();
   const [, setOpen] = useQueryState('policy-overview-sheet');
   const [, setArchiveOpen] = useQueryState('archive-policy-sheet');
@@ -56,23 +58,23 @@ export function PolicyOverview({
 
   const denyPolicyChanges = useAction(denyRequestedPolicyChangesAction, {
     onSuccess: () => {
-      toast.info('Policy changes denied!');
+      toast.info(t('Policy changes denied!'));
       // Force a complete page reload instead of just a refresh
       window.location.reload();
     },
     onError: () => {
-      toast.error('Failed to deny policy changes.');
+      toast.error(t('Failed to deny policy changes.'));
     },
   });
 
   const acceptPolicyChanges = useAction(acceptRequestedPolicyChangesAction, {
     onSuccess: () => {
-      toast.success('Policy changes accepted and published!');
+      toast.success(t('Policy changes accepted and published!'));
       // Force a complete page reload instead of just a refresh
       window.location.reload();
     },
     onError: () => {
-      toast.error('Failed to accept policy changes.');
+      toast.error(t('Failed to accept policy changes.'));
     },
   });
 
@@ -117,31 +119,49 @@ export function PolicyOverview({
       {isPendingApproval && (
         <Alert variant="default">
           <ShieldX className="h-4 w-4" />
-          <AlertTitle>
-            {canCurrentUserApprove ? 'Action Required by You' : 'Pending Approval'}
-          </AlertTitle>
+          <T>
+            <AlertTitle>
+              <Branch
+                branch={canCurrentUserApprove.toString()}
+                true={<>Action Required by You</>}
+                false={<>Pending Approval</>}
+              />
+            </AlertTitle>
+          </T>
           <AlertDescription className="flex flex-col gap-2">
-            <div>
-              This policy is awaiting approval from{' '}
-              <span className="font-semibold">
-                {policy.approverId === activeMember?.id
-                  ? 'you'
-                  : `${policy?.approver?.user?.name} (${policy?.approver?.user?.email})`}
-              </span>
-              .
-            </div>
-            {canCurrentUserApprove &&
-              ' Please review the details and either approve or reject the changes.'}
-            {!canCurrentUserApprove && ' All fields are disabled until the policy is actioned.'}
+            <T>
+              <div>
+                This policy is awaiting approval from{' '}
+                <span className="font-semibold">
+                  <Branch
+                    branch={(policy.approverId === activeMember?.id).toString()}
+                    true={<>you</>}
+                    false={
+                      <>
+                        <Var>{policy?.approver?.user?.name}</Var> (<Var>{policy?.approver?.user?.email}</Var>)
+                      </>
+                    }
+                  />
+                </span>
+                .
+              </div>
+            </T>
+            <T>
+              <Branch
+                branch={canCurrentUserApprove.toString()}
+                true={<> Please review the details and either approve or reject the changes.</>}
+                false={<> All fields are disabled until the policy is actioned.</>}
+              />
+            </T>
             {isPendingApproval && policy.approverId && canCurrentUserApprove && (
               <div className="flex items-center gap-2">
                 <Button variant="outline" onClick={() => setDenyDialogOpen(true)}>
                   <ShieldX className="h-4 w-4" />
-                  Reject Changes
+                  {t('Reject Changes')}
                 </Button>
                 <Button onClick={() => setApproveDialogOpen(true)}>
                   <ShieldCheck className="h-4 w-4" />
-                  Approve
+                  {t('Approve')}
                 </Button>
               </div>
             )}
@@ -152,18 +172,26 @@ export function PolicyOverview({
         <Alert>
           <div className="flex items-center gap-2">
             <ArchiveIcon className="h-4 w-4" />
-            <div className="font-medium">{'This policy is archived'}</div>
+            <T>
+              <div className="font-medium">This policy is archived</div>
+            </T>
           </div>
-          <AlertDescription>
-            {policy?.isArchived && (
-              <>
-                {'Archived on'} {format(new Date(policy?.updatedAt ?? new Date()), 'PPP')}
-              </>
-            )}
-          </AlertDescription>
+          <T>
+            <AlertDescription>
+              <Branch
+                branch={policy?.isArchived?.toString() ?? 'false'}
+                true={
+                  <>
+                    Archived on <Var>{format(new Date(policy?.updatedAt ?? new Date()), 'PPP')}</Var>
+                  </>
+                }
+                false={<></>}
+              />
+            </AlertDescription>
+          </T>
           <Button size="sm" variant="outline" onClick={() => setArchiveOpen('true')}>
             <ArchiveRestoreIcon className="h-3 w-3" />
-            {'Restore'}
+            {t('Restore')}
           </Button>
         </Alert>
       )}
@@ -196,7 +224,7 @@ export function PolicyOverview({
                     disabled={isPendingApproval}
                   >
                     <PencilIcon className="mr-2 h-4 w-4" />
-                    {'Edit policy'}
+                    {t('Edit policy')}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => {
@@ -210,7 +238,7 @@ export function PolicyOverview({
                     ) : (
                       <ArchiveIcon className="mr-2 h-4 w-4" />
                     )}
-                    {policy?.isArchived ? 'Restore policy' : 'Archive policy'}
+                    {policy?.isArchived ? t('Restore policy') : t('Archive policy')}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => {
@@ -221,7 +249,7 @@ export function PolicyOverview({
                     className="text-destructive focus:text-destructive"
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
-                    Delete
+                    {t('Delete')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -256,9 +284,9 @@ export function PolicyOverview({
             isOpen={approveDialogOpen}
             onClose={() => setApproveDialogOpen(false)}
             onConfirm={handleApprove}
-            title="Approve Policy Changes"
-            description="Are you sure you want to approve these policy changes? You can optionally add a comment that will be visible in the policy history."
-            confirmText="Approve"
+            title={t('Approve Policy Changes')}
+            description={t('Are you sure you want to approve these policy changes? You can optionally add a comment that will be visible in the policy history.')}
+            confirmText={t('Approve')}
             confirmIcon={<ShieldCheck className="h-4 w-4" />}
           />
 
@@ -267,9 +295,9 @@ export function PolicyOverview({
             isOpen={denyDialogOpen}
             onClose={() => setDenyDialogOpen(false)}
             onConfirm={handleDeny}
-            title="Deny Policy Changes"
-            description="Are you sure you want to deny these policy changes? You can optionally add a comment explaining your decision that will be visible in the policy history."
-            confirmText="Deny"
+            title={t('Deny Policy Changes')}
+            description={t('Are you sure you want to deny these policy changes? You can optionally add a comment explaining your decision that will be visible in the policy history.')}
+            confirmText={t('Deny')}
             confirmIcon={<ShieldX className="h-4 w-4" />}
             confirmVariant="destructive"
           />

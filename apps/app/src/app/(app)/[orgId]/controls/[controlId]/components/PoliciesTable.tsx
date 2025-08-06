@@ -9,6 +9,7 @@ import { Input } from '@comp/ui/input';
 import { Policy } from '@db';
 import { ColumnDef } from '@tanstack/react-table';
 import { useMemo, useState } from 'react';
+import { useGT } from 'gt-next';
 
 interface PoliciesTableProps {
   policies: Policy[];
@@ -18,12 +19,13 @@ interface PoliciesTableProps {
 
 export function PoliciesTable({ policies, orgId, controlId }: PoliciesTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  const t = useGT();
 
   const columns = useMemo<ColumnDef<Policy>[]>(
     () => [
       {
         accessorKey: 'name',
-        header: ({ column }) => <DataTableColumnHeader column={column} title={'Name'} />,
+        header: ({ column }) => <DataTableColumnHeader column={column} title={t('Name')} />,
         cell: ({ row }) => {
           const name = row.original.name;
           return <span>{name}</span>;
@@ -37,7 +39,7 @@ export function PoliciesTable({ policies, orgId, controlId }: PoliciesTableProps
       },
       {
         accessorKey: 'createdAt',
-        header: ({ column }) => <DataTableColumnHeader column={column} title={'Created At'} />,
+        header: ({ column }) => <DataTableColumnHeader column={column} title={t('Created At')} />,
         cell: ({ row }) => <span>{new Date(row.original.createdAt).toLocaleDateString()}</span>,
         enableSorting: true,
         sortingFn: (rowA, rowB) => {
@@ -48,7 +50,7 @@ export function PoliciesTable({ policies, orgId, controlId }: PoliciesTableProps
       },
       {
         accessorKey: 'status',
-        header: ({ column }) => <DataTableColumnHeader column={column} title={'Status'} />,
+        header: ({ column }) => <DataTableColumnHeader column={column} title={t('Status')} />,
         cell: ({ row }) => {
           const rawStatus = row.original.status;
           return <StatusIndicator status={rawStatus} />;
@@ -85,7 +87,7 @@ export function PoliciesTable({ policies, orgId, controlId }: PoliciesTableProps
     <div className="space-y-4">
       <div className="flex items-center">
         <Input
-          placeholder="Search policies..."
+          placeholder={t('Search policies...')}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="max-w-sm"

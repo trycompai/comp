@@ -3,14 +3,15 @@ import { db, Departments, RiskCategory, RiskStatus } from '@db';
 import { headers } from 'next/headers';
 import { z } from 'zod';
 
-export function getRiskTools() {
+export function getRiskTools(t: (content: string) => string) {
   return {
-    getRisks,
+    getRisks: getGetRisks(t),
     getRiskById,
   };
 }
 
-export const getRisks = {
+export const getGetRisks = (t: (content: string) => string) => {
+  return {
   description: 'Get risks for the organization',
   inputSchema: z.object({
     status: z.enum(Object.values(RiskStatus) as [RiskStatus, ...RiskStatus[]]).optional(),
@@ -63,6 +64,7 @@ export const getRisks = {
       risks,
     };
   },
+};
 };
 
 export const getRiskById = {

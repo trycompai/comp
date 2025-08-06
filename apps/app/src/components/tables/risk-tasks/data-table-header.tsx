@@ -5,6 +5,7 @@ import { TableHead, TableHeader, TableRow } from '@comp/ui/table';
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback } from 'react';
+import { useGT, T } from 'gt-next';
 
 type Props = {
   table?: {
@@ -26,6 +27,7 @@ export function DataTableHeader({ table, loading }: Props) {
   const router = useRouter();
   const sortParam = searchParams.get('sort');
   const [column, value] = sortParam ? sortParam.split(':') : [];
+  const t = useGT();
 
   const createSortQuery = useCallback(
     (name: string) => {
@@ -62,7 +64,7 @@ export function DataTableHeader({ table, loading }: Props) {
               variant="ghost"
               onClick={() => createSortQuery('title')}
             >
-              <span>{'Tasks'}</span>
+              <span><T>Tasks</T></span>
               {'title' === column && value === 'asc' && <ArrowDown size={16} />}
               {'title' === column && value === 'desc' && <ArrowUp size={16} />}
             </Button>
@@ -76,7 +78,7 @@ export function DataTableHeader({ table, loading }: Props) {
               variant="ghost"
               onClick={() => createSortQuery('status')}
             >
-              <span>{'Status'}</span>
+              <span><T>Status</T></span>
               {'status' === column && value === 'asc' && <ArrowDown size={16} />}
               {'status' === column && value === 'desc' && <ArrowUp size={16} />}
             </Button>
@@ -90,7 +92,7 @@ export function DataTableHeader({ table, loading }: Props) {
               variant="ghost"
               onClick={() => createSortQuery('dueDate')}
             >
-              <span>{'Due Date'}</span>
+              <span><T>Due Date</T></span>
               {'dueDate' === column && value === 'asc' && <ArrowDown size={16} />}
               {'dueDate' === column && value === 'desc' && <ArrowUp size={16} />}
             </Button>
@@ -104,7 +106,7 @@ export function DataTableHeader({ table, loading }: Props) {
               variant="ghost"
               onClick={() => createSortQuery('assigneeId')}
             >
-              <span>{'Assigned To'}</span>
+              <span><T>Assigned To</T></span>
               {'assigneeId' === column && value === 'asc' && <ArrowDown size={16} />}
               {'assigneeId' === column && value === 'desc' && <ArrowUp size={16} />}
             </Button>

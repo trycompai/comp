@@ -2,6 +2,7 @@
 
 import type { Column } from '@tanstack/react-table';
 import * as React from 'react';
+import { T, useGT } from 'gt-next';
 
 import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
@@ -33,6 +34,7 @@ interface DataTableSliderFilterProps<TData> {
 }
 
 export function DataTableSliderFilter<TData>({ column, title }: DataTableSliderFilterProps<TData>) {
+  const t = useGT();
   const id = React.useId();
 
   const columnFilterValue = getIsValidRange(column.getFilterValue())
@@ -123,7 +125,7 @@ export function DataTableSliderFilter<TData>({ column, title }: DataTableSliderF
         <Button variant="outline" size="sm" className="border-dashed">
           {columnFilterValue ? (
             <div
-              aria-label={`Clear ${title} filter`}
+              aria-label={t('Clear {title} filter', { title })}
               className="focus-visible:ring-ring rounded-sm opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-1 focus-visible:outline-hidden"
               onClick={onReset}
             >
@@ -203,8 +205,8 @@ export function DataTableSliderFilter<TData>({ column, title }: DataTableSliderF
             onValueChange={onSliderValueChange}
           />
         </div>
-        <Button aria-label={`Clear ${title} filter`} variant="outline" size="sm" onClick={onReset}>
-          Clear
+        <Button aria-label={t('Clear {title} filter', { title })} variant="outline" size="sm" onClick={onReset}>
+          <T>Clear</T>
         </Button>
       </PopoverContent>
     </Popover>

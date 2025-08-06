@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { cn } from '@comp/ui/cn';
 import { Progress } from '@comp/ui/progress';
 import type { Control, Task } from '@db';
+import { T, useGT, Var, Num } from 'gt-next';
 import { BarChart3, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -16,34 +17,35 @@ interface FrameworkCardProps {
   tasks: (Task & { controls: Control[] })[];
 }
 
+const getStatusBadge = (score: number, t: (content: string) => string) => {
+  if (score >= 95)
+    return {
+      label: t('Compliant'),
+      variant: 'default' as const,
+    };
+  if (score >= 80)
+    return {
+      label: t('Nearly Compliant'),
+      variant: 'secondary' as const,
+    };
+  if (score >= 50)
+    return {
+      label: t('In Progress'),
+      variant: 'outline' as const,
+    };
+  return {
+    label: t('Needs Attention'),
+    variant: 'destructive' as const,
+  };
+};
+
 export function FrameworkCard({
   frameworkInstance,
   complianceScore = 0,
   tasks,
 }: FrameworkCardProps) {
   const { orgId } = useParams<{ orgId: string }>();
-
-  const getStatusBadge = (score: number) => {
-    if (score >= 95)
-      return {
-        label: 'Compliant',
-        variant: 'default' as const,
-      };
-    if (score >= 80)
-      return {
-        label: 'Nearly Compliant',
-        variant: 'secondary' as const,
-      };
-    if (score >= 50)
-      return {
-        label: 'In Progress',
-        variant: 'outline' as const,
-      };
-    return {
-      label: 'Needs Attention',
-      variant: 'destructive' as const,
-    };
-  };
+  const t = useGT();
 
   const getComplianceColor = (score: number) => {
     if (score >= 80) return 'text-green-600 dark:text-green-400';
@@ -86,7 +88,7 @@ export function FrameworkCard({
 
   // Use direct framework data:
   const frameworkDetails = frameworkInstance.framework;
-  const statusBadge = getStatusBadge(complianceScore);
+  const statusBadge = getStatusBadge(complianceScore, t);
 
   // Calculate last activity date - use current date as fallback
   const lastActivityDate = new Date().toLocaleDateString('en-US', {
@@ -118,10 +120,12 @@ export function FrameworkCard({
           {/* Progress Section */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs">
-              <div className="flex items-center gap-1">
-                <BarChart3 className="text-muted-foreground h-3 w-3" />
-                <span className="text-muted-foreground">Progress</span>
-              </div>
+              <T>
+                <div className="flex items-center gap-1">
+                  <BarChart3 className="text-muted-foreground h-3 w-3" />
+                  <span className="text-muted-foreground">Progress</span>
+                </div>
+              </T>
               <span className={cn('font-medium tabular-nums', getComplianceColor(complianceScore))}>
                 {complianceScore}%
               </span>
@@ -130,17 +134,21 @@ export function FrameworkCard({
           </div>
 
           {/* Stats */}
-          <div className="text-muted-foreground flex items-center justify-between text-xs">
-            <span>{compliantControlsCount} complete</span>
-            <span>{inProgressCount} active</span>
-            <span>{controlsCount} total</span>
-          </div>
+          <T>
+            <div className="text-muted-foreground flex items-center justify-between text-xs">
+              <span><Num>{compliantControlsCount}</Num> complete</span>
+              <span><Num>{inProgressCount}</Num> active</span>
+              <span><Num>{controlsCount}</Num> total</span>
+            </div>
+          </T>
 
           {/* Footer */}
-          <div className="text-muted-foreground flex items-center border-t pt-2 text-xs">
-            <Clock className="mr-1 h-3 w-3" />
-            <span>Updated {lastActivityDate}</span>
-          </div>
+          <T>
+            <div className="text-muted-foreground flex items-center border-t pt-2 text-xs">
+              <Clock className="mr-1 h-3 w-3" />
+              <span>Updated <Var>{lastActivityDate}</Var></span>
+            </div>
+          </T>
         </CardContent>
       </Card>
     </Link>

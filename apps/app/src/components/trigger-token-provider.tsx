@@ -3,6 +3,7 @@
 import { healAndSetAccessToken } from '@/actions/trigger/heal-access-token';
 import { TriggerProvider } from '@/components/trigger-provider';
 import { useEffect, useState } from 'react';
+import { T } from 'gt-next';
 
 interface TriggerTokenProviderProps {
   triggerJobId?: string;
@@ -41,7 +42,9 @@ export function TriggerTokenProvider({
     return (
       <div className="flex items-center justify-center p-4">
         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-        <span className="ml-2 text-sm text-muted-foreground">Connecting...</span>
+        <T>
+          <span className="ml-2 text-sm text-muted-foreground">Connecting...</span>
+        </T>
       </div>
     );
   }
@@ -50,7 +53,9 @@ export function TriggerTokenProvider({
   if (triggerJobId && !token && !isLoading) {
     return (
       <div className="flex items-center justify-center p-4">
-        <span className="text-sm text-destructive">Failed to establish connection</span>
+        <T>
+          <span className="text-sm text-destructive">Failed to establish connection</span>
+        </T>
       </div>
     );
   }

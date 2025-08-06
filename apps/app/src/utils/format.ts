@@ -127,7 +127,7 @@ export function formatDateRange(dates: TZDate[]): string {
   return `${formatFullDate(startDate)} - ${formatFullDate(endDate)}`;
 }
 
-export function getDueDateStatus(dueDate: string): string {
+export function getDueDateStatus(dueDate: string, t: (content: string, options?: any) => string): string {
   const now = new Date();
   const due = new Date(dueDate);
 
@@ -138,26 +138,27 @@ export function getDueDateStatus(dueDate: string): string {
   const diffDays = differenceInDays(dueDay, nowDay);
   const diffMonths = differenceInMonths(dueDay, nowDay);
 
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return 'Tomorrow';
-  if (diffDays === -1) return 'Yesterday';
+  if (diffDays === 0) return t('Today');
+  if (diffDays === 1) return t('Tomorrow');
+  if (diffDays === -1) return t('Yesterday');
 
   if (diffDays > 0) {
-    if (diffMonths < 1) return `in ${diffDays} days`;
-    return `in ${diffMonths} month${diffMonths === 1 ? '' : 's'}`;
+    if (diffMonths < 1) return t('in {diffDays} days', { diffDays });
+    return t('in {diffMonths} month{monthSuffix}', { diffMonths, monthSuffix: diffMonths === 1 ? '' : 's' });
   }
 
-  if (diffMonths < 1) return `${Math.abs(diffDays)} day${Math.abs(diffDays) === 1 ? '' : 's'} ago`;
-  return `${diffMonths} month${diffMonths === 1 ? '' : 's'} ago`;
+  const absDiffDays = Math.abs(diffDays);
+  if (diffMonths < 1) return t('{absDiffDays} day{daySuffix} ago', { absDiffDays, daySuffix: absDiffDays === 1 ? '' : 's' });
+  return t('{diffMonths} month{monthSuffix} ago', { diffMonths: Math.abs(diffMonths), monthSuffix: Math.abs(diffMonths) === 1 ? '' : 's' });
 }
 
-export function formatRelativeTime(date: Date | string): string {
+export const getFormatRelativeTime = (date: Date | string, t: (content: string, options?: any) => string) => {
   const now = new Date();
   const dateObj = typeof date === 'string' ? new Date(date) : date;
   const diffInSeconds = Math.floor((now.getTime() - dateObj.getTime()) / 1000);
 
   if (diffInSeconds < 60) {
-    return 'just now';
+    return t('just now');
   }
 
   const intervals = [
@@ -171,9 +172,9 @@ export function formatRelativeTime(date: Date | string): string {
   for (const interval of intervals) {
     const count = Math.floor(diffInSeconds / interval.seconds);
     if (count > 0) {
-      return `${count}${interval.label} ago`;
+      return t('{count}{label} ago', { count, label: interval.label });
     }
   }
 
-  return 'just now';
-}
+  return t('just now');
+};

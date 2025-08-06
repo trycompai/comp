@@ -3,9 +3,10 @@
 import { cn } from '@comp/ui/cn';
 import { Table, TableBody, TableCell, TableRow } from '@comp/ui/table';
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
-import { type RiskRegisterType, useColumns as getColumns } from './columns';
+import { type RiskRegisterType, useColumns } from './columns';
 import { DataTableHeader } from './data-table-header';
 import { DataTablePagination } from './data-table-pagination';
+import { T } from 'gt-next';
 
 interface DataTableProps<TData, TValue> {
   columnHeaders: {
@@ -25,8 +26,8 @@ export function DataTable<TData, TValue>({
   pageCount,
   currentPage,
 }: DataTableProps<TData, TValue>) {
-  const clientColumns = getColumns();
-  const columns = clientColumns.map((col) => ({
+  const clientColumns = useColumns();
+  const columns = clientColumns.map((col: any) => ({
     ...col,
     header: columnHeaders[col.id as keyof typeof columnHeaders],
   }));
@@ -67,7 +68,7 @@ export function DataTable<TData, TValue>({
           ) : (
             <TableRow>
               <TableCell colSpan={columns.length} className="h-24 text-center">
-                No results.
+                <T>No results.</T>
               </TableCell>
             </TableRow>
           )}

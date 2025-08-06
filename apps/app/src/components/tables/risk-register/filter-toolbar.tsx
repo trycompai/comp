@@ -10,6 +10,7 @@ import { Departments, Member, RiskStatus, User } from '@db';
 import { Plus, Search, X } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import { useCallback, useTransition } from 'react';
+import { useGT } from 'gt-next';
 
 const riskStatuses = Object.values(RiskStatus);
 const departments = Object.values(Departments).filter((d) => d !== 'none');
@@ -29,6 +30,7 @@ const statusTranslationKeys = {
 export function FilterToolbar({ isEmpty, users }: Props) {
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useQueryState('create-risk-sheet');
+  const t = useGT();
 
   const [search, setSearch] = useQueryState('search', {
     shallow: false,
@@ -96,7 +98,7 @@ export function FilterToolbar({ isEmpty, users }: Props) {
         <div className="relative flex-1 md:max-w-sm">
           <Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
           <Input
-            placeholder={'Search...'}
+            placeholder={t('Search...')}
             className="pl-8"
             value={search || ''}
             onChange={(e) => setSearch(e.target.value || null)}
@@ -106,7 +108,7 @@ export function FilterToolbar({ isEmpty, users }: Props) {
         <div className="md:hidden">
           <Button onClick={() => setOpen('true')} variant="default">
             <Plus className="h-4 w-4" />
-            {'Add New'}
+            {t('Add New')}
           </Button>
         </div>
       </div>
@@ -114,7 +116,7 @@ export function FilterToolbar({ isEmpty, users }: Props) {
       <div className="hidden items-center gap-2 md:flex">
         <Select value={status || ''} onValueChange={(value) => setStatus(value || null)}>
           <SelectTrigger className="w-auto min-w-[100px]">
-            <SelectValue placeholder={'Status'} />
+            <SelectValue placeholder={t('Status')} />
           </SelectTrigger>
           <SelectContent>
             {riskStatuses.map((stat) => (
@@ -127,7 +129,7 @@ export function FilterToolbar({ isEmpty, users }: Props) {
 
         <Select value={department || ''} onValueChange={(value) => setDepartment(value || null)}>
           <SelectTrigger className="w-[150px] min-w-[150px]">
-            <SelectValue placeholder={'Department'} />
+            <SelectValue placeholder={t('Department')} />
           </SelectTrigger>
           <SelectContent>
             {departments.map((dept) => (
@@ -140,7 +142,7 @@ export function FilterToolbar({ isEmpty, users }: Props) {
 
         <Select value={assigneeId || ''} onValueChange={(value) => setAssigneeId(value || null)}>
           <SelectTrigger className="w-[200px] min-w-[200px]">
-            <SelectValue placeholder={'Filter by assignee'} />
+            <SelectValue placeholder={t('Filter by assignee')} />
           </SelectTrigger>
           <SelectContent>
             {users.map((user) => (
@@ -154,13 +156,13 @@ export function FilterToolbar({ isEmpty, users }: Props) {
         {hasFilters && (
           <Button variant="ghost" size="sm" onClick={handleReset} disabled={isPending}>
             <X className="mr-2 h-4 w-4" />
-            {'Clear'}
+            {t('Clear')}
           </Button>
         )}
 
         <Button onClick={() => setOpen('true')} variant="default">
           <Plus className="h-4 w-4" />
-          {'Add New'}
+          {t('Add New')}
         </Button>
       </div>
 

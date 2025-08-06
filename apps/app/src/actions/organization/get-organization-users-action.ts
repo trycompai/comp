@@ -1,6 +1,7 @@
 'use server';
 
 import { db } from '@db';
+import { getGT } from 'gt-next/server';
 import { authActionClient } from '../safe-action';
 
 interface User {
@@ -15,10 +16,12 @@ export const getOrganizationUsersAction = authActionClient
   })
   .action(
     async ({ parsedInput, ctx }): Promise<{ success: boolean; error?: string; data?: User[] }> => {
+      const t = await getGT();
+      
       if (!ctx.session.activeOrganizationId) {
         return {
           success: false,
-          error: 'User does not have an organization',
+          error: t('User does not have an organization'),
         };
       }
 
@@ -54,7 +57,7 @@ export const getOrganizationUsersAction = authActionClient
       } catch (error) {
         return {
           success: false,
-          error: 'Failed to fetch organization users',
+          error: t('Failed to fetch organization users'),
         };
       }
     },

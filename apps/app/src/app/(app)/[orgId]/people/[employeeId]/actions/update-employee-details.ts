@@ -3,19 +3,19 @@
 import { authActionClient } from '@/actions/safe-action';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
+import { getGT } from 'gt-next/server';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { z } from 'zod';
-import { appErrors } from '../types';
+import { getAppErrors } from '../types';
 
-const schema = z.object({
+const getSchema = (t: Awaited<ReturnType<typeof getGT>>) => z.object({
   employeeId: z.string(),
-  name: z.string().min(1, 'Name is required'),
-  email: z.string().email('Invalid email address'),
+  name: z.string().min(1, t('Name is required')),
+  email: z.string().email(t('Invalid email address')),
 });
 
 export const updateEmployeeDetails = authActionClient
-  .inputSchema(schema)
   .metadata({
     name: 'update-employee-details',
     track: {
@@ -26,8 +26,21 @@ export const updateEmployeeDetails = authActionClient
   .action(
     async ({
       parsedInput,
+      ctx,
     }): Promise<{ success: true; data: any } | { success: false; error: any }> => {
-      const { employeeId, name, email } = parsedInput;
+      const t = await getGT();
+      const schema = getSchema(t);
+      const appErrors = getAppErrors(t);
+      
+      const parseResult = schema.safeParse(parsedInput);
+      if (!parseResult.success) {
+        return {
+          success: false,
+          error: parseResult.error.errors[0]?.message || t('Invalid input'),
+        };
+      }
+      
+      const { employeeId, name, email } = parseResult.data;
 
       const session = await auth.api.getSession({
         headers: await headers(),

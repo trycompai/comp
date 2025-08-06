@@ -14,6 +14,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { T, useGT } from 'gt-next';
 import { isFriendlyAvailable } from '../actions/is-friendly-available';
 import { trustPortalSwitchAction } from '../actions/trust-portal-switch';
 import { updateTrustPortalFrameworks } from '../actions/update-trust-portal-frameworks';
@@ -66,12 +67,14 @@ export function TrustPortalSwitch({
   hipaaStatus: 'started' | 'in_progress' | 'compliant';
   friendlyUrl: string | null;
 }) {
+  const t = useGT();
+
   const trustPortalSwitch = useAction(trustPortalSwitchAction, {
     onSuccess: () => {
-      toast.success('Trust portal status updated');
+      toast.success(t('Trust portal status updated'));
     },
     onError: () => {
-      toast.error('Failed to update trust portal status');
+      toast.error(t('Failed to update trust portal status'));
     },
   });
 
@@ -198,7 +201,7 @@ export function TrustPortalSwitch({
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <CardTitle className="flex items-center gap-2">
-                  Trust Portal
+                  <T>Trust Portal</T>
                   <Link
                     href={portalUrl}
                     target="_blank"
@@ -208,7 +211,7 @@ export function TrustPortalSwitch({
                   </Link>
                 </CardTitle>
                 <p className="text-muted-foreground text-sm">
-                  Create a public trust portal for your organization.
+                  <T>Create a public trust portal for your organization.</T>
                 </p>
               </div>
               <FormField
@@ -231,14 +234,14 @@ export function TrustPortalSwitch({
           <CardContent className="space-y-6 pt-0">
             {form.watch('enabled') && (
               <div className="pt-2">
-                <h3 className="mb-4 text-sm font-medium">Trust Portal Settings</h3>
+                <h3 className="mb-4 text-sm font-medium"><T>Trust Portal Settings</T></h3>
                 <div className="grid grid-cols-1 gap-x-4 lg:grid-cols-2">
                   <FormField
                     control={form.control}
                     name="friendlyUrl"
                     render={({ field }) => (
                       <FormItem className="w-full">
-                        <FormLabel>Custom URL</FormLabel>
+                        <FormLabel><T>Custom URL</T></FormLabel>
                         <FormControl>
                           <div>
                             <div className="relative flex w-full items-center">
@@ -250,7 +253,7 @@ export function TrustPortalSwitch({
                                   setFriendlyUrlValue(e.target.value);
                                 }}
                                 onBlur={handleFriendlyUrlBlur}
-                                placeholder="my-org"
+                                placeholder={t('my-org')}
                                 autoComplete="off"
                                 autoCapitalize="none"
                                 autoCorrect="off"
@@ -260,13 +263,13 @@ export function TrustPortalSwitch({
                             </div>
                             {friendlyUrlValue && (
                               <div className="mt-1 min-h-[18px] text-xs">
-                                {friendlyUrlStatus === 'checking' && 'Checking availability...'}
+                                {friendlyUrlStatus === 'checking' && t('Checking availability...')}
                                 {friendlyUrlStatus === 'available' && (
-                                  <span className="text-green-600">{'This URL is available!'}</span>
+                                  <span className="text-green-600">{t('This URL is available!')}</span>
                                 )}
                                 {friendlyUrlStatus === 'unavailable' && (
                                   <span className="text-red-600">
-                                    {'This URL is already taken.'}
+                                    {t('This URL is already taken.')}
                                   </span>
                                 )}
                               </div>
@@ -281,7 +284,7 @@ export function TrustPortalSwitch({
                     name="contactEmail"
                     render={({ field }) => (
                       <FormItem className="w-full">
-                        <FormLabel>Contact Email</FormLabel>
+                        <FormLabel><T>Contact Email</T></FormLabel>
                         <FormControl>
                           <Input
                             {...field}
@@ -291,7 +294,7 @@ export function TrustPortalSwitch({
                               setContactEmailValue(e.target.value);
                             }}
                             onBlur={handleContactEmailBlur}
-                            placeholder="contact@example.com"
+                            placeholder={t('contact@example.com')}
                             className="w-auto"
                             autoComplete="off"
                             autoCapitalize="none"
@@ -309,15 +312,15 @@ export function TrustPortalSwitch({
               <div className="">
                 {/* Compliance Frameworks Section */}
                 <div>
-                  <h3 className="mb-2 text-sm font-medium">Compliance Frameworks</h3>
+                  <h3 className="mb-2 text-sm font-medium"><T>Compliance Frameworks</T></h3>
                   <p className="text-muted-foreground mb-4 text-sm">
-                    Share the frameworks your organization is compliant with or working towards.
+                    <T>Share the frameworks your organization is compliant with or working towards.</T>
                   </p>
                   <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
                     {/* SOC 2 */}
                     <ComplianceFramework
                       title="SOC 2"
-                      description="A compliance framework focused on data security, availability, and confidentiality."
+                      description={t('A compliance framework focused on data security, availability, and confidentiality.')}
                       isEnabled={soc2}
                       status={soc2Status}
                       onStatusChange={async (value) => {
@@ -326,9 +329,9 @@ export function TrustPortalSwitch({
                             orgId,
                             soc2Status: value as 'started' | 'in_progress' | 'compliant',
                           });
-                          toast.success('SOC 2 status updated');
+                          toast.success(t('SOC 2 status updated'));
                         } catch (error) {
-                          toast.error('Failed to update SOC 2 status');
+                          toast.error(t('Failed to update SOC 2 status'));
                         }
                       }}
                       onToggle={async (checked) => {
@@ -337,16 +340,16 @@ export function TrustPortalSwitch({
                             orgId,
                             soc2: checked,
                           });
-                          toast.success('SOC 2 status updated');
+                          toast.success(t('SOC 2 status updated'));
                         } catch (error) {
-                          toast.error('Failed to update SOC 2 status');
+                          toast.error(t('Failed to update SOC 2 status'));
                         }
                       }}
                     />
                     {/* ISO 27001 */}
                     <ComplianceFramework
                       title="ISO 27001"
-                      description="An international standard for managing information security systems."
+                      description={t('An international standard for managing information security systems.')}
                       isEnabled={iso27001}
                       status={iso27001Status}
                       onStatusChange={async (value) => {
@@ -355,9 +358,9 @@ export function TrustPortalSwitch({
                             orgId,
                             iso27001Status: value as 'started' | 'in_progress' | 'compliant',
                           });
-                          toast.success('ISO 27001 status updated');
+                          toast.success(t('ISO 27001 status updated'));
                         } catch (error) {
-                          toast.error('Failed to update ISO 27001 status');
+                          toast.error(t('Failed to update ISO 27001 status'));
                         }
                       }}
                       onToggle={async (checked) => {
@@ -366,16 +369,16 @@ export function TrustPortalSwitch({
                             orgId,
                             iso27001: checked,
                           });
-                          toast.success('ISO 27001 status updated');
+                          toast.success(t('ISO 27001 status updated'));
                         } catch (error) {
-                          toast.error('Failed to update ISO 27001 status');
+                          toast.error(t('Failed to update ISO 27001 status'));
                         }
                       }}
                     />
                     {/* GDPR */}
                     <ComplianceFramework
                       title="GDPR"
-                      description="A European regulation that governs personal data protection and user privacy."
+                      description={t('A European regulation that governs personal data protection and user privacy.')}
                       isEnabled={gdpr}
                       status={gdprStatus}
                       onStatusChange={async (value) => {
@@ -384,9 +387,9 @@ export function TrustPortalSwitch({
                             orgId,
                             gdprStatus: value as 'started' | 'in_progress' | 'compliant',
                           });
-                          toast.success('GDPR status updated');
+                          toast.success(t('GDPR status updated'));
                         } catch (error) {
-                          toast.error('Failed to update GDPR status');
+                          toast.error(t('Failed to update GDPR status'));
                         }
                       }}
                       onToggle={async (checked) => {
@@ -395,16 +398,16 @@ export function TrustPortalSwitch({
                             orgId,
                             gdpr: checked,
                           });
-                          toast.success('GDPR status updated');
+                          toast.success(t('GDPR status updated'));
                         } catch (error) {
-                          toast.error('Failed to update GDPR status');
+                          toast.error(t('Failed to update GDPR status'));
                         }
                       }}
                     />
                     {/* HIPAA */}
                     <ComplianceFramework
                       title="HIPAA"
-                      description="A US regulation that protects sensitive patient health information and medical data."
+                      description={t('A US regulation that protects sensitive patient health information and medical data.')}
                       isEnabled={hipaa}
                       status={hipaaStatus}
                       onStatusChange={async (value) => {
@@ -413,9 +416,9 @@ export function TrustPortalSwitch({
                             orgId,
                             hipaaStatus: value as 'started' | 'in_progress' | 'compliant',
                           });
-                          toast.success('HIPAA status updated');
+                          toast.success(t('HIPAA status updated'));
                         } catch (error) {
-                          toast.error('Failed to update HIPAA status');
+                          toast.error(t('Failed to update HIPAA status'));
                         }
                       }}
                       onToggle={async (checked) => {
@@ -424,9 +427,9 @@ export function TrustPortalSwitch({
                             orgId,
                             hipaa: checked,
                           });
-                          toast.success('HIPAA status updated');
+                          toast.success(t('HIPAA status updated'));
                         } catch (error) {
-                          toast.error('Failed to update HIPAA status');
+                          toast.error(t('Failed to update HIPAA status'));
                         }
                       }}
                     />
@@ -457,6 +460,8 @@ function ComplianceFramework({
   onStatusChange: (value: string) => Promise<void>;
   onToggle: (checked: boolean) => Promise<void>;
 }) {
+  const t = useGT();
+
   const logo =
     title === 'SOC 2' ? (
       <div className="h-16 w-16 flex items-center justify-center">
@@ -497,32 +502,32 @@ function ComplianceFramework({
               {isEnabled ? (
                 <Select defaultValue={status} onValueChange={onStatusChange}>
                   <SelectTrigger className="min-w-[180px] text-base font-medium">
-                    <SelectValue placeholder="Select status" className="w-auto" />
+                    <SelectValue placeholder={t('Select status')} className="w-auto" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="started">
                       <span className="flex items-center gap-2">
                         <span className="inline-block h-4 w-4 rounded-sm bg-gray-300" />
-                        Started
+                        <T>Started</T>
                       </span>
                     </SelectItem>
                     <SelectItem value="in_progress">
                       <span className="flex items-center gap-2">
                         <span className="inline-block h-4 w-4 rounded-sm bg-yellow-400" />
-                        In Progress
+                        <T>In Progress</T>
                       </span>
                     </SelectItem>
                     <SelectItem value="compliant">
                       <span className="flex items-center gap-2">
                         <span className="inline-block h-4 w-4 rounded-sm bg-green-500" />
-                        Compliant
+                        <T>Compliant</T>
                       </span>
                     </SelectItem>
                   </SelectContent>
                 </Select>
               ) : (
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">Disabled</span>
+                  <span className="text-sm font-medium"><T>Disabled</T></span>
                 </div>
               )}
             </div>

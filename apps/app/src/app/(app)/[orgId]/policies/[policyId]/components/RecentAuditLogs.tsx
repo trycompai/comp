@@ -5,6 +5,7 @@ import { cn } from '@comp/ui/cn';
 import { ScrollArea } from '@comp/ui/scroll-area';
 import { AuditLog, AuditLogEntityType } from '@db';
 import { format } from 'date-fns';
+import { T, useGT } from 'gt-next';
 import {
   ActivityIcon,
   CalendarIcon,
@@ -134,7 +135,9 @@ const LogItem = ({ log }: { log: AuditLogWithRelations }) => {
 
             {logData.changes && Object.keys(logData.changes).length > 0 && (
               <div className="bg-muted/40 rounded-md p-2 text-xs">
-                <div className="mb-1 font-medium">Changes:</div>
+                <T>
+                  <div className="mb-1 font-medium">Changes:</div>
+                </T>
                 <ul className="space-y-1">
                   {Object.entries(logData.changes).map(([field, { previous, current }]) => (
                     <li key={field}>
@@ -178,11 +181,13 @@ const LogItem = ({ log }: { log: AuditLogWithRelations }) => {
   );
 };
 export const RecentAuditLogs = ({ logs }: { logs: AuditLogWithRelations[] }) => {
+  const t = useGT();
+  
   return (
     <Card className="overflow-hidden">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-md">Recent Activity</CardTitle>
+          <CardTitle className="text-md">{t('Recent Activity')}</CardTitle>
         </div>
       </CardHeader>
 
@@ -197,13 +202,15 @@ export const RecentAuditLogs = ({ logs }: { logs: AuditLogWithRelations[] }) => 
               </div>
             </div>
           ) : (
-            <div className="bg-background flex flex-col items-center justify-center py-12 px-6 text-center">
-              <ActivityIcon className="text-muted-foreground mb-2 h-8 w-8" />
-              <p className="text-sm font-medium">No recent activity</p>
-              <p className="text-muted-foreground text-xs">
-                Activity will appear here when changes are made to this policy
-              </p>
-            </div>
+            <T>
+              <div className="bg-background flex flex-col items-center justify-center py-12 px-6 text-center">
+                <ActivityIcon className="text-muted-foreground mb-2 h-8 w-8" />
+                <p className="text-sm font-medium">No recent activity</p>
+                <p className="text-muted-foreground text-xs">
+                  Activity will appear here when changes are made to this policy
+                </p>
+              </div>
+            </T>
           )}
         </ScrollArea>
       </CardContent>

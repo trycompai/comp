@@ -4,6 +4,7 @@ import { completeInvitation } from '@/actions/organization/accept-invitation';
 import { authClient } from '@/utils/auth-client';
 import { Button } from '@comp/ui/button';
 import { Icons } from '@comp/ui/icons';
+import { T, Var, useGT } from 'gt-next';
 import { Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import Link from 'next/link';
@@ -18,6 +19,7 @@ export function AcceptInvite({
   organizationName: string;
 }) {
   const router = useRouter();
+  const t = useGT();
 
   const { execute, isPending } = useAction(completeInvitation, {
     onSuccess: async (result) => {
@@ -31,7 +33,7 @@ export function AcceptInvite({
       }
     },
     onError: (error) => {
-      toast.error('Failed to accept invitation');
+      toast.error(t('Failed to accept invitation'));
     },
   });
 
@@ -48,21 +50,25 @@ export function AcceptInvite({
       </div>
 
       <div className="mb-8 space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight">You have been invited to join</h1>
-        <p className="text-xl font-medium line-clamp-1">{organizationName || 'an organization'}</p>
-        <p className="text-muted-foreground text-sm">
-          Please accept the invitation to join the organization.
-        </p>
+        <T>
+          <h1 className="text-2xl font-semibold tracking-tight">You have been invited to join</h1>
+        </T>
+        <p className="text-xl font-medium line-clamp-1">{organizationName || t('an organization')}</p>
+        <T>
+          <p className="text-muted-foreground text-sm">
+            Please accept the invitation to join the organization.
+          </p>
+        </T>
       </div>
 
       <Button onClick={handleAccept} className="w-full" disabled={isPending}>
         {isPending ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Accepting...
+            {t('Accepting...')}
           </>
         ) : (
-          'Accept Invitation'
+          t('Accept Invitation')
         )}
       </Button>
     </div>

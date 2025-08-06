@@ -6,6 +6,7 @@ import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
 import { Icons } from '@comp/ui/icons';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
+import { T, useGT } from 'gt-next';
 import {
   Blocks,
   FlaskConical,
@@ -51,12 +52,13 @@ export function MainMenu({ organizationId, isCollapsed = false, onItemClick }: P
   const [activeStyle, setActiveStyle] = useState({ top: '0px', height: '0px' });
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const isDubEnabled = env.NEXT_PUBLIC_IS_DUB_ENABLED === 'true';
+  const t = useGT();
 
   const items: MenuItem[] = [
     {
       id: 'frameworks',
       path: '/:organizationId/frameworks',
-      name: 'Frameworks',
+      name: t('Frameworks'),
       disabled: false,
       icon: Gauge,
       protected: false,
@@ -64,7 +66,7 @@ export function MainMenu({ organizationId, isCollapsed = false, onItemClick }: P
     {
       id: 'controls',
       path: '/:organizationId/controls',
-      name: 'Controls',
+      name: t('Controls'),
       disabled: false,
       icon: ShieldEllipsis,
       protected: false,
@@ -72,7 +74,7 @@ export function MainMenu({ organizationId, isCollapsed = false, onItemClick }: P
     {
       id: 'policies',
       path: '/:organizationId/policies',
-      name: 'Policies',
+      name: t('Policies'),
       disabled: false,
       icon: NotebookText,
       protected: false,
@@ -80,7 +82,7 @@ export function MainMenu({ organizationId, isCollapsed = false, onItemClick }: P
     {
       id: 'tasks',
       path: '/:organizationId/tasks',
-      name: 'Tasks',
+      name: t('Tasks'),
       disabled: false,
       icon: ListCheck,
       protected: false,
@@ -88,7 +90,7 @@ export function MainMenu({ organizationId, isCollapsed = false, onItemClick }: P
     {
       id: 'people',
       path: '/:organizationId/people/all',
-      name: 'People',
+      name: t('People'),
       disabled: false,
       icon: Users,
       protected: false,
@@ -96,7 +98,7 @@ export function MainMenu({ organizationId, isCollapsed = false, onItemClick }: P
     {
       id: 'risk',
       path: '/:organizationId/risk',
-      name: 'Risks',
+      name: t('Risks'),
       disabled: false,
       icon: Icons.Risk,
       protected: false,
@@ -104,7 +106,7 @@ export function MainMenu({ organizationId, isCollapsed = false, onItemClick }: P
     {
       id: 'vendors',
       path: '/:organizationId/vendors',
-      name: 'Vendors',
+      name: t('Vendors'),
       disabled: false,
       icon: Store,
       protected: false,
@@ -112,7 +114,7 @@ export function MainMenu({ organizationId, isCollapsed = false, onItemClick }: P
     {
       id: 'tests',
       path: '/:organizationId/tests',
-      name: 'Cloud Tests',
+      name: t('Cloud Tests'),
       disabled: false,
       icon: FlaskConical,
       protected: false,
@@ -120,12 +122,12 @@ export function MainMenu({ organizationId, isCollapsed = false, onItemClick }: P
     {
       id: 'integrations',
       path: '/:organizationId/integrations',
-      name: 'Integrations',
+      name: t('Integrations'),
       disabled: false,
       icon: Blocks,
       protected: true,
       badge: {
-        text: 'Beta',
+        text: t('Beta'),
         variant: 'secondary',
       },
     },
@@ -134,7 +136,7 @@ export function MainMenu({ organizationId, isCollapsed = false, onItemClick }: P
           {
             id: 'referrals',
             path: '/:organizationId/referrals',
-            name: 'Referrals',
+            name: t('Referrals'),
             disabled: false,
             icon: Gift,
             protected: false,
@@ -144,7 +146,7 @@ export function MainMenu({ organizationId, isCollapsed = false, onItemClick }: P
     {
       id: 'settings',
       path: '/:organizationId/settings',
-      name: 'Settings',
+      name: t('Settings'),
       disabled: false,
       icon: Icons.Settings,
       protected: true,
@@ -256,6 +258,7 @@ const Item = ({
   const Icon = item.icon;
   const linkDisabled = disabled || item.disabled;
   const itemPath = item.path.replace(':organizationId', organizationId);
+  const t = useGT();
 
   if (linkDisabled) {
     return (
@@ -273,10 +276,10 @@ const Item = ({
                 disabled
               >
                 <Icon size={16} />
-                {!isCollapsed && <span className="ml-2 truncate">Coming Soon</span>}
+                {!isCollapsed && <span className="ml-2 truncate">{t('Coming Soon')}</span>}
               </Button>
             </TooltipTrigger>
-            {isCollapsed && <TooltipContent side="right">Coming Soon</TooltipContent>}
+            {isCollapsed && <TooltipContent side="right">{t('Coming Soon')}</TooltipContent>}
           </Tooltip>
         </TooltipProvider>
       </div>

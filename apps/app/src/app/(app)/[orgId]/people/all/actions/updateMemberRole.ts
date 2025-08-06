@@ -6,6 +6,7 @@ import { z } from 'zod';
 // Adjust safe-action import for colocalized structure
 import { authActionClient } from '@/actions/safe-action';
 import type { ActionResponse } from '@/actions/types';
+import { getGT } from 'gt-next/server';
 
 // Define selectable roles constants here as well for schema consistency
 const selectableRoles = ['admin', 'auditor', 'employee'] as const satisfies Readonly<Role[]>;
@@ -50,10 +51,12 @@ export const updateMemberRole = authActionClient
   })
   .inputSchema(updateMemberRoleSchema)
   .action(async ({ parsedInput, ctx }): Promise<ActionResponse<{ updated: boolean }>> => {
+    const t = await getGT();
+    
     if (!ctx.session.activeOrganizationId) {
       return {
         success: false,
-        error: 'User does not have an organization',
+        error: t('User does not have an organization'),
       };
     }
 
@@ -74,7 +77,7 @@ export const updateMemberRole = authActionClient
       if (!isAdminOrOwner) {
         return {
           success: false,
-          error: "You don't have permission to update member roles",
+          error: t("You don't have permission to update member roles"),
         };
       }
 
@@ -86,7 +89,7 @@ export const updateMemberRole = authActionClient
       if (!targetMember) {
         return {
           success: false,
-          error: 'Member not found in this organization',
+          error: t('Member not found in this organization'),
         };
       }
 
@@ -97,7 +100,7 @@ export const updateMemberRole = authActionClient
       if (currentRoles.includes(Role.owner)) {
         return {
           success: false,
-          error: 'Cannot change roles for the organization owner.',
+          error: t('Cannot change roles for the organization owner.'),
         };
       }
 
@@ -159,7 +162,7 @@ export const updateMemberRole = authActionClient
       console.error('Error updating member role(s):', error);
       return {
         success: false,
-        error: 'Failed to update member role(s)',
+        error: t('Failed to update member role(s)'),
       };
     }
   });

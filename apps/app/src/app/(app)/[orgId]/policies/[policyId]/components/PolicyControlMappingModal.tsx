@@ -11,6 +11,7 @@ import {
 } from '@comp/ui/dialog';
 import MultipleSelector, { Option } from '@comp/ui/multiple-selector';
 import { Control } from '@db';
+import { T, useGT } from 'gt-next';
 import { PlusIcon } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -28,6 +29,7 @@ export const PolicyControlMappingModal = ({
   const mappedControlIds = new Set(mappedControls.map((c) => c.id));
   const [selectedControls, setSelectedControls] = useState<Option[]>([]);
   const { policyId } = useParams<{ policyId: string }>();
+  const t = useGT();
 
   // Filter out controls that are already mapped
   const filteredControls = allControls.filter((control) => !mappedControlIds.has(control.id));
@@ -47,11 +49,14 @@ export const PolicyControlMappingModal = ({
       });
       setOpen(false);
       toast.success(
-        `Controls ${selectedControls.map((c) => c.label)} mapped successfully to policy ${policyId}`,
+        t('Controls {controlNames} mapped successfully to policy {policyId}', { 
+          controlNames: selectedControls.map((c) => c.label).join(', '), 
+          policyId 
+        }),
       );
     } catch (error) {
       console.error(error);
-      toast.error('Failed to map controls');
+      toast.error(t('Failed to map controls'));
     }
   };
 
@@ -64,22 +69,28 @@ export const PolicyControlMappingModal = ({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Badge
-          variant="secondary"
-          className="hover:bg-secondary/80 flex h-5 cursor-pointer items-center self-end"
-          onClick={() => setOpen(true)}
-        >
-          <PlusIcon className="mr-2 h-3 w-3" />
-          Link Controls
-        </Badge>
+        <T>
+          <Badge
+            variant="secondary"
+            className="hover:bg-secondary/80 flex h-5 cursor-pointer items-center self-end"
+            onClick={() => setOpen(true)}
+          >
+            <PlusIcon className="mr-2 h-3 w-3" />
+            Link Controls
+          </Badge>
+        </T>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Link New Controls</DialogTitle>
+          <T>
+            <DialogTitle>Link New Controls</DialogTitle>
+          </T>
         </DialogHeader>
-        <DialogDescription>Select controls you want to link to this policy</DialogDescription>
+        <T>
+          <DialogDescription>Select controls you want to link to this policy</DialogDescription>
+        </T>
         <MultipleSelector
-          placeholder="Search or select controls..."
+          placeholder={t('Search or select controls...')}
           value={selectedControls}
           onChange={setSelectedControls}
           options={preparedOptions}
@@ -96,10 +107,14 @@ export const PolicyControlMappingModal = ({
           }}
         />
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleMapControls}>Map</Button>
+          <T>
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+          </T>
+          <T>
+            <Button onClick={handleMapControls}>Map</Button>
+          </T>
         </DialogFooter>
       </DialogContent>
     </Dialog>

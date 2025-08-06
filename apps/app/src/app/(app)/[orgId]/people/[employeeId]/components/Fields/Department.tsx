@@ -1,20 +1,24 @@
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import type { Departments } from '@db';
+import { T, useGT } from 'gt-next';
 import type { Control } from 'react-hook-form';
 import type { EmployeeFormValues } from '../EmployeeDetails';
 
-const DEPARTMENTS: { value: Departments; label: string }[] = [
-  { value: 'admin', label: 'Admin' },
-  { value: 'gov', label: 'Governance' },
-  { value: 'hr', label: 'HR' },
-  { value: 'it', label: 'IT' },
-  { value: 'itsm', label: 'IT Service Management' },
-  { value: 'qms', label: 'Quality Management' },
-  { value: 'none', label: 'None' },
+const getDepartments = (t: (content: string) => string): { value: Departments; label: string }[] => [
+  { value: 'admin', label: t('Admin') },
+  { value: 'gov', label: t('Governance') },
+  { value: 'hr', label: t('HR') },
+  { value: 'it', label: t('IT') },
+  { value: 'itsm', label: t('IT Service Management') },
+  { value: 'qms', label: t('Quality Management') },
+  { value: 'none', label: t('None') },
 ];
 
 export const Department = ({ control }: { control: Control<EmployeeFormValues> }) => {
+  const t = useGT();
+  const departments = getDepartments(t);
+
   return (
     <FormField
       control={control}
@@ -22,16 +26,16 @@ export const Department = ({ control }: { control: Control<EmployeeFormValues> }
       render={({ field }) => (
         <FormItem className="flex flex-col">
           <FormLabel className="text-muted-foreground text-xs font-medium uppercase">
-            Department
+            <T>Department</T>
           </FormLabel>
           <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
             <FormControl>
               <SelectTrigger className="h-10">
-                <SelectValue placeholder="Select department" />
+                <SelectValue placeholder={t('Select department')} />
               </SelectTrigger>
             </FormControl>
             <SelectContent>
-              {DEPARTMENTS.map((dept) => (
+              {departments.map((dept) => (
                 <SelectItem key={dept.value} value={dept.value}>
                   {dept.label}
                 </SelectItem>

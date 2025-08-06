@@ -4,11 +4,15 @@
 
 import { authActionClient } from '@/actions/safe-action';
 import { db } from '@db';
+import { getGT } from 'gt-next/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
-import { updateVendorSchema } from './schema';
+import { getUpdateVendorSchema } from './schema';
 
 export const updateVendorAction = authActionClient
-  .inputSchema(updateVendorSchema)
+  .inputSchema(async () => {
+    const t = await getGT();
+    return getUpdateVendorSchema(t);
+  })
   .metadata({
     name: 'update-vendor',
     track: {
@@ -19,9 +23,10 @@ export const updateVendorAction = authActionClient
   .action(async ({ parsedInput, ctx }) => {
     const { id, name, description, category, assigneeId, status } = parsedInput;
     const { session } = ctx;
+    const t = await getGT();
 
     if (!session.activeOrganizationId) {
-      throw new Error('Invalid user input');
+      throw new Error(t('Invalid user input'));
     }
 
     try {

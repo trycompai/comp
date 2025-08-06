@@ -6,13 +6,13 @@ import { formatDate } from '@/lib/format';
 import { Policy } from '@db';
 import { ColumnDef } from '@tanstack/react-table';
 
-export function getPolicyColumns(): ColumnDef<Policy>[] {
+export const getGetPolicyColumns = (t: (content: string) => string) => {
   return [
     {
       id: 'name',
       accessorKey: 'name',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Policy Name" />,
-      cell: ({ row }) => {
+      header: ({ column }: { column: any }) => <DataTableColumnHeader column={column} title={t("Policy Name")} />,
+      cell: ({ row }: { row: any }) => {
         return (
           <div className="flex items-center gap-2">
             <span className="max-w-[31.25rem] truncate font-medium">{row.getValue('name')}</span>
@@ -20,37 +20,37 @@ export function getPolicyColumns(): ColumnDef<Policy>[] {
         );
       },
       meta: {
-        label: 'Policy Name',
-        placeholder: 'Search for a policy...',
-        variant: 'text',
+        label: t('Policy Name'),
+        placeholder: t('Search for a policy...'),
+        variant: 'text' as const,
       },
       enableColumnFilter: true,
     },
     {
       id: 'status',
       accessorKey: 'status',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
-      cell: ({ row }) => {
+      header: ({ column }: { column: any }) => <DataTableColumnHeader column={column} title={t("Status")} />,
+      cell: ({ row }: { row: any }) => {
         return <StatusIndicator status={row.original.status} />;
       },
       meta: {
-        label: 'Status',
-        placeholder: 'Search status...',
-        variant: 'select',
+        label: t('Status'),
+        placeholder: t('Search status...'),
+        variant: 'select' as const,
       },
     },
     {
       id: 'updatedAt',
       accessorKey: 'updatedAt',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Last Updated" />,
-      cell: ({ row }) => {
+      header: ({ column }: { column: any }) => <DataTableColumnHeader column={column} title={t("Last Updated")} />,
+      cell: ({ row }: { row: any }) => {
         return <div className="text-muted-foreground">{formatDate(row.getValue('updatedAt'))}</div>;
       },
       meta: {
-        label: 'Last Updated',
-        placeholder: 'Search last updated...',
-        variant: 'date',
+        label: t('Last Updated'),
+        placeholder: t('Search last updated...'),
+        variant: 'date' as const,
       },
     },
   ];
-}
+};

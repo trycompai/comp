@@ -5,6 +5,7 @@ import { Card, CardContent } from '@comp/ui/card';
 import { FileText } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { T } from 'gt-next';
 
 export function NoPolicies() {
   const { orgId } = useParams<{ orgId: string }>();
@@ -13,10 +14,16 @@ export function NoPolicies() {
     <Card className="w-full">
       <CardContent className="flex flex-col items-center justify-center p-6 text-center">
         <FileText className="text-muted-foreground mb-4 h-12 w-12" />
-        <h3 className="mb-2 text-lg font-semibold">{'No policies yet'}</h3>
-        <p className="text-muted-foreground mb-6">{'Get started by creating your first policy'}</p>
+        <T>
+          <h3 className="mb-2 text-lg font-semibold">No policies yet</h3>
+        </T>
+        <T>
+          <p className="text-muted-foreground mb-6">Get started by creating your first policy</p>
+        </T>
         <Link href={`/${orgId}/policies/new`}>
-          <Button>{'Create first policy'}</Button>
+          <T>
+            <Button>Create first policy</Button>
+          </T>
         </Link>
       </CardContent>
     </Card>
@@ -28,8 +35,12 @@ export function NoResults({ hasFilters }: { hasFilters: boolean }) {
     <Card className="w-full">
       <CardContent className="flex flex-col items-center justify-center p-6 text-center">
         <FileText className="text-muted-foreground mb-4 h-12 w-12" />
-        <h3 className="mb-2 text-lg font-semibold">{'No results found'}</h3>
-        <p className="text-muted-foreground">{'Try another search, or adjusting the filters'}</p>
+        <T>
+          <h3 className="mb-2 text-lg font-semibold">No results found</h3>
+        </T>
+        <T>
+          <p className="text-muted-foreground">Try another search, or adjusting the filters</p>
+        </T>
       </CardContent>
     </Card>
   );

@@ -5,9 +5,10 @@ import { DataTableToolbar } from '@/components/data-table/data-table-toolbar';
 import { useDataTable } from '@/hooks/use-data-table';
 import { useParams } from 'next/navigation';
 import * as React from 'react';
+import { useGT } from 'gt-next';
 import { CreateVendorSheet } from '../../components/create-vendor-sheet';
 import type { GetAssigneesResult, GetVendorsResult } from '../data/queries';
-import { columns } from './VendorColumns';
+import { getColumns } from './VendorColumns'; // This requires a t function to be passed into it
 
 interface VendorsTableProps {
   promises: Promise<[GetVendorsResult, GetAssigneesResult]>;
@@ -15,12 +16,13 @@ interface VendorsTableProps {
 
 export function VendorsTable({ promises }: VendorsTableProps) {
   const { orgId } = useParams();
+  const t = useGT();
 
   // Resolve the promise data here
   const [{ data: vendors, pageCount }, assignees] = React.use(promises);
 
   // Define columns memoized
-  const memoizedColumns = React.useMemo(() => columns, []);
+  const memoizedColumns = React.useMemo(() => getColumns(t), [t]);
 
   const { table } = useDataTable({
     data: vendors,
@@ -41,7 +43,7 @@ export function VendorsTable({ promises }: VendorsTableProps) {
   return (
     <>
       <DataTable table={table} getRowId={(row) => row.id} rowClickBasePath={`/${orgId}/vendors`}>
-        <DataTableToolbar table={table} sheet="createVendorSheet" action="Add Vendor" />
+        <DataTableToolbar table={table} sheet="createVendorSheet" action={t('Add Vendor')} />
       </DataTable>
       <CreateVendorSheet assignees={assignees} />
     </>

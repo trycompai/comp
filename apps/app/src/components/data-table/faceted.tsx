@@ -15,6 +15,7 @@ import {
   CommandSeparator,
 } from '@comp/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
+import { T, Var, useGT } from 'gt-next';
 
 type FacetedValue<Multiple extends boolean> = Multiple extends true ? string[] : string;
 
@@ -122,6 +123,7 @@ interface FacetedBadgeListProps extends React.ComponentProps<'div'> {
 }
 
 function FacetedBadgeList(props: FacetedBadgeListProps) {
+  const t = useGT();
   const {
     options = [],
     max = 2,
@@ -147,7 +149,7 @@ function FacetedBadgeList(props: FacetedBadgeListProps) {
   if (!values || values.length === 0) {
     return (
       <div {...badgeListProps} className="text-muted-foreground flex w-full items-center gap-1">
-        {placeholder}
+        {t('Select options...')}
         <ChevronsUpDown className="ml-auto size-4 shrink-0 opacity-50" />
       </div>
     );
@@ -157,7 +159,7 @@ function FacetedBadgeList(props: FacetedBadgeListProps) {
     <div {...badgeListProps} className={cn('flex flex-wrap items-center gap-1', className)}>
       {values.length > max ? (
         <Badge variant="secondary" className={cn('rounded-sm px-1 font-normal', badgeClassName)}>
-          {values.length} selected
+          <T><Var>{values.length}</Var> selected</T>
         </Badge>
       ) : (
         values.map((value) => (

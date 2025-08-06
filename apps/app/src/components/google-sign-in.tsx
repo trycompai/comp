@@ -3,6 +3,7 @@
 import { authClient } from '@/utils/auth-client';
 import { Button } from '@comp/ui/button';
 import { Icons } from '@comp/ui/icons';
+import { T } from 'gt-next';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -46,10 +47,12 @@ export function GoogleSignIn({
       {isLoading ? (
         <Loader2 className="h-4 w-4 animate-spin" />
       ) : (
-        <>
-          <Icons.Google className="h-4 w-4" />
-          Continue with Google
-        </>
+        <T>
+          <>
+            <Icons.Google className="h-4 w-4" />
+            Continue with Google
+          </>
+        </T>
       )}
     </Button>
   );

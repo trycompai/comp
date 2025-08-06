@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
 import type { Organization } from '@db';
+import { T, useGT } from 'gt-next';
 import { Check, ChevronsUpDown, Loader2, Plus } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
@@ -23,6 +24,7 @@ export function MinimalOrganizationSwitcher({
   organizations,
   currentOrganization,
 }: MinimalOrganizationSwitcherProps) {
+  const t = useGT();
   const router = useRouter();
   const { execute, status } = useAction(changeOrganizationAction, {
     onSuccess: (result) => {
@@ -48,7 +50,7 @@ export function MinimalOrganizationSwitcher({
           className="h-auto p-1 text-sm font-medium"
           disabled={status === 'executing'}
         >
-          {currentOrganization?.name || 'Select Organization'}
+          {currentOrganization?.name || t('Select Organization')}
           {status === 'executing' ? (
             <Loader2 className="ml-2 h-4 w-4 animate-spin" />
           ) : (
@@ -67,10 +69,12 @@ export function MinimalOrganizationSwitcher({
         ))}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => router.push('/setup?intent=create-additional')}>
-          <div className="flex items-center">
-            <Plus className="mr-2 h-4 w-4" />
-            Create Organization
-          </div>
+          <T>
+            <div className="flex items-center">
+              <Plus className="mr-2 h-4 w-4" />
+              Create Organization
+            </div>
+          </T>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

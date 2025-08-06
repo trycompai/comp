@@ -2,6 +2,7 @@
 
 import { auth } from '@/utils/auth';
 import { db } from '@db';
+import { getGT } from 'gt-next/server';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { z } from 'zod';
@@ -32,9 +33,10 @@ export const changeOrganizationAction = authActionClient
     });
 
     if (!organizationMember) {
+      const t = await getGT();
       return {
         success: false,
-        error: 'Unauthorized',
+        error: t('Unauthorized'),
       };
     }
 
@@ -46,9 +48,10 @@ export const changeOrganizationAction = authActionClient
       });
 
       if (!organization) {
+        const t = await getGT();
         return {
           success: false,
-          error: 'Organization not found',
+          error: t('Organization not found'),
         };
       }
 
@@ -68,9 +71,10 @@ export const changeOrganizationAction = authActionClient
     } catch (error) {
       console.error('Error changing organization:', error);
 
+      const t = await getGT();
       return {
         success: false,
-        error: 'Failed to change organization',
+        error: t('Failed to change organization'),
       };
     }
   });

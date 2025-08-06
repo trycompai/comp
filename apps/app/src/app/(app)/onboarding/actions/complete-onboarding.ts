@@ -1,10 +1,11 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
-import { steps } from '@/app/(app)/setup/lib/constants';
+import { getSteps } from '@/app/(app)/setup/lib/constants'; // This requires a t function to be passed into it
 import { createFleetLabelForOrg } from '@/jobs/tasks/device/create-fleet-label-for-org';
 import { onboardOrganization as onboardOrganizationTask } from '@/jobs/tasks/onboarding/onboard-organization';
 import { db } from '@db';
+import { getGT } from 'gt-next/server';
 import { tasks } from '@trigger.dev/sdk/v3';
 import { revalidatePath } from 'next/cache';
 import { cookies, headers } from 'next/headers';
@@ -34,6 +35,7 @@ export const completeOnboarding = authActionClient
     },
   })
   .action(async ({ parsedInput, ctx }) => {
+    const t = await getGT();
     try {
       const { activeOrganizationId } = ctx.session;
 
@@ -41,7 +43,7 @@ export const completeOnboarding = authActionClient
       if (parsedInput.organizationId !== activeOrganizationId) {
         return {
           success: false,
-          error: 'Organization mismatch',
+          error: t('Organization mismatch'),
         };
       }
 
@@ -56,11 +58,12 @@ export const completeOnboarding = authActionClient
       if (!member) {
         return {
           success: false,
-          error: 'Access denied',
+          error: t('Access denied'),
         };
       }
 
       // Save the remaining steps to context
+      const steps = getSteps(t);
       const postPaymentSteps = steps.slice(3); // Steps 4-12
       await db.context.createMany({
         data: postPaymentSteps
@@ -138,7 +141,7 @@ export const completeOnboarding = authActionClient
 
       return {
         success: false,
-        error: 'Failed to complete onboarding',
+        error: t('Failed to complete onboarding'),
       };
     }
   });

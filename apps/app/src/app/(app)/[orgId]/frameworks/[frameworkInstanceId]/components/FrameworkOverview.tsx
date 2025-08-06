@@ -12,6 +12,7 @@ import {
 } from '@comp/ui/dropdown-menu';
 import { Progress } from '@comp/ui/progress';
 import { Control, Task } from '@db';
+import { T, useGT } from 'gt-next';
 import { BarChart3, MoreVertical, Target, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { getControlStatus } from '../../lib/utils';
@@ -29,6 +30,7 @@ export function FrameworkOverview({
 }: FrameworkOverviewProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const t = useGT();
 
   // Get all controls from all requirements
   const allControls = frameworkInstanceWithControls.controls;
@@ -87,7 +89,7 @@ export function FrameworkOverview({
               className="text-destructive focus:text-destructive"
             >
               <Trash2 className="mr-2 h-4 w-4" />
-              Delete Framework
+              <T>Delete Framework</T>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -100,7 +102,7 @@ export function FrameworkOverview({
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <BarChart3 className="h-4 w-4" />
-              Compliance Progress
+              <T>Compliance Progress</T>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -115,15 +117,17 @@ export function FrameworkOverview({
                   >
                     {compliancePercentage}
                   </span>
-                  <span className="text-muted-foreground text-sm">% complete</span>
+                  <span className="text-muted-foreground text-sm">
+                    <T>% complete</T>
+                  </span>
                 </div>
                 <Progress value={compliancePercentage} className="h-2" />
               </div>
             </div>
             <div className="text-muted-foreground flex items-center gap-6 text-sm">
-              <span>{compliantControls} completed</span>
-              <span>{inProgressControls} remaining</span>
-              <span>{totalControls} total</span>
+              <span>{compliantControls} <T>completed</T></span>
+              <span>{inProgressControls} <T>remaining</T></span>
+              <span>{totalControls} <T>total</T></span>
             </div>
           </CardContent>
         </Card>
@@ -133,26 +137,32 @@ export function FrameworkOverview({
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <Target className="h-4 w-4" />
-              Control Status
+              <T>Control Status</T>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center justify-between py-2">
               <div className="flex items-center gap-2">
                 <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                <span className="text-sm">Complete</span>
+                <span className="text-sm">
+                  <T>Complete</T>
+                </span>
               </div>
               <span className="font-medium tabular-nums">{compliantControls}</span>
             </div>
             <div className="flex items-center justify-between py-2">
               <div className="flex items-center gap-2">
                 <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-                <span className="text-sm">In Progress</span>
+                <span className="text-sm">
+                  <T>In Progress</T>
+                </span>
               </div>
               <span className="font-medium tabular-nums">{inProgressControls}</span>
             </div>
             <div className="flex items-center justify-between border-t py-2 pt-3">
-              <span className="text-sm font-medium">Total</span>
+              <span className="text-sm font-medium">
+                <T>Total</T>
+              </span>
               <span className="font-semibold tabular-nums">{totalControls}</span>
             </div>
           </CardContent>

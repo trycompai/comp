@@ -4,10 +4,14 @@ import { Cookies } from '@/utils/constants';
 import { addYears } from 'date-fns';
 import { cookies } from 'next/headers';
 import { authActionClient } from './safe-action';
-import { updaterMenuSchema } from './schema';
+import { getUpdaterMenuSchema } from './schema';
+import { getGT } from 'gt-next/server';
 
 export const updateMenuAction = authActionClient
-  .inputSchema(updaterMenuSchema)
+  .inputSchema(async () => {
+    const t = await getGT();
+    return getUpdaterMenuSchema(t);
+  })
   .metadata({
     name: 'update-menu',
   })

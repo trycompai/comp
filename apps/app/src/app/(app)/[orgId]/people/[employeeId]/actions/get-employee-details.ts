@@ -3,8 +3,9 @@
 import { authActionClient } from '@/actions/safe-action';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
+import { getGT } from 'gt-next/server';
 import { headers } from 'next/headers';
-import { type AppError, appErrors, employeeDetailsInputSchema } from '../types';
+import { type AppError, getAppErrors, employeeDetailsInputSchema } from '../types';
 
 // Type-safe action response
 export type ActionResponse<T> = Promise<
@@ -28,9 +29,11 @@ export const getEmployeeDetails = authActionClient
     });
 
     const organizationId = session?.session.activeOrganizationId;
+    const t = await getGT();
+    const appErrors = getAppErrors(t);
 
     if (!organizationId) {
-      throw new Error('Organization ID not found');
+      throw new Error(t('Organization ID not found'));
     }
 
     try {

@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@comp/ui/switch';
 import { Departments, Frequency, Member, type Policy, PolicyStatus, User } from '@db';
 import { format } from 'date-fns';
+import { T, useGT } from 'gt-next';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
@@ -32,6 +33,7 @@ export function UpdatePolicyOverview({
   assignees,
   isPendingApproval,
 }: UpdatePolicyOverviewProps) {
+  const t = useGT();
   // Dialog state only - no form state
   const [isApprovalDialogOpen, setIsApprovalDialogOpen] = useState(false);
   const [selectedApproverId, setSelectedApproverId] = useState<string | null>(null);
@@ -58,20 +60,20 @@ export function UpdatePolicyOverview({
 
   const updatePolicyForm = useAction(updatePolicyFormAction, {
     onSuccess: () => {
-      toast.success('Policy updated successfully');
+      toast.success(t('Policy updated successfully'));
       setIsSubmitting(false);
       setFormInteracted(false); // Reset form interaction state after successful update
       router.refresh();
     },
     onError: () => {
-      toast.error('Failed to update policy');
+      toast.error(t('Failed to update policy'));
       setIsSubmitting(false);
     },
   });
 
   const submitForApproval = useAction(submitPolicyForApprovalAction, {
     onSuccess: () => {
-      toast.success('Policy submitted for approval successfully!');
+      toast.success(t('Policy submitted for approval successfully!'));
       setIsSubmitting(false);
       setIsApprovalDialogOpen(false);
       setFormInteracted(false); // Reset form interaction state after successful submission
@@ -79,7 +81,7 @@ export function UpdatePolicyOverview({
       router.refresh();
     },
     onError: () => {
-      toast.error('Failed to submit policy for approval.');
+      toast.error(t('Failed to submit policy for approval.'));
       setIsSubmitting(false);
     },
   });
@@ -143,7 +145,7 @@ export function UpdatePolicyOverview({
 
   const handleConfirmApproval = () => {
     if (!selectedApproverId) {
-      toast.error('Approver is required.');
+      toast.error(t('Approver is required.'));
       return;
     }
 
@@ -178,12 +180,12 @@ export function UpdatePolicyOverview({
   const hasFormChanges = formInteracted;
 
   // Determine button text based on status and form interaction
-  let buttonText = 'Save';
+  let buttonText = t('Save');
   if (
     (policy.status === 'draft' && selectedStatus === 'published') ||
     (policy.status === 'published' && hasFormChanges)
   ) {
-    buttonText = 'Submit for Approval';
+    buttonText = t('Submit for Approval');
   }
 
   return (
@@ -193,7 +195,7 @@ export function UpdatePolicyOverview({
           {/* Status Field */}
           <div className="space-y-2">
             <label htmlFor="status" className="text-sm font-medium">
-              Status
+              {t('Status')}
             </label>
             {/* Hidden input for form submission */}
             <input type="hidden" name="status" id="status" value={selectedStatus} />
@@ -206,7 +208,7 @@ export function UpdatePolicyOverview({
               }}
             >
               <SelectTrigger value={selectedStatus}>
-                <SelectValue placeholder="Select status">
+                <SelectValue placeholder={t('Select status')}>
                   <StatusIndicator status={selectedStatus} />
                 </SelectValue>
               </SelectTrigger>
@@ -223,7 +225,7 @@ export function UpdatePolicyOverview({
           {/* Review Frequency Field */}
           <div className="space-y-2">
             <label htmlFor="review_frequency" className="text-sm font-medium">
-              Review Frequency
+              {t('Review Frequency')}
             </label>
             <Select
               name="review_frequency"
@@ -232,7 +234,7 @@ export function UpdatePolicyOverview({
               onValueChange={handleFormChange}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select review frequency" />
+                <SelectValue placeholder={t('Select review frequency')} />
               </SelectTrigger>
               <SelectContent>
                 {Object.values(Frequency).map((frequency) => (
@@ -247,7 +249,7 @@ export function UpdatePolicyOverview({
           {/* Department Field */}
           <div className="space-y-2">
             <label htmlFor="department" className="text-sm font-medium">
-              Department
+              {t('Department')}
             </label>
             <Select
               name="department"
@@ -256,7 +258,7 @@ export function UpdatePolicyOverview({
               onValueChange={handleFormChange}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select department" />
+                <SelectValue placeholder={t('Select department')} />
               </SelectTrigger>
               <SelectContent>
                 {Object.values(Departments).map((dept) => {
@@ -274,7 +276,7 @@ export function UpdatePolicyOverview({
           {/* Assignee Field */}
           <div className="space-y-2">
             <label htmlFor="assigneeId" className="text-sm font-medium">
-              Assignee
+              {t('Assignee')}
             </label>
             <SelectAssignee
               assignees={assignees}
@@ -291,7 +293,7 @@ export function UpdatePolicyOverview({
           {/* Review Date Field */}
           <div className="mt-2 space-y-2">
             <label htmlFor="review_date" className="text-sm font-medium">
-              Review Date
+              {t('Review Date')}
             </label>
             <Popover
               open={isDatePickerOpen}
@@ -321,7 +323,7 @@ export function UpdatePolicyOverview({
                     ) : policy.reviewDate ? (
                       format(new Date(policy.reviewDate), 'PPP')
                     ) : (
-                      <span>Select review date</span>
+                      <span>{t('Select review date')}</span>
                     )}
                     <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                   </Button>
@@ -350,10 +352,10 @@ export function UpdatePolicyOverview({
                         setIsDatePickerOpen(false);
                       }}
                     >
-                      Cancel
+                      {t('Cancel')}
                     </Button>
                     <Button type="button" size="sm" onClick={() => handleDateConfirm(tempDate)}>
-                      Confirm Date
+                      {t('Confirm Date')}
                     </Button>
                   </div>
                 </div>
@@ -376,7 +378,7 @@ export function UpdatePolicyOverview({
           {/* Required to Sign Field */}
           <div className="mt-2 flex flex-col gap-2">
             <label htmlFor="isRequiredToSign" className="text-sm font-medium">
-              Employee Signature Requirement
+              {t('Employee Signature Requirement')}
             </label>
             <div className="mt-4 flex items-center space-x-2">
               <Switch
@@ -387,7 +389,7 @@ export function UpdatePolicyOverview({
                 onCheckedChange={handleFormChange}
               />
               <span className="text-sm text-gray-500">
-                {policy.isRequiredToSign ? 'Required' : 'Not Required'}
+                {policy.isRequiredToSign ? t('Required') : t('Not Required')}
               </span>
             </div>
           </div>

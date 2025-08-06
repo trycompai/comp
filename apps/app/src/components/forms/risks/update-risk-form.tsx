@@ -1,13 +1,15 @@
 'use client';
 
+import React from 'react';
 import { updateRiskAction } from '@/actions/risk/update-risk-action';
-import { updateRiskSchema } from '@/actions/schema';
+import { getUpdateRiskSchema } from '@/actions/schema';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
 import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Input } from '@comp/ui/input';
 import { Textarea } from '@comp/ui/textarea';
 import { Departments, type Risk } from '@db';
+import { useGT } from 'gt-next';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
@@ -17,15 +19,17 @@ import { toast } from 'sonner';
 import type { z } from 'zod';
 
 export function UpdateRiskForm({ risk }: { risk: Risk }) {
+  const t = useGT();
+  const updateRiskSchema = React.useMemo(() => getUpdateRiskSchema(t), [t]);
   const [open, setOpen] = useQueryState('risk-overview-sheet');
 
   const updateRisk = useAction(updateRiskAction, {
     onSuccess: () => {
-      toast.success('Risk updated successfully');
+      toast.success(t('Risk updated successfully'));
       setOpen(null);
     },
     onError: () => {
-      toast.error('Failed to update risk');
+      toast.error(t('Failed to update risk'));
     },
   });
 
@@ -42,7 +46,7 @@ export function UpdateRiskForm({ risk }: { risk: Risk }) {
     },
   });
 
-  const onSubmit = (data: z.infer<typeof updateRiskSchema>) => {
+  const onSubmit = (data: z.infer<ReturnType<typeof getUpdateRiskSchema>>) => {
     updateRisk.execute({
       id: data.id,
       title: data.title,
@@ -59,7 +63,7 @@ export function UpdateRiskForm({ risk }: { risk: Risk }) {
       <div className="scrollbar-hide h-[calc(100vh-250px)] overflow-auto">
         <Accordion type="multiple" defaultValue={['risk']}>
           <AccordionItem value="risk">
-            <AccordionTrigger>{'Risk'}</AccordionTrigger>
+            <AccordionTrigger>{t('Risk')}</AccordionTrigger>
             <AccordionContent>
               <form onSubmit={form.handleSubmit(onSubmit)}>
                 <div className="space-y-4">
@@ -68,13 +72,13 @@ export function UpdateRiskForm({ risk }: { risk: Risk }) {
                     name="title"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{'Risk Title'}</FormLabel>
+                        <FormLabel>{t('Risk Title')}</FormLabel>
                         <FormControl>
                           <Input
                             {...field}
                             autoFocus
                             className="mt-3"
-                            placeholder={'A short, descriptive title for the risk.'}
+                            placeholder={t('A short, descriptive title for the risk.')}
                             autoCorrect="off"
                           />
                         </FormControl>
@@ -87,13 +91,13 @@ export function UpdateRiskForm({ risk }: { risk: Risk }) {
                     name="description"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Description</FormLabel>
+                        <FormLabel>{t('Description')}</FormLabel>
                         <FormControl>
                           <Textarea
                             {...field}
                             className="mt-3 min-h-[80px]"
                             placeholder={
-                              'A detailed description of the risk, its potential impact, and its causes.'
+                              t('A detailed description of the risk, its potential impact, and its causes.')
                             }
                           />
                         </FormControl>
@@ -111,7 +115,7 @@ export function UpdateRiskForm({ risk }: { risk: Risk }) {
                     {updateRisk.status === 'executing' ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      'Save'
+                      t('Save')
                     )}
                   </Button>
                 </div>

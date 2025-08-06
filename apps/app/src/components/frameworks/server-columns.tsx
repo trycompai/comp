@@ -1,7 +1,10 @@
+import { getGT } from 'gt-next/server';
+
 export async function getServerColumnHeaders() {
+  const t = await getGT();
   return {
-    name: 'Control',
-    status: 'Status',
-    artifacts: 'Artifacts',
+    name: t('Control'),
+    status: t('Status'),
+    artifacts: t('Artifacts'),
   };
 }

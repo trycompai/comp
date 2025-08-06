@@ -3,14 +3,15 @@ import { db } from '@db';
 import { headers } from 'next/headers';
 import { z } from 'zod';
 
-export function getPolicyTools() {
+export function getPolicyTools(t: (content: string) => string) {
   return {
-    getPolicies,
+    getPolicies: getGetPolicies(t),
     getPolicyContent,
   };
 }
 
-export const getPolicies = {
+export const getGetPolicies = (t: (content: string) => string) => {
+  return {
   description: 'Get all policies for the organization',
   inputSchema: z.object({
     status: z.enum(['draft', 'published']).optional(),
@@ -48,6 +49,7 @@ export const getPolicies = {
       policies,
     };
   },
+};
 };
 
 export const getPolicyContent = {

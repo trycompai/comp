@@ -2,11 +2,15 @@
 
 import { db, PolicyStatus } from '@db';
 import { revalidatePath } from 'next/cache';
+import { getGT } from 'gt-next/server';
 import { authActionClient } from '../safe-action';
-import { updatePolicyFormSchema } from '../schema';
+import { getUpdatePolicyFormSchema } from '../schema';
 
 export const submitPolicyForApprovalAction = authActionClient
-  .inputSchema(updatePolicyFormSchema)
+  .inputSchema(async () => {
+    const t = await getGT();
+    return getUpdatePolicyFormSchema(t);
+  })
   .metadata({
     name: 'submit-policy-for-approval',
     track: {
@@ -16,6 +20,7 @@ export const submitPolicyForApprovalAction = authActionClient
     },
   })
   .action(async ({ parsedInput, ctx }) => {
+    const t = await getGT();
     const {
       id,
       assigneeId,
@@ -28,11 +33,11 @@ export const submitPolicyForApprovalAction = authActionClient
     const { user, session } = ctx;
 
     if (!user.id || !session.activeOrganizationId) {
-      throw new Error('Unauthorized');
+      throw new Error(t('Unauthorized'));
     }
 
     if (!approverId) {
-      throw new Error('Approver is required');
+      throw new Error(t('Approver is required'));
     }
 
     try {

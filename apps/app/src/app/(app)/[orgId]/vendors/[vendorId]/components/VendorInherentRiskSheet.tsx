@@ -7,6 +7,7 @@ import { useMediaQuery } from '@comp/ui/hooks';
 import { ScrollArea } from '@comp/ui/scroll-area';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@comp/ui/sheet';
 import { Impact, Likelihood } from '@db';
+import { T } from 'gt-next';
 import { X } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 
@@ -28,7 +29,9 @@ export function VendorInherentRiskSheet({
         <SheetContent stack>
           <SheetHeader className="mb-8">
             <div className="flex flex-row items-center justify-between">
-              <SheetTitle>{'Update Inherent Risk'}</SheetTitle>
+              <T>
+                <SheetTitle>Update Inherent Risk</SheetTitle>
+              </T>
               <Button
                 size="icon"
                 variant="ghost"
@@ -38,7 +41,9 @@ export function VendorInherentRiskSheet({
                 <X className="h-5 w-5" />
               </Button>
             </div>
-            <SheetDescription>{'Select the inherent risk level for this vendor'}</SheetDescription>
+            <T>
+              <SheetDescription>Select the inherent risk level for this vendor</SheetDescription>
+            </T>
           </SheetHeader>
 
           <ScrollArea className="h-full p-0 pb-[100px]" hideScrollbar>
@@ -55,7 +60,9 @@ export function VendorInherentRiskSheet({
 
   return (
     <Drawer open={isOpen === 'true'} onOpenChange={(value) => setOpen(value ? 'true' : null)}>
-      <DrawerTitle hidden>{'Update Inherent Risk'}</DrawerTitle>
+      <T>
+        <DrawerTitle hidden>Update Inherent Risk</DrawerTitle>
+      </T>
       <DrawerContent className="p-6">
         <InherentRiskForm
           vendorId={vendorId}

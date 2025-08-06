@@ -6,6 +6,7 @@ import * as React from 'react';
 import { Dialog, DialogContent } from '@comp/ui/dialog';
 import { MultiRoleComboboxContent } from './MultiRoleComboboxContent';
 import { MultiRoleComboboxTrigger } from './MultiRoleComboboxTrigger';
+import { useGT } from 'gt-next';
 
 // Define the selectable roles explicitly (exclude owner)
 const selectableRoles: {
@@ -52,6 +53,7 @@ export function MultiRoleCombobox({
 }: MultiRoleComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState('');
+  const t = useGT();
 
   // Process selected roles to handle comma-separated values
   const selectedRoles = React.useMemo(() => {
@@ -88,32 +90,32 @@ export function MultiRoleCombobox({
   const getRoleLabel = (roleValue: Role) => {
     switch (roleValue) {
       case 'owner':
-        return 'Owner';
+        return t('Owner');
       case 'admin':
-        return 'Admin';
+        return t('Admin');
       case 'auditor':
-        return 'Auditor';
+        return t('Auditor');
       case 'employee':
-        return 'Employee';
+        return t('Employee');
       default:
         return roleValue;
     }
   };
 
   const triggerText =
-    selectedRoles.length > 0 ? `${selectedRoles.length} selected` : placeholder || 'Select role(s)';
+    selectedRoles.length > 0 ? t('{count} selected', { count: selectedRoles.length }) : placeholder || t('Select role(s)');
 
   const filteredRoles = availableRoles.filter((role) => {
     const label = (() => {
       switch (role.value) {
         case 'admin':
-          return 'Admin';
+          return t('Admin');
         case 'auditor':
-          return 'Auditor';
+          return t('Auditor');
         case 'employee':
-          return 'Employee';
+          return t('Employee');
         case 'owner':
-          return 'Owner';
+          return t('Owner');
         default:
           return role.value;
       }

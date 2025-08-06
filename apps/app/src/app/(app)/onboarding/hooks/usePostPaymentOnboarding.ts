@@ -2,10 +2,11 @@
 
 import type { OnboardingFormFields } from '@/app/(app)/setup/components/OnboardingStepInput';
 import { useLocalStorage } from '@/app/(app)/setup/hooks/useLocalStorage';
-import { companyDetailsSchema, steps } from '@/app/(app)/setup/lib/constants';
+import { getCompanyDetailsSchema, getSteps } from '@/app/(app)/setup/lib/constants';
 import type { CompanyDetails } from '@/app/(app)/setup/lib/types';
 import { trackEvent, trackOnboardingEvent } from '@/utils/tracking';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useGT } from 'gt-next';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -20,15 +21,18 @@ interface UsePostPaymentOnboardingProps {
   initialData?: Record<string, any>;
 }
 
-// Use steps 4-12 (post-payment steps)
-const postPaymentSteps = steps.slice(3);
-
 export function usePostPaymentOnboarding({
   organizationId,
   organizationName,
   initialData = {},
 }: UsePostPaymentOnboardingProps) {
   const router = useRouter();
+  const t = useGT();
+  const companyDetailsSchema = getCompanyDetailsSchema(t);
+
+  // Use steps 4-12 (post-payment steps)
+  const steps = getSteps(t);
+  const postPaymentSteps = steps.slice(3);
 
   // Create storage keys specific to this organization
   const storageKey = `onboarding-progress-${organizationId}`;
@@ -52,7 +56,7 @@ export function usePostPaymentOnboarding({
   useEffect(() => {
     // Use saved step index, but also verify it makes sense
     // (e.g., don't jump to step 7 if steps 4-6 aren't answered)
-    const firstUnansweredIndex = postPaymentSteps.findIndex((step) => !savedAnswers[step.key]);
+    const firstUnansweredIndex = postPaymentSteps.findIndex((step) => !(savedAnswers as any)[step.key]);
 
     // Use the saved step index if it's valid, otherwise use first unanswered
     const initialStep =
@@ -68,18 +72,18 @@ export function usePostPaymentOnboarding({
 
   const step = postPaymentSteps[stepIndex];
   const stepSchema = z.object({
-    [step.key]: companyDetailsSchema.shape[step.key],
+    [step.key]: companyDetailsSchema.shape[step.key as keyof CompanyDetails],
   });
 
   const form = useForm<OnboardingFormFields>({
     resolver: zodResolver(stepSchema),
     mode: 'onSubmit',
-    defaultValues: { [step.key]: savedAnswers[step.key] || '' },
+    defaultValues: { [step.key]: (savedAnswers as any)[step.key] || '' },
   });
 
   // Reset form when step changes
   useEffect(() => {
-    form.reset({ [step.key]: savedAnswers[step.key] || '' });
+    form.reset({ [step.key]: (savedAnswers as any)[step.key] || '' });
   }, [savedAnswers, step.key, form]);
 
   // Track onboarding start
@@ -111,13 +115,13 @@ export function usePostPaymentOnboarding({
         // Redirect to the organization dashboard
         router.push(data.redirectUrl);
       } else {
-        toast.error('Failed to complete onboarding');
+        toast.error(t('Failed to complete onboarding'));
         setIsFinalizing(false);
         setIsOnboarding(false);
       }
     },
     onError: () => {
-      toast.error('Failed to complete onboarding');
+      toast.error(t('Failed to complete onboarding'));
       setIsFinalizing(false);
       setIsOnboarding(false);
     },
@@ -147,17 +151,17 @@ export function usePostPaymentOnboarding({
     // Handle multi-select fields with "Other" option
     for (const key of Object.keys(newAnswers)) {
       if (step.options && step.key === key && key !== 'frameworkIds') {
-        const customValue = newAnswers[`${key}Other`] || '';
-        const values = (newAnswers[key] || '').split(',').filter(Boolean);
+        const customValue = (newAnswers as any)[`${key}Other`] || '';
+        const values = ((newAnswers as any)[key] || '').split(',').filter(Boolean);
 
         if (customValue) {
           values.push(customValue);
         }
 
-        newAnswers[key] = values
+        (newAnswers as any)[key] = values
           .filter((v: string, i: number, arr: string[]) => arr.indexOf(v) === i && v !== '')
           .join(',');
-        delete newAnswers[`${key}Other`];
+        delete (newAnswers as any)[`${key}Other`];
       }
     }
 
@@ -168,7 +172,7 @@ export function usePostPaymentOnboarding({
 
     // Track step completion
     trackOnboardingEvent(step.key, stepIndex + 1, {
-      step_value: data[step.key],
+      step_value: (data as any)[step.key],
       phase: 'post_payment',
     });
 
@@ -185,8 +189,8 @@ export function usePostPaymentOnboarding({
     if (stepIndex > 0) {
       // Save current form values before going back
       const currentValues = form.getValues();
-      if (currentValues[step.key]) {
-        setSavedAnswers({ ...savedAnswers, [step.key]: currentValues[step.key], organizationName });
+      if ((currentValues as any)[step.key]) {
+        setSavedAnswers({ ...savedAnswers, [step.key]: (currentValues as any)[step.key], organizationName });
       }
 
       // Clear form errors

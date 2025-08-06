@@ -5,10 +5,14 @@
 import { authActionClient } from '@/actions/safe-action';
 import { db } from '@db';
 import { revalidatePath, revalidateTag } from 'next/cache';
-import { createVendorTaskSchema } from '../schema';
+import { getCreateVendorTaskSchema } from '../schema';
+import { getGT } from 'gt-next/server';
 
 export const createVendorTaskAction = authActionClient
-  .inputSchema(createVendorTaskSchema)
+  .inputSchema(async () => {
+    const t = await getGT();
+    return getCreateVendorTaskSchema(t);
+  })
   .metadata({
     name: 'create-vendor-task',
     track: {

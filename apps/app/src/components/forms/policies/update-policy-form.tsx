@@ -1,7 +1,8 @@
 'use client';
 
+import React from 'react';
 import { updatePolicyOverviewAction } from '@/actions/policies/update-policy-overview-action';
-import { updatePolicyOverviewSchema } from '@/actions/schema';
+import { getUpdatePolicyOverviewSchema } from '@/actions/schema';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
 import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
@@ -9,6 +10,7 @@ import { Input } from '@comp/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Textarea } from '@comp/ui/textarea';
 import { Policy } from '@db';
+import { T, useGT } from 'gt-next';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
@@ -19,14 +21,16 @@ import type { z } from 'zod';
 
 export function UpdatePolicyForm({ policy }: { policy: Policy }) {
   const [open, setOpen] = useQueryState('policy-overview-sheet');
+  const t = useGT();
+  const updatePolicyOverviewSchema = React.useMemo(() => getUpdatePolicyOverviewSchema(t), [t]);
 
   const updatePolicy = useAction(updatePolicyOverviewAction, {
     onSuccess: () => {
-      toast.success('Policy updated successfully');
+      toast.success(t('Policy updated successfully'));
       setOpen(null);
     },
     onError: () => {
-      toast.error('Failed to update policy');
+      toast.error(t('Failed to update policy'));
     },
   });
 
@@ -41,7 +45,7 @@ export function UpdatePolicyForm({ policy }: { policy: Policy }) {
     },
   });
 
-  const onSubmit = (data: z.infer<typeof updatePolicyOverviewSchema>) => {
+  const onSubmit = (data: z.infer<ReturnType<typeof getUpdatePolicyOverviewSchema>>) => {
     console.log(data);
     updatePolicy.execute({
       id: data.id,
@@ -57,7 +61,9 @@ export function UpdatePolicyForm({ policy }: { policy: Policy }) {
       <div className="scrollbar-hide h-[calc(100vh-250px)] overflow-auto">
         <Accordion type="multiple" defaultValue={['policy']}>
           <AccordionItem value="policy">
-            <AccordionTrigger>{'Policy'}</AccordionTrigger>
+            <T>
+              <AccordionTrigger>Policy</AccordionTrigger>
+            </T>
             <AccordionContent>
               <form onSubmit={form.handleSubmit(onSubmit)}>
                 <div className="space-y-4">
@@ -66,13 +72,15 @@ export function UpdatePolicyForm({ policy }: { policy: Policy }) {
                     name="title"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{'Policy Title'}</FormLabel>
+                        <T>
+                          <FormLabel>Policy Title</FormLabel>
+                        </T>
                         <FormControl>
                           <Input
                             {...field}
                             autoFocus
                             className="mt-3"
-                            placeholder={'Policy Title'}
+                            placeholder={t('Policy Title')}
                             autoCorrect="off"
                           />
                         </FormControl>
@@ -85,12 +93,14 @@ export function UpdatePolicyForm({ policy }: { policy: Policy }) {
                     name="description"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Description</FormLabel>
+                        <T>
+                          <FormLabel>Description</FormLabel>
+                        </T>
                         <FormControl>
                           <Textarea
                             {...field}
                             className="mt-3 min-h-[80px]"
-                            placeholder={"A brief summary of the policy's purpose."}
+                            placeholder={t("A brief summary of the policy's purpose.")}
                           />
                         </FormControl>
                         <FormMessage />
@@ -102,16 +112,22 @@ export function UpdatePolicyForm({ policy }: { policy: Policy }) {
                     name="isRequiredToSign"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{'Signature Requirement'}</FormLabel>
+                        <T>
+                          <FormLabel>Signature Requirement</FormLabel>
+                        </T>
                         <FormControl>
                           <div className="mt-3">
                             <Select value={field.value} onValueChange={field.onChange}>
                               <SelectTrigger>
-                                <SelectValue placeholder={'Select signature requirement'} />
+                                <SelectValue placeholder={t('Select signature requirement')} />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="required">{'Required'}</SelectItem>
-                                <SelectItem value="not_required">{'Not Required'}</SelectItem>
+                                <T>
+                                  <SelectItem value="required">Required</SelectItem>
+                                </T>
+                                <T>
+                                  <SelectItem value="not_required">Not Required</SelectItem>
+                                </T>
                               </SelectContent>
                             </Select>
                           </div>
@@ -129,7 +145,7 @@ export function UpdatePolicyForm({ policy }: { policy: Policy }) {
                     {updatePolicy.status === 'executing' ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      'Save'
+                      <T>Save</T>
                     )}
                   </Button>
                 </div>

@@ -20,14 +20,14 @@ export type PolicyType = {
   updatedAt: string;
 };
 
-export function useColumns(): ColumnDef<PolicyType>[] {
+export const getUseColumns = (t: (content: string) => string) => {
   const { orgId } = useParams<{ orgId: string }>();
 
   return [
     {
       id: 'name',
       accessorKey: 'policy.name',
-      cell: ({ row }) => {
+      cell: ({ row }: { row: any }) => {
         const name = row.original.policy.name;
         const id = row.original.id;
         const status = row.original.status;
@@ -49,7 +49,7 @@ export function useColumns(): ColumnDef<PolicyType>[] {
     {
       id: 'status',
       accessorKey: 'status',
-      cell: ({ row }) => {
+      cell: ({ row }: { row: any }) => {
         const status = row.original.status;
 
         return (
@@ -62,11 +62,11 @@ export function useColumns(): ColumnDef<PolicyType>[] {
     {
       id: 'updatedAt',
       accessorKey: 'updatedAt',
-      cell: ({ row }) => {
+      cell: ({ row }: { row: any }) => {
         const date = row.original.updatedAt;
 
         return <div className="text-muted-foreground">{formatDate(date, 'MMM d, yyyy')}</div>;
       },
     },
   ];
-}
+};

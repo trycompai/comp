@@ -1,22 +1,22 @@
-export const PRICING_FEATURES = {
+export const getPricingFeatures = (t: (content: string) => string) => ({
   starter: [
-    'Access to all frameworks',
-    'Trust & Security Portal',
-    'AI Vendor Management',
-    'AI Risk Management',
-    'Unlimited team members',
-    'API access',
-    'Community Support',
+    t('Access to all frameworks'),
+    t('Trust & Security Portal'),
+    t('AI Vendor Management'),
+    t('AI Risk Management'),
+    t('Unlimited team members'),
+    t('API access'),
+    t('Community Support'),
   ],
   managed: [
-    'Any Framework',
-    '3rd Party Audit Included',
-    'Compliant in 14 Days or Less',
-    'Dedicated Success Team',
-    '24x7x365 Support & SLA',
-    'Slack Channel with Comp AI',
+    t('Any Framework'),
+    t('3rd Party Audit Included'),
+    t('Compliant in 14 Days or Less'),
+    t('Dedicated Success Team'),
+    t('24x7x365 Support & SLA'),
+    t('Slack Channel with Comp AI'),
   ],
-} as const;
+});
 
 export const PRICING_DEFAULTS = {
   starter: {

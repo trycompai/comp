@@ -6,6 +6,7 @@ import { Alert, AlertDescription, AlertTitle } from '@comp/ui/alert';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import type { Task, User } from '@db';
+import { T } from 'gt-next';
 import { PencilIcon, ShieldAlert } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 
@@ -35,7 +36,9 @@ export function TaskOverview({ task, users }: { task: Task; users: User[] }) {
       <Card>
         <CardHeader>
           <CardTitle>
-            <div className="flex items-center justify-between gap-2">{'Overview'}</div>
+            <div className="flex items-center justify-between gap-2">
+              <T>Overview</T>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>

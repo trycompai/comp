@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { MiniDataStream } from './mini-data-stream';
+import { T, useGT } from 'gt-next';
 
 interface WorkItem {
   id: string;
@@ -25,43 +26,43 @@ interface WorkItem {
   subtitle?: string;
 }
 
-const WORK_ITEMS: WorkItem[] = [
+const getWorkItems = (t: (content: string) => string): WorkItem[] => [
   {
     id: '1',
-    title: 'Analyzing your tech stack',
-    subtitle: 'AWS, GitHub, Stripe detected',
+    title: t('Analyzing your tech stack'),
+    subtitle: t('AWS, GitHub, Stripe detected'),
     type: 'evidence',
     status: 'waiting' as const,
     progress: 0,
   },
   {
     id: '2',
-    title: 'Researching vendor compliance',
-    subtitle: 'Checking SOC 2 & security certifications',
+    title: t('Researching vendor compliance'),
+    subtitle: t('Checking SOC 2 & security certifications'),
     type: 'vendor',
     status: 'waiting' as const,
     progress: 0,
   },
   {
     id: '3',
-    title: 'Drafting security policies',
-    subtitle: 'Based on your infrastructure',
+    title: t('Drafting security policies'),
+    subtitle: t('Based on your infrastructure'),
     type: 'policy',
     status: 'waiting' as const,
     progress: 0,
   },
   {
     id: '4',
-    title: 'Identifying compliance risks',
-    subtitle: 'Scanning for gaps and vulnerabilities',
+    title: t('Identifying compliance risks'),
+    subtitle: t('Scanning for gaps and vulnerabilities'),
     type: 'risk',
     status: 'waiting' as const,
     progress: 0,
   },
   {
     id: '5',
-    title: 'Setting up monitoring',
-    subtitle: 'Continuous compliance tracking',
+    title: t('Setting up monitoring'),
+    subtitle: t('Continuous compliance tracking'),
     type: 'control',
     status: 'waiting' as const,
     progress: 0,
@@ -104,7 +105,8 @@ const getIcon = (type: WorkItem['type']) => {
 };
 
 export function AiWorkPreviewAuthentic() {
-  const [workItems, setWorkItems] = useState<WorkItem[]>(WORK_ITEMS);
+  const t = useGT();
+  const [workItems, setWorkItems] = useState<WorkItem[]>(getWorkItems(t));
   const [overallProgress, setOverallProgress] = useState(0);
 
   useEffect(() => {
@@ -186,38 +188,49 @@ export function AiWorkPreviewAuthentic() {
           )}
         </div>
         <div className="flex-1">
-          <h2 className="text-2xl font-semibold">AI is building your compliance program</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            This process typically takes 2-7 minutes to complete
-          </p>
-          <p className="text-xs text-muted-foreground/70 mt-1">
-            We're thoroughly analyzing your infrastructure to create accurate, personalized policies
-          </p>
+          <T>
+            <h2 className="text-2xl font-semibold">AI is building your compliance program</h2>
+          </T>
+          <T>
+            <p className="text-sm text-muted-foreground mt-1">
+              This process typically takes 2-7 minutes to complete
+            </p>
+          </T>
+          <T>
+            <p className="text-xs text-muted-foreground/70 mt-1">
+              We're thoroughly analyzing your infrastructure to create accurate, personalized policies
+            </p>
+          </T>
         </div>
       </div>
 
       {/* Overall Progress */}
       <div className="space-y-2">
         <div className="flex justify-between items-center">
-          <span className="text-sm text-muted-foreground">Background job progress</span>
+          <T>
+            <span className="text-sm text-muted-foreground">Background job progress</span>
+          </T>
           <span className="text-lg font-semibold tabular-nums">{overallProgress}%</span>
         </div>
         <Progress value={overallProgress} className="h-2" />
         <p className="text-xs text-muted-foreground/70">
-          {completedCount} of {workItems.length} tasks completed • Estimated time remaining:{' '}
-          {overallProgress < 10
-            ? '6-7 min'
-            : overallProgress < 20
-              ? '5-6 min'
-              : overallProgress < 40
-                ? '4-5 min'
-                : overallProgress < 60
-                  ? '3-4 min'
-                  : overallProgress < 80
-                    ? '2-3 min'
-                    : overallProgress < 90
-                      ? '1-2 min'
-                      : 'Almost done...'}
+          {t('{completedCount} of {totalTasks} tasks completed • Estimated time remaining: {timeRemaining}', {
+            completedCount,
+            totalTasks: workItems.length,
+            timeRemaining: overallProgress < 10
+              ? t('6-7 min')
+              : overallProgress < 20
+                ? t('5-6 min')
+                : overallProgress < 40
+                  ? t('4-5 min')
+                  : overallProgress < 60
+                    ? t('3-4 min')
+                    : overallProgress < 80
+                      ? t('2-3 min')
+                      : overallProgress < 90
+                        ? t('1-2 min')
+                        : t('Almost done...')
+          })}
         </p>
       </div>
 
@@ -288,8 +301,10 @@ export function AiWorkPreviewAuthentic() {
                               isStuck && 'text-amber-600 dark:text-amber-400',
                             )}
                           >
-                            {Math.round(item.progress)}% complete
-                            {isStuck && ' - Finalizing...'}
+                            {t('{progress}% complete{finalizingText}', {
+                              progress: Math.round(item.progress),
+                              finalizingText: isStuck ? t(' - Finalizing...') : ''
+                            })}
                           </p>
                         </div>
                       </div>

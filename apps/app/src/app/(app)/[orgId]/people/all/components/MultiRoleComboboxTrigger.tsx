@@ -6,6 +6,7 @@ import { cn } from '@comp/ui/cn';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import type { Role } from '@db'; // Assuming Role is from prisma
 import { ChevronsUpDown, Lock, X } from 'lucide-react';
+import { useGT, T } from 'gt-next';
 
 interface MultiRoleComboboxTriggerProps {
   selectedRoles: Role[];
@@ -28,6 +29,7 @@ export function MultiRoleComboboxTrigger({
   onClick,
   ariaExpanded,
 }: MultiRoleComboboxTriggerProps) {
+  const t = useGT();
   return (
     <Button
       type="button"
@@ -62,7 +64,9 @@ export function MultiRoleComboboxTrigger({
                     <Lock className="text-primary ml-1 h-3 w-3" />
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>{'The owner role cannot be removed.'}</p>
+                    <T>
+                      <p>The owner role cannot be removed.</p>
+                    </T>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>

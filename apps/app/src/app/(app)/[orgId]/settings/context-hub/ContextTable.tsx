@@ -3,15 +3,17 @@ import { DataTable } from '@/components/data-table/data-table';
 import { DataTableToolbar } from '@/components/data-table/data-table-toolbar';
 import { useDataTable } from '@/hooks/use-data-table';
 import { Button } from '@comp/ui/button';
-import type { Context } from '@db';
+import type { Context } from '@prisma/client';
+import { T, useGT } from 'gt-next';
 import { Plus } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import { useMemo } from 'react';
 import { CreateContextSheet } from './components/CreateContextSheet';
-import { columns as getColumns } from './components/table/ContextColumns';
+import { columns as getColumns } from './components/table/ContextColumns'; // This requires a t function to be passed into it
 
 export const ContextTable = ({ entries, pageCount }: { entries: Context[]; pageCount: number }) => {
-  const columns = useMemo(() => getColumns(), []);
+  const t = useGT();
+  const columns = useMemo(() => getColumns(t), [t]);
   const { table } = useDataTable({
     data: entries,
     columns,
@@ -37,7 +39,7 @@ export const ContextTable = ({ entries, pageCount }: { entries: Context[]; pageC
             onClick={() => setOpenSheet('true')}
           >
             <Plus className="h-4 w-4" />
-            Add Entry
+            <T>Add Entry</T>
           </Button>
         </DataTableToolbar>
       </DataTable>
