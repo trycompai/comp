@@ -3,6 +3,7 @@
 import { auth } from '@/utils/auth';
 import type { Role } from '@db';
 import { db } from '@db';
+import { getGT } from 'gt-next/server';
 
 export const addEmployeeWithoutInvite = async ({
   email,
@@ -44,6 +45,7 @@ export const addEmployeeWithoutInvite = async ({
     return { success: true, data: member };
   } catch (error) {
     console.error('Error adding employee:', error);
-    return { success: false, error: 'Failed to add employee' };
+    const t = await getGT();
+    return { success: false, error: t('Failed to add employee') };
   }
 };

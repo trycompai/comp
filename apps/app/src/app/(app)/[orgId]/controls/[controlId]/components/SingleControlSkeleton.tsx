@@ -1,6 +1,7 @@
 import { CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 
 import { Card } from '@comp/ui/card';
+import { T } from 'gt-next';
 
 export const SingleControlSkeleton = () => {
   return (
@@ -17,7 +18,9 @@ export const SingleControlSkeleton = () => {
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>Domain</CardTitle>
+              <T>
+                <CardTitle>Domain</CardTitle>
+              </T>
             </CardHeader>
             <CardContent>
               <div className="bg-muted h-4 w-1/2 animate-pulse rounded-sm" />

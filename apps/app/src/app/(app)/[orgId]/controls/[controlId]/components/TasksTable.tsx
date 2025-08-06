@@ -8,6 +8,7 @@ import { Icons } from '@comp/ui/icons';
 import { Input } from '@comp/ui/input';
 import { Task } from '@db';
 import { ColumnDef } from '@tanstack/react-table';
+import { useGT } from 'gt-next';
 import { useMemo, useState } from 'react';
 
 interface TasksTableProps {
@@ -18,13 +19,14 @@ interface TasksTableProps {
 
 export function TasksTable({ tasks, orgId, controlId }: TasksTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  const t = useGT();
 
   // Define columns for tasks table
   const columns = useMemo<ColumnDef<Task>[]>(
     () => [
       {
         accessorKey: 'title',
-        header: ({ column }) => <DataTableColumnHeader column={column} title={'Title'} />,
+        header: ({ column }) => <DataTableColumnHeader column={column} title={t('Title')} />,
         cell: ({ row }) => {
           const title = row.original.title;
           return <span>{title}</span>;
@@ -38,7 +40,7 @@ export function TasksTable({ tasks, orgId, controlId }: TasksTableProps) {
       },
       {
         accessorKey: 'description',
-        header: ({ column }) => <DataTableColumnHeader column={column} title={'Description'} />,
+        header: ({ column }) => <DataTableColumnHeader column={column} title={t('Description')} />,
         cell: ({ row }) => {
           const description = row.original.description;
           return <span className="line-clamp-1 capitalize">{description}</span>;
@@ -46,7 +48,7 @@ export function TasksTable({ tasks, orgId, controlId }: TasksTableProps) {
       },
       {
         accessorKey: 'status',
-        header: ({ column }) => <DataTableColumnHeader column={column} title={'Status'} />,
+        header: ({ column }) => <DataTableColumnHeader column={column} title={t('Status')} />,
         cell: ({ row }) => {
           const rawStatus = row.original.status;
 
@@ -55,7 +57,7 @@ export function TasksTable({ tasks, orgId, controlId }: TasksTableProps) {
         },
       },
     ],
-    [],
+    [t],
   );
 
   // Filter tasks data based on search term
@@ -88,7 +90,7 @@ export function TasksTable({ tasks, orgId, controlId }: TasksTableProps) {
     <div className="space-y-4">
       <div className="flex items-center">
         <Input
-          placeholder="Search tasks..."
+          placeholder={t('Search tasks...')}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="max-w-sm"

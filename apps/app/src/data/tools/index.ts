@@ -3,9 +3,11 @@ import { getPolicyTools } from './policies';
 import { getRiskTools } from './risks-tool';
 import { getUserTools } from './user';
 
-export const tools = {
-  ...getOrganizationTools(),
-  ...getPolicyTools(),
-  ...getRiskTools(),
-  ...getUserTools(),
-};
+export function getTools(t: (content: string) => string) {
+  return {
+    ...getOrganizationTools(),
+    ...getPolicyTools(t),
+    ...getRiskTools(t),
+    ...getUserTools(),
+  };
+}

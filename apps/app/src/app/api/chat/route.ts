@@ -1,7 +1,8 @@
-import { tools } from '@/data/tools';
+import { getTools } from '@/data/tools';
 import { auth } from '@/utils/auth';
 import { groq } from '@ai-sdk/groq';
 import { type UIMessage, convertToModelMessages, streamText } from 'ai';
+import { getGT } from 'gt-next/server';
 import { headers } from 'next/headers';
 
 export const maxDuration = 30;
@@ -28,6 +29,9 @@ export async function POST(req: Request) {
 
     If you are unsure about the answer, say "I don't know" or "I don't know the answer to that question".
 `;
+
+  const t = await getGT();
+  const tools = getTools(t);
 
   const result = streamText({
     model: groq('deepseek-r1-distill-llama-70b'),

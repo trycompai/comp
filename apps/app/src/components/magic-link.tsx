@@ -6,6 +6,7 @@ import { cn } from '@comp/ui/cn';
 import { Form, FormControl, FormField, FormItem } from '@comp/ui/form';
 import { Input } from '@comp/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { T, useGT } from 'gt-next';
 import { Loader2, Mail } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -25,6 +26,7 @@ type Props = {
 
 export function MagicLinkSignIn({ className, inviteCode, searchParams, onMagicLinkSubmit }: Props) {
   const [isLoading, setLoading] = useState(false);
+  const t = useGT();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -54,7 +56,7 @@ export function MagicLinkSignIn({ className, inviteCode, searchParams, onMagicLi
     });
 
     if (error) {
-      toast.error('Error sending email - try again?');
+      toast.error(t('Error sending email - try again?'));
       setLoading(false);
     } else {
       // Call the callback if provided
@@ -75,7 +77,7 @@ export function MagicLinkSignIn({ className, inviteCode, searchParams, onMagicLi
               <FormItem>
                 <FormControl>
                   <Input
-                    placeholder="name@example.com"
+                    placeholder={t('name@example.com')}
                     {...field}
                     autoFocus
                     className="h-11"
@@ -99,7 +101,7 @@ export function MagicLinkSignIn({ className, inviteCode, searchParams, onMagicLi
             ) : (
               <>
                 <Mail className="h-4 w-4" />
-                Continue with email
+                <T>Continue with email</T>
               </>
             )}
           </Button>

@@ -7,6 +7,8 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@comp/ui/chart';
+import { useGT } from 'gt-next';
+import type { InlineTranslationOptions } from 'gt-next/types';
 import { Cell, Pie, PieChart } from 'recharts';
 
 interface PolicyOverviewProps {
@@ -18,21 +20,26 @@ interface PolicyOverviewProps {
   };
 }
 
+const getChartConfig = (
+  t: (content: string, options?: InlineTranslationOptions) => string,
+): ChartConfig => ({
+  draft: {
+    label: t('Draft'),
+    color: 'hsl(var(--chart-1))',
+  },
+  published: {
+    label: t('Published'),
+    color: 'hsl(var(--chart-2))',
+  },
+  review: {
+    label: t('Needs Review'),
+    color: 'hsl(var(--chart-3))',
+  },
+});
+
 export function PolicyOverview({ data }: PolicyOverviewProps) {
-  const config: ChartConfig = {
-    draft: {
-      label: 'Draft',
-      color: 'hsl(var(--chart-1))',
-    },
-    published: {
-      label: 'Published',
-      color: 'hsl(var(--chart-2))',
-    },
-    review: {
-      label: 'Needs Review',
-      color: 'hsl(var(--chart-3))',
-    },
-  };
+  const t = useGT();
+  const config = getChartConfig(t);
 
   const chartData = [
     {
@@ -56,10 +63,10 @@ export function PolicyOverview({ data }: PolicyOverviewProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>{'Policy by Status'}</CardTitle>
+          <CardTitle>{t('Policy by Status')}</CardTitle>
         </CardHeader>
         <CardContent className="text-muted-foreground flex h-[300px] items-center justify-center">
-          No data
+          {t('No data')}
         </CardContent>
       </Card>
     );
@@ -68,7 +75,7 @@ export function PolicyOverview({ data }: PolicyOverviewProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{'Policy by Status'}</CardTitle>
+        <CardTitle>{t('Policy by Status')}</CardTitle>
       </CardHeader>
       <CardContent>
         <ChartContainer config={config}>

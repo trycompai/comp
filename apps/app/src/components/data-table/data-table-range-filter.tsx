@@ -7,6 +7,16 @@ import type { ExtendedColumnFilter } from '@/types/data-table';
 import { cn } from '@comp/ui/cn';
 import { Input } from '@comp/ui/input';
 
+// Type guard for filter values
+const asString = (value: unknown): string => {
+  return typeof value === 'string' ? value : String(value || '');
+};
+
+const asStringArray = (value: unknown): string[] => {
+  if (Array.isArray(value)) return value.map(asString);
+  return [asString(value)];
+};
+
 interface DataTableRangeFilterProps<TData> extends React.ComponentProps<'div'> {
   filter: ExtendedColumnFilter<TData>;
   column: Column<TData>;
@@ -48,8 +58,9 @@ export function DataTableRangeFilter<TData>({
   }, []);
 
   const value = React.useMemo(() => {
-    if (Array.isArray(filter.value)) return filter.value.map(formatValue);
-    return [formatValue(filter.value), ''];
+    if (Array.isArray(filter.value))
+      return filter.value.map((v) => formatValue(v as string | number));
+    return [formatValue(filter.value as string | number), ''];
   }, [filter.value, formatValue]);
 
   const onRangeValueChange = React.useCallback(

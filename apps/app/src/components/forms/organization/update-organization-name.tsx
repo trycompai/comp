@@ -1,7 +1,7 @@
 'use client';
 
 import { updateOrganizationNameAction } from '@/actions/organization/update-organization-name-action';
-import { organizationNameSchema } from '@/actions/schema';
+import { getOrganizationNameSchema } from '@/actions/schema';
 import { Button } from '@comp/ui/button';
 import {
   Card,
@@ -14,19 +14,24 @@ import {
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@comp/ui/form';
 import { Input } from '@comp/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { T, useGT } from 'gt-next';
 import { Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 
 export function UpdateOrganizationName({ organizationName }: { organizationName: string }) {
+  const t = useGT();
+  const organizationNameSchema = React.useMemo(() => getOrganizationNameSchema(t), [t]);
+
   const updateOrganizationName = useAction(updateOrganizationNameAction, {
     onSuccess: () => {
-      toast.success('Organization name updated');
+      toast.success(t('Organization name updated'));
     },
     onError: () => {
-      toast.error('Error updating organization name');
+      toast.error(t('Error updating organization name'));
     },
   });
 
@@ -37,7 +42,7 @@ export function UpdateOrganizationName({ organizationName }: { organizationName:
     },
   });
 
-  const onSubmit = (data: z.infer<typeof organizationNameSchema>) => {
+  const onSubmit = (data: z.infer<ReturnType<typeof getOrganizationNameSchema>>) => {
     updateOrganizationName.execute(data);
   };
 
@@ -46,15 +51,18 @@ export function UpdateOrganizationName({ organizationName }: { organizationName:
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <Card>
           <CardHeader>
-            <CardTitle>{'Organization name'}</CardTitle>
+            <T>
+              <CardTitle>Organization name</CardTitle>
+            </T>
 
-            <CardDescription>
-              <div className="max-w-[600px]">
-                {
-                  'This is your organizations visible name. You should use the legal name of your organization.'
-                }
-              </div>
-            </CardDescription>
+            <T>
+              <CardDescription>
+                <div className="max-w-[600px]">
+                  This is your organizations visible name. You should use the legal name of your
+                  organization.
+                </div>
+              </CardDescription>
+            </T>
           </CardHeader>
           <CardContent>
             <FormField
@@ -79,14 +87,16 @@ export function UpdateOrganizationName({ organizationName }: { organizationName:
             />
           </CardContent>
           <CardFooter className="flex justify-between">
-            <div className="text-muted-foreground text-xs">
-              {'Please use 32 characters at maximum.'}
-            </div>
+            <T>
+              <div className="text-muted-foreground text-xs">
+                Please use 32 characters at maximum.
+              </div>
+            </T>
             <Button type="submit" disabled={updateOrganizationName.status === 'executing'}>
               {updateOrganizationName.status === 'executing' ? (
                 <Loader2 className="mr-1 h-4 w-4 animate-spin" />
               ) : null}
-              {'Save'}
+              <T>Save</T>
             </Button>
           </CardFooter>
         </Card>

@@ -3,12 +3,16 @@
 'use server';
 
 import { db } from '@db';
+import { getGT } from 'gt-next/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { authActionClient } from '../safe-action';
-import { updateRiskSchema } from '../schema';
+import { getUpdateRiskSchema } from '../schema';
 
 export const updateRiskAction = authActionClient
-  .inputSchema(updateRiskSchema)
+  .inputSchema(async () => {
+    const t = await getGT();
+    return getUpdateRiskSchema(t);
+  })
   .metadata({
     name: 'update-risk',
     track: {

@@ -12,6 +12,7 @@ import type {
   RequirementMap,
 } from '@db';
 import { ColumnDef } from '@tanstack/react-table';
+import { useGT } from 'gt-next';
 import { useMemo, useState } from 'react';
 
 interface RequirementsTableProps {
@@ -26,6 +27,7 @@ interface RequirementsTableProps {
 
 export function RequirementsTable({ requirements, orgId }: RequirementsTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  const t = useGT();
 
   // Define columns for requirements table
   const columns = useMemo<
@@ -42,7 +44,7 @@ export function RequirementsTable({ requirements, orgId }: RequirementsTableProp
       {
         id: 'reqName',
         accessorKey: 'requirement.name',
-        header: ({ column }) => <DataTableColumnHeader column={column} title={'Name'} />,
+        header: ({ column }) => <DataTableColumnHeader column={column} title={t('Name')} />,
 
         cell: ({ row }) => {
           return (
@@ -62,7 +64,7 @@ export function RequirementsTable({ requirements, orgId }: RequirementsTableProp
       {
         id: 'reqDescription',
         accessorKey: 'requirement.description',
-        header: ({ column }) => <DataTableColumnHeader column={column} title={'Description'} />,
+        header: ({ column }) => <DataTableColumnHeader column={column} title={t('Description')} />,
         cell: ({ row }) => {
           return (
             <span className="line-clamp-2 h-10 max-w-[600px] truncate text-wrap">
@@ -79,7 +81,7 @@ export function RequirementsTable({ requirements, orgId }: RequirementsTableProp
         },
       },
     ],
-    [],
+    [t],
   );
 
   // Filter requirements data based on search term
@@ -116,7 +118,7 @@ export function RequirementsTable({ requirements, orgId }: RequirementsTableProp
     <div className="space-y-4">
       <div className="flex items-center">
         <Input
-          placeholder="Search requirements..."
+          placeholder={t('Search requirements...')}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="max-w-sm"

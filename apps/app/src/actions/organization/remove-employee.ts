@@ -1,6 +1,7 @@
 'use server';
 
 import { db } from '@db';
+import { getGT } from 'gt-next/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { authActionClient } from '../safe-action';
@@ -24,13 +25,14 @@ export const removeEmployeeRoleOrMember = authActionClient
       parsedInput,
       ctx,
     }): Promise<ActionResponse<{ removed: boolean; roleUpdated?: boolean }>> => {
+      const t = await getGT();
       const organizationId = ctx.session.activeOrganizationId;
       const currentUserId = ctx.user.id;
 
       if (!organizationId) {
         return {
           success: false,
-          error: 'Organization not found',
+          error: t('Organization not found'),
         };
       }
 
@@ -48,7 +50,7 @@ export const removeEmployeeRoleOrMember = authActionClient
         if (!currentUserMember || !['admin', 'owner'].includes(currentUserMember.role)) {
           return {
             success: false,
-            error: 'Permission denied: Only admins or owners can remove employees.',
+            error: t('Permission denied: Only admins or owners can remove employees.'),
           };
         }
 
@@ -63,7 +65,7 @@ export const removeEmployeeRoleOrMember = authActionClient
         if (!targetMember) {
           return {
             success: false,
-            error: 'Target employee not found in this organization.',
+            error: t('Target employee not found in this organization.'),
           };
         }
 
@@ -72,7 +74,7 @@ export const removeEmployeeRoleOrMember = authActionClient
         if (!roles.includes('employee')) {
           return {
             success: false,
-            error: 'Target member does not have the employee role.',
+            error: t('Target member does not have the employee role.'),
           };
         }
 
@@ -84,14 +86,14 @@ export const removeEmployeeRoleOrMember = authActionClient
           if (targetMember.role === 'owner') {
             return {
               success: false,
-              error: 'Cannot remove the organization owner.',
+              error: t('Cannot remove the organization owner.'),
             };
           }
           // Cannot remove self
           if (targetMember.userId === currentUserId) {
             return {
               success: false,
-              error: 'You cannot remove yourself.',
+              error: t('You cannot remove yourself.'),
             };
           }
 
@@ -128,7 +130,7 @@ export const removeEmployeeRoleOrMember = authActionClient
       } catch (error) {
         console.error('Error removing employee role/member:', error);
         const errorMessage =
-          error instanceof Error ? error.message : 'Failed to remove employee role or member.';
+          error instanceof Error ? error.message : t('Failed to remove employee role or member.');
         return {
           success: false,
           error: errorMessage,

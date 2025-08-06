@@ -3,6 +3,7 @@
 import { PieChart } from '@/components/ui/pie-chart';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { cn } from '@comp/ui/cn';
+import { useGT } from 'gt-next';
 
 interface Props {
   totalTests: number;
@@ -21,6 +22,7 @@ export function TestsSeverity({
   highSeverityTests,
   criticalSeverityTests,
 }: Props) {
+  const t = useGT();
   const severityCounts = {
     low: lowSeverityTests,
     medium: mediumSeverityTests,
@@ -30,31 +32,31 @@ export function TestsSeverity({
 
   const data = [
     {
-      name: 'Info',
+      name: t('Info'),
       value: infoSeverityTests,
       color: 'var(--chart-closed)',
       colorClass: 'bg-[var(--chart-closed)]',
     },
     {
-      name: 'Low',
+      name: t('Low'),
       value: severityCounts.low,
       color: 'var(--chart-archived)',
       colorClass: 'bg-[var(--chart-archived)]',
     },
     {
-      name: 'Medium',
+      name: t('Medium'),
       value: severityCounts.medium,
       color: 'var(--chart-pending)',
       colorClass: 'bg-[var(--chart-pending)]',
     },
     {
-      name: 'High',
+      name: t('High'),
       value: severityCounts.high,
       color: 'var(--chart-open)',
       colorClass: 'bg-[var(--chart-open)]',
     },
     {
-      name: 'Critical',
+      name: t('Critical'),
       value: severityCounts.critical,
       color: 'hsl(var(--destructive))',
       colorClass: 'bg-[hsl(var(--destructive))]',
@@ -64,7 +66,7 @@ export function TestsSeverity({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{'Test Severity Distribution'}</CardTitle>
+        <CardTitle>{t('Test Severity Distribution')}</CardTitle>
       </CardHeader>
       <CardContent>
         <PieChart data={data} />

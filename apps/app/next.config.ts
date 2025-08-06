@@ -1,3 +1,4 @@
+import { withGTConfig } from 'gt-next/config';
 import type { NextConfig } from 'next';
 import './src/env.mjs';
 
@@ -51,4 +52,4 @@ const config: NextConfig = {
   },
 };
 
-export default config;
+export default withGTConfig(config, {});

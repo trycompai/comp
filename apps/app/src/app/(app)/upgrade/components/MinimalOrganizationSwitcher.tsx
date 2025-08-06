@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
 import type { Organization } from '@db';
+import { useGT } from 'gt-next';
 import { Check, ChevronsUpDown, Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
@@ -23,6 +24,7 @@ export function MinimalOrganizationSwitcher({
   currentOrganization,
 }: MinimalOrganizationSwitcherProps) {
   const router = useRouter();
+  const t = useGT();
   const { execute, status } = useAction(changeOrganizationAction, {
     onSuccess: (result) => {
       const orgId = result.data?.data?.id;
@@ -47,7 +49,7 @@ export function MinimalOrganizationSwitcher({
           className="h-auto p-1 text-sm font-medium"
           disabled={status === 'executing'}
         >
-          {currentOrganization?.name || 'Select Organization'}
+          {currentOrganization?.name || t('Select Organization')}
           {status === 'executing' ? (
             <Loader2 className="ml-2 h-4 w-4 animate-spin" />
           ) : (

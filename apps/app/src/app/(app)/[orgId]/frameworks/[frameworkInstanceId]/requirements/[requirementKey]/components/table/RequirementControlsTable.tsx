@@ -6,6 +6,7 @@ import { useDataTable } from '@/hooks/use-data-table';
 import { Input } from '@comp/ui/input';
 import type { Control, Task } from '@db';
 import { ColumnDef } from '@tanstack/react-table';
+import { useGT } from 'gt-next';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
@@ -16,6 +17,7 @@ interface RequirementControlsTableProps {
 }
 
 export function RequirementControlsTable({ controls, tasks }: RequirementControlsTableProps) {
+  const t = useGT();
   const { orgId } = useParams<{ orgId: string }>();
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -25,7 +27,7 @@ export function RequirementControlsTable({ controls, tasks }: RequirementControl
       {
         id: 'name',
         accessorKey: 'name',
-        header: ({ column }) => <DataTableColumnHeader column={column} title={'Control'} />,
+        header: ({ column }) => <DataTableColumnHeader column={column} title={t('Control')} />,
         cell: ({ row }) => (
           <div className="flex w-[300px] flex-col">
             <Link href={`/${orgId}/controls/${row.original.id}`} className="flex flex-col">
@@ -40,7 +42,7 @@ export function RequirementControlsTable({ controls, tasks }: RequirementControl
         enableResizing: true,
       },
     ],
-    [orgId],
+    [orgId, t],
   );
 
   // Filter controls data based on search term
@@ -68,7 +70,7 @@ export function RequirementControlsTable({ controls, tasks }: RequirementControl
     <div className="space-y-4">
       <div className="flex items-center">
         <Input
-          placeholder={'Search controls...'}
+          placeholder={t('Search controls...')}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="max-w-sm"

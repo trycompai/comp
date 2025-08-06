@@ -20,10 +20,7 @@ export default async function TaskPage({
   });
   console.log('[TaskPage] Session obtained, fetching data');
 
-  const [task, members] = await Promise.all([
-    getTask(taskId, session),
-    getMembers(orgId, session),
-  ]);
+  const [task, members] = await Promise.all([getTask(taskId, session), getMembers(orgId, session)]);
 
   if (!task) {
     redirect(`/${orgId}/tasks`);
@@ -57,8 +54,6 @@ const getTask = async (taskId: string, session: Session) => {
     throw error;
   }
 };
-
-
 
 const getMembers = async (orgId: string, session: Session) => {
   const activeOrgId = orgId ?? session?.session.activeOrganizationId;

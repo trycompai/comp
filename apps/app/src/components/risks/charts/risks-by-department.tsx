@@ -1,6 +1,7 @@
 import { auth } from '@/utils/auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { db } from '@db';
+import { getGT } from 'gt-next/server';
 import { headers } from 'next/headers';
 import { cache } from 'react';
 import { DepartmentChart } from './department-chart';
@@ -9,6 +10,7 @@ const ALL_DEPARTMENTS = ['none', 'admin', 'gov', 'hr', 'it', 'itsm', 'qms'];
 
 export async function RisksByDepartment() {
   const risks = await getRisksByDepartment();
+  const t = await getGT();
 
   const data = ALL_DEPARTMENTS.map((dept) => {
     const found = risks.find(
@@ -36,7 +38,7 @@ export async function RisksByDepartment() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{'Risks by Department'}</CardTitle>
+        <CardTitle>{t('Risks by Department')}</CardTitle>
       </CardHeader>
       <CardContent>
         <DepartmentChart data={departmentsToShow} showEmptyDepartments={true} />

@@ -2,6 +2,7 @@
 
 import { Button } from '@comp/ui/button';
 import { TableHead, TableHeader, TableRow } from '@comp/ui/table';
+import { useGT } from 'gt-next';
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback } from 'react';
@@ -21,6 +22,7 @@ type Props = {
 };
 
 export function FrameworkControlsTableHeader({ table, loading }: Props) {
+  const t = useGT();
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
@@ -62,7 +64,7 @@ export function FrameworkControlsTableHeader({ table, loading }: Props) {
               variant="ghost"
               onClick={() => createSortQuery('name')}
             >
-              <span>{'Control'}</span>
+              <span>{t('Control')}</span>
               {'name' === column && value === 'asc' && <ArrowDown size={16} />}
               {'name' === column && value === 'desc' && <ArrowUp size={16} />}
             </Button>
@@ -76,7 +78,7 @@ export function FrameworkControlsTableHeader({ table, loading }: Props) {
               variant="ghost"
               onClick={() => createSortQuery('category')}
             >
-              <span>{'Category'}</span>
+              <span>{t('Category')}</span>
               {'category' === column && value === 'asc' && <ArrowDown size={16} />}
               {'category' === column && value === 'desc' && <ArrowUp size={16} />}
             </Button>
@@ -90,7 +92,7 @@ export function FrameworkControlsTableHeader({ table, loading }: Props) {
               variant="ghost"
               onClick={() => createSortQuery('status')}
             >
-              <span>{'Status'}</span>
+              <span>{t('Status')}</span>
               {'status' === column && value === 'asc' && <ArrowDown size={16} />}
               {'status' === column && value === 'desc' && <ArrowUp size={16} />}
             </Button>

@@ -1,5 +1,6 @@
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { db } from '@db';
+import { getGT } from 'gt-next/server';
 
 export default async function Layout({
   children,
@@ -9,6 +10,7 @@ export default async function Layout({
   params: Promise<{ taskId: string; orgId: string }>;
 }) {
   const { taskId, orgId } = await params;
+  const t = await getGT();
 
   const task = await db.task.findUnique({
     where: {
@@ -19,7 +21,7 @@ export default async function Layout({
   return (
     <PageWithBreadcrumb
       breadcrumbs={[
-        { label: 'Tasks', href: `/${orgId}/tasks` },
+        { label: t('Tasks'), href: `/${orgId}/tasks` },
         { label: task?.title ?? '', href: `/${orgId}/tasks/${taskId}` },
       ]}
     >

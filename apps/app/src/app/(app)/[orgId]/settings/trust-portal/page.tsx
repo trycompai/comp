@@ -1,5 +1,6 @@
 import { auth } from '@/utils/auth';
 import { db } from '@db';
+import { getGT } from 'gt-next/server';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { cache } from 'react';
@@ -83,7 +84,9 @@ export async function generateMetadata({
 }: {
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
+  const t = await getGT();
+
   return {
-    title: 'Trust Portal',
+    title: t('Trust Portal'),
   };
 }

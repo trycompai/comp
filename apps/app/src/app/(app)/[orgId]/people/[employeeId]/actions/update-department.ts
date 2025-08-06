@@ -4,9 +4,10 @@ import { authActionClient } from '@/actions/safe-action';
 import { auth } from '@/utils/auth';
 import type { Departments } from '@db';
 import { db } from '@db';
+import { getGT } from 'gt-next/server';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
-import { type AppError, appErrors, updateEmployeeDepartmentSchema } from '../types';
+import { type AppError, getAppErrors, updateEmployeeDepartmentSchema } from '../types';
 
 export type ActionResponse<T = any> = Promise<
   { success: true; data: T } | { success: false; error: AppError }
@@ -29,6 +30,8 @@ export const updateEmployeeDepartment = authActionClient
     });
 
     const organizationId = session?.session.activeOrganizationId;
+    const t = await getGT();
+    const appErrors = getAppErrors(t);
 
     if (!organizationId) {
       return {

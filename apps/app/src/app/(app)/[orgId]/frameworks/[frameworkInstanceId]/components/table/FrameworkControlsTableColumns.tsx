@@ -4,6 +4,7 @@ import { StatusIndicator, StatusType } from '@/components/status-indicator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import type { Policy } from '@db';
 import type { ColumnDef } from '@tanstack/react-table';
+import { useGT } from 'gt-next';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
@@ -35,13 +36,14 @@ function isPolicyCompleted(policy: Policy): boolean {
 }
 
 export function FrameworkControlsTableColumns(): ColumnDef<OrganizationControlType>[] {
+  const t = useGT();
   const { orgId } = useParams<{ orgId: string }>();
 
   return [
     {
       id: 'name',
       accessorKey: 'name',
-      header: 'Control',
+      header: t('Control'),
       cell: ({ row }) => {
         return (
           <div className="flex w-[300px] flex-col">
@@ -55,7 +57,7 @@ export function FrameworkControlsTableColumns(): ColumnDef<OrganizationControlTy
     {
       id: 'category',
       accessorKey: 'name',
-      header: 'Category',
+      header: t('Category'),
       cell: ({ row }) => (
         <div className="w-[200px]">
           <span className="text-sm">{row.original.name}</span>
@@ -65,7 +67,7 @@ export function FrameworkControlsTableColumns(): ColumnDef<OrganizationControlTy
     {
       id: 'status',
       accessorKey: 'policies',
-      header: 'Status',
+      header: t('Status'),
       cell: ({ row }) => {
         const policies = row.original.policies || [];
         const status = getControlStatusForPolicies(policies);
@@ -83,9 +85,16 @@ export function FrameworkControlsTableColumns(): ColumnDef<OrganizationControlTy
               </TooltipTrigger>
               <TooltipContent>
                 <div className="text-sm">
-                  <p>Progress: {Math.round((completedPolicies / totalPolicies) * 100) || 0}%</p>
                   <p>
-                    Completed: {completedPolicies}/{totalPolicies} policies
+                    {t('Progress: {progress}%', {
+                      progress: Math.round((completedPolicies / totalPolicies) * 100) || 0,
+                    })}
+                  </p>
+                  <p>
+                    {t('Completed: {completed}/{total} policies', {
+                      completed: completedPolicies,
+                      total: totalPolicies,
+                    })}
                   </p>
                 </div>
               </TooltipContent>

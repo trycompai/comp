@@ -1,6 +1,7 @@
 'use server';
 
 import { db } from '@db';
+import { getGT } from 'gt-next/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { authActionClient } from '../safe-action';
@@ -22,13 +23,14 @@ export const archivePolicyAction = authActionClient
     },
   })
   .action(async ({ parsedInput, ctx }) => {
+    const t = await getGT();
     const { id, action } = parsedInput;
     const { activeOrganizationId } = ctx.session;
 
     if (!activeOrganizationId) {
       return {
         success: false,
-        error: 'Not authorized',
+        error: t('Not authorized'),
       };
     }
 
@@ -43,7 +45,7 @@ export const archivePolicyAction = authActionClient
       if (!policy) {
         return {
           success: false,
-          error: 'Policy not found',
+          error: t('Policy not found'),
         };
       }
 
@@ -70,7 +72,7 @@ export const archivePolicyAction = authActionClient
       console.error(error);
       return {
         success: false,
-        error: 'Failed to update policy archive status',
+        error: t('Failed to update policy archive status'),
       };
     }
   });

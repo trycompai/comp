@@ -2,6 +2,7 @@
 
 import { ClientTooltip } from '@comp/ui/chart-tooltip';
 import { format, max, scaleBand, scaleLinear } from 'd3';
+import { T } from 'gt-next';
 import { type CSSProperties } from 'react';
 
 const DEPARTMENT_COLORS = {
@@ -34,7 +35,7 @@ export function DepartmentChart({ data, showEmptyDepartments = true }: Departmen
   if (sortedData.length === 0) {
     return (
       <div className="text-muted-foreground flex h-[300px] items-center justify-center">
-        No departments with risks found
+        <T>No departments with risks found</T>
       </div>
     );
   }

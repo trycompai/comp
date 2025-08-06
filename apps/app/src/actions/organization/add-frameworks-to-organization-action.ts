@@ -1,7 +1,8 @@
 'use server';
 
-import { addFrameworksSchema } from '@/actions/schema';
+import { getAddFrameworksSchema } from '@/actions/schema';
 import { db, Prisma } from '@db';
+import { getGT } from 'gt-next/server';
 import { authWithOrgAccessClient } from '../safe-action';
 import { _upsertOrgFrameworkStructureCore } from './lib/initialize-organization';
 
@@ -11,7 +12,10 @@ import { _upsertOrgFrameworkStructureCore } from './lib/initialize-organization'
  * already exist (e.g., from a shared template or a previous addition).
  */
 export const addFrameworksToOrganizationAction = authWithOrgAccessClient
-  .inputSchema(addFrameworksSchema)
+  .inputSchema(async () => {
+    const t = await getGT();
+    return getAddFrameworksSchema(t);
+  })
   .metadata({
     name: 'add-frameworks-to-organization',
     track: {
@@ -23,6 +27,7 @@ export const addFrameworksToOrganizationAction = authWithOrgAccessClient
   .action(async ({ parsedInput, ctx }) => {
     const { user, member, organizationId } = ctx;
     const { frameworkIds } = parsedInput;
+    const t = await getGT();
 
     await db.$transaction(async (tx) => {
       // 1. Fetch FrameworkEditorFrameworks and their requirements for the given frameworkIds, filtering by visible: true
@@ -37,7 +42,7 @@ export const addFrameworksToOrganizationAction = authWithOrgAccessClient
       });
 
       if (frameworksAndRequirements.length === 0) {
-        throw new Error('No valid or visible frameworks found for the provided IDs.');
+        throw new Error(t('No valid or visible frameworks found for the provided IDs.'));
       }
 
       const finalFrameworkEditorIds = frameworksAndRequirements.map((f) => f.id);

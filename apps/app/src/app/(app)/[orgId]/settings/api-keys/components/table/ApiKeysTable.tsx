@@ -4,14 +4,15 @@ import { DataTableToolbar } from '@/components/data-table/data-table-toolbar';
 import type { ApiKey } from '@/hooks/use-api-keys';
 import { useDataTable } from '@/hooks/use-data-table';
 import { Button } from '@comp/ui/button';
+import { T, useGT } from 'gt-next';
 import { Plus } from 'lucide-react';
 import { useQueryState } from 'nuqs';
-import { useMemo } from 'react';
 import { CreateApiKeyDialog } from '../CreateApiKeyDialog';
-import { columns as getColumns } from './ApiKeysColumns';
+import { useColumns } from './ApiKeysColumns';
 
 export function ApiKeysTable({ apiKeys }: { apiKeys: ApiKey[] }) {
-  const columns = useMemo(() => getColumns(), []);
+  const t = useGT();
+  const columns = useColumns(t);
   const { table } = useDataTable({
     data: apiKeys,
     columns,
@@ -37,7 +38,7 @@ export function ApiKeysTable({ apiKeys }: { apiKeys: ApiKey[] }) {
             onClick={() => setOpenSheet('true')}
           >
             <Plus className="h-4 w-4" />
-            Add API Key
+            <T>Add API Key</T>
           </Button>
         </DataTableToolbar>
       </DataTable>

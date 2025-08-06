@@ -2,6 +2,7 @@
 
 import { encrypt } from '@/lib/encryption';
 import { db } from '@db';
+import { getGT } from 'gt-next/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { authActionClient } from '../safe-action';
@@ -24,9 +25,10 @@ export const updateIntegrationSettingsAction = authActionClient
     },
   })
   .action(async ({ parsedInput: { integration_id, option }, ctx: { session } }) => {
+    const t = await getGT();
     try {
       if (!session.activeOrganizationId) {
-        throw new Error('User organization not found');
+        throw new Error(t('User organization not found'));
       }
 
       let existingIntegration = await db.integration.findFirst({
@@ -51,7 +53,7 @@ export const updateIntegrationSettingsAction = authActionClient
       const userSettings = existingIntegration.userSettings;
 
       if (!userSettings) {
-        throw new Error('User settings not found');
+        throw new Error(t('User settings not found'));
       }
 
       const updatedUserSettings = {
@@ -87,7 +89,7 @@ export const updateIntegrationSettingsAction = authActionClient
       console.error('Failed to update integration settings:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to update integration settings',
+        error: error instanceof Error ? error.message : t('Failed to update integration settings'),
       };
     }
   });

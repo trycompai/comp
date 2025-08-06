@@ -5,6 +5,7 @@ import { Drawer, DrawerContent, DrawerTitle } from '@comp/ui/drawer';
 import { useMediaQuery } from '@comp/ui/hooks';
 import { ScrollArea } from '@comp/ui/scroll-area';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@comp/ui/sheet';
+import { T } from 'gt-next';
 import { X } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 // import { CreateVendorTaskForm } from "./create-vendor-task-form";
@@ -23,7 +24,9 @@ export function CreateVendorTaskSheet() {
       <Sheet open={isOpen} onOpenChange={handleOpenChange}>
         <SheetContent stack>
           <SheetHeader className="mb-8 flex flex-row items-center justify-between">
-            <SheetTitle>{'Create Vendor Task'}</SheetTitle>
+            <SheetTitle>
+              <T>Create Vendor Task</T>
+            </SheetTitle>
             <Button
               size="icon"
               variant="ghost"
@@ -44,7 +47,9 @@ export function CreateVendorTaskSheet() {
 
   return (
     <Drawer open={isOpen} onOpenChange={handleOpenChange}>
-      <DrawerTitle hidden>{'Create Vendor Task'}</DrawerTitle>
+      <DrawerTitle hidden>
+        <T>Create Vendor Task</T>
+      </DrawerTitle>
       <DrawerContent className="p-6">
         {/* <CreateVendorTaskForm assignees={assignees} /> */}
       </DrawerContent>

@@ -3,6 +3,7 @@
 import { Loading } from '@/components/tables/risk-tasks/loading';
 import { Table, TableBody, TableCell, TableRow } from '@comp/ui/table';
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
+import { T } from 'gt-next';
 import { Suspense } from 'react';
 import {
   FrameworkControlsTableColumns,
@@ -46,7 +47,7 @@ export function FrameworkControlsTable({ data }: DataTableProps) {
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No controls found.
+                  <T>No controls found.</T>
                 </TableCell>
               </TableRow>
             )}

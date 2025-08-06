@@ -6,6 +6,7 @@ import { Drawer, DrawerContent, DrawerTitle } from '@comp/ui/drawer';
 import { useMediaQuery } from '@comp/ui/hooks';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@comp/ui/sheet';
 import { Policy } from '@db';
+import { useGT } from 'gt-next';
 import { ArchiveIcon, ArchiveRestoreIcon, X } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
@@ -13,6 +14,7 @@ import { useQueryState } from 'nuqs';
 import { toast } from 'sonner';
 
 export function PolicyArchiveSheet({ policy }: { policy: Policy }) {
+  const t = useGT();
   const router = useRouter();
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const [open, setOpen] = useQueryState('archive-policy-sheet');
@@ -22,18 +24,18 @@ export function PolicyArchiveSheet({ policy }: { policy: Policy }) {
   const archivePolicy = useAction(archivePolicyAction, {
     onSuccess: (result) => {
       if (result) {
-        toast.success('Policy archived successfully');
+        toast.success(t('Policy archived successfully'));
         // Redirect to policies list after successful archive
         router.push(`/${policy.organizationId}/policies/all`);
       } else {
-        toast.success('Policy restored successfully');
+        toast.success(t('Policy restored successfully'));
         // Stay on the policy page after restore
         router.refresh();
       }
       handleOpenChange(false);
     },
     onError: () => {
-      toast.error('Failed to update policy archive status');
+      toast.error(t('Failed to update policy archive status'));
     },
   });
 
@@ -53,8 +55,8 @@ export function PolicyArchiveSheet({ policy }: { policy: Policy }) {
     <div className="space-y-6">
       <p className="text-muted-foreground text-sm">
         {isArchived
-          ? 'Are you sure you want to restore this policy?'
-          : 'Are you sure you want to archive this policy?'}
+          ? t('Are you sure you want to restore this policy?')
+          : t('Are you sure you want to archive this policy?')}
       </p>
       <div className="flex justify-end gap-2">
         <Button
@@ -62,7 +64,7 @@ export function PolicyArchiveSheet({ policy }: { policy: Policy }) {
           onClick={() => handleOpenChange(false)}
           disabled={archivePolicy.status === 'executing'}
         >
-          {'Cancel'}
+          {t('Cancel')}
         </Button>
         <Button
           variant={isArchived ? 'default' : 'destructive'}
@@ -72,19 +74,19 @@ export function PolicyArchiveSheet({ policy }: { policy: Policy }) {
           {archivePolicy.status === 'executing' ? (
             <span className="flex items-center gap-2">
               <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
-              {isArchived ? 'Restore' : 'Archive'}
+              {isArchived ? t('Restore') : t('Archive')}
             </span>
           ) : (
             <span className="flex items-center gap-2">
               {isArchived ? (
                 <>
                   <ArchiveRestoreIcon className="h-3 w-3" />
-                  {'Restore'}
+                  {t('Restore')}
                 </>
               ) : (
                 <>
                   <ArchiveIcon className="h-3 w-3" />
-                  {'Archive'}
+                  {t('Archive')}
                 </>
               )}
             </span>
@@ -100,7 +102,7 @@ export function PolicyArchiveSheet({ policy }: { policy: Policy }) {
         <SheetContent>
           <SheetHeader className="mb-6">
             <div className="flex flex-row items-center justify-between">
-              <SheetTitle>{isArchived ? 'Restore Policy' : 'Archive Policy'}</SheetTitle>
+              <SheetTitle>{isArchived ? t('Restore Policy') : t('Archive Policy')}</SheetTitle>
               <Button
                 size="icon"
                 variant="ghost"
@@ -120,11 +122,11 @@ export function PolicyArchiveSheet({ policy }: { policy: Policy }) {
 
   return (
     <Drawer open={isOpen} onOpenChange={handleOpenChange}>
-      <DrawerTitle hidden>{isArchived ? 'Restore Policy' : 'Archive Policy'}</DrawerTitle>
+      <DrawerTitle hidden>{isArchived ? t('Restore Policy') : t('Archive Policy')}</DrawerTitle>
       <DrawerContent className="p-6">
         <div className="mb-4">
           <h3 className="text-lg font-medium">
-            {isArchived ? 'Restore Policy' : 'Archive Policy'}
+            {isArchived ? t('Restore Policy') : t('Archive Policy')}
           </h3>
           <p className="text-muted-foreground mt-1 text-sm">{policy.name}</p>
         </div>

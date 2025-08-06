@@ -1,5 +1,6 @@
 import { EMPLOYEE_STATUS_HEX_COLORS } from '@/app/(app)/[orgId]/people/[employeeId]/components/Fields/Status';
 import { cn } from '@comp/ui/cn';
+import { useGT } from 'gt-next';
 
 // Define employee status types
 export const EMPLOYEE_STATUS_TYPES = ['active', 'inactive'] as const;
@@ -10,7 +11,8 @@ export type EmployeeStatusType = (typeof EMPLOYEE_STATUS_TYPES)[number];
  * but uses active/inactive states specific to employees
  */
 export function EmployeeStatus({ status }: { status: EmployeeStatusType }) {
-  const statusLabel = status === 'active' ? 'Active' : 'Inactive';
+  const t = useGT();
+  const statusLabel = status === 'active' ? t('Active') : t('Inactive');
   return (
     <div className="flex items-center gap-2">
       <div

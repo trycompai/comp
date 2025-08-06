@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from '@comp/ui/dialog';
 import confetti from 'canvas-confetti';
+import { useGT } from 'gt-next';
 import { ArrowRight, CheckCircle2 } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import { usePostHog } from 'posthog-js/react';
@@ -36,6 +37,7 @@ export function CheckoutCompleteDialog({ orgId }: { orgId: string }) {
   const [open, setOpen] = useState(false);
   const [planType, setPlanType] = useState<PlanType | null>('done-for-you');
   const posthog = usePostHog();
+  const t = useGT();
 
   useEffect(() => {
     if (checkoutComplete === 'starter' || checkoutComplete === 'done-for-you') {
@@ -100,23 +102,24 @@ export function CheckoutCompleteDialog({ orgId }: { orgId: string }) {
   // Different content based on plan type
   const content: Record<PlanType, PlanContent> = {
     'done-for-you': {
-      title: 'Payment Successful! 🎉',
-      description:
+      title: t('Payment Successful! 🎉'),
+      description: t(
         'Your invoice has been paid. To get started, please continue with the onboarding so our AI can get to work.',
-      badge: 'Invoice Paid',
+      ),
+      badge: t('Invoice Paid'),
       badgeClass: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
       iconClass: 'bg-green-100 dark:bg-green-900/30',
       iconColor: 'text-green-600 dark:text-green-400',
-      buttonText: 'Continue',
+      buttonText: t('Continue'),
     },
     starter: {
-      title: 'Payment Successful! 🎉',
-      description: 'Your Starter subscription is now active.',
-      badge: 'Invoice Paid',
+      title: t('Payment Successful! 🎉'),
+      description: t('Your Starter subscription is now active.'),
+      badge: t('Invoice Paid'),
       badgeClass: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
       iconClass: 'bg-blue-100 dark:bg-blue-900/30',
       iconColor: 'text-blue-600 dark:text-blue-400',
-      buttonText: 'Complete Onboarding',
+      buttonText: t('Complete Onboarding'),
     },
   };
 

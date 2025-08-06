@@ -1,5 +1,6 @@
 'use server';
 
+import { getGT } from 'gt-next/server';
 import { isHubSpotConfigured } from './api-client';
 import { createOrUpdateCompany, findCompanyByDomain, findCompanyByName } from './companies';
 import { associateContactWithCompany, findContactByEmail, updateContactDetails } from './contacts';
@@ -66,6 +67,7 @@ export async function updateHubSpotContactAndCreateCompany({
     complianceNeeds,
     orgId,
   });
+  const t = await getGT();
 
   try {
     // Validate inputs
@@ -73,7 +75,7 @@ export async function updateHubSpotContactAndCreateCompany({
       console.error('[HubSpot] Missing required fields');
       return {
         success: false,
-        message: 'Email, name, and company are required',
+        message: t('Email, name, and company are required'),
       };
     }
 
@@ -81,7 +83,7 @@ export async function updateHubSpotContactAndCreateCompany({
       console.error('[HubSpot] API key not configured');
       return {
         success: true,
-        message: 'Contact processed',
+        message: t('Contact processed'),
       };
     }
 
@@ -91,7 +93,7 @@ export async function updateHubSpotContactAndCreateCompany({
       console.error('[HubSpot] Invalid email format, cannot extract domain');
       return {
         success: false,
-        message: 'Invalid email format',
+        message: t('Invalid email format'),
       };
     }
 
@@ -101,7 +103,7 @@ export async function updateHubSpotContactAndCreateCompany({
       console.error('[HubSpot] Contact not found for email:', email);
       return {
         success: false,
-        message: contactResult.error || 'Contact not found',
+        message: contactResult.error || t('Contact not found'),
       };
     }
 
@@ -145,7 +147,7 @@ export async function updateHubSpotContactAndCreateCompany({
     if (!companyId) {
       return {
         success: true,
-        message: 'Contact updated, company creation failed',
+        message: t('Contact updated, company creation failed'),
         contactId,
       };
     }
@@ -159,7 +161,7 @@ export async function updateHubSpotContactAndCreateCompany({
     console.log('[HubSpot] Process completed successfully');
     return {
       success: true,
-      message: 'Contact updated and company created',
+      message: t('Contact updated and company created'),
       contactId,
       companyId,
     };
@@ -169,7 +171,7 @@ export async function updateHubSpotContactAndCreateCompany({
     // Don't expose internal errors to the client
     return {
       success: true,
-      message: 'Contact processed',
+      message: t('Contact processed'),
     };
   }
 }

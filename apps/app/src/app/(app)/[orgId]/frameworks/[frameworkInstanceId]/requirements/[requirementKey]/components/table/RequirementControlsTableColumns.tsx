@@ -5,6 +5,7 @@ import { isPolicyCompleted } from '@/lib/control-compliance';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import type { Control, Policy, Task } from '@db';
 import type { ColumnDef } from '@tanstack/react-table';
+import { useGT } from 'gt-next';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { getControlStatus } from '../../../../../lib/utils';
@@ -19,12 +20,13 @@ export function RequirementControlsTableColumns({
   tasks: (Task & { controls: Control[] })[];
 }): ColumnDef<OrganizationControlType>[] {
   const { orgId } = useParams<{ orgId: string }>();
+  const t = useGT();
 
   return [
     {
       id: 'name',
       accessorKey: 'name',
-      header: 'Control',
+      header: t('Control'),
       cell: ({ row }) => {
         return (
           <div className="flex w-[300px] flex-col">
@@ -38,7 +40,7 @@ export function RequirementControlsTableColumns({
     {
       id: 'status',
       accessorKey: 'policies',
-      header: 'Status',
+      header: t('Status'),
       cell: ({ row }) => {
         const controlData = row.original;
         const policies = controlData.policies || [];
@@ -58,9 +60,16 @@ export function RequirementControlsTableColumns({
               </TooltipTrigger>
               <TooltipContent>
                 <div className="text-sm">
-                  <p>Progress: {Math.round((completedPolicies / totalPolicies) * 100) || 0}%</p>
                   <p>
-                    Completed: {completedPolicies}/{totalPolicies} policies
+                    {t('Progress: {progress}%', {
+                      progress: Math.round((completedPolicies / totalPolicies) * 100) || 0,
+                    })}
+                  </p>
+                  <p>
+                    {t('Completed: {completed}/{total} policies', {
+                      completed: completedPolicies,
+                      total: totalPolicies,
+                    })}
                   </p>
                 </div>
               </TooltipContent>

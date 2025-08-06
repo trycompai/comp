@@ -3,6 +3,7 @@
 import { useTaskComments } from '@/hooks/use-comments-api';
 import { Separator } from '@comp/ui/separator';
 import { CommentEntityType, type Task } from '@db';
+import { T } from 'gt-next';
 import { useEffect, useState } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 import { CommentForm } from '../../../../../../components/comments/CommentForm';
@@ -69,10 +70,12 @@ export function TaskMainContent({ task }: TaskMainContentProps) {
 
       {/* Comment Section */}
       <div className="space-y-4">
-        <h3 className="text-lg font-medium">Comments</h3>
+        <T>
+          <h3 className="text-lg font-medium">Comments</h3>
+        </T>
         <CommentForm entityId={task.id} entityType={CommentEntityType.task} />
 
-                {commentsLoading && (
+        {commentsLoading && (
           <div className="space-y-3">
             {/* Simple comment skeletons */}
             {[1, 2].map((i) => (
@@ -82,7 +85,11 @@ export function TaskMainContent({ task }: TaskMainContentProps) {
         )}
 
         {commentsError && (
-          <div className="text-destructive text-sm">Failed to load comments. Please try again.</div>
+          <T>
+            <div className="text-destructive text-sm">
+              Failed to load comments. Please try again.
+            </div>
+          </T>
         )}
 
         {!commentsLoading && !commentsError && (

@@ -3,10 +3,12 @@
 import { authClient } from '@/utils/auth-client';
 import { Button } from '@comp/ui/button';
 import { DropdownMenuItem } from '@comp/ui/dropdown-menu';
+import { useGT } from 'gt-next';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 export function SignOut({ asButton = false }: { asButton?: boolean }) {
+  const t = useGT();
   const router = useRouter();
   const [isLoading, setLoading] = useState(false);
 
@@ -22,12 +24,12 @@ export function SignOut({ asButton = false }: { asButton?: boolean }) {
   };
 
   if (asButton) {
-    return <Button onClick={handleSignOut}>{isLoading ? 'Loading...' : 'Sign out'}</Button>;
+    return <Button onClick={handleSignOut}>{isLoading ? t('Loading...') : t('Sign out')}</Button>;
   }
 
   return (
     <DropdownMenuItem onClick={handleSignOut}>
-      {isLoading ? 'Loading...' : 'Sign out'}
+      {isLoading ? t('Loading...') : t('Sign out')}
     </DropdownMenuItem>
   );
 }

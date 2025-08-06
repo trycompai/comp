@@ -1,4 +1,5 @@
 import PageCore from '@/components/pages/PageCore.tsx';
+import { getGT } from 'gt-next/server';
 import type { Metadata } from 'next';
 import { ContextTable } from './ContextTable';
 import { getContextEntries } from './data/getContextEntries';
@@ -32,7 +33,8 @@ export default async function ContextHubSettings({
 }
 
 export async function generateMetadata(): Promise<Metadata> {
+  const t = await getGT();
   return {
-    title: 'Context',
+    title: t('Context'),
   };
 }

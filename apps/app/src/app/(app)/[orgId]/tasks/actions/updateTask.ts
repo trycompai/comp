@@ -2,6 +2,7 @@
 
 import { auth } from '@/utils/auth';
 import { db, Task } from '@db';
+import { getGT } from 'gt-next/server';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 
@@ -10,11 +11,12 @@ export const updateTask = async (input: Partial<Task>) => {
     headers: await headers(),
   });
   const { id, ...rest } = input;
+  const t = await getGT();
 
   if (!session?.session?.activeOrganizationId) {
     return {
       success: false,
-      error: 'Not authorized - no organization found',
+      error: t('Not authorized - no organization found'),
     };
   }
 
@@ -39,7 +41,7 @@ export const updateTask = async (input: Partial<Task>) => {
     console.error('Failed to update task:', error);
     return {
       success: false,
-      error: 'Failed to update task',
+      error: t('Failed to update task'),
     };
   }
 };

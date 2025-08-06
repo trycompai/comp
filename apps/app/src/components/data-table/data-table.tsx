@@ -5,6 +5,7 @@ import type * as React from 'react';
 import { getCommonPinningStyles } from '@/lib/data-table';
 import { cn } from '@comp/ui/cn';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@comp/ui/table';
+import { T } from 'gt-next';
 import { DataTablePagination } from './data-table-pagination';
 
 interface DataTableProps<TData> extends React.ComponentProps<'div'> {
@@ -105,7 +106,7 @@ export function DataTable<TData>({
                   colSpan={table.getAllColumns().length}
                   className="text-muted-foreground h-24 text-center"
                 >
-                  No results.
+                  <T>No results.</T>
                 </TableCell>
               </TableRow>
             )}

@@ -6,9 +6,10 @@ import { DataTable } from '@/components/data-table/data-table';
 import { DataTableToolbar } from '@/components/data-table/data-table-toolbar';
 import { CreatePolicySheet } from '@/components/sheets/create-policy-sheet';
 import { useDataTable } from '@/hooks/use-data-table';
+import { useGT } from 'gt-next';
 import { useParams } from 'next/navigation';
 import { ControlWithRelations } from '../data/queries';
-import { getControlColumns } from './controls-table-columns';
+import { getGetControlColumns } from './controls-table-columns';
 
 interface ControlsTableProps {
   promises: Promise<[{ data: ControlWithRelations[]; pageCount: number }]>;
@@ -17,7 +18,8 @@ interface ControlsTableProps {
 export function ControlsTable({ promises }: ControlsTableProps) {
   const [{ data, pageCount }] = React.use(promises);
   const { orgId } = useParams();
-  const columns = React.useMemo(() => getControlColumns(), []);
+  const t = useGT();
+  const columns = React.useMemo(() => getGetControlColumns(t), [t]);
   const [filteredData, setFilteredData] = React.useState<ControlWithRelations[]>(data);
 
   // For client-side filtering, we don't need to apply server-side filtering

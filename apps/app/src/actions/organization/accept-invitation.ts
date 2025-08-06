@@ -1,6 +1,7 @@
 'use server';
 
 import { db } from '@db';
+import { getGT } from 'gt-next/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { Resend } from 'resend';
 import { z } from 'zod';
@@ -52,16 +53,17 @@ export const completeInvitation = authActionClientWithoutOrg
     > => {
       const { inviteCode } = parsedInput;
       const user = ctx.user;
+      const t = await getGT();
 
       if (!user || !user.email) {
-        throw new Error('Unauthorized');
+        throw new Error(t('Unauthorized'));
       }
 
       try {
         const invitation = await validateInviteCode(inviteCode, user.email);
 
         if (!invitation) {
-          throw new Error('Invitation either used or expired');
+          throw new Error(t('Invitation either used or expired'));
         }
 
         const existingMembership = await db.member.findFirst({
@@ -98,7 +100,7 @@ export const completeInvitation = authActionClientWithoutOrg
         }
 
         if (!invitation.role) {
-          throw new Error('Invitation role is required');
+          throw new Error(t('Invitation role is required'));
         }
 
         await db.member.create({

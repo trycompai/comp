@@ -3,10 +3,11 @@
 import { authActionClient } from '@/actions/safe-action';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
+import { getGT } from 'gt-next/server';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { z } from 'zod';
-import { appErrors } from '../types';
+import { getAppErrors } from '../types';
 
 const schema = z.object({
   employeeId: z.string(),
@@ -33,6 +34,8 @@ export const updateEmployeeStatus = authActionClient
       });
 
       const organizationId = session?.session.activeOrganizationId;
+      const t = await getGT();
+      const appErrors = getAppErrors(t);
 
       if (!organizationId) {
         return {

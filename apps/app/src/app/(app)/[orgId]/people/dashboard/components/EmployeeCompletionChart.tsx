@@ -1,6 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
+import { T, useGT } from 'gt-next';
 import type { CSSProperties } from 'react';
 import * as React from 'react';
 
@@ -43,6 +44,7 @@ export function EmployeeCompletionChart({
   policies,
   trainingVideos,
 }: EmployeeCompletionChartProps) {
+  const t = useGT();
   // Calculate completion data for each employee
   const employeeStats: EmployeeTaskStats[] = React.useMemo(() => {
     return employees.map((employee) => {
@@ -102,11 +104,13 @@ export function EmployeeCompletionChart({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>{'Employee Task Completion'}</CardTitle>
+          <CardTitle>
+            <T>Employee Task Completion</T>
+          </CardTitle>
         </CardHeader>
         <CardContent className="flex h-[300px] items-center justify-center">
           <p className="text-muted-foreground text-center text-sm">
-            {'No employee data available'}
+            <T>No employee data available</T>
           </p>
         </CardContent>
       </Card>
@@ -118,11 +122,13 @@ export function EmployeeCompletionChart({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>{'Employee Task Completion'}</CardTitle>
+          <CardTitle>
+            <T>Employee Task Completion</T>
+          </CardTitle>
         </CardHeader>
         <CardContent className="flex h-[300px] items-center justify-center">
           <p className="text-muted-foreground text-center text-sm">
-            {'No tasks available to complete'}
+            <T>No tasks available to complete</T>
           </p>
         </CardContent>
       </Card>
@@ -137,7 +143,9 @@ export function EmployeeCompletionChart({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{'Employee Task Completion'}</CardTitle>
+        <CardTitle>
+          <T>Employee Task Completion</T>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-8">
@@ -146,7 +154,8 @@ export function EmployeeCompletionChart({
               <div className="flex items-center justify-between text-sm">
                 <p>{stat.name}</p>
                 <span className="text-muted-foreground">
-                  {stat.policiesCompleted + stat.trainingsCompleted} / {stat.totalTasks} {'tasks'}
+                  {stat.policiesCompleted + stat.trainingsCompleted} / {stat.totalTasks}{' '}
+                  <T>tasks</T>
                 </span>
               </div>
 
@@ -155,11 +164,15 @@ export function EmployeeCompletionChart({
               <div className="text-muted-foreground flex flex-wrap gap-3 text-xs">
                 <div className="flex items-center gap-1">
                   <div className="bg-primary size-2" />
-                  <span>{'Completed'}</span>
+                  <span>
+                    <T>Completed</T>
+                  </span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="size-2 bg-[var(--chart-open)]" />
-                  <span>{'Not Completed'}</span>
+                  <span>
+                    <T>Not Completed</T>
+                  </span>
                 </div>
               </div>
             </div>
@@ -171,6 +184,7 @@ export function EmployeeCompletionChart({
 }
 
 function TaskBarChart({ stat }: { stat: EmployeeTaskStats }) {
+  const t = useGT();
   const totalCompleted = stat.policiesCompleted + stat.trainingsCompleted;
   const totalIncomplete = stat.totalTasks - totalCompleted;
   const barHeight = 12;
@@ -202,7 +216,7 @@ function TaskBarChart({ stat }: { stat: EmployeeTaskStats }) {
                 width: '100%',
                 height: '100%',
               }}
-              title={`Completed: ${totalCompleted}`}
+              title={t('Completed: {count}', { count: totalCompleted })}
             />
           </div>
         )}
@@ -223,7 +237,7 @@ function TaskBarChart({ stat }: { stat: EmployeeTaskStats }) {
                 width: '100%',
                 height: '100%',
               }}
-              title={`Incomplete: ${totalIncomplete}`}
+              title={t('Incomplete: {count}', { count: totalIncomplete })}
             />
           </div>
         )}

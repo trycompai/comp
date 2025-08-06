@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { db } from '@db';
+import { T } from 'gt-next';
 import { StatusChart } from './status-chart';
 interface Props {
   organizationId: string;
@@ -16,7 +17,9 @@ export async function VendorsByStatus({ organizationId }: Props) {
   return (
     <Card className="h-full w-full">
       <CardHeader>
-        <CardTitle>{'Vendor Status'}</CardTitle>
+        <T>
+          <CardTitle>Vendor Status</CardTitle>
+        </T>
       </CardHeader>
       <CardContent className="w-full">
         <StatusChart data={data} />

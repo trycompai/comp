@@ -3,9 +3,10 @@
 import { authActionClient } from '@/actions/safe-action';
 import type { Departments } from '@db';
 import { db, Prisma } from '@db';
+import { getGT } from 'gt-next/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { appErrors } from '../types';
+import { getAppErrors } from '../types';
 
 const schema = z.object({
   employeeId: z.string(),
@@ -27,6 +28,8 @@ export const updateEmployee = authActionClient
   })
   .action(async ({ parsedInput, ctx }) => {
     const { employeeId, name, email, department, isActive, createdAt } = parsedInput;
+    const t = await getGT();
+    const appErrors = getAppErrors(t);
 
     const organizationId = ctx.session.activeOrganizationId;
     if (!organizationId) throw new Error(appErrors.UNAUTHORIZED.message);
@@ -110,7 +113,7 @@ export const updateEmployee = authActionClient
         if (error.code === 'P2002') {
           const targetFields = error.meta?.target as string[] | undefined;
           if (targetFields?.includes('email')) {
-            throw new Error('Email address is already in use.');
+            throw new Error(t('Email address is already in use.'));
           }
         }
       }

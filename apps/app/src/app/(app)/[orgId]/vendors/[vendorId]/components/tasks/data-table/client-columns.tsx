@@ -1,7 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
 import { Badge } from '@comp/ui/badge';
-import { Task, TaskStatus } from '@db';
-import type { ColumnDef } from '@tanstack/react-table';
+import { TaskStatus } from '@db';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -18,7 +17,7 @@ export interface VendorTaskType {
   };
 }
 
-export function useGetColumnHeaders(): ColumnDef<Task>[] {
+export const useGetColumnHeaders = (t: (content: string) => string) => {
   const { vendorId, orgId } = useParams<{
     vendorId: string;
     orgId: string;
@@ -27,8 +26,8 @@ export function useGetColumnHeaders(): ColumnDef<Task>[] {
   return [
     {
       accessorKey: 'title',
-      header: 'Title',
-      cell: ({ row }) => {
+      header: t('Title'),
+      cell: ({ row }: { row: any }) => {
         const title = row.getValue('title') as string;
         return (
           <Link
@@ -42,12 +41,12 @@ export function useGetColumnHeaders(): ColumnDef<Task>[] {
     },
     {
       accessorKey: 'description',
-      header: 'Description',
+      header: t('Description'),
     },
     {
       accessorKey: 'status',
-      header: 'Status',
-      cell: ({ row }) => {
+      header: t('Status'),
+      cell: ({ row }: { row: any }) => {
         const status = row.getValue('status') as TaskStatus;
         return (
           <Badge
@@ -70,8 +69,8 @@ export function useGetColumnHeaders(): ColumnDef<Task>[] {
     },
     {
       accessorKey: 'dueDate',
-      header: 'Due Date',
-      cell: ({ row }) => {
+      header: t('Due Date'),
+      cell: ({ row }: { row: any }) => {
         const date = row.getValue('dueDate') as string;
         if (!date) return '-';
         return format(new Date(date), 'PP');
@@ -79,8 +78,8 @@ export function useGetColumnHeaders(): ColumnDef<Task>[] {
     },
     {
       accessorKey: 'owner',
-      header: 'Owner',
-      cell: ({ row }) => {
+      header: t('Owner'),
+      cell: ({ row }: { row: any }) => {
         const owner = row.getValue('owner') as {
           name: string;
           image: string;
@@ -103,4 +102,4 @@ export function useGetColumnHeaders(): ColumnDef<Task>[] {
       },
     },
   ];
-}
+};

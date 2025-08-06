@@ -1,11 +1,15 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
-import { uploadTaskFileSchema } from '@/actions/schema';
+import { getUploadTaskFileSchema } from '@/actions/schema';
+import { getGT } from 'gt-next/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
 
 export const revalidateUpload = authActionClient
-  .inputSchema(uploadTaskFileSchema)
+  .inputSchema(async () => {
+    const t = await getGT();
+    return getUploadTaskFileSchema(t);
+  })
   .metadata({
     name: 'upload-task-file',
     track: {

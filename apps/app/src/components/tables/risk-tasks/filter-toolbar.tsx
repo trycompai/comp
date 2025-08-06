@@ -4,6 +4,7 @@ import { cn } from '@comp/ui/cn';
 import { Input } from '@comp/ui/input';
 import { Skeleton } from '@comp/ui/skeleton';
 import type { Member, User } from '@db';
+import { useGT } from 'gt-next';
 import { Search } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import { useTransition } from 'react';
@@ -16,6 +17,7 @@ type Props = {
 export function FilterToolbar({ isEmpty, assignees }: Props) {
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useQueryState('create-task-sheet');
+  const t = useGT();
 
   const [search, setSearch] = useQueryState('search', {
     shallow: false,
@@ -62,7 +64,7 @@ export function FilterToolbar({ isEmpty, assignees }: Props) {
       <div className="relative flex-1 sm:max-w-sm">
         <Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
         <Input
-          placeholder={'Search...'}
+          placeholder={t('Search...')}
           className="pl-8"
           value={search || ''}
           onChange={(e) => setSearch(e.target.value || null)}

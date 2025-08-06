@@ -2,6 +2,7 @@ import { TaskOverview } from '@/components/risks/tasks/task-overview';
 import { getUsers } from '@/hooks/use-users';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
+import { getGT } from 'gt-next/server';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -49,7 +50,9 @@ const getTask = cache(async (riskId: string, taskId: string) => {
 });
 
 export async function generateMetadata(): Promise<Metadata> {
+  const t = await getGT();
+
   return {
-    title: 'Task Overview',
+    title: t('Task Overview'),
   };
 }

@@ -2,6 +2,7 @@ import { IntegrationsHeader } from '@/components/integrations/integrations-heade
 import { IntegrationsServer } from '@/components/integrations/integrations.server';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
+import { getGT } from 'gt-next/server';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -37,7 +38,8 @@ export default async function IntegrationsPage() {
 }
 
 export async function generateMetadata(): Promise<Metadata> {
+  const t = await getGT();
   return {
-    title: 'Integrations',
+    title: t('Integrations'),
   };
 }

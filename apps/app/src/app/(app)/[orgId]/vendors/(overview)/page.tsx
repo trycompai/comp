@@ -1,6 +1,7 @@
 import { AppOnboarding } from '@/components/app-onboarding';
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import type { SearchParams } from '@/types';
+import { getGT } from 'gt-next/server';
 import type { Metadata } from 'next';
 import { CreateVendorSheet } from '../components/create-vendor-sheet';
 import { VendorsTable } from './components/VendorsTable';
@@ -16,6 +17,7 @@ export default async function Page({
   params: Promise<{ orgId: string }>;
 }) {
   const { orgId } = await params;
+  const t = await getGT();
 
   const parsedSearchParams = await vendorsSearchParamsCache.parse(searchParams);
 
@@ -41,28 +43,31 @@ export default async function Page({
     return (
       <div className="py-4">
         <AppOnboarding
-          title={'Vendor Management'}
-          description={'Manage your vendors and ensure your organization is protected.'}
-          cta={'Add vendor'}
+          title={t('Vendor Management')}
+          description={t('Manage your vendors and ensure your organization is protected.')}
+          cta={t('Add vendor')}
           imageSrcLight="/onboarding/vendor-light.webp"
           imageSrcDark="/onboarding/vendor-dark.webp"
-          imageAlt="Vendor Management"
+          imageAlt={t('Vendor Management')}
           sheetName="createVendorSheet"
           faqs={[
             {
-              questionKey: 'What is vendor management?',
-              answerKey:
+              questionKey: t('What is vendor management?'),
+              answerKey: t(
                 'Vendor management is the process of managing, and controlling relationships and agreements with third-party suppliers of goods and services.',
+              ),
             },
             {
-              questionKey: 'Why is vendor management important?',
-              answerKey:
+              questionKey: t('Why is vendor management important?'),
+              answerKey: t(
                 'It helps to ensure that you are getting the most value from your vendors, while also minimizing risks and maintaining compliance.',
+              ),
             },
             {
-              questionKey: 'What are the key steps in vendor management?',
-              answerKey:
+              questionKey: t('What are the key steps in vendor management?'),
+              answerKey: t(
                 'The key steps include vendor selection, contract negotiation, performance monitoring, risk management, and relationship management.',
+              ),
             },
           ]}
         />
@@ -73,7 +78,7 @@ export default async function Page({
 
   return (
     <PageWithBreadcrumb
-      breadcrumbs={[{ label: 'Vendors', href: `/${orgId}/vendors`, current: true }]}
+      breadcrumbs={[{ label: t('Vendors'), href: `/${orgId}/vendors`, current: true }]}
     >
       <VendorsTable
         promises={Promise.all([getVendors(orgId, parsedSearchParams), getAssignees(orgId)])}
@@ -83,7 +88,8 @@ export default async function Page({
 }
 
 export async function generateMetadata(): Promise<Metadata> {
+  const t = await getGT();
   return {
-    title: 'Vendors',
+    title: t('Vendors'),
   };
 }

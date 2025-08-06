@@ -8,6 +8,7 @@ import { createOrUpdateCompany, findCompanyByDomain } from '@/hubspot/companies'
 import { findContactByEmail } from '@/hubspot/contacts';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
+import { getGT } from 'gt-next/server';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { z } from 'zod';
@@ -29,6 +30,7 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
     },
   })
   .action(async ({ parsedInput, ctx }) => {
+    const t = await getGT();
     try {
       const session = await auth.api.getSession({
         headers: await headers(),
@@ -37,7 +39,7 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
       if (!session) {
         return {
           success: false,
-          error: 'Not authorized.',
+          error: t('Not authorized.'),
         };
       }
 
@@ -171,7 +173,7 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
 
       return {
         success: false,
-        error: 'Failed to create organization',
+        error: t('Failed to create organization'),
       };
     }
   });

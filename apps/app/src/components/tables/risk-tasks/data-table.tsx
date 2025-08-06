@@ -5,6 +5,7 @@ import { Suspense } from 'react';
 
 import { cn } from '@comp/ui/cn';
 import { Table, TableBody, TableCell, TableRow } from '@comp/ui/table';
+import { T } from 'gt-next';
 import { type RiskTaskType, useColumns as getColumns } from './columns';
 import { DataTableHeader } from './data-table-header';
 import { DataTablePagination } from './data-table-pagination';
@@ -67,7 +68,7 @@ export function DataTable<TData, TValue>({
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  {'No results found'}
+                  <T>No results found</T>
                 </TableCell>
               </TableRow>
             )}

@@ -1,6 +1,7 @@
 'use server';
 
 import { authClient } from '@/utils/auth-client';
+import { getGT } from 'gt-next/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { authActionClient } from '../safe-action';
@@ -22,11 +23,12 @@ export const inviteEmployee = authActionClient
   .inputSchema(inviteEmployeeSchema)
   .action(async ({ parsedInput, ctx }): Promise<ActionResponse<{ invited: boolean }>> => {
     const organizationId = ctx.session.activeOrganizationId;
+    const t = await getGT();
 
     if (!organizationId) {
       return {
         success: false,
-        error: 'Organization not found',
+        error: t('Organization not found'),
       };
     }
 
@@ -48,7 +50,7 @@ export const inviteEmployee = authActionClient
       };
     } catch (error) {
       console.error('Error inviting employee:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to invite employee';
+      const errorMessage = error instanceof Error ? error.message : t('Failed to invite employee');
       return {
         success: false,
         error: errorMessage,

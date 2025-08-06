@@ -9,6 +9,7 @@ import { logger } from '@/utils/logger';
 import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { AttachmentEntityType, AttachmentType, db } from '@db';
+import { getGT } from 'gt-next/server';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { z } from 'zod';
@@ -54,13 +55,14 @@ export const uploadFile = async (input: z.infer<typeof uploadAttachmentSchema>) 
   logger.info(`[uploadFile] Starting upload for ${input.fileName}`);
 
   console.log('[uploadFile] Checking S3 client availability');
+  const t = await getGT();
   try {
     // Check if S3 client is available
     if (!s3Client) {
       logger.error('[uploadFile] S3 client not initialized - check environment variables');
       return {
         success: false,
-        error: 'File upload service is currently unavailable. Please contact support.',
+        error: t('File upload service is currently unavailable. Please contact support.'),
       } as const;
     }
 
@@ -68,7 +70,7 @@ export const uploadFile = async (input: z.infer<typeof uploadAttachmentSchema>) 
       logger.error('[uploadFile] S3 bucket name not configured');
       return {
         success: false,
-        error: 'File upload service is not properly configured.',
+        error: t('File upload service is not properly configured.'),
       } as const;
     }
 
@@ -84,7 +86,7 @@ export const uploadFile = async (input: z.infer<typeof uploadAttachmentSchema>) 
       logger.error('[uploadFile] Not authorized - no organization found');
       return {
         success: false,
-        error: 'Not authorized - no organization found',
+        error: t('Not authorized - no organization found'),
       } as const;
     }
 
@@ -101,7 +103,7 @@ export const uploadFile = async (input: z.infer<typeof uploadAttachmentSchema>) 
       );
       return {
         success: false,
-        error: `File exceeds the ${MAX_FILE_SIZE_MB}MB limit.`,
+        error: t('File exceeds the {maxSize}MB limit.', { maxSize: MAX_FILE_SIZE_MB }),
       } as const;
     }
 
@@ -157,7 +159,7 @@ export const uploadFile = async (input: z.infer<typeof uploadAttachmentSchema>) 
     logger.error(`[uploadFile] Error during upload process:`, error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'An unknown error occurred.',
+      error: error instanceof Error ? error.message : t('An unknown error occurred.'),
     } as const;
   }
 };

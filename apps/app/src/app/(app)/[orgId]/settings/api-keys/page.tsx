@@ -1,4 +1,5 @@
 import { auth } from '@/utils/auth';
+import { getGT } from 'gt-next/server';
 import { headers } from 'next/headers';
 import { cache } from 'react';
 
@@ -18,8 +19,10 @@ export default async function ApiKeysPage() {
 }
 
 export async function generateMetadata(): Promise<Metadata> {
+  const t = await getGT();
+
   return {
-    title: 'API',
+    title: t('API'),
   };
 }
 

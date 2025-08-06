@@ -1,15 +1,20 @@
 import { getOrganizations } from '@/data/getOrganizations';
 import { auth } from '@/utils/auth';
 import type { Organization } from '@db';
+import { getGT } from 'gt-next/server';
 import { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { OrganizationSetupForm } from '../components/OrganizationSetupForm';
 import { getSetupSession } from '../lib/setup-session';
 
-export const metadata: Metadata = {
-  title: 'Setup Your Organization | Comp AI',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getGT();
+
+  return {
+    title: t('Setup Your Organization | Comp AI'),
+  };
+}
 
 interface SetupPageProps {
   params: Promise<{ setupId: string }>;

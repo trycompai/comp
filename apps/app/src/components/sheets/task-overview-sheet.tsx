@@ -5,6 +5,7 @@ import { Drawer, DrawerContent, DrawerTitle } from '@comp/ui/drawer';
 import { useMediaQuery } from '@comp/ui/hooks';
 import { ScrollArea } from '@comp/ui/scroll-area';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@comp/ui/sheet';
+import { T } from 'gt-next';
 import { X } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 
@@ -26,7 +27,9 @@ export function TaskOverviewSheet({ task }: { task: Task }) {
         <SheetContent stack>
           <SheetHeader className="mb-8">
             <div className="flex flex-row items-center justify-between">
-              <SheetTitle>{'Update Task'}</SheetTitle>
+              <SheetTitle>
+                <T>Update Task</T>
+              </SheetTitle>
               <Button
                 size="icon"
                 variant="ghost"
@@ -36,7 +39,9 @@ export function TaskOverviewSheet({ task }: { task: Task }) {
                 <X className="h-5 w-5" />
               </Button>
             </div>{' '}
-            <SheetDescription>{'Update task details and metadata'}</SheetDescription>
+            <SheetDescription>
+              <T>Update task details and metadata</T>
+            </SheetDescription>
           </SheetHeader>
 
           <ScrollArea className="h-full p-0 pb-[100px]" hideScrollbar>
@@ -49,7 +54,9 @@ export function TaskOverviewSheet({ task }: { task: Task }) {
 
   return (
     <Drawer open={isOpen} onOpenChange={handleOpenChange}>
-      <DrawerTitle hidden>{'Update Risk'}</DrawerTitle>
+      <DrawerTitle hidden>
+        <T>Update Risk</T>
+      </DrawerTitle>
       <DrawerContent className="p-6">
         <UpdateTaskOverviewForm task={task} />
       </DrawerContent>

@@ -203,7 +203,7 @@ export function useOptimisticTaskAttachments(taskId: string) {
         },
       );
     },
-    [mutate, uploadAttachment, data],
+    [mutate, uploadAttachment, data, taskId],
   );
 
   const optimisticDelete = useCallback(

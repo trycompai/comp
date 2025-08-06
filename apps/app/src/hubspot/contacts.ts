@@ -1,3 +1,4 @@
+import { getGT } from 'gt-next/server';
 import { makeHubSpotRequest } from './api-client';
 import type { ContactSearchResult } from './types';
 
@@ -18,6 +19,7 @@ import type { ContactSearchResult } from './types';
  */
 export async function findContactByEmail(email: string): Promise<ContactSearchResult> {
   console.log('[HubSpot] Searching for contact by email...');
+  const t = await getGT();
 
   try {
     const response = await makeHubSpotRequest('/contacts/search', {
@@ -42,7 +44,7 @@ export async function findContactByEmail(email: string): Promise<ContactSearchRe
       console.error('[HubSpot] Error searching for contact:', errorData);
       return {
         contactId: null,
-        error: `Failed to search contact: ${response.statusText}`,
+        error: t('Failed to search contact: {statusText}', { statusText: response.statusText }),
       };
     }
 
@@ -50,7 +52,7 @@ export async function findContactByEmail(email: string): Promise<ContactSearchRe
     console.log('[HubSpot] Contact search results:', data.total || 0, 'contacts found');
 
     if (!data.results || data.results.length === 0) {
-      return { contactId: null, error: 'Contact not found' };
+      return { contactId: null, error: t('Contact not found') };
     }
 
     return { contactId: data.results[0].id };
@@ -75,6 +77,7 @@ export async function findContactByEmail(email: string): Promise<ContactSearchRe
  */
 export async function createContact(email: string): Promise<ContactSearchResult> {
   console.log('[HubSpot] Creating contact with email...');
+  const t = await getGT();
 
   try {
     const response = await makeHubSpotRequest('/contacts', {
@@ -92,7 +95,7 @@ export async function createContact(email: string): Promise<ContactSearchResult>
       console.error('[HubSpot] Error creating contact:', errorData);
       return {
         contactId: null,
-        error: `Failed to create contact: ${response.statusText}`,
+        error: t('Failed to create contact: {statusText}', { statusText: response.statusText }),
       };
     }
 

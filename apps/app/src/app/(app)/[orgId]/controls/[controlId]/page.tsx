@@ -1,5 +1,6 @@
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { auth } from '@/utils/auth';
+import { getGT } from 'gt-next/server';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { SingleControl } from './components/SingleControl';
@@ -52,10 +53,12 @@ export default async function ControlPage({ params }: ControlPageProps) {
     controlId: controlId,
   });
 
+  const t = await getGT();
+
   return (
     <PageWithBreadcrumb
       breadcrumbs={[
-        { label: 'Controls', href: `/${orgId}/controls` },
+        { label: t('Controls'), href: `/${orgId}/controls` },
         { label: control.name, current: true },
       ]}
     >
