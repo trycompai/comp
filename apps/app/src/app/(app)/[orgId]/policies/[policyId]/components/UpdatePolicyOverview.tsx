@@ -9,7 +9,6 @@ import { Calendar } from '@comp/ui/calendar';
 import { cn } from '@comp/ui/cn';
 import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import { Switch } from '@comp/ui/switch';
 import { Departments, Frequency, Member, type Policy, PolicyStatus, User } from '@db';
 import { format } from 'date-fns';
 import { CalendarIcon, Loader2 } from 'lucide-react';
@@ -105,8 +104,6 @@ export function UpdatePolicyOverview({
     const assigneeId = selectedAssigneeId; // Use state instead of form data
     const department = formData.get('department') as Departments;
     const reviewFrequency = formData.get('review_frequency') as Frequency;
-    const isRequiredToSign =
-      formData.get('isRequiredToSign') === 'on' ? 'required' : 'not_required';
 
     // Get review date from the form or use the existing one
     const reviewDate = tempDate || (policy.reviewDate ? new Date(policy.reviewDate) : new Date());
@@ -118,7 +115,6 @@ export function UpdatePolicyOverview({
         assigneeId !== policy.assigneeId ||
         department !== policy.department ||
         reviewFrequency !== policy.frequency ||
-        (policy.isRequiredToSign ? 'required' : 'not_required') !== isRequiredToSign ||
         (policy.reviewDate ? new Date(policy.reviewDate).toDateString() : '') !==
           reviewDate.toDateString());
 
@@ -134,7 +130,6 @@ export function UpdatePolicyOverview({
         department,
         review_frequency: reviewFrequency,
         review_date: reviewDate,
-        isRequiredToSign,
         approverId: null,
         entityId: policy.id,
       });
@@ -153,8 +148,6 @@ export function UpdatePolicyOverview({
     const assigneeId = selectedAssigneeId; // Use state instead of form data
     const department = formData.get('department') as Departments;
     const reviewFrequency = formData.get('review_frequency') as Frequency;
-    const isRequiredToSign =
-      formData.get('isRequiredToSign') === 'on' ? 'required' : 'not_required';
 
     // Get review date from the form or use the existing one
     const reviewDate = tempDate || (policy.reviewDate ? new Date(policy.reviewDate) : new Date());
@@ -167,7 +160,6 @@ export function UpdatePolicyOverview({
       department,
       review_frequency: reviewFrequency,
       review_date: reviewDate,
-      isRequiredToSign,
       approverId: selectedApproverId,
       entityId: policy.id,
     });
@@ -371,25 +363,6 @@ export function UpdatePolicyOverview({
                   : new Date().toISOString())
               }
             />
-          </div>
-
-          {/* Required to Sign Field */}
-          <div className="mt-2 flex flex-col gap-2">
-            <label htmlFor="isRequiredToSign" className="text-sm font-medium">
-              Employee Signature Requirement
-            </label>
-            <div className="mt-4 flex items-center space-x-2">
-              <Switch
-                id="isRequiredToSign"
-                name="isRequiredToSign"
-                disabled={fieldsDisabled}
-                defaultChecked={policy.isRequiredToSign}
-                onCheckedChange={handleFormChange}
-              />
-              <span className="text-sm text-gray-500">
-                {policy.isRequiredToSign ? 'Required' : 'Not Required'}
-              </span>
-            </div>
           </div>
         </div>
 

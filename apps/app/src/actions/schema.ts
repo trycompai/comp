@@ -291,7 +291,6 @@ export const updatePolicyOverviewSchema = z.object({
   id: z.string(),
   title: z.string(),
   description: z.string(),
-  isRequiredToSign: z.enum(['required', 'not_required']).optional(),
   entityId: z.string(),
 });
 
@@ -302,7 +301,6 @@ export const updatePolicyFormSchema = z.object({
   department: z.nativeEnum(Departments),
   review_frequency: z.nativeEnum(Frequency),
   review_date: z.date(),
-  isRequiredToSign: z.enum(['required', 'not_required']),
   approverId: z.string().optional().nullable(), // Added for selecting an approver
   entityId: z.string(),
 });
