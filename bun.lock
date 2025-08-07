@@ -149,7 +149,7 @@
         "@tiptap/extension-table-row": "^2.22.3",
         "@trigger.dev/react-hooks": "3.3.17",
         "@trigger.dev/sdk": "3.3.17",
-        "@trycompai/db": "^1.3.2",
+        "@trycompai/db": "^1.3.3",
         "@types/canvas-confetti": "^1.9.0",
         "@types/three": "^0.177.0",
         "@uploadthing/react": "^7.3.0",
@@ -236,7 +236,7 @@
         "@react-email/render": "^1.1.2",
         "@t3-oss/env-nextjs": "^0.13.8",
         "@trycompai/analytics": "workspace:*",
-        "@trycompai/db": "^1.3.0",
+        "@trycompai/db": "^1.3.3",
         "@trycompai/email": "workspace:*",
         "@trycompai/kv": "workspace:*",
         "@trycompai/ui": "workspace:*",
@@ -1786,7 +1786,7 @@
 
     "@trycompai/analytics": ["@trycompai/analytics@workspace:packages/analytics"],
 
-    "@trycompai/db": ["@trycompai/db@1.3.2", "", { "dependencies": { "@prisma/client": "^6.13.0", "dotenv": "^16.4.5" } }, "sha512-iM7K6qISSe4hdHpTBGNkAHx8O636Vmt6A1akgU32pu+K10kNYHRkR1yc6YmXwy5wxCNKYeTDyVghoe5PcgCVhw=="],
+    "@trycompai/db": ["@trycompai/db@1.3.3", "", { "dependencies": { "@prisma/client": "^6.13.0", "dotenv": "^16.4.5" } }, "sha512-7xaOFJ4UyjBkZTAbdDuvXmcuWMDtD1D1j2EUUjO/tbuhsGblyJ3i3o9saUce3IHCKNLVj5tU+BUEmlXdECQtew=="],
 
     "@trycompai/email": ["@trycompai/email@workspace:packages/email"],
 
@@ -5201,6 +5201,8 @@
     "@trigger.dev/sdk/chalk": ["chalk@5.5.0", "", {}, "sha512-1tm8DTaJhPBG3bIkVeZt1iZM9GfSX2lzOeDVZH9R9ffRHpmHvxZ/QhgQH/aDTkswQVt+YHdXAdS/In/30OjCbg=="],
 
     "@trigger.dev/sdk/uuid": ["uuid@9.0.1", "", { "bin": { "uuid": "dist/bin/uuid" } }, "sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA=="],
+
+    "@trycompai/db/dotenv": ["dotenv@16.6.1", "", {}, "sha512-uBq4egWHTcTt33a72vpSG0z3HnPuIl6NqYcTrKEg2azoEyl2hpW0zqlxysq2pK9HlDIHyHyakeYaYnSAwd8bow=="],
 
     "@trycompai/integrations/@types/node": ["@types/node@24.2.0", "", { "dependencies": { "undici-types": "~7.10.0" } }, "sha512-3xyG3pMCq3oYCNg7/ZP+E1ooTaGB4cG8JWRsqqOYQdbWNY4zbaV0Ennrd7stjiJEFZCaybcIgpTjJWHRfBSIDw=="],
 

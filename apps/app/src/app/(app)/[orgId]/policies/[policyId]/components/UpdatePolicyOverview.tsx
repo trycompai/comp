@@ -104,8 +104,6 @@ export function UpdatePolicyOverview({
     const assigneeId = selectedAssigneeId; // Use state instead of form data
     const department = formData.get('department') as Departments;
     const reviewFrequency = formData.get('review_frequency') as Frequency;
-    const isRequiredToSign =
-      formData.get('isRequiredToSign') === 'on' ? 'required' : 'not_required';
 
     // Get review date from the form or use the existing one
     const reviewDate = tempDate || (policy.reviewDate ? new Date(policy.reviewDate) : new Date());
@@ -117,7 +115,6 @@ export function UpdatePolicyOverview({
         assigneeId !== policy.assigneeId ||
         department !== policy.department ||
         reviewFrequency !== policy.frequency ||
-        (policy.isRequiredToSign ? 'required' : 'not_required') !== isRequiredToSign ||
         (policy.reviewDate ? new Date(policy.reviewDate).toDateString() : '') !==
           reviewDate.toDateString());
 
@@ -133,7 +130,6 @@ export function UpdatePolicyOverview({
         department,
         review_frequency: reviewFrequency,
         review_date: reviewDate,
-        isRequiredToSign,
         approverId: null,
         entityId: policy.id,
       });
@@ -152,8 +148,6 @@ export function UpdatePolicyOverview({
     const assigneeId = selectedAssigneeId; // Use state instead of form data
     const department = formData.get('department') as Departments;
     const reviewFrequency = formData.get('review_frequency') as Frequency;
-    const isRequiredToSign =
-      formData.get('isRequiredToSign') === 'on' ? 'required' : 'not_required';
 
     // Get review date from the form or use the existing one
     const reviewDate = tempDate || (policy.reviewDate ? new Date(policy.reviewDate) : new Date());
@@ -166,7 +160,6 @@ export function UpdatePolicyOverview({
       department,
       review_frequency: reviewFrequency,
       review_date: reviewDate,
-      isRequiredToSign,
       approverId: selectedApproverId,
       entityId: policy.id,
     });

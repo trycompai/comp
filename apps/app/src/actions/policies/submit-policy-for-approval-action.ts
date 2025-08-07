@@ -16,15 +16,7 @@ export const submitPolicyForApprovalAction = authActionClient
     },
   })
   .action(async ({ parsedInput, ctx }) => {
-    const {
-      id,
-      assigneeId,
-      department,
-      review_frequency,
-      review_date,
-      isRequiredToSign,
-      approverId,
-    } = parsedInput;
+    const { id, assigneeId, department, review_frequency, review_date, approverId } = parsedInput;
     const { user, session } = ctx;
 
     if (!user.id || !session.activeOrganizationId) {
@@ -49,7 +41,6 @@ export const submitPolicyForApprovalAction = authActionClient
           department,
           frequency: review_frequency,
           reviewDate: newReviewDate,
-          isRequiredToSign: isRequiredToSign === 'required',
           approverId,
         },
       });
