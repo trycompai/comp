@@ -11,7 +11,7 @@
     "@hookform/resolvers": "^5.1.1",
     "@number-flow/react": "^0.5.9",
     "@prisma/adapter-pg": "6.10.1",
-    "@react-email/components": "^0.0.41",
+    "@react-email/components": "^0.5.0",
     "@react-email/render": "^1.1.2",
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/commit-analyzer": "^13.0.1",
