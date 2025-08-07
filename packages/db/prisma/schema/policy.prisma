@@ -6,7 +6,7 @@ model Policy {
   content          Json[]
   frequency        Frequency?
   department       Departments?
-  isRequiredToSign Boolean      @default(false)
+  isRequiredToSign Boolean      @default(true)
   signedBy         String[]     @default([])
   reviewDate       DateTime?
   isArchived       Boolean      @default(false)
