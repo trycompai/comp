@@ -10,7 +10,6 @@ import { cn } from '@comp/ui/cn';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import { Switch } from '@comp/ui/switch';
 import { Departments, Frequency, type Policy, type PolicyStatus } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
@@ -52,7 +51,6 @@ export function UpdatePolicyOverview({ policy }: { policy: Policy }) {
       department: policy.department ?? Departments.admin,
       review_frequency: policy.frequency ?? Frequency.monthly,
       review_date: reviewDate,
-      isRequiredToSign: policy.isRequiredToSign ? 'required' : 'not_required',
     },
   });
 
@@ -64,7 +62,6 @@ export function UpdatePolicyOverview({ policy }: { policy: Policy }) {
       department: data.department,
       review_frequency: data.review_frequency,
       review_date: data.review_date,
-      isRequiredToSign: data.isRequiredToSign,
       entityId: data.id,
     });
   };
@@ -190,24 +187,6 @@ export function UpdatePolicyOverview({ policy }: { policy: Policy }) {
                     />
                   </PopoverContent>
                 </Popover>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="isRequiredToSign"
-            render={({ field }) => (
-              <FormItem className="flex flex-col gap-3">
-                <FormLabel>{'Signature Requirement'}</FormLabel>
-                <FormControl>
-                  <Switch
-                    checked={field.value === 'required'}
-                    onCheckedChange={(checked) => {
-                      field.onChange(checked ? 'required' : 'not_required');
-                    }}
-                  />
-                </FormControl>
                 <FormMessage />
               </FormItem>
             )}

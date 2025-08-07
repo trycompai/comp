@@ -6,7 +6,6 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@c
 import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Input } from '@comp/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Textarea } from '@comp/ui/textarea';
 import { Policy } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -36,7 +35,6 @@ export function UpdatePolicyForm({ policy }: { policy: Policy }) {
       id: policy.id,
       title: policy.name,
       description: policy.description ?? '',
-      isRequiredToSign: policy.isRequiredToSign ? 'required' : 'not_required',
       entityId: policy.id,
     },
   });
@@ -47,7 +45,6 @@ export function UpdatePolicyForm({ policy }: { policy: Policy }) {
       id: data.id,
       title: data.title,
       description: data.description,
-      isRequiredToSign: data.isRequiredToSign,
       entityId: data.id,
     });
   };
@@ -94,28 +91,6 @@ export function UpdatePolicyForm({ policy }: { policy: Policy }) {
                           />
                         </FormControl>
                         <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="isRequiredToSign"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{'Signature Requirement'}</FormLabel>
-                        <FormControl>
-                          <div className="mt-3">
-                            <Select value={field.value} onValueChange={field.onChange}>
-                              <SelectTrigger>
-                                <SelectValue placeholder={'Select signature requirement'} />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="required">{'Required'}</SelectItem>
-                                <SelectItem value="not_required">{'Not Required'}</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </FormControl>
                       </FormItem>
                     )}
                   />

@@ -52,13 +52,10 @@ export async function EmployeesOverview() {
       return roles.includes('employee');
     });
 
-    console.log(employees);
-
     // Fetch required policies
     policies = await db.policy.findMany({
       where: {
         organizationId: organizationId,
-        isRequiredToSign: true,
       },
     });
 
