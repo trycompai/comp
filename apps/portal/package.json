@@ -5,7 +5,7 @@
     "@aws-sdk/client-s3": "^3.806.0",
     "@aws-sdk/s3-request-presigner": "^3.832.0",
     "@prisma/client": "^6.13.0",
-    "@react-email/components": "^0.0.41",
+    "@react-email/components": "^0.5.0",
     "@react-email/render": "^1.1.2",
     "@t3-oss/env-nextjs": "^0.13.8",
     "@trycompai/analytics": "workspace:*",
