@@ -40,8 +40,7 @@ export const updatePolicyFormAction = authActionClient
     },
   })
   .action(async ({ parsedInput, ctx }) => {
-    const { id, status, assigneeId, department, review_frequency, review_date, isRequiredToSign } =
-      parsedInput;
+    const { id, status, assigneeId, department, review_frequency, review_date } = parsedInput;
     const { user, session } = ctx;
 
     if (!user.id || !session.activeOrganizationId) {
@@ -81,7 +80,6 @@ export const updatePolicyFormAction = authActionClient
           department,
           frequency: review_frequency,
           reviewDate,
-          isRequiredToSign: isRequiredToSign === 'required',
           ...(lastPublishedAt && { lastPublishedAt }),
         },
       });

@@ -40,7 +40,7 @@ vi.mock('next/cache', () => ({
 // Set up environment variables for testing
 beforeAll(() => {
   process.env.AUTH_SECRET = 'test-auth-secret';
-  process.env.BETTER_AUTH_URL = 'http://localhost:3000';
+  process.env.NEXT_PUBLIC_BETTER_AUTH_URL = 'http://localhost:3000';
   // NODE_ENV is automatically set to 'test' by Vitest
 });
 

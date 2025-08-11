@@ -14,6 +14,9 @@ import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import { Toaster } from 'sonner';
 import { Providers } from './providers';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export const metadata: Metadata = {
   metadataBase: new URL('https://app.trycomp.ai'),
   title: 'Comp AI | Automate SOC 2, ISO 27001 and GDPR compliance with AI.',

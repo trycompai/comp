@@ -26,9 +26,11 @@ export default async function TrustPortalSettings({
         soc2={trustPortal?.soc2 ?? false}
         iso27001={trustPortal?.iso27001 ?? false}
         gdpr={trustPortal?.gdpr ?? false}
+        hipaa={trustPortal?.hipaa ?? false}
         soc2Status={trustPortal?.soc2Status ?? 'started'}
         iso27001Status={trustPortal?.iso27001Status ?? 'started'}
         gdprStatus={trustPortal?.gdprStatus ?? 'started'}
+        hipaaStatus={trustPortal?.hipaaStatus ?? 'started'}
         friendlyUrl={trustPortal?.friendlyUrl ?? null}
       />
       <TrustPortalDomain
@@ -65,9 +67,11 @@ const getTrustPortal = cache(async (orgId: string) => {
     soc2: trustPortal?.soc2,
     iso27001: trustPortal?.iso27001,
     gdpr: trustPortal?.gdpr,
+    hipaa: trustPortal?.hipaa,
     soc2Status: trustPortal?.soc2_status,
     iso27001Status: trustPortal?.iso27001_status,
     gdprStatus: trustPortal?.gdpr_status,
+    hipaaStatus: trustPortal?.hipaa_status,
     isVercelDomain: trustPortal?.isVercelDomain,
     vercelVerification: trustPortal?.vercelVerification,
     friendlyUrl: trustPortal?.friendlyUrl,

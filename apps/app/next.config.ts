@@ -1,18 +1,14 @@
 import type { NextConfig } from 'next';
-import path from 'path';
 import './src/env.mjs';
 
 const config: NextConfig = {
-  // Use S3 bucket for static assets
-  assetPrefix: process.env.NODE_ENV === 'production' ? process.env.STATIC_ASSETS_URL : '',
-  poweredByHeader: false,
+  // Use S3 bucket for static assets with app-specific path
+  assetPrefix:
+    process.env.NODE_ENV === 'production' && process.env.STATIC_ASSETS_URL
+      ? `${process.env.STATIC_ASSETS_URL}/app`
+      : '',
   reactStrictMode: true,
   transpilePackages: ['@trycompai/db'],
-  turbopack: {
-    resolveAlias: {
-      underscore: 'lodash',
-    },
-  },
   images: {
     remotePatterns: [
       {
@@ -21,69 +17,22 @@ const config: NextConfig = {
       },
     ],
   },
-  logging: {
-    fetches: {
-      fullUrl: process.env.LOG_FETCHES === 'true',
-    },
-  },
+
   experimental: {
     serverActions: {
       bodySizeLimit: '15mb',
+      allowedOrigins:
+        process.env.NODE_ENV === 'production'
+          ? ([process.env.NEXT_PUBLIC_PORTAL_URL, 'https://app.trycomp.ai'].filter(
+              Boolean,
+            ) as string[])
+          : undefined,
     },
     authInterrupts: true,
+    optimizePackageImports: ['@trycompai/db', '@trycompai/ui'],
   },
-  outputFileTracingRoot: path.join(__dirname, '../../'),
-  outputFileTracingIncludes: {
-    '/api/**/*': ['./node_modules/.prisma/client/**/*'],
-  },
-  async headers() {
-    return [
-      {
-        // Super permissive CORS for all API routes
-        source: '/api/:path*',
-        headers: [
-          {
-            key: 'Access-Control-Allow-Origin',
-            value: '*',
-          },
-          {
-            key: 'Access-Control-Allow-Methods',
-            value: 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
-          },
-          {
-            key: 'Access-Control-Allow-Headers',
-            value: 'Content-Type, Authorization, X-Requested-With, Accept, Origin, x-pathname',
-          },
-          {
-            key: 'Access-Control-Max-Age',
-            value: '86400',
-          },
-        ],
-      },
-      {
-        // Apply security headers to all routes
-        source: '/(.*)',
-        headers: [
-          {
-            key: 'X-DNS-Prefetch-Control',
-            value: 'on',
-          },
-          {
-            key: 'X-Frame-Options',
-            value: 'SAMEORIGIN',
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'origin-when-cross-origin',
-          },
-        ],
-      },
-    ];
-  },
+
+  // PostHog proxy for better tracking
   async rewrites() {
     return [
       {
@@ -100,10 +49,6 @@ const config: NextConfig = {
       },
     ];
   },
-  skipTrailingSlashRedirect: true,
 };
-
-// Always use standalone output
-config.output = 'standalone';
 
 export default config;

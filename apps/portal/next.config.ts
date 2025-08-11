@@ -1,15 +1,8 @@
 import type { NextConfig } from 'next';
-import path from 'path';
 import './src/env.mjs';
 
 const config: NextConfig = {
-  // Use S3 bucket for static assets
-  assetPrefix: process.env.NODE_ENV === 'production' ? process.env.STATIC_ASSETS_URL : '',
   transpilePackages: ['@trycompai/db'],
-  outputFileTracingRoot: path.join(__dirname, '../../'),
-  outputFileTracingIncludes: {
-    '/api/**/*': ['./prisma/**/*'],
-  },
   images: {
     remotePatterns: [
       {
@@ -34,10 +27,34 @@ const config: NextConfig = {
       },
     ];
   },
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        has: [
+          {
+            type: 'header',
+            key: 'Next-Action',
+          },
+        ],
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-cache, no-store, must-revalidate',
+          },
+          {
+            key: 'Pragma',
+            value: 'no-cache',
+          },
+          {
+            key: 'Expires',
+            value: '0',
+          },
+        ],
+      },
+    ];
+  },
   skipTrailingSlashRedirect: true,
 };
-
-// Always use standalone output
-config.output = 'standalone';
 
 export default config;

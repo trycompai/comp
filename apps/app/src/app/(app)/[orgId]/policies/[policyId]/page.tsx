@@ -1,13 +1,7 @@
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import type { Metadata } from 'next';
 import PolicyPage from './components/PolicyPage';
-import {
-  getAssignees,
-  getComments,
-  getLogsForPolicy,
-  getPolicy,
-  getPolicyControlMappingInfo,
-} from './data';
+import { getAssignees, getLogsForPolicy, getPolicy, getPolicyControlMappingInfo } from './data';
 
 export default async function PolicyDetails({
   params,
@@ -18,7 +12,6 @@ export default async function PolicyDetails({
 
   const policy = await getPolicy(policyId);
   const assignees = await getAssignees();
-  const comments = await getComments(policyId);
   const { mappedControls, allControls } = await getPolicyControlMappingInfo(policyId);
   const logs = await getLogsForPolicy(policyId);
 
@@ -39,7 +32,6 @@ export default async function PolicyDetails({
         allControls={allControls}
         isPendingApproval={isPendingApproval}
         logs={logs}
-        comments={comments}
       />
     </PageWithBreadcrumb>
   );

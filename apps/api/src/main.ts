@@ -3,10 +3,28 @@ import { VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { OpenAPIObject } from '@nestjs/swagger';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import * as express from 'express';
 import { AppModule } from './app.module';
 
 async function bootstrap(): Promise<void> {
   const app: INestApplication = await NestFactory.create(AppModule);
+
+  // Configure body parser limits for file uploads (base64 encoded files)
+  app.use(express.json({ limit: '15mb' }));
+  app.use(express.urlencoded({ limit: '15mb', extended: true }));
+
+  // Enable CORS for cross-origin requests
+  app.enableCors({
+    origin: true, // Allow requests from any origin
+    credentials: true, // Allow cookies to be sent cross-origin (for auth)
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-API-Key',
+      'X-Organization-Id',
+    ],
+  });
 
   // Enable API versioning
   app.enableVersioning({
@@ -43,9 +61,13 @@ async function bootstrap(): Promise<void> {
     },
   });
 
-  await app.listen(port);
-  console.log(`Application is running on: ${baseUrl}`);
-  console.log(`API Documentation available at: ${baseUrl}/api/docs`);
+  const server = await app.listen(port);
+  const address = server.address();
+  const actualPort = typeof address === 'string' ? port : address?.port || port;
+  const actualUrl = `http://localhost:${actualPort}`;
+
+  console.log(`Application is running on: ${actualUrl}`);
+  console.log(`API Documentation available at: ${actualUrl}/api/docs`);
 }
 
 // Handle bootstrap errors properly
