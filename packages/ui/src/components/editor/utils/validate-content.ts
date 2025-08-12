@@ -46,9 +46,14 @@ function fixContentArray(contentArray: any[]): JSONContent[] {
     return [createEmptyParagraph()];
   }
 
-  const fixedContent = contentArray
-    .map(fixNode)
-    .filter((node): node is JSONContent => node !== null) as JSONContent[];
+  const fixedContent = contentArray.map(fixNode).filter((node): node is JSONContent => {
+    if (!node) return false;
+    if (node.type === 'text') {
+      const value = typeof (node as any).text === 'string' ? (node as any).text : '';
+      return isNonEmptyText(value);
+    }
+    return true;
+  }) as JSONContent[];
 
   // Ensure we have at least one paragraph
   if (fixedContent.length === 0) {
@@ -56,6 +61,13 @@ function fixContentArray(contentArray: any[]): JSONContent[] {
   }
 
   return fixedContent;
+}
+
+function isNonEmptyText(value: string): boolean {
+  // Consider normal whitespace, NBSP, zero-width space and narrow no-break space
+  if (typeof value !== 'string') return false;
+  const normalized = value.replace(/[\u00A0\u200B\u202F]/g, '');
+  return normalized.trim().length > 0;
 }
 
 /**
@@ -124,12 +136,17 @@ function fixParagraph(node: any): JSONContent {
       }
       return fixNode(item);
     })
-    .filter(Boolean) as JSONContent[];
+    .filter((n): n is JSONContent => {
+      if (!n) return false;
+      // Drop empty text nodes entirely
+      if (n.type === 'text') {
+        const txt = typeof (n as any).text === 'string' ? (n as any).text : '';
+        return txt.trim().length > 0;
+      }
+      return true;
+    });
 
-  // If no valid content, create empty text node
-  if (fixedContent.length === 0) {
-    fixedContent.push({ type: 'text', text: '' });
-  }
+  // If no valid content, keep an empty paragraph (no empty text nodes)
 
   return {
     type: 'paragraph',
@@ -199,9 +216,11 @@ function fixListItem(node: any): JSONContent {
 function fixTextNode(node: any): JSONContent {
   const { text, marks, ...rest } = node;
 
+  const value = typeof text === 'string' ? text : '';
+  // If the resulting text is empty, return a text node with non-empty check handled by callers.
   return {
     type: 'text',
-    text: typeof text === 'string' ? text : '',
+    text: value,
     ...(marks && Array.isArray(marks) && { marks: fixMarks(marks) }),
     ...rest,
   };
@@ -219,8 +238,7 @@ function fixHeading(node: any): JSONContent {
   return {
     type: 'heading',
     attrs: { level: validLevel, ...(attrs && typeof attrs === 'object' ? attrs : {}) },
-    content:
-      content && Array.isArray(content) ? fixContentArray(content) : [{ type: 'text', text: '' }],
+    content: content && Array.isArray(content) ? fixContentArray(content) : [],
     ...rest,
   };
 }
@@ -248,8 +266,7 @@ function fixCodeBlock(node: any): JSONContent {
 
   return {
     type: 'codeBlock',
-    content:
-      content && Array.isArray(content) ? fixContentArray(content) : [{ type: 'text', text: '' }],
+    content: content && Array.isArray(content) ? fixContentArray(content) : [],
     ...(attrs && typeof attrs === 'object' && { attrs }),
     ...rest,
   };
@@ -287,7 +304,7 @@ function createEmptyDocument(): JSONContent {
 function createEmptyParagraph(): JSONContent {
   return {
     type: 'paragraph',
-    content: [{ type: 'text', text: '' }],
+    content: [],
   };
 }
 
