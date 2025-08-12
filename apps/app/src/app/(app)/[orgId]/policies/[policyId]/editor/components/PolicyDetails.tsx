@@ -1,6 +1,7 @@
 'use client';
 
 import { PolicyEditor } from '@/components/editor/policy-editor';
+import { validateAndFixTipTapContent } from '@comp/ui/editor';
 import '@comp/ui/editor.css';
 import type { JSONContent } from '@tiptap/react';
 import { updatePolicy } from '../actions/update-policy';
@@ -34,6 +35,9 @@ export function PolicyPageEditor({
       ? [policyContent as JSONContent]
       : [];
   const sanitizedContent = formattedContent.map(removeUnsupportedMarks);
+  // Normalize via validator so editor always receives a clean array
+  const validatedDoc = validateAndFixTipTapContent(sanitizedContent);
+  const normalizedContent = (validatedDoc.content || []) as JSONContent[];
   const handleSavePolicy = async (policyContent: JSONContent[]): Promise<void> => {
     if (!policyId) return;
 
@@ -48,7 +52,7 @@ export function PolicyPageEditor({
   return (
     <div className="flex h-full flex-col border">
       <PolicyEditor
-        content={sanitizedContent}
+        content={normalizedContent}
         onSave={handleSavePolicy}
         readOnly={isPendingApproval}
       />
