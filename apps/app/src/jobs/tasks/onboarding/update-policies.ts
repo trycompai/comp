@@ -12,6 +12,17 @@ export const updatePolicies = schemaTask({
     organizationId: z.string(),
     policyId: z.string(),
     contextHub: z.string(),
+    frameworks: z.array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        version: z.string(),
+        description: z.string(),
+        visible: z.boolean(),
+        createdAt: z.date(),
+        updatedAt: z.date(),
+      }),
+    ),
   }),
   run: async (params) => {
     try {

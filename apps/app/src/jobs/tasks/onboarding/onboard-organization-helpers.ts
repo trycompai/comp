@@ -4,6 +4,7 @@ import {
   CommentEntityType,
   db,
   Departments,
+  FrameworkEditorFramework,
   Impact,
   Likelihood,
   RiskCategory,
@@ -357,6 +358,7 @@ export async function getOrganizationPolicies(organizationId: string) {
 export async function triggerPolicyUpdates(
   organizationId: string,
   questionsAndAnswers: ContextItem[],
+  frameworks: FrameworkEditorFramework[],
 ): Promise<void> {
   const policies = await getOrganizationPolicies(organizationId);
 
@@ -367,6 +369,7 @@ export async function triggerPolicyUpdates(
           organizationId,
           policyId: policy.id,
           contextHub: questionsAndAnswers.map((c) => `${c.question}\n${c.answer}`).join('\n'),
+          frameworks,
         },
         queue: {
           name: 'update-policies',
@@ -442,6 +445,7 @@ export async function createRisks(
 export async function updateOrganizationPolicies(
   organizationId: string,
   questionsAndAnswers: ContextItem[],
+  frameworks: FrameworkEditorFramework[],
 ): Promise<void> {
-  await triggerPolicyUpdates(organizationId, questionsAndAnswers);
+  await triggerPolicyUpdates(organizationId, questionsAndAnswers, frameworks);
 }

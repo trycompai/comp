@@ -28,6 +28,20 @@ export const onboardOrganization = task({
         payload.organizationId,
       );
 
+      const frameworkInstances = await db.frameworkInstance.findMany({
+        where: {
+          organizationId: payload.organizationId,
+        },
+      });
+
+      const frameworks = await db.frameworkEditorFramework.findMany({
+        where: {
+          id: {
+            in: frameworkInstances.map((instance) => instance.frameworkId),
+          },
+        },
+      });
+
       // Create vendors
       const vendors = await createVendors(questionsAndAnswers, payload.organizationId);
 
@@ -38,7 +52,7 @@ export const onboardOrganization = task({
       await createRisks(questionsAndAnswers, payload.organizationId, organization.name);
 
       // Update policies
-      await updateOrganizationPolicies(payload.organizationId, questionsAndAnswers);
+      await updateOrganizationPolicies(payload.organizationId, questionsAndAnswers, frameworks);
 
       // Mark onboarding as completed
       await db.onboarding.update({

@@ -1,10 +1,85 @@
 import { openai } from '@ai-sdk/openai';
-import { db } from '@db';
+import { db, FrameworkEditorFramework, type Policy } from '@db';
 import type { JSONContent } from '@tiptap/react';
 import { logger } from '@trigger.dev/sdk/v3';
 import { generateObject, NoObjectGeneratedError } from 'ai';
 import { z } from 'zod';
 import { generatePrompt } from '../../lib/prompts';
+
+// Sanitization utilities
+const PLACEHOLDER_REGEX = /<<\s*TO\s*REVIEW\s*>>/gi;
+
+function extractText(node: Record<string, unknown>): string {
+  const text = node && typeof node['text'] === 'string' ? (node['text'] as string) : '';
+  const content = Array.isArray((node as any)?.content)
+    ? ((node as any).content as Record<string, unknown>[])
+    : null;
+  if (content && content.length > 0) {
+    return content.map(extractText).join('');
+  }
+  return text || '';
+}
+
+function sanitizeNodePlaceholders(node: Record<string, unknown>): Record<string, unknown> {
+  const cloned: Record<string, unknown> = { ...node };
+  if (typeof cloned['text'] === 'string') {
+    const replaced = (cloned['text'] as string)
+      .replace(PLACEHOLDER_REGEX, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+    cloned['text'] = replaced;
+  }
+  const content = Array.isArray((cloned as any).content)
+    ? ((cloned as any).content as Record<string, unknown>[])
+    : null;
+  if (content) {
+    (cloned as any).content = content.map(sanitizeNodePlaceholders);
+  }
+  return cloned;
+}
+
+function shouldRemoveAuditorArtifactsHeading(headingText: string): boolean {
+  const lower = headingText.trim().toLowerCase();
+  // Match variations: artefacts/artifacts and with/without "evidence"
+  return lower.includes('auditor') && (lower.includes('artefact') || lower.includes('artifact'));
+}
+
+function removeAuditorArtifactsSection(
+  content: Record<string, unknown>[],
+): Record<string, unknown>[] {
+  const result: Record<string, unknown>[] = [];
+  let i = 0;
+  while (i < content.length) {
+    const node = content[i] as Record<string, unknown>;
+    const nodeType = typeof node['type'] === 'string' ? (node['type'] as string) : '';
+    if (nodeType === 'heading') {
+      const headingText = extractText(node);
+      if (shouldRemoveAuditorArtifactsHeading(headingText)) {
+        // Skip this heading and subsequent nodes until next heading or end
+        i += 1;
+        while (i < content.length) {
+          const nextNode = content[i] as Record<string, unknown>;
+          const nextType = typeof nextNode['type'] === 'string' ? (nextNode['type'] as string) : '';
+          if (nextType === 'heading') break;
+          i += 1;
+        }
+        continue;
+      }
+    }
+    result.push(sanitizeNodePlaceholders(node));
+    i += 1;
+  }
+  return result;
+}
+
+function sanitizeDocument(document: { type: 'document'; content: Record<string, unknown>[] }) {
+  const content = Array.isArray(document.content) ? document.content : [];
+  const withoutAuditorArtifacts = removeAuditorArtifactsSection(content);
+  return {
+    type: 'document' as const,
+    content: withoutAuditorArtifacts,
+  };
+}
 
 // Types
 export type OrganizationData = {
@@ -13,24 +88,19 @@ export type OrganizationData = {
   website: string | null;
 };
 
-export type PolicyData = {
-  id: string;
-  organizationId: string;
-  content: JSONContent[] | null;
-  name: string | null;
-  description: string | null;
-};
+// Use Prisma `Policy` type downstream instead of a local narrow type
 
 export type UpdatePolicyParams = {
   organizationId: string;
   policyId: string;
   contextHub: string;
+  frameworks: FrameworkEditorFramework[];
 };
 
 export type PolicyUpdateResult = {
   policyId: string;
   contextHub: string;
-  policy: PolicyData;
+  policy: Policy;
   updatedContent: {
     type: 'document';
     content: Record<string, unknown>[];
@@ -43,7 +113,7 @@ export type PolicyUpdateResult = {
 export async function fetchOrganizationAndPolicy(
   organizationId: string,
   policyId: string,
-): Promise<{ organization: OrganizationData; policy: PolicyData }> {
+): Promise<{ organization: OrganizationData; policy: Policy }> {
   const [organization, policy] = await Promise.all([
     db.organization.findUnique({
       where: { id: organizationId },
@@ -51,13 +121,6 @@ export async function fetchOrganizationAndPolicy(
     }),
     db.policy.findUnique({
       where: { id: policyId, organizationId },
-      select: {
-        id: true,
-        organizationId: true,
-        content: true,
-        name: true,
-        description: true,
-      },
     }),
   ]);
 
@@ -76,16 +139,18 @@ export async function fetchOrganizationAndPolicy(
  * Generates the prompt for policy content generation
  */
 export async function generatePolicyPrompt(
-  policy: PolicyData,
+  policy: Policy,
   contextHub: string,
   organization: OrganizationData,
+  frameworks: FrameworkEditorFramework[],
 ): Promise<string> {
-  return await generatePrompt({
-    existingPolicyContent: policy.content,
+  return generatePrompt({
+    existingPolicyContent: (policy.content as unknown as JSONContent | JSONContent[]) ?? [],
     contextHub,
     policy,
     companyName: organization.name ?? 'Company',
     companyWebsite: organization.website ?? 'https://company.com',
+    frameworks,
   });
 }
 
@@ -98,7 +163,7 @@ export async function generatePolicyContent(prompt: string): Promise<{
 }> {
   try {
     const { object } = await generateObject({
-      model: openai('gpt-4o-mini'),
+      model: openai('gpt-5-mini'),
       mode: 'json',
       system: `You are an expert at writing security policies. Generate content directly as TipTap JSON format.
 
@@ -165,24 +230,27 @@ export async function updatePolicyInDatabase(
  * Complete policy update workflow
  */
 export async function processPolicyUpdate(params: UpdatePolicyParams): Promise<PolicyUpdateResult> {
-  const { organizationId, policyId, contextHub } = params;
+  const { organizationId, policyId, contextHub, frameworks } = params;
 
   // Fetch organization and policy data
   const { organization, policy } = await fetchOrganizationAndPolicy(organizationId, policyId);
 
   // Generate prompt for AI
-  const prompt = await generatePolicyPrompt(policy, contextHub, organization);
+  const prompt = await generatePolicyPrompt(policy, contextHub, organization, frameworks);
 
   // Generate new policy content
   const updatedContent = await generatePolicyContent(prompt);
 
+  // Remove placeholders and any Auditor Artefacts/Artifacts sections before saving
+  const sanitized = sanitizeDocument(updatedContent);
+
   // Update policy in database
-  await updatePolicyInDatabase(policyId, updatedContent.content);
+  await updatePolicyInDatabase(policyId, sanitized.content);
 
   return {
     policyId,
     contextHub,
     policy,
-    updatedContent,
+    updatedContent: sanitized,
   };
 }
