@@ -67,7 +67,8 @@ export class AttachmentsService {
         Body: fileBuffer,
         ContentType: uploadDto.fileType,
         Metadata: {
-          originalFileName: uploadDto.fileName,
+          // S3 metadata becomes HTTP headers (x-amz-meta-*) and must be ASCII without control chars
+          originalFileName: this.sanitizeHeaderValue(uploadDto.fileName),
           organizationId,
           entityId,
           entityType,
@@ -271,6 +272,18 @@ export class AttachmentsService {
    */
   private sanitizeFileName(fileName: string): string {
     return fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
+  }
+
+  /**
+   * Sanitize header value for S3 user metadata (x-amz-meta-*) to avoid invalid characters
+   * - Remove control characters (\x00-\x1F, \x7F)
+   * - Replace non-ASCII with '_'
+   * - Trim whitespace
+   */
+  private sanitizeHeaderValue(value: string): string {
+    const withoutControls = value.replace(/[\x00-\x1F\x7F]/g, '');
+    const asciiOnly = withoutControls.replace(/[^\x20-\x7E]/g, '_');
+    return asciiOnly.trim();
   }
 
   /**
