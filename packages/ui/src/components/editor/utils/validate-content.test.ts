@@ -181,4 +181,53 @@ describe('validateAndFixTipTapContent', () => {
       groupEndSpy.mockRestore();
     });
   });
+
+  describe('empty text node handling', () => {
+    const strip = (s: string) => s.replace(/[\u00A0\u200B\u202F]/g, '').trim();
+
+    const hasEmptyTextNodes = (node: any): boolean => {
+      if (!node || typeof node !== 'object') return false;
+      if (node.type === 'text') {
+        const txt = typeof node.text === 'string' ? node.text : '';
+        return strip(txt).length === 0;
+      }
+      if (Array.isArray(node.content)) {
+        return node.content.some((child: any) => hasEmptyTextNodes(child));
+      }
+      return false;
+    };
+
+    it('removes empty and whitespace-only (including NBSP/ZWSP) text nodes in paragraphs', () => {
+      const content = {
+        type: 'doc',
+        content: [
+          {
+            type: 'paragraph',
+            content: [
+              { type: 'text', text: '' },
+              { type: 'text', text: ' ' },
+              { type: 'text', text: '\u00A0' },
+              { type: 'text', text: '\u200B' },
+              { type: 'text', text: 'Hello' },
+              { text: 'World' },
+            ],
+          },
+        ],
+      };
+
+      const fixed = validateAndFixTipTapContent(content);
+      expect(fixed.type).toBe('doc');
+      expect(hasEmptyTextNodes(fixed)).toBe(false);
+
+      const paragraph = (fixed.content as any[])[0];
+      const texts = paragraph.content.map((n: any) => n.text);
+      expect(texts).toEqual(['Hello', 'World']);
+    });
+
+    it('does not introduce empty text nodes when creating empty structures', () => {
+      const fixed = validateAndFixTipTapContent({});
+      expect(fixed.type).toBe('doc');
+      expect(hasEmptyTextNodes(fixed)).toBe(false);
+    });
+  });
 });

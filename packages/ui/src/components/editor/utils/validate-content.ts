@@ -58,6 +58,15 @@ function fixContentArray(contentArray: any[]): JSONContent[] {
   return fixedContent;
 }
 
+function ensureNonEmptyText(value: unknown): string {
+  const text = typeof value === 'string' ? value : '';
+  // Normalize NBSP and narrow no-break space for emptiness checks
+  const normalized = text.replace(/[\u00A0\u202F]/g, '');
+  if (normalized.trim().length > 0) return text;
+  // Return zero-width space to ensure non-empty text node without visual change
+  return '\u200B';
+}
+
 /**
  * Fixes a single node and its content
  */
@@ -82,6 +91,12 @@ function fixNode(node: any): JSONContent | null {
       return fixList(node);
     case 'listItem':
       return fixListItem(node);
+    case 'table':
+      return fixTable(node);
+    case 'tableRow':
+      return fixTableRow(node);
+    case 'tableCell':
+      return fixTableCell(node);
     case 'text':
       return fixTextNode(node);
     case 'heading':
@@ -90,6 +105,8 @@ function fixNode(node: any): JSONContent | null {
       return fixBlockquote(node);
     case 'codeBlock':
       return fixCodeBlock(node);
+    case 'hardBreak':
+      return { type: 'hardBreak' };
     default:
       // For other valid nodes, just fix their content if they have any
       return {
@@ -118,18 +135,15 @@ function fixParagraph(node: any): JSONContent {
       if (item.text && !item.type) {
         return {
           type: 'text',
-          text: item.text,
+          text: ensureNonEmptyText(item.text),
           ...(item.marks && { marks: fixMarks(item.marks) }),
         };
       }
       return fixNode(item);
     })
-    .filter(Boolean) as JSONContent[];
+    .filter((n): n is JSONContent => Boolean(n));
 
-  // If no valid content, create empty text node
-  if (fixedContent.length === 0) {
-    fixedContent.push({ type: 'text', text: '' });
-  }
+  // If no valid content, keep an empty paragraph (no empty text nodes)
 
   return {
     type: 'paragraph',
@@ -199,9 +213,10 @@ function fixListItem(node: any): JSONContent {
 function fixTextNode(node: any): JSONContent {
   const { text, marks, ...rest } = node;
 
+  const value = ensureNonEmptyText(text);
   return {
     type: 'text',
-    text: typeof text === 'string' ? text : '',
+    text: value,
     ...(marks && Array.isArray(marks) && { marks: fixMarks(marks) }),
     ...rest,
   };
@@ -219,8 +234,7 @@ function fixHeading(node: any): JSONContent {
   return {
     type: 'heading',
     attrs: { level: validLevel, ...(attrs && typeof attrs === 'object' ? attrs : {}) },
-    content:
-      content && Array.isArray(content) ? fixContentArray(content) : [{ type: 'text', text: '' }],
+    content: content && Array.isArray(content) ? fixContentArray(content) : [],
     ...rest,
   };
 }
@@ -248,11 +262,53 @@ function fixCodeBlock(node: any): JSONContent {
 
   return {
     type: 'codeBlock',
-    content:
-      content && Array.isArray(content) ? fixContentArray(content) : [{ type: 'text', text: '' }],
+    content: content && Array.isArray(content) ? fixContentArray(content) : [],
     ...(attrs && typeof attrs === 'object' && { attrs }),
     ...rest,
   };
+}
+
+/**
+ * Fixes table structures
+ */
+function fixTable(node: any): JSONContent {
+  const { content, attrs, ...rest } = node;
+  let rows: JSONContent[] = [];
+  if (Array.isArray(content)) {
+    rows = content
+      .map((child: any) => (child?.type === 'tableRow' ? fixTableRow(child) : null))
+      .filter(Boolean) as JSONContent[];
+  }
+  if (rows.length === 0) {
+    rows = [createEmptyTableRow()];
+  }
+  return { type: 'table', content: rows, ...(attrs && { attrs }), ...rest };
+}
+
+function fixTableRow(node: any): JSONContent {
+  const { content, attrs, ...rest } = node;
+  let cells: JSONContent[] = [];
+  if (Array.isArray(content)) {
+    cells = content
+      .map((child: any) => (child?.type === 'tableCell' ? fixTableCell(child) : null))
+      .filter(Boolean) as JSONContent[];
+  }
+  if (cells.length === 0) {
+    cells = [createEmptyTableCell()];
+  }
+  return { type: 'tableRow', content: cells, ...(attrs && { attrs }), ...rest };
+}
+
+function fixTableCell(node: any): JSONContent {
+  const { content, attrs, ...rest } = node;
+  let blocks: JSONContent[] = [];
+  if (Array.isArray(content)) {
+    blocks = fixContentArray(content);
+  }
+  if (blocks.length === 0) {
+    blocks = [createEmptyParagraph()];
+  }
+  return { type: 'tableCell', content: blocks, ...(attrs && { attrs }), ...rest };
 }
 
 /**
@@ -287,7 +343,7 @@ function createEmptyDocument(): JSONContent {
 function createEmptyParagraph(): JSONContent {
   return {
     type: 'paragraph',
-    content: [{ type: 'text', text: '' }],
+    content: [],
   };
 }
 
@@ -298,6 +354,20 @@ function createEmptyListItem(): JSONContent {
   return {
     type: 'listItem',
     content: [createEmptyParagraph()],
+  };
+}
+
+function createEmptyTableCell(): JSONContent {
+  return {
+    type: 'tableCell',
+    content: [createEmptyParagraph()],
+  };
+}
+
+function createEmptyTableRow(): JSONContent {
+  return {
+    type: 'tableRow',
+    content: [createEmptyTableCell()],
   };
 }
 
