@@ -8,6 +8,7 @@ if (!process.env.OPENAI_API_KEY) {
 
 export const updatePolicies = schemaTask({
   id: 'update-policies',
+  maxDuration: 600, // 10 minutes.
   schema: z.object({
     organizationId: z.string(),
     policyId: z.string(),

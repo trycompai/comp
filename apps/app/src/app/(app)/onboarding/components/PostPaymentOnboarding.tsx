@@ -7,7 +7,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@comp/ui/c
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@comp/ui/form';
 import type { Organization } from '@db';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { usePostPaymentOnboarding } from '../hooks/usePostPaymentOnboarding';
 
 interface PostPaymentOnboardingProps {
@@ -33,11 +33,23 @@ export function PostPaymentOnboarding({
     isLastStep,
     currentStepNumber,
     totalSteps,
+    completeNow,
   } = usePostPaymentOnboarding({
     organizationId: organization.id,
     organizationName: organization.name,
     initialData,
   });
+
+  const isLocal = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    const host = window.location.host || '';
+    return (
+      process.env.NODE_ENV !== 'production' ||
+      host.includes('localhost') ||
+      host.startsWith('127.0.0.1') ||
+      host.startsWith('::1')
+    );
+  }, []);
 
   // Dispatch custom event for background animation when step changes
   useEffect(() => {
@@ -124,24 +136,37 @@ export function PostPaymentOnboarding({
                 Back
               </Button>
 
-              <Button
-                type="submit"
-                form="onboarding-form"
-                disabled={isOnboarding || isFinalizing || isLoading}
-                className="group transition-all hover:pl-3"
-                data-testid="onboarding-next-button"
-              >
-                {isFinalizing ? (
-                  'Setting up...'
-                ) : isLastStep ? (
-                  'Complete Setup'
-                ) : (
-                  <>
-                    Next
-                    <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                  </>
+              <div className="flex items-center gap-2">
+                {isLocal && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={completeNow}
+                    disabled={isOnboarding || isFinalizing || isLoading}
+                    className="group transition-all"
+                  >
+                    Complete now
+                  </Button>
                 )}
-              </Button>
+                <Button
+                  type="submit"
+                  form="onboarding-form"
+                  disabled={isOnboarding || isFinalizing || isLoading}
+                  className="group transition-all hover:pl-3"
+                  data-testid="onboarding-next-button"
+                >
+                  {isFinalizing ? (
+                    'Setting up...'
+                  ) : isLastStep ? (
+                    'Complete Setup'
+                  ) : (
+                    <>
+                      Next
+                      <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
             <div className="w-full border-t border-border/30 pt-3">
               <p className="text-center text-xs text-muted-foreground/70">

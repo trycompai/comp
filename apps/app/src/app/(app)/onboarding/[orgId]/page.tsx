@@ -64,6 +64,32 @@ export default async function OnboardingPage({ params }: OnboardingPageProps) {
     }
   });
 
+  // Local-only: prefill onboarding fields to speed up development
+  const hdrs = await headers();
+  const host = hdrs.get('host') || '';
+  const isLocal =
+    process.env.NODE_ENV !== 'production' ||
+    host.includes('localhost') ||
+    host.startsWith('127.0.0.1') ||
+    host.startsWith('::1');
+
+  if (isLocal) {
+    Object.assign(initialData, {
+      describe:
+        initialData.describe ||
+        'comp ai is a grc platform saas that gets companies compliant with soc2 iso and hipaa in days',
+      industry: initialData.industry || 'SaaS',
+      teamSize: initialData.teamSize || '1-10',
+      devices: initialData.devices || 'Personal laptops',
+      authentication: initialData.authentication || 'Google Workspace',
+      software:
+        initialData.software || 'Rippling, HubSpot, Slack, Notion, Linear, GitHub, Figma, Stripe',
+      workLocation: initialData.workLocation || 'Fully remote',
+      infrastructure: initialData.infrastructure || 'AWS, Vercel',
+      dataTypes: initialData.dataTypes || 'Employee data',
+    });
+  }
+
   // We'll use a modified version that starts at step 3
   return <PostPaymentOnboarding organization={organization} initialData={initialData} />;
 }
