@@ -33,6 +33,9 @@ export const generatePrompt = ({
       ? frameworks.map((f) => `${f.name} v${f.version}`).join(', ')
       : 'None explicitly selected';
   const hasHIPAA = frameworks.some((f) => f.name.toLowerCase().includes('hipaa'));
+  const hasSOC2 = frameworks.some(
+    (f) => /soc\s*2/i.test(f.name) || f.name.toLowerCase().includes('soc'),
+  );
 
   return `
 Company: ${companyName} (${companyWebsite})
@@ -44,30 +47,36 @@ ${contextHub}
 Task: Edit the provided TipTap JSON template to produce the final policy TipTap JSON. Apply ONLY the rules below.
 
 Required rules (keep this simple):
-1) Framework sections
-   - The template may contain framework-specific sections titled like "SOC 2 Specific" or "HIPAA Specific".
-   - Keep only the sections for the selected frameworks. Remove the sections for unselected frameworks.
-   - For the kept sections, remove the "<Framework> Specific" label and keep their bullets under the appropriate place.
-   - Consolidate bullets if redundant; do not add new sections.
 
-2) Company details
-   - If the template asks to insert company info, replace placeholders (e.g., {{COMPANY_NAME}}, {{COMPANY_WEBSITE}}) with: ${companyName}, ${companyWebsite}.
-   - Only add details where the template asks; do not invent new fields.
+1) Company details
+   - If the template contains placeholders like {{...}}, replace ANY placeholder with information you actually have (from the knowledge base, company name, company website, frameworks context).
+   - If a specific placeholder cannot be resolved, set it to "N/A" (do not invent values).
+   - Only fill placeholders where the template asks; do not add new fields beyond the placeholders.
+   - Placeholder legend (map values from the knowledge base Q&A where available):
+     - {{COMPANY}}            ⇐ Company Name
+     - {{COMPANYINFO}}        ⇐ Describe your company in a few sentences
+     - {{INDUSTRY}}           ⇐ What Industry is your company in?
+     - {{EMPLOYEES}}          ⇐ How many employees do you have
+     - {{DEVICES}}            ⇐ What Devices do your team members use
+     - {{SOFTWARE}}           ⇐ What software do you use
+     - {{LOCATION}}           ⇐ How does your team work
+     - {{CRITICAL}}           ⇐ Where do you host your application and data
+     - {{DATA}}               ⇐ What type of data do you handle
+     - {{GEO}}                ⇐ Where is your data located
+   - If multiple answers exist, choose the most specific/concise form. If no answer is found for a placeholder, set it to "N/A".
 
-3) Vendors (keep focused)
-   - Mention only vendors/tools that are critical or high-impact for this policy.
-   - Do not invent vendors.
-${
-  hasHIPAA
-    ? `   - If HIPAA is selected, inline-tag vendors when relevant: (criticality: high|medium|low; data: PHI|PII when applicable). No separate Vendors table.`
-    : ''
-}
-
-4) Structure & style
+2) Structure & style
    - Keep the same section order and general layout as the template (headings or bold titles as-is).
-   - No Table of Contents. No control/criteria mapping section unless it already exists in the template.
-   - Use concise, mandatory language (must/shall) with clear owners/cadences when appropriate.
    - Do NOT copy instruction cue lines (e.g., "Add a HIPAA checklist...", "State that...", "Clarify that..."). Convert such cues into real policy language, and then remove the cue line entirely. If a cue precedes bullet points, keep the bullets but delete the cue line.
+
+3) Handlebars-style conditionals
+   - The template may contain conditional blocks using {{#if var}}...{{/if}} syntax (e.g., {{#if soc2}}, {{#if hipaa}}).
+   - Evaluate these using the selected frameworks:
+     - soc2 is ${hasSOC2 ? 'true' : 'false'}
+     - hipaa is ${hasHIPAA ? 'true' : 'false'}
+   - If the condition is true: keep only the inner content and remove the {{#if}}/{{/if}} markers.
+   - If the condition is false: remove the entire block including its content.
+   - For any other unknown {{#if X}} variables: assume false and remove the block.
 
 Output: Return ONLY the final TipTap JSON document.
 

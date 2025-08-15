@@ -87,6 +87,7 @@ export default async function OnboardingPage({ params }: OnboardingPageProps) {
       workLocation: initialData.workLocation || 'Fully remote',
       infrastructure: initialData.infrastructure || 'AWS, Vercel',
       dataTypes: initialData.dataTypes || 'Employee data',
+      geo: initialData.geo || 'North America,Europe (EU)',
     });
   }
 

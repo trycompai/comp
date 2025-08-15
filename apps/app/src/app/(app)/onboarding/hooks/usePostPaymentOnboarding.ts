@@ -138,6 +138,7 @@ export function usePostPaymentOnboarding({
       workLocation: allAnswers.workLocation || '',
       infrastructure: allAnswers.infrastructure || '',
       dataTypes: allAnswers.dataTypes || '',
+      geo: allAnswers.geo || '',
     });
   };
 
