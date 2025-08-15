@@ -11,6 +11,7 @@ export type CompanyDetails = {
   infrastructure: string;
   dataTypes: string;
   software: string;
+  geo: string;
 };
 
 export type ChatBubble = {

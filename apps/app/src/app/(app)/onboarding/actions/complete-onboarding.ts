@@ -22,6 +22,7 @@ const onboardingCompletionSchema = z.object({
   workLocation: z.string().min(1),
   infrastructure: z.string().min(1),
   dataTypes: z.string().min(1),
+  geo: z.string().min(1),
 });
 
 export const completeOnboarding = authActionClient

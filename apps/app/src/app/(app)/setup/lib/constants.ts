@@ -19,6 +19,7 @@ export const companyDetailsSchema = z.object({
   devices: z.string().min(1, 'Please select device types'),
   authentication: z.string().min(1, 'Please select authentication methods'),
   workLocation: z.string().min(1, 'Please select work arrangement'),
+  geo: z.string().min(1, 'Please select where your data is located'),
 });
 
 export const steps: Step[] = [
@@ -119,6 +120,21 @@ export const steps: Step[] = [
       'Health records',
       'Intellectual property',
       'Other',
+    ],
+  },
+  {
+    key: 'geo',
+    question: 'Where is your data located?',
+    placeholder: 'e.g., North America',
+    options: [
+      'North America',
+      'Europe (EU)',
+      'United Kingdom',
+      'Asia-Pacific',
+      'South America',
+      'Africa',
+      'Middle East',
+      'Australia/New Zealand',
     ],
   },
 ];

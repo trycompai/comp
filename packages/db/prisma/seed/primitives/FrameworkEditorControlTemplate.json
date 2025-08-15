@@ -35,13 +35,6 @@
     "updatedAt": "2025-06-04 19:41:05.205"
   },
   {
-    "id": "frk_ct_684072e06f4a49ee669076cc",
-    "name": "Malware Protection",
-    "description": "Protect Systems Against Malware",
-    "createdAt": "2025-06-04 16:22:56.279",
-    "updatedAt": "2025-06-04 19:41:06.033"
-  },
-  {
     "id": "frk_ct_6840738800f98fa3c0f3a3ae",
     "name": "Configuration & Patch Management",
     "description": "Harden baselines; patch swiftly",
@@ -49,11 +42,11 @@
     "updatedAt": "2025-06-04 19:41:06.507"
   },
   {
-    "id": "frk_ct_684075c692439e38c753c95d",
-    "name": "Physical Access Control",
-    "description": "Control Physical Entry to Facilities",
-    "createdAt": "2025-06-04 16:35:17.828",
-    "updatedAt": "2025-06-04 19:41:07.120"
+    "id": "frk_ct_684072e06f4a49ee669076cc",
+    "name": "Endpoint Protection",
+    "description": "Protect Systems Against Malware",
+    "createdAt": "2025-06-04 16:22:56.279",
+    "updatedAt": "2025-06-09 02:50:51.955"
   },
   {
     "id": "frk_ct_684070831cc83c4ab4c2c4d8",
@@ -91,6 +84,13 @@
     "updatedAt": "2025-06-04 19:41:07.258"
   },
   {
+    "id": "frk_ct_6849ba93636ff0155eb89158",
+    "name": "Utility Tool monitoring",
+    "description": "Audits the execution of privileged program",
+    "createdAt": "2025-06-11 17:19:15.284",
+    "updatedAt": "2025-06-11 17:19:15.284"
+  },
+  {
     "id": "frk_ct_683f4a410cf5bf6d40bf3583",
     "name": "Access Rights",
     "description": "Manage User Access Rights Lifecycle",
@@ -124,20 +124,6 @@
     "description": "Maintain compliance register exceptions",
     "createdAt": "2025-06-03 19:27:24.623",
     "updatedAt": "2025-06-04 19:41:03.972"
-  },
-  {
-    "id": "frk_ct_683f4cf6afd7a19be2d4432c",
-    "name": "Configuration management",
-    "description": "Implement Secure Configuration Management",
-    "createdAt": "2025-06-03 19:28:54.395",
-    "updatedAt": "2025-06-04 19:41:04.126"
-  },
-  {
-    "id": "frk_ct_683f4d7360a876b972aba39a",
-    "name": "Vulnerability Disclosure",
-    "description": "Public CVD channel; triage",
-    "createdAt": "2025-06-03 19:30:59.173",
-    "updatedAt": "2025-06-04 19:41:04.258"
   },
   {
     "id": "frk_ct_683f4dd564057a97ae323c9f",
@@ -182,13 +168,6 @@
     "updatedAt": "2025-06-04 19:41:05.484"
   },
   {
-    "id": "frk_ct_684070f0b4f6c2036306e23c",
-    "name": "Network Security",
-    "description": "Enforce segmentation and firewalls",
-    "createdAt": "2025-06-04 16:14:40.321",
-    "updatedAt": "2025-06-04 19:41:05.635"
-  },
-  {
     "id": "frk_ct_68407122565b1968676d93db",
     "name": "Physical Access Control",
     "description": "Control Physical Entry to Facilities",
@@ -201,6 +180,13 @@
     "description": "Secure User Endpoint Devices",
     "createdAt": "2025-06-04 16:27:49.808",
     "updatedAt": "2025-06-04 19:41:06.874"
+  },
+  {
+    "id": "frk_ct_683f4d7360a876b972aba39a",
+    "name": "Vulnerability Management",
+    "description": "Manage both software and code vulnerabilities",
+    "createdAt": "2025-06-03 19:30:59.173",
+    "updatedAt": "2025-06-09 03:19:38.679"
   },
   {
     "id": "frk_ct_683f3ecd42e62fde624c59c1",
@@ -292,5 +278,19 @@
     "description": "Ensure Security in Supplier Relationships",
     "createdAt": "2025-06-03 19:11:41.449",
     "updatedAt": "2025-06-04 19:41:03.278"
+  },
+  {
+    "id": "frk_ct_684070f0b4f6c2036306e23c",
+    "name": "Architecture Diagram",
+    "description": "Enforce segmentation and firewalls",
+    "createdAt": "2025-06-04 16:14:40.321",
+    "updatedAt": "2025-06-11 16:02:01.899"
+  },
+  {
+    "id": "frk_ct_6849c343d7fbe4e71446ce78",
+    "name": "Data Masking",
+    "description": "Hide sensitive fields",
+    "createdAt": "2025-06-11 17:56:19.307",
+    "updatedAt": "2025-06-11 17:56:19.307"
   }
 ]

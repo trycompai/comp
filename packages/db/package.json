@@ -7,8 +7,10 @@
     "dotenv": "^16.4.5"
   },
   "devDependencies": {
+    "@types/node": "^24.2.0",
     "prisma": "^6.13.0",
-    "typescript": "^5.8.3"
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
   },
   "exports": {
     ".": "./dist/index.js"
