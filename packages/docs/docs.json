@@ -47,7 +47,7 @@
       },
       {
         "tab": "API",
-        "openapi": "https://api.trycomp.ai/api/docs-json"
+        "openapi": "https://petstore3.swagger.io/api/v3/openapi.json"
       }
     ],
     "global": {
