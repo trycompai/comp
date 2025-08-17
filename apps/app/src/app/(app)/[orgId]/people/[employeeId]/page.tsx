@@ -1,6 +1,7 @@
 import { auth } from '@/utils/auth';
 
 import { getPostHogClient } from '@/app/posthog';
+import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import {
   type TrainingVideo,
   trainingVideos as trainingVideosData,
@@ -16,9 +17,9 @@ import { Employee } from './components/Employee';
 export default async function EmployeeDetailsPage({
   params,
 }: {
-  params: Promise<{ employeeId: string }>;
+  params: Promise<{ employeeId: string; orgId: string }>;
 }) {
-  const { employeeId } = await params;
+  const { employeeId, orgId } = await params;
 
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -46,14 +47,21 @@ export default async function EmployeeDetailsPage({
   );
 
   return (
-    <Employee
-      employee={employee}
-      policies={policies}
-      trainingVideos={employeeTrainingVideos}
-      fleetPolicies={fleetPolicies}
-      host={device}
-      isFleetEnabled={isFleetEnabled ?? false}
-    />
+    <PageWithBreadcrumb
+      breadcrumbs={[
+        { label: 'People', href: `/${orgId}/people/all` },
+        { label: employee.user.name, current: true },
+      ]}
+    >
+      <Employee
+        employee={employee}
+        policies={policies}
+        trainingVideos={employeeTrainingVideos}
+        fleetPolicies={fleetPolicies}
+        host={device}
+        isFleetEnabled={isFleetEnabled ?? false}
+      />
+    </PageWithBreadcrumb>
   );
 }
 

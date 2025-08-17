@@ -39,6 +39,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
           {
             path: `/${orgId}/people/all`,
             label: 'People',
+            activeOverrideIdPrefix: 'mem_',
           },
           ...(employees.length > 0
             ? [
