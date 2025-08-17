@@ -183,7 +183,8 @@ export function OrganizationSwitcher({
                 {organizations.map((org) => (
                   <CommandItem
                     key={org.id}
-                    value={org.id}
+                    // Search by id and name
+                    value={`${org.id} ${org.name || ''}`}
                     onSelect={() => {
                       if (org.id !== currentOrganization?.id) {
                         handleOrgChange(org);
