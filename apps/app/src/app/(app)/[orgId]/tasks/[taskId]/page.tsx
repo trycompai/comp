@@ -48,6 +48,9 @@ const getTask = async (taskId: string, session: Session) => {
         id: taskId,
         organizationId: activeOrgId,
       },
+      include: {
+        controls: true,
+      },
     });
 
     console.log('[getTask] Database query successful');
@@ -57,8 +60,6 @@ const getTask = async (taskId: string, session: Session) => {
     throw error;
   }
 };
-
-
 
 const getMembers = async (orgId: string, session: Session) => {
   const activeOrgId = orgId ?? session?.session.activeOrganizationId;
