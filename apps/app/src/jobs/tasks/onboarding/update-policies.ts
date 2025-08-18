@@ -76,7 +76,7 @@ ${prompt.replace(/\\n/g, '\n')}
 Return the complete TipTap document following ALL the above requirements using proper TipTap JSON structure.`,
           schema: z.object({
             type: z.literal('document'),
-            content: z.array(z.record(z.unknown())),
+            content: z.array(z.record(z.string(), z.unknown())),
           }),
         });
 

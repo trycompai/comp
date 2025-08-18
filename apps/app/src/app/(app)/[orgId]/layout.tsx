@@ -39,11 +39,9 @@ export default async function Layout({
     return redirect('/auth/login');
   }
 
-  // First check if the organization exists
+  // First check if the organization exists and load access flags
   const organization = await db.organization.findUnique({
-    where: {
-      id: requestedOrgId,
-    },
+    where: { id: requestedOrgId },
   });
 
   if (!organization) {
@@ -61,6 +59,16 @@ export default async function Layout({
   if (!member) {
     // User doesn't have access to this organization
     return redirect('/auth/unauthorized');
+  }
+
+  // If this org is not accessible on current plan, redirect to upgrade
+  if (!organization.hasAccess) {
+    return redirect(`/upgrade/${organization.id}`);
+  }
+
+  // If onboarding is required and user isn't already on onboarding, redirect
+  if (!organization.onboardingCompleted) {
+    return redirect(`/onboarding/${organization.id}`);
   }
 
   const onboarding = await db.onboarding.findFirst({

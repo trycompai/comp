@@ -4,8 +4,8 @@ services:
     ports:
       - '5432:5432'
     environment:
-      POSTGRES_PASSWORD: pass
-      POSTGRES_DB: comp
+      POSTGRES_PASSWORD: 'REPLACE_ME'
+      POSTGRES_DB: 'REPLACE_ME'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -19,44 +19,84 @@ services:
       context: .
       dockerfile: Dockerfile
       target: migrator
-    env_file:
-      - packages/db/.env
+    environment:
+      DATABASE_URL: 'postgresql://user:pass@host:5432/db'
     depends_on:
       db:
         condition: service_healthy
+
+  seeder:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: migrator
+    environment:
+      DATABASE_URL: 'postgresql://user:pass@host:5432/db'
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
+    # Generate Prisma client for seeding against local schema, then run seed script
+    command: sh -lc "bunx prisma generate --schema=packages/db/prisma/schema.prisma && bun run packages/db/prisma/seed/seed.ts || bun packages/db/prisma/seed/seed.js"
 
   app:
     build:
       context: .
       dockerfile: Dockerfile
       target: app
+      args:
+        NEXT_PUBLIC_BETTER_AUTH_URL: 'http://localhost:3000'
     ports:
       - '3000:3000'
-    env_file:
-      - apps/app/.env
+    environment:
+      # Server-side
+      AUTH_SECRET: 'REPLACE_ME'
+      DATABASE_URL: 'postgresql://user:pass@host:5432/db'
+      BETTER_AUTH_URL: 'http://localhost:3000'
+      NEXT_PUBLIC_BETTER_AUTH_URL: 'http://localhost:3000'
+      OPENAI_API_KEY: 'REPLACE_ME'
+
+      # Email Services
+      RESEND_API_KEY: 'REPLACE_ME'
+      # Infrastructure
+      # Redis - Upstash (https://console.upstash.com/)
+      UPSTASH_REDIS_REST_URL: 'https://YOUR_UPSTASH_URL'
+      UPSTASH_REDIS_REST_TOKEN: 'YOUR_UPSTASH_TOKEN'
+
+      # Trigger.dev (https://app.trigger.dev)
+      TRIGGER_SECRET_KEY: 'REPLACE_ME'
+
+      NEXT_PUBLIC_PORTAL_URL: 'http://localhost:3002'
+      REVALIDATION_SECRET: 'REPLACE_ME'
     depends_on:
-      migrator:
+      seeder:
         condition: service_completed_successfully
     healthcheck:
       test: ['CMD-SHELL', 'curl -f http://localhost:3000/api/health || exit 1']
       interval: 30s
       timeout: 10s
       retries: 3
+    command: sh -lc "node apps/app/server.js"
 
   portal:
     build:
       context: .
       dockerfile: Dockerfile
       target: portal
+      args:
+        NEXT_PUBLIC_BETTER_AUTH_URL: 'http://localhost:3002'
     ports:
-      - '3001:3000'
-    env_file:
-      - apps/portal/.env
+      - '3002:3000'
+    environment:
+      DATABASE_URL: 'postgresql://user:pass@host:5432/db'
+      BETTER_AUTH_URL: 'http://localhost:3002'
+      NEXT_PUBLIC_BETTER_AUTH_URL: 'http://localhost:3002'
+      RESEND_API_KEY: 'REPLACE_ME'
+      BETTER_AUTH_SECRET: 'REPLACE_ME'
     depends_on:
-      migrator:
+      seeder:
         condition: service_completed_successfully
     healthcheck:
-      test: ['CMD-SHELL', 'curl -f http://localhost:3000/api/health || exit 1']
+      test: ['CMD-SHELL', 'curl -f http://localhost:3002/ || exit 1']
       interval: 30s
       timeout: 10s
       retries: 3
