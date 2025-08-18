@@ -35,14 +35,14 @@ WORKDIR /app
 COPY packages/db/prisma ./packages/db/prisma
 
 # Create minimal package.json for Prisma runtime (also used by seeder)
-RUN echo '{"name":"migrator","type":"module","dependencies":{"prisma":"^6.13.0","@prisma/client":"^6.13.0","zod":"^3.25.7"}}' > package.json
+RUN echo '{"name":"migrator","type":"module","dependencies":{"prisma":"^6.14.0","@prisma/client":"^6.14.0","@trycompai/db":"^1.3.4","zod":"^3.25.7"}}' > package.json
 
 # Install ONLY Prisma dependencies
 RUN bun install
 
-# Run migrations against the workspace schema
-RUN echo "Running migrations against the workspace schema"
-CMD ["bunx", "prisma", "migrate", "deploy", "--schema=packages/db/prisma/schema.prisma"]
+# Run migrations against the combined schema published by @trycompai/db
+RUN echo "Running migrations against @trycompai/db combined schema"
+CMD ["bunx", "prisma", "migrate", "deploy", "--schema=node_modules/@trycompai/db/dist/schema.prisma"]
 
 # =============================================================================
 # STAGE 3: App Builder

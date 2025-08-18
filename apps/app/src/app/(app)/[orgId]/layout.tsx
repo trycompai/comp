@@ -36,7 +36,8 @@ export default async function Layout({
   });
 
   if (!session) {
-    return redirect('/auth/login');
+    console.log('no session');
+    return redirect('/auth');
   }
 
   // First check if the organization exists and load access flags
@@ -55,6 +56,8 @@ export default async function Layout({
       organizationId: requestedOrgId,
     },
   });
+
+  console.log('member', member);
 
   if (!member) {
     // User doesn't have access to this organization

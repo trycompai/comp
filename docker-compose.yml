@@ -1,43 +1,19 @@
 services:
-  db:
-    image: postgres:17-alpine
-    ports:
-      - '5432:5432'
-    environment:
-      POSTGRES_PASSWORD: 'REPLACE_ME'
-      POSTGRES_DB: 'REPLACE_ME'
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres -d comp']
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   migrator:
     build:
       context: .
       dockerfile: Dockerfile
       target: migrator
     environment:
-      DATABASE_URL: 'postgresql://user:pass@host:5432/db'
-    depends_on:
-      db:
-        condition: service_healthy
-
+      DATABASE_URL: 'YOUR_DATABASE_URL'
   seeder:
     build:
       context: .
       dockerfile: Dockerfile
       target: migrator
     environment:
-      DATABASE_URL: 'postgresql://user:pass@host:5432/db'
-    depends_on:
-      migrator:
-        condition: service_completed_successfully
-    # Generate Prisma client for seeding against local schema, then run seed script
-    command: sh -lc "bunx prisma generate --schema=packages/db/prisma/schema.prisma && bun run packages/db/prisma/seed/seed.ts || bun packages/db/prisma/seed/seed.js"
-
+      DATABASE_URL: 'YOUR_DATABASE_URL'
+    command: sh -lc "bunx prisma generate --schema=node_modules/@trycompai/db/dist/schema.prisma && bun packages/db/prisma/seed/seed.js"
   app:
     build:
       context: .
@@ -49,27 +25,26 @@ services:
       - '3000:3000'
     environment:
       # Server-side
-      AUTH_SECRET: 'REPLACE_ME'
-      DATABASE_URL: 'postgresql://user:pass@host:5432/db'
+      AUTH_SECRET: 'YOUR_AUTH_SECRET'
+      DATABASE_URL: 'YOUR_DATABASE_URL'
+
       BETTER_AUTH_URL: 'http://localhost:3000'
       NEXT_PUBLIC_BETTER_AUTH_URL: 'http://localhost:3000'
-      OPENAI_API_KEY: 'REPLACE_ME'
+      NEXT_PUBLIC_PORTAL_URL: 'http://localhost:3002' # http://localhost:3002
+
+      OPENAI_API_KEY: 'YOUR_OPENAI_API_KEY' # Get from OpenAI dashboard -> API Keys
 
       # Email Services
-      RESEND_API_KEY: 'REPLACE_ME'
+      RESEND_API_KEY: 'YOUR_RESEND_API_KEY' # Resend Dashboard -> API Keys
       # Infrastructure
       # Redis - Upstash (https://console.upstash.com/)
-      UPSTASH_REDIS_REST_URL: 'https://YOUR_UPSTASH_URL'
-      UPSTASH_REDIS_REST_TOKEN: 'YOUR_UPSTASH_TOKEN'
+      UPSTASH_REDIS_REST_URL: 'YOUR_UPSTASH_REDIS_REST_URL' # Upstash Console -> Redis -> Create Database
+      UPSTASH_REDIS_REST_TOKEN: 'YOUR_UPSTASH_REDIS_REST_TOKEN' # Found in the same database details page
 
       # Trigger.dev (https://app.trigger.dev)
-      TRIGGER_SECRET_KEY: 'REPLACE_ME'
+      TRIGGER_SECRET_KEY: 'YOUR_TRIGGER_SECRET_KEY' # Trigger.dev Dashboard -> Project Settings -> API Keys
 
-      NEXT_PUBLIC_PORTAL_URL: 'http://localhost:3002'
-      REVALIDATION_SECRET: 'REPLACE_ME'
-    depends_on:
-      seeder:
-        condition: service_completed_successfully
+      REVALIDATION_SECRET: 'YOUR_REVALIDATION_SECRET' # It can be anything (Use `openssl rand -base64 32` to generate)
     healthcheck:
       test: ['CMD-SHELL', 'curl -f http://localhost:3000/api/health || exit 1']
       interval: 30s
@@ -87,19 +62,13 @@ services:
     ports:
       - '3002:3000'
     environment:
-      DATABASE_URL: 'postgresql://user:pass@host:5432/db'
+      DATABASE_URL: 'YOUR_DATABASE_URL'
       BETTER_AUTH_URL: 'http://localhost:3002'
       NEXT_PUBLIC_BETTER_AUTH_URL: 'http://localhost:3002'
-      RESEND_API_KEY: 'REPLACE_ME'
-      BETTER_AUTH_SECRET: 'REPLACE_ME'
-    depends_on:
-      seeder:
-        condition: service_completed_successfully
+      RESEND_API_KEY: 'YOUR_RESEND_API_KEY'
+      BETTER_AUTH_SECRET: 'YOUR_BETTER_AUTH_SECRET'
     healthcheck:
       test: ['CMD-SHELL', 'curl -f http://localhost:3002/ || exit 1']
       interval: 30s
       timeout: 10s
       retries: 3
-
-volumes:
-  postgres_data:
