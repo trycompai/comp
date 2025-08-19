@@ -1,4 +1,3 @@
-import { anthropic } from '@ai-sdk/anthropic';
 import { openai } from '@ai-sdk/openai';
 import {
   CommentEntityType,
@@ -7,6 +6,7 @@ import {
   FrameworkEditorFramework,
   Impact,
   Likelihood,
+  Risk,
   RiskCategory,
   RiskTreatmentType,
   VendorCategory,
@@ -16,6 +16,7 @@ import { generateObject, generateText } from 'ai';
 import axios from 'axios';
 import z from 'zod';
 import type { researchVendor } from '../scrape/research';
+import { RISK_MITIGATION_PROMPT } from './prompts/risk-mitigation';
 import { VENDOR_RISK_ASSESSMENT_PROMPT } from './prompts/vendor-risk-assessment';
 import { updatePolicies } from './update-policies';
 
@@ -154,7 +155,7 @@ export async function createVendorRiskComment(
       : 'No specific policies available - use standard security policy guidance.';
 
   const riskMitigationComment = await generateText({
-    model: anthropic('claude-sonnet-4-20250514'),
+    model: openai('gpt-5-nano'),
     system: VENDOR_RISK_ASSESSMENT_PROMPT,
     prompt: `Vendor: ${vendor.name} (${vendor.category}) - ${vendor.description}. Website: ${vendor.website}.
 
@@ -263,6 +264,70 @@ export async function createVendorRiskComments(
 }
 
 /**
+ * Creates a risk mitigation comment for a risk
+ */
+export async function createRiskMitigationComment(
+  risk: Risk,
+  policies: PolicyContext[],
+  organizationId: string,
+  authorId: string,
+): Promise<void> {
+  const policiesContext =
+    policies.length > 0
+      ? policies
+          .map((p) => `- ${p.name}: ${p.description || 'No description available'}`)
+          .join('\n')
+      : 'No specific policies available - use standard security policy guidance.';
+
+  const mitigation = await generateText({
+    model: openai('gpt-5-nano'),
+    system: RISK_MITIGATION_PROMPT,
+    prompt: `Risk: ${risk.title} (${risk.category} / ${risk.department})\n\nDescription:\n${risk.description}\n\nTreatment Strategy:\n${risk.treatmentStrategy}: ${risk.treatmentStrategyDescription || 'N/A'}\n\nResidual Assessment: Likelihood ${risk.likelihood}, Impact ${risk.impact}\n\nAvailable Organization Policies:\n${policiesContext}\n\nWrite a pragmatic mitigation plan with concrete steps the team can implement in the next 30-90 days.`,
+  });
+
+  await db.comment.create({
+    data: {
+      content: mitigation.text,
+      entityId: risk.id,
+      entityType: CommentEntityType.risk,
+      authorId,
+      organizationId,
+    },
+  });
+
+  logger.info(`Created risk mitigation comment for risk: ${risk.id} (${risk.title})`);
+}
+
+/**
+ * Creates risk mitigation comments for all risks provided
+ */
+export async function createRiskMitigationComments(
+  risks: Risk[],
+  policies: PolicyContext[],
+  organizationId: string,
+  authorId: string,
+): Promise<void> {
+  for (const risk of risks) {
+    await createRiskMitigationComment(risk, policies, organizationId, authorId);
+  }
+}
+
+/**
+ * Create risk mitigation comments for risks
+ */
+export async function createRiskMitigation(
+  risks: Risk[],
+  policies: PolicyContext[],
+  organizationId: string,
+): Promise<void> {
+  const commentAuthor = await findCommentAuthor(organizationId);
+
+  if (commentAuthor && risks.length > 0) {
+    await createRiskMitigationComments(risks, policies, organizationId, commentAuthor.id);
+  }
+}
+
+/**
  * Extracts risks from context using AI
  */
 export async function extractRisksFromContext(
@@ -321,7 +386,8 @@ export async function getExistingRisks(organizationId: string) {
 export async function createRisksFromData(
   riskData: RiskData[],
   organizationId: string,
-): Promise<void> {
+): Promise<Risk[]> {
+  const createdRisks: Risk[] = [];
   for (const risk of riskData) {
     const createdRisk = await db.risk.create({
       data: {
@@ -337,10 +403,12 @@ export async function createRisksFromData(
       },
     });
 
+    createdRisks.push(createdRisk);
     logger.info(`Created risk: ${createdRisk.id} (${createdRisk.title})`);
   }
 
   logger.info(`Created ${riskData.length} risks`);
+  return createdRisks;
 }
 
 /**
@@ -420,7 +488,7 @@ export async function createRisks(
   questionsAndAnswers: ContextItem[],
   organizationId: string,
   organizationName: string,
-): Promise<void> {
+): Promise<Risk[]> {
   // Get existing risks to avoid duplicates
   const existingRisks = await getExistingRisks(organizationId);
 
@@ -432,7 +500,8 @@ export async function createRisks(
   );
 
   // Create risk records in database
-  await createRisksFromData(riskData, organizationId);
+  const risks = await createRisksFromData(riskData, organizationId);
+  return risks;
 }
 
 /**

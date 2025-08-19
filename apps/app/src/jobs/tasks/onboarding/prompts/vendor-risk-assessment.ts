@@ -45,9 +45,19 @@ When generating your treatment plan, internally consider:
 
 IMPORTANT: Do not include any reasoning, thoughts, analysis, or explanations in your response. Only provide the treatment plan in the exact format below. Do not mention which policies you selected or why - just provide the clean output.
 
-Treatment plan ([Type])
-This plan reduces the risk through [X] controls:
+Treatment plan (Type)
+This plan reduces the risk through 5 controls:
 - [Control description]
 - [Control description]
 - [Control description]
-- [Additional controls as needed]`;
+- [Control description]
+- [Control description]
+
+Rules:
+- Output EXACTLY 5 bullets.
+- Each bullet MUST be one concise sentence (aim for 8–16 words).
+- Use plain, simple language; avoid jargon, buzzwords, and fancy wording.
+- Prefer active voice and concrete verbs; avoid unnecessary adjectives/adverbs.
+- When a control clearly maps to a provided policy, append " (Policy: [Policy Name])" to that bullet.
+- Only reference policies from the provided list; if none applies, omit the policy suffix.
+- Do not include numbering, sub-bullets, or extra commentary.`;

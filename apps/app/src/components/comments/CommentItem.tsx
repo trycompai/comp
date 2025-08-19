@@ -6,6 +6,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent } from '@comp/ui/card';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@comp/ui/dialog';
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -54,6 +62,8 @@ interface CommentItemProps {
 export function CommentItem({ comment, refreshComments }: CommentItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(comment.content);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Use API hooks instead of server actions
   const { updateComment, deleteComment } = useCommentActions();
@@ -93,17 +103,17 @@ export function CommentItem({ comment, refreshComments }: CommentItemProps) {
   };
 
   const handleDeleteComment = async () => {
-    if (window.confirm('Are you sure you want to delete this comment?')) {
-      try {
-        // Use API hook directly instead of server action
-        await deleteComment(comment.id);
-
-        toast.success('Comment deleted successfully.');
-        refreshComments();
-      } catch (error) {
-        toast.error('Failed to delete comment.');
-        console.error('Delete comment error:', error);
-      }
+    setIsDeleting(true);
+    try {
+      await deleteComment(comment.id);
+      toast.success('Comment deleted successfully.');
+      refreshComments();
+      setIsDeleteOpen(false);
+    } catch (error) {
+      toast.error('Failed to delete comment.');
+      console.error('Delete comment error:', error);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -171,7 +181,7 @@ export function CommentItem({ comment, refreshComments }: CommentItemProps) {
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       className="text-destructive focus:text-destructive focus:bg-destructive/10"
-                      onSelect={handleDeleteComment}
+                      onSelect={() => setIsDeleteOpen(true)}
                     >
                       <Trash2 className="mr-2 h-3.5 w-3.5" />
                       Delete
@@ -229,6 +239,25 @@ export function CommentItem({ comment, refreshComments }: CommentItemProps) {
           </div>
         </div>
       </CardContent>
+      {/* Delete confirmation dialog */}
+      <Dialog open={isDeleteOpen} onOpenChange={(open) => !open && setIsDeleteOpen(false)}>
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>Delete Comment</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this comment? This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setIsDeleteOpen(false)} disabled={isDeleting}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteComment} disabled={isDeleting}>
+              {isDeleting ? 'Deleting…' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

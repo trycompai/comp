@@ -39,6 +39,7 @@ interface PageLayoutProps {
    */
   maxItems?: number;
   maxLabelLength?: number;
+  headerRight?: React.ReactNode;
 }
 
 export default function PageWithBreadcrumb({
@@ -46,6 +47,7 @@ export default function PageWithBreadcrumb({
   breadcrumbs,
   maxItems = 3,
   maxLabelLength = 40,
+  headerRight,
 }: PageLayoutProps) {
   const totalItems = breadcrumbs.length;
   const shouldCollapse = totalItems > maxItems;
@@ -58,82 +60,85 @@ export default function PageWithBreadcrumb({
 
   return (
     <PageCore>
-      <Breadcrumb>
-        <BreadcrumbList>
-          {visibleItems.map((item, index) => {
-            const isFirst = index === 0;
-            const isLast = index === visibleItems.length - 1;
-            const showEllipsis = shouldCollapse && index === 1;
+      <div className="mb-2 flex items-center justify-between">
+        <Breadcrumb>
+          <BreadcrumbList>
+            {visibleItems.map((item, index) => {
+              const isFirst = index === 0;
+              const isLast = index === visibleItems.length - 1;
+              const showEllipsis = shouldCollapse && index === 1;
 
-            return (
-              <React.Fragment key={item.label}>
-                <BreadcrumbItem>
-                  {item.dropdown ? (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        className={`flex items-center gap-1 text-sm ${item.current ? 'font-medium' : ''}`}
-                      >
-                        {item.current ? (
-                          <BreadcrumbPage className="inline-flex items-center gap-1">
-                            {item.label.length > maxLabelLength
-                              ? `${item.label.slice(0, maxLabelLength)}...`
-                              : item.label}
-                            <ChevronDown className="h-4 w-4" />
-                          </BreadcrumbPage>
-                        ) : (
-                          <>
-                            {item.label.length > maxLabelLength
-                              ? `${item.label.slice(0, maxLabelLength)}...`
-                              : item.label}
-                            <ChevronDown className="h-4 w-4" />
-                          </>
-                        )}
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" className="max-h-[300px]">
-                        {item.dropdown.map((dropdownItem) => (
-                          <DropdownMenuItem key={dropdownItem.href} asChild>
-                            <Link href={dropdownItem.href}>
-                              {dropdownItem.label.length > maxLabelLength
-                                ? `${dropdownItem.label.slice(0, maxLabelLength)}...`
-                                : dropdownItem.label}
-                            </Link>
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  ) : item.current ? (
-                    <BreadcrumbPage>{item.label}</BreadcrumbPage>
-                  ) : (
-                    <BreadcrumbLink asChild>
-                      <Link href={item.href || '#'}>{item.label}</Link>
-                    </BreadcrumbLink>
-                  )}
-                </BreadcrumbItem>
-                {!isLast && <BreadcrumbSeparator />}
-                {showEllipsis && hiddenItems.length > 0 && (
-                  <>
-                    <BreadcrumbItem>
+              return (
+                <React.Fragment key={item.label}>
+                  <BreadcrumbItem>
+                    {item.dropdown ? (
                       <DropdownMenu>
-                        <DropdownMenuTrigger>
-                          <BreadcrumbEllipsis />
+                        <DropdownMenuTrigger
+                          className={`flex items-center gap-1 text-sm ${item.current ? 'font-medium' : ''}`}
+                        >
+                          {item.current ? (
+                            <BreadcrumbPage className="inline-flex items-center gap-1">
+                              {item.label.length > maxLabelLength
+                                ? `${item.label.slice(0, maxLabelLength)}...`
+                                : item.label}
+                              <ChevronDown className="h-4 w-4" />
+                            </BreadcrumbPage>
+                          ) : (
+                            <>
+                              {item.label.length > maxLabelLength
+                                ? `${item.label.slice(0, maxLabelLength)}...`
+                                : item.label}
+                              <ChevronDown className="h-4 w-4" />
+                            </>
+                          )}
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start">
-                          {hiddenItems.map((hiddenItem) => (
-                            <DropdownMenuItem key={hiddenItem.label} asChild>
-                              <Link href={hiddenItem.href || '#'}>{hiddenItem.label}</Link>
+                        <DropdownMenuContent align="start" className="max-h-[300px]">
+                          {item.dropdown.map((dropdownItem) => (
+                            <DropdownMenuItem key={dropdownItem.href} asChild>
+                              <Link href={dropdownItem.href}>
+                                {dropdownItem.label.length > maxLabelLength
+                                  ? `${dropdownItem.label.slice(0, maxLabelLength)}...`
+                                  : dropdownItem.label}
+                              </Link>
                             </DropdownMenuItem>
                           ))}
                         </DropdownMenuContent>
                       </DropdownMenu>
-                    </BreadcrumbItem>
-                    <BreadcrumbSeparator />
-                  </>
-                )}
-              </React.Fragment>
-            );
-          })}
-        </BreadcrumbList>
-      </Breadcrumb>
+                    ) : item.current ? (
+                      <BreadcrumbPage>{item.label}</BreadcrumbPage>
+                    ) : (
+                      <BreadcrumbLink asChild>
+                        <Link href={item.href || '#'}>{item.label}</Link>
+                      </BreadcrumbLink>
+                    )}
+                  </BreadcrumbItem>
+                  {!isLast && <BreadcrumbSeparator />}
+                  {showEllipsis && hiddenItems.length > 0 && (
+                    <>
+                      <BreadcrumbItem>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger>
+                            <BreadcrumbEllipsis />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start">
+                            {hiddenItems.map((hiddenItem) => (
+                              <DropdownMenuItem key={hiddenItem.label} asChild>
+                                <Link href={hiddenItem.href || '#'}>{hiddenItem.label}</Link>
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </BreadcrumbItem>
+                      <BreadcrumbSeparator />
+                    </>
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </BreadcrumbList>
+        </Breadcrumb>
+        {headerRight}
+      </div>
       {children}
     </PageCore>
   );
