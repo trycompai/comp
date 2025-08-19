@@ -1,308 +1,191 @@
 [
   {
-    "id": "frk_tt_6840672484e8bf8f9cf8f2fe",
-    "name": "Security Policy Acknowledgment and Availability",
-    "description": "Develop procedures for all staff to periodically acknowledge and review the company’s security policies, including as part of onboarding. Ensure all security policies are accessible to staff at any time. Document and maintain an Information Security Policy that defines the organization’s approach to ensuring the confidentiality, integrity, and availability of its information systems.",
-    "frequency": "yearly",
-    "department": "it",
-    "createdAt": "2025-06-04 15:32:52.138",
-    "updatedAt": "2025-06-05 00:20:39.062"
-  },
-  {
-    "id": "frk_tt_68406951bd282273ebe286cc",
-    "name": "Secure Staff Screening and Training",
-    "description": "Implement security risk screening of all individuals before granting access to company systems or sensitive information. Ensure that staff in security-related roles have the appropriate qualifications and skills. Provide information security and privacy training relevant to job functions, including onboarding training for new hires. Maintain accurate documentation and monitoring of individual training activities and records to ensure compliance and readiness.",
-    "frequency": "yearly",
-    "department": "hr",
-    "createdAt": "2025-06-04 15:42:08.603",
-    "updatedAt": "2025-06-05 00:20:39.762"
-  },
-  {
-    "id": "frk_tt_684069a3a0dd8322b2ac3f03",
-    "name": "Security Responsibility Evaluations",
-    "description": "Periodically evaluate all employees in client-serving, IT Engineering, and Information Security roles to ensure they understand and fulfill their job responsibilities, including adherence to security policies and procedures. Incorporate these evaluations into the overall disciplinary process for managing security violations.",
-    "frequency": "yearly",
-    "department": "hr",
-    "createdAt": "2025-06-04 15:43:30.893",
-    "updatedAt": "2025-06-05 00:20:39.920"
-  },
-  {
-    "id": "frk_tt_684069f039a8802920361d55",
-    "name": "Information Retention and Secure Disposal",
-    "description": "Develop and document policies for the retention and secure disposal of information, including processes for decommissioning information assets containing classified or confidential data. Ensure these policies meet confidentiality objectives and are applied consistently to protect sensitive information throughout its lifecycle.",
-    "frequency": "yearly",
-    "department": "it",
-    "createdAt": "2025-06-04 15:44:48.172",
-    "updatedAt": "2025-06-05 00:20:40.144"
-  },
-  {
-    "id": "frk_tt_68406a514e90bb6e32e0b107",
-    "name": "Contact Information and Incident Reporting",
-    "description": "Maintain and display up-to-date information on your website about the services offered, and provide clear guidance for customers on how to report failures, incidents, concerns, or complaints. Ensure that these processes facilitate ongoing communication and transparency with customers.",
-    "frequency": "yearly",
-    "department": "it",
-    "createdAt": "2025-06-04 15:46:24.989",
-    "updatedAt": "2025-06-05 00:20:40.314"
-  },
-  {
-    "id": "frk_tt_68406a9d44fc335ab8a26554",
-    "name": "Information Classification and Labeling",
-    "description": "Develop and implement a policy and procedures for classifying information by sensitivity, including confidential and critical information. Apply appropriate physical and/or logical labels to information systems to support confidentiality, data integrity, and processing integrity. Ensure system inputs are properly labeled to meet processing integrity objectives and data definitions.",
-    "frequency": "yearly",
-    "department": "gov",
-    "createdAt": "2025-06-04 15:47:40.857",
-    "updatedAt": "2025-06-05 00:20:40.539"
-  },
-  {
-    "id": "frk_tt_68406af04a4acb93083413b9",
-    "name": "Centralized SIEM and Continuous Monitoring",
-    "description": "Implement and maintain a centralized Security Information and Event Management (SIEM) system with alerting capabilities to monitor and evaluate information system events. Use this system to identify and communicate internal control deficiencies, track security incidents, and report the health of the information security program to stakeholders. Establish general control activities through continuous monitoring to support technology and security objectives.",
-    "frequency": "yearly",
-    "department": "itsm",
-    "createdAt": "2025-06-04 15:49:03.955",
-    "updatedAt": "2025-06-05 00:20:40.711"
-  },
-  {
     "id": "frk_tt_68406b4f40c87c12ae0479ce",
-    "name": "Incident Management Policy and Procedures",
-    "description": "Develop and document an incident management policy and supporting procedures that include guidance on reporting failures, incidents, concerns, or complaints; employee reporting mechanisms for internal control deficiencies; and notifying customers and other stakeholders in the event of a breach. Maintain records of security incidents, investigations, and response plans to ensure effective management and resolution.",
+    "name": "Incident Response",
+    "description": "Keep a record of all security incidents and how they were resolved. If there haven't been any, add a comment which says \"no incidents\".",
     "frequency": "yearly",
     "department": "itsm",
     "createdAt": "2025-06-04 15:50:38.678",
-    "updatedAt": "2025-06-05 00:20:40.908"
-  },
-  {
-    "id": "frk_tt_6840681b6dfa62a119d6dca3",
-    "name": "Define and Communicate Security Roles",
-    "description": "Define and document the cybersecurity responsibilities for all personnel. Establish a process to clearly communicate these roles and responsibilities to staff. Maintain an organizational structure that clarifies authority, facilitates information flow, and establishes accountability. Appoint key roles, including a Compliance Program Manager to oversee internal controls, an Information Security Officer to lead the enterprise-wide security and privacy program, and a People Operations Officer to manage personnel-related security strategies.",
-    "frequency": "yearly",
-    "department": "gov",
-    "createdAt": "2025-06-04 15:36:59.274",
-    "updatedAt": "2025-06-05 00:20:39.237"
+    "updatedAt": "2025-06-08 18:32:02.985"
   },
   {
     "id": "frk_tt_68406903839203801ac8041a",
-    "name": "Manage and Maintain Asset Inventory",
-    "description": "Develop, document, and maintain an inventory of all organizational infrastructure and information systems. Assign asset ownership responsibilities to ensure accountability and establish common asset protection requirements. Periodically update and review the inventory as part of ongoing evaluations to ensure accurate asset tracking and compliance with security standards.",
+    "name": "Device List",
+    "description": "Keep and maintain a list of your devices (laptops/servers). If you install the Comp AI agent on your devices, these will be automatically tracked in-app and you can mark this task as not-relevant.\n\nFor HIPAA: Know which devices hold your patient data is going and create a maintain a system to track it",
     "frequency": "yearly",
     "department": "admin",
     "createdAt": "2025-06-04 15:40:51.392",
-    "updatedAt": "2025-06-05 00:20:39.601"
+    "updatedAt": "2025-06-09 02:42:32.291"
   },
   {
-    "id": "frk_tt_68406cd9dde2d8cd4c463fe0",
-    "name": "Secure Authentication Management",
-    "description": "Document and share guidelines for managing passwords and secure login mechanisms with all staff. Require all users with access to critical systems to use secure login mechanisms, including multi-factor authentication, to protect authentication information.",
+    "id": "frk_tt_68406af04a4acb93083413b9",
+    "name": "Monitoring & Alerting",
+    "description": "Ensure you have logging enabled in cloud environments (e.g. Google Cloud or Vercel) and review it periodically.\n\nUpload a screenshot of an alert you received (e.g. deployment failures) recently. If you don't have any, add a comment to say no alerts received.\n\nHIPAA: Enable Audit logs wherever there is patient data to show that the data has not been secretly changed or corrupted. ",
     "frequency": "yearly",
     "department": "itsm",
-    "createdAt": "2025-06-04 15:57:13.287",
-    "updatedAt": "2025-06-05 00:20:41.703"
+    "createdAt": "2025-06-04 15:49:03.955",
+    "updatedAt": "2025-06-09 03:33:42.294"
   },
   {
-    "id": "frk_tt_68406d2e86acc048d1774ea6",
-    "name": "Capacity Monitoring and Alerts",
-    "description": "Implement continuous monitoring of critical assets to detect vulnerabilities, anomalies, and security events. Generate capacity alerts to protect against denial-of-service attacks and ensure optimal performance, enabling the organization to meet current and future capacity requirements.",
+    "id": "frk_tt_68406a514e90bb6e32e0b107",
+    "name": "Contact Information",
+    "description": "You need to show what services/software you offer and provide clear instructions on how your customers can contact you about problems, issues or complaints on your website, then ensure you are logging these requests.",
     "frequency": "yearly",
     "department": "it",
-    "createdAt": "2025-06-04 15:58:37.662",
-    "updatedAt": "2025-06-05 00:20:41.871"
+    "createdAt": "2025-06-04 15:46:24.989",
+    "updatedAt": "2025-06-09 15:28:58.716"
+  },
+  {
+    "id": "frk_tt_68406951bd282273ebe286cc",
+    "name": "Employee Verification",
+    "description": "Maintain a list of reference checks you made for every new hire. Verify the identity of every new hire.\n\nFor ISO 27001: Ensure you are also storing the NDA, candidate evaluation form and access creation request with its approval evidence\n",
+    "frequency": "yearly",
+    "department": "hr",
+    "createdAt": "2025-06-04 15:42:08.603",
+    "updatedAt": "2025-07-07 05:05:26.845"
+  },
+  {
+    "id": "frk_tt_684069a3a0dd8322b2ac3f03",
+    "name": "Employee Descriptions",
+    "description": "We need to make sure every employee has a clear job description. Once a year, you'll meet with each team member to confirm their job description is still accurate and that they fully understand what's expected of them.\n\nKeep a brief note from this meeting or a screenshot of the meeting invite from your calendar, showing the date and time.",
+    "frequency": "yearly",
+    "department": "hr",
+    "createdAt": "2025-06-04 15:43:30.893",
+    "updatedAt": "2025-06-08 17:17:37.405"
   },
   {
     "id": "frk_tt_68406d64f09f13271c14dd01",
-    "name": "Change Management for Information Systems",
-    "description": "Document and implement policies and procedures to govern changes to the operating environment, including approval processes. Conduct application regression testing to ensure key processing and output delivery remain accurate and timely, supporting processing integrity.",
+    "name": "Code Changes",
+    "description": "Enable branch protection on your main branch to prevent direct pushes and enforce pull requests. Ensure regression testing is done.\n\nUpload a screenshot of these settings, demonstrating the disallowed direct push and required pull request.\n\nFor ISO 27001: Show change approval with peer review, change testing evidence, rollback plan and impact assessment.",
     "frequency": "yearly",
     "department": "gov",
     "createdAt": "2025-06-04 15:59:31.795",
-    "updatedAt": "2025-06-05 00:20:42.021"
-  },
-  {
-    "id": "frk_tt_68406df8fe190156f79afc5f",
-    "name": "Secure Configuration Management",
-    "description": "Document and implement policies and procedures to manage and govern configuration changes to the operating environment. Ensure all configuration changes receive proper approval before implementation to maintain a secure and controlled environment.",
-    "frequency": "yearly",
-    "department": "it",
-    "createdAt": "2025-06-04 16:01:59.882",
-    "updatedAt": "2025-06-05 00:20:42.177"
-  },
-  {
-    "id": "frk_tt_68406e353df3bc002994acef",
-    "name": "Vulnerability Management and Triage",
-    "description": "Establish policies and procedures to identify, track, and remediate technical vulnerabilities through regular vulnerability scans, system component monitoring, and annual penetration testing. Maintain guidelines for managing vulnerabilities, evaluating security events, and preventing incidents.",
-    "frequency": "yearly",
-    "department": "itsm",
-    "createdAt": "2025-06-04 16:03:00.858",
-    "updatedAt": "2025-06-05 00:20:42.330"
-  },
-  {
-    "id": "frk_tt_68406eedf0f0ddd220ea19c2",
-    "name": "Secure Application Input Controls",
-    "description": "Implement software application controls to ensure that input values are limited to acceptable ranges and that mandatory fields are completed before records are accepted. These controls help maintain processing integrity and ensure system input requirements are met.",
-    "frequency": "yearly",
-    "department": "it",
-    "createdAt": "2025-06-04 16:06:05.042",
-    "updatedAt": "2025-06-05 00:20:42.670"
+    "updatedAt": "2025-07-07 05:12:29.403"
   },
   {
     "id": "frk_tt_68406f411fe27e47a0d6d5f3",
-    "name": "Secure Data Encryption",
-    "description": "Implement cryptographic controls to encrypt all production databases storing customer data at rest and ensure consistent protection in non-production environments. Use standard encryption protocols, such as HTTPS with TLS, to secure data in transit and maintain confidentiality across all stages of data processing, including inputs, items in processing, and outputs.",
+    "name": "TLS / HTTPS",
+    "description": "Ensure TLS / HTTPS is enabled. If you're working towards. \n\nFor HIPAA and ISO 27001 compliance, your database needs to be fully encrypted.\n\nUpload a screenshot from SSL Labs to show this is enabled.",
     "frequency": "yearly",
     "department": "itsm",
     "createdAt": "2025-06-04 16:07:28.979",
-    "updatedAt": "2025-06-05 00:20:42.825"
+    "updatedAt": "2025-07-07 05:12:30.137"
   },
   {
-    "id": "frk_tt_68406c5fff783844f31941e2",
-    "name": "Vendor Risk Management Program",
-    "description": "Conduct a formal vendor risk assessment annually to identify and evaluate vendors critical to meeting security commitments and system requirements. Regularly review and assess all subservice organizations to ensure they meet customer commitments. Develop and maintain documented policies and procedures to manage vendor relationships, including risk assessment, mitigation, and alignment with service commitments and system requirements.",
+    "id": "frk_tt_68406d2e86acc048d1774ea6",
+    "name": "App Availability",
+    "description": "Make sure your website or app doesn't slow down or crash because too many people are using it, or if there's a problem. \n\nUpload a screenshot showing you have DDoS protection enabled / auto-scale turned on.\n\nFor ISO 27001: Show evidence of firewall configuration\n",
     "frequency": "yearly",
-    "department": "gov",
-    "createdAt": "2025-06-04 15:55:11.286",
-    "updatedAt": "2025-06-05 00:20:41.327"
+    "department": "it",
+    "createdAt": "2025-06-04 15:58:37.662",
+    "updatedAt": "2025-07-07 05:12:30.312"
   },
   {
-    "id": "frk_tt_68407759cc3a434f9f0e7ced",
-    "name": "Security Event Logging and Monitoring",
-    "description": "Implement procedures to detect and monitor system configurations and vulnerabilities, identify anomalies, and evaluate security events to determine their potential impact on organizational objectives.",
+    "id": "frk_tt_68406cd9dde2d8cd4c463fe0",
+    "name": "2FA",
+    "description": "Always enable 2FA/MFA (Two-Factor Authentication/Multi-Factor Authentication) on Google Workspace, the apps you use, and wherever else it's an option.\n\nFor HIPAA: Ensure you have a break glass account for obtaining necessary electronic protected health information during an emergency",
     "frequency": "yearly",
     "department": "itsm",
-    "createdAt": "2025-06-04 16:42:00.668",
-    "updatedAt": "2025-06-05 00:20:43.172"
+    "createdAt": "2025-06-04 15:57:13.287",
+    "updatedAt": "2025-07-07 05:31:41.581"
   },
   {
-    "id": "frk_tt_684077bdcc601f30e0a1640c",
-    "name": "Network Segmentation and Firewall Protection",
-    "description": "Restrict public internet access to production databases and secure infrastructure entities. Protect every production host with a firewall configured with a deny-by-default rule. Document guidelines for managing communication protections and network security for critical systems.",
+    "id": "frk_tt_68406eedf0f0ddd220ea19c2",
+    "name": "Sanitized Inputs",
+    "description": "Implement input validation / sanitization via libraries like Zod, Pydantic or their equivalent or enable CodeQL.\n\nUpload a screenshot of this in use/being enforced. ",
     "frequency": "yearly",
     "department": "it",
-    "createdAt": "2025-06-04 16:43:41.481",
-    "updatedAt": "2025-06-05 00:20:43.333"
+    "createdAt": "2025-06-04 16:06:05.042",
+    "updatedAt": "2025-06-08 22:32:30.176"
   },
   {
-    "id": "frk_tt_6840780693a81cc2f8071ca9",
-    "name": "Physical and Environmental Security",
-    "description": "Document policies and procedures to manage physical and environmental security, ensuring that access to facilities is properly controlled and monitored.",
-    "frequency": "yearly",
-    "department": "gov",
-    "createdAt": "2025-06-04 16:44:53.895",
-    "updatedAt": "2025-06-05 00:20:44.282"
-  },
-  {
-    "id": "frk_tt_6840791cac0a7b780dbaf932",
-    "name": "Privacy and Data Protection",
-    "description": "Develop and implement a comprehensive privacy and data protection program. Document and maintain policies, procedures, and guidelines for integrating privacy principles into system design, ensuring regulatory compliance, managing consent, safeguarding personal information, and handling privacy incidents. Appoint a Privacy Officer, maintain an inventory of personal data, and establish processes for data subject access, vendor management, breach notification, and compliance monitoring.",
-    "frequency": "yearly",
-    "department": "it",
-    "createdAt": "2025-06-04 16:49:31.599",
-    "updatedAt": "2025-06-05 00:20:44.838"
-  },
-  {
-    "id": "frk_tt_68407a449efc782c44549c91",
-    "name": "Segregation of Duties",
-    "description": "Establish and enforce segregation of responsibilities across the organization to reduce risks and protect the services provided to customers",
-    "frequency": "yearly",
-    "department": "admin",
-    "createdAt": "2025-06-04 16:54:28.427",
-    "updatedAt": "2025-06-05 00:20:45.602"
-  },
-  {
-    "id": "frk_tt_68407a881a0cffa5d779fa46",
-    "name": "Secure Endpoints and Data Transfers",
-    "description": "Implement logical access security measures on endpoint devices to protect against external threats. Restrict the transmission, movement, and removal of information to authorized users, ensuring that data is protected during transmission.",
+    "id": "frk_tt_68406e353df3bc002994acef",
+    "name": "Secure Code",
+    "description": "Ensure dependabot or it's equivalent is enabled to automatically identify insecure or patched dependencies.",
     "frequency": "yearly",
     "department": "itsm",
-    "createdAt": "2025-06-04 16:55:36.308",
-    "updatedAt": "2025-06-05 00:20:45.771"
-  },
-  {
-    "id": "frk_tt_68407ae5274a64092c305104",
-    "name": "Cryptographic Key Management",
-    "description": "Document and implement a policy to manage encryption and cryptographic protection controls, ensuring secure handling of cryptographic keys throughout their lifecycle.",
-    "frequency": "yearly",
-    "department": "itsm",
-    "createdAt": "2025-06-04 16:57:08.693",
-    "updatedAt": "2025-06-05 00:20:45.944"
-  },
-  {
-    "id": "frk_tt_68403fe29097e661ba06a035",
-    "name": "Acceptable Use Policy Implementation",
-    "description": "Create and document a policy outlining acceptable use of company technology, setting clear behavioral standards and expected conduct for all users. Define what is considered acceptable and unacceptable technology usage, including consequences for misuse. Establish a process for staff to acknowledge these policies periodically (to support confidentiality), and ensure new hires acknowledge them during onboarding.",
-    "frequency": "yearly",
-    "department": "it",
-    "createdAt": "2025-06-04 12:45:21.910",
-    "updatedAt": "2025-06-05 00:20:38.906"
-  },
-  {
-    "id": "frk_tt_68406bae3b18802df42e4965",
-    "name": "Risk Management Program",
-    "description": "Conduct a formal risk assessment annually to identify threats that may impact security, availability, and confidentiality. Assess each risk, assign a risk score based on likelihood and impact, and map risks to mitigating factors. Consider the potential for fraud in the risk matrix. Develop and maintain documented policies and procedures to identify, assess, and mitigate risks, ensuring alignment with service commitments and system requirements.",
-    "frequency": "yearly",
-    "department": "it",
-    "createdAt": "2025-06-04 15:52:14.245",
-    "updatedAt": "2025-06-05 00:20:41.149"
+    "createdAt": "2025-06-04 16:03:00.858",
+    "updatedAt": "2025-06-08 22:32:18.166"
   },
   {
     "id": "frk_tt_68406ca292d9fffb264991b9",
-    "name": "User Access Management",
-    "description": "Maintain an access management program that includes annual reviews of who has access to production consoles, critical systems, and databases. Require authorized approvals for access based on roles, and remove access promptly when no longer needed. Use continuous monitoring to update access levels as roles change, and document policies governing user registration, credentialing, and management of system inputs, items in process, and outputs.",
+    "name": "Employee Access",
+    "description": "Ensure you are using an identity provider like Google Workspace and upload a screenshot of a list of your users and review their access on an annual basis\n\nMake sure that employees don't have access to software and devices or data that they don't need for their job. \n\nFor example, a sales person shouldn't have access to your production database. Upload a screenshot of what your employees have access to and their job titles.\n\nFor ISO 27001: For one sample leaver, provide an exit checklist and IT Access revocation evidence. \n\nMake sure to also have a list of privileged users in the list of roles assigned\n\n",
     "frequency": "yearly",
     "department": "it",
     "createdAt": "2025-06-04 15:56:18.236",
-    "updatedAt": "2025-06-05 00:20:41.537"
+    "updatedAt": "2025-07-07 05:12:29.877"
   },
   {
-    "id": "frk_tt_684076a02261faf3d331289d",
-    "name": "Operational Procedures Documentation",
-    "description": "Develop and document policies and procedures that define expected behavior for the control environment. Ensure these documents support general control activities over technology and enable consistent deployment of control activities across the organization.",
+    "id": "frk_tt_68407ae5274a64092c305104",
+    "name": "Secure Secrets",
+    "description": "Use your cloud providers default secret manager for storing secrets. Don't commit secrets to Git and don't store secrets in code.\n\nUpload a screenshot of the secrets manager being used (don't include your actual secrets!).",
     "frequency": "yearly",
-    "department": "gov",
-    "createdAt": "2025-06-04 16:38:56.293",
-    "updatedAt": "2025-06-05 00:20:42.980"
+    "department": "itsm",
+    "createdAt": "2025-06-04 16:57:08.693",
+    "updatedAt": "2025-06-08 23:07:56.390"
   },
   {
     "id": "frk_tt_6840796f77d8a0dff53f947a",
-    "name": "Endpoint Malware Protection",
-    "description": "Ensure that all endpoints accessing critical servers or data are protected by up-to-date malware protection software.",
+    "name": "Secure Devices",
+    "description": "Ensure all devices have BitLocker/FileVault enabled, screen lock enabled after 5 minutes of inactivity, a minimum password length of 8+ characters, security updates are automatically installed and Anti-virus enabled (Windows Defender or MacOS XProtect). \n\nUpload screenshots of each device or install the Comp AI agent on devices.",
     "frequency": "yearly",
     "department": "itsm",
     "createdAt": "2025-06-04 16:50:54.671",
-    "updatedAt": "2025-06-05 00:20:45.022"
+    "updatedAt": "2025-06-09 15:14:41.745"
   },
   {
-    "id": "frk_tt_68407a05d2b9cc29a0c57b12",
-    "name": "System Hardening and Patching",
-    "description": "Conduct security and privacy compliance checks on software versions and patches for all remote devices before they connect internally. Perform regular checks to support security event evaluation and prevent incidents.",
-    "frequency": "yearly",
-    "department": "it",
-    "createdAt": "2025-06-04 16:53:24.991",
-    "updatedAt": "2025-06-05 00:20:45.431"
-  },
-  {
-    "id": "frk_tt_6840688c2faba1517eee62e7",
-    "name": "Senior Management Security Oversight",
-    "description": "Ensure that senior management annually reviews and approves key documents and processes, including company policies, the organizational chart, risk assessments, the Information Security program, and vendor risk assessments. Develop and implement general control activities through these reviews, and conduct ongoing evaluations of policy compliance and the overall security program. Communicate the status of the Information Security program and policy compliance to senior management, and facilitate corrective actions as needed.",
+    "id": "frk_tt_684076a02261faf3d331289d",
+    "name": "Review Policies",
+    "description": "Make sure all of the policies in Comp AI have been approved and all employees have signed/agreed to them.",
     "frequency": "yearly",
     "department": "gov",
-    "createdAt": "2025-06-04 15:38:51.705",
-    "updatedAt": "2025-06-05 00:20:39.397"
+    "createdAt": "2025-06-04 16:38:56.293",
+    "updatedAt": "2025-06-08 22:42:13.707"
+  },
+  {
+    "id": "frk_tt_6840791cac0a7b780dbaf932",
+    "name": "Public Policies",
+    "description": "Add a comment with links to your privacy policy / terms of service. Ensure Privacy policy has  a form for data deletion requests and make sure you are tracking and logging those requests",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2025-06-04 16:49:31.599",
+    "updatedAt": "2025-06-09 15:28:58.942"
   },
   {
     "id": "frk_tt_68406e7abae2a9b16c2cc197",
-    "name": "Disaster Recovery and Business Continuity",
-    "description": "Document and implement policies and procedures for data backups, disaster recovery, and business continuity to ensure ongoing operations during security incidents and environmental disruptions. Establish processes for regular backups, periodic integrity tests, and consistent recovery plan testing to meet recovery time and point objectives (RTO/RPO). Include guidelines to manage environmental protection and support contingency planning, ensuring readiness to execute recovery plans when needed.",
+    "name": "Planning",
+    "description": "Make sure you have point in time recovery / backups enabled and that you test this works on an annual basis.\n\nCreate a step by step document of what you did to test the backup worked and upload this as evidence.",
     "frequency": "yearly",
     "department": "gov",
     "createdAt": "2025-06-04 16:04:09.896",
-    "updatedAt": "2025-06-05 00:20:42.497"
+    "updatedAt": "2025-06-08 22:32:18.249"
   },
   {
-    "id": "frk_tt_684079ba137c4e7727ae8859",
-    "name": "Secure Remote Working",
-    "description": "Establish measures to perform security and privacy compliance checks on software versions and patches of remote devices before they connect internally. Ensure all remote endpoints with access to critical systems auto-lock after 15 minutes of inactivity, and conduct ongoing compliance checks to support security event evaluation.",
+    "id": "frk_tt_6849aad98c50d734dd904d98",
+    "name": "Diagramming",
+    "description": "Architecture Diagram: Draw a single‑page diagram (Figma, Draw.io, Lucidchart—whatever is fastest)\n\nFor ISO 27001 and HIPAA :\n\nData Flow Diagram: Show exactly how user and sensitive data travels through your system—so you can spot risks (and impress due‑diligence teams)\n\n*If there is no sensitive data, then the data flow diagram is not needed for ISO 27001\n",
     "frequency": "yearly",
-    "department": "itsm",
-    "createdAt": "2025-06-04 16:52:10.234",
-    "updatedAt": "2025-06-05 00:20:45.227"
+    "department": "it",
+    "createdAt": "2025-06-11 16:12:08.468",
+    "updatedAt": "2025-06-11 16:33:40.237"
+  },
+  {
+    "id": "frk_tt_6849c1a1038c3f18cfff47bf",
+    "name": "Utility Monitoring",
+    "description": "Maintain a list of approved privileged utilities (e.g. iptables, tcpdump, disk‑encryption tools)\n\nShow NTP/Chrony status on one Linux box and one Windows/Mac device proving they are within ±1 second of the chosen time source",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2025-06-11 17:49:21.226",
+    "updatedAt": "2025-06-11 17:49:21.226"
+  },
+  {
+    "id": "frk_tt_686b51339d7e9f8ef2081a70",
+    "name": "Data Masking",
+    "description": "Hide Sensitive fields",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2025-07-07 04:46:43.319",
+    "updatedAt": "2025-07-07 04:46:43.319"
   }
 ]

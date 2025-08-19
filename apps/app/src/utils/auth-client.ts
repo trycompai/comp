@@ -3,6 +3,7 @@ import {
   inferAdditionalFields,
   jwtClient,
   magicLinkClient,
+  multiSessionClient,
   organizationClient,
 } from 'better-auth/client/plugins';
 import { createAuthClient } from 'better-auth/react';
@@ -26,6 +27,7 @@ export const authClient = createAuthClient({
     emailOTPClient(),
     magicLinkClient(),
     jwtClient(),
+    multiSessionClient(),
   ],
   fetchOptions: {
     onSuccess: (ctx) => {

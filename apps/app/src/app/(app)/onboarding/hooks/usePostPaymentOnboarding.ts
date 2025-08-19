@@ -138,7 +138,19 @@ export function usePostPaymentOnboarding({
       workLocation: allAnswers.workLocation || '',
       infrastructure: allAnswers.infrastructure || '',
       dataTypes: allAnswers.dataTypes || '',
+      geo: allAnswers.geo || '',
     });
+  };
+
+  const completeNow = () => {
+    const currentValues = form.getValues();
+    const allAnswers: Partial<CompanyDetails> = {
+      ...savedAnswers,
+      ...currentValues,
+      organizationName,
+    } as Partial<CompanyDetails>;
+
+    handleCompleteOnboarding(allAnswers);
   };
 
   const onSubmit = (data: OnboardingFormFields) => {
@@ -215,5 +227,6 @@ export function usePostPaymentOnboarding({
     isLastStep,
     currentStepNumber: stepIndex + 1, // Display as steps 1-9
     totalSteps: postPaymentSteps.length, // Total 9 steps for post-payment
+    completeNow,
   };
 }
