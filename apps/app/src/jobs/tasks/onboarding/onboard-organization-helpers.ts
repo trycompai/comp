@@ -18,7 +18,7 @@ import z from 'zod';
 import type { researchVendor } from '../scrape/research';
 import { RISK_MITIGATION_PROMPT } from './prompts/risk-mitigation';
 import { VENDOR_RISK_ASSESSMENT_PROMPT } from './prompts/vendor-risk-assessment';
-import { updatePolicies } from './update-policies';
+import { updatePolicy } from './update-policy';
 
 // Types
 export type ContextItem = {
@@ -431,7 +431,7 @@ export async function triggerPolicyUpdates(
   const policies = await getOrganizationPolicies(organizationId);
 
   if (policies.length > 0) {
-    await updatePolicies.batchTriggerAndWait(
+    await updatePolicy.batchTriggerAndWait(
       policies.map((policy) => ({
         payload: {
           organizationId,
