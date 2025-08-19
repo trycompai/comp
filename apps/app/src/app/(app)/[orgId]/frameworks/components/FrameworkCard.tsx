@@ -8,6 +8,7 @@ import type { Control, Task } from '@db';
 import { BarChart3, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { computeFrameworkStats } from '../lib/compute';
 import type { FrameworkInstanceWithControls } from '../types';
 
 interface FrameworkCardProps {
@@ -51,53 +52,13 @@ export function FrameworkCard({
     return 'text-red-600 dark:text-red-400';
   };
 
-  const controlsCount = frameworkInstance.controls?.length || 0;
-  // Policies breakdown
-  const frameworkControlIds = frameworkInstance.controls?.map((c) => c.id) || [];
-  const allPolicies =
-    frameworkInstance.controls?.flatMap((control) => control.policies || []) || [];
-  const uniquePoliciesMap = new Map<string, { id: string; status: string }>();
-  for (const p of allPolicies) uniquePoliciesMap.set(p.id, p);
-  const uniquePolicies = Array.from(uniquePoliciesMap.values());
-  const totalPolicies = uniquePolicies.length;
-  const publishedPolicies = uniquePolicies.filter((p) => p.status === 'published').length;
-
-  // Calculate not started controls: controls where all policies are draft or non-existent AND all tasks are todo or non-existent
-  const notStartedControlsCount =
-    frameworkInstance.controls?.filter((control) => {
-      // If a control has no policies and no tasks, it's not started.
-      const controlTasks = tasks.filter((task) => task.controls.some((c) => c.id === control.id));
-
-      if ((!control.policies || control.policies.length === 0) && controlTasks.length === 0) {
-        return true;
-      }
-
-      // Check if ALL policies are in draft state or non-existent
-      const policiesNotStarted =
-        !control.policies ||
-        control.policies.length === 0 ||
-        control.policies.every((policy) => policy.status === 'draft');
-
-      // Check if ALL tasks are in todo state or there are no tasks
-      const tasksNotStarted =
-        controlTasks.length === 0 || controlTasks.every((task) => task.status === 'todo');
-
-      return policiesNotStarted && tasksNotStarted;
-      // If either any policy is not draft or any task is not todo, it's in progress
-    }).length || 0;
-
-  // Tasks breakdown for this framework (tasks associated with its controls)
-  const frameworkTasks = tasks.filter((task) =>
-    task.controls.some((c) => frameworkControlIds.includes(c.id)),
+  const { totalPolicies, publishedPolicies, totalTasks, doneTasks } = computeFrameworkStats(
+    frameworkInstance,
+    tasks,
   );
-  const totalTasks = frameworkTasks.length;
-  const doneTasks = frameworkTasks.filter((t) => t.status === 'done').length;
 
-  // Use direct framework data:
   const frameworkDetails = frameworkInstance.framework;
   const statusBadge = getStatusBadge(complianceScore);
-
-  // Calculate last activity date - use current date as fallback
   const lastActivityDate = new Date().toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
@@ -152,10 +113,7 @@ export function FrameworkCard({
                 {doneTasks}/{totalTasks} done
               </span>
             </div>
-            <div className="flex items-center justify-between">
-              <span>Controls</span>
-              <span className="tabular-nums">{controlsCount} total</span>
-            </div>
+            {/* Intentionally omit controls in card to reduce noise */}
           </div>
 
           {/* Footer */}
