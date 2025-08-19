@@ -136,7 +136,7 @@
     "build": "next build",
     "db:generate": "bun run db:getschema && prisma generate",
     "db:getschema": "cp ../../node_modules/@trycompai/db/dist/schema.prisma prisma/schema.prisma",
-    "deploy:trigger-prod": "npx trigger.dev@latest deploy",
+    "deploy:trigger-prod": "npx trigger.dev@3.3.17 deploy",
     "dev": "bun i && bunx concurrently --kill-others --names \"next,trigger\" --prefix-colors \"yellow,blue\" \"next dev --turbo -p 3000\" \"bun run trigger:dev\"",
     "lint": "next lint && prettier --check .",
     "prebuild": "bun run db:generate",
@@ -153,7 +153,7 @@
     "test:e2e:ui": "playwright test --ui",
     "test:ui": "vitest --ui",
     "test:watch": "vitest --watch",
-    "trigger:dev": "npx trigger.dev@latest dev",
+    "trigger:dev": "npx trigger.dev@3.3.17 dev",
     "typecheck": "tsc --noEmit"
   }
 }
