@@ -11,8 +11,18 @@ export async function createFleetLabel({
   fleetDevicePathMac,
   fleetDevicePathWindows,
 }: CreateFleetLabelParams): Promise<void> {
+  logger('createFleetLabel function called', {
+    employeeId,
+    memberId,
+    os,
+    fleetDevicePathMac,
+    fleetDevicePathWindows,
+  });
+
   try {
+    logger('Getting Fleet instance...');
     const fleet = await getFleetInstance();
+    logger('Fleet instance obtained successfully');
 
     // Create platform-specific query
     const query =
@@ -20,12 +30,41 @@ export async function createFleetLabel({
         ? `SELECT 1 FROM file WHERE path = '${fleetDevicePathMac}/${employeeId}' LIMIT 1;`
         : `SELECT 1 FROM file WHERE path = '${fleetDevicePathWindows}\\${employeeId}' LIMIT 1;`;
 
+    logger('Generated Fleet query for label creation', {
+      employeeId,
+      os,
+      query,
+    });
+
+    logger('Sending POST request to Fleet API to create label...', {
+      labelName: employeeId,
+      endpoint: '/labels',
+      requestBody: {
+        name: employeeId,
+        query: query,
+      },
+    });
+
     const response = await fleet.post('/labels', {
       name: employeeId,
       query: query,
     });
 
+    logger('Fleet API response received', {
+      status: response.status,
+      statusText: response.statusText,
+      labelId: response.data?.label?.id,
+      responseData: response.data,
+      headers: response.headers,
+    });
+
     const labelId = response.data.label.id;
+
+    logger('Updating member record with Fleet label ID', {
+      memberId,
+      labelId,
+      employeeId,
+    });
 
     await db.member.update({
       where: {
@@ -35,11 +74,47 @@ export async function createFleetLabel({
         fleetDmLabelId: labelId,
       },
     });
+
+    logger('Member record updated successfully with Fleet label ID', {
+      memberId,
+      labelId,
+      employeeId,
+    });
   } catch (error) {
     if (error instanceof AxiosError && error.response?.status === 409) {
       // Label already exists, which is fine.
-      logger('Fleet label already exists, skipping creation.', { employeeId });
+      const fleetError = error.response.data;
+      logger('Fleet label already exists, skipping creation.', {
+        employeeId,
+        httpStatus: error.response.status,
+        httpStatusText: error.response.statusText,
+        fleetMessage: fleetError?.message,
+        fleetErrors: fleetError?.errors,
+        fleetUuid: fleetError?.uuid,
+        axiosMessage: error.message,
+        url: error.config?.url,
+        method: error.config?.method,
+        fullResponseData: error.response.data,
+      });
     } else {
+      // Log the error details before re-throwing
+      const fleetError = error instanceof AxiosError ? error.response?.data : null;
+      logger('Error creating Fleet label', {
+        employeeId,
+        memberId,
+        os,
+        httpStatus: error instanceof AxiosError ? error.response?.status : undefined,
+        httpStatusText: error instanceof AxiosError ? error.response?.statusText : undefined,
+        fleetMessage: fleetError?.message,
+        fleetErrors: fleetError?.errors,
+        fleetUuid: fleetError?.uuid,
+        axiosMessage: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        url: error instanceof AxiosError ? error.config?.url : undefined,
+        method: error instanceof AxiosError ? error.config?.method : undefined,
+        fullResponseData: fleetError,
+      });
+
       // Re-throw other errors
       throw error;
     }

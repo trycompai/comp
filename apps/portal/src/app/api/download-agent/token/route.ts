@@ -1,8 +1,10 @@
 import { auth } from '@/app/lib/auth';
+import { logger } from '@/utils/logger';
 import { client as kv } from '@comp/kv';
 import { randomBytes } from 'crypto';
 import { type NextRequest, NextResponse } from 'next/server';
-import type { DownloadAgentRequest } from '../types';
+import { createFleetLabel } from '../fleet-label';
+import type { DownloadAgentRequest, SupportedOS } from '../types';
 import { detectOSFromUserAgent, validateMemberAndOrg } from '../utils';
 
 export async function POST(req: NextRequest) {
@@ -39,10 +41,70 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  logger('Token route: Starting fleet label creation', {
+    employeeId,
+    memberId: member.id,
+    os: detectedOS,
+    orgId,
+    userId: session.user.id,
+  });
+
+  // Check environment configuration for fleet label creation
+  const fleetDevicePathMac = process.env.FLEET_DEVICE_PATH_MAC;
+  const fleetDevicePathWindows = process.env.FLEET_DEVICE_PATH_WINDOWS;
+
+  if (!fleetDevicePathMac || !fleetDevicePathWindows) {
+    logger('Fleet device paths not configured in token route', {
+      fleetDevicePathMac: !!fleetDevicePathMac,
+      fleetDevicePathWindows: !!fleetDevicePathWindows,
+    });
+    return new NextResponse('Server configuration error: Fleet device paths are missing.', {
+      status: 500,
+    });
+  }
+
+  // Create Fleet label
+  try {
+    await createFleetLabel({
+      employeeId,
+      memberId: member.id,
+      os: detectedOS as SupportedOS,
+      fleetDevicePathMac,
+      fleetDevicePathWindows,
+    });
+
+    logger('Token route: Fleet label creation completed successfully', {
+      employeeId,
+      memberId: member.id,
+      os: detectedOS,
+      orgId,
+    });
+  } catch (error) {
+    logger('Token route: Error creating fleet label', {
+      employeeId,
+      memberId: member.id,
+      os: detectedOS,
+      orgId,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+
+    return new NextResponse('Failed to create fleet label', { status: 500 });
+  }
+
   // Generate a secure random token
+  logger('Generating download token', { employeeId, os: detectedOS, orgId });
   const token = randomBytes(32).toString('hex');
 
   // Store token with download info in KV store (expires in 5 minutes)
+  logger('Storing download token in KV store', {
+    employeeId,
+    os: detectedOS,
+    orgId,
+    tokenLength: token.length,
+    expiresInSeconds: 300,
+  });
+
   await kv.set(
     `download:${token}`,
     {
@@ -54,6 +116,13 @@ export async function POST(req: NextRequest) {
     },
     { ex: 300 }, // 5 minutes
   );
+
+  logger('Download token created and stored successfully', {
+    employeeId,
+    os: detectedOS,
+    orgId,
+    userId: session.user.id,
+  });
 
   return NextResponse.json({ token });
 }
