@@ -11,6 +11,7 @@ import dynamic from 'next/dynamic';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
+import { DynamicMinHeight } from './components/DynamicMinHeight';
 import { OnboardingTracker } from './components/OnboardingTracker';
 
 const HotKeys = dynamic(() => import('@/components/hot-keys').then((mod) => mod.HotKeys), {
@@ -57,8 +58,6 @@ export default async function Layout({
     },
   });
 
-  console.log('member', member);
-
   if (!member) {
     // User doesn't have access to this organization
     return redirect('/auth/unauthorized');
@@ -80,12 +79,6 @@ export default async function Layout({
     },
   });
 
-  const isOnboardingRunning = !!onboarding?.triggerJobId && !onboarding.triggerJobCompleted;
-  const navbarHeight = 53 + 1; // 1 for border
-  const onboardingHeight = 132 + 1; // 1 for border
-
-  const pixelsOffset = isOnboardingRunning ? navbarHeight + onboardingHeight : navbarHeight;
-
   return (
     <TriggerTokenProvider
       triggerJobId={onboarding?.triggerJobId || undefined}
@@ -95,12 +88,7 @@ export default async function Layout({
         <AnimatedLayout sidebar={<Sidebar organization={organization} />} isCollapsed={isCollapsed}>
           {onboarding?.triggerJobId && <OnboardingTracker onboarding={onboarding} />}
           <Header />
-          <div
-            className="textured-background mx-auto px-4 py-4"
-            style={{ minHeight: `calc(100vh - ${pixelsOffset}px)` }}
-          >
-            {children}
-          </div>
+          <DynamicMinHeight>{children}</DynamicMinHeight>
           <AssistantSheet />
           <Suspense fallback={null}>
             <CheckoutCompleteDialog orgId={organization.id} />
