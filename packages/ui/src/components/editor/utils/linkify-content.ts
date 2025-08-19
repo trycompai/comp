@@ -44,30 +44,33 @@ export function linkifyContent(doc: JSONContent): JSONContent {
   const recurse = (node: JSONContent): JSONContent => {
     if (!node) return node;
 
-    if (node.type === 'text' && typeof node.text === 'string') {
-      // If it already has a link mark, leave as-is
-      const hasLink = Array.isArray(node.marks) && node.marks.some((m) => m.type === 'link');
-      if (hasLink) return node;
-      const segments = linkifyText(node.text);
-      // If no links detected, return original
-      if (segments.length === 1 && segments[0].text === node.text && !segments[0].marks) {
-        return node;
-      }
-      return { type: 'text', text: '', content: segments } as any; // handled by parent rewrite below
-    }
-
     if (Array.isArray(node.content)) {
       const newChildren: JSONContent[] = [];
       for (const child of node.content) {
-        const next = recurse(child);
-        // If a text node returned a wrapper with inline content, flatten it
-        if (next && (next as any).content && next.type === 'text' && next.text === '') {
-          newChildren.push(...(((next as any).content as JSONContent[]) || []));
+        // Only transform plain text nodes here to avoid complex wrapping
+        if (child && child.type === 'text' && typeof child.text === 'string') {
+          const hasLink = Array.isArray(child.marks) && child.marks.some((m) => m.type === 'link');
+          if (hasLink) {
+            newChildren.push(child);
+          } else {
+            const segments = linkifyText(child.text);
+            if (segments.length === 0) {
+              newChildren.push(child);
+            } else if (
+              segments.length === 1 &&
+              segments[0]?.text === child.text &&
+              !segments[0]?.marks
+            ) {
+              newChildren.push(child);
+            } else {
+              newChildren.push(...segments);
+            }
+          }
         } else {
-          newChildren.push(next);
+          newChildren.push(recurse(child as JSONContent));
         }
       }
-      return { ...node, content: newChildren };
+      return { ...node, content: newChildren } as JSONContent;
     }
 
     return node;
