@@ -1,9 +1,8 @@
 import Aws from './aws/config';
 import Azure from './azure/config';
-import Deel from './deel/config';
 import Gcp from './gcp/config';
 
-export const integrations = [Aws, Azure, Deel, Gcp];
+export const integrations = [Aws, Azure, Gcp];
 
 // Export the integration factory
 export { getIntegrationHandler, type IntegrationHandler } from './factory';

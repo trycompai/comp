@@ -1,7 +1,8 @@
 'use client';
 
 import { Card } from '@comp/ui/card';
-import type { Member, Task, User } from '@db';
+import type { Control, Member, Task, User } from '@db';
+import { useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { updateTask } from '../../actions/updateTask';
 import { TaskDeleteDialog } from './TaskDeleteDialog';
@@ -9,12 +10,14 @@ import { TaskMainContent } from './TaskMainContent';
 import { TaskPropertiesSidebar } from './TaskPropertiesSidebar';
 
 interface SingleTaskProps {
-  task: Task & { fileUrls?: string[] };
+  task: Task & { fileUrls?: string[]; controls?: Control[] };
   members?: (Member & { user: User })[];
 }
 
 export function SingleTask({ task, members }: SingleTaskProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const params = useParams<{ orgId: string }>();
+  const orgIdFromParams = params.orgId;
 
   const assignedMember = useMemo(() => {
     if (!task.assigneeId || !members) return null;
@@ -54,6 +57,7 @@ export function SingleTask({ task, members }: SingleTaskProps) {
         assignedMember={assignedMember}
         handleUpdateTask={handleUpdateTask}
         onDeleteClick={() => setDeleteDialogOpen(true)}
+        orgId={orgIdFromParams}
       />
 
       {/* Delete Dialog */}

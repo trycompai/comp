@@ -115,11 +115,11 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
     const friendlyStatus = getFriendlyStatusName(run.status);
 
     switch (run.status) {
-      case 'WAITING_FOR_DEPLOY':
+      case 'WAITING':
       case 'QUEUED':
       case 'EXECUTING':
-      case 'REATTEMPTING':
-      case 'FROZEN':
+      case 'PENDING_VERSION':
+      case 'DEQUEUED':
       case 'DELAYED':
         return (
           <div className="flex flex-col items-center justify-center gap-2 text-center">
@@ -156,7 +156,6 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
       case 'FAILED':
       case 'CANCELED':
       case 'CRASHED':
-      case 'INTERRUPTED':
       case 'SYSTEM_FAILURE':
       case 'EXPIRED':
       case 'TIMED_OUT': {
@@ -198,7 +197,10 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
   }
 
   return (
-    <Card className="w-full overflow-hidden rounded-none border-x-0 border-t-0">
+    <Card
+      id="onboarding-banner"
+      className="w-full overflow-hidden rounded-none border-x-0 border-t-0"
+    >
       <CardContent className="bg-background flex flex-col items-center justify-center">
         <div className="w-full pt-4">{renderStatusContent()}</div>
       </CardContent>

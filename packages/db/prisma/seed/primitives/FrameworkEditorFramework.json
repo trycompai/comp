@@ -9,15 +9,6 @@
     "visible": false
   },
   {
-    "id": "frk_681fdd150f59a1560a66c89a",
-    "name": "HIPPA",
-    "description": "Health Insurance Portability and Accountability Act\r\n\r\nCurrently sufficient for a pure HIPAA Security-Rule audit.*\r\n\r\nCurrently Missing: \r\n\r\n1. Privacy requirements\r\n2. Breach-Notification requirements\r\n3. Soon-to-be-mandatory NPRM items. ",
-    "version": "2025",
-    "createdAt": "2025-05-14 19:20:44.920",
-    "updatedAt": "2025-05-14 19:20:44.920",
-    "visible": false
-  },
-  {
     "id": "frk_681ef1952907deb7cb85896d",
     "name": "GDPR",
     "description": "GDPR",
@@ -95,7 +86,16 @@
     "description": "ISO 27001",
     "version": "2022",
     "createdAt": "2025-05-14 19:20:44.920",
-    "updatedAt": "2025-06-05 10:38:33.912",
-    "visible": false
+    "updatedAt": "2025-07-07 06:10:51.312",
+    "visible": true
+  },
+  {
+    "id": "frk_681fdd150f59a1560a66c89a",
+    "name": "HIPAA",
+    "description": "Health Insurance Portability and Accountability Act\r\n\r\n",
+    "version": "2025",
+    "createdAt": "2025-05-14 19:20:44.920",
+    "updatedAt": "2025-07-29 01:20:39.551",
+    "visible": true
   }
 ]

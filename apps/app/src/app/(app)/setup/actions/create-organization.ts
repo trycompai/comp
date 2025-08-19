@@ -10,7 +10,7 @@ import { createFleetLabelForOrg } from '@/jobs/tasks/device/create-fleet-label-f
 import { onboardOrganization as onboardOrganizationTask } from '@/jobs/tasks/onboarding/onboard-organization';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
-import { tasks } from '@trigger.dev/sdk/v3';
+import { tasks } from '@trigger.dev/sdk';
 import { revalidatePath } from 'next/cache';
 import { cookies, headers } from 'next/headers';
 import { companyDetailsSchema, steps } from '../lib/constants';
@@ -173,19 +173,9 @@ export const createOrganization = authActionClientWithoutOrg
         revalidatePath(`/${org.organizationId}`);
       }
 
-      const handle = await tasks.trigger<typeof onboardOrganizationTask>(
-        'onboard-organization',
-        {
-          organizationId: orgId,
-        },
-        {
-          queue: {
-            name: 'onboard-organization',
-            concurrencyLimit: 5,
-          },
-          concurrencyKey: orgId,
-        },
-      );
+      const handle = await tasks.trigger<typeof onboardOrganizationTask>('onboard-organization', {
+        organizationId: orgId,
+      });
 
       // Set triggerJobId to signal that the job is running.
       await db.onboarding.update({

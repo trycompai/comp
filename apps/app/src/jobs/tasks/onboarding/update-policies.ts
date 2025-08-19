@@ -1,122 +1,48 @@
-import { openai } from '@ai-sdk/openai';
-import { db } from '@db';
-import type { JSONContent } from '@tiptap/react';
-import { logger, schemaTask } from '@trigger.dev/sdk/v3';
-import { generateObject, NoObjectGeneratedError } from 'ai';
+import { logger, queue, schemaTask } from '@trigger.dev/sdk';
 import { z } from 'zod';
-import { generatePrompt } from '../../lib/prompts';
+import { processPolicyUpdate } from './update-policies-helpers';
 
 if (!process.env.OPENAI_API_KEY) {
   throw new Error('OPENAI_API_KEY is not set');
 }
 
+// v4: define queue ahead of time
+export const updatePoliciesQueue = queue({ name: 'update-policies', concurrencyLimit: 5 });
+
 export const updatePolicies = schemaTask({
   id: 'update-policies',
+  maxDuration: 600, // 10 minutes.
+  queue: updatePoliciesQueue,
   schema: z.object({
     organizationId: z.string(),
     policyId: z.string(),
     contextHub: z.string(),
+    frameworks: z.array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        version: z.string(),
+        description: z.string(),
+        visible: z.boolean(),
+        createdAt: z.date(),
+        updatedAt: z.date(),
+      }),
+    ),
   }),
-  run: async ({ organizationId, policyId, contextHub }) => {
+  run: async (params) => {
     try {
-      const organization = await db.organization.findUnique({
-        where: {
-          id: organizationId,
-        },
-      });
+      logger.info(`Starting policy update for policy ${params.policyId}`);
 
-      if (!organization) {
-        logger.error(`Organization not found for ${organizationId}`);
-        return;
-      }
+      const result = await processPolicyUpdate(params);
 
-      const policy = await db.policy.findUnique({
-        where: {
-          id: policyId,
-          organizationId,
-        },
-      });
-
-      if (!policy) {
-        logger.error(`Policy not found for ${policyId}`);
-        return;
-      }
-
-      const prompt = await generatePrompt({
-        existingPolicyContent: policy?.content,
-        contextHub,
-        policy,
-        companyName: organization?.name ?? 'Company',
-        companyWebsite: organization?.website ?? 'https://company.com',
-      });
-
-      try {
-        // Generate TipTap JSON directly in one step to avoid malformed JSON issues
-        const { object } = await generateObject({
-          model: openai('gpt-4o-mini'),
-          mode: 'json',
-          system: `You are an expert at writing security policies. Generate content directly as TipTap JSON format.
-
-TipTap JSON structure:
-- Root: {"type": "document", "content": [array of nodes]}
-- Paragraphs: {"type": "paragraph", "content": [text nodes]}
-- Headings: {"type": "heading", "attrs": {"level": 1-6}, "content": [text nodes]}
-- Lists: {"type": "orderedList"/"bulletList", "content": [listItem nodes]}
-- List items: {"type": "listItem", "content": [paragraph nodes]}
-- Text: {"type": "text", "text": "content", "marks": [formatting]}
-- Bold: {"type": "bold"} in marks array
-- Italic: {"type": "italic"} in marks array
-
-IMPORTANT: Follow ALL formatting instructions in the prompt, implementing them as proper TipTap JSON structures.`,
-          prompt: `Generate a SOC 2 compliant security policy as a complete TipTap JSON document.
-
-INSTRUCTIONS TO IMPLEMENT IN TIPTAP JSON:
-${prompt.replace(/\\n/g, '\n')}
-
-Return the complete TipTap document following ALL the above requirements using proper TipTap JSON structure.`,
-          schema: z.object({
-            type: z.literal('document'),
-            content: z.array(z.record(z.unknown())),
-          }),
-        });
-
-        try {
-          await db.policy.update({
-            where: {
-              id: policyId,
-            },
-            data: {
-              content: object.content as JSONContent[],
-            },
-          });
-
-          return {
-            policyId,
-            contextHub,
-            policy,
-            updatedContent: object,
-          };
-        } catch (dbError) {
-          logger.error(`Failed to update policy in database: ${dbError}`);
-          throw dbError;
-        }
-      } catch (aiError) {
-        logger.error(`Error generating AI content: ${aiError}`);
-
-        if (NoObjectGeneratedError.isInstance(aiError)) {
-          logger.error(
-            `NoObjectGeneratedError: ${JSON.stringify({
-              cause: aiError.cause,
-              text: aiError.text,
-              response: aiError.response,
-              usage: aiError.usage,
-            })}`,
-          );
-        }
-        throw aiError;
-      }
+      logger.info(`Successfully updated policy ${params.policyId}`);
+      return result;
     } catch (error) {
-      logger.error(`Unexpected error in updatePolicies: ${error}`);
+      logger.error(`Error updating policy ${params.policyId}:`, {
+        error: error instanceof Error ? error.message : String(error),
+        policyId: params.policyId,
+        organizationId: params.organizationId,
+      });
       throw error;
     }
   },

@@ -7,6 +7,7 @@ import { redirect } from 'next/navigation';
 import { cache } from 'react';
 import { FrameworksOverview } from './components/FrameworksOverview';
 import { getAllFrameworkInstancesWithControls } from './data/getAllFrameworkInstancesWithControls';
+import { getFrameworkWithComplianceScores } from './data/getFrameworkWithComplianceScores';
 
 export async function generateMetadata() {
   return {
@@ -25,9 +26,23 @@ export default async function DashboardPage() {
     redirect('/');
   }
 
+  // If onboarding for this org is not completed yet, redirect to onboarding first
+  const org = await db.organization.findUnique({
+    where: { id: organizationId },
+    select: { onboardingCompleted: true },
+  });
+  if (org && org.onboardingCompleted === false) {
+    redirect(`/onboarding/${organizationId}`);
+  }
+
   const tasks = await getControlTasks();
   const frameworksWithControls = await getAllFrameworkInstancesWithControls({
     organizationId,
+  });
+
+  const frameworksWithCompliance = await getFrameworkWithComplianceScores({
+    frameworksWithControls,
+    tasks,
   });
 
   const allFrameworks = await db.frameworkEditorFramework.findMany({
@@ -43,6 +58,7 @@ export default async function DashboardPage() {
         frameworksWithControls={frameworksWithControls}
         tasks={tasks}
         allFrameworks={allFrameworks}
+        frameworksWithCompliance={frameworksWithCompliance}
       />
     </PageWithBreadcrumb>
   );

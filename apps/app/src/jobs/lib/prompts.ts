@@ -1,6 +1,6 @@
-import { Policy } from '@db';
+import { FrameworkEditorFramework, Policy } from '@db';
 import type { JSONContent } from '@tiptap/react';
-import { logger } from '@trigger.dev/sdk/v3';
+import { logger } from '@trigger.dev/sdk';
 
 export const generatePrompt = ({
   policy,
@@ -8,53 +8,79 @@ export const generatePrompt = ({
   contextHub,
   companyName,
   companyWebsite,
+  frameworks,
 }: {
   contextHub: string;
   companyName: string;
   companyWebsite: string;
   policy: Policy;
   existingPolicyContent: JSONContent | JSONContent[];
+  frameworks: FrameworkEditorFramework[];
 }) => {
   logger.info(`Generating prompt for policy ${policy.name}`);
   logger.info(`Company Name: ${companyName}`);
   logger.info(`Company Website: ${companyWebsite}`);
   logger.info(`Context: ${contextHub}`);
   logger.info(`Existing Policy Content: ${JSON.stringify(existingPolicyContent)}`);
+  logger.info(
+    `Frameworks: ${JSON.stringify(
+      frameworks.map((f) => ({ id: f.id, name: f.name, version: f.version })),
+    )}`,
+  );
+
+  const frameworkList =
+    frameworks.length > 0
+      ? frameworks.map((f) => `${f.name} v${f.version}`).join(', ')
+      : 'None explicitly selected';
+  const hasHIPAA = frameworks.some((f) => f.name.toLowerCase().includes('hipaa'));
+  const hasSOC2 = frameworks.some(
+    (f) => /soc\s*2/i.test(f.name) || f.name.toLowerCase().includes('soc'),
+  );
 
   return `
-Company details:
+Company: ${companyName} (${companyWebsite})
+Frameworks selected: ${frameworkList}
 
-Company Name: ${companyName}
-Company Website: ${companyWebsite}
-
-Knowledge Base for ${companyName}:
-
+Knowledge base:
 ${contextHub}
 
-Tailoring rules:
-Create or update a policy based on strict alignment with SOC 2 standards and controls.
+Task: Edit the provided TipTap JSON template to produce the final policy TipTap JSON. Apply ONLY the rules below.
 
-Contextualise every section with company Secure-specific systems, regions, and roles.
-Replace office-centric language with cloud and home-office equivalents.
-Build control statements that directly mitigate the listed risks; remove irrelevant clauses.
-Use mandatory language such as “must” or “shall”; specify measurable review cycles (quarterly, annually).
-End with a bullet list of auditor evidence artefacts (logs, tickets, approvals, screenshots).
-Limit to three-sentence executive summary and maximum 600-word main body.
-Wrap any unresolved detail in <<TO REVIEW>>.
+Required rules (keep this simple):
 
-1.Remove Document Version Control section altogether(if present) and also adjust numbering accordingly
-2. Make a table of contents (in tiptap format)
-3. Give me executive summary on top of the document
-4. Wrap any unresolved detail in <<TO REVIEW>>
-5. Number 1 in Table of Contents will be Document Content Page
-6. I want to document to be strictly aligned with SOC 2 standards and controls
+1) Company details
+   - If the template contains placeholders like {{...}}, replace ANY placeholder with information you actually have (from the knowledge base, company name, company website, frameworks context).
+   - If a specific placeholder cannot be resolved, set it to "N/A" (do not invent values).
+   - Only fill placeholders where the template asks; do not add new fields beyond the placeholders.
+   - Placeholder legend (map values from the knowledge base Q&A where available):
+     - {{COMPANY}}            ⇐ Company Name
+     - {{COMPANYINFO}}        ⇐ Describe your company in a few sentences
+     - {{INDUSTRY}}           ⇐ What Industry is your company in?
+     - {{EMPLOYEES}}          ⇐ How many employees do you have
+     - {{DEVICES}}            ⇐ What Devices do your team members use
+     - {{SOFTWARE}}           ⇐ What software do you use
+     - {{LOCATION}}           ⇐ How does your team work
+     - {{CRITICAL}}           ⇐ Where do you host your application and data
+     - {{DATA}}               ⇐ What type of data do you handle
+     - {{GEO}}                ⇐ Where is your data located
+   - If multiple answers exist, choose the most specific/concise form. If no answer is found for a placeholder, set it to "N/A".
 
-Policy Title: ${policy.name}
-Policy: ${policy.description}
+2) Structure & style
+   - Keep the same section order and general layout as the template (headings or bold titles as-is).
+   - Do NOT copy instruction cue lines (e.g., "Add a HIPAA checklist...", "State that...", "Clarify that..."). Convert such cues into real policy language, and then remove the cue line entirely. If a cue precedes bullet points, keep the bullets but delete the cue line.
 
+3) Handlebars-style conditionals
+   - The template may contain conditional blocks using {{#if var}}...{{/if}} syntax (e.g., {{#if soc2}}, {{#if hipaa}}).
+   - Evaluate these using the selected frameworks:
+     - soc2 is ${hasSOC2 ? 'true' : 'false'}
+     - hipaa is ${hasHIPAA ? 'true' : 'false'}
+   - If the condition is true: keep only the inner content and remove the {{#if}}/{{/if}} markers.
+   - If the condition is false: remove the entire block including its content.
+   - For any other unknown {{#if X}} variables: assume false and remove the block.
 
-Here is the initial template policy to edit:
+Output: Return ONLY the final TipTap JSON document.
 
+Template (TipTap JSON) to edit:
 ${JSON.stringify(existingPolicyContent)}
 `;
 };

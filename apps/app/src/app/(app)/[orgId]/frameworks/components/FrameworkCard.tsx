@@ -8,6 +8,7 @@ import type { Control, Task } from '@db';
 import { BarChart3, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { computeFrameworkStats } from '../lib/compute';
 import type { FrameworkInstanceWithControls } from '../types';
 
 interface FrameworkCardProps {
@@ -51,44 +52,13 @@ export function FrameworkCard({
     return 'text-red-600 dark:text-red-400';
   };
 
-  const controlsCount = frameworkInstance.controls?.length || 0;
-  const compliantControlsCount = Math.round((complianceScore / 100) * controlsCount);
-
-  // Calculate not started controls: controls where all policies are draft or non-existent AND all tasks are todo or non-existent
-  const notStartedControlsCount =
-    frameworkInstance.controls?.filter((control) => {
-      // If a control has no policies and no tasks, it's not started.
-      const controlTasks = tasks.filter((task) => task.controls.some((c) => c.id === control.id));
-
-      if ((!control.policies || control.policies.length === 0) && controlTasks.length === 0) {
-        return true;
-      }
-
-      // Check if ALL policies are in draft state or non-existent
-      const policiesNotStarted =
-        !control.policies ||
-        control.policies.length === 0 ||
-        control.policies.every((policy) => policy.status === 'draft');
-
-      // Check if ALL tasks are in todo state or there are no tasks
-      const tasksNotStarted =
-        controlTasks.length === 0 || controlTasks.every((task) => task.status === 'todo');
-
-      return policiesNotStarted && tasksNotStarted;
-      // If either any policy is not draft or any task is not todo, it's in progress
-    }).length || 0;
-
-  // Calculate in progress controls: Total - Compliant - Not Started
-  const inProgressCount = Math.max(
-    0, // Ensure count doesn't go below zero
-    controlsCount - compliantControlsCount - notStartedControlsCount,
+  const { totalPolicies, publishedPolicies, totalTasks, doneTasks } = computeFrameworkStats(
+    frameworkInstance,
+    tasks,
   );
 
-  // Use direct framework data:
   const frameworkDetails = frameworkInstance.framework;
   const statusBadge = getStatusBadge(complianceScore);
-
-  // Calculate last activity date - use current date as fallback
   const lastActivityDate = new Date().toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
@@ -129,11 +99,21 @@ export function FrameworkCard({
             <Progress value={complianceScore} className="h-1" />
           </div>
 
-          {/* Stats */}
-          <div className="text-muted-foreground flex items-center justify-between text-xs">
-            <span>{compliantControlsCount} complete</span>
-            <span>{inProgressCount} active</span>
-            <span>{controlsCount} total</span>
+          {/* Breakdown */}
+          <div className="text-muted-foreground space-y-1.5 text-xs">
+            <div className="flex items-center justify-between">
+              <span>Policies</span>
+              <span className="tabular-nums">
+                {publishedPolicies}/{totalPolicies} published
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>Tasks</span>
+              <span className="tabular-nums">
+                {doneTasks}/{totalTasks} done
+              </span>
+            </div>
+            {/* Intentionally omit controls in card to reduce noise */}
           </div>
 
           {/* Footer */}

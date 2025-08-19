@@ -1,3 +1,5 @@
+'use server';
+
 import { auth } from '@/app/lib/auth';
 import { getPostHogClient } from '@/app/posthog';
 import { getFleetInstance } from '@/utils/fleet';
@@ -17,7 +19,7 @@ export default async function OrganizationPage({ params }: { params: Promise<{ o
     });
 
     if (!session?.user) {
-      redirect('/login'); // Or appropriate login/auth route
+      return redirect('/auth');
     }
 
     let member = null;
@@ -36,11 +38,11 @@ export default async function OrganizationPage({ params }: { params: Promise<{ o
     } catch (error) {
       console.error('Error fetching member:', error);
       // Return a fallback UI or redirect to error page
-      redirect('/');
+      return redirect('/');
     }
 
     if (!member) {
-      redirect('/'); // Or appropriate login/auth route
+      return redirect('/'); // Or appropriate login/auth route
     }
 
     // Check fleet feature flag first
@@ -75,9 +77,9 @@ export default async function OrganizationPage({ params }: { params: Promise<{ o
       />
     );
   } catch (error) {
-    console.error('Error in OrganizationPage:', error);
+    console.error('Error in OrganizationPage:', { error });
     // Redirect to a safe page if there's an unexpected error
-    redirect('/');
+    return redirect('/');
   }
 }
 
