@@ -1,9 +1,13 @@
 import { getFleetInstance } from '@/lib/fleet';
 import { db } from '@db';
-import { logger, task } from '@trigger.dev/sdk/v3';
+import { logger, queue, task } from '@trigger.dev/sdk';
+
+// Optional: define a queue if we want to control concurrency in v4
+const fleetQueue = queue({ name: 'create-fleet-label-for-org', concurrencyLimit: 10 });
 
 export const createFleetLabelForOrg = task({
   id: 'create-fleet-label-for-org',
+  queue: fleetQueue,
   retry: {
     maxAttempts: 3,
   },

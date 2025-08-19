@@ -1,5 +1,5 @@
 import { db } from '@db';
-import { logger, task } from '@trigger.dev/sdk/v3';
+import { logger, task } from '@trigger.dev/sdk';
 import { createFleetLabelForOrg } from './create-fleet-label-for-org';
 
 export const createFleetLabelForAllOrgs = task({

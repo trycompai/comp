@@ -115,11 +115,10 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
     const friendlyStatus = getFriendlyStatusName(run.status);
 
     switch (run.status) {
-      case 'WAITING_FOR_DEPLOY':
+      case 'WAITING':
       case 'QUEUED':
       case 'EXECUTING':
-      case 'REATTEMPTING':
-      case 'FROZEN':
+      case 'PENDING_VERSION':
       case 'DELAYED':
         return (
           <div className="flex flex-col items-center justify-center gap-2 text-center">
@@ -156,8 +155,8 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
       case 'FAILED':
       case 'CANCELED':
       case 'CRASHED':
-      case 'INTERRUPTED':
       case 'SYSTEM_FAILURE':
+      case 'DEQUEUED':
       case 'EXPIRED':
       case 'TIMED_OUT': {
         const errorMessage = run.error?.message || 'An unexpected issue occurred.';

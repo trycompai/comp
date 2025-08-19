@@ -10,7 +10,7 @@ import {
   RiskTreatmentType,
   VendorCategory,
 } from '@db';
-import { logger, task, tasks } from '@trigger.dev/sdk/v3';
+import { logger, queue, task, tasks } from '@trigger.dev/sdk';
 import { generateObject, generateText } from 'ai';
 import axios from 'axios';
 import z from 'zod';
@@ -18,37 +18,12 @@ import type { researchVendor } from '../scrape/research';
 import { VENDOR_RISK_ASSESSMENT_PROMPT } from './prompts/vendor-risk-assessment';
 import { updatePolicies } from './update-policies';
 
+// v4 queues must be declared in advance
+const onboardOrgQueue = queue({ name: 'onboard-organization', concurrencyLimit: 10 });
+
 export const onboardOrganization = task({
   id: 'onboard-organization',
-  cleanup: async ({ organizationId }: { organizationId: string }) => {
-    await db.onboarding.update({
-      where: {
-        organizationId,
-      },
-      data: { triggerJobId: null },
-    });
-
-    try {
-      logger.info(`Revalidating path ${process.env.NEXT_PUBLIC_BETTER_AUTH_URL}/${organizationId}`);
-      const revalidateResponse = await axios.post(
-        `${process.env.NEXT_PUBLIC_BETTER_AUTH_URL}/api/revalidate/path`,
-        {
-          path: `${process.env.NEXT_PUBLIC_BETTER_AUTH_URL}/${organizationId}`,
-          secret: process.env.REVALIDATION_SECRET,
-          type: 'layout',
-        },
-      );
-
-      if (!revalidateResponse.data?.revalidated) {
-        logger.error(`Failed to revalidate path: ${revalidateResponse.statusText}`);
-        logger.error(revalidateResponse.data);
-      } else {
-        logger.info('Revalidated path successfully');
-      }
-    } catch (err) {
-      logger.error('Error revalidating path', { err });
-    }
-  },
+  queue: onboardOrgQueue,
   run: async (payload: { organizationId: string }) => {
     logger.info(`Start onboarding organization ${payload.organizationId}`);
 
@@ -260,16 +235,13 @@ Please perform a comprehensive vendor risk assessment for this vendor using the 
     });
 
     if (fullPolicies.length > 0) {
+      // v4: queues are predefined on the task; trigger without on-demand queue options
       await updatePolicies.batchTriggerAndWait(
         fullPolicies.map((policy) => ({
           payload: {
             organizationId: payload.organizationId,
             policyId: policy.id,
             contextHub: contextHub.map((c) => `${c.question}\n${c.answer}`).join('\n'),
-          },
-          queue: {
-            name: 'update-policies',
-            concurrencyLimit: 5,
           },
           concurrencyKey: payload.organizationId,
         })),
@@ -285,5 +257,34 @@ Please perform a comprehensive vendor risk assessment for this vendor using the 
 
     logger.info(`Created ${extractRisks.object.risks.length} risks`);
     logger.info(`Created ${extractVendors.object.vendors.length} vendors`);
+
+    const organizationId = payload.organizationId;
+    await db.onboarding.update({
+      where: {
+        organizationId,
+      },
+      data: { triggerJobId: null },
+    });
+
+    try {
+      logger.info(`Revalidating path ${process.env.NEXT_PUBLIC_BETTER_AUTH_URL}/${organizationId}`);
+      const revalidateResponse = await axios.post(
+        `${process.env.NEXT_PUBLIC_BETTER_AUTH_URL}/api/revalidate/path`,
+        {
+          path: `${process.env.NEXT_PUBLIC_BETTER_AUTH_URL}/${organizationId}`,
+          secret: process.env.REVALIDATION_SECRET,
+          type: 'layout',
+        },
+      );
+
+      if (!revalidateResponse.data?.revalidated) {
+        logger.error(`Failed to revalidate path: ${revalidateResponse.statusText}`);
+        logger.error(revalidateResponse.data);
+      } else {
+        logger.info('Revalidated path successfully');
+      }
+    } catch (err) {
+      logger.error('Error revalidating path', { err });
+    }
   },
 });
