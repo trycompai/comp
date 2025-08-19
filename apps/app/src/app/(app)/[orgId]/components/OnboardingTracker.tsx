@@ -119,6 +119,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
       case 'QUEUED':
       case 'EXECUTING':
       case 'PENDING_VERSION':
+      case 'DEQUEUED':
       case 'DELAYED':
         return (
           <div className="flex flex-col items-center justify-center gap-2 text-center">
@@ -156,7 +157,6 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
       case 'CANCELED':
       case 'CRASHED':
       case 'SYSTEM_FAILURE':
-      case 'DEQUEUED':
       case 'EXPIRED':
       case 'TIMED_OUT': {
         const errorMessage = run.error?.message || 'An unexpected issue occurred.';
