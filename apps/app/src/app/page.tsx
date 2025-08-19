@@ -36,6 +36,18 @@ export default async function RootPage({
   const orgId = session.session.activeOrganizationId;
 
   if (!orgId) {
+    // If the user has no active org, check for pending invitations for this email
+    const pendingInvite = await db.invitation.findFirst({
+      where: {
+        email: session.user.email,
+        status: 'pending',
+      },
+    });
+
+    if (pendingInvite) {
+      return redirect(await buildUrlWithParams(`/invite/${pendingInvite.id}`));
+    }
+
     return redirect(await buildUrlWithParams('/setup'));
   }
 
