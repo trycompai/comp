@@ -46,9 +46,7 @@ export function PolicyDeleteDialog({ isOpen, onClose, policy }: PolicyDeleteDial
 
   const deletePolicy = useAction(deletePolicyAction, {
     onSuccess: () => {
-      toast.info('Policy deleted! Redirecting to policies list...');
       onClose();
-      router.push(`/${policy.organizationId}/policies/all`);
     },
     onError: () => {
       toast.error('Failed to delete policy.');
@@ -61,6 +59,11 @@ export function PolicyDeleteDialog({ isOpen, onClose, policy }: PolicyDeleteDial
       id: policy.id,
       entityId: policy.id,
     });
+
+    setTimeout(() => {
+      router.replace(`/${policy.organizationId}/policies/all`);
+    }, 1000);
+    toast.info('Policy deleted! Redirecting to policies list...');
   };
 
   return (
