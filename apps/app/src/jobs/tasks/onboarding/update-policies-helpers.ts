@@ -1,5 +1,5 @@
 import { openai } from '@ai-sdk/openai';
-import { db, FrameworkEditorFramework, type Policy } from '@db';
+import { db, FrameworkEditorFramework, FrameworkEditorPolicyTemplate, type Policy } from '@db';
 import type { JSONContent } from '@tiptap/react';
 import { logger } from '@trigger.dev/sdk';
 import { generateObject, NoObjectGeneratedError } from 'ai';
@@ -379,7 +379,7 @@ export type UpdatePolicyParams = {
 export type PolicyUpdateResult = {
   policyId: string;
   contextHub: string;
-  policy: Policy;
+  policyName: string;
   updatedContent: {
     type: 'document';
     content: Record<string, unknown>[];
@@ -392,7 +392,11 @@ export type PolicyUpdateResult = {
 export async function fetchOrganizationAndPolicy(
   organizationId: string,
   policyId: string,
-): Promise<{ organization: OrganizationData; policy: Policy }> {
+): Promise<{
+  organization: OrganizationData;
+  policy: Policy;
+  policyTemplate: FrameworkEditorPolicyTemplate;
+}> {
   const [organization, policy] = await Promise.all([
     db.organization.findUnique({
       where: { id: organizationId },
@@ -411,22 +415,33 @@ export async function fetchOrganizationAndPolicy(
     throw new Error(`Policy not found for ${policyId}`);
   }
 
-  return { organization, policy };
+  if (!policy.policyTemplateId) {
+    throw new Error(`Policy template not found for ${policyId}`);
+  }
+
+  const policyTemplate = await db.frameworkEditorPolicyTemplate.findUnique({
+    where: { id: policy.policyTemplateId },
+  });
+
+  if (!policyTemplate) {
+    throw new Error(`Policy template not found for ${policy.policyTemplateId}`);
+  }
+
+  return { organization, policy, policyTemplate };
 }
 
 /**
  * Generates the prompt for policy content generation
  */
 export async function generatePolicyPrompt(
-  policy: Policy,
+  policyTemplate: FrameworkEditorPolicyTemplate,
   contextHub: string,
   organization: OrganizationData,
   frameworks: FrameworkEditorFramework[],
 ): Promise<string> {
   return generatePrompt({
-    existingPolicyContent: (policy.content as unknown as JSONContent | JSONContent[]) ?? [],
     contextHub,
-    policy,
+    policyTemplate,
     companyName: organization.name ?? 'Company',
     companyWebsite: organization.website ?? 'https://company.com',
     frameworks,
@@ -512,27 +527,16 @@ export async function processPolicyUpdate(params: UpdatePolicyParams): Promise<P
   const { organizationId, policyId, contextHub, frameworks } = params;
 
   // Fetch organization and policy data
-  const { organization, policy } = await fetchOrganizationAndPolicy(organizationId, policyId);
+  const { organization, policyTemplate } = await fetchOrganizationAndPolicy(
+    organizationId,
+    policyId,
+  );
 
   // Generate prompt for AI
-  const prompt = await generatePolicyPrompt(policy, contextHub, organization, frameworks);
+  const prompt = await generatePolicyPrompt(policyTemplate, contextHub, organization, frameworks);
 
   // Generate new policy content
   const updatedContent = await generatePolicyContent(prompt);
-
-  // // Remove placeholders and any Auditor Artefacts/Artifacts sections before saving
-  // const sanitized = sanitizeDocument(updatedContent);
-
-  // // QA pass: enforce template structure (no TOC, no new mapping section, keep only original top-level headings)
-  // const originalTipTap = (policy.content as unknown as JSONContent[]) ?? [];
-  // const aligned = alignToTemplateStructure(
-  //   sanitized,
-  //   originalTipTap as unknown as Record<string, unknown>[],
-  // );
-
-  // QA AI temporarily disabled: use deterministic alignment result directly
-  // const originalNodes = originalTipTap as unknown as Record<string, unknown>[];
-  // const current = aligned;
 
   // Update policy in database
   await updatePolicyInDatabase(policyId, updatedContent.content);
@@ -540,7 +544,7 @@ export async function processPolicyUpdate(params: UpdatePolicyParams): Promise<P
   return {
     policyId,
     contextHub,
-    policy,
     updatedContent,
+    policyName: policyTemplate.name,
   };
 }
