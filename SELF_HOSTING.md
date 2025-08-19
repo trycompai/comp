@@ -62,40 +62,108 @@ Portal (`apps/portal`):
 - **NEXT_PUBLIC_POSTHOG_KEY**, **NEXT_PUBLIC_POSTHOG_HOST**: Client analytics via PostHog for portal.
 - **UPSTASH_REDIS_REST_URL**, **UPSTASH_REDIS_REST_TOKEN**: Optional Redis if you enable portal-side rate limiting/queues.
 
-### Configure `docker-compose.yml`
+### docker-compose.yml uses `.env` (no direct edits needed)
 
-Edit the placeholders in `docker-compose.yml` for both `app` and `portal` services:
+We keep `docker-compose.yml` generic and read values from `.env`:
 
 ```yaml
 services:
   migrator:
-    # runs prisma migrate deploy against the published @trycompai/db combined schema
-    environment:
-      DATABASE_URL: 'postgresql://user:pass@host:5432/db?sslmode=require'
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: migrator
+    env_file:
+      - .env
 
   seeder:
-    # generates Prisma client from @trycompai/db schema and runs seed (idempotent upserts)
-    environment:
-      DATABASE_URL: 'postgresql://user:pass@host:5432/db?sslmode=require'
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: migrator
+    env_file:
+      - .env
+    command: sh -lc "bunx prisma generate --schema=node_modules/@trycompai/db/dist/schema.prisma && bun packages/db/prisma/seed/seed.js"
 
   app:
-    environment:
-      AUTH_SECRET: 'REPLACE_ME'
-      DATABASE_URL: 'postgresql://user:pass@host:5432/db?sslmode=require'
-      BETTER_AUTH_URL: 'http://localhost:3000'
-      NEXT_PUBLIC_BETTER_AUTH_URL: 'http://localhost:3000'
-      NEXT_PUBLIC_PORTAL_URL: 'http://localhost:3002'
-      RESEND_API_KEY: 'REPLACE_ME'
-      TRIGGER_SECRET_KEY: 'REPLACE_ME'
-      REVALIDATION_SECRET: 'REPLACE_ME'
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: app
+      args:
+        NEXT_PUBLIC_BETTER_AUTH_URL: ${BETTER_AUTH_URL}
+    ports: ['3000:3000']
+    env_file: [.env]
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f http://localhost:3000/api/health || exit 1']
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   portal:
-    environment:
-      DATABASE_URL: 'postgresql://user:pass@host:5432/db?sslmode=require'
-      BETTER_AUTH_SECRET: 'REPLACE_ME'
-      BETTER_AUTH_URL: 'http://localhost:3002'
-      NEXT_PUBLIC_BETTER_AUTH_URL: 'http://localhost:3002'
-      RESEND_API_KEY: 'REPLACE_ME'
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: portal
+      args:
+        NEXT_PUBLIC_BETTER_AUTH_URL: ${BETTER_AUTH_URL_PORTAL}
+    ports: ['3002:3000']
+    env_file: [.env]
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f http://localhost:3002/ || exit 1']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+```
+
+#### `.env` example
+
+Create a `.env` file at the repo root with your values (never commit real secrets):
+
+```bash
+# External PostgreSQL (required)
+DATABASE_URL=postgresql://user:pass@host:5432/db?sslmode=require
+
+# App auth + URLs (required)
+AUTH_SECRET=
+BETTER_AUTH_URL=http://localhost:3000
+NEXT_PUBLIC_BETTER_AUTH_URL=http://localhost:3000
+NEXT_PUBLIC_PORTAL_URL=http://localhost:3002
+REVALIDATION_SECRET=
+
+# Email (required)
+RESEND_API_KEY=
+
+# Workflows (Trigger.dev hosted)
+TRIGGER_SECRET_KEY=
+
+# Portal auth + URLs (required)
+BETTER_AUTH_SECRET=
+BETTER_AUTH_URL_PORTAL=http://localhost:3002
+NEXT_PUBLIC_BETTER_AUTH_URL_PORTAL=http://localhost:3002
+
+# Optional
+# OPENAI_API_KEY=
+# UPSTASH_REDIS_REST_URL=
+# UPSTASH_REDIS_REST_TOKEN=
+# NEXT_PUBLIC_POSTHOG_KEY=
+# NEXT_PUBLIC_POSTHOG_HOST=
+# NEXT_PUBLIC_GTM_ID=
+# NEXT_PUBLIC_LINKEDIN_PARTNER_ID=
+# NEXT_PUBLIC_LINKEDIN_CONVERSION_ID=
+# NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL=
+# ZAPIER_HUBSPOT_WEBHOOK_URL=
+# HUBSPOT_ACCESS_TOKEN=
+# DUB_API_KEY=
+# DUB_REFER_URL=
+# FIRECRAWL_API_KEY=
+# GROQ_API_KEY=
+# SLACK_SALES_WEBHOOK=
+# GA4_API_SECRET=
+# GA4_MEASUREMENT_ID=
+# NEXT_PUBLIC_API_URL=
 ```
 
 #### What the `migrator` and `seeder` services do
@@ -137,27 +205,36 @@ Steps:
 
 ### Build & run
 
-Fresh install (optional clean):
+#### Prepare environment
+
+Copy the example and fill real values (kept out of git):
+
+```bash
+cp .env.example .env
+# edit .env with your production secrets and URLs
+```
+
+#### Fresh install (optional clean):
 
 ```bash
 docker compose down --rmi all --volumes --remove-orphans
 docker builder prune --all --force
 ```
 
-Build images:
+#### Build images:
 
 ```bash
 docker compose build --no-cache
 ```
 
-Run migrations & seed (against your hosted DB):
+#### Run migrations & seed (against your hosted DB):
 
 ```bash
 docker compose run --rm migrator
 docker compose run --rm seeder
 ```
 
-Start the apps:
+#### Start the apps:
 
 ```bash
 docker compose up -d app portal

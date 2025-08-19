@@ -4,15 +4,15 @@ services:
       context: .
       dockerfile: Dockerfile
       target: migrator
-    environment:
-      DATABASE_URL: 'YOUR_DATABASE_URL'
+    env_file:
+      - .env
   seeder:
     build:
       context: .
       dockerfile: Dockerfile
       target: migrator
-    environment:
-      DATABASE_URL: 'YOUR_DATABASE_URL'
+    env_file:
+      - .env
     command: sh -lc "bunx prisma generate --schema=node_modules/@trycompai/db/dist/schema.prisma && bun packages/db/prisma/seed/seed.js"
   app:
     build:
@@ -20,31 +20,11 @@ services:
       dockerfile: Dockerfile
       target: app
       args:
-        NEXT_PUBLIC_BETTER_AUTH_URL: 'http://localhost:3000'
+        NEXT_PUBLIC_BETTER_AUTH_URL: ${BETTER_AUTH_URL}
     ports:
       - '3000:3000'
-    environment:
-      # Server-side
-      AUTH_SECRET: 'YOUR_AUTH_SECRET'
-      DATABASE_URL: 'YOUR_DATABASE_URL'
-
-      BETTER_AUTH_URL: 'http://localhost:3000'
-      NEXT_PUBLIC_BETTER_AUTH_URL: 'http://localhost:3000'
-      NEXT_PUBLIC_PORTAL_URL: 'http://localhost:3002' # http://localhost:3002
-
-      OPENAI_API_KEY: 'YOUR_OPENAI_API_KEY' # Get from OpenAI dashboard -> API Keys
-
-      # Email Services
-      RESEND_API_KEY: 'YOUR_RESEND_API_KEY' # Resend Dashboard -> API Keys
-      # Infrastructure
-      # Redis - Upstash (https://console.upstash.com/)
-      UPSTASH_REDIS_REST_URL: 'YOUR_UPSTASH_REDIS_REST_URL' # Upstash Console -> Redis -> Create Database
-      UPSTASH_REDIS_REST_TOKEN: 'YOUR_UPSTASH_REDIS_REST_TOKEN' # Found in the same database details page
-
-      # Trigger.dev (https://app.trigger.dev)
-      TRIGGER_SECRET_KEY: 'YOUR_TRIGGER_SECRET_KEY' # Trigger.dev Dashboard -> Project Settings -> API Keys
-
-      REVALIDATION_SECRET: 'YOUR_REVALIDATION_SECRET' # It can be anything (Use `openssl rand -base64 32` to generate)
+    env_file:
+      - .env
     healthcheck:
       test: ['CMD-SHELL', 'curl -f http://localhost:3000/api/health || exit 1']
       interval: 30s
@@ -58,15 +38,11 @@ services:
       dockerfile: Dockerfile
       target: portal
       args:
-        NEXT_PUBLIC_BETTER_AUTH_URL: 'http://localhost:3002'
+        NEXT_PUBLIC_BETTER_AUTH_URL: ${BETTER_AUTH_URL_PORTAL}
     ports:
       - '3002:3000'
-    environment:
-      DATABASE_URL: 'YOUR_DATABASE_URL'
-      BETTER_AUTH_URL: 'http://localhost:3002'
-      NEXT_PUBLIC_BETTER_AUTH_URL: 'http://localhost:3002'
-      RESEND_API_KEY: 'YOUR_RESEND_API_KEY'
-      BETTER_AUTH_SECRET: 'YOUR_BETTER_AUTH_SECRET'
+    env_file:
+      - .env
     healthcheck:
       test: ['CMD-SHELL', 'curl -f http://localhost:3002/ || exit 1']
       interval: 30s
