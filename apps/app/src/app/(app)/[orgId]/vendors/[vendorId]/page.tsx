@@ -8,6 +8,7 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
 import { Comments } from '../../../../../components/comments/Comments';
+import { VendorActions } from './components/VendorActions';
 import { VendorInherentRiskChart } from './components/VendorInherentRiskChart';
 import { VendorResidualRiskChart } from './components/VendorResidualRiskChart';
 import { SecondaryFields } from './components/secondary-fields/secondary-fields';
@@ -31,6 +32,7 @@ export default async function VendorPage({ params }: PageProps) {
         { label: 'Vendors', href: `/${orgId}/vendors` },
         { label: vendor.vendor?.name ?? '', current: true },
       ]}
+      headerRight={<VendorActions vendorId={vendorId} />}
     >
       <div className="flex flex-col gap-4">
         <SecondaryFields

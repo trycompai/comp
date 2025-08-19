@@ -9,6 +9,7 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
 import { Comments } from '../../../../../components/comments/Comments';
+import { RiskActions } from './components/RiskActions';
 
 interface PageProps {
   searchParams: Promise<{
@@ -35,6 +36,7 @@ export default async function RiskPage({ searchParams, params }: PageProps) {
         { label: 'Risks', href: `/${orgId}/risk` },
         { label: risk.title, current: true },
       ]}
+      headerRight={<RiskActions riskId={riskId} />}
     >
       <div className="flex flex-col gap-4">
         <RiskOverview risk={risk} assignees={assignees} />
@@ -73,8 +75,6 @@ const getRisk = cache(async (riskId: string) => {
 
   return risk;
 });
-
-
 
 const getAssignees = cache(async () => {
   const session = await auth.api.getSession({

@@ -1,9 +1,10 @@
 import { db } from '@db';
-import { logger, queue, task } from '@trigger.dev/sdk';
+import { logger, queue, task, tasks } from '@trigger.dev/sdk';
 import axios from 'axios';
+import { generateRiskMitigationsForOrg } from './generate-risk-mitigation';
+import { generateVendorMitigationsForOrg } from './generate-vendor-mitigation';
 import {
   createRisks,
-  createVendorRiskMitigation,
   createVendors,
   getOrganizationContext,
   updateOrganizationPolicies,
@@ -41,11 +42,24 @@ export const onboardOrganization = task({
       // Create vendors
       const vendors = await createVendors(questionsAndAnswers, payload.organizationId);
 
-      // Create risk mitigation for vendors
-      await createVendorRiskMitigation(vendors, policies, payload.organizationId);
+      // Fan-out vendor mitigations as separate jobs
+      await tasks.trigger<typeof generateVendorMitigationsForOrg>(
+        'generate-vendor-mitigations-for-org',
+        {
+          organizationId: payload.organizationId,
+        },
+      );
 
       // Create risks
       await createRisks(questionsAndAnswers, payload.organizationId, organization.name);
+
+      // Fan-out risk mitigations as separate jobs
+      await tasks.trigger<typeof generateRiskMitigationsForOrg>(
+        'generate-risk-mitigations-for-org',
+        {
+          organizationId: payload.organizationId,
+        },
+      );
 
       // Update policies
       await updateOrganizationPolicies(payload.organizationId, questionsAndAnswers, frameworks);
