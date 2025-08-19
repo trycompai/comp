@@ -1,5 +1,6 @@
 import { VendorStatus, db } from '@db';
 import { logger, queue, task } from '@trigger.dev/sdk';
+import axios from 'axios';
 import {
   createVendorRiskComment,
   findCommentAuthor,
@@ -48,6 +49,18 @@ export const generateVendorMitigation = task({
         assigneeId: author.id,
       },
     });
+
+    // Revalidate the vendor detail page so the new comment shows up
+    try {
+      const detailPath = `/${organizationId}/vendors/${vendorId}`;
+      await axios.post(`${process.env.NEXT_PUBLIC_BETTER_AUTH_URL}/api/revalidate/path`, {
+        path: detailPath,
+        secret: process.env.REVALIDATION_SECRET,
+      });
+      logger.info(`Revalidated vendor path: ${detailPath}`);
+    } catch (e) {
+      logger.error('Failed to revalidate vendor paths after mitigation', { e });
+    }
   },
 });
 
@@ -70,5 +83,17 @@ export const generateVendorMitigationsForOrg = task({
         concurrencyKey: `${organizationId}:${v.id}`,
       })),
     );
+
+    // Revalidate the parent vendors route after batch triggering
+    try {
+      const parentPath = `/${organizationId}/vendors`;
+      await axios.post(`${process.env.NEXT_PUBLIC_BETTER_AUTH_URL}/api/revalidate/path`, {
+        path: parentPath,
+        secret: process.env.REVALIDATION_SECRET,
+      });
+      logger.info(`Revalidated vendors parent path: ${parentPath}`);
+    } catch (e) {
+      logger.error('Failed to revalidate vendors parent path after batch', { e });
+    }
   },
 });

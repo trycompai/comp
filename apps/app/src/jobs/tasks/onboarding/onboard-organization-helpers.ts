@@ -1,4 +1,3 @@
-import { anthropic } from '@ai-sdk/anthropic';
 import { openai } from '@ai-sdk/openai';
 import {
   CommentEntityType,
@@ -156,7 +155,7 @@ export async function createVendorRiskComment(
       : 'No specific policies available - use standard security policy guidance.';
 
   const riskMitigationComment = await generateText({
-    model: anthropic('claude-sonnet-4-20250514'),
+    model: openai('gpt-5-nano'),
     system: VENDOR_RISK_ASSESSMENT_PROMPT,
     prompt: `Vendor: ${vendor.name} (${vendor.category}) - ${vendor.description}. Website: ${vendor.website}.
 
@@ -273,20 +272,6 @@ export async function createRiskMitigationComment(
   organizationId: string,
   authorId: string,
 ): Promise<void> {
-  // Skip if a mitigation comment already exists for this risk
-  const existing = await db.comment.findFirst({
-    where: {
-      organizationId,
-      entityId: risk.id,
-      entityType: CommentEntityType.risk,
-    },
-  });
-
-  if (existing) {
-    logger.info(`Risk mitigation comment already exists for risk: ${risk.id} (${risk.title})`);
-    return;
-  }
-
   const policiesContext =
     policies.length > 0
       ? policies
@@ -295,7 +280,7 @@ export async function createRiskMitigationComment(
       : 'No specific policies available - use standard security policy guidance.';
 
   const mitigation = await generateText({
-    model: anthropic('claude-sonnet-4-20250514'),
+    model: openai('gpt-5-nano'),
     system: RISK_MITIGATION_PROMPT,
     prompt: `Risk: ${risk.title} (${risk.category} / ${risk.department})\n\nDescription:\n${risk.description}\n\nTreatment Strategy:\n${risk.treatmentStrategy}: ${risk.treatmentStrategyDescription || 'N/A'}\n\nResidual Assessment: Likelihood ${risk.likelihood}, Impact ${risk.impact}\n\nAvailable Organization Policies:\n${policiesContext}\n\nWrite a pragmatic mitigation plan with concrete steps the team can implement in the next 30-90 days.`,
   });
