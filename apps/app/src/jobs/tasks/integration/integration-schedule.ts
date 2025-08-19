@@ -1,5 +1,5 @@
 import { db } from '@db';
-import { logger, schedules } from '@trigger.dev/sdk/v3';
+import { logger, schedules } from '@trigger.dev/sdk';
 import { sendIntegrationResults } from './integration-results';
 
 export const sendIntegrationSchedule = schedules.task({
