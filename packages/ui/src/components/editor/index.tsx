@@ -9,6 +9,7 @@ import { defaultExtensions } from './extensions';
 import { LinkSelector } from './selectors/link-selector';
 import { NodeSelector } from './selectors/node-selector';
 import { TextButtons } from './selectors/text-buttons';
+import { linkifyContent } from './utils/linkify-content';
 import { validateAndFixTipTapContent } from './utils/validate-content';
 
 export interface EditorProps {
@@ -46,11 +47,12 @@ export const Editor = ({
   const [openNode, setOpenNode] = useState(false);
   const [openLink, setOpenLink] = useState(false);
 
-  // Ensure content is properly structured with a doc type and fix any schema issues
-  const formattedContent = initialContent ? validateAndFixTipTapContent(initialContent) : null;
+  // Ensure content is properly structured and add link marks for plain URLs in read-only mode
+  const validated = initialContent ? validateAndFixTipTapContent(initialContent) : null;
+  const formattedContent = readOnly && validated ? linkifyContent(validated) : validated;
 
   const editor = useEditor({
-    extensions: defaultExtensions(placeholder),
+    extensions: defaultExtensions({ placeholder, openLinksOnClick: readOnly }),
     content: formattedContent || '',
     editable: !readOnly,
     immediatelyRender: false,

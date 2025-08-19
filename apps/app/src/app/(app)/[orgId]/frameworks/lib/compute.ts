@@ -29,8 +29,12 @@ export function computeFrameworkStats(
 
   const controlIds = controls.map((c) => c.id);
   const frameworkTasks = tasks.filter((t) => t.controls.some((c) => controlIds.includes(c.id)));
-  const totalTasks = frameworkTasks.length;
-  const doneTasks = frameworkTasks.filter((t) => t.status === 'done').length;
+  // Deduplicate tasks by id to avoid double counting across multiple controls
+  const uniqueTaskMap = new Map<string, Task & { controls: Control[] }>();
+  for (const t of frameworkTasks) uniqueTaskMap.set(t.id, t);
+  const uniqueTasks = Array.from(uniqueTaskMap.values());
+  const totalTasks = uniqueTasks.length;
+  const doneTasks = uniqueTasks.filter((t) => t.status === 'done').length;
   const taskRatio = totalTasks > 0 ? doneTasks / totalTasks : 1;
 
   const complianceScore = Math.round(((policyRatio + taskRatio) / 2) * 100);

@@ -15,7 +15,15 @@ import Typography from '@tiptap/extension-typography';
 import Underline from '@tiptap/extension-underline';
 import StarterKit from '@tiptap/starter-kit';
 
-export const defaultExtensions = (placeholder: string = 'Start writing...') => [
+type DefaultExtensionsOptions = {
+  placeholder?: string;
+  openLinksOnClick?: boolean;
+};
+
+export const defaultExtensions = ({
+  placeholder = 'Start writing...',
+  openLinksOnClick = false,
+}: DefaultExtensionsOptions = {}) => [
   StarterKit.configure({
     bulletList: {
       HTMLAttributes: {
@@ -69,10 +77,15 @@ export const defaultExtensions = (placeholder: string = 'Start writing...') => [
   }),
   // Links and images
   Link.configure({
-    openOnClick: false,
+    // Make links clickable when viewing (readOnly). When editing, keep disabled.
+    openOnClick: openLinksOnClick,
+    autolink: true,
+    linkOnPaste: true,
     HTMLAttributes: {
       class:
         'text-muted-foreground underline underline-offset-[3px] hover:text-primary transition-colors cursor-pointer',
+      target: '_blank',
+      rel: 'noopener noreferrer',
     },
   }),
   Image.configure({
