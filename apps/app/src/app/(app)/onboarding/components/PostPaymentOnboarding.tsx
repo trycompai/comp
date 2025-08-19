@@ -63,8 +63,8 @@ export function PostPaymentOnboarding({
 
   return (
     <div className="scrollbar-hide flex min-h-[calc(100vh-50px)] flex-col items-center justify-center p-4">
-      <div className="relative w-full max-w-2xl">
-        <Card className="scrollbar-hide relative flex w-full flex-col bg-card/80 dark:bg-card/70 backdrop-blur-xl border border-border/50 shadow-2xl">
+      <div className="relative w-full max-w-6xl">
+        <Card className="scrollbar-hide relative mx-auto flex w-full max-w-3xl flex-col bg-card/80 dark:bg-card/70 backdrop-blur-xl border border-border/50 shadow-2xl md:w-[680px] lg:w-[820px] xl:w-[920px]">
           {(isLoading || isFinalizing) && (
             <div className="absolute inset-0 z-50 flex items-center justify-center rounded-lg bg-background/80 backdrop-blur-sm">
               <LogoSpinner />
