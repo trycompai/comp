@@ -10,17 +10,20 @@ import { useState } from 'react';
 import type { FrameworkInstanceWithControls } from '../types';
 import { AddFrameworkModal } from './AddFrameworkModal';
 import { FrameworkList } from './FrameworkList';
+import type { FrameworkInstanceWithComplianceScore } from './types';
 
 export interface FrameworksOverviewProps {
   frameworksWithControls: FrameworkInstanceWithControls[];
   tasks: (Task & { controls: Control[] })[];
   allFrameworks: FrameworkEditorFramework[];
+  frameworksWithCompliance?: FrameworkInstanceWithComplianceScore[];
 }
 
 export function FrameworksOverview({
   frameworksWithControls,
   tasks,
   allFrameworks,
+  frameworksWithCompliance,
 }: FrameworksOverviewProps) {
   const params = useParams<{ orgId: string }>();
   const organizationId = params.orgId;
@@ -34,7 +37,13 @@ export function FrameworksOverview({
   return (
     <div className="space-y-4">
       <div className="grid w-full gap-4 select-none md:grid-cols-1">
-        <FrameworkList frameworksWithControls={frameworksWithControls} tasks={tasks} />
+        <FrameworkList
+          frameworksWithCompliance={
+            frameworksWithCompliance ??
+            frameworksWithControls.map((fw) => ({ frameworkInstance: fw, complianceScore: 0 }))
+          }
+          tasks={tasks}
+        />
         <div className="flex items-center justify-center">
           <Button onClick={() => setIsAddFrameworkModalOpen(true)} variant="outline">
             {'Add Framework'} <PlusIcon className="h-4 w-4" />
