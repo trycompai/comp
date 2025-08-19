@@ -29,7 +29,13 @@ export async function middleware(request: NextRequest) {
     }
 
     // Cookie-only gating (auth will validate server-side on actual routes)
-    const sessionToken = request.cookies.get('better-auth.session_token')?.value;
+    const secureCookieName = '__Secure-better-auth.session_token';
+    const fallbackCookieName = 'better-auth.session_token';
+
+    let sessionToken = request.cookies.get(secureCookieName)?.value;
+    if (!sessionToken) {
+      sessionToken = request.cookies.get(fallbackCookieName)?.value;
+    }
     const hasToken = Boolean(sessionToken);
     const nextUrl = request.nextUrl;
     const requestHeaders = new Headers(request.headers);
