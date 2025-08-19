@@ -81,7 +81,7 @@
   "devDependencies": {
     "@tailwindcss/cli": "^4.1.10",
     "@tailwindcss/postcss": "^4.1.10",
-    "@vitejs/plugin-react": "^4.3.3",
+    "@vitejs/plugin-react": "^4.6.0",
     "autoprefixer": "^10.4.21",
     "jsdom": "^26.1.0",
     "postcss": "^8.5.4",
@@ -365,6 +365,14 @@
     "./editor/extensions": {
       "types": "./dist/components/editor/extensions.d.ts",
       "import": "./dist/components/editor/extensions.js"
+    },
+    "./editor/utils/validate-content.test": {
+      "types": "./dist/components/editor/utils/validate-content.test.d.ts",
+      "import": "./dist/components/editor/utils/validate-content.test.js"
+    },
+    "./editor/utils/validate-content": {
+      "types": "./dist/components/editor/utils/validate-content.d.ts",
+      "import": "./dist/components/editor/utils/validate-content.js"
     },
     "./editor/selectors/text-buttons": {
       "types": "./dist/components/editor/selectors/text-buttons.d.ts",

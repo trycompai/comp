@@ -3,7 +3,7 @@
 import { sendIntegrationResults } from '@/jobs/tasks/integration/integration-results';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
-import { runs, tasks } from '@trigger.dev/sdk/v3';
+import { tasks } from '@trigger.dev/sdk';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 
@@ -56,7 +56,7 @@ export const runTests = async () => {
     };
   }
 
-  const batchHandle = await tasks.batchTrigger<typeof sendIntegrationResults>(
+  const batchHandle = await tasks.batchTriggerAndWait<typeof sendIntegrationResults>(
     'send-integration-results',
     integrations.map((integration) => ({
       payload: {
@@ -71,20 +71,6 @@ export const runTests = async () => {
       },
     })),
   );
-
-  let existingRuns = await runs.list({
-    status: 'EXECUTING',
-    batch: batchHandle.batchId,
-  });
-
-  while (existingRuns.data.length > 0) {
-    console.log(`Waiting for existing runs to complete: ${existingRuns.data.length}`);
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    existingRuns = await runs.list({
-      status: 'EXECUTING',
-      batch: batchHandle.batchId,
-    });
-  }
 
   revalidatePath(`/${orgId}/tests/dashboard`);
   return {

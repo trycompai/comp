@@ -27,7 +27,7 @@ export default async function PolicyPage({
   });
 
   if (!session?.user) {
-    redirect('/login');
+    redirect('/auth');
   }
 
   const policy = await db.policy.findUnique({

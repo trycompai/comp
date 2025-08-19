@@ -25,6 +25,15 @@ export default async function DashboardPage() {
     redirect('/');
   }
 
+  // If onboarding for this org is not completed yet, redirect to onboarding first
+  const org = await db.organization.findUnique({
+    where: { id: organizationId },
+    select: { onboardingCompleted: true },
+  });
+  if (org && org.onboardingCompleted === false) {
+    redirect(`/onboarding/${organizationId}`);
+  }
+
   const tasks = await getControlTasks();
   const frameworksWithControls = await getAllFrameworkInstancesWithControls({
     organizationId,

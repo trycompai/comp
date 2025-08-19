@@ -1,4 +1,4 @@
-import { logger, schemaTask } from '@trigger.dev/sdk/v3';
+import { logger, queue, schemaTask } from '@trigger.dev/sdk';
 import { z } from 'zod';
 import { processPolicyUpdate } from './update-policies-helpers';
 
@@ -6,9 +6,13 @@ if (!process.env.OPENAI_API_KEY) {
   throw new Error('OPENAI_API_KEY is not set');
 }
 
+// v4: define queue ahead of time
+export const updatePoliciesQueue = queue({ name: 'update-policies', concurrencyLimit: 5 });
+
 export const updatePolicies = schemaTask({
   id: 'update-policies',
   maxDuration: 600, // 10 minutes.
+  queue: updatePoliciesQueue,
   schema: z.object({
     organizationId: z.string(),
     policyId: z.string(),

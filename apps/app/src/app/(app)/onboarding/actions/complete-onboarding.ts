@@ -5,7 +5,7 @@ import { steps } from '@/app/(app)/setup/lib/constants';
 import { createFleetLabelForOrg } from '@/jobs/tasks/device/create-fleet-label-for-org';
 import { onboardOrganization as onboardOrganizationTask } from '@/jobs/tasks/onboarding/onboard-organization';
 import { db } from '@db';
-import { tasks } from '@trigger.dev/sdk/v3';
+import { tasks } from '@trigger.dev/sdk';
 import { revalidatePath } from 'next/cache';
 import { cookies, headers } from 'next/headers';
 import { z } from 'zod';
@@ -81,19 +81,9 @@ export const completeOnboarding = authActionClient
       });
 
       // Now trigger the jobs that were skipped during minimal creation
-      const handle = await tasks.trigger<typeof onboardOrganizationTask>(
-        'onboard-organization',
-        {
-          organizationId: parsedInput.organizationId,
-        },
-        {
-          queue: {
-            name: 'onboard-organization',
-            concurrencyLimit: 5,
-          },
-          concurrencyKey: parsedInput.organizationId,
-        },
-      );
+      const handle = await tasks.trigger<typeof onboardOrganizationTask>('onboard-organization', {
+        organizationId: parsedInput.organizationId,
+      });
 
       // Update onboarding record with job ID
       await db.onboarding.update({

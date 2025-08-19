@@ -1,10 +1,12 @@
-import { getOrganizations } from '@/data/getOrganizations';
+import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
 import { auth } from '@/utils/auth';
-import type { Organization } from '@db';
 import { db } from '@db';
 import { headers } from 'next/headers';
-import { notFound, redirect } from 'next/navigation';
+import { redirect } from 'next/navigation';
 import { AcceptInvite } from '../../setup/components/accept-invite';
+import { InviteNotMatchCard } from './components/InviteNotMatchCard';
+import { InviteStatusCard } from './components/InviteStatusCard';
+import { maskEmail } from './utils';
 
 interface InvitePageProps {
   params: Promise<{ code: string }>;
@@ -17,26 +19,12 @@ export default async function InvitePage({ params }: InvitePageProps) {
   });
 
   if (!session) {
-    // Redirect to auth with the invite code
     return redirect(`/auth?inviteCode=${code}`);
   }
 
-  // Fetch existing organizations
-  let organizations: Organization[] = [];
-  try {
-    const result = await getOrganizations();
-    organizations = result.organizations;
-  } catch (error) {
-    // If user has no organizations, continue with empty array
-    console.error('Failed to fetch organizations:', error);
-  }
-
-  // Check if this invitation exists and is valid for this user
   const invitation = await db.invitation.findFirst({
     where: {
       id: code,
-      email: session.user.email,
-      status: 'pending',
     },
     include: {
       organization: {
@@ -48,16 +36,60 @@ export default async function InvitePage({ params }: InvitePageProps) {
   });
 
   if (!invitation) {
-    // Either invitation doesn't exist, already accepted, or not for this user
-    notFound();
+    return (
+      <OnboardingLayout variant="setup" currentOrganization={null}>
+        <div className="flex min-h-[calc(100dvh-80px)] w-full items-center justify-center p-4">
+          <InviteStatusCard
+            title="Invite not found"
+            description="This invitation code does not exist. Please check the link or ask your admin to resend the invite."
+            primaryHref="/"
+            primaryLabel="Go home"
+          />
+        </div>
+      </OnboardingLayout>
+    );
+  }
+
+  if (invitation.status !== 'pending') {
+    return (
+      <OnboardingLayout variant="setup" currentOrganization={null}>
+        <div className="flex min-h-[calc(100dvh-80px)] w-full items-center justify-center p-4">
+          <InviteStatusCard
+            title={invitation.status === 'accepted' ? 'Invite already accepted' : 'Invite expired'}
+            description={
+              invitation.status === 'accepted'
+                ? 'This invitation has already been accepted. If you believe this is a mistake, contact your organization admin.'
+                : 'This invitation has expired. Please ask your organization admin to send a new invite.'
+            }
+            primaryHref="/"
+            primaryLabel="Go home"
+          />
+        </div>
+      </OnboardingLayout>
+    );
+  }
+
+  if (invitation.email !== session.user.email) {
+    return (
+      <OnboardingLayout variant="setup" currentOrganization={null}>
+        <div className="flex min-h-[calc(100dvh-80px)] w-full items-center justify-center p-4">
+          <InviteNotMatchCard
+            currentEmail={session.user.email}
+            invitedEmail={maskEmail(invitation.email)}
+          />
+        </div>
+      </OnboardingLayout>
+    );
   }
 
   return (
-    <div className="flex flex-1 items-center justify-center p-4">
-      <AcceptInvite
-        inviteCode={invitation.id}
-        organizationName={invitation.organization.name || ''}
-      />
-    </div>
+    <OnboardingLayout variant="setup" currentOrganization={null}>
+      <div className="flex min-h-[calc(100dvh-80px)] w-full items-center justify-center p-4">
+        <AcceptInvite
+          inviteCode={invitation.id}
+          organizationName={invitation.organization.name || ''}
+        />
+      </div>
+    </OnboardingLayout>
   );
 }
