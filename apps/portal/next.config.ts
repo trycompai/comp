@@ -1,7 +1,9 @@
-import type { NextConfig } from 'next';
+import path from 'path';
 import './src/env.mjs';
 
-const config: NextConfig = {
+const isStandalone = process.env.NEXT_OUTPUT_STANDALONE === 'true';
+
+const config = {
   transpilePackages: ['@trycompai/db'],
   images: {
     remotePatterns: [
@@ -55,6 +57,12 @@ const config: NextConfig = {
     ];
   },
   skipTrailingSlashRedirect: true,
+  outputFileTracingRoot: path.join(__dirname, '../../'),
+  ...(isStandalone
+    ? {
+        output: 'standalone' as const,
+      }
+    : {}),
 };
 
 export default config;

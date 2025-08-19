@@ -7,21 +7,23 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
-import type { Departments, Member, Task, TaskFrequency, TaskStatus, User } from '@db';
+import type { Control, Departments, Member, Task, TaskFrequency, TaskStatus, User } from '@db';
 import { MoreVertical, Trash2 } from 'lucide-react';
+import Link from 'next/link';
 import { useState } from 'react';
 import { TaskStatusIndicator } from '../../components/TaskStatusIndicator';
 import { PropertySelector } from './PropertySelector';
 import { DEPARTMENT_COLORS, taskDepartments, taskFrequencies, taskStatuses } from './constants';
 
 interface TaskPropertiesSidebarProps {
-  task: Task;
+  task: Task & { controls?: Control[] };
   members?: (Member & { user: User })[];
   assignedMember: (Member & { user: User }) | null | undefined; // Allow undefined
   handleUpdateTask: (
     data: Partial<Pick<Task, 'status' | 'assigneeId' | 'frequency' | 'department'>>,
   ) => void;
   onDeleteClick?: () => void;
+  orgId: string;
 }
 
 export function TaskPropertiesSidebar({
@@ -30,6 +32,7 @@ export function TaskPropertiesSidebar({
   assignedMember,
   handleUpdateTask,
   onDeleteClick,
+  orgId,
 }: TaskPropertiesSidebarProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   return (
@@ -247,6 +250,26 @@ export function TaskPropertiesSidebar({
             contentWidth="w-48"
           />
         </div>
+
+        {/* Control */}
+        {task.controls && (
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">Control</span>
+            <div className="flex flex-wrap gap-2">
+              {task.controls.map((control) => (
+                <div key={control.id} className="font-medium max-w-48">
+                  <Link
+                    href={`/${orgId}/controls/${control.id}`}
+                    className="block truncate hover:underline"
+                    title={control.name}
+                  >
+                    {control.name}
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </aside>
   );

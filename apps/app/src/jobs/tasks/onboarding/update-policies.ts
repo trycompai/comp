@@ -1,7 +1,7 @@
 import { openai } from '@ai-sdk/openai';
 import { db } from '@db';
 import type { JSONContent } from '@tiptap/react';
-import { logger, schemaTask } from '@trigger.dev/sdk/v3';
+import { logger, queue, schemaTask } from '@trigger.dev/sdk';
 import { generateObject, NoObjectGeneratedError } from 'ai';
 import { z } from 'zod';
 import { generatePrompt } from '../../lib/prompts';
@@ -10,8 +10,12 @@ if (!process.env.OPENAI_API_KEY) {
   throw new Error('OPENAI_API_KEY is not set');
 }
 
+// v4: define queue ahead of time
+export const updatePoliciesQueue = queue({ name: 'update-policies', concurrencyLimit: 5 });
+
 export const updatePolicies = schemaTask({
   id: 'update-policies',
+  queue: updatePoliciesQueue,
   schema: z.object({
     organizationId: z.string(),
     policyId: z.string(),
@@ -76,7 +80,7 @@ ${prompt.replace(/\\n/g, '\n')}
 Return the complete TipTap document following ALL the above requirements using proper TipTap JSON structure.`,
           schema: z.object({
             type: z.literal('document'),
-            content: z.array(z.record(z.unknown())),
+            content: z.array(z.record(z.string(), z.unknown())),
           }),
         });
 

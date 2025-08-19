@@ -1,181 +1,92 @@
-import { auth } from '@/utils/auth';
-import { db } from '@db';
-import { headers } from 'next/headers';
+// Note: middleware must not call Prisma/BetterAuth APIs. Use cookie presence only.
 import { NextRequest, NextResponse } from 'next/server';
 
 export const config = {
-  runtime: 'nodejs',
   matcher: [
     // Skip auth-related routes (removed onboarding from exclusions)
     '/((?!api|_next/static|_next/image|favicon.ico|monitoring|ingest|research).*)',
   ],
 };
 
-// Unprotected routes
-const UNPROTECTED_ROUTES = ['/auth', '/invite', '/setup', '/upgrade'];
-
-function isUnprotectedRoute(pathname: string): boolean {
-  return UNPROTECTED_ROUTES.some((route) => pathname.includes(route));
-}
-
 export async function middleware(request: NextRequest) {
-  // E2E Test Mode: Check for test auth header
-  if (process.env.E2E_TEST_MODE === 'true') {
-    const testAuthHeader = request.headers.get('x-e2e-test-auth');
-    if (testAuthHeader) {
-      try {
-        const testAuth = JSON.parse(testAuthHeader);
-        if (testAuth.bypass) {
-          // Allow the request to proceed without auth checks
-          const response = NextResponse.next();
-          response.headers.set('x-pathname', request.nextUrl.pathname);
-          return response;
+  try {
+    // E2E Test Mode: Check for test auth header
+    if (process.env.E2E_TEST_MODE === 'true') {
+      const testAuthHeader = request.headers.get('x-e2e-test-auth');
+      if (testAuthHeader) {
+        try {
+          const testAuth = JSON.parse(testAuthHeader);
+          if (testAuth.bypass) {
+            // Allow the request to proceed without auth checks
+            const response = NextResponse.next();
+            response.headers.set('x-pathname', request.nextUrl.pathname);
+            return response;
+          }
+        } catch (e) {
+          // Invalid test auth header, continue with normal auth flow
         }
-      } catch (e) {
-        // Invalid test auth header, continue with normal auth flow
       }
     }
-  }
 
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+    // Cookie-only gating (auth will validate server-side on actual routes)
+    const secureCookieName = '__Secure-better-auth.session_token';
+    const fallbackCookieName = 'better-auth.session_token';
 
-  const response = NextResponse.next();
-  const nextUrl = request.nextUrl;
+    let sessionToken = request.cookies.get(secureCookieName)?.value;
+    if (!sessionToken) {
+      sessionToken = request.cookies.get(fallbackCookieName)?.value;
+    }
+    const hasToken = Boolean(sessionToken);
+    const nextUrl = request.nextUrl;
+    const requestHeaders = new Headers(request.headers);
 
-  // Add x-path-name
-  response.headers.set('x-pathname', nextUrl.pathname);
-
-  // Allow unauthenticated access to invite routes
-  if (nextUrl.pathname.startsWith('/invite/')) {
-    return response;
-  }
-
-  // 1. Not authenticated
-  if (!session && nextUrl.pathname !== '/auth') {
-    const url = new URL('/auth', request.url);
-    // Preserve existing search params
-    nextUrl.searchParams.forEach((value, key) => {
-      url.searchParams.set(key, value);
+    // Add x-path-name and selected query hints for server components
+    const response = NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
     });
-    return NextResponse.redirect(url);
+    response.headers.set('x-pathname', nextUrl.pathname);
+    const intent = nextUrl.searchParams.get('intent') || '';
+    if (intent) {
+      // Also forward intent to the request headers so server components can read it
+      requestHeaders.set('x-intent', intent);
+      // Recreate response with updated forwarded headers
+      return NextResponse.next({ request: { headers: requestHeaders } });
+    }
+
+    // Allow unauthenticated access to invite routes
+    if (nextUrl.pathname.startsWith('/invite/')) {
+      return response;
+    }
+
+    // 1. Not authenticated
+    if (!hasToken && nextUrl.pathname !== '/auth') {
+      const url = new URL('/auth', request.url);
+      // Preserve existing search params
+      nextUrl.searchParams.forEach((value, key) => {
+        url.searchParams.set(key, value);
+      });
+      return NextResponse.redirect(url);
+    }
+
+    // 2. Authenticated users (avoid DB calls in middleware)
+    if (hasToken) {
+      const isRootPath = nextUrl.pathname === '/';
+
+      // If user hits root: route based on active org presence
+      if (isRootPath) {
+        const url = new URL('/setup', request.url);
+        nextUrl.searchParams.forEach((value, key) => {
+          url.searchParams.set(key, value);
+        });
+        return NextResponse.redirect(url);
+      }
+    }
+
+    return response;
+  } catch (err) {
+    console.error('[MW] error', err);
+    return NextResponse.next();
   }
-
-  // 2. Authenticated users
-  if (session) {
-    // Special handling for /setup path - it's used for creating organizations
-    if (nextUrl.pathname.startsWith('/setup')) {
-      // Check if user already has an organization
-      const hasOrg = await db.organization.findFirst({
-        where: {
-          members: {
-            some: {
-              userId: session.user.id,
-            },
-          },
-        },
-      });
-
-      // Allow access if:
-      // - User has no organization (new user)
-      // - User is intentionally creating additional org (intent=create-additional)
-      // - User is in a setup session (has setupId in path)
-      const isIntentionalSetup = nextUrl.searchParams.get('intent') === 'create-additional';
-      const isSetupSession = nextUrl.pathname.match(/^\/setup\/[a-zA-Z0-9]+/);
-
-      if (!hasOrg || isIntentionalSetup || isSetupSession) {
-        return response;
-      }
-
-      // If user has org and not intentionally creating new one, redirect to their org
-      if (hasOrg && !isIntentionalSetup && !isSetupSession) {
-        const url = new URL(`/${hasOrg.id}/frameworks`, request.url);
-        // Preserve existing search params
-        nextUrl.searchParams.forEach((value, key) => {
-          url.searchParams.set(key, value);
-        });
-        return NextResponse.redirect(url);
-      }
-    }
-
-    const orgMatch = nextUrl.pathname.match(/^\/org_[a-zA-Z0-9]+/);
-    if (orgMatch && !isUnprotectedRoute(nextUrl.pathname)) {
-      const orgId = orgMatch[0].substring(1);
-
-      const foundOrg = await db.organization.findFirst({
-        where: { id: orgId },
-        select: { hasAccess: true },
-      });
-
-      const hasAccess = foundOrg?.hasAccess;
-
-      if (!hasAccess) {
-        const url = new URL(`/upgrade/${orgId}`, request.url);
-        // Preserve existing search params
-        nextUrl.searchParams.forEach((value, key) => {
-          url.searchParams.set(key, value);
-        });
-        return NextResponse.redirect(url);
-      }
-
-      // Check onboarding status for paid users
-      const org = await db.organization.findUnique({
-        where: { id: orgId },
-        select: { onboardingCompleted: true },
-      });
-
-      // If they have a subscription but haven't completed onboarding, redirect
-      // Only redirect if onboardingCompleted is explicitly false (not null/undefined)
-      if (org && org.onboardingCompleted === false && !nextUrl.pathname.includes('/onboarding')) {
-        console.log(`[MIDDLEWARE] Redirecting org ${orgId} to complete onboarding`);
-        const url = new URL(`/onboarding/${orgId}`, request.url);
-        // Preserve existing search params
-        nextUrl.searchParams.forEach((value, key) => {
-          url.searchParams.set(key, value);
-        });
-        return NextResponse.redirect(url);
-      }
-    }
-
-    // Heal sessions for organization-dependent routes
-    const isOrgRoute = nextUrl.pathname.includes('/org_');
-    const isRootPath = nextUrl.pathname === '/';
-
-    if ((isOrgRoute || isRootPath) && !session.session.activeOrganizationId) {
-      // Try to find and set an organization for the user
-      const userOrg = await db.organization.findFirst({
-        where: {
-          members: {
-            some: {
-              userId: session.user.id,
-            },
-          },
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-      });
-
-      if (userOrg) {
-        // Set the active organization
-        await auth.api.setActiveOrganization({
-          headers: await headers(),
-          body: {
-            organizationId: userOrg.id,
-          },
-        });
-
-        // Refresh to get the updated session
-        const url = new URL(nextUrl.pathname, request.url);
-        // Preserve existing search params
-        nextUrl.searchParams.forEach((value, key) => {
-          url.searchParams.set(key, value);
-        });
-        return NextResponse.redirect(url);
-      }
-    }
-  }
-
-  return response;
 }

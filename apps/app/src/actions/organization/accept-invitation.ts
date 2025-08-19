@@ -2,6 +2,7 @@
 
 import { db } from '@db';
 import { revalidatePath, revalidateTag } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { Resend } from 'resend';
 import { z } from 'zod';
 import { authActionClientWithoutOrg } from '../safe-action';
@@ -88,13 +89,8 @@ export const completeInvitation = authActionClientWithoutOrg
             },
           });
 
-          return {
-            success: true,
-            data: {
-              accepted: true,
-              organizationId: invitation.organizationId,
-            },
-          };
+          // Server redirect to the organization's root
+          redirect(`/${invitation.organizationId}/`);
         }
 
         if (!invitation.role) {
@@ -148,13 +144,8 @@ export const completeInvitation = authActionClientWithoutOrg
         revalidatePath(`/${invitation.organization.id}/settings/users`);
         revalidateTag(`user_${user.id}`);
 
-        return {
-          success: true,
-          data: {
-            accepted: true,
-            organizationId: invitation.organizationId,
-          },
-        };
+        // Server redirect to the organization's root
+        redirect(`/${invitation.organizationId}/`);
       } catch (error) {
         console.error('Error accepting invitation:', error);
         throw new Error(error as string);
