@@ -1,6 +1,5 @@
 import { db } from '@db';
-import { queue } from '@trigger.dev/sdk';
-import { logger, task } from '@trigger.dev/sdk/v3';
+import { logger, queue, task } from '@trigger.dev/sdk';
 import axios from 'axios';
 import {
   createRisks,
@@ -9,7 +8,6 @@ import {
   getOrganizationContext,
   updateOrganizationPolicies,
 } from './onboard-organization-helpers';
-import { updatePolicies } from './update-policies';
 
 // v4 queues must be declared in advance
 const onboardOrgQueue = queue({ name: 'onboard-organization', concurrencyLimit: 10 });
@@ -67,43 +65,12 @@ export const onboardOrganization = task({
       throw error;
     }
 
-    // Re-fetch policies with full data for policy updates
-    const fullPolicies = await db.policy.findMany({
-      where: {
-        organizationId: payload.organizationId,
-      },
-    });
-
-    if (fullPolicies.length > 0) {
-      // v4: queues are predefined on the task; trigger without on-demand queue options
-      await updatePolicies.batchTriggerAndWait(
-        fullPolicies.map((policy) => ({
-          payload: {
-            organizationId: payload.organizationId,
-            policyId: policy.id,
-            contextHub: contextHub.map((c) => `${c.question}\n${c.answer}`).join('\n'),
-          },
-          concurrencyKey: payload.organizationId,
-        })),
-      );
-    }
-
-    await db.onboarding.update({
-      where: {
-        organizationId: payload.organizationId,
-      },
-      data: { triggerJobCompleted: true },
-    });
-
-    logger.info(`Created ${extractRisks.object.risks.length} risks`);
-    logger.info(`Created ${extractVendors.object.vendors.length} vendors`);
-
     const organizationId = payload.organizationId;
     await db.onboarding.update({
       where: {
         organizationId,
       },
-      data: { triggerJobId: null },
+      data: { triggerJobId: null, triggerJobCompleted: true },
     });
 
     try {

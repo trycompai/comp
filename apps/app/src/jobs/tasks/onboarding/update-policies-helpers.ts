@@ -1,7 +1,7 @@
 import { openai } from '@ai-sdk/openai';
 import { db, FrameworkEditorFramework, type Policy } from '@db';
 import type { JSONContent } from '@tiptap/react';
-import { logger } from '@trigger.dev/sdk/v3';
+import { logger } from '@trigger.dev/sdk';
 import { generateObject, NoObjectGeneratedError } from 'ai';
 import { z } from 'zod';
 import { generatePrompt } from '../../lib/prompts';
@@ -211,7 +211,7 @@ Given an ORIGINAL policy TipTap JSON and a DRAFT TipTap JSON, produce a FINAL Ti
 Follow the structure rules above strictly.`,
       schema: z.object({
         type: z.literal('document'),
-        content: z.array(z.record(z.unknown())),
+        content: z.array(z.record(z.string(), z.unknown())),
       }),
     });
     return object;
@@ -465,7 +465,7 @@ ${prompt.replace(/\\n/g, '\n')}
 Return the complete TipTap document following ALL the above requirements using proper TipTap JSON structure.`,
       schema: z.object({
         type: z.literal('document'),
-        content: z.array(z.record(z.unknown())),
+        content: z.array(z.record(z.string(), z.unknown())),
       }),
     });
 

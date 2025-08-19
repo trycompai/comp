@@ -456,8 +456,8 @@
     "format": "prettier --write .",
     "lint": "prettier --check .",
     "test": "vitest",
-    "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:run": "vitest run",
     "test:ui": "vitest --ui",
     "test:watch": "vitest --watch",
     "typecheck": "tsc --noEmit"

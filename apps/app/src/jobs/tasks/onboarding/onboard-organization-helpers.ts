@@ -11,7 +11,7 @@ import {
   RiskTreatmentType,
   VendorCategory,
 } from '@db';
-import { logger, tasks } from '@trigger.dev/sdk/v3';
+import { logger, tasks } from '@trigger.dev/sdk';
 import { generateObject, generateText } from 'ai';
 import axios from 'axios';
 import z from 'zod';
@@ -370,10 +370,6 @@ export async function triggerPolicyUpdates(
           policyId: policy.id,
           contextHub: questionsAndAnswers.map((c) => `${c.question}\n${c.answer}`).join('\n'),
           frameworks,
-        },
-        queue: {
-          name: 'update-policies',
-          concurrencyLimit: 5,
         },
         concurrencyKey: organizationId,
       })),
