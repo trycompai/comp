@@ -39,7 +39,7 @@ export async function OnboardingLayout({
         currentOrganization={currentOrganization}
         variant={variant}
       />
-      <div className="flex flex-1">{children}</div>
+      <div className="flex flex-1 items-center justify-center px-4">{children}</div>
     </main>
   );
 }
