@@ -197,7 +197,10 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
   }
 
   return (
-    <Card className="w-full overflow-hidden rounded-none border-x-0 border-t-0">
+    <Card
+      id="onboarding-banner"
+      className="w-full overflow-hidden rounded-none border-x-0 border-t-0"
+    >
       <CardContent className="bg-background flex flex-col items-center justify-center">
         <div className="w-full pt-4">{renderStatusContent()}</div>
       </CardContent>
