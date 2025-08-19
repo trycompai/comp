@@ -89,7 +89,7 @@ RUN cd apps/app && SKIP_ENV_VALIDATION=true bun run build
 # =============================================================================
 # STAGE 4: App Production
 # =============================================================================
-FROM node:20-alpine AS app
+FROM node:22-alpine AS app
 
 WORKDIR /app
 
@@ -129,7 +129,7 @@ RUN cd apps/portal && SKIP_ENV_VALIDATION=true bun run build
 # =============================================================================
 # STAGE 6: Portal Production
 # =============================================================================
-FROM node:20-alpine AS portal
+FROM node:22-alpine AS portal
 
 WORKDIR /app
 
