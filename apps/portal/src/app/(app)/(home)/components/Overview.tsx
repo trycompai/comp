@@ -24,7 +24,7 @@ export async function Overview() {
   });
 
   if (!session?.user) {
-    redirect('/login'); // Or appropriate login/auth route
+    redirect('/auth');
   }
 
   // Fetch all memberships for the user, including organization details

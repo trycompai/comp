@@ -8,8 +8,7 @@ WORKDIR /app
 # Copy workspace configuration
 COPY package.json bun.lock ./
 
-# Copy package.json files for all packages
-COPY packages/db/package.json ./packages/db/
+# Copy package.json files for all packages (exclude local db; use published @trycompai/db)
 COPY packages/kv/package.json ./packages/kv/
 COPY packages/ui/package.json ./packages/ui/
 COPY packages/email/package.json ./packages/email/
@@ -23,7 +22,7 @@ COPY apps/app/package.json ./apps/app/
 COPY apps/portal/package.json ./apps/portal/
 
 # Install all dependencies
-RUN PRISMA_SKIP_POSTINSTALL_GENERATE=true bun install --frozen-lockfile
+RUN PRISMA_SKIP_POSTINSTALL_GENERATE=true bun install
 
 # =============================================================================
 # STAGE 2: Ultra-Minimal Migrator - Only Prisma
@@ -32,20 +31,18 @@ FROM oven/bun:1.2.8 AS migrator
 
 WORKDIR /app
 
-# Copy Prisma schema and migration files
+# Copy local Prisma schema and migrations from workspace
 COPY packages/db/prisma ./packages/db/prisma
 
-# Create minimal package.json for Prisma
-RUN echo '{"name":"migrator","type":"module","dependencies":{"prisma":"^6.13.0","@prisma/client":"^6.13.0"}}' > package.json
+# Create minimal package.json for Prisma runtime (also used by seeder)
+RUN echo '{"name":"migrator","type":"module","dependencies":{"prisma":"^6.14.0","@prisma/client":"^6.14.0","@trycompai/db":"^1.3.4","zod":"^3.25.7"}}' > package.json
 
 # Install ONLY Prisma dependencies
 RUN bun install
 
-# Generate Prisma client
-RUN cd packages/db && bunx prisma generate
-
-# Default command for migrations
-CMD ["bunx", "prisma", "migrate", "deploy", "--schema=packages/db/prisma/schema.prisma"]
+# Run migrations against the combined schema published by @trycompai/db
+RUN echo "Running migrations against @trycompai/db combined schema"
+CMD ["bunx", "prisma", "migrate", "deploy", "--schema=node_modules/@trycompai/db/dist/schema.prisma"]
 
 # =============================================================================
 # STAGE 3: App Builder
@@ -58,8 +55,33 @@ WORKDIR /app
 COPY packages ./packages
 COPY apps/app ./apps/app
 
-# Generate Prisma client in the full workspace context
-RUN cd packages/db && bunx prisma generate
+# Bring in node_modules for build and prisma prebuild
+COPY --from=deps /app/node_modules ./node_modules
+
+# Ensure Next build has required public env at build-time
+ARG NEXT_PUBLIC_BETTER_AUTH_URL
+ARG NEXT_PUBLIC_PORTAL_URL
+ARG NEXT_PUBLIC_POSTHOG_KEY
+ARG NEXT_PUBLIC_POSTHOG_HOST
+ARG NEXT_PUBLIC_IS_DUB_ENABLED
+ARG NEXT_PUBLIC_GTM_ID
+ARG NEXT_PUBLIC_LINKEDIN_PARTNER_ID
+ARG NEXT_PUBLIC_LINKEDIN_CONVERSION_ID
+ARG NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_BETTER_AUTH_URL=$NEXT_PUBLIC_BETTER_AUTH_URL \
+    NEXT_PUBLIC_PORTAL_URL=$NEXT_PUBLIC_PORTAL_URL \
+    NEXT_PUBLIC_POSTHOG_KEY=$NEXT_PUBLIC_POSTHOG_KEY \
+    NEXT_PUBLIC_POSTHOG_HOST=$NEXT_PUBLIC_POSTHOG_HOST \
+    NEXT_PUBLIC_IS_DUB_ENABLED=$NEXT_PUBLIC_IS_DUB_ENABLED \
+    NEXT_PUBLIC_GTM_ID=$NEXT_PUBLIC_GTM_ID \
+    NEXT_PUBLIC_LINKEDIN_PARTNER_ID=$NEXT_PUBLIC_LINKEDIN_PARTNER_ID \
+    NEXT_PUBLIC_LINKEDIN_CONVERSION_ID=$NEXT_PUBLIC_LINKEDIN_CONVERSION_ID \
+    NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL=$NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL \
+    NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+    NEXT_TELEMETRY_DISABLED=1 NODE_ENV=production \
+    NEXT_OUTPUT_STANDALONE=true \
+    NODE_OPTIONS=--max_old_space_size=6144
 
 # Build the app
 RUN cd apps/app && SKIP_ENV_VALIDATION=true bun run build
@@ -67,19 +89,18 @@ RUN cd apps/app && SKIP_ENV_VALIDATION=true bun run build
 # =============================================================================
 # STAGE 4: App Production
 # =============================================================================
-FROM oven/bun:1.2.8 AS app
+FROM node:20-alpine AS app
 
 WORKDIR /app
 
-# Copy the built app and all necessary dependencies from builder
-COPY --from=app-builder /app/apps/app/.next ./apps/app/.next
-COPY --from=app-builder /app/apps/app/package.json ./apps/app/
-COPY --from=app-builder /app/package.json ./
-COPY --from=app-builder /app/node_modules ./node_modules
-COPY --from=app-builder /app/packages ./packages
+# Copy Next standalone output
+COPY --from=app-builder /app/apps/app/.next/standalone ./
+COPY --from=app-builder /app/apps/app/.next/static ./apps/app/.next/static
+COPY --from=app-builder /app/apps/app/public ./apps/app/public
+
 
 EXPOSE 3000
-CMD ["bun", "run", "--cwd", "apps/app", "start"]
+CMD ["node", "apps/app/server.js"]
 
 # =============================================================================
 # STAGE 5: Portal Builder
@@ -92,8 +113,15 @@ WORKDIR /app
 COPY packages ./packages
 COPY apps/portal ./apps/portal
 
-# Generate Prisma client
-RUN cd packages/db && bunx prisma generate
+# Bring in node_modules for build and prisma prebuild
+COPY --from=deps /app/node_modules ./node_modules
+
+# Ensure Next build has required public env at build-time
+ARG NEXT_PUBLIC_BETTER_AUTH_URL
+ENV NEXT_PUBLIC_BETTER_AUTH_URL=$NEXT_PUBLIC_BETTER_AUTH_URL \
+    NEXT_TELEMETRY_DISABLED=1 NODE_ENV=production \
+    NEXT_OUTPUT_STANDALONE=true \
+    NODE_OPTIONS=--max_old_space_size=6144
 
 # Build the portal
 RUN cd apps/portal && SKIP_ENV_VALIDATION=true bun run build
@@ -101,16 +129,16 @@ RUN cd apps/portal && SKIP_ENV_VALIDATION=true bun run build
 # =============================================================================
 # STAGE 6: Portal Production
 # =============================================================================
-FROM oven/bun:1.2.8 AS portal
+FROM node:20-alpine AS portal
 
 WORKDIR /app
 
-# Copy the built portal and all necessary dependencies from builder
-COPY --from=portal-builder /app/apps/portal/.next ./apps/portal/.next
-COPY --from=portal-builder /app/apps/portal/package.json ./apps/portal/
-COPY --from=portal-builder /app/package.json ./
-COPY --from=portal-builder /app/node_modules ./node_modules
-COPY --from=portal-builder /app/packages ./packages
+# Copy Next standalone output for portal
+COPY --from=portal-builder /app/apps/portal/.next/standalone ./
+COPY --from=portal-builder /app/apps/portal/.next/static ./apps/portal/.next/static
+COPY --from=portal-builder /app/apps/portal/public ./apps/portal/public
 
 EXPOSE 3000
-CMD ["bun", "run", "--cwd", "apps/portal", "start"] 
+CMD ["node", "apps/portal/server.js"]
+
+# (Trigger.dev hosted; no local runner stage)

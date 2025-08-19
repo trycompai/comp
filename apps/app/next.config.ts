@@ -1,5 +1,8 @@
 import type { NextConfig } from 'next';
+import path from 'path';
 import './src/env.mjs';
+
+const isStandalone = process.env.NEXT_OUTPUT_STANDALONE === 'true';
 
 const config: NextConfig = {
   // Use S3 bucket for static assets with app-specific path
@@ -30,7 +33,20 @@ const config: NextConfig = {
     },
     authInterrupts: true,
     optimizePackageImports: ['@trycompai/db', '@trycompai/ui'],
+    // Reduce build peak memory
+    webpackMemoryOptimizations: true,
   },
+  outputFileTracingRoot: path.join(__dirname, '../../'),
+
+  // Reduce memory usage during production build
+  productionBrowserSourceMaps: false,
+  // If builds still OOM, uncomment the next line to disable SWC minification (larger output, less memory)
+  // swcMinify: false,
+  ...(isStandalone
+    ? {
+        output: 'standalone' as const,
+      }
+    : {}),
 
   // PostHog proxy for better tracking
   async rewrites() {

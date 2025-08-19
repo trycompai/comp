@@ -32,10 +32,25 @@ export default async function RootPage({
     return redirect(await buildUrlWithParams('/auth'));
   }
 
+  const intent = (await searchParams)?.intent;
   const orgId = session.session.activeOrganizationId;
 
   if (!orgId) {
     return redirect(await buildUrlWithParams('/setup'));
+  }
+
+  // If user is explicitly creating an additional org, go to setup regardless of current org state
+  if (intent === 'create-additional') {
+    return redirect(await buildUrlWithParams('/setup'));
+  }
+
+  // If org exists but hasn't completed onboarding, route to onboarding flow
+  const org = await db.organization.findUnique({
+    where: { id: orgId },
+    select: { onboardingCompleted: true },
+  });
+  if (org && org.onboardingCompleted === false) {
+    return redirect(await buildUrlWithParams(`/onboarding/${orgId}`));
   }
 
   const member = await db.member.findFirst({
