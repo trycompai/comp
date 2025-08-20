@@ -25,25 +25,51 @@ set "CHOSEN_DIR="
 set "LOG_FILE="
 set "HAS_ERROR=0"
 set "ERRORS="
+set "EXIT_CODE=0"
 
-REM Self-elevate if not running as administrator
-net session >nul 2>&1
-if not %errorlevel%==0 (
+REM Capture elevation flag if passed
+set "ELEVATED_FLAG=%~1"
+
+REM Self-elevate if not running as administrator (check High Mandatory Level)
+whoami /groups | find "S-1-16-12288" >nul 2>&1
+if errorlevel 1 if /I not "%ELEVATED_FLAG%"=="elevated" (
   color 0E
   echo Administrator permission is required.
   echo A prompt will appear asking for permission. Please click "Yes".
   echo If no prompt appears, right-click this file and select "Run as administrator".
   echo.
-  echo Elevating... A new window will open and remain open after running.
-  > "%TEMP%\getadmin.vbs" echo Set UAC = CreateObject^("Shell.Application"^)
-  >> "%TEMP%\getadmin.vbs" echo UAC.ShellExecute "%~f0", "", "", "runas", 1
-  wscript "%TEMP%\getadmin.vbs" >nul 2>&1
-  del "%TEMP%\getadmin.vbs" >nul 2>&1
-  echo This window will now close. The setup will continue in the new (admin) window.
-  pause
-  exit /b
+  echo Choose an option:
+  echo   [Y] Try to auto-elevate (recommended)
+  echo   [N] I will re-run manually as Administrator
+  choice /C YN /N /M "Attempt automatic elevation? (Y/N): "
+  if errorlevel 2 (
+    echo.
+    echo Please close this window and re-run the script by right-clicking it and selecting "Run as administrator".
+    echo Press any key to exit.
+    pause >nul
+    exit /b
+  ) else (
+    echo Elevating... A new window will open and remain open after running.
+    rem Try PowerShell elevation first (keeps admin window open with /k)
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -Verb RunAs -FilePath '%comspec%' -ArgumentList '/k','\"%~f0 elevated\"' -WorkingDirectory '%~dp0'" 2>nul
+    rem Fallback to VBScript if PowerShell attempt failed or is blocked
+    if not exist "%TEMP%\elevate.tmp" (
+      > "%TEMP%\getadmin.vbs" echo Set UAC = CreateObject^("Shell.Application"^)
+      >> "%TEMP%\getadmin.vbs" echo UAC.ShellExecute "%~f0", "elevated", "", "runas", 1
+      wscript "%TEMP%\getadmin.vbs" >nul 2>&1
+      del "%TEMP%\getadmin.vbs" >nul 2>&1
+    )
+    echo.
+    echo This window will now stay open so you can see messages.
+    echo Once the new admin window appears, you may close this one after confirming progress.
+    echo Press any key to exit this non-admin window.
+    pause >nul
+    exit /b
+  )
 )
 echo Running with administrator privileges.
+echo Current directory: %cd%
+echo Script path: %~f0
 echo.
 
 REM Choose a writable directory (primary first, then fallback)
@@ -67,6 +93,7 @@ if not defined CHOSEN_DIR (
   set "LOG_FILE=%~dp0setup.log"
   set "HAS_ERROR=1"
   set "ERRORS=!ERRORS!- No writable directory found (Primary: %PRIMARY_DIR%, Fallback: %FALLBACK_DIR%).!nl!"
+  set "EXIT_CODE=1"
 ) else (
   set "MARKER_DIR=%CHOSEN_DIR%"
   if not "%MARKER_DIR:~-1%"=="\\" set "MARKER_DIR=%MARKER_DIR%\\"
@@ -86,6 +113,7 @@ if defined CHOSEN_DIR (
     echo [%date% %time%] Failed writing org marker file >> "%LOG_FILE%"
     set "HAS_ERROR=1"
     set "ERRORS=!ERRORS!- Failed writing organization marker file.!nl!"
+    set "EXIT_CODE=1"
   ) else (
     echo [OK] Organization marker file: %MARKER_DIR%%ORG_ID%
   )
@@ -98,6 +126,7 @@ if defined CHOSEN_DIR (
     echo [%date% %time%] Failed writing employee marker file >> "%LOG_FILE%"
     set "HAS_ERROR=1"
     set "ERRORS=!ERRORS!- Failed writing employee marker file.!nl!"
+    set "EXIT_CODE=1"
   ) else (
     echo [OK] Employee marker file: %MARKER_DIR%%EMPLOYEE_ID%
   )
@@ -122,6 +151,7 @@ if %errorlevel%==0 (
     echo [%date% %time%] Failed writing OrgId to HKLM >> "%LOG_FILE%"
     set "HAS_ERROR=1"
     set "ERRORS=!ERRORS!- Failed writing OrgId to HKLM registry.!nl!"
+    set "EXIT_CODE=1"
   )
   reg add "HKLM\SOFTWARE\CompAI\Device" /v EmployeeId /t REG_SZ /d "%EMPLOYEE_ID%" /f >nul 2>&1
   if errorlevel 1 (
@@ -130,6 +160,7 @@ if %errorlevel%==0 (
     echo [%date% %time%] Failed writing EmployeeId to HKLM >> "%LOG_FILE%"
     set "HAS_ERROR=1"
     set "ERRORS=!ERRORS!- Failed writing EmployeeId to HKLM registry.!nl!"
+    set "EXIT_CODE=1"
   )
 ) else (
   color 0E
@@ -143,6 +174,7 @@ if %errorlevel%==0 (
     echo [%date% %time%] Failed writing OrgId to HKCU >> "%LOG_FILE%"
     set "HAS_ERROR=1"
     set "ERRORS=!ERRORS!- Failed writing OrgId to HKCU registry.!nl!"
+    set "EXIT_CODE=1"
   )
   reg add "HKCU\Software\CompAI\Device" /v EmployeeId /t REG_SZ /d "%EMPLOYEE_ID%" /f >nul 2>&1
   if errorlevel 1 (
@@ -151,6 +183,7 @@ if %errorlevel%==0 (
     echo [%date% %time%] Failed writing EmployeeId to HKCU >> "%LOG_FILE%"
     set "HAS_ERROR=1"
     set "ERRORS=!ERRORS!- Failed writing EmployeeId to HKCU registry.!nl!"
+    set "EXIT_CODE=1"
   )
 )
 
@@ -162,7 +195,8 @@ if defined CHOSEN_DIR (
     echo WARNING: Employee marker file missing at %MARKER_DIR%%EMPLOYEE_ID%
     echo [%date% %time%] Verification failed: employee marker file missing >> "%LOG_FILE%"
     set "HAS_ERROR=1"
-    set "ERRORS=!ERRORS!- Employee marker file missing at %CHOSEN_DIR%\%EMPLOYEE_ID%.!nl!"
+    set "ERRORS=!ERRORS!- Employee marker file missing at %MARKER_DIR%%EMPLOYEE_ID%.!nl!"
+    set "EXIT_CODE=2"
   ) else (
     echo [OK] Employee marker file present.
   )
@@ -175,6 +209,7 @@ if errorlevel 1 (
   echo [%date% %time%] Warning: registry EmployeeId value not found or mismatched >> "%LOG_FILE%"
   set "HAS_ERROR=1"
   set "ERRORS=!ERRORS!- Registry EmployeeId not found or mismatched in HKLM/HKCU.!nl!"
+  set "EXIT_CODE=2"
 ) else (
   echo [OK] Registry value found for EmployeeId.
 )
@@ -202,8 +237,8 @@ if "%HAS_ERROR%"=="0" (
 echo ------------------------------------------------------------
 echo.
 echo Press any key to close this window. This will not affect installation.
-pause >nul
-if "%HAS_ERROR%"=="0" (exit /b 0) else (exit /b 1)`;
+pause
+if "%HAS_ERROR%"=="0" (exit /b 0) else (exit /b %EXIT_CODE%)`;
 
   return script.replace(/\n/g, '\r\n');
 }
