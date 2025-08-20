@@ -38,6 +38,14 @@ if errorlevel 1 (
   pause
   exit /b 5
 )
+
+REM Ensure this script runs in a persistent cmd session that stays open after completion
+if not "%PERSIST%"=="1" (
+  set "PERSIST=1"
+  echo Re-launching in a persistent window...
+  start "CompAI Device Setup" cmd /k "%~f0 %*"
+  exit /b
+)
 echo Running with administrator privileges.
 echo Current directory: %cd%
 echo Script path: %~f0
