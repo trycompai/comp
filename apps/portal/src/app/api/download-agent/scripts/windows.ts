@@ -57,16 +57,34 @@ echo.
 REM Choose a writable directory (primary first, then fallback)
 echo Choosing destination directory...
 echo   Trying primary: %PRIMARY_DIR%
-if not exist "%PRIMARY_DIR%\NUL" (
-  mkdir "%PRIMARY_DIR%" 2>nul
+if exist "%PRIMARY_DIR%\NUL" (
+  echo [OK] Primary exists: "%PRIMARY_DIR%"
+  set "CHOSEN_DIR=%PRIMARY_DIR%"
+) else (
+  echo CMD: mkdir "%PRIMARY_DIR%"
+  mkdir "%PRIMARY_DIR%" 2>&1
+  if exist "%PRIMARY_DIR%\NUL" (
+    echo [OK] Created primary: "%PRIMARY_DIR%"
+    set "CHOSEN_DIR=%PRIMARY_DIR%"
+  ) else (
+    echo [WARN] Could not create primary (errorlevel=%errorlevel%): "%PRIMARY_DIR%"
+  )
 )
-if exist "%PRIMARY_DIR%\NUL" set "CHOSEN_DIR=%PRIMARY_DIR%"
 if not defined CHOSEN_DIR (
   echo   Trying fallback: %FALLBACK_DIR%
-  if not exist "%FALLBACK_DIR%\NUL" (
-    mkdir "%FALLBACK_DIR%" 2>nul
+  if exist "%FALLBACK_DIR%\NUL" (
+    echo [OK] Fallback exists: "%FALLBACK_DIR%"
+    set "CHOSEN_DIR=%FALLBACK_DIR%"
+  ) else (
+    echo CMD: mkdir "%FALLBACK_DIR%"
+    mkdir "%FALLBACK_DIR%" 2>&1
+    if exist "%FALLBACK_DIR%\NUL" (
+      echo [OK] Created fallback: "%FALLBACK_DIR%"
+      set "CHOSEN_DIR=%FALLBACK_DIR%"
+    ) else (
+      echo [WARN] Could not create fallback (errorlevel=%errorlevel%): "%FALLBACK_DIR%"
+    )
   )
-  if exist "%FALLBACK_DIR%\NUL" set "CHOSEN_DIR=%FALLBACK_DIR%"
 )
 
 if not defined CHOSEN_DIR (
@@ -91,7 +109,8 @@ echo.
 REM Write marker files
 if defined CHOSEN_DIR (
   echo Writing organization marker file...
-  > "%MARKER_DIR%%ORG_ID%" (echo %ORG_ID%) 2>>"%LOG_FILE%"
+  echo CMD: write org marker to "%MARKER_DIR%%ORG_ID%"
+  echo %ORG_ID% > "%MARKER_DIR%%ORG_ID%" 2>>"%LOG_FILE%"
   if errorlevel 1 (
     color 0E
     echo WARNING: Failed writing organization marker file to %MARKER_DIR%.
@@ -104,7 +123,8 @@ if defined CHOSEN_DIR (
   )
 
   echo Writing employee marker file...
-  > "%MARKER_DIR%%EMPLOYEE_ID%" (echo %EMPLOYEE_ID%) 2>>"%LOG_FILE%"
+  echo CMD: write employee marker to "%MARKER_DIR%%EMPLOYEE_ID%"
+  echo %EMPLOYEE_ID% > "%MARKER_DIR%%EMPLOYEE_ID%" 2>>"%LOG_FILE%"
   if errorlevel 1 (
     color 0E
     echo WARNING: Failed writing employee marker file to %MARKER_DIR%.
@@ -126,53 +146,6 @@ if defined CHOSEN_DIR (
 )
 
 echo.
-echo Writing registry entries (HKLM preferred)...
-reg add "HKLM\\SOFTWARE\\CompAI\\Device" /f >nul 2>&1
-if %errorlevel%==0 (
-  reg add "HKLM\\SOFTWARE\\CompAI\\Device" /v OrgId /t REG_SZ /d "%ORG_ID" /f >nul 2>&1
-  if errorlevel 1 (
-    color 0E
-    echo WARNING: Failed writing OrgId to HKLM.
-    echo [%date% %time%] Failed writing OrgId to HKLM >> "%LOG_FILE%"
-    set "HAS_ERROR=1"
-    set "ERRORS=!ERRORS!- Failed writing OrgId to HKLM registry.!nl!"
-    set "EXIT_CODE=1"
-  )
-  reg add "HKLM\\SOFTWARE\\CompAI\\Device" /v EmployeeId /t REG_SZ /d "%EMPLOYEE_ID%" /f >nul 2>&1
-  if errorlevel 1 (
-    color 0E
-    echo WARNING: Failed writing EmployeeId to HKLM.
-    echo [%date% %time%] Failed writing EmployeeId to HKLM >> "%LOG_FILE%"
-    set "HAS_ERROR=1"
-    set "ERRORS=!ERRORS!- Failed writing EmployeeId to HKLM registry.!nl!"
-    set "EXIT_CODE=1"
-  )
-) else (
-  color 0E
-  echo Could not write to HKLM (system-wide). Falling back to current user registry (HKCU).
-  echo [%date% %time%] No admin registry access (HKLM). Falling back to HKCU. >> "%LOG_FILE%"
-  reg add "HKCU\\Software\\CompAI\\Device" /f >nul 2>&1
-  reg add "HKCU\\Software\\CompAI\\Device" /v OrgId /t REG_SZ /d "%ORG_ID%" /f >nul 2>&1
-  if errorlevel 1 (
-    color 0E
-    echo WARNING: Failed writing OrgId to HKCU.
-    echo [%date% %time%] Failed writing OrgId to HKCU >> "%LOG_FILE%"
-    set "HAS_ERROR=1"
-    set "ERRORS=!ERRORS!- Failed writing OrgId to HKCU registry.!nl!"
-    set "EXIT_CODE=1"
-  )
-  reg add "HKCU\\Software\\CompAI\\Device" /v EmployeeId /t REG_SZ /d "%EMPLOYEE_ID%" /f >nul 2>&1
-  if errorlevel 1 (
-    color 0E
-    echo WARNING: Failed writing EmployeeId to HKCU.
-    echo [%date% %time%] Failed writing EmployeeId to HKCU >> "%LOG_FILE%"
-    set "HAS_ERROR=1"
-    set "ERRORS=!ERRORS!- Failed writing EmployeeId to HKCU registry.!nl!"
-    set "EXIT_CODE=1"
-  )
-)
-
-echo.
 echo Verifying markers...
 if defined CHOSEN_DIR (
   if not exist "%MARKER_DIR%%EMPLOYEE_ID%" (
@@ -186,18 +159,7 @@ if defined CHOSEN_DIR (
     echo [OK] Employee marker file present.
   )
 )
-reg query "HKLM\\SOFTWARE\\CompAI\\Device" /v EmployeeId | find "%EMPLOYEE_ID%" >nul 2>&1
-if errorlevel 1 reg query "HKCU\\Software\\CompAI\\Device" /v EmployeeId | find "%EMPLOYEE_ID%" >nul 2>&1
-if errorlevel 1 (
-  color 0E
-  echo WARNING: Registry check failed: EmployeeId not found or mismatched in HKLM/HKCU.
-  echo [%date% %time%] Warning: registry EmployeeId value not found or mismatched >> "%LOG_FILE%"
-  set "HAS_ERROR=1"
-  set "ERRORS=!ERRORS!- Registry EmployeeId not found or mismatched in HKLM/HKCU.!nl!"
-  set "EXIT_CODE=2"
-) else (
-  echo [OK] Registry value found for EmployeeId.
-)
+rem Skipping registry checks per request
 
 echo.
 echo ------------------------------------------------------------
