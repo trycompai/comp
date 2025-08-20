@@ -8,15 +8,18 @@ import {
 } from './onboard-organization-helpers';
 
 // Queues
-const vendorMitigationQueue = queue({ name: 'vendor-risk-mitigations', concurrencyLimit: 10 });
+const vendorMitigationQueue = queue({ name: 'vendor-risk-mitigations', concurrencyLimit: 100 });
 const vendorMitigationFanoutQueue = queue({
   name: 'vendor-risk-mitigations-fanout',
-  concurrencyLimit: 3,
+  concurrencyLimit: 100,
 });
 
 export const generateVendorMitigation = task({
   id: 'generate-vendor-mitigation',
   queue: vendorMitigationQueue,
+  retry: {
+    maxAttempts: 5,
+  },
   run: async (payload: { organizationId: string; vendorId: string }) => {
     const { organizationId, vendorId } = payload;
     logger.info(`Generating vendor mitigation for vendor ${vendorId} in org ${organizationId}`);

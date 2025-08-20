@@ -8,12 +8,15 @@ import {
 } from './onboard-organization-helpers';
 
 // Queues
-const riskMitigationQueue = queue({ name: 'risk-mitigations', concurrencyLimit: 10 });
-const riskMitigationFanoutQueue = queue({ name: 'risk-mitigations-fanout', concurrencyLimit: 3 });
+const riskMitigationQueue = queue({ name: 'risk-mitigations', concurrencyLimit: 100 });
+const riskMitigationFanoutQueue = queue({ name: 'risk-mitigations-fanout', concurrencyLimit: 100 });
 
 export const generateRiskMitigation = task({
   id: 'generate-risk-mitigation',
   queue: riskMitigationQueue,
+  retry: {
+    maxAttempts: 5,
+  },
   run: async (payload: { organizationId: string; riskId: string }) => {
     const { organizationId, riskId } = payload;
     logger.info(`Generating risk mitigation for risk ${riskId} in org ${organizationId}`);

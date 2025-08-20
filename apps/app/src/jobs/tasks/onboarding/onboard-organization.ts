@@ -11,11 +11,14 @@ import {
 } from './onboard-organization-helpers';
 
 // v4 queues must be declared in advance
-const onboardOrgQueue = queue({ name: 'onboard-organization', concurrencyLimit: 10 });
+const onboardOrgQueue = queue({ name: 'onboard-organization', concurrencyLimit: 100 });
 
 export const onboardOrganization = task({
   id: 'onboard-organization',
   queue: onboardOrgQueue,
+  retry: {
+    maxAttempts: 3,
+  },
   run: async (payload: { organizationId: string }) => {
     logger.info(`Start onboarding organization ${payload.organizationId}`);
 
