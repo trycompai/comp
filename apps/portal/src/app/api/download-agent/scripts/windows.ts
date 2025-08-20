@@ -20,7 +20,7 @@ REM Variables
 set "ORG_ID=${orgId}"
 set "EMPLOYEE_ID=${employeeId}"
 set "PRIMARY_DIR=${fleetDevicePath}"
-set "FALLBACK_DIR=%PUBLIC%\CompAI\Fleet"
+set "FALLBACK_DIR=C:\\Users\\Public\\CompAI\\Fleet"
 set "CHOSEN_DIR="
 set "LOG_FILE="
 set "HAS_ERROR=0"
@@ -127,9 +127,9 @@ if defined CHOSEN_DIR (
 
 echo.
 echo Writing registry entries (HKLM preferred)...
-reg add "HKLM\SOFTWARE\CompAI\Device" /f >nul 2>&1
+reg add "HKLM\\SOFTWARE\\CompAI\\Device" /f >nul 2>&1
 if %errorlevel%==0 (
-  reg add "HKLM\SOFTWARE\CompAI\Device" /v OrgId /t REG_SZ /d "%ORG_ID" /f >nul 2>&1
+  reg add "HKLM\\SOFTWARE\\CompAI\\Device" /v OrgId /t REG_SZ /d "%ORG_ID" /f >nul 2>&1
   if errorlevel 1 (
     color 0E
     echo WARNING: Failed writing OrgId to HKLM.
@@ -138,7 +138,7 @@ if %errorlevel%==0 (
     set "ERRORS=!ERRORS!- Failed writing OrgId to HKLM registry.!nl!"
     set "EXIT_CODE=1"
   )
-  reg add "HKLM\SOFTWARE\CompAI\Device" /v EmployeeId /t REG_SZ /d "%EMPLOYEE_ID%" /f >nul 2>&1
+  reg add "HKLM\\SOFTWARE\\CompAI\\Device" /v EmployeeId /t REG_SZ /d "%EMPLOYEE_ID%" /f >nul 2>&1
   if errorlevel 1 (
     color 0E
     echo WARNING: Failed writing EmployeeId to HKLM.
@@ -151,8 +151,8 @@ if %errorlevel%==0 (
   color 0E
   echo Could not write to HKLM (system-wide). Falling back to current user registry (HKCU).
   echo [%date% %time%] No admin registry access (HKLM). Falling back to HKCU. >> "%LOG_FILE%"
-  reg add "HKCU\Software\CompAI\Device" /f >nul 2>&1
-  reg add "HKCU\Software\CompAI\Device" /v OrgId /t REG_SZ /d "%ORG_ID%" /f >nul 2>&1
+  reg add "HKCU\\Software\\CompAI\\Device" /f >nul 2>&1
+  reg add "HKCU\\Software\\CompAI\\Device" /v OrgId /t REG_SZ /d "%ORG_ID%" /f >nul 2>&1
   if errorlevel 1 (
     color 0E
     echo WARNING: Failed writing OrgId to HKCU.
@@ -161,7 +161,7 @@ if %errorlevel%==0 (
     set "ERRORS=!ERRORS!- Failed writing OrgId to HKCU registry.!nl!"
     set "EXIT_CODE=1"
   )
-  reg add "HKCU\Software\CompAI\Device" /v EmployeeId /t REG_SZ /d "%EMPLOYEE_ID%" /f >nul 2>&1
+  reg add "HKCU\\Software\\CompAI\\Device" /v EmployeeId /t REG_SZ /d "%EMPLOYEE_ID%" /f >nul 2>&1
   if errorlevel 1 (
     color 0E
     echo WARNING: Failed writing EmployeeId to HKCU.
@@ -186,8 +186,8 @@ if defined CHOSEN_DIR (
     echo [OK] Employee marker file present.
   )
 )
-reg query "HKLM\SOFTWARE\CompAI\Device" /v EmployeeId | find "%EMPLOYEE_ID%" >nul 2>&1
-if errorlevel 1 reg query "HKCU\Software\CompAI\Device" /v EmployeeId | find "%EMPLOYEE_ID%" >nul 2>&1
+reg query "HKLM\\SOFTWARE\\CompAI\\Device" /v EmployeeId | find "%EMPLOYEE_ID%" >nul 2>&1
+if errorlevel 1 reg query "HKCU\\Software\\CompAI\\Device" /v EmployeeId | find "%EMPLOYEE_ID%" >nul 2>&1
 if errorlevel 1 (
   color 0E
   echo WARNING: Registry check failed: EmployeeId not found or mismatched in HKLM/HKCU.
