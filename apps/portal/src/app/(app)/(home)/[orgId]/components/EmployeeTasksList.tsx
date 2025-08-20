@@ -15,7 +15,6 @@ interface EmployeeTasksListProps {
   member: Member;
   fleetPolicies: FleetPolicy[];
   host: Host | null;
-  isFleetEnabled: boolean;
 }
 
 export const EmployeeTasksList = ({
@@ -24,7 +23,6 @@ export const EmployeeTasksList = ({
   member,
   fleetPolicies,
   host,
-  isFleetEnabled,
 }: EmployeeTasksListProps) => {
   // Check completion status
   const hasAcceptedPolicies =
@@ -58,16 +56,12 @@ export const EmployeeTasksList = ({
       title: 'Accept security policies',
       content: <PoliciesAccordionItem policies={policies} member={member} />,
     },
-    ...(isFleetEnabled
-      ? [
-          {
-            title: 'Download and install Comp AI Device Agent',
-            content: (
-              <DeviceAgentAccordionItem member={member} host={host} fleetPolicies={fleetPolicies} />
-            ),
-          },
-        ]
-      : []),
+    {
+      title: 'Download and install Comp AI Device Agent',
+      content: (
+        <DeviceAgentAccordionItem member={member} host={host} fleetPolicies={fleetPolicies} />
+      ),
+    },
     {
       title: 'Complete general security awareness training',
       content: <GeneralTrainingAccordionItem trainingVideoCompletions={trainingVideoCompletions} />,

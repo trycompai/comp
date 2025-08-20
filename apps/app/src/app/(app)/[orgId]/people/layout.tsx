@@ -1,4 +1,3 @@
-import { getPostHogClient } from '@/app/posthog';
 import { auth } from '@/utils/auth';
 import { SecondaryMenu } from '@comp/ui/secondary-menu';
 import { db } from '@db';
@@ -27,11 +26,6 @@ export default async function Layout({ children }: { children: React.ReactNode }
     return roles.includes('employee');
   });
 
-  const isFleetEnabled = await getPostHogClient()?.isFeatureEnabled(
-    'is-fleet-enabled',
-    session?.session.userId,
-  );
-
   return (
     <div className="m-auto max-w-[1200px]">
       <SecondaryMenu
@@ -48,14 +42,10 @@ export default async function Layout({ children }: { children: React.ReactNode }
                 },
               ]
             : []),
-          ...(isFleetEnabled
-            ? [
-                {
-                  path: `/${orgId}/people/devices`,
-                  label: 'Employee Devices',
-                },
-              ]
-            : []),
+          {
+            path: `/${orgId}/people/devices`,
+            label: 'Employee Devices',
+          },
         ]}
       />
 
