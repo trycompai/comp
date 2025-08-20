@@ -89,14 +89,14 @@ echo.
 
 REM Choose writable directory
 call :log_msg "Choosing destination directory; primary=%PRIMARY_DIR% fallback=%FALLBACK_DIR%"
-if exist "%PRIMARY_DIR%\\NUL" set "CHOSEN_DIR=%PRIMARY_DIR%"
+if exist "%PRIMARY_DIR%\\*" set "CHOSEN_DIR=%PRIMARY_DIR%"
 if not defined CHOSEN_DIR call :log_run mkdir "%PRIMARY_DIR%"
-if not defined CHOSEN_DIR if exist "%PRIMARY_DIR%\\NUL" set "CHOSEN_DIR=%PRIMARY_DIR%"
+if not defined CHOSEN_DIR if exist "%PRIMARY_DIR%\\*" set "CHOSEN_DIR=%PRIMARY_DIR%"
 
 if not defined CHOSEN_DIR call :log_msg "Primary not available; trying fallback"
-if not defined CHOSEN_DIR if exist "%FALLBACK_DIR%\\NUL" set "CHOSEN_DIR=%FALLBACK_DIR%"
+if not defined CHOSEN_DIR if exist "%FALLBACK_DIR%\\*" set "CHOSEN_DIR=%FALLBACK_DIR%"
 if not defined CHOSEN_DIR call :log_run mkdir "%FALLBACK_DIR%"
-if not defined CHOSEN_DIR if exist "%FALLBACK_DIR%\\NUL" set "CHOSEN_DIR=%FALLBACK_DIR%"
+if not defined CHOSEN_DIR if exist "%FALLBACK_DIR%\\*" set "CHOSEN_DIR=%FALLBACK_DIR%"
 
 if not defined CHOSEN_DIR (
   color 0E
@@ -121,7 +121,7 @@ if not defined CHOSEN_DIR (
   )
   call :log_msg "Using directory: !MARKER_DIR!"
 )
-echo Logs will be written to: %LOG_FILE%
+echo Logs will be written to: !LOG_FILE!
 echo.
 
 REM Write marker files
@@ -192,8 +192,8 @@ if "%HAS_ERROR%"=="0" (
   color 0A
   echo RESULT: SUCCESS
   echo Setup completed successfully for %EMPLOYEE_ID%.
-  if defined CHOSEN_DIR echo Files created in: %CHOSEN_DIR%
-  echo Log file: %LOG_FILE%
+  if defined CHOSEN_DIR echo Files created in: !CHOSEN_DIR!
+  echo Log file: !LOG_FILE!
   call :log_msg "RESULT: SUCCESS"
 ) else (
   color 0C
@@ -204,7 +204,7 @@ if "%HAS_ERROR%"=="0" (
   echo.
   echo Next steps:
   echo  - Take a screenshot of this window.
-  echo  - Attach the log file from: %LOG_FILE%
+  echo  - Attach the log file from: !LOG_FILE!
   echo  - Share both with your CompAI support contact.
   call :log_msg "RESULT: COMPLETED WITH ISSUES (exit=%EXIT_CODE%)"
 )
