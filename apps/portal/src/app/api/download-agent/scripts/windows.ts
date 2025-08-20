@@ -5,7 +5,7 @@ export function generateWindowsScript(config: ScriptConfig): string {
 
   const script = `@echo off
 title CompAI Device Setup
-setlocal EnableExtensions EnableDelayedExpansion
+setlocal EnableExtensions DisableDelayedExpansion
 color 0A
 
 echo ------------------------------------------------------------
@@ -54,44 +54,24 @@ cd /d "%~dp0"
 echo New current directory: %cd%
 echo.
 
-REM Choose a writable directory (primary first, then fallback)
+REM Choose a writable directory (primary first, then fallback) without parentheses blocks
 echo Choosing destination directory...
-echo   Trying primary: %PRIMARY_DIR%
-if exist "%PRIMARY_DIR%\NUL" (
-  echo [OK] Primary exists: "%PRIMARY_DIR%"
-  set "CHOSEN_DIR=%PRIMARY_DIR%"
-) else (
-  echo CMD: mkdir "%PRIMARY_DIR%"
-  mkdir "%PRIMARY_DIR%" 2>&1
-  if exist "%PRIMARY_DIR%\NUL" (
-    echo [OK] Created primary: "%PRIMARY_DIR%"
-    set "CHOSEN_DIR=%PRIMARY_DIR%"
-  ) else (
-    echo [WARN] Could not create primary (errorlevel=%errorlevel%): "%PRIMARY_DIR%"
-  )
-)
-if not defined CHOSEN_DIR (
-  echo   Trying fallback: %FALLBACK_DIR%
-  if exist "%FALLBACK_DIR%\NUL" (
-    echo [OK] Fallback exists: "%FALLBACK_DIR%"
-    set "CHOSEN_DIR=%FALLBACK_DIR%"
-  ) else (
-    echo CMD: mkdir "%FALLBACK_DIR%"
-    mkdir "%FALLBACK_DIR%" 2>&1
-    if exist "%FALLBACK_DIR%\NUL" (
-      echo [OK] Created fallback: "%FALLBACK_DIR%"
-      set "CHOSEN_DIR=%FALLBACK_DIR%"
-    ) else (
-      echo [WARN] Could not create fallback (errorlevel=%errorlevel%): "%FALLBACK_DIR%"
-    )
-  )
-)
+echo   Primary: "%PRIMARY_DIR%"
+if exist "%PRIMARY_DIR%\" set "CHOSEN_DIR=%PRIMARY_DIR%"
+if not defined CHOSEN_DIR echo CMD: mkdir "%PRIMARY_DIR%"
+if not defined CHOSEN_DIR mkdir "%PRIMARY_DIR%" 2>&1
+if not defined CHOSEN_DIR if exist "%PRIMARY_DIR%\" set "CHOSEN_DIR=%PRIMARY_DIR%"
+if not defined CHOSEN_DIR echo   Fallback: "%FALLBACK_DIR%"
+if not defined CHOSEN_DIR if exist "%FALLBACK_DIR%\" set "CHOSEN_DIR=%FALLBACK_DIR%"
+if not defined CHOSEN_DIR echo CMD: mkdir "%FALLBACK_DIR%"
+if not defined CHOSEN_DIR mkdir "%FALLBACK_DIR%" 2>&1
+if not defined CHOSEN_DIR if exist "%FALLBACK_DIR%\" set "CHOSEN_DIR=%FALLBACK_DIR%"
 
 if not defined CHOSEN_DIR (
   color 0E
   echo WARNING: No writable directory found.
-  echo Primary attempted: %PRIMARY_DIR%
-  echo Fallback attempted: %FALLBACK_DIR%
+  echo Primary attempted: "%PRIMARY_DIR%"
+  echo Fallback attempted: "%FALLBACK_DIR%"
   echo [%date% %time%] No writable directory found. Primary: %PRIMARY_DIR%, Fallback: %FALLBACK_DIR% >> "%~dp0setup.log"
   set "LOG_FILE=%~dp0setup.log"
   set "HAS_ERROR=1"
@@ -110,7 +90,7 @@ REM Write marker files
 if defined CHOSEN_DIR (
   echo Writing organization marker file...
   echo CMD: write org marker to "%MARKER_DIR%%ORG_ID%"
-  echo %ORG_ID% > "%MARKER_DIR%%ORG_ID%" 2>>"%LOG_FILE%"
+  (echo %ORG_ID%) ^> "%MARKER_DIR%%ORG_ID%" 2^>^>"%LOG_FILE%"
   if errorlevel 1 (
     color 0E
     echo WARNING: Failed writing organization marker file to %MARKER_DIR%.
@@ -124,7 +104,7 @@ if defined CHOSEN_DIR (
 
   echo Writing employee marker file...
   echo CMD: write employee marker to "%MARKER_DIR%%EMPLOYEE_ID%"
-  echo %EMPLOYEE_ID% > "%MARKER_DIR%%EMPLOYEE_ID%" 2>>"%LOG_FILE%"
+  (echo %EMPLOYEE_ID%) ^> "%MARKER_DIR%%EMPLOYEE_ID%" 2^>^>"%LOG_FILE%"
   if errorlevel 1 (
     color 0E
     echo WARNING: Failed writing employee marker file to %MARKER_DIR%.
