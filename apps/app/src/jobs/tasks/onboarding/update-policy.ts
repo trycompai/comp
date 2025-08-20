@@ -7,12 +7,15 @@ if (!process.env.OPENAI_API_KEY) {
 }
 
 // v4: define queue ahead of time
-export const updatePolicyQueue = queue({ name: 'update-policy', concurrencyLimit: 5 });
+export const updatePolicyQueue = queue({ name: 'update-policy', concurrencyLimit: 100 });
 
 export const updatePolicy = schemaTask({
   id: 'update-policy',
   maxDuration: 600, // 10 minutes.
   queue: updatePolicyQueue,
+  retry: {
+    maxAttempts: 5,
+  },
   schema: z.object({
     organizationId: z.string(),
     policyId: z.string(),
