@@ -30,8 +30,8 @@ export const createFleetLabelForOrg = task({
     }
 
     const fleetDevicePathMac = '/Users/Shared/.fleet';
-    const fleetDevicePathWindows = 'C\\ProgramData\\CompAI\\Fleet';
-    const windowsFallbackDir = 'C\\Users\\Public\\CompAI\\Fleet';
+    const fleetDevicePathWindows = 'C:\\ProgramData\\CompAI\\Fleet';
+    const windowsFallbackDir = 'C:\\Users\\Public\\CompAI\\Fleet';
 
     // Simple union query: only file table, constrained per platform path
     const query = `
