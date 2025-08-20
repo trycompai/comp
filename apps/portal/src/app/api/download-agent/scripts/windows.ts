@@ -64,8 +64,10 @@ if not defined CHOSEN_DIR (
   set "HAS_ERROR=1"
   set "ERRORS=!ERRORS!- No writable directory found (Primary: %PRIMARY_DIR%, Fallback: %FALLBACK_DIR%).!nl!"
 ) else (
-  set "LOG_FILE=%CHOSEN_DIR%\setup.log"
-  echo Using directory: %CHOSEN_DIR%
+  set "MARKER_DIR=%CHOSEN_DIR%"
+  if not "%MARKER_DIR:~-1%"=="\\" set "MARKER_DIR=%MARKER_DIR%\\"
+  set "LOG_FILE=%MARKER_DIR%setup.log"
+  echo Using directory: %MARKER_DIR%
 )
 echo Logs will be written to: %LOG_FILE%
 echo.
@@ -73,36 +75,36 @@ echo.
 REM Write marker files
 if defined CHOSEN_DIR (
   echo Writing organization marker file...
-  > "%CHOSEN_DIR%\%ORG_ID%" (echo %ORG_ID%) 2>>"%LOG_FILE%"
+  > "%MARKER_DIR%%ORG_ID%" (echo %ORG_ID%) 2>>"%LOG_FILE%"
   if errorlevel 1 (
     color 0E
-    echo WARNING: Failed writing organization marker file to %CHOSEN_DIR%.
+    echo WARNING: Failed writing organization marker file to %MARKER_DIR%.
     echo [%date% %time%] Failed writing org marker file >> "%LOG_FILE%"
     set "HAS_ERROR=1"
     set "ERRORS=!ERRORS!- Failed writing organization marker file.!nl!"
   ) else (
-    echo [OK] Organization marker file: %CHOSEN_DIR%\%ORG_ID%
+    echo [OK] Organization marker file: %MARKER_DIR%%ORG_ID%
   )
 
   echo Writing employee marker file...
-  > "%CHOSEN_DIR%\%EMPLOYEE_ID%" (echo %EMPLOYEE_ID%) 2>>"%LOG_FILE%"
+  > "%MARKER_DIR%%EMPLOYEE_ID%" (echo %EMPLOYEE_ID%) 2>>"%LOG_FILE%"
   if errorlevel 1 (
     color 0E
-    echo WARNING: Failed writing employee marker file to %CHOSEN_DIR%.
+    echo WARNING: Failed writing employee marker file to %MARKER_DIR%.
     echo [%date% %time%] Failed writing employee marker file >> "%LOG_FILE%"
     set "HAS_ERROR=1"
     set "ERRORS=!ERRORS!- Failed writing employee marker file.!nl!"
   ) else (
-    echo [OK] Employee marker file: %CHOSEN_DIR%\%EMPLOYEE_ID%
+    echo [OK] Employee marker file: %MARKER_DIR%%EMPLOYEE_ID%
   )
 )
 
 REM Set permissive read ACLs for SYSTEM and Administrators
 if defined CHOSEN_DIR (
   echo Setting permissions on marker files...
-  icacls "%CHOSEN_DIR%" /inheritance:e >nul 2>&1
-  icacls "%CHOSEN_DIR%\%ORG_ID%" /grant *S-1-5-18:R *S-1-5-32-544:R /T >nul 2>&1
-  icacls "%CHOSEN_DIR%\%EMPLOYEE_ID%" /grant *S-1-5-18:R *S-1-5-32-544:R /T >nul 2>&1
+  icacls "%MARKER_DIR%" /inheritance:e >nul 2>&1
+  icacls "%MARKER_DIR%%ORG_ID%" /grant *S-1-5-18:R *S-1-5-32-544:R /T >nul 2>&1
+  icacls "%MARKER_DIR%%EMPLOYEE_ID%" /grant *S-1-5-18:R *S-1-5-32-544:R /T >nul 2>&1
 )
 
 echo.
@@ -151,9 +153,9 @@ if %errorlevel%==0 (
 echo.
 echo Verifying markers...
 if defined CHOSEN_DIR (
-  if not exist "%CHOSEN_DIR%\%EMPLOYEE_ID%" (
+  if not exist "%MARKER_DIR%%EMPLOYEE_ID%" (
     color 0E
-    echo WARNING: Employee marker file missing at %CHOSEN_DIR%\%EMPLOYEE_ID%
+    echo WARNING: Employee marker file missing at %MARKER_DIR%%EMPLOYEE_ID%
     echo [%date% %time%] Verification failed: employee marker file missing >> "%LOG_FILE%"
     set "HAS_ERROR=1"
     set "ERRORS=!ERRORS!- Employee marker file missing at %CHOSEN_DIR%\%EMPLOYEE_ID%.!nl!"
