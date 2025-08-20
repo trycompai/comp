@@ -5,7 +5,7 @@ export function generateWindowsScript(config: ScriptConfig): string {
 
   const script = `@echo off
 title CompAI Device Setup
-setlocal EnableExtensions DisableDelayedExpansion
+setlocal EnableExtensions EnableDelayedExpansion
 color 0A
 
 echo ------------------------------------------------------------
@@ -26,6 +26,7 @@ set "LOG_FILE="
 set "HAS_ERROR=0"
 set "ERRORS="
 set "EXIT_CODE=0"
+set "nl=^
 
 REM Require Administrator (check High Mandatory Level) and exit with instructions if not elevated
 whoami /groups | find "S-1-16-12288" >nul 2>&1
@@ -57,15 +58,15 @@ echo.
 REM Choose a writable directory (primary first, then fallback) without parentheses blocks
 echo Choosing destination directory...
 echo   Primary: "%PRIMARY_DIR%"
-if exist "%PRIMARY_DIR%\" set "CHOSEN_DIR=%PRIMARY_DIR%"
+if exist "%PRIMARY_DIR%\NUL" set "CHOSEN_DIR=%PRIMARY_DIR%"
 if not defined CHOSEN_DIR echo CMD: mkdir "%PRIMARY_DIR%"
 if not defined CHOSEN_DIR mkdir "%PRIMARY_DIR%" 2>&1
-if not defined CHOSEN_DIR if exist "%PRIMARY_DIR%\" set "CHOSEN_DIR=%PRIMARY_DIR%"
+if not defined CHOSEN_DIR if exist "%PRIMARY_DIR%\NUL" set "CHOSEN_DIR=%PRIMARY_DIR%"
 if not defined CHOSEN_DIR echo   Fallback: "%FALLBACK_DIR%"
-if not defined CHOSEN_DIR if exist "%FALLBACK_DIR%\" set "CHOSEN_DIR=%FALLBACK_DIR%"
+if not defined CHOSEN_DIR if exist "%FALLBACK_DIR%\NUL" set "CHOSEN_DIR=%FALLBACK_DIR%"
 if not defined CHOSEN_DIR echo CMD: mkdir "%FALLBACK_DIR%"
 if not defined CHOSEN_DIR mkdir "%FALLBACK_DIR%" 2>&1
-if not defined CHOSEN_DIR if exist "%FALLBACK_DIR%\" set "CHOSEN_DIR=%FALLBACK_DIR%"
+if not defined CHOSEN_DIR if exist "%FALLBACK_DIR%\NUL" set "CHOSEN_DIR=%FALLBACK_DIR%"
 
 if not defined CHOSEN_DIR (
   color 0E
@@ -79,9 +80,9 @@ if not defined CHOSEN_DIR (
   set "EXIT_CODE=1"
 ) else (
   set "MARKER_DIR=%CHOSEN_DIR%"
-  if not "%MARKER_DIR:~-1%"=="\\" set "MARKER_DIR=%MARKER_DIR%\\"
-  set "LOG_FILE=%MARKER_DIR%setup.log"
-  echo Using directory: %MARKER_DIR%
+  if not "!MARKER_DIR:~-1!"=="\\" set "MARKER_DIR=!MARKER_DIR!\\"
+  set "LOG_FILE=!MARKER_DIR!setup.log"
+  echo Using directory: !MARKER_DIR!
 )
 echo Logs will be written to: %LOG_FILE%
 echo.
@@ -90,7 +91,7 @@ REM Write marker files
 if defined CHOSEN_DIR (
   echo Writing organization marker file...
   echo CMD: write org marker to "%MARKER_DIR%%ORG_ID%"
-  (echo %ORG_ID%) ^> "%MARKER_DIR%%ORG_ID%" 2^>^>"%LOG_FILE%"
+  (echo %ORG_ID%) > "%MARKER_DIR%%ORG_ID%" 2>>"%LOG_FILE%"
   if errorlevel 1 (
     color 0E
     echo WARNING: Failed writing organization marker file to %MARKER_DIR%.
@@ -104,7 +105,7 @@ if defined CHOSEN_DIR (
 
   echo Writing employee marker file...
   echo CMD: write employee marker to "%MARKER_DIR%%EMPLOYEE_ID%"
-  (echo %EMPLOYEE_ID%) ^> "%MARKER_DIR%%EMPLOYEE_ID%" 2^>^>"%LOG_FILE%"
+  (echo %EMPLOYEE_ID%) > "%MARKER_DIR%%EMPLOYEE_ID%" 2>>"%LOG_FILE%"
   if errorlevel 1 (
     color 0E
     echo WARNING: Failed writing employee marker file to %MARKER_DIR%.
@@ -120,23 +121,23 @@ if defined CHOSEN_DIR (
 REM Set permissive read ACLs for SYSTEM and Administrators
 if defined CHOSEN_DIR (
   echo Setting permissions on marker files...
-  icacls "%MARKER_DIR%" /inheritance:e >nul 2>&1
-  icacls "%MARKER_DIR%%ORG_ID%" /grant *S-1-5-18:R *S-1-5-32-544:R /T >nul 2>&1
-  icacls "%MARKER_DIR%%EMPLOYEE_ID%" /grant *S-1-5-18:R *S-1-5-32-544:R /T >nul 2>&1
+  icacls "!MARKER_DIR!" /inheritance:e >nul 2>&1
+  icacls "!MARKER_DIR!!ORG_ID!" /grant *S-1-5-18:R *S-1-5-32-544:R >nul 2>&1
+  icacls "!MARKER_DIR!!EMPLOYEE_ID!" /grant *S-1-5-18:R *S-1-5-32-544:R >nul 2>&1
 )
 
 echo.
 echo Verifying markers...
 if defined CHOSEN_DIR (
-  if not exist "%MARKER_DIR%%EMPLOYEE_ID%" (
+  if not exist "!MARKER_DIR!!EMPLOYEE_ID!" (
     color 0E
-    echo WARNING: Employee marker file missing at %MARKER_DIR%%EMPLOYEE_ID%
-    echo [%date% %time%] Verification failed: employee marker file missing >> "%LOG_FILE%"
+    echo WARNING: Employee marker file missing at !MARKER_DIR!!EMPLOYEE_ID!
+    echo [%date% %time%] Verification failed: employee marker file missing >> "!LOG_FILE!"
     set "HAS_ERROR=1"
-    set "ERRORS=!ERRORS!- Employee marker file missing at %MARKER_DIR%%EMPLOYEE_ID%.!nl!"
+    set "ERRORS=!ERRORS!- Employee marker file missing at !MARKER_DIR!!EMPLOYEE_ID!!.!nl!"
     set "EXIT_CODE=2"
   ) else (
-    echo [OK] Employee marker file present.
+    echo [OK] Employee marker file present: !MARKER_DIR!!EMPLOYEE_ID!
   )
 )
 rem Skipping registry checks per request
