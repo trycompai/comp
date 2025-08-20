@@ -54,16 +54,16 @@ echo.
 REM Choose a writable directory (primary first, then fallback)
 echo Choosing destination directory...
 echo   Trying primary: %PRIMARY_DIR%
-if not exist "%PRIMARY_DIR%" (
-  mkdir "%PRIMARY_DIR%" >nul 2>&1
+if not exist "%PRIMARY_DIR%\" (
+  md "%PRIMARY_DIR%" 2>nul || echo [WARN] mkdir failed for "%PRIMARY_DIR%"
 )
-if exist "%PRIMARY_DIR%" set "CHOSEN_DIR=%PRIMARY_DIR%"
+if exist "%PRIMARY_DIR%\" set "CHOSEN_DIR=%PRIMARY_DIR%"
 if not defined CHOSEN_DIR (
   echo   Trying fallback: %FALLBACK_DIR%
-  if not exist "%FALLBACK_DIR%" (
-    mkdir "%FALLBACK_DIR%" >nul 2>&1
+  if not exist "%FALLBACK_DIR%\" (
+    md "%FALLBACK_DIR%" 2>nul || echo [WARN] mkdir failed for "%FALLBACK_DIR%"
   )
-  if exist "%FALLBACK_DIR%" set "CHOSEN_DIR=%FALLBACK_DIR%"
+  if exist "%FALLBACK_DIR%\" set "CHOSEN_DIR=%FALLBACK_DIR%"
 )
 
 if not defined CHOSEN_DIR (
