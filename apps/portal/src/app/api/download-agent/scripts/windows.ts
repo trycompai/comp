@@ -34,8 +34,12 @@ if not %errorlevel%==0 (
   echo A prompt will appear asking for permission. Please click "Yes".
   echo If no prompt appears, right-click this file and select "Run as administrator".
   echo.
-  powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -Verb RunAs -FilePath '%comspec%' -ArgumentList '/k','\"%~f0\"' -WorkingDirectory '%cd%'"
-  echo This window will now close. The setup will continue in the new window.
+  echo Elevating... A new window will open and remain open after running.
+  > "%TEMP%\getadmin.vbs" echo Set UAC = CreateObject^("Shell.Application"^)
+  >> "%TEMP%\getadmin.vbs" echo UAC.ShellExecute "%~f0", "", "", "runas", 1
+  wscript "%TEMP%\getadmin.vbs" >nul 2>&1
+  del "%TEMP%\getadmin.vbs" >nul 2>&1
+  echo This window will now close. The setup will continue in the new (admin) window.
   pause
   exit /b
 )
