@@ -8,14 +8,6 @@ title CompAI Device Setup
 setlocal EnableExtensions EnableDelayedExpansion
 color 0A
 
-echo ------------------------------------------------------------
-echo  CompAI Device Setup
-echo  Organization: ${orgId}
-echo  Employee: ${employeeId}
-echo  Date: %date% %time%
-echo ------------------------------------------------------------
-echo.
-
 REM =========================
 REM Variables
 REM =========================
@@ -35,7 +27,11 @@ set "nl=^
 REM --- bootstrap log (updated once CHOSEN_DIR is known) ---
 set "LOG_FILE=%~dp0setup.log"
 
-REM --- log a message to console and log ---
+goto :main
+
+REM =======================================================
+REM Subroutines (placed AFTER main to avoid early execution)
+REM =======================================================
 :log_msg
 setlocal EnableDelayedExpansion
 set "msg=%~1"
@@ -43,7 +39,6 @@ echo [%date% %time%] !msg!
 >>"%LOG_FILE%" echo [%date% %time%] !msg!
 endlocal & exit /b 0
 
-REM --- run a command with logging and error capture ---
 :log_run
 setlocal EnableDelayedExpansion
 set "cmdline=%*"
@@ -58,11 +53,13 @@ if not "!rc!"=="0" (
 endlocal & set "LAST_RC=%rc%"
 exit /b %LAST_RC%
 
+REM =========================
+REM Main
+REM =========================
+:main
 call :log_msg "Script starting"
 
-REM =========================
 REM Admin check
-REM =========================
 whoami /groups | find "S-1-16-12288" >nul 2>&1
 if errorlevel 1 (
   color 0E
@@ -74,9 +71,7 @@ if errorlevel 1 (
   exit /b 5
 )
 
-REM =========================
 REM Relaunch persistent window
-REM =========================
 if not "%PERSIST%"=="1" (
   set "PERSIST=1"
   call :log_msg "Re-launching in a persistent window"
@@ -92,9 +87,7 @@ cd /d "%~dp0"
 call :log_msg "New current directory: %cd%"
 echo.
 
-REM =========================
 REM Choose writable directory
-REM =========================
 call :log_msg "Choosing destination directory; primary=%PRIMARY_DIR% fallback=%FALLBACK_DIR%"
 if exist "%PRIMARY_DIR%\\NUL" set "CHOSEN_DIR=%PRIMARY_DIR%"
 if not defined CHOSEN_DIR call :log_run mkdir "%PRIMARY_DIR%"
@@ -131,9 +124,7 @@ if not defined CHOSEN_DIR (
 echo Logs will be written to: %LOG_FILE%
 echo.
 
-REM =========================
 REM Write marker files
-REM =========================
 if defined CHOSEN_DIR (
   call :log_msg "Writing organization marker file"
   call :log_msg "Preparing to write org marker to !MARKER_DIR!!ORG_ID!"
@@ -164,9 +155,7 @@ if defined CHOSEN_DIR (
   )
 )
 
-REM =========================
 REM Permissions
-REM =========================
 if defined CHOSEN_DIR (
   call :log_msg "Setting permissions on marker directory"
   call :log_run icacls "!MARKER_DIR!" /inheritance:e
@@ -178,9 +167,7 @@ if defined CHOSEN_DIR (
   call :log_run icacls "!MARKER_DIR!!EMPLOYEE_ID!" /grant *S-1-5-18:R *S-1-5-32-544:R
 )
 
-REM =========================
 REM Verify
-REM =========================
 echo.
 echo Verifying markers...
 if defined CHOSEN_DIR (
@@ -198,9 +185,7 @@ if defined CHOSEN_DIR (
 )
 rem Skipping registry checks per request
 
-REM =========================
 REM Result / Exit
-REM =========================
 echo.
 echo ------------------------------------------------------------
 if "%HAS_ERROR%"=="0" (
@@ -227,7 +212,11 @@ echo ------------------------------------------------------------
 echo.
 echo Press any key to close this window. This will not affect installation.
 pause
-if "%HAS_ERROR%"=="0" (exit /b 0) else (exit /b %EXIT_CODE%)`;
+if "%HAS_ERROR%"=="0" (exit /b 0) else (exit /b %EXIT_CODE%)
+
+REM End of main
+goto :eof
+`;
 
   return script.replace(/\n/g, '\r\n');
 }
