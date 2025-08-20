@@ -24,19 +24,21 @@ export async function createFleetLabel({
     const fleet = await getFleetInstance();
     logger('Fleet instance obtained successfully');
 
-    // Create platform-specific query
+    // OS-specific queries: mac uses file-only; Windows uses UNION with file and registry
     const query =
       os === 'macos'
         ? `SELECT 1 FROM file WHERE path = '${fleetDevicePathMac}/${employeeId}' LIMIT 1;`
-        : `SELECT 1 FROM file WHERE path = '${fleetDevicePathWindows}\\${employeeId}' OR path = 'C:\\Users\\Public\\CompAI\\Fleet\\${employeeId}'
-           OR (SELECT data FROM registry WHERE key = 'HKEY_LOCAL_MACHINE\\SOFTWARE\\CompAI\\Device' AND name = 'EmployeeId' AND data = '${employeeId}' LIMIT 1) IS NOT NULL
-           OR (SELECT data FROM registry WHERE key = 'HKEY_CURRENT_USER\\Software\\CompAI\\Device' AND name = 'EmployeeId' AND data = '${employeeId}' LIMIT 1) IS NOT NULL
+        : `SELECT 1 FROM file WHERE path = '${fleetDevicePathWindows}\\${employeeId}'
+           UNION SELECT 1 FROM file WHERE path = 'C:\\Users\\Public\\CompAI\\Fleet\\${employeeId}'
            LIMIT 1;`;
+
+    // Normalize whitespace to a single line to avoid issues with newlines/tabs
+    const normalizedQuery = query.replace(/\s+/g, ' ').trim();
 
     logger('Generated Fleet query for label creation', {
       employeeId,
       os,
-      query,
+      query: normalizedQuery,
     });
 
     logger('Sending POST request to Fleet API to create label...', {
@@ -44,13 +46,13 @@ export async function createFleetLabel({
       endpoint: '/labels',
       requestBody: {
         name: employeeId,
-        query: query,
+        query: normalizedQuery,
       },
     });
 
     const response = await fleet.post('/labels', {
       name: employeeId,
-      query: query,
+      query: normalizedQuery,
     });
 
     logger('Fleet API response received', {

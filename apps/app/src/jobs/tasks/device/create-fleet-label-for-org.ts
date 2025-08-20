@@ -30,24 +30,20 @@ export const createFleetLabelForOrg = task({
     }
 
     const fleetDevicePathMac = '/Users/Shared/.fleet';
-    const fleetDevicePathWindows = 'C\\\\ProgramData\\\\CompAI\\\\Fleet'.replace(/\\\\/g, '\\');
-    const windowsFallbackDir = 'C\\\\Users\\\\Public\\\\CompAI\\\\Fleet'.replace(/\\\\/g, '\\');
+    const fleetDevicePathWindows = 'C\\ProgramData\\CompAI\\Fleet';
+    const windowsFallbackDir = 'C\\Users\\Public\\CompAI\\Fleet';
 
-    // Create a query that matches devices from macOS or Windows across multiple possible locations
-    // - macOS: ${fleetDevicePathMac}/${organizationId}
-    // - Windows primary: ${fleetDevicePathWindows}\\${organizationId}
-    // - Windows fallback: C:\\Users\\Public\\CompAI\\${organizationId}
-    // - Windows registry (HKLM/HKCU): OrgId == organizationId
-    const query = `SELECT 1 FROM file WHERE path = '${fleetDevicePathMac}/${organizationId}'
-			OR path = '${fleetDevicePathWindows}\\${organizationId}'
-			OR path = '${windowsFallbackDir}\\${organizationId}'
-			OR (SELECT data FROM registry WHERE key = 'HKEY_LOCAL_MACHINE\\\\SOFTWARE\\\\CompAI\\\\Device' AND name = 'OrgId' AND data = '${organizationId}' LIMIT 1) IS NOT NULL
-			OR (SELECT data FROM registry WHERE key = 'HKEY_CURRENT_USER\\\\Software\\\\CompAI\\\\Device' AND name = 'OrgId' AND data = '${organizationId}' LIMIT 1) IS NOT NULL
+    // Simple union query: only file table, constrained per platform path
+    const query = `
+			SELECT 1 FROM file WHERE path = '${fleetDevicePathMac}/${organizationId}'
+			UNION SELECT 1 FROM file WHERE path = '${fleetDevicePathWindows}\\${organizationId}'
+			UNION SELECT 1 FROM file WHERE path = '${windowsFallbackDir}\\${organizationId}'
 			LIMIT 1;`;
+    const normalizedQuery = query.replace(/\s+/g, ' ').trim();
 
     logger.info('Creating label', {
       name: organization.id,
-      query: query,
+      query: normalizedQuery,
     });
 
     const fleet = await getFleetInstance();
@@ -58,7 +54,7 @@ export const createFleetLabelForOrg = task({
       // Create a manual label that we can assign to hosts.
       labelResponse = await fleet.post('/labels', {
         name: organization.id,
-        query: query,
+        query: normalizedQuery,
       });
 
       logger.info('Label created', {

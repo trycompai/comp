@@ -15,6 +15,8 @@ export default async function EmployeeDevicesPage() {
     devices = [];
   }
 
+  console.log('devices', devices);
+
   return (
     <div>
       <DeviceComplianceChart devices={devices} />
