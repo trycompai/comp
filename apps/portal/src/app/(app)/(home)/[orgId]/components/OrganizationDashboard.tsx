@@ -15,7 +15,6 @@ interface OrganizationDashboardProps {
   member: MemberWithUserOrg; // Pass the full member object for user info etc.
   fleetPolicies: FleetPolicy[];
   host: Host | null;
-  isFleetEnabled: boolean;
 }
 
 export async function OrganizationDashboard({
@@ -23,7 +22,6 @@ export async function OrganizationDashboard({
   member,
   fleetPolicies,
   host,
-  isFleetEnabled,
 }: OrganizationDashboardProps) {
   // Fetch policies specific to the selected organization
   const policies = await db.policy.findMany({
@@ -74,7 +72,6 @@ export async function OrganizationDashboard({
       member={member} // Pass the member object down
       fleetPolicies={fleetPolicies}
       host={host}
-      isFleetEnabled={isFleetEnabled ?? false}
     />
   );
 }
