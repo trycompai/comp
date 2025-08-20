@@ -13,6 +13,10 @@ import {
   getScriptFilename,
 } from './scripts';
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
+
 // GET handler for direct browser downloads using token
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
@@ -39,12 +43,12 @@ export async function GET(req: NextRequest) {
     os: 'macos' | 'windows';
   };
 
-  // Check environment configuration
-  const fleetDevicePathMac = process.env.FLEET_DEVICE_PATH_MAC;
-  const fleetDevicePathWindows = process.env.FLEET_DEVICE_PATH_WINDOWS;
+  // Hardcoded device marker paths used by the setup scripts
+  const fleetDevicePathMac = '/Users/Shared/.fleet';
+  const fleetDevicePathWindows = 'C:\\ProgramData\\CompAI\\Fleet';
   const fleetBucketName = process.env.FLEET_AGENT_BUCKET_NAME;
 
-  if (!fleetDevicePathMac || !fleetDevicePathWindows || !fleetBucketName) {
+  if (!fleetBucketName) {
     return new NextResponse('Server configuration error', { status: 500 });
   }
 
@@ -62,6 +66,21 @@ export async function GET(req: NextRequest) {
 
     // Pipe archive to passthrough
     archive.pipe(passThrough);
+
+    // Robust error handling for staging/prod reliability
+    archive.on('error', (err) => {
+      logger('archiver_error', { message: err?.message, stack: (err as Error)?.stack });
+      passThrough.destroy(err as Error);
+    });
+    archive.on('warning', (warn) => {
+      logger('archiver_warning', { message: (warn as Error)?.message });
+    });
+    passThrough.on('error', (err) => {
+      logger('download_stream_error', {
+        message: (err as Error)?.message,
+        stack: (err as Error)?.stack,
+      });
+    });
 
     // Add script file
     const scriptFilename = getScriptFilename(os);
@@ -84,6 +103,13 @@ export async function GET(req: NextRequest) {
 
     if (s3Response.Body) {
       const s3Stream = s3Response.Body as Readable;
+      s3Stream.on('error', (err) => {
+        logger('s3_stream_error', {
+          message: (err as Error)?.message,
+          stack: (err as Error)?.stack,
+        });
+        passThrough.destroy(err as Error);
+      });
       archive.append(s3Stream, { name: packageFilename, store: true });
     }
 
@@ -99,6 +125,7 @@ export async function GET(req: NextRequest) {
         'Content-Type': 'application/zip',
         'Content-Disposition': `attachment; filename="compai-device-agent-${os}.zip"`,
         'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'X-Accel-Buffering': 'no',
       },
     });
   } catch (error) {

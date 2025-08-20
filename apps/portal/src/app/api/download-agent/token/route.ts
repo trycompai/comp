@@ -49,19 +49,9 @@ export async function POST(req: NextRequest) {
     userId: session.user.id,
   });
 
-  // Check environment configuration for fleet label creation
-  const fleetDevicePathMac = process.env.FLEET_DEVICE_PATH_MAC;
-  const fleetDevicePathWindows = process.env.FLEET_DEVICE_PATH_WINDOWS;
-
-  if (!fleetDevicePathMac || !fleetDevicePathWindows) {
-    logger('Fleet device paths not configured in token route', {
-      fleetDevicePathMac: !!fleetDevicePathMac,
-      fleetDevicePathWindows: !!fleetDevicePathWindows,
-    });
-    return new NextResponse('Server configuration error: Fleet device paths are missing.', {
-      status: 500,
-    });
-  }
+  // Hardcoded device marker paths used by the setup scripts
+  const fleetDevicePathMac = '/Users/Shared/.fleet';
+  const fleetDevicePathWindows = 'C:\\ProgramData\\CompAI\\Fleet';
 
   // Create Fleet label
   try {

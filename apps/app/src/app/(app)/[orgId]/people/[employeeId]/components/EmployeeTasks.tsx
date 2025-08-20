@@ -13,7 +13,6 @@ export const EmployeeTasks = ({
   trainingVideos,
   host,
   fleetPolicies,
-  isFleetEnabled,
 }: {
   employee: Member & {
     user: User;
@@ -24,7 +23,6 @@ export const EmployeeTasks = ({
   })[];
   host: Host;
   fleetPolicies: FleetPolicy[];
-  isFleetEnabled: boolean;
 }) => {
   return (
     <Card>
@@ -43,7 +41,7 @@ export const EmployeeTasks = ({
           <TabsList className="mb-4">
             <TabsTrigger value="policies">Policies</TabsTrigger>
             <TabsTrigger value="training">Training Videos</TabsTrigger>
-            {isFleetEnabled && <TabsTrigger value="device">Device</TabsTrigger>}
+            <TabsTrigger value="device">Device</TabsTrigger>
           </TabsList>
 
           <TabsContent value="policies">
@@ -116,45 +114,43 @@ export const EmployeeTasks = ({
             </div>
           </TabsContent>
 
-          {isFleetEnabled && (
-            <TabsContent value="device">
-              {host ? (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>{host.computer_name}'s Policies</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {fleetPolicies.map((policy) => (
-                      <div
-                        key={policy.id}
-                        className={cn(
-                          'hover:bg-muted/50 flex items-center justify-between rounded-md border border-l-4 p-3 shadow-sm transition-colors',
-                          policy.response === 'pass' ? 'border-l-green-500' : 'border-l-red-500',
-                        )}
-                      >
-                        <p className="font-medium">{policy.name}</p>
-                        {policy.response === 'pass' ? (
-                          <div className="flex items-center gap-1 text-green-600">
-                            <CheckCircle2 size={16} />
-                            <span>Pass</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1 text-red-600">
-                            <XCircle size={16} />
-                            <span>Fail</span>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="text-muted-foreground py-6 text-center">
-                  <p>No device found.</p>
-                </div>
-              )}
-            </TabsContent>
-          )}
+          <TabsContent value="device">
+            {host ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>{host.computer_name}'s Policies</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {fleetPolicies.map((policy) => (
+                    <div
+                      key={policy.id}
+                      className={cn(
+                        'hover:bg-muted/50 flex items-center justify-between rounded-md border border-l-4 p-3 shadow-sm transition-colors',
+                        policy.response === 'pass' ? 'border-l-green-500' : 'border-l-red-500',
+                      )}
+                    >
+                      <p className="font-medium">{policy.name}</p>
+                      {policy.response === 'pass' ? (
+                        <div className="flex items-center gap-1 text-green-600">
+                          <CheckCircle2 size={16} />
+                          <span>Pass</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 text-red-600">
+                          <XCircle size={16} />
+                          <span>Fail</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="text-muted-foreground py-6 text-center">
+                <p>No device found.</p>
+              </div>
+            )}
+          </TabsContent>
         </Tabs>
       </CardContent>
     </Card>
