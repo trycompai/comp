@@ -27,6 +27,33 @@ set "HAS_ERROR=0"
 set "ERRORS="
 set "EXIT_CODE=0"
 set "nl=^
+"
+
+REM --- bootstrap log (updated once CHOSEN_DIR is known) ---
+set "LOG_FILE=%~dp0setup.log"
+
+REM --- log a message to console and log ---
+:log_msg
+setlocal EnableDelayedExpansion
+set "msg=%~1"
+echo [%date% %time%] !msg!
+>>"%LOG_FILE%" echo [%date% %time%] !msg!
+endlocal & exit /b 0
+
+REM --- run a command with logging and error capture ---
+:log_run
+setlocal EnableDelayedExpansion
+set "cmdline=%*"
+echo [%date% %time%] CMD: !cmdline!
+>>"%LOG_FILE%" echo [%date% %time%] CMD: !cmdline!
+%*
+set "rc=!errorlevel!"
+if not "!rc!"=="0" (
+  echo [%date% %time%] ERR !rc!: !cmdline!
+  >>"%LOG_FILE%" echo [%date% %time%] ERR !rc!: !cmdline!
+)
+endlocal & set "LAST_RC=%rc%"
+exit /b %LAST_RC%
 
 REM Require Administrator (check High Mandatory Level) and exit with instructions if not elevated
 whoami /groups | find "S-1-16-12288" >nul 2>&1
@@ -43,29 +70,27 @@ if errorlevel 1 (
 REM Ensure this script runs in a persistent cmd session that stays open after completion
 if not "%PERSIST%"=="1" (
   set "PERSIST=1"
-  echo Re-launching in a persistent window...
+  call :log_msg "Re-launching in a persistent window"
   start "CompAI Device Setup" cmd /k "%~f0 %*"
   exit /b
 )
-echo Running with administrator privileges.
-echo Current directory: %cd%
-echo Script path: %~f0
-echo Switching working directory to script folder...
+call :log_msg "Running with administrator privileges"
+call :log_msg "Current directory: %cd%"
+call :log_msg "Script path: %~f0"
+call :log_msg "Switching working directory to script folder"
 cd /d "%~dp0"
-echo New current directory: %cd%
+call :log_msg "New current directory: %cd%"
 echo.
 
 REM Choose a writable directory (primary first, then fallback) without parentheses blocks
-echo Choosing destination directory...
-echo   Primary: "%PRIMARY_DIR%"
+call :log_msg "Choosing destination directory; primary=%PRIMARY_DIR% fallback=%FALLBACK_DIR%"
 if exist "%PRIMARY_DIR%\NUL" set "CHOSEN_DIR=%PRIMARY_DIR%"
-if not defined CHOSEN_DIR echo CMD: mkdir "%PRIMARY_DIR%"
-if not defined CHOSEN_DIR mkdir "%PRIMARY_DIR%" 2>&1
+if not defined CHOSEN_DIR call :log_run mkdir "%PRIMARY_DIR%"
 if not defined CHOSEN_DIR if exist "%PRIMARY_DIR%\NUL" set "CHOSEN_DIR=%PRIMARY_DIR%"
-if not defined CHOSEN_DIR echo   Fallback: "%FALLBACK_DIR%"
+
+if not defined CHOSEN_DIR call :log_msg "Primary not available; trying fallback"
 if not defined CHOSEN_DIR if exist "%FALLBACK_DIR%\NUL" set "CHOSEN_DIR=%FALLBACK_DIR%"
-if not defined CHOSEN_DIR echo CMD: mkdir "%FALLBACK_DIR%"
-if not defined CHOSEN_DIR mkdir "%FALLBACK_DIR%" 2>&1
+if not defined CHOSEN_DIR call :log_run mkdir "%FALLBACK_DIR%"
 if not defined CHOSEN_DIR if exist "%FALLBACK_DIR%\NUL" set "CHOSEN_DIR=%FALLBACK_DIR%"
 
 if not defined CHOSEN_DIR (
@@ -81,54 +106,66 @@ if not defined CHOSEN_DIR (
 ) else (
   set "MARKER_DIR=%CHOSEN_DIR%"
   if not "!MARKER_DIR:~-1!"=="\\" set "MARKER_DIR=!MARKER_DIR!\\"
-  set "LOG_FILE=!MARKER_DIR!setup.log"
-  echo Using directory: !MARKER_DIR!
+
+  REM switch the log file to the chosen directory, carrying over bootstrap logs
+  set "FINAL_LOG=!MARKER_DIR!setup.log"
+  if /i not "%LOG_FILE%"=="%FINAL_LOG%" (
+    call :log_msg "Switching log to !FINAL_LOG!"
+    if exist "%LOG_FILE%" type "%LOG_FILE%" >> "!FINAL_LOG!" & del "%LOG_FILE%"
+    set "LOG_FILE=!FINAL_LOG!"
+  )
+  call :log_msg "Using directory: !MARKER_DIR!"
 )
 echo Logs will be written to: %LOG_FILE%
 echo.
 
 REM Write marker files
 if defined CHOSEN_DIR (
-  echo Writing organization marker file...
-  echo CMD: write org marker to "%MARKER_DIR%%ORG_ID%"
-  (echo %ORG_ID%) > "%MARKER_DIR%%ORG_ID%" 2>>"%LOG_FILE%"
+  call :log_msg "Writing organization marker file"
+  call :log_msg "Preparing to write org marker to !MARKER_DIR!!ORG_ID!"
+  call :log_run cmd /c "(echo %ORG_ID%) > \"!MARKER_DIR!!ORG_ID!\""
   if errorlevel 1 (
     color 0E
-    echo WARNING: Failed writing organization marker file to %MARKER_DIR%.
+    call :log_msg "WARNING: Failed writing organization marker file to !MARKER_DIR!"
     echo [%date% %time%] Failed writing org marker file >> "%LOG_FILE%"
     set "HAS_ERROR=1"
     set "ERRORS=!ERRORS!- Failed writing organization marker file.!nl!"
     set "EXIT_CODE=1"
   ) else (
-    echo [OK] Organization marker file: %MARKER_DIR%%ORG_ID%
+    call :log_msg "[OK] Organization marker file: !MARKER_DIR!!ORG_ID!"
   )
 
-  echo Writing employee marker file...
-  echo CMD: write employee marker to "%MARKER_DIR%%EMPLOYEE_ID%"
-  (echo %EMPLOYEE_ID%) > "%MARKER_DIR%%EMPLOYEE_ID%" 2>>"%LOG_FILE%"
+  call :log_msg "Writing employee marker file"
+  call :log_msg "Preparing to write employee marker to !MARKER_DIR!!EMPLOYEE_ID!"
+  call :log_run cmd /c "(echo %EMPLOYEE_ID%) > \"!MARKER_DIR!!EMPLOYEE_ID!\""
   if errorlevel 1 (
     color 0E
-    echo WARNING: Failed writing employee marker file to %MARKER_DIR%.
+    call :log_msg "WARNING: Failed writing employee marker file to !MARKER_DIR!"
     echo [%date% %time%] Failed writing employee marker file >> "%LOG_FILE%"
     set "HAS_ERROR=1"
     set "ERRORS=!ERRORS!- Failed writing employee marker file.!nl!"
     set "EXIT_CODE=1"
   ) else (
-    echo [OK] Employee marker file: %MARKER_DIR%%EMPLOYEE_ID%
+    call :log_msg "[OK] Employee marker file: !MARKER_DIR!!EMPLOYEE_ID!"
   )
 )
 
 REM Set permissive read ACLs for SYSTEM and Administrators
 if defined CHOSEN_DIR (
-  echo Setting permissions on marker files...
-  icacls "!MARKER_DIR!" /inheritance:e >nul 2>&1
-  icacls "!MARKER_DIR!!ORG_ID!" /grant *S-1-5-18:R *S-1-5-32-544:R >nul 2>&1
-  icacls "!MARKER_DIR!!EMPLOYEE_ID!" /grant *S-1-5-18:R *S-1-5-32-544:R >nul 2>&1
+  call :log_msg "Setting permissions on marker directory"
+  call :log_run icacls "!MARKER_DIR!" /inheritance:e
+
+  call :log_msg "Granting read to SYSTEM and Administrators on org marker"
+  call :log_run icacls "!MARKER_DIR!!ORG_ID!" /grant *S-1-5-18:R *S-1-5-32-544:R
+
+  call :log_msg "Granting read to SYSTEM and Administrators on employee marker"
+  call :log_run icacls "!MARKER_DIR!!EMPLOYEE_ID!" /grant *S-1-5-18:R *S-1-5-32-544:R
 )
 
 echo.
 echo Verifying markers...
 if defined CHOSEN_DIR (
+  call :log_msg "Verifying marker exists: !MARKER_DIR!!EMPLOYEE_ID!"
   if not exist "!MARKER_DIR!!EMPLOYEE_ID!" (
     color 0E
     echo WARNING: Employee marker file missing at !MARKER_DIR!!EMPLOYEE_ID!
@@ -137,7 +174,7 @@ if defined CHOSEN_DIR (
     set "ERRORS=!ERRORS!- Employee marker file missing at !MARKER_DIR!!EMPLOYEE_ID!!.!nl!"
     set "EXIT_CODE=2"
   ) else (
-    echo [OK] Employee marker file present: !MARKER_DIR!!EMPLOYEE_ID!
+    call :log_msg "[OK] Employee marker file present: !MARKER_DIR!!EMPLOYEE_ID!"
   )
 )
 rem Skipping registry checks per request
@@ -150,6 +187,7 @@ if "%HAS_ERROR%"=="0" (
   echo Setup completed successfully for %EMPLOYEE_ID%.
   if defined CHOSEN_DIR echo Files created in: %CHOSEN_DIR%
   echo Log file: %LOG_FILE%
+  call :log_msg "RESULT: SUCCESS"
 ) else (
   color 0C
   echo RESULT: COMPLETED WITH ISSUES
@@ -161,6 +199,7 @@ if "%HAS_ERROR%"=="0" (
   echo  - Take a screenshot of this window.
   echo  - Attach the log file from: %LOG_FILE%
   echo  - Share both with your CompAI support contact.
+  call :log_msg "RESULT: COMPLETED WITH ISSUES (exit=%EXIT_CODE%)"
 )
 echo ------------------------------------------------------------
 echo.
@@ -168,5 +207,5 @@ echo Press any key to close this window. This will not affect installation.
 pause
 if "%HAS_ERROR%"=="0" (exit /b 0) else (exit /b %EXIT_CODE%)`;
 
-  return script.replace(/\n/g, '\r\n');
+  return script.replace(/\\n/g, '\r\n');
 }
