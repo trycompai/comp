@@ -16,7 +16,9 @@ echo  Date: %date% %time%
 echo ------------------------------------------------------------
 echo.
 
+REM =========================
 REM Variables
+REM =========================
 set "ORG_ID=${orgId}"
 set "EMPLOYEE_ID=${employeeId}"
 set "PRIMARY_DIR=${fleetDevicePath}"
@@ -26,6 +28,7 @@ set "LOG_FILE="
 set "HAS_ERROR=0"
 set "ERRORS="
 set "EXIT_CODE=0"
+REM newline token (exactly this 2-line shape)
 set "nl=^
 "
 
@@ -55,7 +58,11 @@ if not "!rc!"=="0" (
 endlocal & set "LAST_RC=%rc%"
 exit /b %LAST_RC%
 
-REM Require Administrator (check High Mandatory Level) and exit with instructions if not elevated
+call :log_msg "Script starting"
+
+REM =========================
+REM Admin check
+REM =========================
 whoami /groups | find "S-1-16-12288" >nul 2>&1
 if errorlevel 1 (
   color 0E
@@ -67,13 +74,16 @@ if errorlevel 1 (
   exit /b 5
 )
 
-REM Ensure this script runs in a persistent cmd session that stays open after completion
+REM =========================
+REM Relaunch persistent window
+REM =========================
 if not "%PERSIST%"=="1" (
   set "PERSIST=1"
   call :log_msg "Re-launching in a persistent window"
   start "CompAI Device Setup" cmd /k "%~f0 %*"
   exit /b
 )
+
 call :log_msg "Running with administrator privileges"
 call :log_msg "Current directory: %cd%"
 call :log_msg "Script path: %~f0"
@@ -82,20 +92,22 @@ cd /d "%~dp0"
 call :log_msg "New current directory: %cd%"
 echo.
 
-REM Choose a writable directory (primary first, then fallback) without parentheses blocks
+REM =========================
+REM Choose writable directory
+REM =========================
 call :log_msg "Choosing destination directory; primary=%PRIMARY_DIR% fallback=%FALLBACK_DIR%"
-if exist "%PRIMARY_DIR%\NUL" set "CHOSEN_DIR=%PRIMARY_DIR%"
+if exist "%PRIMARY_DIR%\\NUL" set "CHOSEN_DIR=%PRIMARY_DIR%"
 if not defined CHOSEN_DIR call :log_run mkdir "%PRIMARY_DIR%"
-if not defined CHOSEN_DIR if exist "%PRIMARY_DIR%\NUL" set "CHOSEN_DIR=%PRIMARY_DIR%"
+if not defined CHOSEN_DIR if exist "%PRIMARY_DIR%\\NUL" set "CHOSEN_DIR=%PRIMARY_DIR%"
 
 if not defined CHOSEN_DIR call :log_msg "Primary not available; trying fallback"
-if not defined CHOSEN_DIR if exist "%FALLBACK_DIR%\NUL" set "CHOSEN_DIR=%FALLBACK_DIR%"
+if not defined CHOSEN_DIR if exist "%FALLBACK_DIR%\\NUL" set "CHOSEN_DIR=%FALLBACK_DIR%"
 if not defined CHOSEN_DIR call :log_run mkdir "%FALLBACK_DIR%"
-if not defined CHOSEN_DIR if exist "%FALLBACK_DIR%\NUL" set "CHOSEN_DIR=%FALLBACK_DIR%"
+if not defined CHOSEN_DIR if exist "%FALLBACK_DIR%\\NUL" set "CHOSEN_DIR=%FALLBACK_DIR%"
 
 if not defined CHOSEN_DIR (
   color 0E
-  echo WARNING: No writable directory found.
+  call :log_msg "WARNING: No writable directory found"
   echo Primary attempted: "%PRIMARY_DIR%"
   echo Fallback attempted: "%FALLBACK_DIR%"
   echo [%date% %time%] No writable directory found. Primary: %PRIMARY_DIR%, Fallback: %FALLBACK_DIR% >> "%~dp0setup.log"
@@ -107,7 +119,7 @@ if not defined CHOSEN_DIR (
   set "MARKER_DIR=%CHOSEN_DIR%"
   if not "!MARKER_DIR:~-1!"=="\\" set "MARKER_DIR=!MARKER_DIR!\\"
 
-  REM switch the log file to the chosen directory, carrying over bootstrap logs
+  REM switch the log file to the chosen directory, carry over bootstrap logs
   set "FINAL_LOG=!MARKER_DIR!setup.log"
   if /i not "%LOG_FILE%"=="%FINAL_LOG%" (
     call :log_msg "Switching log to !FINAL_LOG!"
@@ -119,7 +131,9 @@ if not defined CHOSEN_DIR (
 echo Logs will be written to: %LOG_FILE%
 echo.
 
+REM =========================
 REM Write marker files
+REM =========================
 if defined CHOSEN_DIR (
   call :log_msg "Writing organization marker file"
   call :log_msg "Preparing to write org marker to !MARKER_DIR!!ORG_ID!"
@@ -150,7 +164,9 @@ if defined CHOSEN_DIR (
   )
 )
 
-REM Set permissive read ACLs for SYSTEM and Administrators
+REM =========================
+REM Permissions
+REM =========================
 if defined CHOSEN_DIR (
   call :log_msg "Setting permissions on marker directory"
   call :log_run icacls "!MARKER_DIR!" /inheritance:e
@@ -162,13 +178,16 @@ if defined CHOSEN_DIR (
   call :log_run icacls "!MARKER_DIR!!EMPLOYEE_ID!" /grant *S-1-5-18:R *S-1-5-32-544:R
 )
 
+REM =========================
+REM Verify
+REM =========================
 echo.
 echo Verifying markers...
 if defined CHOSEN_DIR (
   call :log_msg "Verifying marker exists: !MARKER_DIR!!EMPLOYEE_ID!"
   if not exist "!MARKER_DIR!!EMPLOYEE_ID!" (
     color 0E
-    echo WARNING: Employee marker file missing at !MARKER_DIR!!EMPLOYEE_ID!
+    call :log_msg "WARNING: Employee marker file missing at !MARKER_DIR!!EMPLOYEE_ID!"
     echo [%date% %time%] Verification failed: employee marker file missing >> "!LOG_FILE!"
     set "HAS_ERROR=1"
     set "ERRORS=!ERRORS!- Employee marker file missing at !MARKER_DIR!!EMPLOYEE_ID!!.!nl!"
@@ -179,6 +198,9 @@ if defined CHOSEN_DIR (
 )
 rem Skipping registry checks per request
 
+REM =========================
+REM Result / Exit
+REM =========================
 echo.
 echo ------------------------------------------------------------
 if "%HAS_ERROR%"=="0" (
@@ -207,5 +229,5 @@ echo Press any key to close this window. This will not affect installation.
 pause
 if "%HAS_ERROR%"=="0" (exit /b 0) else (exit /b %EXIT_CODE%)`;
 
-  return script.replace(/\\n/g, '\r\n');
+  return script.replace(/\n/g, '\r\n');
 }
