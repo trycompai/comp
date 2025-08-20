@@ -16,7 +16,6 @@ export const getEmployeeDevices: () => Promise<Host[] | null> = async () => {
   const organizationId = session?.session.activeOrganizationId;
 
   if (!organizationId) {
-    console.log('No organization id');
     return null;
   }
 
@@ -27,22 +26,17 @@ export const getEmployeeDevices: () => Promise<Host[] | null> = async () => {
   });
 
   if (!organization) {
-    console.log('No organization');
     return null;
   }
 
   const labelId = organization.fleetDmLabelId;
-  console.log('labelId', labelId);
 
   // Get all hosts to get their ids.
   const employeeDevices = await fleet.get(`/labels/${labelId}/hosts`);
-  console.log('employeeDevices', employeeDevices);
   const allIds = employeeDevices.data.hosts.map((host: { id: number }) => host.id);
-  console.log('allIds', allIds);
 
   // Get all devices by id. in parallel
   const devices = await Promise.all(allIds.map((id: number) => fleet.get(`/hosts/${id}`)));
-  console.log('devices', devices);
 
   return devices.map((device: { data: { host: Host } }) => device.data.host);
 };
