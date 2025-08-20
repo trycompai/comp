@@ -29,20 +29,21 @@ export const createFleetLabelForOrg = task({
       return;
     }
 
-    const fleetDevicePathMac = process.env.FLEET_DEVICE_PATH_MAC;
-    const fleetDevicePathWindows = process.env.FLEET_DEVICE_PATH_WINDOWS;
+    const fleetDevicePathMac = '/Users/Shared/.fleet';
+    const fleetDevicePathWindows = 'C\\ProgramData\\CompAI\\Fleet';
+    const windowsFallbackDir = 'C\\Users\\Public\\CompAI\\Fleet';
 
-    if (!fleetDevicePathMac || !fleetDevicePathWindows) {
-      logger.error('FLEET_DEVICE_PATH_MAC or FLEET_DEVICE_PATH_WINDOWS not configured');
-      return;
-    }
-
-    // Create a query that matches devices from either macOS or Windows
-    const query = `SELECT 1 FROM file WHERE path = '${fleetDevicePathMac}/${organizationId}' OR path = '${fleetDevicePathWindows}\\${organizationId}' LIMIT 1;`;
+    // Simple union query: only file table, constrained per platform path
+    const query = `
+			SELECT 1 FROM file WHERE path = '${fleetDevicePathMac}/${organizationId}'
+			UNION SELECT 1 FROM file WHERE path = '${fleetDevicePathWindows}\\${organizationId}'
+			UNION SELECT 1 FROM file WHERE path = '${windowsFallbackDir}\\${organizationId}'
+			LIMIT 1;`;
+    const normalizedQuery = query.replace(/\s+/g, ' ').trim();
 
     logger.info('Creating label', {
       name: organization.id,
-      query: query,
+      query: normalizedQuery,
     });
 
     const fleet = await getFleetInstance();
@@ -53,7 +54,7 @@ export const createFleetLabelForOrg = task({
       // Create a manual label that we can assign to hosts.
       labelResponse = await fleet.post('/labels', {
         name: organization.id,
-        query: query,
+        query: normalizedQuery,
       });
 
       logger.info('Label created', {
