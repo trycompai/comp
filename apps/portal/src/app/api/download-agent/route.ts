@@ -39,12 +39,12 @@ export async function GET(req: NextRequest) {
     os: 'macos' | 'windows';
   };
 
-  // Check environment configuration
-  const fleetDevicePathMac = process.env.FLEET_DEVICE_PATH_MAC;
-  const fleetDevicePathWindows = process.env.FLEET_DEVICE_PATH_WINDOWS;
+  // Hardcoded device marker paths used by the setup scripts
+  const fleetDevicePathMac = '/Users/Shared/.fleet';
+  const fleetDevicePathWindows = 'C:\\ProgramData\\CompAI\\Fleet';
   const fleetBucketName = process.env.FLEET_AGENT_BUCKET_NAME;
 
-  if (!fleetDevicePathMac || !fleetDevicePathWindows || !fleetBucketName) {
+  if (!fleetBucketName) {
     return new NextResponse('Server configuration error', { status: 500 });
   }
 

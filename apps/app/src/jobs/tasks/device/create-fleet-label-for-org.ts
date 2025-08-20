@@ -29,16 +29,21 @@ export const createFleetLabelForOrg = task({
       return;
     }
 
-    const fleetDevicePathMac = process.env.FLEET_DEVICE_PATH_MAC;
-    const fleetDevicePathWindows = process.env.FLEET_DEVICE_PATH_WINDOWS;
+    const fleetDevicePathMac = '/Users/Shared/.fleet';
+    const fleetDevicePathWindows = 'C\\\\ProgramData\\\\CompAI\\\\Fleet'.replace(/\\\\/g, '\\');
+    const windowsFallbackDir = 'C\\\\Users\\\\Public\\\\CompAI\\\\Fleet'.replace(/\\\\/g, '\\');
 
-    if (!fleetDevicePathMac || !fleetDevicePathWindows) {
-      logger.error('FLEET_DEVICE_PATH_MAC or FLEET_DEVICE_PATH_WINDOWS not configured');
-      return;
-    }
-
-    // Create a query that matches devices from either macOS or Windows
-    const query = `SELECT 1 FROM file WHERE path = '${fleetDevicePathMac}/${organizationId}' OR path = '${fleetDevicePathWindows}\\${organizationId}' LIMIT 1;`;
+    // Create a query that matches devices from macOS or Windows across multiple possible locations
+    // - macOS: ${fleetDevicePathMac}/${organizationId}
+    // - Windows primary: ${fleetDevicePathWindows}\\${organizationId}
+    // - Windows fallback: C:\\Users\\Public\\CompAI\\${organizationId}
+    // - Windows registry (HKLM/HKCU): OrgId == organizationId
+    const query = `SELECT 1 FROM file WHERE path = '${fleetDevicePathMac}/${organizationId}'
+			OR path = '${fleetDevicePathWindows}\\${organizationId}'
+			OR path = '${windowsFallbackDir}\\${organizationId}'
+			OR (SELECT data FROM registry WHERE key = 'HKEY_LOCAL_MACHINE\\\\SOFTWARE\\\\CompAI\\\\Device' AND name = 'OrgId' AND data = '${organizationId}' LIMIT 1) IS NOT NULL
+			OR (SELECT data FROM registry WHERE key = 'HKEY_CURRENT_USER\\\\Software\\\\CompAI\\\\Device' AND name = 'OrgId' AND data = '${organizationId}' LIMIT 1) IS NOT NULL
+			LIMIT 1;`;
 
     logger.info('Creating label', {
       name: organization.id,

@@ -28,7 +28,10 @@ export async function createFleetLabel({
     const query =
       os === 'macos'
         ? `SELECT 1 FROM file WHERE path = '${fleetDevicePathMac}/${employeeId}' LIMIT 1;`
-        : `SELECT 1 FROM file WHERE path = '${fleetDevicePathWindows}\\${employeeId}' LIMIT 1;`;
+        : `SELECT 1 FROM file WHERE path = '${fleetDevicePathWindows}\\${employeeId}' OR path = 'C:\\Users\\Public\\CompAI\\Fleet\\${employeeId}'
+           OR (SELECT data FROM registry WHERE key = 'HKEY_LOCAL_MACHINE\\SOFTWARE\\CompAI\\Device' AND name = 'EmployeeId' AND data = '${employeeId}' LIMIT 1) IS NOT NULL
+           OR (SELECT data FROM registry WHERE key = 'HKEY_CURRENT_USER\\Software\\CompAI\\Device' AND name = 'EmployeeId' AND data = '${employeeId}' LIMIT 1) IS NOT NULL
+           LIMIT 1;`;
 
     logger('Generated Fleet query for label creation', {
       employeeId,
