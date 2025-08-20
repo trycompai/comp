@@ -49,21 +49,24 @@ if not "%PERSIST%"=="1" (
 echo Running with administrator privileges.
 echo Current directory: %cd%
 echo Script path: %~f0
+echo Switching working directory to script folder...
+cd /d "%~dp0"
+echo New current directory: %cd%
 echo.
 
 REM Choose a writable directory (primary first, then fallback)
 echo Choosing destination directory...
 echo   Trying primary: %PRIMARY_DIR%
-if not exist "%PRIMARY_DIR%\" (
-  md "%PRIMARY_DIR%" 2>nul || echo [WARN] mkdir failed for "%PRIMARY_DIR%"
+if not exist "%PRIMARY_DIR%\NUL" (
+  mkdir "%PRIMARY_DIR%" 2>nul
 )
-if exist "%PRIMARY_DIR%\" set "CHOSEN_DIR=%PRIMARY_DIR%"
+if exist "%PRIMARY_DIR%\NUL" set "CHOSEN_DIR=%PRIMARY_DIR%"
 if not defined CHOSEN_DIR (
   echo   Trying fallback: %FALLBACK_DIR%
-  if not exist "%FALLBACK_DIR%\" (
-    md "%FALLBACK_DIR%" 2>nul || echo [WARN] mkdir failed for "%FALLBACK_DIR%"
+  if not exist "%FALLBACK_DIR%\NUL" (
+    mkdir "%FALLBACK_DIR%" 2>nul
   )
-  if exist "%FALLBACK_DIR%\" set "CHOSEN_DIR=%FALLBACK_DIR%"
+  if exist "%FALLBACK_DIR%\NUL" set "CHOSEN_DIR=%FALLBACK_DIR%"
 )
 
 if not defined CHOSEN_DIR (
