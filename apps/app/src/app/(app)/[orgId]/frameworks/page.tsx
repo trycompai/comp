@@ -34,6 +34,14 @@ export default async function DashboardPage() {
     redirect(`/onboarding/${organizationId}`);
   }
 
+  // Fetch current user's member information
+  const currentMember = await db.member.findFirst({
+    where: {
+      userId: session.user.id,
+      organizationId,
+    },
+  });
+
   const tasks = await getControlTasks();
   const frameworksWithControls = await getAllFrameworkInstancesWithControls({
     organizationId,
@@ -61,6 +69,7 @@ export default async function DashboardPage() {
       organizationId={organizationId}
       publishedPoliciesScore={publishedPoliciesScore}
       doneTasksScore={doneTasksScore}
+      currentMember={currentMember}
     />
   );
 }

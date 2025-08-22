@@ -1,11 +1,24 @@
 'use client';
 
+import { publishAllPoliciesAction } from '@/actions/policies/publish-all';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { ScrollArea } from '@comp/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
-import { ArrowRight, CheckCircle2, FileText, ListCheck, NotebookText, Upload } from 'lucide-react';
+import {
+  ArrowRight,
+  CheckCircle2,
+  FileText,
+  ListCheck,
+  NotebookText,
+  Play,
+  Upload,
+} from 'lucide-react';
+import { useAction } from 'next-safe-action/hooks';
 import Link from 'next/link';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { ConfirmActionDialog } from './ConfirmActionDialog';
 
 interface Policy {
   id: string;
@@ -28,6 +41,7 @@ export function ToDoOverview({
   incompleteTasks,
   policiesInReview,
   organizationId,
+  currentMember,
 }: {
   totalPolicies: number;
   totalTasks: number;
@@ -37,9 +51,44 @@ export function ToDoOverview({
   incompleteTasks: Task[];
   policiesInReview: Policy[];
   organizationId: string;
+  currentMember: { id: string; role: string } | null;
 }) {
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
   const formatStatus = (status: string) => {
     return status.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+  };
+
+  // Check if current user is an owner
+  const isOwner = currentMember?.role.includes('owner') || false;
+
+  const publishPolicies = useAction(publishAllPoliciesAction, {
+    onSuccess: () => {
+      toast.info('Policies published! Redirecting to policies list...');
+    },
+    onError: () => {
+      toast.error('Failed to publish policies.');
+      setIsLoading(false);
+    },
+  });
+
+  const handlePublishPolicies = async () => {
+    setIsLoading(true);
+    publishPolicies.execute({
+      organizationId,
+    });
+  };
+
+  const handleConfirmAction = async () => {
+    setIsLoading(true);
+    try {
+      handlePublishPolicies();
+    } catch (error) {
+      console.error('Error performing action:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -80,6 +129,20 @@ export function ToDoOverview({
           </TabsList>
 
           <TabsContent value="policies" className="mt-4">
+            {isOwner && (
+              <div className="flex w-full mb-3">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsConfirmDialogOpen(true)}
+                  className="flex items-center gap-2 w-full"
+                >
+                  <Play className="h-3 w-3" />
+                  Publish All Policies
+                </Button>
+              </div>
+            )}
+
             {unpublishedPolicies.length === 0 ? (
               <div className="flex items-center justify-center gap-2 rounded-lg bg-green-50 dark:bg-green-950/20 p-3">
                 <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
@@ -182,6 +245,17 @@ export function ToDoOverview({
           </TabsContent>
         </Tabs>
       </CardContent>
+
+      <ConfirmActionDialog
+        isOpen={isConfirmDialogOpen}
+        onClose={() => setIsConfirmDialogOpen(false)}
+        onConfirm={handleConfirmAction}
+        title="Are you sure you want to publish all policies?"
+        description="This will automatically publish all policies that are in draft status. This action cannot be undone."
+        confirmText="Publish Policies"
+        cancelText="Cancel"
+        isLoading={isLoading}
+      />
     </Card>
   );
 }

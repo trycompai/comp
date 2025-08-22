@@ -33,8 +33,8 @@ export interface DoneTasksScore {
   doneTasks: number;
   incompleteTasks: {
     id: string;
-    status: 'todo' | 'in_progress' | 'done' | 'not_relevant';
     title: string;
+    status: 'todo' | 'in_progress' | 'done' | 'not_relevant';
   }[];
 }
 
@@ -45,6 +45,7 @@ export interface OverviewProps {
   organizationId: string;
   publishedPoliciesScore: PublishedPoliciesScore;
   doneTasksScore: DoneTasksScore;
+  currentMember: { id: string; role: string } | null;
 }
 
 export const Overview = ({
@@ -54,6 +55,7 @@ export const Overview = ({
   organizationId,
   publishedPoliciesScore,
   doneTasksScore,
+  currentMember,
 }: OverviewProps) => {
   return (
     <DraggableCards>
@@ -81,6 +83,7 @@ export const Overview = ({
         incompleteTasks={doneTasksScore.incompleteTasks}
         policiesInReview={publishedPoliciesScore.policiesInReview}
         organizationId={organizationId}
+        currentMember={currentMember}
       />
     </DraggableCards>
   );
