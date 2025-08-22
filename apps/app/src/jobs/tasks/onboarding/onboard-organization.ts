@@ -65,6 +65,26 @@ export const onboardOrganization = task({
         },
       });
 
+      // Assign owner to all tasks
+      await db.task.updateMany({
+        where: {
+          organizationId: payload.organizationId,
+        },
+        data: {
+          assigneeId: owner.id,
+        },
+      });
+
+      // Update tasks to be quarterly
+      await db.task.updateMany({
+        where: {
+          organizationId: payload.organizationId,
+        },
+        data: {
+          frequency: 'quarterly',
+        },
+      });
+
       // Create vendors
       const vendors = await createVendors(questionsAndAnswers, payload.organizationId);
 
