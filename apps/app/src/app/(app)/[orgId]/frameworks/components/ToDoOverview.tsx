@@ -60,7 +60,6 @@ export function ToDoOverview({
     return status.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
   };
 
-  // Check if current user is an owner
   const isOwner = currentMember?.role.includes('owner') || false;
 
   const publishPolicies = useAction(publishAllPoliciesAction, {
@@ -116,7 +115,10 @@ export function ToDoOverview({
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        <Tabs defaultValue="policies" className="w-full">
+        <Tabs
+          defaultValue={unpublishedPolicies.length === 0 ? 'tasks' : 'policies'}
+          className="w-full"
+        >
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="policies" className="flex items-center gap-2">
               <FileText className="h-3 w-3" />
@@ -129,7 +131,7 @@ export function ToDoOverview({
           </TabsList>
 
           <TabsContent value="policies" className="mt-4">
-            {isOwner && (
+            {isOwner && unpublishedPolicies.length > 0 && (
               <div className="flex w-full mb-3">
                 <Button
                   size="sm"
