@@ -145,7 +145,7 @@ export function FrameworksOverview({
           <AddFrameworkModal
             onOpenChange={setIsAddFrameworkModalOpen}
             availableFrameworks={availableFrameworksToAdd}
-            organizationId={organizationId || ''}
+            organizationId={organizationId}
           />
         )}
       </Dialog>
