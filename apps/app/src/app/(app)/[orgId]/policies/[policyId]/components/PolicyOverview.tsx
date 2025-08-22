@@ -6,29 +6,16 @@ import { authClient } from '@/utils/auth-client';
 import { Alert, AlertDescription, AlertTitle } from '@comp/ui/alert';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@comp/ui/dropdown-menu';
 import { Icons } from '@comp/ui/icons';
 import type { Member, Policy, User } from '@db';
 import { Control } from '@db';
 import { format } from 'date-fns';
-import {
-  ArchiveIcon,
-  ArchiveRestoreIcon,
-  MoreVertical,
-  PencilIcon,
-  ShieldCheck,
-  ShieldX,
-  Trash2,
-} from 'lucide-react';
+import { ArchiveIcon, ArchiveRestoreIcon, ShieldCheck, ShieldX } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useQueryState } from 'nuqs';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { regeneratePolicyAction } from '../actions/regenerate-policy';
 import { PolicyActionDialog } from './PolicyActionDialog';
 import { PolicyArchiveSheet } from './PolicyArchiveSheet';
 import { PolicyControlMappings } from './PolicyControlMappings';
@@ -79,10 +66,8 @@ export function PolicyOverview({
   // Dialog state for approval/denial actions
   const [approveDialogOpen, setApproveDialogOpen] = useState(false);
   const [denyDialogOpen, setDenyDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-
-  // Dropdown menu state
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [deleteOpenParam, setDeleteOpenParam] = useQueryState('delete-policy');
+  const [regenerateOpen, setRegenerateOpen] = useState(false);
 
   // Handle approve with optional comment
   const handleApprove = (comment?: string) => {
@@ -149,22 +134,26 @@ export function PolicyOverview({
         </Alert>
       )}
       {policy?.isArchived && (
-        <Alert>
-          <div className="flex items-center gap-2">
-            <ArchiveIcon className="h-4 w-4" />
-            <div className="font-medium">{'This policy is archived'}</div>
+        <Alert className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-2">
+            <ArchiveIcon className="mt-0.5 h-4 w-4" />
+            <div className="space-y-1">
+              <div className="font-medium">This policy is archived</div>
+              <AlertDescription>
+                Archived on {format(new Date(policy?.updatedAt ?? new Date()), 'PPP')}
+              </AlertDescription>
+            </div>
           </div>
-          <AlertDescription>
-            {policy?.isArchived && (
-              <>
-                {'Archived on'} {format(new Date(policy?.updatedAt ?? new Date()), 'PPP')}
-              </>
-            )}
-          </AlertDescription>
-          <Button size="sm" variant="outline" onClick={() => setArchiveOpen('true')}>
-            <ArchiveRestoreIcon className="h-3 w-3" />
-            {'Restore'}
-          </Button>
+          <div className="shrink-0">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setArchiveOpen('true')}
+              className="gap-1"
+            >
+              <ArchiveRestoreIcon className="h-3 w-3" /> Restore
+            </Button>
+          </div>
         </Alert>
       )}
 
@@ -176,55 +165,8 @@ export function PolicyOverview({
                 <Icons.Policies className="h-4 w-4" />
                 {policy?.name}
               </div>
-              <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    disabled={isPendingApproval}
-                    className="m-0 size-auto p-2 hover:bg-transparent"
-                  >
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={() => {
-                      setDropdownOpen(false);
-                      setOpen('true');
-                    }}
-                    disabled={isPendingApproval}
-                  >
-                    <PencilIcon className="mr-2 h-4 w-4" />
-                    {'Edit policy'}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      setDropdownOpen(false);
-                      setArchiveOpen('true');
-                    }}
-                    disabled={isPendingApproval}
-                  >
-                    {policy?.isArchived ? (
-                      <ArchiveRestoreIcon className="mr-2 h-4 w-4" />
-                    ) : (
-                      <ArchiveIcon className="mr-2 h-4 w-4" />
-                    )}
-                    {policy?.isArchived ? 'Restore policy' : 'Archive policy'}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      setDropdownOpen(false);
-                      setDeleteDialogOpen(true);
-                    }}
-                    disabled={isPendingApproval}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {/* Redundant gear removed; actions moved to breadcrumb header */}
+              <div className="h-6" />
             </div>
           </CardTitle>
           <CardDescription>{policy?.description}</CardDescription>
@@ -276,9 +218,23 @@ export function PolicyOverview({
 
           {/* Delete Dialog */}
           <PolicyDeleteDialog
-            isOpen={deleteDialogOpen}
-            onClose={() => setDeleteDialogOpen(false)}
+            isOpen={Boolean(deleteOpenParam)}
+            onClose={() => setDeleteOpenParam(null)}
             policy={policy}
+          />
+          {/* Regenerate Dialog */}
+          <PolicyActionDialog
+            isOpen={regenerateOpen}
+            onClose={() => setRegenerateOpen(false)}
+            onConfirm={async () => {
+              if (!policy?.id) return;
+              await regeneratePolicyAction({ policyId: policy.id });
+              toast.info('Regeneration started');
+            }}
+            title="Regenerate Policy"
+            description="This will regenerate the policy content and mark it for review. Continue?"
+            confirmText="Regenerate"
+            confirmIcon={<Icons.AI className="h-4 w-4" />}
           />
         </>
       )}

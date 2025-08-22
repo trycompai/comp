@@ -1,5 +1,6 @@
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import type { Metadata } from 'next';
+import { PolicyHeaderActions } from './components/PolicyHeaderActions';
 import PolicyPage from './components/PolicyPage';
 import { getAssignees, getLogsForPolicy, getPolicy, getPolicyControlMappingInfo } from './data';
 
@@ -23,6 +24,7 @@ export default async function PolicyDetails({
         { label: 'Policies', href: `/${orgId}/policies/all` },
         { label: policy?.name ?? 'Policy', current: true },
       ]}
+      headerRight={<PolicyHeaderActions policyId={policyId} />}
     >
       <PolicyPage
         policy={policy}

@@ -1,65 +1,50 @@
 services:
-  db:
-    image: postgres:17-alpine
-    ports:
-      - '5432:5432'
-    environment:
-      POSTGRES_PASSWORD: pass
-      POSTGRES_DB: comp
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres -d comp']
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   migrator:
     build:
       context: .
       dockerfile: Dockerfile
       target: migrator
     env_file:
-      - packages/db/.env
-    depends_on:
-      db:
-        condition: service_healthy
-
+      - .env
+  seeder:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: migrator
+    env_file:
+      - .env
+    command: sh -lc "bunx prisma generate --schema=node_modules/@trycompai/db/dist/schema.prisma && bun packages/db/prisma/seed/seed.js"
   app:
     build:
       context: .
       dockerfile: Dockerfile
       target: app
+      args:
+        NEXT_PUBLIC_BETTER_AUTH_URL: ${BETTER_AUTH_URL}
     ports:
       - '3000:3000'
     env_file:
-      - apps/app/.env
-    depends_on:
-      migrator:
-        condition: service_completed_successfully
+      - .env
     healthcheck:
       test: ['CMD-SHELL', 'curl -f http://localhost:3000/api/health || exit 1']
       interval: 30s
       timeout: 10s
       retries: 3
+    command: sh -lc "node apps/app/server.js"
 
   portal:
     build:
       context: .
       dockerfile: Dockerfile
       target: portal
+      args:
+        NEXT_PUBLIC_BETTER_AUTH_URL: ${BETTER_AUTH_URL_PORTAL}
     ports:
-      - '3001:3000'
+      - '3002:3000'
     env_file:
-      - apps/portal/.env
-    depends_on:
-      migrator:
-        condition: service_completed_successfully
+      - .env
     healthcheck:
-      test: ['CMD-SHELL', 'curl -f http://localhost:3000/api/health || exit 1']
+      test: ['CMD-SHELL', 'curl -f http://localhost:3002/ || exit 1']
       interval: 30s
       timeout: 10s
       retries: 3
-
-volumes:
-  postgres_data:

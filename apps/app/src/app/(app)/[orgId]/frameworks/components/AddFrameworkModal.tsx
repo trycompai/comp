@@ -28,7 +28,7 @@ type Props = {
     FrameworkEditorFramework,
     'id' | 'name' | 'description' | 'version' | 'visible'
   >[];
-  organizationId: string;
+  organizationId?: string;
 };
 
 export function AddFrameworkModal({ onOpenChange, availableFrameworks, organizationId }: Props) {

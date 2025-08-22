@@ -3,22 +3,22 @@ import type { ControlWithRelations } from '../data/queries';
 
 export function getControlStatus(control: ControlWithRelations): StatusType {
   const policies = control.policies || [];
+  const tasks = control.tasks || [];
 
-  if (!policies.length) {
+  const allPoliciesArePublished = policies.every((policy) => policy.status === 'published');
+  const allTasksAreCompleted = tasks.every((task) => task.status === 'done');
+
+  if (!allPoliciesArePublished && !allTasksAreCompleted) {
     return 'not_started';
   }
 
-  const hasUnpublishedPolicies = policies.some((policy) => policy.status !== 'published');
+  if (allPoliciesArePublished && allTasksAreCompleted) {
+    return 'completed';
+  }
 
-  const allPoliciesAreDraft = policies.every((policy) => policy.status === 'draft');
-
-  if (allPoliciesAreDraft) {
+  if (!allPoliciesArePublished && tasks.length === 0) {
     return 'not_started';
   }
 
-  if (hasUnpublishedPolicies) {
-    return 'in_progress';
-  }
-
-  return 'completed';
+  return 'in_progress';
 }

@@ -1,14 +1,16 @@
 {
   "name": "@trycompai/db",
   "description": "Database package with Prisma client and schema for Comp AI",
-  "version": "1.3.3",
+  "version": "1.3.4",
   "dependencies": {
     "@prisma/client": "^6.13.0",
     "dotenv": "^16.4.5"
   },
   "devDependencies": {
+    "@types/node": "^24.2.0",
     "prisma": "^6.13.0",
-    "typescript": "^5.8.3"
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
   },
   "exports": {
     ".": "./dist/index.js"
@@ -34,9 +36,9 @@
     "db:push": "prisma db push",
     "db:seed": "bun prisma/seed/seed.ts",
     "db:studio": "prisma studio",
-    "docker:clean": "docker-compose down -v",
-    "docker:down": "docker-compose down",
-    "docker:up": "docker-compose up -d",
+    "docker:clean": "docker compose down -v",
+    "docker:down": "docker compose down",
+    "docker:up": "docker compose up -d",
     "lint": "prettier --check 'src/**/*.{ts,tsx,js,jsx,json}' 'prisma/**/*.prisma' && tsc --noEmit",
     "prepublishOnly": "bun run build"
   }

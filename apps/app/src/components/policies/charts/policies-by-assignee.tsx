@@ -33,15 +33,15 @@ export async function PoliciesByAssignee({ organizationId }: Props) {
     policiesByUser(organizationId),
   ]);
 
-  const stats: UserPolicyStats[] = userStats.map((user) => {
-    const userPolicies = policies.filter((policy) => policy.assigneeId === user.id);
+  const stats: UserPolicyStats[] = userStats.map((member) => {
+    const userPolicies = policies.filter((policy) => policy.assigneeId === member.id);
 
     return {
       user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        image: user.image,
+        id: member.id,
+        name: member.user.name,
+        email: member.user.email,
+        image: member.user.image,
       },
       totalPolicies: userPolicies.length,
       publishedPolicies: userPolicies.filter((policy) => policy.status === PolicyStatus.published)
@@ -214,19 +214,19 @@ const policiesByUser = async (organizationId: string) => {
 };
 
 const userData = async (organizationId: string) => {
-  return await db.user.findMany({
+  return await db.member.findMany({
     where: {
-      members: {
-        some: {
-          organizationId,
-        },
-      },
+      organizationId,
     },
     select: {
       id: true,
-      name: true,
-      image: true,
-      email: true,
+      user: {
+        select: {
+          name: true,
+          image: true,
+          email: true,
+        },
+      },
     },
   });
 };

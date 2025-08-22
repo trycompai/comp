@@ -1,5 +1,6 @@
+'use server';
+
 import { auth } from '@/app/lib/auth';
-import { getPostHogClient } from '@/app/posthog';
 import { getFleetInstance } from '@/utils/fleet';
 import type { Member } from '@db';
 import { db } from '@db';
@@ -17,7 +18,7 @@ export default async function OrganizationPage({ params }: { params: Promise<{ o
     });
 
     if (!session?.user) {
-      redirect('/login'); // Or appropriate login/auth route
+      return redirect('/auth');
     }
 
     let member = null;
@@ -36,33 +37,20 @@ export default async function OrganizationPage({ params }: { params: Promise<{ o
     } catch (error) {
       console.error('Error fetching member:', error);
       // Return a fallback UI or redirect to error page
-      redirect('/');
+      return redirect('/');
     }
 
     if (!member) {
-      redirect('/'); // Or appropriate login/auth route
-    }
-
-    // Check fleet feature flag first
-    let isFleetEnabled = false;
-    try {
-      const postHogClient = await getPostHogClient();
-      isFleetEnabled =
-        (await postHogClient?.isFeatureEnabled('is-fleet-enabled', session?.user.id)) ?? false;
-    } catch (error) {
-      console.error('Error checking fleet feature flag:', error);
-      // Default to false if there's an error
+      return redirect('/'); // Or appropriate login/auth route
     }
 
     // Only fetch fleet policies if fleet is enabled
     let fleetPolicies: FleetPolicy[] = [];
     let device: Host | null = null;
 
-    if (isFleetEnabled) {
-      const fleetData = await getFleetPolicies(member);
-      fleetPolicies = fleetData.fleetPolicies;
-      device = fleetData.device;
-    }
+    const fleetData = await getFleetPolicies(member);
+    fleetPolicies = fleetData.fleetPolicies;
+    device = fleetData.device;
 
     return (
       <OrganizationDashboard
@@ -71,13 +59,12 @@ export default async function OrganizationPage({ params }: { params: Promise<{ o
         member={member}
         fleetPolicies={fleetPolicies}
         host={device}
-        isFleetEnabled={isFleetEnabled}
       />
     );
   } catch (error) {
-    console.error('Error in OrganizationPage:', error);
+    console.error('Error in OrganizationPage:', { error });
     // Redirect to a safe page if there's an unexpected error
-    redirect('/');
+    return redirect('/');
   }
 }
 

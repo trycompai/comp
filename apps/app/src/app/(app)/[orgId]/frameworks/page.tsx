@@ -1,12 +1,13 @@
-import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
-import { CheckoutCompleteTracking } from '@/components/tracking/CheckoutCompleteTracking';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
-import { FrameworksOverview } from './components/FrameworksOverview';
+import { Overview } from './components/Overview';
 import { getAllFrameworkInstancesWithControls } from './data/getAllFrameworkInstancesWithControls';
+import { getFrameworkWithComplianceScores } from './data/getFrameworkWithComplianceScores';
+import { getPublishedPoliciesScore } from './lib/getPolicies';
+import { getDoneTasks } from './lib/getTasks';
 
 export async function generateMetadata() {
   return {
@@ -25,9 +26,30 @@ export default async function DashboardPage() {
     redirect('/');
   }
 
+  const org = await db.organization.findUnique({
+    where: { id: organizationId },
+    select: { onboardingCompleted: true },
+  });
+  if (org && org.onboardingCompleted === false) {
+    redirect(`/onboarding/${organizationId}`);
+  }
+
+  // Fetch current user's member information
+  const currentMember = await db.member.findFirst({
+    where: {
+      userId: session.user.id,
+      organizationId,
+    },
+  });
+
   const tasks = await getControlTasks();
   const frameworksWithControls = await getAllFrameworkInstancesWithControls({
     organizationId,
+  });
+
+  const frameworksWithCompliance = await getFrameworkWithComplianceScores({
+    frameworksWithControls,
+    tasks,
   });
 
   const allFrameworks = await db.frameworkEditorFramework.findMany({
@@ -36,15 +58,19 @@ export default async function DashboardPage() {
     },
   });
 
+  const publishedPoliciesScore = await getPublishedPoliciesScore(organizationId);
+  const doneTasksScore = await getDoneTasks(organizationId);
+
   return (
-    <PageWithBreadcrumb breadcrumbs={[{ label: 'Frameworks', current: true }]}>
-      <CheckoutCompleteTracking />
-      <FrameworksOverview
-        frameworksWithControls={frameworksWithControls}
-        tasks={tasks}
-        allFrameworks={allFrameworks}
-      />
-    </PageWithBreadcrumb>
+    <Overview
+      frameworksWithControls={frameworksWithControls}
+      frameworksWithCompliance={frameworksWithCompliance}
+      allFrameworks={allFrameworks}
+      organizationId={organizationId}
+      publishedPoliciesScore={publishedPoliciesScore}
+      doneTasksScore={doneTasksScore}
+      currentMember={currentMember}
+    />
   );
 }
 

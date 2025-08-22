@@ -13,7 +13,7 @@
     "node-fetch": "^2.6.7",
     "sharp": "^0.34.2",
     "stoppable": "^1.1.0",
-    "zod": "3.25.67"
+    "zod": "^4.0.14"
   },
   "devDependencies": {
     "@types/node": "^24.0.3",

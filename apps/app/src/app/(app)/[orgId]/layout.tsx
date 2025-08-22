@@ -11,6 +11,7 @@ import dynamic from 'next/dynamic';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
+import { DynamicMinHeight } from './components/DynamicMinHeight';
 import { OnboardingTracker } from './components/OnboardingTracker';
 
 const HotKeys = dynamic(() => import('@/components/hot-keys').then((mod) => mod.HotKeys), {
@@ -36,14 +37,13 @@ export default async function Layout({
   });
 
   if (!session) {
-    return redirect('/auth/login');
+    console.log('no session');
+    return redirect('/auth');
   }
 
-  // First check if the organization exists
+  // First check if the organization exists and load access flags
   const organization = await db.organization.findUnique({
-    where: {
-      id: requestedOrgId,
-    },
+    where: { id: requestedOrgId },
   });
 
   if (!organization) {
@@ -63,17 +63,21 @@ export default async function Layout({
     return redirect('/auth/unauthorized');
   }
 
+  // If this org is not accessible on current plan, redirect to upgrade
+  if (!organization.hasAccess) {
+    return redirect(`/upgrade/${organization.id}`);
+  }
+
+  // If onboarding is required and user isn't already on onboarding, redirect
+  if (!organization.onboardingCompleted) {
+    return redirect(`/onboarding/${organization.id}`);
+  }
+
   const onboarding = await db.onboarding.findFirst({
     where: {
       organizationId: requestedOrgId,
     },
   });
-
-  const isOnboardingRunning = !!onboarding?.triggerJobId && !onboarding.triggerJobCompleted;
-  const navbarHeight = 53 + 1; // 1 for border
-  const onboardingHeight = 132 + 1; // 1 for border
-
-  const pixelsOffset = isOnboardingRunning ? navbarHeight + onboardingHeight : navbarHeight;
 
   return (
     <TriggerTokenProvider
@@ -84,12 +88,7 @@ export default async function Layout({
         <AnimatedLayout sidebar={<Sidebar organization={organization} />} isCollapsed={isCollapsed}>
           {onboarding?.triggerJobId && <OnboardingTracker onboarding={onboarding} />}
           <Header />
-          <div
-            className="textured-background mx-auto px-4 py-4"
-            style={{ minHeight: `calc(100vh - ${pixelsOffset}px)` }}
-          >
-            {children}
-          </div>
+          <DynamicMinHeight>{children}</DynamicMinHeight>
           <AssistantSheet />
           <Suspense fallback={null}>
             <CheckoutCompleteDialog orgId={organization.id} />
