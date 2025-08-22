@@ -11,11 +11,14 @@ import {
 } from './onboard-organization-helpers';
 
 // v4 queues must be declared in advance
-const onboardOrgQueue = queue({ name: 'onboard-organization', concurrencyLimit: 10 });
+const onboardOrgQueue = queue({ name: 'onboard-organization', concurrencyLimit: 100 });
 
 export const onboardOrganization = task({
   id: 'onboard-organization',
   queue: onboardOrgQueue,
+  retry: {
+    maxAttempts: 3,
+  },
   run: async (payload: { organizationId: string }) => {
     logger.info(`Start onboarding organization ${payload.organizationId}`);
 
@@ -36,6 +39,51 @@ export const onboardOrganization = task({
           id: {
             in: frameworkInstances.map((instance) => instance.frameworkId),
           },
+        },
+      });
+
+      // Get owner
+      const owner = await db.member.findFirst({
+        where: {
+          organizationId: payload.organizationId,
+          role: {
+            contains: 'owner',
+          },
+        },
+      });
+
+      if (!owner) {
+        logger.error(`Owner not found for organization ${payload.organizationId}`);
+        throw new Error(`Owner not found for organization ${payload.organizationId}`);
+      }
+
+      // Update owner to also be an employee
+      await db.member.update({
+        where: {
+          id: owner.id,
+        },
+        data: {
+          role: 'owner,employee',
+        },
+      });
+
+      // Assign owner to all tasks
+      await db.task.updateMany({
+        where: {
+          organizationId: payload.organizationId,
+        },
+        data: {
+          assigneeId: owner.id,
+        },
+      });
+
+      // Update tasks to be quarterly
+      await db.task.updateMany({
+        where: {
+          organizationId: payload.organizationId,
+        },
+        data: {
+          frequency: 'quarterly',
         },
       });
 

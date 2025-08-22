@@ -1,10 +1,8 @@
-import { FrameworkEditorFramework, Policy } from '@db';
-import type { JSONContent } from '@tiptap/react';
+import { FrameworkEditorFramework, FrameworkEditorPolicyTemplate } from '@db';
 import { logger } from '@trigger.dev/sdk';
 
 export const generatePrompt = ({
-  policy,
-  existingPolicyContent,
+  policyTemplate,
   contextHub,
   companyName,
   companyWebsite,
@@ -13,15 +11,14 @@ export const generatePrompt = ({
   contextHub: string;
   companyName: string;
   companyWebsite: string;
-  policy: Policy;
-  existingPolicyContent: JSONContent | JSONContent[];
+  policyTemplate: FrameworkEditorPolicyTemplate;
   frameworks: FrameworkEditorFramework[];
 }) => {
-  logger.info(`Generating prompt for policy ${policy.name}`);
+  logger.info(`Generating prompt for policy ${policyTemplate.name}`);
   logger.info(`Company Name: ${companyName}`);
   logger.info(`Company Website: ${companyWebsite}`);
   logger.info(`Context: ${contextHub}`);
-  logger.info(`Existing Policy Content: ${JSON.stringify(existingPolicyContent)}`);
+  logger.info(`Existing Policy Content: ${JSON.stringify(policyTemplate.content)}`);
   logger.info(
     `Frameworks: ${JSON.stringify(
       frameworks.map((f) => ({ id: f.id, name: f.name, version: f.version })),
@@ -81,6 +78,6 @@ Required rules (keep this simple):
 Output: Return ONLY the final TipTap JSON document.
 
 Template (TipTap JSON) to edit:
-${JSON.stringify(existingPolicyContent)}
+${JSON.stringify(policyTemplate.content)}
 `;
 };

@@ -14,6 +14,13 @@ const controlInclude = {
       name: true,
     },
   },
+  tasks: {
+    select: {
+      id: true,
+      title: true,
+      status: true,
+    },
+  },
   requirementsMapped: {
     include: {
       frameworkInstance: {
@@ -43,6 +50,7 @@ export async function getControls(
     const session = await auth.api.getSession({
       headers: await headers(),
     });
+
     const organizationId = session?.session.activeOrganizationId;
 
     if (!organizationId) {

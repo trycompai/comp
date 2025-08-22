@@ -18,7 +18,7 @@ import z from 'zod';
 import type { researchVendor } from '../scrape/research';
 import { RISK_MITIGATION_PROMPT } from './prompts/risk-mitigation';
 import { VENDOR_RISK_ASSESSMENT_PROMPT } from './prompts/vendor-risk-assessment';
-import { updatePolicies } from './update-policies';
+import { updatePolicy } from './update-policy';
 
 // Types
 export type ContextItem = {
@@ -155,7 +155,7 @@ export async function createVendorRiskComment(
       : 'No specific policies available - use standard security policy guidance.';
 
   const riskMitigationComment = await generateText({
-    model: openai('gpt-5-nano'),
+    model: openai('gpt-5-mini'),
     system: VENDOR_RISK_ASSESSMENT_PROMPT,
     prompt: `Vendor: ${vendor.name} (${vendor.category}) - ${vendor.description}. Website: ${vendor.website}.
 
@@ -280,7 +280,7 @@ export async function createRiskMitigationComment(
       : 'No specific policies available - use standard security policy guidance.';
 
   const mitigation = await generateText({
-    model: openai('gpt-5-nano'),
+    model: openai('gpt-5-mini'),
     system: RISK_MITIGATION_PROMPT,
     prompt: `Risk: ${risk.title} (${risk.category} / ${risk.department})\n\nDescription:\n${risk.description}\n\nTreatment Strategy:\n${risk.treatmentStrategy}: ${risk.treatmentStrategyDescription || 'N/A'}\n\nResidual Assessment: Likelihood ${risk.likelihood}, Impact ${risk.impact}\n\nAvailable Organization Policies:\n${policiesContext}\n\nWrite a pragmatic mitigation plan with concrete steps the team can implement in the next 30-90 days.`,
   });
@@ -431,7 +431,7 @@ export async function triggerPolicyUpdates(
   const policies = await getOrganizationPolicies(organizationId);
 
   if (policies.length > 0) {
-    await updatePolicies.batchTriggerAndWait(
+    await updatePolicy.batchTriggerAndWait(
       policies.map((policy) => ({
         payload: {
           organizationId,

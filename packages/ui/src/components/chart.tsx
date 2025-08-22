@@ -102,6 +102,7 @@ const ChartTooltipContent = React.forwardRef<
       indicator?: 'line' | 'dot' | 'dashed';
       nameKey?: string;
       labelKey?: string;
+      isPercentage?: boolean;
     }
 >(
   (
@@ -119,6 +120,7 @@ const ChartTooltipContent = React.forwardRef<
       color,
       nameKey,
       labelKey,
+      isPercentage = false,
     },
     ref,
   ) => {
@@ -221,7 +223,7 @@ const ChartTooltipContent = React.forwardRef<
                       </div>
                       {item.value && (
                         <span className="text-foreground font-mono font-medium tabular-nums">
-                          {item.value.toLocaleString()}
+                          {isPercentage ? `${item.value}%` : item.value.toLocaleString()}
                         </span>
                       )}
                     </div>

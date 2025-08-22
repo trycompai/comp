@@ -1,6 +1,5 @@
 import { auth } from '@/utils/auth';
 
-import { getPostHogClient } from '@/app/posthog';
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import {
   type TrainingVideo,
@@ -41,10 +40,6 @@ export default async function EmployeeDetailsPage({
   }
 
   const { fleetPolicies, device } = await getFleetPolicies(employee);
-  const isFleetEnabled = await getPostHogClient()?.isFeatureEnabled(
-    'is-fleet-enabled',
-    session?.session.userId,
-  );
 
   return (
     <PageWithBreadcrumb
@@ -59,7 +54,6 @@ export default async function EmployeeDetailsPage({
         trainingVideos={employeeTrainingVideos}
         fleetPolicies={fleetPolicies}
         host={device}
-        isFleetEnabled={isFleetEnabled ?? false}
       />
     </PageWithBreadcrumb>
   );
