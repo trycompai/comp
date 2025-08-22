@@ -4,7 +4,6 @@ import * as React from 'react';
 
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTableToolbar } from '@/components/data-table/data-table-toolbar';
-import { CreatePolicySheet } from '@/components/sheets/create-policy-sheet';
 import { useDataTable } from '@/hooks/use-data-table';
 import { useParams } from 'next/navigation';
 import { ControlWithRelations } from '../data/queries';
@@ -38,7 +37,6 @@ export function ControlsTable({ promises }: ControlsTableProps) {
       <DataTable table={table} getRowId={(row) => row.id} rowClickBasePath={`/${orgId}/controls`}>
         <DataTableToolbar table={table} />
       </DataTable>
-      <CreatePolicySheet />
     </>
   );
 }
