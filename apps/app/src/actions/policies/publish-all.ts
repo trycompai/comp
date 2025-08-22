@@ -19,11 +19,10 @@ export const publishAllPoliciesAction = authActionClient
       channel: 'server',
     },
   })
-  .action(async ({ ctx }) => {
+  .action(async ({ ctx, parsedInput }) => {
     const { user, session } = ctx;
 
     if (!user) {
-      console.log('[publish-all-policies] User not found');
       return {
         success: false,
         error: 'Not authorized',
@@ -31,7 +30,6 @@ export const publishAllPoliciesAction = authActionClient
     }
 
     if (!session.activeOrganizationId) {
-      console.log('[publish-all-policies] No active organization ID');
       return {
         success: false,
         error: 'Not authorized',
@@ -41,7 +39,7 @@ export const publishAllPoliciesAction = authActionClient
     const member = await db.member.findFirst({
       where: {
         userId: user.id,
-        organizationId: session.activeOrganizationId,
+        organizationId: parsedInput.organizationId,
       },
     });
 
@@ -63,7 +61,7 @@ export const publishAllPoliciesAction = authActionClient
 
     try {
       const policies = await db.policy.findMany({
-        where: { organizationId: session.activeOrganizationId, status: PolicyStatus.draft },
+        where: { organizationId: parsedInput.organizationId, status: PolicyStatus.draft },
       });
 
       if (!policies || policies.length === 0) {
@@ -89,14 +87,14 @@ export const publishAllPoliciesAction = authActionClient
             policyId: policy.id,
             policyName: policy.name,
             memberId: member.id,
-            organizationId: session.activeOrganizationId,
+            organizationId: parsedInput.organizationId,
           });
           throw policyError; // Re-throw to be caught by outer catch block
         }
       }
 
-      revalidatePath(`/${session.activeOrganizationId}/policies`);
-      revalidatePath(`/${session.activeOrganizationId}/frameworks`);
+      revalidatePath(`/${parsedInput.organizationId}/policies`);
+      revalidatePath(`/${parsedInput.organizationId}/frameworks`);
       return {
         success: true,
       };
@@ -107,7 +105,7 @@ export const publishAllPoliciesAction = authActionClient
         errorStack: error instanceof Error ? error.stack : undefined,
         userId: user?.id,
         memberId: member?.id,
-        organizationId: session.activeOrganizationId,
+        organizationId: parsedInput.organizationId,
       });
 
       return {
