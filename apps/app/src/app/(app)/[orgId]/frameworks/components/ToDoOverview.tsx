@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { ConfirmActionDialog } from './ConfirmActionDialog';
 
@@ -90,6 +90,14 @@ export function ToDoOverview({
     }
   };
 
+  const width = useMemo(() => {
+    return totalPolicies + totalTasks === 0
+      ? 0
+      : ((totalPolicies + totalTasks - (unpublishedPolicies.length + incompleteTasks.length)) /
+          (totalPolicies + totalTasks)) *
+          100;
+  }, [totalPolicies, totalTasks, unpublishedPolicies.length, incompleteTasks.length]);
+
   return (
     <Card className="flex flex-col h-full">
       <CardHeader className="pb-2">
@@ -101,15 +109,7 @@ export function ToDoOverview({
           <div
             className="bg-primary/80 h-full transition-all"
             style={{
-              width: `${
-                totalPolicies + totalTasks === 0
-                  ? 0
-                  : ((totalPolicies +
-                      totalTasks -
-                      (unpublishedPolicies.length + incompleteTasks.length)) /
-                      (totalPolicies + totalTasks)) *
-                    100
-              }%`,
+              width: `${width}%`,
             }}
           />
         </div>
