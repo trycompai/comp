@@ -5,25 +5,20 @@ export function getControlStatus(control: ControlWithRelations): StatusType {
   const policies = control.policies || [];
   const tasks = control.tasks || [];
 
-  if (!policies.length && !tasks.length) {
+  const allPoliciesArePublished = policies.every((policy) => policy.status === 'published');
+  const allTasksAreCompleted = tasks.every((task) => task.status === 'done');
+
+  if (!allPoliciesArePublished && !allTasksAreCompleted) {
     return 'not_started';
   }
 
-  if (!tasks.length) {
+  if (allPoliciesArePublished && allTasksAreCompleted) {
     return 'completed';
   }
 
-  const hasUnpublishedPolicies = policies.some((policy) => policy.status !== 'published');
-  const hasUncompletedTasks = tasks.some((task) => task.status !== 'done');
-  const allPoliciesAreDraft = policies.every((policy) => policy.status === 'draft');
-
-  if (allPoliciesAreDraft) {
+  if (!allPoliciesArePublished && tasks.length === 0) {
     return 'not_started';
   }
 
-  if (hasUnpublishedPolicies || hasUncompletedTasks) {
-    return 'in_progress';
-  }
-
-  return 'completed';
+  return 'in_progress';
 }
