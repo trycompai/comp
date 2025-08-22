@@ -374,6 +374,10 @@
       "types": "./dist/components/editor/utils/validate-content.d.ts",
       "import": "./dist/components/editor/utils/validate-content.js"
     },
+    "./editor/utils/linkify-content": {
+      "types": "./dist/components/editor/utils/linkify-content.d.ts",
+      "import": "./dist/components/editor/utils/linkify-content.js"
+    },
     "./editor/selectors/text-buttons": {
       "types": "./dist/components/editor/selectors/text-buttons.d.ts",
       "import": "./dist/components/editor/selectors/text-buttons.js"

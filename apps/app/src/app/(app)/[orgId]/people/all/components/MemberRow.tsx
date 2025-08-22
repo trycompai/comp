@@ -134,30 +134,30 @@ export function MemberRow({ member, onRemove, onUpdateRole }: MemberRowProps) {
   return (
     <>
       <div className="hover:bg-muted/50 flex items-center justify-between p-4">
-        <div className="flex items-center gap-3">
-          <Avatar>
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <Avatar className="flex-shrink-0">
             <AvatarImage src={memberAvatar || undefined} />
             <AvatarFallback>{getInitials(member.user.name, member.user.email)}</AvatarFallback>
           </Avatar>
-          <div>
-            <div className="flex items-center gap-2 font-medium">
-              <span>{memberName}</span>
+          <div className="min-w-0 flex-1 gap-2">
+            <div className="flex items-center flex-wrap gap-1.5">
+              <span className="truncate text-sm font-medium">{memberName}</span>
               {isEmployee && (
                 <Link
                   href={`/${orgId}/people/${memberId}`}
-                  className="text-xs text-blue-600 hover:underline"
+                  className="text-xs text-blue-600 hover:underline flex-shrink-0"
                 >
                   ({'View Profile'})
                 </Link>
               )}
             </div>
-            <div className="text-muted-foreground text-sm">{memberEmail}</div>
+            <div className="text-muted-foreground text-sm truncate">{memberEmail}</div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex max-w-[150px] flex-wrap justify-end gap-1 hidden md:block">
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex flex-wrap gap-1 max-w-[120px] sm:max-w-none">
             {currentRoles.map((role) => (
-              <Badge key={role} variant="secondary" className="text-xs">
+              <Badge key={role} variant="secondary" className="text-xs whitespace-nowrap">
                 {(() => {
                   switch (role) {
                     case 'owner':

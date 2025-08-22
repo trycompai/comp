@@ -42,6 +42,49 @@ export const onboardOrganization = task({
         },
       });
 
+      // Get owner
+      const owner = await db.member.findFirst({
+        where: {
+          organizationId: payload.organizationId,
+          role: 'owner',
+        },
+      });
+
+      if (!owner) {
+        logger.error(`Owner not found for organization ${payload.organizationId}`);
+        throw new Error(`Owner not found for organization ${payload.organizationId}`);
+      }
+
+      // Update owner to also be an employee
+      await db.member.update({
+        where: {
+          id: owner.id,
+        },
+        data: {
+          role: 'owner,employee',
+        },
+      });
+
+      // Assign owner to all tasks
+      await db.task.updateMany({
+        where: {
+          organizationId: payload.organizationId,
+        },
+        data: {
+          assigneeId: owner.id,
+        },
+      });
+
+      // Update tasks to be quarterly
+      await db.task.updateMany({
+        where: {
+          organizationId: payload.organizationId,
+        },
+        data: {
+          frequency: 'quarterly',
+        },
+      });
+
       // Create vendors
       const vendors = await createVendors(questionsAndAnswers, payload.organizationId);
 

@@ -56,7 +56,7 @@ export function MainMenu({ organizationId, isCollapsed = false, onItemClick }: P
     {
       id: 'frameworks',
       path: '/:organizationId/frameworks',
-      name: 'Frameworks',
+      name: 'Overview',
       disabled: false,
       icon: Gauge,
       protected: false,

@@ -108,14 +108,8 @@ export function SingleControl({
       </div>
 
       {/* Tabbed Content */}
-      <Tabs defaultValue="requirements" className="space-y-4">
+      <Tabs defaultValue="policies" className="space-y-4">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="requirements" className="flex items-center gap-2">
-            <span>Requirements</span>
-            <span className="bg-muted/50 rounded-xs px-1.5 py-0.5 text-xs tabular-nums">
-              {control.requirementsMapped.length}
-            </span>
-          </TabsTrigger>
           <TabsTrigger value="policies" className="flex items-center gap-2">
             <span>Policies</span>
             <span className="bg-muted/50 rounded-xs px-1.5 py-0.5 text-xs tabular-nums">
@@ -128,11 +122,13 @@ export function SingleControl({
               {relatedTasks.length}
             </span>
           </TabsTrigger>
+          <TabsTrigger value="requirements" className="flex items-center gap-2">
+            <span>Requirements</span>
+            <span className="bg-muted/50 rounded-xs px-1.5 py-0.5 text-xs tabular-nums">
+              {control.requirementsMapped.length}
+            </span>
+          </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="requirements" className="space-y-0">
-          <RequirementsTable requirements={control.requirementsMapped} orgId={orgIdFromParams} />
-        </TabsContent>
 
         <TabsContent value="policies" className="space-y-0">
           <PoliciesTable
@@ -148,6 +144,10 @@ export function SingleControl({
             orgId={orgIdFromParams}
             controlId={controlIdFromParams}
           />
+        </TabsContent>
+
+        <TabsContent value="requirements" className="space-y-0">
+          <RequirementsTable requirements={control.requirementsMapped} orgId={orgIdFromParams} />
         </TabsContent>
       </Tabs>
 

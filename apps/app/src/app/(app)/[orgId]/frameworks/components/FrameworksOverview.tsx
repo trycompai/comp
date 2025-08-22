@@ -1,55 +1,145 @@
 'use client';
 
 import { Button } from '@comp/ui/button';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@comp/ui/card';
 import { Dialog } from '@comp/ui/dialog';
+import { ScrollArea } from '@comp/ui/scroll-area';
 import type { FrameworkEditorFramework } from '@db';
-import { Control, Task } from '@db';
 import { PlusIcon } from 'lucide-react';
-import { useParams } from 'next/navigation';
+import Image from 'next/image';
 import { useState } from 'react';
 import type { FrameworkInstanceWithControls } from '../types';
 import { AddFrameworkModal } from './AddFrameworkModal';
-import { FrameworkList } from './FrameworkList';
 import type { FrameworkInstanceWithComplianceScore } from './types';
 
 export interface FrameworksOverviewProps {
   frameworksWithControls: FrameworkInstanceWithControls[];
-  tasks: (Task & { controls: Control[] })[];
   allFrameworks: FrameworkEditorFramework[];
   frameworksWithCompliance?: FrameworkInstanceWithComplianceScore[];
+  organizationId?: string;
+}
+
+export function mapFrameworkToBadge(framework: FrameworkInstanceWithControls) {
+  if (framework.framework.name === 'SOC 2') {
+    return '/badges/soc2.svg';
+  }
+
+  if (framework.framework.name === 'ISO 27001') {
+    return '/badges/iso27001.svg';
+  }
+
+  if (framework.framework.name === 'HIPAA') {
+    return '/badges/hipaa.svg';
+  }
+
+  return null;
 }
 
 export function FrameworksOverview({
   frameworksWithControls,
-  tasks,
-  allFrameworks,
   frameworksWithCompliance,
+  allFrameworks,
+  organizationId,
 }: FrameworksOverviewProps) {
-  const params = useParams<{ orgId: string }>();
-  const organizationId = params.orgId;
   const [isAddFrameworkModalOpen, setIsAddFrameworkModalOpen] = useState(false);
 
-  const instancedFrameworkIds = frameworksWithControls.map((fw) => fw.frameworkId);
+  // Create a map of framework IDs to compliance scores for easy lookup
+  const complianceMap = new Map(
+    frameworksWithCompliance?.map((f) => [f.frameworkInstance.id, f.complianceScore]) ?? [],
+  );
+
+  // Calculate overall compliance score from all frameworks
+  const overallComplianceScore =
+    frameworksWithCompliance && frameworksWithCompliance.length > 0
+      ? frameworksWithCompliance.reduce((sum, f) => sum + f.complianceScore, 0) /
+        frameworksWithCompliance.length
+      : 0;
+
+  // Get available frameworks that can be added (not already in the organization)
   const availableFrameworksToAdd = allFrameworks.filter(
-    (fw) => !instancedFrameworkIds.includes(fw.id) && fw.visible,
+    (framework) => !frameworksWithControls.some((fc) => fc.framework.id === framework.id),
   );
 
   return (
-    <div className="space-y-4">
-      <div className="grid w-full gap-4 select-none md:grid-cols-1">
-        <FrameworkList
-          frameworksWithCompliance={
-            frameworksWithCompliance ??
-            frameworksWithControls.map((fw) => ({ frameworkInstance: fw, complianceScore: 0 }))
-          }
-          tasks={tasks}
-        />
-        <div className="flex items-center justify-center">
-          <Button onClick={() => setIsAddFrameworkModalOpen(true)} variant="outline">
-            {'Add Framework'} <PlusIcon className="h-4 w-4" />
+    <Card className="flex flex-col h-full">
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">{'Frameworks'}</CardTitle>
+        </div>
+
+        <div className="bg-secondary/50 relative mt-2 h-1 w-full overflow-hidden rounded-full">
+          <div
+            className="bg-primary/80 h-full transition-all"
+            style={{
+              width: `${overallComplianceScore}%`,
+            }}
+          />
+        </div>
+      </CardHeader>
+      <CardContent className="flex flex-col">
+        <div className="h-[300px]">
+          <ScrollArea className="h-full">
+            <div className="space-y-0 pr-4">
+              {frameworksWithControls.map((framework, index) => {
+                const complianceScore = complianceMap.get(framework.id) ?? 0;
+
+                return (
+                  <div key={framework.id}>
+                    <div className="flex items-start justify-between py-4 px-1">
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
+                        <div className="flex-shrink-0 mt-1">
+                          <Image
+                            src={mapFrameworkToBadge(framework) ?? ''}
+                            alt={framework.framework.name}
+                            width={400}
+                            height={400}
+                            className="rounded-full w-8 h-8"
+                          />
+                        </div>
+                        <div className="flex flex-col flex-1 min-w-0">
+                          <span className="text-sm font-medium text-foreground flex flex-col">
+                            {framework.framework.name}
+                            <span className="text-xs text-muted-foreground font-normal">
+                              {framework.framework.description?.trim()}
+                            </span>
+                          </span>
+
+                          <div className="flex flex-col mt-1.5">
+                            <div className="w-full bg-muted/50 rounded-full h-1">
+                              <div
+                                className="bg-primary h-full rounded-full transition-all duration-300"
+                                style={{
+                                  width: `${complianceScore}%`,
+                                }}
+                              />
+                            </div>
+                            <span className="text-xs text-muted-foreground tabular-nums text-right mt-1">
+                              {Math.round(complianceScore)}% compliant
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    {index < frameworksWithControls.length - 1 && (
+                      <div className="border-t border-muted/30" />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </ScrollArea>
+        </div>
+      </CardContent>
+
+      <CardFooter className="mt-auto">
+        <div className="flex justify-center w-full">
+          <Button variant="outline" onClick={() => setIsAddFrameworkModalOpen(true)}>
+            <PlusIcon className="h-4 w-4 mr-2" />
+            Add Framework
           </Button>
         </div>
-      </div>
+      </CardFooter>
+
       <Dialog open={isAddFrameworkModalOpen} onOpenChange={setIsAddFrameworkModalOpen}>
         {isAddFrameworkModalOpen && (
           <AddFrameworkModal
@@ -59,6 +149,6 @@ export function FrameworksOverview({
           />
         )}
       </Dialog>
-    </div>
+    </Card>
   );
 }

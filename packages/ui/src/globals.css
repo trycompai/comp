@@ -26,13 +26,14 @@
     --ring: 168 84% 24%; /* emerald-700 */
     --radius: 0.5rem;
 
-    --chart-positive: 142 76% 45%; /* Green: use for published, or reviewed = the items are in a good state */
+    --chart-primary: 156 93% 36%;
+    --chart-positive: 163 64% 21%; /* Green: use for published, or reviewed = the items are in a good state */
     --chart-neutral: 45 89% 53%; /* Yellow: use for draft(s) and actions that need reviewing soon */
     --chart-warning: 220 14% 53%; /* Gray: deleted, archived - states that have been closed */
     --chart-destructive: 0 85% 60%; /* Red: use for needs review, something that needs action immediately */
     --chart-other: 196 80% 45%; /* Blue: use for other states */
 
-    --chart-closed: #00dc73;
+    --chart-closed: ##06b26c;
     --chart-pending: #0ba5e9;
     --chart-open: #ffc007;
     --chart-archived: #64748b;
