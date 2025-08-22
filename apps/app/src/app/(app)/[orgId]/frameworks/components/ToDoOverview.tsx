@@ -85,7 +85,7 @@ export function ToDoOverview({
     try {
       handlePublishPolicies();
     } catch (error) {
-      console.error('Error performing action:', error);
+      toast.error('Failed to publish policies.');
     } finally {
       setIsLoading(false);
     }
