@@ -46,7 +46,9 @@ export const onboardOrganization = task({
       const owner = await db.member.findFirst({
         where: {
           organizationId: payload.organizationId,
-          role: 'owner',
+          role: {
+            contains: 'owner',
+          },
         },
       });
 
