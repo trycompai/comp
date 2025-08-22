@@ -1,7 +1,7 @@
 <!-- PROJECT LOGO -->
 <p align="center">
   <a href="https://github.com/trycompai/comp">
-   <img src="https://trycomp.ai/horizontal_black.svg" alt="Logo" width="50%">
+   <img src="https://lp.trycomp.ai/logo_light.svg" alt="Logo" width="50%">
   </a>
 
   <h3 align="center">Comp AI</h3>
