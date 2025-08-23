@@ -45,13 +45,13 @@ export const revokeInvitation = authActionClient
         !currentUserMember ||
         (!currentUserMember.role.includes('admin') && !currentUserMember.role.includes('owner'))
       ) {
-      return {
-        success: false,
-        error: {
-          code: appErrors.UNAUTHORIZED,
-          message: "You don't have permission to revoke invitations",
-        },
-      };
+        return {
+          success: false,
+          error: {
+            code: appErrors.UNAUTHORIZED,
+            message: "You don't have permission to revoke invitations",
+          },
+        };
       }
 
       // Check if the invitation exists in the organization
