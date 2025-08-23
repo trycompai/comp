@@ -48,7 +48,11 @@ export const EmployeeDetails = ({
   });
 
   const { execute, status: actionStatus } = useAction(updateEmployee, {
-    onSuccess: () => {
+    onSuccess: (res) => {
+      if (!res?.data?.success) {
+        toast.error(res?.data?.error?.message || 'Failed to update employee details');
+        return;
+      }
       toast.success('Employee details updated successfully');
     },
     onError: (error) => {

@@ -29,7 +29,35 @@ export const updateEmployee = authActionClient
     const { employeeId, name, email, department, isActive, createdAt } = parsedInput;
 
     const organizationId = ctx.session.activeOrganizationId;
-    if (!organizationId) throw new Error(appErrors.UNAUTHORIZED.message);
+    if (!organizationId) {
+      return {
+        success: false,
+        error: {
+          code: appErrors.UNAUTHORIZED,
+          message: appErrors.UNAUTHORIZED.message,
+        },
+      };
+    }
+
+    const currentUserMember = await db.member.findFirst({
+      where: {
+        organizationId: organizationId,
+        userId: ctx.user.id,
+      },
+    });
+
+    if (
+      !currentUserMember ||
+      (!currentUserMember.role.includes('admin') && !currentUserMember.role.includes('owner'))
+    ) {
+        return {
+          success: false,
+          error: {
+            code: appErrors.UNAUTHORIZED,
+            message: "You don't have permission to update members.",
+          },
+        };
+    }
 
     const member = await db.member.findUnique({
       where: {
@@ -40,7 +68,13 @@ export const updateEmployee = authActionClient
     });
 
     if (!member || !member.user) {
-      throw new Error(appErrors.NOT_FOUND.message);
+      return {
+        success: false,
+        error: {
+          code: appErrors.NOT_FOUND,
+          message: appErrors.NOT_FOUND.message,
+        },
+      };
     }
 
     const memberUpdateData: {
@@ -110,7 +144,13 @@ export const updateEmployee = authActionClient
         if (error.code === 'P2002') {
           const targetFields = error.meta?.target as string[] | undefined;
           if (targetFields?.includes('email')) {
-            throw new Error('Email address is already in use.');
+            return {
+              success: false,
+              error: {
+                code: appErrors.UNEXPECTED_ERROR,
+                message: 'Email address is already in use.',
+              },
+            };
           }
         }
       }
