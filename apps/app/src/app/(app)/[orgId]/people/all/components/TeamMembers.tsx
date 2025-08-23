@@ -24,11 +24,11 @@ export async function TeamMembers() {
   const organizationId = session?.session.activeOrganizationId;
 
   const currentUserMember = await db.member.findFirst({
-      where: {
-        organizationId: session?.session.activeOrganizationId,
-        userId: session?.user.id,
-      },
-    });
+    where: {
+      organizationId: session?.session.activeOrganizationId,
+      userId: session?.user.id,
+    },
+  });
 
   const canManageMembers = ['owner', 'admin'].includes(currentUserMember?.role ?? '');
 

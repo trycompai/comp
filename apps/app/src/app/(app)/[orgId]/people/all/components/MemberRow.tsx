@@ -61,7 +61,7 @@ function getInitials(name?: string | null, email?: string | null): string {
   return '??';
 }
 
-export function MemberRow({ member, onRemove, onUpdateRole, canEdit}: MemberRowProps) {
+export function MemberRow({ member, onRemove, onUpdateRole, canEdit }: MemberRowProps) {
   const params = useParams<{ orgId: string }>();
   const { orgId } = params;
 

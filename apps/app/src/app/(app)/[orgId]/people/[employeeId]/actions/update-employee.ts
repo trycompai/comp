@@ -50,13 +50,13 @@ export const updateEmployee = authActionClient
       !currentUserMember ||
       (!currentUserMember.role.includes('admin') && !currentUserMember.role.includes('owner'))
     ) {
-        return {
-          success: false,
-          error: {
-            code: appErrors.UNAUTHORIZED,
-            message: "You don't have permission to update members.",
-          },
-        };
+      return {
+        success: false,
+        error: {
+          code: appErrors.UNAUTHORIZED,
+          message: "You don't have permission to update members.",
+        },
+      };
     }
 
     const member = await db.member.findUnique({
