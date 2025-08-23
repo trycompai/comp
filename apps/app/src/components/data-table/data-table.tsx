@@ -1,5 +1,5 @@
 import { type Table as TanstackTable, flexRender } from '@tanstack/react-table';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import type * as React from 'react';
 
 import { getCommonPinningStyles } from '@/lib/data-table';
@@ -10,8 +10,8 @@ import { DataTablePagination } from './data-table-pagination';
 interface DataTableProps<TData> extends React.ComponentProps<'div'> {
   table: TanstackTable<TData>;
   actionBar?: React.ReactNode;
-  getRowId?: (row: TData) => string;
-  rowClickBasePath?: string;
+  getRowId: (row: TData) => string;
+  rowClickBasePath: string;
   tableId?: string;
   onRowClick?: (row: TData) => void;
 }
@@ -27,19 +27,12 @@ export function DataTable<TData>({
   onRowClick,
   ...props
 }: DataTableProps<TData>) {
-  const router = useRouter();
-
   const handleRowClick = (row: TData) => {
     if (onRowClick) {
       onRowClick(row);
     }
-    if (getRowId) {
-      const id = getRowId(row);
-      router.push(`${rowClickBasePath}/${id}`);
-    }
   };
 
-  // Apply client-side filtering
   const filteredRows = table.getFilteredRowModel().rows;
 
   return (
@@ -74,31 +67,42 @@ export function DataTable<TData>({
           </TableHeader>
           <TableBody>
             {filteredRows.length ? (
-              filteredRows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && 'selected'}
-                  className={cn((getRowId || onRowClick) && 'hover:bg-muted/50 cursor-pointer')}
-                  onClick={() => handleRowClick(row.original)}
-                >
-                  {row.getVisibleCells().map((cell, index) => (
-                    <TableCell
-                      key={cell.id}
-                      className={cn(
-                        index !== 0 && 'hidden md:table-cell',
-                        index === 0 && 'truncate',
-                      )}
-                      style={{
-                        ...getCommonPinningStyles({
-                          column: cell.column,
-                        }),
-                      }}
-                    >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
+              filteredRows.map((row) => {
+                const id = getRowId(row.original);
+                const href = `${rowClickBasePath}/${id}`;
+
+                return (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && 'selected'}
+                    className="hover:bg-muted/50"
+                  >
+                    {row.getVisibleCells().map((cell, index) => (
+                      <TableCell
+                        key={cell.id}
+                        className={cn(
+                          index !== 0 && 'hidden md:table-cell',
+                          index === 0 && 'truncate',
+                        )}
+                        style={{
+                          ...getCommonPinningStyles({
+                            column: cell.column,
+                          }),
+                        }}
+                      >
+                        <Link
+                          href={href}
+                          onClick={() => handleRowClick(row.original)}
+                          className="block w-full h-full"
+                          style={{ textDecoration: 'none', color: 'inherit' }}
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </Link>
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                );
+              })
             ) : (
               <TableRow>
                 <TableCell
