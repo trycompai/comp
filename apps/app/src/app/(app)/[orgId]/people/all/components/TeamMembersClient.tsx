@@ -123,7 +123,12 @@ export function TeamMembersClient({
   const handleCancelInvitation = async (invitationId: string) => {
     const result = await revokeInvitationAction({ invitationId });
     if (result?.data) {
+      if (result.data?.error) {
+        toast.error(result.data.error.message || 'Failed to cancel invitation');
+        return;
+      }
       // Success case
+      toast.success('Invitation has been cancelled');
       // Data revalidates server-side via action's revalidatePath
       router.refresh(); // Add client-side refresh as well
     } else {
