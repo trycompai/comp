@@ -43,6 +43,7 @@ interface MemberRowProps {
   member: MemberWithUser;
   onRemove: (memberId: string) => void;
   onUpdateRole: (memberId: string, roles: Role[]) => void;
+  canEdit: boolean;
 }
 
 // Helper to get initials
@@ -60,7 +61,7 @@ function getInitials(name?: string | null, email?: string | null): string {
   return '??';
 }
 
-export function MemberRow({ member, onRemove, onUpdateRole }: MemberRowProps) {
+export function MemberRow({ member, onRemove, onUpdateRole, canEdit}: MemberRowProps) {
   const params = useParams<{ orgId: string }>();
   const { orgId } = params;
 
@@ -89,7 +90,6 @@ export function MemberRow({ member, onRemove, onUpdateRole }: MemberRowProps) {
   ) as Role[];
 
   const isOwner = currentRoles.includes('owner');
-  const canEditRoles = true;
   const canRemove = !isOwner;
 
   const isEmployee = currentRoles.includes('employee');
@@ -183,7 +183,7 @@ export function MemberRow({ member, onRemove, onUpdateRole }: MemberRowProps) {
                 variant="ghost"
                 size="sm"
                 className="h-8 w-8 p-0"
-                disabled={!canEditRoles}
+                disabled={!canEdit}
               >
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
@@ -199,7 +199,7 @@ export function MemberRow({ member, onRemove, onUpdateRole }: MemberRowProps) {
                 }
               }}
             >
-              {canEditRoles && (
+              {canEdit && (
                 <Dialog open={isUpdateRolesOpen} onOpenChange={handleDialogOpenChange}>
                   <DialogTrigger asChild>
                     <DropdownMenuItem
