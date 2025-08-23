@@ -13,12 +13,13 @@ import {
   CommandSeparator,
 } from '@comp/ui/command';
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@comp/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import type { Organization } from '@db';
 import { Check, ChevronsUpDown, Loader2, Plus, Search } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
 import { useQueryState } from 'nuqs';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface OrganizationSwitcherProps {
   organizations: Organization[];
@@ -88,6 +89,27 @@ export function OrganizationSwitcher({
   const router = useRouter();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [pendingOrgId, setPendingOrgId] = useState<string | null>(null);
+  const [sortOrder, setSortOrder] = useState('alphabetical');
+
+  useEffect(() => {
+    const savedSortOrder = localStorage.getItem('org-sort-order');
+    if (savedSortOrder) {
+      setSortOrder(savedSortOrder);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('org-sort-order', sortOrder);
+  }, [sortOrder]);
+
+  const sortedOrganizations = [...organizations].sort((a, b) => {
+    if (sortOrder === 'alphabetical') {
+      return (a.name).localeCompare(b.name);
+    } else if (sortOrder === 'recent') {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    }
+    return 0;
+  });
 
   const [showOrganizationSwitcher, setShowOrganizationSwitcher] = useQueryState(
     'showOrganizationSwitcher',
@@ -177,10 +199,21 @@ export function OrganizationSwitcher({
                 className="placeholder:text-muted-foreground flex h-11 w-full rounded-md border-0 bg-transparent py-3 text-sm outline-hidden focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
               />
             </div>
+            <div className="p-2">
+              <Select value={sortOrder} onValueChange={setSortOrder}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Sort by..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="alphabetical">Alphabetical</SelectItem>
+                  <SelectItem value="recent">Recently Created</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <CommandList>
               <CommandEmpty>No results found</CommandEmpty>
               <CommandGroup className="max-h-[300px] overflow-y-auto">
-                {organizations.map((org) => (
+                {sortedOrganizations.map((org) => (
                   <CommandItem
                     key={org.id}
                     // Search by id and name
