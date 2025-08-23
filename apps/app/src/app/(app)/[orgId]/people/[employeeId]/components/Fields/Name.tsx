@@ -3,7 +3,13 @@ import { Input } from '@comp/ui/input';
 import type { Control } from 'react-hook-form';
 import type { EmployeeFormValues } from '../EmployeeDetails';
 
-export const Name = ({ control }: { control: Control<EmployeeFormValues> }) => {
+export const Name = ({
+  control,
+  disabled,
+}: {
+  control: Control<EmployeeFormValues>;
+  disabled: boolean;
+}) => {
   return (
     <FormField
       control={control}
@@ -14,7 +20,7 @@ export const Name = ({ control }: { control: Control<EmployeeFormValues> }) => {
             NAME
           </FormLabel>
           <FormControl>
-            <Input {...field} placeholder="Employee name" className="h-10" />
+            <Input {...field} placeholder="Employee name" className="h-10" disabled={disabled} />
           </FormControl>
           <FormMessage />
         </FormItem>
