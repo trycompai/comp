@@ -8,7 +8,6 @@ import { z } from 'zod';
 // Adjust safe-action import for colocalized structure
 import { authActionClient } from '@/actions/safe-action';
 import type { ActionResponse } from '@/actions/types';
-import { appErrors } from '../../types';
 
 const revokeInvitationSchema = z.object({
   invitationId: z.string(),
@@ -47,10 +46,7 @@ export const revokeInvitation = authActionClient
       ) {
         return {
           success: false,
-          error: {
-            code: appErrors.UNAUTHORIZED,
-            message: "You don't have permission to revoke invitations",
-          },
+          error: "You don't have permission to revoke invitations",
         };
       }
 

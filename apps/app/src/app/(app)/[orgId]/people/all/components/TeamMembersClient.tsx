@@ -124,7 +124,7 @@ export function TeamMembersClient({
     const result = await revokeInvitationAction({ invitationId });
     if (result?.data) {
       if (result.data?.error) {
-        toast.error(result.data.error.message || 'Failed to cancel invitation');
+        toast.error(String(result?.data?.error) || 'Failed to cancel invitation');
         return;
       }
       // Success case
