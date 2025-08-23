@@ -1,5 +1,6 @@
 import { type Table as TanstackTable, flexRender } from '@tanstack/react-table';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import type * as React from 'react';
 
 import { getCommonPinningStyles } from '@/lib/data-table';
@@ -10,8 +11,8 @@ import { DataTablePagination } from './data-table-pagination';
 interface DataTableProps<TData> extends React.ComponentProps<'div'> {
   table: TanstackTable<TData>;
   actionBar?: React.ReactNode;
-  getRowId: (row: TData) => string;
-  rowClickBasePath: string;
+  getRowId?: (row: TData) => string;
+  rowClickBasePath?: string;
   tableId?: string;
   onRowClick?: (row: TData) => void;
 }
@@ -27,13 +28,21 @@ export function DataTable<TData>({
   onRowClick,
   ...props
 }: DataTableProps<TData>) {
+  const router = useRouter();
+
   const handleRowClick = (row: TData) => {
     if (onRowClick) {
       onRowClick(row);
     }
+    // This part of the handler will now only be used for non-link rows
+    if (getRowId && rowClickBasePath) {
+      const id = getRowId(row);
+      router.push(`${rowClickBasePath}/${id}`);
+    }
   };
 
   const filteredRows = table.getFilteredRowModel().rows;
+  const canBeLinks = getRowId && rowClickBasePath;
 
   return (
     <div className={cn('space-y-4', className)} {...props}>
@@ -67,17 +76,17 @@ export function DataTable<TData>({
           </TableHeader>
           <TableBody>
             {filteredRows.length ? (
-              filteredRows.map((row) => {
-                const id = getRowId(row.original);
-                const href = `${rowClickBasePath}/${id}`;
+              filteredRows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && 'selected'}
+                  className={cn((getRowId || onRowClick) && 'hover:bg-muted/50 cursor-pointer')}
+                  onClick={!canBeLinks ? () => handleRowClick(row.original) : undefined}
+                >
+                  {row.getVisibleCells().map((cell, index) => {
+                    const href = canBeLinks ? `${rowClickBasePath}/${getRowId(row.original)}` : '';
 
-                return (
-                  <TableRow
-                    key={row.id}
-                    data-state={row.getIsSelected() && 'selected'}
-                    className="hover:bg-muted/50"
-                  >
-                    {row.getVisibleCells().map((cell, index) => (
+                    return (
                       <TableCell
                         key={cell.id}
                         className={cn(
@@ -90,19 +99,23 @@ export function DataTable<TData>({
                           }),
                         }}
                       >
-                        <Link
-                          href={href}
-                          onClick={() => handleRowClick(row.original)}
-                          className="block w-full h-full"
-                          style={{ textDecoration: 'none', color: 'inherit' }}
-                        >
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </Link>
+                        {canBeLinks ? (
+                          <Link
+                            href={href}
+                            onClick={() => onRowClick && onRowClick(row.original)}
+                            className="block"
+                            style={{ color: 'inherit', textDecoration: 'none' }}
+                          >
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </Link>
+                        ) : (
+                          flexRender(cell.column.columnDef.cell, cell.getContext())
+                        )}
                       </TableCell>
-                    ))}
-                  </TableRow>
-                );
-              })
+                    );
+                  })}
+                </TableRow>
+              ))
             ) : (
               <TableRow>
                 <TableCell
