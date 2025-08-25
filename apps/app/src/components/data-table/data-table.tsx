@@ -1,4 +1,5 @@
 import { type Table as TanstackTable, flexRender } from '@tanstack/react-table';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type * as React from 'react';
 
@@ -33,14 +34,15 @@ export function DataTable<TData>({
     if (onRowClick) {
       onRowClick(row);
     }
-    if (getRowId) {
+    // This part of the handler will now only be used for non-link rows
+    if (getRowId && rowClickBasePath) {
       const id = getRowId(row);
       router.push(`${rowClickBasePath}/${id}`);
     }
   };
 
-  // Apply client-side filtering
   const filteredRows = table.getFilteredRowModel().rows;
+  const canBeLinks = getRowId && rowClickBasePath;
 
   return (
     <div className={cn('space-y-4', className)} {...props}>
@@ -79,24 +81,39 @@ export function DataTable<TData>({
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
                   className={cn((getRowId || onRowClick) && 'hover:bg-muted/50 cursor-pointer')}
-                  onClick={() => handleRowClick(row.original)}
+                  onClick={!canBeLinks ? () => handleRowClick(row.original) : undefined}
                 >
-                  {row.getVisibleCells().map((cell, index) => (
-                    <TableCell
-                      key={cell.id}
-                      className={cn(
-                        index !== 0 && 'hidden md:table-cell',
-                        index === 0 && 'truncate',
-                      )}
-                      style={{
-                        ...getCommonPinningStyles({
-                          column: cell.column,
-                        }),
-                      }}
-                    >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
+                  {row.getVisibleCells().map((cell, index) => {
+                    const href = canBeLinks ? `${rowClickBasePath}/${getRowId(row.original)}` : '';
+
+                    return (
+                      <TableCell
+                        key={cell.id}
+                        className={cn(
+                          index !== 0 && 'hidden md:table-cell',
+                          index === 0 && 'truncate',
+                        )}
+                        style={{
+                          ...getCommonPinningStyles({
+                            column: cell.column,
+                          }),
+                        }}
+                      >
+                        {canBeLinks ? (
+                          <Link
+                            href={href}
+                            onClick={() => onRowClick && onRowClick(row.original)}
+                            className="block"
+                            style={{ color: 'inherit', textDecoration: 'none' }}
+                          >
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </Link>
+                        ) : (
+                          flexRender(cell.column.columnDef.cell, cell.getContext())
+                        )}
+                      </TableCell>
+                    );
+                  })}
                 </TableRow>
               ))
             ) : (
