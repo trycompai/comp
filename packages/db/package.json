@@ -34,7 +34,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
-    "db:seed": "prisma db seed",
+    "db:seed": "bun prisma/seed/seed.ts",
     "db:studio": "prisma studio",
     "docker:clean": "docker compose down -v",
     "docker:down": "docker compose down",
