@@ -132,9 +132,12 @@ export async function getFleetAgent({ os }: { os: 'macos' | 'windows' }) {
       throw new Error(`Unsupported OS: ${os}`);
   }
 
+  const macosPackageFilename = 'Comp AI Agent-1.0.0-arm64.dmg';
+  const windowsPackageFilename = 'fleet-osquery.msi';
+
   const getFleetAgentCommand = new GetObjectCommand({
     Bucket: fleetBucketName,
-    Key: `${os}/fleet-osquery.${extension}`,
+    Key: `${os}/${os === 'macos' ? macosPackageFilename : windowsPackageFilename}`,
   });
 
   const response = await s3Client.send(getFleetAgentCommand);

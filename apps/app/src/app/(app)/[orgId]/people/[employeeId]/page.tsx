@@ -1,5 +1,6 @@
 import { auth } from '@/utils/auth';
 
+import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import {
   type TrainingVideo,
   trainingVideos as trainingVideosData,
@@ -15,9 +16,9 @@ import { Employee } from './components/Employee';
 export default async function EmployeeDetailsPage({
   params,
 }: {
-  params: Promise<{ employeeId: string }>;
+  params: Promise<{ employeeId: string; orgId: string }>;
 }) {
-  const { employeeId } = await params;
+  const { employeeId, orgId } = await params;
 
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -50,14 +51,21 @@ export default async function EmployeeDetailsPage({
   const { fleetPolicies, device } = await getFleetPolicies(employee);
 
   return (
-    <Employee
-      employee={employee}
-      policies={policies}
-      trainingVideos={employeeTrainingVideos}
-      fleetPolicies={fleetPolicies}
-      host={device}
-      canEdit={canEditMembers}
-    />
+    <PageWithBreadcrumb
+      breadcrumbs={[
+        { label: 'People', href: `/${orgId}/people/all` },
+        { label: employee.user.name, current: true },
+      ]}
+    >
+      <Employee
+        employee={employee}
+        policies={policies}
+        trainingVideos={employeeTrainingVideos}
+        fleetPolicies={fleetPolicies}
+        host={device}
+        canEdit={canEditMembers}
+      />
+    </PageWithBreadcrumb>
   );
 }
 
