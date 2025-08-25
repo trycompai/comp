@@ -38,9 +38,6 @@ export default async function TasksPage({
 }
 
 const getTasks = async (statusParam?: string) => {
-  console.log('Fetching tasks...', {
-    statusParam,
-  });
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -59,7 +56,6 @@ const getTasks = async (statusParam?: string) => {
   // Filter by Status (using passed argument)
   if (typeof statusParam === 'string' && statusParam in TaskStatus) {
     whereClause.status = statusParam as TaskStatus;
-    console.log(`Filtering by status: ${whereClause.status}`);
   }
 
   const tasks = await db.task.findMany({
@@ -70,7 +66,6 @@ const getTasks = async (statusParam?: string) => {
 };
 
 const getMembersWithMetadata = async () => {
-  console.log('Fetching members...');
   const session = await auth.api.getSession({
     headers: await headers(),
   });

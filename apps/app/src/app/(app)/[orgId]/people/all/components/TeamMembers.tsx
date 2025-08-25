@@ -23,6 +23,15 @@ export async function TeamMembers() {
   });
   const organizationId = session?.session.activeOrganizationId;
 
+  const currentUserMember = await db.member.findFirst({
+    where: {
+      organizationId: session?.session.activeOrganizationId,
+      userId: session?.user.id,
+    },
+  });
+
+  const canManageMembers = ['owner', 'admin'].includes(currentUserMember?.role ?? '');
+
   let members: MemberWithUser[] = [];
   let pendingInvitations: Invitation[] = [];
 
@@ -65,6 +74,7 @@ export async function TeamMembers() {
       organizationId={organizationId ?? ''}
       removeMemberAction={removeMember}
       revokeInvitationAction={revokeInvitation}
+      canManageMembers={canManageMembers}
     />
   );
 }

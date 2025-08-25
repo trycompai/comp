@@ -26,6 +26,15 @@ export default async function EmployeeDetailsPage({
 
   const organizationId = session?.session.activeOrganizationId;
 
+  const currentUserMember = await db.member.findFirst({
+    where: {
+      organizationId,
+      userId: session?.user.id,
+    },
+  });
+
+  const canEditMembers = ['owner', 'admin'].includes(currentUserMember?.role ?? '');
+
   if (!organizationId) {
     redirect('/');
   }
@@ -54,6 +63,7 @@ export default async function EmployeeDetailsPage({
         trainingVideos={employeeTrainingVideos}
         fleetPolicies={fleetPolicies}
         host={device}
+        canEdit={canEditMembers}
       />
     </PageWithBreadcrumb>
   );
