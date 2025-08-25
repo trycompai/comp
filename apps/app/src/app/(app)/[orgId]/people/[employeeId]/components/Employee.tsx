@@ -16,6 +16,7 @@ interface EmployeeDetailsProps {
   })[];
   fleetPolicies: FleetPolicy[];
   host: Host;
+  canEdit: boolean;
 }
 
 export function Employee({
@@ -24,10 +25,11 @@ export function Employee({
   trainingVideos,
   fleetPolicies,
   host,
+  canEdit,
 }: EmployeeDetailsProps) {
   return (
     <div className="flex flex-col gap-4">
-      <EmployeeDetails employee={employee} />
+      <EmployeeDetails employee={employee} canEdit={canEdit} />
       <EmployeeTasks
         employee={employee}
         policies={policies}

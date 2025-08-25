@@ -14,7 +14,13 @@ const DEPARTMENTS: { value: Departments; label: string }[] = [
   { value: 'none', label: 'None' },
 ];
 
-export const Department = ({ control }: { control: Control<EmployeeFormValues> }) => {
+export const Department = ({
+  control,
+  disabled,
+}: {
+  control: Control<EmployeeFormValues>;
+  disabled: boolean;
+}) => {
   return (
     <FormField
       control={control}
@@ -24,7 +30,12 @@ export const Department = ({ control }: { control: Control<EmployeeFormValues> }
           <FormLabel className="text-muted-foreground text-xs font-medium uppercase">
             Department
           </FormLabel>
-          <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+          <Select
+            onValueChange={field.onChange}
+            defaultValue={field.value}
+            value={field.value}
+            disabled={disabled}
+          >
             <FormControl>
               <SelectTrigger className="h-10">
                 <SelectValue placeholder="Select department" />
