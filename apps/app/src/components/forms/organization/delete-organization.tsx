@@ -42,7 +42,7 @@ export function DeleteOrganization({ organizationId }: { organizationId: string 
   });
 
   return (
-    <Card className="border-destructive border">
+    <Card className="border-destructive border border-2">
       <CardHeader>
         <div className="flex items-center gap-2">
           <CardTitle>{'Delete organization'}</CardTitle>
