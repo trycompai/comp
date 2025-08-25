@@ -92,7 +92,9 @@ export async function GET(req: NextRequest) {
 
     // Get package from S3 and stream it
     const packageFilename = getPackageFilename(os);
-    const packageKey = `${os}/fleet-osquery.${os === 'macos' ? 'pkg' : 'msi'}`;
+    const macosPackageFilename = 'Comp AI Agent-1.0.0-arm64.dmg';
+    const windowsPackageFilename = 'fleet-osquery.msi';
+    const packageKey = `${os}/${os === 'macos' ? macosPackageFilename : windowsPackageFilename}`;
 
     const getObjectCommand = new GetObjectCommand({
       Bucket: fleetBucketName,
