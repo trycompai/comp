@@ -3,6 +3,7 @@
 import { auth } from '@/utils/auth';
 import type { Role } from '@db';
 import { db } from '@db';
+import { headers } from 'next/headers';
 
 export const addEmployeeWithoutInvite = async ({
   email,
@@ -14,6 +15,25 @@ export const addEmployeeWithoutInvite = async ({
   roles: Role[];
 }) => {
   try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.session) {
+      throw new Error('Authentication required.');
+    }
+    const currentUserId = session.session.userId;
+    const currentUserMember = await db.member.findFirst({
+      where: {
+        organizationId: organizationId,
+        userId: currentUserId,
+      },
+    });
+
+    if (
+      !currentUserMember ||
+      (!currentUserMember.role.includes('admin') && !currentUserMember.role.includes('owner'))
+    ) {
+      throw new Error("You don't have permission to add members.");
+    }
+
     let userId = '';
     const existingUser = await db.user.findUnique({
       where: {

@@ -28,9 +28,14 @@ interface PendingInvitationRowProps {
     createdAt?: Date;
   };
   onCancel: (invitationId: string) => Promise<void>;
+  canCancel: boolean;
 }
 
-export function PendingInvitationRow({ invitation, onCancel }: PendingInvitationRowProps) {
+export function PendingInvitationRow({
+  invitation,
+  onCancel,
+  canCancel,
+}: PendingInvitationRowProps) {
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -105,7 +110,11 @@ export function PendingInvitationRow({ invitation, onCancel }: PendingInvitation
             ))}
           </div>
           <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
-            <DropdownMenuTrigger ref={dropdownTriggerRef} asChild disabled={isCancelling}>
+            <DropdownMenuTrigger
+              ref={dropdownTriggerRef}
+              asChild
+              disabled={isCancelling || !canCancel}
+            >
               <Button variant="ghost" className="data-[state=open]:bg-muted flex h-8 w-8 p-0">
                 <MoreHorizontal className="h-4 w-4" />
                 <span className="sr-only">Open menu</span>

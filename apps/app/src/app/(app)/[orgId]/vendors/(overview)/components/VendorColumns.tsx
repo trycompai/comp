@@ -6,6 +6,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { UserIcon } from 'lucide-react';
 import Link from 'next/link';
 import type { GetVendorsResult } from '../data/queries';
+import { VendorDeleteCell } from './VendorDeleteCell';
 
 type VendorRow = GetVendorsResult['data'][number];
 
@@ -124,5 +125,13 @@ export const columns: ColumnDef<VendorRow>[] = [
       placeholder: 'Search by assignee...',
       variant: 'select',
     },
+  },
+  {
+    id: 'delete-vendor',
+    cell: ({ row }) => {
+      return <VendorDeleteCell vendor={row.original} />;
+    },
+    enableSorting: false,
+    enableHiding: false,
   },
 ];
