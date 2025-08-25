@@ -22,7 +22,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@dub/analytics": "^0.0.27",
     "@dub/better-auth": "^0.0.3",
-    "@dub/embed-react": "^0.0.15",
+    "@dub/embed-react": "^0.0.16",
     "@hookform/resolvers": "^5.1.1",
     "@mendable/firecrawl-js": "^1.24.0",
     "@nangohq/frontend": "^0.53.2",
