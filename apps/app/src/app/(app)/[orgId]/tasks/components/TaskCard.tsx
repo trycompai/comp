@@ -1,11 +1,11 @@
 'use client';
 
-import type { Member, Task, TaskStatus, User } from '@db';
+import type { Member, Task, User } from '@db';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
-import { TaskStatusIndicator } from './TaskStatusIndicator';
+import { TaskStatusSelector } from './TaskStatusSelector';
 
 // DnD Item Type identifier for tasks.
 export const ItemTypes = {
@@ -85,8 +85,6 @@ export function TaskCard({
         return;
       }
 
-      const dragIndex = item.index;
-      const hoverIndex = index;
       const clientOffset = monitor.getClientOffset();
       if (!clientOffset) return;
 
@@ -151,20 +149,6 @@ export function TaskCard({
     return members.find((m) => m.id === task.assigneeId);
   }, [task.assigneeId, members]);
 
-  // Helper to get Tailwind class for the entity type indicator dot.
-  const getEntityTypeDotClass = (entityType: 'control' | 'risk' | 'vendor'): string => {
-    switch (entityType) {
-      case 'control':
-        return 'bg-blue-500';
-      case 'risk':
-        return 'bg-red-500';
-      case 'vendor':
-        return 'bg-green-500';
-      default:
-        return 'bg-gray-500';
-    }
-  };
-
   // Navigation handler for clicking on the task card.
   const handleNavigate = () => {
     const targetPath = `${pathname}/${task.id}`;
@@ -174,9 +158,8 @@ export function TaskCard({
   return (
     <div
       ref={setRefs}
-      onClick={handleNavigate}
       className={`group relative flex w-full items-center pr-2 ${!isLast ? 'border-border border-b' : ''} ${
-        isDragging ? 'bg-muted opacity-30' : 'hover:bg-muted/50 cursor-pointer opacity-100'
+        isDragging ? 'bg-muted opacity-30' : 'hover:bg-muted/50 opacity-100'
       }`}
     >
       {/* Reorder Indicator (Solid Line) */}
@@ -203,26 +186,32 @@ export function TaskCard({
       <div className="text-muted-foreground/50 flex h-8 w-6 shrink-0 cursor-grab items-center justify-center opacity-0 transition-opacity group-hover:opacity-100">
         <span className="text-xs">::</span>
       </div>
-      <div className="mr-2 flex h-8 w-6 shrink-0 items-center justify-center">
-        <TaskStatusIndicator status={task.status as TaskStatus} />
+      <div className="mr-2 flex shrink-0 items-center justify-center">
+        <TaskStatusSelector task={task} />
       </div>
-      <span className="min-w-0 flex-grow truncate py-2 text-sm">{task.title}</span>
-      <div className="ml-auto flex shrink-0 items-center space-x-3 pl-2">
-        <span className="text-muted-foreground text-xs whitespace-nowrap">Apr 15</span>
-        <div className="bg-muted flex h-5 w-5 items-center justify-center overflow-hidden rounded-full border">
-          {assignedMember?.user?.image ? (
-            <Image
-              src={assignedMember.user.image}
-              alt={assignedMember.user.name ?? 'Assignee'}
-              width={20}
-              height={20}
-              className="object-cover"
-            />
-          ) : (
-            <span className="text-muted-foreground text-[10px]">
-              {assignedMember?.user?.name?.charAt(0) ?? '?'}
-            </span>
-          )}
+
+      <div
+        className="flex flex-grow items-center h-full min-w-0 cursor-pointer"
+        onClick={handleNavigate}
+      >
+        <span className="min-w-0 flex-grow truncate py-2 text-sm">{task.title}</span>
+        <div className="ml-auto flex shrink-0 items-center space-x-3 pl-2">
+          <span className="text-muted-foreground text-xs whitespace-nowrap">Apr 15</span>
+          <div className="bg-muted flex h-5 w-5 items-center justify-center overflow-hidden rounded-full border">
+            {assignedMember?.user?.image ? (
+              <Image
+                src={assignedMember.user.image}
+                alt={assignedMember.user.name ?? 'Assignee'}
+                width={20}
+                height={20}
+                className="object-cover"
+              />
+            ) : (
+              <span className="text-muted-foreground text-[10px]">
+                {assignedMember?.user?.name?.charAt(0) ?? '?'}
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </div>
