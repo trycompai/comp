@@ -30,7 +30,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           </span>
         )}
         {leftIcon && !isUrl && !isPrefix && (
-          <span className="text-muted-foreground pointer-events-none absolute top-0 left-0 flex h-full items-center justify-center pl-3 text-sm">
+          <span className="text-primary pointer-events-none absolute top-0 left-0 flex h-full items-center justify-center pl-3 text-sm">
             {leftIcon}
           </span>
         )}

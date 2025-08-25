@@ -1,6 +1,7 @@
 import { Resend } from 'resend';
 
 export const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+export const domain = process.env.RESEND_DOMAIN ?? 'mail.trycomp.ai';
 
 export const sendEmail = async ({
   to,
@@ -28,13 +29,13 @@ export const sendEmail = async ({
   try {
     const { data, error } = await resend.emails.send({
       from: marketing
-        ? 'Lewis Carhart <lewis@mail.trycomp.ai>'
+        ? `Lewis Carhart <lewis@${domain}>`
         : system
-          ? 'Comp AI <mail@mail.trycomp.ai>'
-          : 'Comp AI <mail@mail.trycomp.ai>',
-      to: test ? 'mail@mail.trycomp.ai' : to,
+          ? `Comp AI <mail@${domain}>`
+          : `Comp AI <mail@${domain}>`,
+      to: test ? `mail@${domain}` : to,
       cc,
-      replyTo: marketing ? 'lewis@trycomp.ai' : undefined,
+      replyTo: marketing ? `lewis@${domain}` : undefined,
       subject,
       //@ts-ignore expected
       react,

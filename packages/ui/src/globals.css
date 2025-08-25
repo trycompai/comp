@@ -21,7 +21,7 @@
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 89.8%;
     --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
+    --ring: 165 100% 15%;
     --radius: 0.5rem;
 
     --chart-primary: 165 100% 15%;
@@ -57,7 +57,7 @@
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 89.8%;
     --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
+    --ring: 165 100% 15%;
     --radius: 0.5rem;
 
     --chart-primary: 165 100% 15%;
@@ -207,7 +207,6 @@
     transform: translate(-50%, -50%) scale(0.97);
   }
 }
-
 /* Spinner */
 .loading-wrapper {
   height: var(--spinner-size);
