@@ -169,25 +169,34 @@ export function DeviceAgentAccordionItem({
                     />
                   )}
                 </li>
-                <li>
-                  <strong>Enable MDM</strong>
-                  <div className="space-y-2">
-                    <p>
-                      {isMacOS
-                        ? 'On the top of your screen, find the Fleet Desktop app which looks like an F made of dots. Click on it and click My Device.'
-                        : 'Find the Fleet Desktop app in your system tray (bottom right corner). Click on it and click My Device.'}
+                {isMacOS ? (
+                  <li>
+                    <strong>Login with your work email</strong>
+                    <p className="mt-1">
+                      After installation, login with your work email, select your organization and
+                      then click "Link Device" and "Install Agent".
                     </p>
-                    <p>
-                      You should see a banner that asks you to enable MDM. Click the button and
-                      follow the instructions.
-                    </p>
-                    <p>
-                      After you've enabled MDM, if you refresh the page, the banner will disappear.
-                      Now your computer will automatically enable the necessary settings on your
-                      computer in order to be compliant.
-                    </p>
-                  </div>
-                </li>
+                  </li>
+                ) : (
+                  <li>
+                    <strong>Enable MDM</strong>
+                    <div className="space-y-2">
+                      <p>
+                        Find the Fleet Desktop app in your system tray (bottom right corner). Click
+                        on it and click My Device.
+                      </p>
+                      <p>
+                        You should see a banner that asks you to enable MDM. Click the button and
+                        follow the instructions.
+                      </p>
+                      <p>
+                        After you've enabled MDM, if you refresh the page, the banner will
+                        disappear. Now your computer will automatically enable the necessary
+                        settings on your computer in order to be compliant.
+                      </p>
+                    </div>
+                  </li>
+                )}
               </ol>
             </div>
           ) : (
