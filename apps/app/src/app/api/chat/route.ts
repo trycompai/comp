@@ -1,12 +1,18 @@
 import { tools } from '@/data/tools';
+import { env } from '@/env.mjs';
 import { auth } from '@/utils/auth';
-import { groq } from '@ai-sdk/groq';
+import { openai } from '@ai-sdk/openai';
 import { type UIMessage, convertToModelMessages, streamText } from 'ai';
 import { headers } from 'next/headers';
+import { NextResponse } from 'next/server';
 
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
+  if (!env.OPENAI_API_KEY) {
+    return NextResponse.json({ error: 'No API key provided.' }, { status: 500 });
+  }
+
   const { messages }: { messages: UIMessage[] } = await req.json();
 
   const session = await auth.api.getSession({
@@ -30,7 +36,7 @@ export async function POST(req: Request) {
 `;
 
   const result = streamText({
-    model: groq('deepseek-r1-distill-llama-70b'),
+    model: openai('gpt-5'),
     system: systemPrompt,
     messages: convertToModelMessages(messages),
     tools,

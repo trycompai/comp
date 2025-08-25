@@ -30,7 +30,9 @@ export async function TeamMembers() {
     },
   });
 
-  const canManageMembers = ['owner', 'admin'].includes(currentUserMember?.role ?? '');
+  // Parse roles from comma-separated string and check if user has admin or owner role
+  const currentUserRoles = currentUserMember?.role?.split(',').map((r) => r.trim()) ?? [];
+  const canManageMembers = currentUserRoles.some((role) => ['owner', 'admin'].includes(role));
 
   let members: MemberWithUser[] = [];
   let pendingInvitations: Invitation[] = [];

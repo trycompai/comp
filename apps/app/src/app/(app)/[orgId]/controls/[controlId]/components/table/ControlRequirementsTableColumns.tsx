@@ -49,7 +49,7 @@ export const ControlRequirementsTableColumns: ColumnDef<RequirementTableData>[] 
       return (
         <div className="flex items-center justify-center">
           {isCompleted ? (
-            <CheckCircle2 size={16} className="text-green-500" />
+            <CheckCircle2 size={16} className="text-primary" />
           ) : (
             <XCircle size={16} className="text-red-500" />
           )}

@@ -29,7 +29,7 @@ export function LoginForm({ inviteCode, showGoogle, showGithub }: LoginFormProps
     return (
       <Card className="w-full max-w-md">
         <CardContent className="flex flex-col items-center justify-center text-center space-y-6 py-16 px-6">
-          <CheckCircle2 className="h-16 w-16 text-green-500 dark:text-green-400" />
+          <CheckCircle2 className="h-16 w-16 text-primary" />
           <div className="space-y-2">
             <CardTitle className="text-2xl font-semibold text-card-foreground">
               Magic link sent

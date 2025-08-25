@@ -14,7 +14,7 @@ export const Messages = ({
   const [containerRef, endRef] = useScrollToBottom();
 
   return (
-    <div className="h-full flex-1 py-4" ref={containerRef}>
+    <div className="h-full flex-1" ref={containerRef}>
       <div className="mx-auto max-w-xl">
         {messages.map((m, i) => (
           <Message

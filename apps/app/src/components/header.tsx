@@ -22,7 +22,7 @@ export async function Header() {
   const { organizations } = await getOrganizations();
 
   return (
-    <header className="border/40 sticky top-0 z-10 flex items-center justify-between border-b px-4 py-2 backdrop-blur-sm">
+    <header className="border/40 sticky top-0 z-10 flex items-center justify-between border-b px-4 py-2 backdrop-blur-sm bg-card">
       <MobileMenu organizationId={currentOrganizationId} organizations={organizations} />
 
       <AssistantButton />

@@ -119,23 +119,11 @@ export function PolicyStatusChart({ data }: PolicyStatusChartProps) {
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">{'Policy by Status'}</CardTitle>
-
-          {data.totalPolicies > 0 && mostCommonStatus && (
-            <Badge
-              className="text-xs"
-              style={{
-                backgroundColor: `${mostCommonStatus.fill}20`,
-                color: mostCommonStatus.fill,
-              }}
-            >
-              Most: {mostCommonStatus.name}
-            </Badge>
-          )}
         </div>
 
-        <div className="bg-secondary/50 relative mt-2 h-1 w-full overflow-hidden rounded-full">
+        <div className="bg-secondary relative mt-2 h-1 w-full overflow-hidden rounded-full">
           <div
-            className="bg-primary/80 h-full transition-all"
+            className="bg-primary h-full transition-all"
             style={{
               width: `${(data.publishedPolicies / Math.max(data.totalPolicies, 1)) * 100}%`,
             }}

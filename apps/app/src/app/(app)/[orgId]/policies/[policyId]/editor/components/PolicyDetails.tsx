@@ -50,7 +50,7 @@ export function PolicyPageEditor({
   };
 
   return (
-    <div className="flex h-full flex-col border">
+    <div className="flex h-full flex-col border border-border rounded-md p-2">
       <PolicyEditor
         content={normalizedContent}
         onSave={handleSavePolicy}

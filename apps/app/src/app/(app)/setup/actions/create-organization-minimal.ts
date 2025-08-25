@@ -1,11 +1,7 @@
 'use server';
 
-import { getFrameworkNames } from '@/actions/organization/lib/get-framework-names';
 import { initializeOrganization } from '@/actions/organization/lib/initialize-organization';
 import { authActionClientWithoutOrg } from '@/actions/safe-action';
-import { isHubSpotConfigured } from '@/hubspot/api-client';
-import { createOrUpdateCompany, findCompanyByDomain } from '@/hubspot/companies';
-import { findContactByEmail } from '@/hubspot/contacts';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
 import { revalidatePath } from 'next/cache';
@@ -67,60 +63,6 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
       });
 
       const orgId = newOrg.id;
-
-      // Create HubSpot company if configured
-      if (isHubSpotConfigured()) {
-        try {
-          console.log('[HubSpot] Creating company for organization:', orgId);
-
-          // Extract domain from website URL
-          let domain = '';
-          try {
-            const url = new URL(parsedInput.website);
-            domain = url.hostname.replace('www.', '');
-          } catch (e) {
-            console.warn('[HubSpot] Could not parse website URL:', parsedInput.website);
-          }
-
-          // Check if company already exists
-          let companyId: string | null = null;
-          if (domain) {
-            const existingCompany = await findCompanyByDomain(domain);
-            companyId = existingCompany.companyId;
-          }
-
-          // Get framework names in lowercase snake_case format
-          const frameworkNames = await getFrameworkNames(parsedInput.frameworkIds);
-
-          // Check if contact exists for this user
-          const contactResult = await findContactByEmail(session.user.email);
-
-          // Create or update company
-          const hubspotCompanyId = await createOrUpdateCompany({
-            companyName: parsedInput.organizationName,
-            // Don't pass companySize - we don't have employee count in minimal setup
-            complianceNeeds: frameworkNames,
-            existingCompanyId: companyId || undefined,
-            domain,
-            orgId,
-          });
-
-          if (hubspotCompanyId && contactResult.contactId) {
-            // Associate contact with company
-            console.log('[HubSpot] Company created/updated:', hubspotCompanyId);
-
-            const { associateContactWithCompany } = await import('@/hubspot/contacts');
-            await associateContactWithCompany({
-              contactId: contactResult.contactId,
-              companyId: hubspotCompanyId,
-            });
-            console.log('[HubSpot] Associated contact with company');
-          }
-        } catch (error) {
-          console.error('[HubSpot] Error creating company:', error);
-          // Don't throw - we don't want to block organization creation if HubSpot fails
-        }
-      }
 
       // Create onboarding record for new org
       await db.onboarding.create({
