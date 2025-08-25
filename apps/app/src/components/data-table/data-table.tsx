@@ -1,5 +1,4 @@
 import { type Table as TanstackTable, flexRender } from '@tanstack/react-table';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type * as React from 'react';
 
@@ -34,7 +33,6 @@ export function DataTable<TData>({
     if (onRowClick) {
       onRowClick(row);
     }
-    // This part of the handler will now only be used for non-link rows
     if (getRowId && rowClickBasePath) {
       const id = getRowId(row);
       router.push(`${rowClickBasePath}/${id}`);
@@ -42,7 +40,7 @@ export function DataTable<TData>({
   };
 
   const filteredRows = table.getFilteredRowModel().rows;
-  const canBeLinks = getRowId && rowClickBasePath;
+  const isRowClickable = !!(getRowId && rowClickBasePath) || !!onRowClick;
 
   return (
     <div className={cn('space-y-4', className)} {...props}>
@@ -80,12 +78,10 @@ export function DataTable<TData>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
-                  className={cn((getRowId || onRowClick) && 'hover:bg-muted/50 cursor-pointer')}
-                  onClick={!canBeLinks ? () => handleRowClick(row.original) : undefined}
+                  className={cn(isRowClickable && 'hover:bg-muted/50 cursor-pointer')}
+                  onClick={isRowClickable ? () => handleRowClick(row.original) : undefined}
                 >
                   {row.getVisibleCells().map((cell, index) => {
-                    const href = canBeLinks ? `${rowClickBasePath}/${getRowId(row.original)}` : '';
-
                     return (
                       <TableCell
                         key={cell.id}
@@ -99,18 +95,7 @@ export function DataTable<TData>({
                           }),
                         }}
                       >
-                        {canBeLinks ? (
-                          <Link
-                            href={href}
-                            onClick={() => onRowClick && onRowClick(row.original)}
-                            className="block"
-                            style={{ color: 'inherit', textDecoration: 'none' }}
-                          >
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                          </Link>
-                        ) : (
-                          flexRender(cell.column.columnDef.cell, cell.getContext())
-                        )}
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </TableCell>
                     );
                   })}
