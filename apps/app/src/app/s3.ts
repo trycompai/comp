@@ -137,6 +137,7 @@ export function extractS3KeyFromUrl(url: string): string {
 
 export async function getFleetAgent({ os }: { os: 'macos' | 'windows' | 'linux' }) {
   const fleetBucketName = process.env.FLEET_AGENT_BUCKET_NAME;
+  const fleetAgentFileName = 'Comp AI Agent-1.0.0-arm64.dmg';
 
   if (!fleetBucketName) {
     throw new Error('FLEET_AGENT_BUCKET_NAME is not defined.');
@@ -144,7 +145,7 @@ export async function getFleetAgent({ os }: { os: 'macos' | 'windows' | 'linux' 
 
   const getFleetAgentCommand = new GetObjectCommand({
     Bucket: fleetBucketName,
-    Key: `${os}/fleet-osquery.pkg`,
+    Key: `${os}/${fleetAgentFileName}`,
   });
 
   const response = await s3Client.send(getFleetAgentCommand);
