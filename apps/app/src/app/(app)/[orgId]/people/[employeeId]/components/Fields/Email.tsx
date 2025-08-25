@@ -3,7 +3,13 @@ import { Input } from '@comp/ui/input';
 import type { Control } from 'react-hook-form';
 import type { EmployeeFormValues } from '../EmployeeDetails';
 
-export const Email = ({ control }: { control: Control<EmployeeFormValues> }) => {
+export const Email = ({
+  control,
+  disabled,
+}: {
+  control: Control<EmployeeFormValues>;
+  disabled: boolean;
+}) => {
   return (
     <FormField
       control={control}
@@ -14,7 +20,13 @@ export const Email = ({ control }: { control: Control<EmployeeFormValues> }) => 
             EMAIL
           </FormLabel>
           <FormControl>
-            <Input {...field} type="email" placeholder="Employee email" className="h-10" disabled />
+            <Input
+              {...field}
+              type="email"
+              placeholder="Employee email"
+              className="h-10"
+              disabled={disabled}
+            />
           </FormControl>
           <FormMessage />
         </FormItem>

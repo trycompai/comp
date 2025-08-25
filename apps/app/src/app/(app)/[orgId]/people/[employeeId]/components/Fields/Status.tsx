@@ -16,7 +16,13 @@ export const EMPLOYEE_STATUS_HEX_COLORS: Record<EmployeeStatusType, string> = {
   active: '#10b981',
 };
 
-export const Status = ({ control }: { control: Control<EmployeeFormValues> }) => {
+export const Status = ({
+  control,
+  disabled,
+}: {
+  control: Control<EmployeeFormValues>;
+  disabled: boolean;
+}) => {
   return (
     <FormField
       control={control}
@@ -26,7 +32,12 @@ export const Status = ({ control }: { control: Control<EmployeeFormValues> }) =>
           <FormLabel className="text-muted-foreground text-xs font-medium uppercase">
             Status
           </FormLabel>
-          <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+          <Select
+            onValueChange={field.onChange}
+            defaultValue={field.value}
+            value={field.value}
+            disabled={disabled}
+          >
             <FormControl>
               <SelectTrigger className="h-10">
                 <SelectValue placeholder="Select status" />

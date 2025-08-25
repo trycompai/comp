@@ -30,6 +30,7 @@ interface TeamMembersClientProps {
   organizationId: string;
   removeMemberAction: typeof removeMember;
   revokeInvitationAction: typeof revokeInvitation;
+  canManageMembers: boolean;
 }
 
 // Define a simplified type for merged list items
@@ -48,6 +49,7 @@ export function TeamMembersClient({
   organizationId,
   removeMemberAction,
   revokeInvitationAction,
+  canManageMembers,
 }: TeamMembersClientProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useQueryState('search', parseAsString.withDefault(''));
@@ -121,7 +123,12 @@ export function TeamMembersClient({
   const handleCancelInvitation = async (invitationId: string) => {
     const result = await revokeInvitationAction({ invitationId });
     if (result?.data) {
+      if (result.data?.error) {
+        toast.error(String(result?.data?.error) || 'Failed to cancel invitation');
+        return;
+      }
       // Success case
+      toast.success('Invitation has been cancelled');
       // Data revalidates server-side via action's revalidatePath
       router.refresh(); // Add client-side refresh as well
     } else {
@@ -227,7 +234,7 @@ export function TeamMembersClient({
             <SelectItem value="employee">{'Employee'}</SelectItem>
           </SelectContent>
         </Select>
-        <Button onClick={() => setIsInviteModalOpen(true)}>
+        <Button onClick={() => setIsInviteModalOpen(true)} disabled={!canManageMembers}>
           <UserPlus className="h-4 w-4" />
           {'Add User'}
         </Button>
@@ -241,6 +248,7 @@ export function TeamMembersClient({
                 member={member as MemberWithUser}
                 onRemove={handleRemoveMember}
                 onUpdateRole={handleUpdateRole}
+                canEdit={canManageMembers}
               />
             ))}
           </div>
@@ -255,6 +263,7 @@ export function TeamMembersClient({
                   key={invitation.displayId}
                   invitation={invitation as Invitation}
                   onCancel={handleCancelInvitation}
+                  canCancel={canManageMembers}
                 />
               ))}
             </div>

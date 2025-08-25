@@ -24,6 +24,9 @@ export function DeviceAgentAccordionItem({
 }: DeviceAgentAccordionItemProps) {
   const [isDownloading, setIsDownloading] = useState(false);
 
+  // Detect OS from user agent
+  const isMacOS = typeof window !== 'undefined' && navigator.userAgent.includes('Mac');
+
   const hasInstalledAgent = host !== null;
   const allPoliciesPass =
     fleetPolicies.length === 0 || fleetPolicies.every((policy) => policy.response === 'pass');
@@ -57,7 +60,7 @@ export function DeviceAgentAccordionItem({
       // Method 1: Using a temporary link (most reliable)
       const a = document.createElement('a');
       a.href = downloadUrl;
-      a.download = 'compai-device-agent.zip';
+      a.download = isMacOS ? 'Comp AI Agent-1.0.0-arm64.dmg' : 'compai-device-agent.zip';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -136,45 +139,64 @@ export function DeviceAgentAccordionItem({
                     {getButtonContent()}
                   </Button>
                 </li>
+                {!isMacOS && (
+                  <li>
+                    <strong>Run the "Install Me First" file</strong>
+                    <p className="mt-1">
+                      After extracting the downloaded zip file, locate and run the "Install Me
+                      First" file to prepare your system.
+                    </p>
+                  </li>
+                )}
                 <li>
-                  <strong>Run the "Install Me First" file</strong>
+                  <strong>
+                    {isMacOS
+                      ? 'Install the Comp AI Device Agent'
+                      : 'Run the Comp AI Device Agent installer'}
+                  </strong>
                   <p className="mt-1">
-                    After extracting the downloaded zip file, locate and run the "Install Me First"
-                    file to prepare your system.
+                    {isMacOS
+                      ? 'Double-click the downloaded DMG file and follow the installation instructions.'
+                      : 'Follow the installation wizard steps. When you reach the introduction screen (as shown below), click "Continue" to proceed through the installation.'}
                   </p>
+                  {!isMacOS && (
+                    <Image
+                      src="/osquery-agent.jpeg"
+                      alt="Fleet osquery installer introduction screen"
+                      width={600}
+                      height={400}
+                      className="mt-2 rounded-xs border"
+                    />
+                  )}
                 </li>
-                <li>
-                  <strong>Run the Comp AI Device Agent installer</strong>
-                  <p className="mt-1">
-                    Follow the installation wizard steps. When you reach the introduction screen (as
-                    shown below), click "Continue" to proceed through the installation.
-                  </p>
-                  <Image
-                    src="/osquery-agent.jpeg"
-                    alt="Fleet osquery installer introduction screen"
-                    width={600}
-                    height={400}
-                    className="mt-2 rounded-xs border"
-                  />
-                </li>
-                <li>
-                  <strong>Enable MDM</strong>
-                  <div className="space-y-2">
-                    <p>
-                      On Mac, on the top of your screen, find the Fleet Desktop app which looks like
-                      an F made of dots. Click on it and click My Device.
+                {isMacOS ? (
+                  <li>
+                    <strong>Login with your work email</strong>
+                    <p className="mt-1">
+                      After installation, login with your work email, select your organization and
+                      then click "Link Device" and "Install Agent".
                     </p>
-                    <p>
-                      You should see a banner that asks you to enable MDM. Click the button and
-                      follow the instructions.
-                    </p>
-                    <p>
-                      After you've enabled MDM, if you refresh the page, the banner will disappear.
-                      Now your computer will automatically enable the necessary settings on your
-                      computer in order to be compliant.
-                    </p>
-                  </div>
-                </li>
+                  </li>
+                ) : (
+                  <li>
+                    <strong>Enable MDM</strong>
+                    <div className="space-y-2">
+                      <p>
+                        Find the Fleet Desktop app in your system tray (bottom right corner). Click
+                        on it and click My Device.
+                      </p>
+                      <p>
+                        You should see a banner that asks you to enable MDM. Click the button and
+                        follow the instructions.
+                      </p>
+                      <p>
+                        After you've enabled MDM, if you refresh the page, the banner will
+                        disappear. Now your computer will automatically enable the necessary
+                        settings on your computer in order to be compliant.
+                      </p>
+                    </div>
+                  </li>
+                )}
               </ol>
             </div>
           ) : (

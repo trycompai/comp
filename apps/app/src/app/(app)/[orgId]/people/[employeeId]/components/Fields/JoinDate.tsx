@@ -8,7 +8,13 @@ import { CalendarIcon } from 'lucide-react';
 import type { Control } from 'react-hook-form';
 import type { EmployeeFormValues } from '../EmployeeDetails';
 
-export const JoinDate = ({ control }: { control: Control<EmployeeFormValues> }) => {
+export const JoinDate = ({
+  control,
+  disabled,
+}: {
+  control: Control<EmployeeFormValues>;
+  disabled: boolean;
+}) => {
   return (
     <FormField
       control={control}
@@ -19,7 +25,7 @@ export const JoinDate = ({ control }: { control: Control<EmployeeFormValues> }) 
             Join Date
           </FormLabel>
           <Popover>
-            <PopoverTrigger asChild>
+            <PopoverTrigger asChild disabled={disabled}>
               <FormControl>
                 <Button
                   variant={'outline'}

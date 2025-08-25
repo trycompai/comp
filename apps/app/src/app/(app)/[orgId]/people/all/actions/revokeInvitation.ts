@@ -33,6 +33,23 @@ export const revokeInvitation = authActionClient
     const { invitationId } = parsedInput;
 
     try {
+      const currentUserMember = await db.member.findFirst({
+        where: {
+          organizationId: ctx.session.activeOrganizationId,
+          userId: ctx.user.id,
+        },
+      });
+
+      if (
+        !currentUserMember ||
+        (!currentUserMember.role.includes('admin') && !currentUserMember.role.includes('owner'))
+      ) {
+        return {
+          success: false,
+          error: "You don't have permission to revoke invitations",
+        };
+      }
+
       // Check if the invitation exists in the organization
       const invitation = await db.invitation.findFirst({
         where: {

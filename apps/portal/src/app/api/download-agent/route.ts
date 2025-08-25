@@ -6,7 +6,6 @@ import archiver from 'archiver';
 import { type NextRequest, NextResponse } from 'next/server';
 import { PassThrough, Readable } from 'stream';
 import {
-  generateMacScript,
   generateWindowsScript,
   getPackageFilename,
   getReadmeContent,
@@ -52,12 +51,46 @@ export async function GET(req: NextRequest) {
     return new NextResponse('Server configuration error', { status: 500 });
   }
 
-  // Generate OS-specific script
-  const fleetDevicePath = os === 'macos' ? fleetDevicePathMac : fleetDevicePathWindows;
-  const script =
-    os === 'macos'
-      ? generateMacScript({ orgId, employeeId, fleetDevicePath })
-      : generateWindowsScript({ orgId, employeeId, fleetDevicePath });
+  // For macOS, serve the DMG directly. For Windows, create a zip with script and installer.
+  if (os === 'macos') {
+    try {
+      // Direct DMG download for macOS
+      const macosPackageFilename = 'Comp AI Agent-1.0.0-arm64.dmg';
+      const packageKey = `macos/${macosPackageFilename}`;
+
+      const getObjectCommand = new GetObjectCommand({
+        Bucket: fleetBucketName,
+        Key: packageKey,
+      });
+
+      const s3Response = await s3Client.send(getObjectCommand);
+
+      if (!s3Response.Body) {
+        return new NextResponse('DMG file not found', { status: 404 });
+      }
+
+      // Convert S3 stream to Web Stream for NextResponse
+      const s3Stream = s3Response.Body as Readable;
+      const webStream = Readable.toWeb(s3Stream) as unknown as ReadableStream;
+
+      // Return streaming response with headers that trigger browser download
+      return new NextResponse(webStream, {
+        headers: {
+          'Content-Type': 'application/x-apple-diskimage',
+          'Content-Disposition': `attachment; filename="${macosPackageFilename}"`,
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'X-Accel-Buffering': 'no',
+        },
+      });
+    } catch (error) {
+      logger('Error downloading macOS DMG', { error });
+      return new NextResponse('Failed to download macOS agent', { status: 500 });
+    }
+  }
+
+  // Windows flow: Generate script and create zip
+  const fleetDevicePath = fleetDevicePathWindows;
+  const script = generateWindowsScript({ orgId, employeeId, fleetDevicePath });
 
   try {
     // Create a passthrough stream for the response
@@ -92,7 +125,8 @@ export async function GET(req: NextRequest) {
 
     // Get package from S3 and stream it
     const packageFilename = getPackageFilename(os);
-    const packageKey = `${os}/fleet-osquery.${os === 'macos' ? 'pkg' : 'msi'}`;
+    const windowsPackageFilename = 'fleet-osquery.msi';
+    const packageKey = `windows/${windowsPackageFilename}`;
 
     const getObjectCommand = new GetObjectCommand({
       Bucket: fleetBucketName,
