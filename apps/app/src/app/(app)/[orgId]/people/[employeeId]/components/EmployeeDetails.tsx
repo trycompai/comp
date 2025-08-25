@@ -30,10 +30,12 @@ export type EmployeeFormValues = z.infer<typeof employeeFormSchema>;
 
 export const EmployeeDetails = ({
   employee,
+  canEdit,
 }: {
   employee: Member & {
     user: User;
   };
+  canEdit: boolean;
 }) => {
   const form = useForm<EmployeeFormValues>({
     resolver: zodResolver(employeeFormSchema),
@@ -48,7 +50,11 @@ export const EmployeeDetails = ({
   });
 
   const { execute, status: actionStatus } = useAction(updateEmployee, {
-    onSuccess: () => {
+    onSuccess: (res) => {
+      if (!res?.data?.success) {
+        toast.error(res?.data?.error?.message || 'Failed to update employee details');
+        return;
+      }
       toast.success('Employee details updated successfully');
     },
     onError: (error) => {
@@ -107,11 +113,11 @@ export const EmployeeDetails = ({
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <CardContent className="px-0">
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              <Name control={form.control} />
-              <Email control={form.control} />
-              <Department control={form.control} />
-              <Status control={form.control} />
-              <JoinDate control={form.control} />
+              <Name control={form.control} disabled={!canEdit} />
+              <Email control={form.control} disabled={true} />
+              <Department control={form.control} disabled={!canEdit} />
+              <Status control={form.control} disabled={!canEdit} />
+              <JoinDate control={form.control} disabled={!canEdit} />
             </div>
           </CardContent>
           <CardFooter className="flex justify-end border-none bg-transparent px-0 py-0 outline-hidden">
