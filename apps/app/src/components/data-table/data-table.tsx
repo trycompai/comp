@@ -33,14 +33,14 @@ export function DataTable<TData>({
     if (onRowClick) {
       onRowClick(row);
     }
-    if (getRowId) {
+    if (getRowId && rowClickBasePath) {
       const id = getRowId(row);
       router.push(`${rowClickBasePath}/${id}`);
     }
   };
 
-  // Apply client-side filtering
   const filteredRows = table.getFilteredRowModel().rows;
+  const isRowClickable = !!(getRowId && rowClickBasePath) || !!onRowClick;
 
   return (
     <div className={cn('space-y-4', className)} {...props}>
@@ -78,25 +78,27 @@ export function DataTable<TData>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
-                  className={cn((getRowId || onRowClick) && 'hover:bg-muted/50 cursor-pointer')}
-                  onClick={() => handleRowClick(row.original)}
+                  className={cn(isRowClickable && 'hover:bg-muted/50 cursor-pointer')}
+                  onClick={isRowClickable ? () => handleRowClick(row.original) : undefined}
                 >
-                  {row.getVisibleCells().map((cell, index) => (
-                    <TableCell
-                      key={cell.id}
-                      className={cn(
-                        index !== 0 && 'hidden md:table-cell',
-                        index === 0 && 'truncate',
-                      )}
-                      style={{
-                        ...getCommonPinningStyles({
-                          column: cell.column,
-                        }),
-                      }}
-                    >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
+                  {row.getVisibleCells().map((cell, index) => {
+                    return (
+                      <TableCell
+                        key={cell.id}
+                        className={cn(
+                          index !== 0 && 'hidden md:table-cell',
+                          index === 0 && 'truncate',
+                        )}
+                        style={{
+                          ...getCommonPinningStyles({
+                            column: cell.column,
+                          }),
+                        }}
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    );
+                  })}
                 </TableRow>
               ))
             ) : (

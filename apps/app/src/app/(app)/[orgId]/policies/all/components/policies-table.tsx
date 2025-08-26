@@ -16,9 +16,10 @@ interface PoliciesTableProps {
 
 export function PoliciesTable({ promises }: PoliciesTableProps) {
   const [{ data, pageCount }] = React.use(promises);
-  const { orgId } = useParams();
+  const params = useParams();
+  const orgId = params.orgId as string;
 
-  const columns = React.useMemo(() => getPolicyColumns(), []);
+  const columns = React.useMemo(() => getPolicyColumns(orgId), [orgId]);
 
   const { table } = useDataTable({
     data,
