@@ -6,7 +6,7 @@ import {
   trainingVideos as trainingVideosData,
 } from '@/lib/data/training-videos';
 import { getFleetInstance } from '@/lib/fleet';
-import type { EmployeeTrainingVideoCompletion, Member } from '@db';
+import type { EmployeeTrainingVideoCompletion, Member, User } from '@db';
 import { db } from '@db';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
@@ -33,7 +33,8 @@ export default async function EmployeeDetailsPage({
     },
   });
 
-  const canEditMembers = ['owner', 'admin'].includes(currentUserMember?.role ?? '');
+  const canEditMembers =
+    currentUserMember?.role.includes('owner') || currentUserMember?.role.includes('admin') || false;
 
   if (!organizationId) {
     redirect('/');
@@ -89,6 +90,7 @@ const getEmployee = async (employeeId: string) => {
   const employee = await db.member.findFirst({
     where: {
       id: employeeId,
+      organizationId,
     },
     include: {
       user: true,
@@ -168,28 +170,127 @@ const getTrainingVideos = async (employeeId: string) => {
     );
 };
 
-const getFleetPolicies = async (member: Member) => {
-  const deviceLabelId = member.fleetDmLabelId;
+const getFleetPolicies = async (member: Member & { user: User }) => {
   const fleet = await getFleetInstance();
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+  const organizationId = session?.session.activeOrganizationId;
 
-  if (!deviceLabelId) {
+  // Try individual member's fleet label first
+  if (member.fleetDmLabelId) {
+    console.log(
+      `Found individual fleetDmLabelId: ${member.fleetDmLabelId} for member: ${member.id}, member email: ${member.user?.email}`,
+    );
+
+    try {
+      const deviceResponse = await fleet.get(`/labels/${member.fleetDmLabelId}/hosts`);
+      const device = deviceResponse.data.hosts?.[0];
+
+      if (device) {
+        const deviceWithPolicies = await fleet.get(`/hosts/${device.id}`);
+        const fleetPolicies = deviceWithPolicies.data.host.policies;
+        return { fleetPolicies, device };
+      }
+    } catch (error) {
+      console.log(
+        `Failed to get device using individual fleet label for member: ${member.id}`,
+        error,
+      );
+    }
+  }
+
+  // Fallback: Use organization fleet label and find device by matching criteria
+  if (!organizationId) {
+    console.log('No organizationId available for fallback device lookup');
     return { fleetPolicies: [], device: null };
   }
 
   try {
-    const deviceResponse = await fleet.get(`/labels/${deviceLabelId}/hosts`);
-    const device = deviceResponse.data.hosts?.[0]; // There should only be one device per label.
+    const organization = await db.organization.findUnique({
+      where: { id: organizationId },
+    });
 
-    if (!device) {
-      console.log(`No host found for device label id: ${deviceLabelId} - member: ${member.id}`);
+    if (!organization?.fleetDmLabelId) {
+      console.log(
+        `No organization fleetDmLabelId found for fallback device lookup - member: ${member.id}`,
+      );
       return { fleetPolicies: [], device: null };
     }
 
-    const deviceWithPolicies = await fleet.get(`/hosts/${device.id}`);
-    const fleetPolicies = deviceWithPolicies.data.host.policies;
-    return { fleetPolicies, device };
+    console.log(
+      `Using organization fleetDmLabelId: ${organization.fleetDmLabelId} as fallback for member: ${member.id}`,
+    );
+
+    // Get all devices from organization
+    const deviceResponse = await fleet.get(`/labels/${organization.fleetDmLabelId}/hosts`);
+    const allDevices = deviceResponse.data.hosts || [];
+
+    if (allDevices.length === 0) {
+      console.log('No devices found in organization fleet');
+      return { fleetPolicies: [], device: null };
+    }
+
+    // Get detailed info for all devices to help match them to the employee
+    const devicesWithDetails = await Promise.all(
+      allDevices.map(async (device: any) => {
+        try {
+          const deviceDetails = await fleet.get(`/hosts/${device.id}`);
+          return deviceDetails.data.host;
+        } catch (error) {
+          console.log(`Failed to get details for device ${device.id}:`, error);
+          return null;
+        }
+      }),
+    );
+
+    const validDevices = devicesWithDetails.filter(Boolean);
+
+    // Try to match device to employee by computer name containing user's name
+    const userName = member.user.name?.toLowerCase();
+    const userEmail = member.user.email?.toLowerCase();
+
+    let matchedDevice = null;
+
+    if (userName) {
+      // Try to find device with computer name containing user's name
+      matchedDevice = validDevices.find(
+        (device: any) =>
+          device.computer_name?.toLowerCase().includes(userName.split(' ')[0]) ||
+          device.computer_name?.toLowerCase().includes(userName.split(' ').pop()),
+      );
+    }
+
+    if (!matchedDevice && userEmail) {
+      // Try to find device with computer name containing part of email
+      const emailPrefix = userEmail.split('@')[0];
+      matchedDevice = validDevices.find((device: any) =>
+        device.computer_name?.toLowerCase().includes(emailPrefix),
+      );
+    }
+
+    // If no specific match found and there's only one device, assume it's theirs
+    if (!matchedDevice && validDevices.length === 1) {
+      matchedDevice = validDevices[0];
+      console.log(`Only one device found, assigning to member: ${member.id}`);
+    }
+
+    if (matchedDevice) {
+      console.log(
+        `Matched device ${matchedDevice.computer_name} (ID: ${matchedDevice.id}) to member: ${member.id}`,
+      );
+      return {
+        fleetPolicies: matchedDevice.policies || [],
+        device: matchedDevice,
+      };
+    }
+
+    console.log(
+      `No device could be matched to member: ${member.id}. Available devices: ${validDevices.map((d: any) => d.computer_name).join(', ')}`,
+    );
+    return { fleetPolicies: [], device: null };
   } catch (error) {
-    console.error(`Failed to get fleet policies for member: ${member.id}`, error);
+    console.error(`Failed to get fleet policies using fallback for member: ${member.id}`, error);
     return { fleetPolicies: [], device: null };
   }
 };
