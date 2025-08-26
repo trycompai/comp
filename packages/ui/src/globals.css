@@ -3,37 +3,35 @@
 
 @layer base {
   :root {
-    --background: 0 0% 98%;
-    --foreground: 240 10% 3.9%;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 168 84% 24%; /* emerald-700 */
-    --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 90.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 165 100% 15%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --warning: 45 89% 65%;
-    --warning-foreground: 240 5.9% 10%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 168 84% 24%; /* emerald-700 */
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 165 100% 15%;
     --radius: 0.5rem;
 
-    --chart-primary: 156 93% 36%;
+    --chart-primary: 165 100% 15%;
     --chart-positive: 163 64% 21%; /* Green: use for published, or reviewed = the items are in a good state */
     --chart-neutral: 45 89% 53%; /* Yellow: use for draft(s) and actions that need reviewing soon */
     --chart-warning: 220 14% 53%; /* Gray: deleted, archived - states that have been closed */
     --chart-destructive: 0 85% 60%; /* Red: use for needs review, something that needs action immediately */
     --chart-other: 196 80% 45%; /* Blue: use for other states */
 
-    --chart-closed: ##06b26c;
+    --chart-closed: #004c3a;
     --chart-pending: #0ba5e9;
     --chart-open: #ffc007;
     --chart-archived: #64748b;
@@ -41,38 +39,39 @@
   }
 
   .dark {
-    --background: 228 10.2% 9.61%;
-    --foreground: 0 0% 98%;
-    --card: 228 10% 13%;
-    --card-foreground: 0 0% 98%;
-    --popover: 228 10% 10%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 160 84% 40%; /* emerald-500 */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 165 100% 15%;
     --primary-foreground: 0 0% 98%;
-    --secondary: 225 10% 20%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 225 10% 20%;
-    --muted-foreground: 210 1.1% 64.7%;
-    --accent: 225 10% 20%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 60% 50%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --warning: 45 89% 65%;
-    --warning-foreground: 240 5.9% 10%;
-    --border: 225 10% 20%;
-    --input: 225 10% 20%;
-    --ring: 158 64% 52%; /* emerald-400 */
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 165 100% 15%;
+    --radius: 0.5rem;
 
-    --chart-positive: 142 76% 45%; /* Green: use for published, or reviewed = the items are in a good state */
+    --chart-primary: 165 100% 15%;
+    --chart-positive: 163 64% 21%; /* Green: use for published, or reviewed = the items are in a good state */
     --chart-neutral: 45 89% 53%; /* Yellow: use for draft(s) and actions that need reviewing soon */
     --chart-warning: 220 14% 53%; /* Gray: deleted, archived - states that have been closed */
     --chart-destructive: 0 85% 60%; /* Red: use for needs review, something that needs action immediately */
     --chart-other: 196 80% 45%; /* Blue: use for other states */
 
-    --chart-closed: #00dc73;
+    --chart-closed: #004c3a;
     --chart-pending: #0ba5e9;
     --chart-open: #ffc007;
     --chart-archived: #64748b;
+    --chart-needs_review: #ff0000;
   }
 
   @layer components {
@@ -208,7 +207,6 @@
     transform: translate(-50%, -50%) scale(0.97);
   }
 }
-
 /* Spinner */
 .loading-wrapper {
   height: var(--spinner-size);

@@ -26,7 +26,7 @@ function getStatusColorClasses(status: TaskStatus): string {
     case 'in_progress':
       return 'border-[#ffc107] bg-[#ffc107]/10'; // Yellowish
     case 'done':
-      return 'border-[#00DC73] bg-[#00DC73]/10'; // Greenish
+      return 'border-[#fff] bg-[#fff]/10'; // Greenish
     default:
       return 'border-[#6b7280] bg-[#6b7280]/10'; // Default Grayish
   }
@@ -39,7 +39,7 @@ export function TaskStatusIndicator({ status, className }: TaskStatusIndicatorPr
     <div className={cn('shrink-0', className)}>
       {status === 'todo' && <Circle className="size-4 text-[#6b7280]" strokeWidth={1.5} />}
       {status === 'in_progress' && <Loader2 className="size-4 text-[#ffc107]" strokeWidth={1.5} />}
-      {status === 'done' && <Check className="size-4 text-[#00DC73]" strokeWidth={1.5} />}
+      {status === 'done' && <Check className="size-4" strokeWidth={1.5} />}
       {status === 'not_relevant' && <CircleX className="size-4 text-[#ff0000]" strokeWidth={1.5} />}
     </div>
   );

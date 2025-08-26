@@ -69,7 +69,7 @@ export function FrameworksOverview({
 
         <div className="bg-secondary/50 relative mt-2 h-1 w-full overflow-hidden rounded-full">
           <div
-            className="bg-primary/80 h-full transition-all"
+            className="bg-primary h-full transition-all"
             style={{
               width: `${overallComplianceScore}%`,
             }}

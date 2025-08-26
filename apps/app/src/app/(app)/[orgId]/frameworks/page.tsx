@@ -15,27 +15,23 @@ export async function generateMetadata() {
   };
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ params }: { params: Promise<{ orgId: string }> }) {
+  const { orgId: organizationId } = await params;
+
   const session = await auth.api.getSession({
     headers: await headers(),
   });
-
-  const organizationId = session?.session.activeOrganizationId;
-
-  if (!organizationId) {
-    redirect('/');
-  }
 
   const org = await db.organization.findUnique({
     where: { id: organizationId },
     select: { onboardingCompleted: true },
   });
+
   if (org && org.onboardingCompleted === false) {
     redirect(`/onboarding/${organizationId}`);
   }
 
-  // Fetch current user's member information
-  const currentMember = await db.member.findFirst({
+  const member = await db.member.findFirst({
     where: {
       userId: session.user.id,
       organizationId,
@@ -69,7 +65,7 @@ export default async function DashboardPage() {
       organizationId={organizationId}
       publishedPoliciesScore={publishedPoliciesScore}
       doneTasksScore={doneTasksScore}
-      currentMember={currentMember}
+      currentMember={member}
     />
   );
 }

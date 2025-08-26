@@ -76,7 +76,7 @@ const StatusIcon = ({ status, progress }: { status: string; progress: number }) 
   }
 
   if (status === 'complete') {
-    return <CheckCircle2 className={cn(baseClass, 'text-green-600 dark:text-green-400')} />;
+    return <CheckCircle2 className={cn(baseClass, 'text-primary')} />;
   }
 
   if (status === 'error') {

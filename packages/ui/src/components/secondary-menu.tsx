@@ -142,7 +142,7 @@ export function SecondaryMenu({
           </Button>
         )}
 
-        <div className="border-border relative mb-0 w-full border-b pb-2">
+        <div className="border-border relative mb-0 w-full border bg-card rounded-sm pb-2">
           {/* Hover Highlight */}
           <div
             className="bg-muted absolute h-9 rounded-xs transition-all duration-300 ease-out"
@@ -155,7 +155,7 @@ export function SecondaryMenu({
           {/* Active Indicator */}
           {activeIndex >= 0 && (
             <div
-              className="bg-primary absolute bottom-0 h-0.5 rounded-t-xs transition-all duration-300 ease-out"
+              className="bg-primary absolute bottom-0 h-[3px] rounded-t-xs transition-all duration-300 ease-out"
               style={activeStyle}
             />
           )}
@@ -198,8 +198,8 @@ export function SecondaryMenu({
                       tabRefs.current[currentEnabledIndex] = el;
                     }}
                     className={cn(
-                      'rounded-xs px-3 py-2 text-sm transition-colors duration-300 select-none',
-                      isActive ? 'text-foreground' : 'text-muted-foreground',
+                      'rounded-xs px-3 text-sm transition-colors pt-2 duration-300 select-none',
+                      isActive ? '' : 'text-muted-foreground',
                     )}
                     onMouseEnter={() => setHoveredIndex(currentEnabledIndex)}
                     onMouseLeave={() => setHoveredIndex(null)}

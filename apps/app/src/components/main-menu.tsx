@@ -1,6 +1,5 @@
 'use client';
 
-import { env } from '@/env.mjs';
 import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
@@ -10,7 +9,6 @@ import {
   Blocks,
   FlaskConical,
   Gauge,
-  Gift,
   ListCheck,
   NotebookText,
   ShieldEllipsis,
@@ -37,7 +35,7 @@ type MenuItem = {
 };
 
 interface ItemProps {
-  organizationId: string;
+  organizationId?: string;
   item: MenuItem;
   isActive: boolean;
   disabled: boolean;
@@ -50,7 +48,6 @@ export function MainMenu({ organizationId, isCollapsed = false, onItemClick }: P
   const pathname = usePathname();
   const [activeStyle, setActiveStyle] = useState({ top: '0px', height: '0px' });
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const isDubEnabled = env.NEXT_PUBLIC_IS_DUB_ENABLED === 'true';
 
   const items: MenuItem[] = [
     {
@@ -129,18 +126,6 @@ export function MainMenu({ organizationId, isCollapsed = false, onItemClick }: P
         variant: 'secondary',
       },
     },
-    ...(isDubEnabled
-      ? [
-          {
-            id: 'referrals',
-            path: '/:organizationId/referrals',
-            name: 'Referrals',
-            disabled: false,
-            icon: Gift,
-            protected: false,
-          },
-        ]
-      : []),
     {
       id: 'settings',
       path: '/:organizationId/settings',
@@ -255,7 +240,7 @@ const Item = ({
 }: ItemProps) => {
   const Icon = item.icon;
   const linkDisabled = disabled || item.disabled;
-  const itemPath = item.path.replace(':organizationId', organizationId);
+  const itemPath = item.path.replace(':organizationId', organizationId ?? '');
 
   if (linkDisabled) {
     return (
@@ -328,7 +313,7 @@ const Item = ({
 };
 
 type Props = {
-  organizationId: string;
+  organizationId?: string;
   isCollapsed?: boolean;
   onItemClick?: () => void;
 };

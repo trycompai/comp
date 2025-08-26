@@ -1,11 +1,7 @@
 'use server';
 
-import { getFrameworkNames } from '@/actions/organization/lib/get-framework-names';
 import { initializeOrganization } from '@/actions/organization/lib/initialize-organization';
 import { authActionClientWithoutOrg } from '@/actions/safe-action';
-import { isHubSpotConfigured } from '@/hubspot/api-client';
-import { createOrUpdateCompany, findCompanyByDomain } from '@/hubspot/companies';
-import { findContactByEmail } from '@/hubspot/contacts';
 import { createFleetLabelForOrg } from '@/jobs/tasks/device/create-fleet-label-for-org';
 import { onboardOrganization as onboardOrganizationTask } from '@/jobs/tasks/onboarding/onboard-organization';
 import { auth } from '@/utils/auth';
@@ -66,75 +62,6 @@ export const createOrganization = authActionClientWithoutOrg
       });
 
       const orgId = newOrg.id;
-
-      // Create HubSpot company if configured
-      if (isHubSpotConfigured()) {
-        try {
-          console.log('[HubSpot] Creating company for organization:', orgId);
-
-          // Extract domain from website URL
-          let domain = '';
-          try {
-            const url = new URL(parsedInput.website);
-            domain = url.hostname.replace('www.', '');
-          } catch (e) {
-            console.warn('[HubSpot] Could not parse website URL:', parsedInput.website);
-          }
-
-          // Check if company already exists
-          let companyId: string | null = null;
-          if (domain) {
-            const existingCompany = await findCompanyByDomain(domain);
-            companyId = existingCompany.companyId;
-          }
-
-          // Get framework names in lowercase snake_case format
-          const frameworkNames = await getFrameworkNames(parsedInput.frameworkIds);
-
-          // Extract employee count from the context answers
-          let employeeCount = 0;
-          const employeeCountAnswer = parsedInput.teamSize;
-          if (employeeCountAnswer) {
-            // Parse employee count range (e.g., "10-50" -> 30)
-            const match = employeeCountAnswer.match(/(\d+)-(\d+)/);
-            if (match) {
-              employeeCount = Math.floor((parseInt(match[1]) + parseInt(match[2])) / 2);
-            } else if (employeeCountAnswer.includes('+')) {
-              employeeCount = parseInt(employeeCountAnswer.replace('+', ''));
-            } else {
-              employeeCount = parseInt(employeeCountAnswer) || 0;
-            }
-          }
-
-          // Check if contact exists for this user
-          const contactResult = await findContactByEmail(session.user.email);
-
-          // Create or update company
-          const hubspotCompanyId = await createOrUpdateCompany({
-            companyName: parsedInput.organizationName,
-            ...(employeeCount > 0 && { companySize: employeeCount }),
-            complianceNeeds: frameworkNames,
-            existingCompanyId: companyId || undefined,
-            domain,
-            orgId,
-          });
-
-          if (hubspotCompanyId && contactResult.contactId) {
-            // Associate contact with company
-            console.log('[HubSpot] Company created/updated:', hubspotCompanyId);
-
-            const { associateContactWithCompany } = await import('@/hubspot/contacts');
-            await associateContactWithCompany({
-              contactId: contactResult.contactId,
-              companyId: hubspotCompanyId,
-            });
-            console.log('[HubSpot] Associated contact with company');
-          }
-        } catch (error) {
-          console.error('[HubSpot] Error creating company:', error);
-          // Don't throw - we don't want to block organization creation if HubSpot fails
-        }
-      }
 
       // Create onboarding record for new org
       await db.onboarding.create({

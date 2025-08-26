@@ -1,7 +1,7 @@
 <!-- PROJECT LOGO -->
 <p align="center">
   <a href="https://github.com/trycompai/comp">
-   <img src="https://lp.trycomp.ai/logo_light.svg" alt="Logo" width="50%">
+   <img src="https://assets.trycomp.ai/logo.png" alt="Logo" width="10%">
   </a>
 
   <h3 align="center">Comp AI</h3>
@@ -24,13 +24,19 @@
   </p>
 </p>
 
+<p align="center">
+   <a href="https://www.producthunt.com/products/comp-ai-get-soc-2-iso-27001-gdpr/launches/comp-ai"><img src="https://img.shields.io/badge/Product%20Hunt-%231%20Product%20of%20the%Day%23DA552E" alt="Product Hunt"></a>
+   <a href="https://github.com/trycompai/comp/stargazers"><img src="https://img.shields.io/github/stars/trycompai/comp" alt="Github Stars"></a>
+   <a href="https://github.com/trycompai/comp/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPLv3-purple" alt="License"></a>
+   <a href="https://github.com/trycompai/comp/pulse"><img src="https://img.shields.io/github/commit-activity/m/trycompai/comp" alt="Commits-per-month"></a>
+   <a href="https://github.com/trycompai/comp/issues"><img src="https://img.shields.io/badge/Help%20Wanted-Contribute-blue"></a>
+</p>
+
 ## About
 
-# Security and compliance, open.
+### AI that handles compliance for you in hours.
 
-We're building the first open source compliance automation platform that helps companies of any size work towards, manage and achieve compliance with common standards like SOC 2, ISO 27001 and GDPR.
-
-We transform compliance from a vendor checkbox into an engineering problem solved through code. Our platform automates evidence collection, policy management, and control implementation while keeping you in control of your data and infrastructure.
+Comp AI is the fastest way to get compliant with frameworks like SOC 2, ISO 27001, HIPAA and GDPR. Comp AI automates evidence collection, policy management, and control implementation while keeping you in control of your data and infrastructure.
 
 ## Recognition
 
@@ -38,9 +44,8 @@ We transform compliance from a vendor checkbox into an engineering problem solve
 
 <a href="https://www.producthunt.com/posts/comp-ai?embed=true&utm_source=badge-top-post-badge&utm_medium=badge&utm_souce=badge-comp&#0045;ai" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/top-post-badge.svg?post_id=944698&theme=light&period=daily&t=1745500415958" alt="Comp&#0032;AI - The&#0032;open&#0032;source&#0032;Vanta&#0032;&#0038;&#0032;Drata&#0032;alternative | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
 
-### [Vercel](https://vercel.com)
+#### [Vercel](https://vercel.com/)
 
-<br />
 <a href="https://vercel.com/oss">
   <img alt="Vercel OSS Program" src="https://vercel.com/oss/program-badge.svg" />
 </a>
@@ -92,41 +97,13 @@ To get the project working locally with all integrations, follow these extended 
    cd comp
    ```
 
-3. Remove existing lock files:
-
-#### Linux / macOS
-
-```sh
-rm bun.lock yarn.lock
-```
-
-#### Windows (Command Prompt)
-
-```cmd
-del bun.lock yarn.lock
-```
-
-#### Windows (PowerShell)
-
-```powershell
-Remove-Item bun.lock, yarn.lock
-```
-
-4. Remove any `yarn` references from `comp/apps/app/package.json`
-
-```sh
-"yarn": "^1.22.22",
-```
-
-> 💡 Make sure this line is already deleted or running `bun install` will give you an error.
-
-5. Install dependencies using Bun:
+3. Install dependencies using Bun:
 
 ```sh
    bun install
 ```
 
-6. Install `concurrently` as a dev dependency:
+4. Install `concurrently` as a dev dependency:
 
 ```sh
    bun add -d concurrently
@@ -301,48 +278,6 @@ bun docker:clean
 
 ---
 
-### Hardcoding Env Vars (if needed)
-
-If `.env` files don’t load values as expected, you can hard-code the following:
-
-- **`comp/packages/kv/src/index.ts`** → Hard-coded Redis client credentials:
-  - **URL**: The Redis URL needs to start with `https`. Example:
-    ```sh
-    url: "https://default:AXhaAA***MA@charmed-wombat-3**0.upstash.io:6379"
-    ```
-  - **Token**: Example:
-    ```sh
-    token: "935****8f20"
-    ```
-
-- **`comp/packages/db/prisma/schema.prisma`** → Hard-coded `DATABASE_URL`:
-  - Example:
-    `sh
-    datasource db {
-  url        = "postpostgresql://user:password@host:port/database?schema=public"
-  directUrl  = "postpostgresql://user:password@host:port/database?schema=public"
-}
-    `
-
-- **`comp/apps/portal/src/app/lib/auth.ts`** → Hard-coded Google environment variables `clientId`, `clientSecret` under `socialProviders/google`:
-  - Example:
-    ```js
-    socialProviders: {
-      google: {
-        clientId: "your-client-id",
-        clientSecret: "your-client-secret"
-      }
-    }
-    ```
-
-- **`comp/apps/app/trigger.config.ts`** → Change the project to yours:
-  - Example:
-    ```sh
-    projectId: "proj_la**ob"
-    ```
-
----
-
 ### Start Development
 
 Once everything is configured:
@@ -432,7 +367,3 @@ Comp AI, Inc. is a commercial open source company, which means some parts of thi
 
 > [!TIP]
 > We work closely with the community and always invite feedback about what should be open and what is fine to be commercial. This list is not set and stone and we have moved things from commercial to open in the past. Please open a [discussion](https://github.com/trycompai/comp/discussions) if you feel like something is wrong.
-
-```
-
-```

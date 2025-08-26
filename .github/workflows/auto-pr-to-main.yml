@@ -16,6 +16,7 @@ on:
       - COMP-*
       - cursor/*
       - codex/*
+      - chas/*
 jobs:
   create-pull-request:
     runs-on: warp-ubuntu-latest-arm64-4x

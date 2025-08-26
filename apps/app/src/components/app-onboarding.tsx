@@ -66,7 +66,7 @@ export function AppOnboarding({
               </div>
 
               <div className="bg-secondary/50 relative mt-4 h-1 w-full overflow-hidden rounded-full">
-                <div className="bg-primary/80 h-full transition-all" style={{ width: '5%' }} />
+                <div className="bg-primary h-full transition-all" style={{ width: '5%' }} />
               </div>
             </CardHeader>
 

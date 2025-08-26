@@ -28,26 +28,30 @@ export const STATUS_TYPES = [
 
 export type StatusType = (typeof STATUS_TYPES)[number];
 
-// Updated STATUS_COLORS mapping
+// Updated STATUS_COLORS mapping using Tailwind classes
 export const STATUS_COLORS: Record<StatusType, string> = {
-  // General / Positive
-  published: '#00DC73', // Green
-  open: '#00DC73', // Green
-  completed: '#00DC73', // Green
-  done: '#00DC73', // Green
-  closed: '#0ea5e9', // Blue (Completed/Done)
-  archived: '#6b7280', // Gray
-  todo: '#6b7280', // Yellow
+  // General / Positive - Green
+  published: 'bg-primary',
+  open: 'bg-blue-500',
+  completed: 'bg-primary',
+  done: 'bg-primary',
 
-  // Neutral / In Progress
-  draft: '#ffc107', // Yellow
-  pending: '#ffc107', // Yellow
-  in_progress: '#ffc107', // Yellow
+  // Completed/Done - Blue
+  closed: 'bg-primary',
 
-  // Warning / Needs Attention
-  needs_review: '#ff0000', // Red
-  not_started: '#ff0000', // Red
-  not_relevant: '#ff0000', // Red
+  // Neutral - Gray
+  archived: 'bg-gray-500 dark:bg-gray-400',
+  todo: 'bg-gray-500 dark:bg-gray-400',
+
+  // In Progress - Yellow
+  draft: 'bg-yellow-500 dark:bg-yellow-400',
+  pending: 'bg-yellow-500 dark:bg-yellow-400',
+  in_progress: 'bg-yellow-500 dark:bg-yellow-400',
+
+  // Warning/Error - Red
+  needs_review: 'bg-red-600 dark:bg-red-400',
+  not_started: 'bg-red-600 dark:bg-red-400',
+  not_relevant: 'bg-red-600 dark:bg-red-400',
 } as const;
 
 // Updated status translation mapping
@@ -93,23 +97,21 @@ interface StatusIndicatorProps {
 export function StatusIndicator({ status, className, withLabel = true }: StatusIndicatorProps) {
   // Handle null or undefined status
   if (!status) {
-    const defaultColor = '#808080'; // Gray color for unknown/null status
-    const defaultLabel = '-'; // Placeholder label
     return (
       <div className={cn('flex items-center gap-2', className)}>
-        <div className={cn('size-2.5')} style={{ backgroundColor: defaultColor }} />
-        {withLabel ? defaultLabel : null}
+        <div className="size-2.5 bg-gray-400 dark:bg-gray-500 rounded-none" />
+        {withLabel ? '-' : null}
       </div>
     );
   }
 
   // Proceed with valid status
-  const color = STATUS_COLORS[status] ?? '#808080';
+  const colorClass = STATUS_COLORS[status] ?? 'bg-gray-400 dark:bg-gray-500';
   const label = getStatusTranslation(status);
 
   return (
     <div className={cn('flex items-center gap-2 text-sm', className)}>
-      <div className={cn('size-2.5')} style={{ backgroundColor: color }} />
+      <div className={cn('size-2.5 rounded-none', colorClass)} />
       {withLabel && label ? label : null}
     </div>
   );

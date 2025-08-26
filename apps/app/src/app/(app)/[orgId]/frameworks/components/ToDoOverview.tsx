@@ -60,7 +60,8 @@ export function ToDoOverview({
     return status.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
   };
 
-  const isOwner = currentMember?.role.includes('owner') || false;
+  const memberRoles = currentMember?.role?.split(',').map((r) => r.trim()) ?? [];
+  const isOwner = memberRoles.includes('owner') || false;
 
   const publishPolicies = useAction(publishAllPoliciesAction, {
     onSuccess: () => {
@@ -107,7 +108,7 @@ export function ToDoOverview({
 
         <div className="bg-secondary/50 relative mt-2 h-1 w-full overflow-hidden rounded-full">
           <div
-            className="bg-primary/80 h-full transition-all"
+            className="bg-primary h-full transition-all"
             style={{
               width: `${width}%`,
             }}
@@ -146,11 +147,9 @@ export function ToDoOverview({
             )}
 
             {unpublishedPolicies.length === 0 ? (
-              <div className="flex items-center justify-center gap-2 rounded-lg bg-green-50 dark:bg-green-950/20 p-3">
-                <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
-                <span className="text-sm text-green-700 dark:text-green-300">
-                  All policies are published!
-                </span>
+              <div className="flex items-center justify-center gap-2 rounded-lg bg-accent p-3">
+                <CheckCircle2 className="h-4 w-4" />
+                <span className="text-sm">All policies are published!</span>
               </div>
             ) : (
               <div className="h-[300px]">
@@ -161,19 +160,9 @@ export function ToDoOverview({
                         <div className="flex items-start justify-between py-3 px-1">
                           <div className="flex items-start gap-3 flex-1 min-w-0">
                             <div
-                              className={`flex h-6 w-6 items-center justify-center rounded-full ${
-                                policy.status === 'needs_review'
-                                  ? 'bg-yellow-50 dark:bg-yellow-950/20'
-                                  : 'bg-blue-50 dark:bg-blue-950/20'
-                              }`}
+                              className={`flex h-6 w-6 items-center justify-center rounded-full`}
                             >
-                              <NotebookText
-                                className={`h-3 w-3 ${
-                                  policy.status === 'needs_review'
-                                    ? 'text-yellow-600 dark:text-yellow-400'
-                                    : 'text-blue-600 dark:text-blue-400'
-                                }`}
-                              />
+                              <NotebookText className="h-3 w-3" />
                             </div>
                             <div className="flex flex-col flex-1 min-w-0">
                               <span className="text-sm font-medium text-foreground">
@@ -203,11 +192,9 @@ export function ToDoOverview({
 
           <TabsContent value="tasks" className="mt-4">
             {incompleteTasks.length === 0 ? (
-              <div className="flex items-center justify-center gap-2 rounded-lg bg-green-50 dark:bg-green-950/20 p-3">
-                <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
-                <span className="text-sm text-green-700 dark:text-green-300">
-                  All tasks are completed!
-                </span>
+              <div className="flex items-center justify-center gap-2 rounded-lg bg-accent p-3">
+                <CheckCircle2 className="h-4 w-4 text-primary" />
+                <span className="text-sm text-primary">All tasks are completed!</span>
               </div>
             ) : (
               <div className="h-[300px]">
@@ -217,8 +204,8 @@ export function ToDoOverview({
                       <div key={task.id}>
                         <div className="flex items-start justify-between py-3 px-1">
                           <div className="flex items-start gap-3 flex-1 min-w-0">
-                            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-50 dark:bg-green-950/20">
-                              <ListCheck className="h-3 w-3 text-green-600 dark:text-green-400" />
+                            <div className="flex h-6 w-6 items-center justify-center rounded-full">
+                              <ListCheck className="h-3 w-3" />
                             </div>
                             <div className="flex flex-col flex-1 min-w-0">
                               <span className="text-sm font-medium text-foreground">
