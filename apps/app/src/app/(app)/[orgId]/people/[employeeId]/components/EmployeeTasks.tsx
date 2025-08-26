@@ -131,7 +131,7 @@ export const EmployeeTasks = ({
                     >
                       <p className="font-medium">{policy.name}</p>
                       {policy.response === 'pass' ? (
-                        <div className="flex items-center gap-1 text-green-600">
+                        <div className="flex items-center gap-1 text-primary">
                           <CheckCircle2 size={16} />
                           <span>Pass</span>
                         </div>
