@@ -2,7 +2,9 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { Input } from '@comp/ui/input';
-import { Search } from 'lucide-react';
+import { ExternalLink, Search } from 'lucide-react';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import type { CSSProperties } from 'react';
 import * as React from 'react';
 
@@ -47,6 +49,8 @@ export function EmployeeCompletionChart({
   trainingVideos,
   showAll = false,
 }: EmployeeCompletionChartProps) {
+  const params = useParams();
+  const orgId = params.orgId as string;
   const [searchTerm, setSearchTerm] = React.useState('');
   const [displayedItems, setDisplayedItems] = React.useState(showAll ? 20 : 5);
   const [isLoading, setIsLoading] = React.useState(false);
@@ -209,8 +213,19 @@ export function EmployeeCompletionChart({
               {sortedStats.map((stat) => (
                 <div key={stat.id} className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
-                    <div>
-                      <p className="font-medium">{stat.name}</p>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium">{stat.name}</p>
+                        <Link
+                          href={`/${orgId}/people/${stat.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:text-primary/80 flex items-center gap-1 text-xs font-medium underline-offset-4 hover:underline"
+                        >
+                          View Profile
+                          <ExternalLink className="h-3 w-3" />
+                        </Link>
+                      </div>
                       <p className="text-muted-foreground text-xs">{stat.email}</p>
                     </div>
                     <span className="text-muted-foreground">
