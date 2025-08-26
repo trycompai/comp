@@ -37,7 +37,7 @@ export const STATUS_COLORS: Record<StatusType, string> = {
   done: 'bg-primary',
 
   // Completed/Done - Blue
-  closed: 'bg-primary dark:bg-blue-400',
+  closed: 'bg-primary',
 
   // Neutral - Gray
   archived: 'bg-gray-500 dark:bg-gray-400',

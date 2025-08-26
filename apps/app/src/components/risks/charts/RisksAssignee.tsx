@@ -25,7 +25,7 @@ interface UserRiskStats {
 const riskStatusColors = {
   open: 'bg-yellow-500',
   pending: 'bg-blue-500',
-  closed: 'bg-green-500',
+  closed: 'bg-primary',
   archived: 'bg-gray-500',
 };
 
