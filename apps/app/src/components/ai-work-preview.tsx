@@ -122,7 +122,7 @@ const StatusIcon = ({ status }: { status: string }) => {
         <Loader2 className={cn(baseClass, 'text-purple-600 dark:text-purple-400 animate-spin')} />
       );
     case 'complete':
-      return <CheckCircle2 className={cn(baseClass, 'text-green-600 dark:text-green-400')} />;
+      return <CheckCircle2 className={cn(baseClass, 'text-primary')} />;
     case 'issue':
       return <AlertTriangle className={cn(baseClass, 'text-amber-600 dark:text-amber-400')} />;
     default:

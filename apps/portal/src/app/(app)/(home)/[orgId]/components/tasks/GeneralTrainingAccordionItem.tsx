@@ -51,7 +51,7 @@ export function GeneralTrainingAccordionItem({
       <AccordionTrigger className="px-4 hover:no-underline [&[data-state=open]]:pb-2">
         <div className="flex items-center gap-3">
           {hasCompletedGeneralTraining ? (
-            <CheckCircle2 className="text-green-600 dark:text-green-400 h-5 w-5" />
+            <CheckCircle2 className="text-primary h-5 w-5" />
           ) : (
             <Circle className="text-muted-foreground h-5 w-5" />
           )}

@@ -49,10 +49,8 @@ App (`apps/app`):
 - **NEXT_PUBLIC_GTM_ID**: Google Tag Manager container ID for client tracking.
 - **NEXT_PUBLIC_LINKEDIN_PARTNER_ID**, **NEXT_PUBLIC_LINKEDIN_CONVERSION_ID**: LinkedIn insights/conversion tracking.
 - **NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL**: Google Ads conversion tracking label.
-- **ZAPIER_HUBSPOT_WEBHOOK_URL**: Zapier inbound webhook for HubSpot events.
-- **HUBSPOT_ACCESS_TOKEN**: Server-side HubSpot API access for CRM sync.
 - **DUB_API_KEY**, **DUB_REFER_URL**: Dub.co link shortener/referral features.
-- **FIRECRAWL_API_KEY**, **GROQ_API_KEY**: Optional LLM/crawling providers for research features.
+- **FIRECRAWL_API_KEY**: Optional LLM/crawling providers for research features.
 - **SLACK_SALES_WEBHOOK**: Slack webhook for sales/lead notifications.
 - **GA4_API_SECRET**, **GA4_MEASUREMENT_ID**: Google Analytics 4 server/client tracking.
 - **NEXT_PUBLIC_API_URL**: Override client API base URL (defaults to same origin).
@@ -154,12 +152,9 @@ NEXT_PUBLIC_BETTER_AUTH_URL_PORTAL=http://localhost:3002
 # NEXT_PUBLIC_LINKEDIN_PARTNER_ID=
 # NEXT_PUBLIC_LINKEDIN_CONVERSION_ID=
 # NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL=
-# ZAPIER_HUBSPOT_WEBHOOK_URL=
-# HUBSPOT_ACCESS_TOKEN=
 # DUB_API_KEY=
 # DUB_REFER_URL=
 # FIRECRAWL_API_KEY=
-# GROQ_API_KEY=
 # SLACK_SALES_WEBHOOK=
 # GA4_API_SECRET=
 # GA4_MEASUREMENT_ID=

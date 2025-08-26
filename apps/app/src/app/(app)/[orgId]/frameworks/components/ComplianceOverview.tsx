@@ -39,7 +39,7 @@ export function ComplianceOverview({
 
         <div className="bg-secondary/50 relative mt-2 h-1 w-full overflow-hidden rounded-full">
           <div
-            className="bg-primary/80 h-full transition-all"
+            className="bg-primary h-full transition-all"
             style={{
               width: `${compliancePercentage}%`,
             }}
@@ -53,7 +53,7 @@ export function ComplianceOverview({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                <div className="h-2 w-2 rounded-full bg-primary"></div>
                 <span className="text-sm">Overall Compliance</span>
               </div>
               <span className="font-medium text-sm tabular-nums">{compliancePercentage}%</span>

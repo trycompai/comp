@@ -31,7 +31,7 @@ export function getEmployeeDevicesColumns(): ColumnDef<Host>[] {
         const policies = row.getValue('policies') as FleetPolicy[];
         const isCompliant = policies.every((policy) => policy.response === 'pass');
         return isCompliant ? (
-          <CheckCircle2 size={16} className="text-green-500" />
+          <CheckCircle2 size={16} className="text-primary" />
         ) : (
           <XCircle size={16} className="text-red-500" />
         );

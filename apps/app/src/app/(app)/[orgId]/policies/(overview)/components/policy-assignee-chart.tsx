@@ -116,19 +116,13 @@ export function PolicyAssigneeChart({ data }: PolicyAssigneeChartProps) {
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">{'Policies by Assignee'}</CardTitle>
-          {topAssignee && (
-            <Badge className="bg-blue-100 text-xs text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-              Top: {topAssignee.name}
-            </Badge>
-          )}
         </div>
 
-        <div className="bg-secondary/50 relative mt-2 h-1 w-full overflow-hidden rounded-full">
+        <div className="bg-secondary relative mt-2 h-1 w-full overflow-hidden rounded-full">
           <div
-            className="bg-primary/80 h-full transition-all"
+            className="bg-primary h-full transition-all"
             style={{
               width: `${totalPolicies > 0 ? 100 : 0}%`,
-              opacity: 0.7,
             }}
           />
         </div>

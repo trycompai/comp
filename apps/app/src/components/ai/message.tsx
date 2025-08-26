@@ -6,7 +6,6 @@ import { cn } from '@comp/ui/cn';
 import type { UIMessage } from 'ai';
 
 import equal from 'fast-deep-equal';
-import { ChevronDownIcon, ChevronUpIcon } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { ErrorBoundary } from 'next/dist/client/components/error-boundary';
 import { memo, useCallback, useEffect, useState } from 'react';
@@ -18,10 +17,6 @@ import { ChatAvatar } from './chat-avatar';
 interface ToolInvocation {
   toolName: string;
   state: 'call' | 'result';
-  result?: any;
-}
-
-interface ExtendedToolInvocation extends ToolInvocation {
   result?: any;
 }
 
@@ -70,9 +65,8 @@ export function ReasoningMessagePart({ part, isReasoning }: ReasoningMessagePart
             <ChatAvatar participantType="assistant" aria-label="Assistant" />
           </div>
           <div className="ml-4 flex-1 overflow-hidden pl-2 text-xs">
-            <div className="font-medium">Reasoning</div>
-            <div className="mt-2 animate-spin">
-              <LogoSpinner size={16} />
+            <div className="font-medium flex items-center gap-2">
+              Reasoning <LogoSpinner size={16} />
             </div>
           </div>
         </div>
@@ -84,24 +78,6 @@ export function ReasoningMessagePart({ part, isReasoning }: ReasoningMessagePart
           <div className="ml-4 flex-1 overflow-hidden pl-2 text-xs">
             <div className="flex items-center gap-2">
               <div className="font-medium">Reasoned for a few seconds</div>
-              <button
-                type="button"
-                className={cn(
-                  'dark:hover:bg-accent cursor-pointer rounded-full p-1 hover:bg-zinc-200',
-                  {
-                    'dark:bg-accent bg-zinc-200': isExpanded,
-                  },
-                )}
-                onClick={() => {
-                  setIsExpanded(!isExpanded);
-                }}
-              >
-                {isExpanded ? (
-                  <ChevronDownIcon className="h-4 w-4" />
-                ) : (
-                  <ChevronUpIcon className="h-4 w-4" />
-                )}
-              </button>
             </div>
           </div>
         </div>
@@ -111,7 +87,7 @@ export function ReasoningMessagePart({ part, isReasoning }: ReasoningMessagePart
         {isExpanded && (
           <motion.div
             key="reasoning"
-            className="ml-[41px] flex flex-col gap-4 text-sm text-zinc-600 dark:text-zinc-400"
+            className="ml-[41px] flex flex-col gap-2 text-sm"
             initial="collapsed"
             animate="expanded"
             exit="collapsed"
@@ -137,16 +113,19 @@ const StreamableMarkdown = memo(({ text }: { text: string | StreamableValue<stri
 
   return (
     <MemoizedReactMarkdown
-      className="prose dark:prose-invert text-xs leading-tight break-words"
+      className="prose text-xs prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0"
       components={{
         p({ children }) {
-          return <div className="gap-0.5">{children}</div>;
+          return <p className="my-1 last:mb-0">{children}</p>;
         },
         ol({ children }) {
-          return <ol>{children}</ol>;
+          return <ol className="list-decimal list-inside space-y-0.5 my-1">{children}</ol>;
         },
         ul({ children }) {
-          return <ul>{children}</ul>;
+          return <ul className="list-disc list-inside space-y-0.5 my-1">{children}</ul>;
+        },
+        li({ children }) {
+          return <li className="leading-tight my-0">{children}</li>;
         },
       }}
     >
@@ -176,7 +155,7 @@ const PurePreviewMessage = ({
       >
         <div
           className={cn(
-            'flex w-full gap-4 group-data-[role=user]/message:ml-auto group-data-[role=user]/message:max-w-2xl',
+            'flex w-full group-data-[role=user]/message:ml-auto group-data-[role=user]/message:max-w-2xl',
             'group-data-[role=user]/message:w-fit',
           )}
         >

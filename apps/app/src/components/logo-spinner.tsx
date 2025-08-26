@@ -15,7 +15,7 @@ export interface LogoSpinnerProps extends React.SVGProps<SVGSVGElement> {
 export const LogoSpinner = ({
   size = 40,
   className,
-  raceColor = '#10b981', // emerald-500
+  raceColor = 'hsl(var(--chart-primary))',
   isDisabled = false,
   ...props
 }: LogoSpinnerProps) => {

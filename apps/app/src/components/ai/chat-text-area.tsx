@@ -20,7 +20,7 @@ export const ChatTextarea = ({ input, handleInputChange, isLoading }: InputProps
   return (
     <div className="relative w-full">
       <ShadcnTextarea
-        className="mb-2 h-12 min-h-12 resize-none border-none pt-3"
+        className="mb-2 h-12 min-h-12 resize-none  pt-3"
         value={input}
         autoFocus
         placeholder={'Ask Comp AI something...'}
@@ -37,7 +37,7 @@ export const ChatTextarea = ({ input, handleInputChange, isLoading }: InputProps
         }}
       />
 
-      <div className="hidden h-[40px] w-full items-center px-3 backdrop-blur-lg backdrop-filter md:flex dark:border-[#2C2C2C] dark:bg-[#151515]/[99]">
+      <div className="hidden h-[40px] w-full items-center px-3 backdrop-blur-lg backdrop-filter md:flex ">
         <Popover>
           <PopoverTrigger>
             <div className="-ml-2 scale-50 opacity-50">
@@ -46,7 +46,7 @@ export const ChatTextarea = ({ input, handleInputChange, isLoading }: InputProps
           </PopoverTrigger>
 
           <PopoverContent
-            className="bg-background -ml-2 w-auto rounded-lg p-2 backdrop-blur-lg backdrop-filter dark:border-[#2C2C2C] dark:bg-[#1A1A1A]/95"
+            className="bg-background -ml-2 w-auto rounded-lg p-2 backdrop-blur-lg backdrop-filter"
             side="top"
             align="start"
             sideOffset={10}
@@ -55,7 +55,7 @@ export const ChatTextarea = ({ input, handleInputChange, isLoading }: InputProps
               <li>
                 <button
                   type="button"
-                  className="flex w-full items-center space-x-2 rounded-sm p-1 text-xs transition-colors hover:bg-[#F2F1EF] dark:hover:bg-[#2b2b2b]"
+                  className="flex w-full items-center space-x-2 rounded-sm p-1 text-xs transition-colors hover:bg-[#F2F1EF]"
                   onClick={() => handleOpenUrl('https://x.com/compai')}
                 >
                   <Icons.X className="h-[16px] w-[16px]" />
@@ -65,7 +65,7 @@ export const ChatTextarea = ({ input, handleInputChange, isLoading }: InputProps
               <li>
                 <button
                   type="button"
-                  className="flex w-full items-center space-x-2 rounded-sm p-1 text-xs transition-colors hover:bg-[#F2F1EF] dark:hover:bg-[#2b2b2b]"
+                  className="flex w-full items-center space-x-2 rounded-sm p-1 text-xs transition-colors hover:bg-[#F2F1EF]"
                   onClick={() => handleOpenUrl('https://discord.gg/compai')}
                 >
                   <Icons.Discord className="h-[16px] w-[16px]" />
@@ -76,7 +76,7 @@ export const ChatTextarea = ({ input, handleInputChange, isLoading }: InputProps
               <li>
                 <button
                   type="button"
-                  className="flex w-full items-center space-x-2 rounded-sm p-1 text-xs transition-colors hover:bg-[#F2F1EF] dark:hover:bg-[#2b2b2b]"
+                  className="flex w-full items-center space-x-2 rounded-sm p-1 text-xs transition-colors hover:bg-[#F2F1EF]"
                   onClick={() => handleOpenUrl('https://git.new/compai')}
                 >
                   <Icons.GithubOutline className="h-[16px] w-[16px]" />

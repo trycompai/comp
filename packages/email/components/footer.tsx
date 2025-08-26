@@ -6,7 +6,7 @@ export function Footer() {
       <Hr />
 
       <Text className="font-regular text-[14px]">
-        Open Source Compliance,{' '}
+        AI that handles compliance for you -{' '}
         <Link href="https://trycomp.ai?utm_source=email&utm_medium=footer">Comp AI</Link>.
       </Text>
 
