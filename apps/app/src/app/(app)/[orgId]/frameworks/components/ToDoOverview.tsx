@@ -60,7 +60,7 @@ export function ToDoOverview({
     return status.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
   };
 
-  const memberRoles = currentMember?.role?.split(',').map(r => r.trim()) ?? [];
+  const memberRoles = currentMember?.role?.split(',').map((r) => r.trim()) ?? [];
   const isOwner = memberRoles.includes('owner') || false;
 
   const publishPolicies = useAction(publishAllPoliciesAction, {
@@ -147,7 +147,7 @@ export function ToDoOverview({
             )}
 
             {unpublishedPolicies.length === 0 ? (
-              <div className="flex items-center justify-center gap-2 rounded-lg bg-accent  p-3">
+              <div className="flex items-center justify-center gap-2 rounded-lg bg-accent p-3">
                 <CheckCircle2 className="h-4 w-4" />
                 <span className="text-sm">All policies are published!</span>
               </div>
@@ -192,7 +192,7 @@ export function ToDoOverview({
 
           <TabsContent value="tasks" className="mt-4">
             {incompleteTasks.length === 0 ? (
-              <div className="flex items-center justify-center gap-2 rounded-lg bg-primary p-3">
+              <div className="flex items-center justify-center gap-2 rounded-lg bg-accent p-3">
                 <CheckCircle2 className="h-4 w-4 text-primary" />
                 <span className="text-sm text-primary">All tasks are completed!</span>
               </div>
