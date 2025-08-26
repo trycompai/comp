@@ -1,6 +1,8 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
+import { Input } from '@comp/ui/input';
+import { Search } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import * as React from 'react';
 
@@ -16,6 +18,7 @@ interface EmployeeCompletionChartProps {
   trainingVideos: (EmployeeTrainingVideoCompletion & {
     metadata: TrainingVideo;
   })[];
+  showAll?: boolean;
 }
 
 // Define colors for the chart
@@ -42,7 +45,11 @@ export function EmployeeCompletionChart({
   employees,
   policies,
   trainingVideos,
+  showAll = false,
 }: EmployeeCompletionChartProps) {
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const [displayedItems, setDisplayedItems] = React.useState(showAll ? 20 : 5);
+  const [isLoading, setIsLoading] = React.useState(false);
   // Calculate completion data for each employee
   const employeeStats: EmployeeTaskStats[] = React.useMemo(() => {
     return employees.map((employee) => {
@@ -97,6 +104,51 @@ export function EmployeeCompletionChart({
     });
   }, [employees, policies, trainingVideos]);
 
+  // Filter employees based on search term
+  const filteredStats = React.useMemo(() => {
+    if (!searchTerm) return employeeStats;
+
+    return employeeStats.filter(
+      (stat) =>
+        stat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        stat.email.toLowerCase().includes(searchTerm.toLowerCase()),
+    );
+  }, [employeeStats, searchTerm]);
+
+  // Sort and limit employees
+  const sortedStats = React.useMemo(() => {
+    const sorted = [...filteredStats].sort((a, b) => b.overallPercentage - a.overallPercentage);
+    return showAll ? sorted.slice(0, displayedItems) : sorted.slice(0, 5);
+  }, [filteredStats, displayedItems, showAll]);
+
+  // Load more function for infinite scroll
+  const loadMore = React.useCallback(async () => {
+    if (isLoading || !showAll) return;
+
+    setIsLoading(true);
+    // Simulate loading delay
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    setDisplayedItems((prev) => prev + 20);
+    setIsLoading(false);
+  }, [isLoading, showAll]);
+
+  // Infinite scroll effect
+  React.useEffect(() => {
+    if (!showAll) return;
+
+    const handleScroll = () => {
+      if (
+        window.innerHeight + document.documentElement.scrollTop >=
+        document.documentElement.offsetHeight - 1000
+      ) {
+        loadMore();
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [loadMore, showAll]);
+
   // Check for empty data scenarios
   if (!employees.length) {
     return (
@@ -129,42 +181,82 @@ export function EmployeeCompletionChart({
     );
   }
 
-  // Sort by completion percentage and limit to top 5
-  const sortedStats = [...employeeStats]
-    .sort((a, b) => b.overallPercentage - a.overallPercentage)
-    .slice(0, 5);
-
   return (
     <Card>
       <CardHeader>
         <CardTitle>{'Employee Task Completion'}</CardTitle>
+        {showAll && (
+          <div className="mt-4">
+            <Input
+              placeholder="Search employees..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              leftIcon={<Search className="h-4 w-4" />}
+            />
+          </div>
+        )}
       </CardHeader>
       <CardContent>
-        <div className="space-y-8">
-          {sortedStats.map((stat) => (
-            <div key={stat.id} className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <p>{stat.name}</p>
-                <span className="text-muted-foreground">
-                  {stat.policiesCompleted + stat.trainingsCompleted} / {stat.totalTasks} {'tasks'}
-                </span>
-              </div>
+        {filteredStats.length === 0 ? (
+          <div className="flex h-[200px] items-center justify-center">
+            <p className="text-muted-foreground text-center text-sm">
+              {searchTerm ? 'No employees found matching your search' : 'No employees available'}
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="space-y-8">
+              {sortedStats.map((stat) => (
+                <div key={stat.id} className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <div>
+                      <p className="font-medium">{stat.name}</p>
+                      <p className="text-muted-foreground text-xs">{stat.email}</p>
+                    </div>
+                    <span className="text-muted-foreground">
+                      {stat.policiesCompleted + stat.trainingsCompleted} / {stat.totalTasks}{' '}
+                      {'tasks'}
+                    </span>
+                  </div>
 
-              <TaskBarChart stat={stat} />
+                  <TaskBarChart stat={stat} />
 
-              <div className="text-muted-foreground flex flex-wrap gap-3 text-xs">
-                <div className="flex items-center gap-1">
-                  <div className="bg-primary size-2" />
-                  <span>{'Completed'}</span>
+                  <div className="text-muted-foreground flex flex-wrap gap-3 text-xs">
+                    <div className="flex items-center gap-1">
+                      <div className="bg-primary size-2 rounded-xs" />
+                      <span>{'Completed'}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="size-2 rounded-xs bg-[var(--chart-open)]" />
+                      <span>{'Not Completed'}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <div className="size-2 bg-[var(--chart-open)]" />
-                  <span>{'Not Completed'}</span>
-                </div>
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
+
+            {showAll && sortedStats.length < filteredStats.length && (
+              <div className="mt-8 flex justify-center">
+                {isLoading ? (
+                  <div className="text-muted-foreground text-sm">Loading more employees...</div>
+                ) : (
+                  <button
+                    onClick={loadMore}
+                    className="text-primary hover:text-primary/80 text-sm font-medium"
+                  >
+                    Load more employees
+                  </button>
+                )}
+              </div>
+            )}
+
+            {showAll && (
+              <div className="mt-4 text-center text-muted-foreground text-xs">
+                Showing {sortedStats.length} of {filteredStats.length} employees
+              </div>
+            )}
+          </>
+        )}
       </CardContent>
     </Card>
   );

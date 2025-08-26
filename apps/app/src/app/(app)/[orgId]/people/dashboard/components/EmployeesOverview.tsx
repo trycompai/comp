@@ -93,8 +93,8 @@ export async function EmployeesOverview() {
       <EmployeeCompletionChart
         employees={employees}
         policies={policies}
-        // Use the correctly typed array, potentially casting if EmployeeCompletionChart expects a slightly different type
         trainingVideos={processedTrainingVideos as any}
+        showAll={true}
       />
     </div>
   );
