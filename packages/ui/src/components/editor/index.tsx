@@ -58,7 +58,7 @@ export const Editor = ({
     immediatelyRender: false,
     editorProps: {
       attributes: {
-        class: `prose prose-lg dark:prose-invert prose-headings:font-title font-default focus:outline-hidden max-w-full ${className || ''}`,
+        class: `prose prose-lg  prose-headings:font-title font-default focus:outline-hidden max-w-full ${className || ''}`,
       },
     },
     onUpdate: ({ editor }) => {
