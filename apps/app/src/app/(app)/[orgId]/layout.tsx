@@ -63,10 +63,7 @@ export default async function Layout({
     return redirect('/auth/unauthorized');
   }
 
-  const isAuthorized = ['admin', 'owner', 'auditor'].includes(member.role);
-
-  // If user is not authorized, redirect to no-access page
-  if (!isAuthorized) {
+  if (member.role === 'employee') {
     return redirect('/no-access');
   }
 
