@@ -63,6 +63,13 @@ export default async function Layout({
     return redirect('/auth/unauthorized');
   }
 
+  const isAuthorized = member.role.includes('admin') || member.role.includes('owner');
+
+  // If user is not authorized, redirect to no-access page
+  if (!isAuthorized) {
+    return redirect('/no-access');
+  }
+
   // If this org is not accessible on current plan, redirect to upgrade
   if (!organization.hasAccess) {
     return redirect(`/upgrade/${organization.id}`);
