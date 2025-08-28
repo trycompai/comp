@@ -1,3 +1,4 @@
+import { Header } from '@/components/header';
 import { OrganizationSwitcher } from '@/components/organization-switcher';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
@@ -31,20 +32,23 @@ export default async function NoAccess() {
   });
 
   return (
-    <div className="bg-foreground/05 flex h-dvh flex-col items-center justify-center gap-4">
-      <h1 className="text-2xl font-bold">Access Denied</h1>
-      <div className="flex flex-col text-center">
-        <p>
-          <b>Employees</b> don&apos;t have access to app.trycomp.ai, did you mean to go to{' '}
-          <Link href="https://portal.trycomp.ai" className="text-primary underline">
-            portal.trycomp.ai
-          </Link>
-          ?
-        </p>
-        <p>Please select another organization or contact your organization administrator.</p>
-      </div>
-      <div>
-        <OrganizationSwitcher organizations={organizations} organization={currentOrg} />
+    <div className="flex h-dvh flex-col">
+      <Header organizationId={currentOrg?.id} hideChat={true} />
+      <div className="bg-foreground/05 flex flex-1 flex-col items-center justify-center gap-4">
+        <h1 className="text-2xl font-bold">Access Denied</h1>
+        <div className="flex flex-col text-center">
+          <p>
+            <b>Employees</b> don&apos;t have access to app.trycomp.ai, did you mean to go to{' '}
+            <Link href="https://portal.trycomp.ai" className="text-primary underline">
+              portal.trycomp.ai
+            </Link>
+            ?
+          </p>
+          <p>Please select another organization or contact your organization administrator.</p>
+        </div>
+        <div>
+          <OrganizationSwitcher organizations={organizations} organization={currentOrg} />
+        </div>
       </div>
     </div>
   );
