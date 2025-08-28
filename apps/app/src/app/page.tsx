@@ -72,10 +72,6 @@ export default async function RootPage({
     },
   });
 
-  if (member?.role === 'employee') {
-    return redirect(await buildUrlWithParams('/no-access'));
-  }
-
   if (!member) {
     return redirect(await buildUrlWithParams('/setup'));
   }

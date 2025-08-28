@@ -514,7 +514,7 @@ function ComplianceFramework({
                     </SelectItem>
                     <SelectItem value="compliant">
                       <span className="flex items-center gap-2">
-                        <span className="inline-block h-4 w-4 rounded-sm bg-green-500" />
+                        <span className="inline-block h-4 w-4 rounded-sm bg-primary" />
                         Compliant
                       </span>
                     </SelectItem>
