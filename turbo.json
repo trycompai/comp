@@ -64,9 +64,6 @@
         "$TURBO_DEFAULT$",
         ".env"
       ],
-      "dependsOn": [
-        "^build"
-      ],
       "outputs": [
         ".next/**",
         "!.next/cache/**",
