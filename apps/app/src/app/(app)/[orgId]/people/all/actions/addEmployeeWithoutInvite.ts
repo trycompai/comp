@@ -1,5 +1,6 @@
 'use server';
 
+import { createTrainingVideoEntries } from '@/lib/db/employee';
 import { auth } from '@/utils/auth';
 import type { Role } from '@db';
 import { db } from '@db';
@@ -60,6 +61,11 @@ export const addEmployeeWithoutInvite = async ({
         role: roles, // Auth API expects role or role array
       },
     });
+
+    // Create training video completion entries for the new member
+    if (member?.id) {
+      await createTrainingVideoEntries(member.id);
+    }
 
     return { success: true, data: member };
   } catch (error) {

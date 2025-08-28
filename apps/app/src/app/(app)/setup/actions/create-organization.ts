@@ -4,6 +4,7 @@ import { initializeOrganization } from '@/actions/organization/lib/initialize-or
 import { authActionClientWithoutOrg } from '@/actions/safe-action';
 import { createFleetLabelForOrg } from '@/jobs/tasks/device/create-fleet-label-for-org';
 import { onboardOrganization as onboardOrganizationTask } from '@/jobs/tasks/onboarding/onboard-organization';
+import { createTrainingVideoEntries } from '@/lib/db/employee';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
 import { tasks } from '@trigger.dev/sdk';
@@ -62,6 +63,19 @@ export const createOrganization = authActionClientWithoutOrg
       });
 
       const orgId = newOrg.id;
+
+      // Get the member that was created with the organization (the owner)
+      const ownerMember = await db.member.findFirst({
+        where: {
+          userId: session.user.id,
+          organizationId: orgId,
+        },
+      });
+
+      // Create training video completion entries for the owner
+      if (ownerMember) {
+        await createTrainingVideoEntries(ownerMember.id);
+      }
 
       // Create onboarding record for new org
       await db.onboarding.create({
