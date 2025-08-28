@@ -3,6 +3,7 @@
 import { authActionClient } from '@/actions/safe-action';
 import { backfillTrainingVideosForAllOrgs } from '@/jobs/tasks/onboarding/backfill-training-videos-for-all-orgs';
 import { backfillTrainingVideosForOrg } from '@/jobs/tasks/onboarding/backfill-training-videos-for-org';
+import { db } from '@db';
 import { z } from 'zod';
 import type { ActionResponse } from '../types';
 
@@ -32,7 +33,7 @@ export const triggerTrainingVideoBackfill = authActionClient
     > => {
       try {
         // Check if user has admin permissions (you may want to add additional checks)
-        const member = await ctx.db.member.findFirst({
+        const member = await db.member.findFirst({
           where: {
             userId: ctx.user.id,
             organizationId: ctx.session.activeOrganizationId,
