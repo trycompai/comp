@@ -63,6 +63,10 @@ export default async function Layout({
     return redirect('/auth/unauthorized');
   }
 
+  if (member.role === 'employee') {
+    return redirect('/no-access');
+  }
+
   // If this org is not accessible on current plan, redirect to upgrade
   if (!organization.hasAccess) {
     return redirect(`/upgrade/${organization.id}`);
