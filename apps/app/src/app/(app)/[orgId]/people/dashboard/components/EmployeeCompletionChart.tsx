@@ -228,10 +228,15 @@ export function EmployeeCompletionChart({
                       </div>
                       <p className="text-muted-foreground text-xs">{stat.email}</p>
                     </div>
-                    <span className="text-muted-foreground">
-                      {stat.policiesCompleted + stat.trainingsCompleted} / {stat.totalTasks}{' '}
-                      {'tasks'}
-                    </span>
+                    <div className="text-muted-foreground text-right text-xs">
+                      <div>
+                        {stat.policiesCompleted + stat.trainingsCompleted} / {stat.totalTasks} tasks
+                      </div>
+                      <div className="text-xs">
+                        {stat.policiesCompleted}/{stat.policiesTotal} policies •{' '}
+                        {stat.trainingsCompleted}/{stat.trainingsTotal} training
+                      </div>
+                    </div>
                   </div>
 
                   <TaskBarChart stat={stat} />
