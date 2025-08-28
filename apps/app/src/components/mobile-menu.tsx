@@ -11,7 +11,7 @@ import { OrganizationSwitcher } from './organization-switcher';
 interface MobileMenuProps {
   organizations: Organization[];
   isCollapsed?: boolean;
-  organizationId: string;
+  organizationId?: string;
 }
 
 export function MobileMenu({ organizationId, organizations }: MobileMenuProps) {

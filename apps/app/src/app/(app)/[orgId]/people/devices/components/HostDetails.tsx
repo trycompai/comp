@@ -22,12 +22,12 @@ export const HostDetails = ({ host, onClose }: { host: Host; onClose: () => void
                 key={policy.id}
                 className={cn(
                   'hover:bg-muted/50 flex items-center justify-between rounded-md border border-l-4 p-3 shadow-sm transition-colors',
-                  policy.response === 'pass' ? 'border-l-green-500' : 'border-l-red-500',
+                  policy.response === 'pass' ? 'border-l-primary' : 'border-l-red-500',
                 )}
               >
                 <p className="font-medium">{policy.name}</p>
                 {policy.response === 'pass' ? (
-                  <div className="flex items-center gap-1 text-green-600">
+                  <div className="flex items-center gap-1 text-primary">
                     <CheckCircle2 size={16} />
                     <span>Pass</span>
                   </div>

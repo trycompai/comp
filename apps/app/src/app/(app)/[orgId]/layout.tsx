@@ -63,6 +63,10 @@ export default async function Layout({
     return redirect('/auth/unauthorized');
   }
 
+  if (member.role === 'employee') {
+    return redirect('/no-access');
+  }
+
   // If this org is not accessible on current plan, redirect to upgrade
   if (!organization.hasAccess) {
     return redirect(`/upgrade/${organization.id}`);
@@ -87,7 +91,7 @@ export default async function Layout({
       <SidebarProvider initialIsCollapsed={isCollapsed}>
         <AnimatedLayout sidebar={<Sidebar organization={organization} />} isCollapsed={isCollapsed}>
           {onboarding?.triggerJobId && <OnboardingTracker onboarding={onboarding} />}
-          <Header />
+          <Header organizationId={organization.id} />
           <DynamicMinHeight>{children}</DynamicMinHeight>
           <AssistantSheet />
           <Suspense fallback={null}>
