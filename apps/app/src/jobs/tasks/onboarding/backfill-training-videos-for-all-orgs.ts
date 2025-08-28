@@ -41,24 +41,50 @@ export const backfillTrainingVideosForAllOrgs = task({
       );
 
       // Create batch items for processing
-      const batchItems = organizations.map((organization) => ({
+      const allBatchItems = organizations.map((organization) => ({
         payload: {
           organizationId: organization.id,
         },
       }));
 
-      logger.info(`Triggering batch job for ${batchItems.length} organizations`);
+      // Split into chunks of 500 (Trigger.dev batch size limit)
+      const BATCH_SIZE = 500;
+      const batches: (typeof allBatchItems)[] = [];
 
-      // Trigger the batch job to process all organizations
-      await backfillTrainingVideosForOrg.batchTrigger(batchItems);
+      for (let i = 0; i < allBatchItems.length; i += BATCH_SIZE) {
+        batches.push(allBatchItems.slice(i, i + BATCH_SIZE));
+      }
 
       logger.info(
-        `Successfully triggered training video backfill jobs for ${organizations.length} organizations`,
+        `Splitting ${allBatchItems.length} organizations into ${batches.length} batches of max ${BATCH_SIZE} each`,
+      );
+
+      // Process each batch
+      let totalTriggered = 0;
+      for (let i = 0; i < batches.length; i++) {
+        const batch = batches[i];
+        logger.info(
+          `Triggering batch ${i + 1}/${batches.length} with ${batch.length} organizations`,
+        );
+
+        try {
+          await backfillTrainingVideosForOrg.batchTrigger(batch);
+          totalTriggered += batch.length;
+          logger.info(`Successfully triggered batch ${i + 1}/${batches.length}`);
+        } catch (error) {
+          logger.error(`Failed to trigger batch ${i + 1}/${batches.length}: ${error}`);
+          throw error;
+        }
+      }
+
+      logger.info(
+        `Successfully triggered training video backfill jobs for ${totalTriggered} organizations across ${batches.length} batches`,
       );
 
       return {
         success: true,
-        organizationsProcessed: organizations.length,
+        organizationsProcessed: totalTriggered,
+        totalBatches: batches.length,
         totalMembers,
       };
     } catch (error) {
