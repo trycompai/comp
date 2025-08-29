@@ -3,7 +3,7 @@
 import { runStagehand, startBBSSession } from '@/lib/browserbase/main';
 import { useCallback, useState } from 'react';
 
-export function StagehandEmbed() {
+export function StagehandEmbed({ organizationId }: { organizationId: string }) {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [debugUrl, setDebugUrl] = useState<string | null>(null);
 
@@ -11,7 +11,7 @@ export function StagehandEmbed() {
     const { sessionId, debugUrl } = await startBBSSession();
     setSessionId(sessionId);
     setDebugUrl(debugUrl);
-    await runStagehand(sessionId);
+    await runStagehand({ sessionId, organizationId });
   }, []);
 
   return (

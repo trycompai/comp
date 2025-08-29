@@ -1,7 +1,7 @@
 import { StagehandEmbed } from './components/stagehandEmbed';
 
-export const runtime = 'nodejs';
+export default async function BrowserbasePage({ params }: { params: Promise<{ orgId: string }> }) {
+  const { orgId } = await params;
 
-export default function BrowserbasePage() {
-  return <StagehandEmbed />;
+  return <StagehandEmbed organizationId={orgId} />;
 }

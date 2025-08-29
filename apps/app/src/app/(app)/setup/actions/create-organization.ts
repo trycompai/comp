@@ -4,7 +4,9 @@ import { initializeOrganization } from '@/actions/organization/lib/initialize-or
 import { authActionClientWithoutOrg } from '@/actions/safe-action';
 import { createFleetLabelForOrg } from '@/jobs/tasks/device/create-fleet-label-for-org';
 import { onboardOrganization as onboardOrganizationTask } from '@/jobs/tasks/onboarding/onboard-organization';
+import { createOnePasswordLoginItem } from '@/lib/browserbase/onepassword';
 import { createTrainingVideoEntries } from '@/lib/db/employee';
+import { provisionOrgMailbox } from '@/lib/mail/provisionMailbox';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
 import { tasks } from '@trigger.dev/sdk';
@@ -63,6 +65,23 @@ export const createOrganization = authActionClientWithoutOrg
       });
 
       const orgId = newOrg.id;
+
+      // Provision org mailbox and save to 1Password
+      try {
+        const { email, password } = await provisionOrgMailbox({
+          organizationId: orgId,
+          notifyEmail: session.user.email ?? undefined,
+        });
+        await createOnePasswordLoginItem({
+          organizationId: orgId,
+          username: email,
+          password,
+          titleSuffix: 'Org Mailbox',
+        });
+      } catch (e) {
+        console.error('Mailbox provisioning failed', e);
+        // Continue onboarding even if mailbox fails, but surface error in logs
+      }
 
       // Get the member that was created with the organization (the owner)
       const ownerMember = await db.member.findFirst({

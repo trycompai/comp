@@ -6,16 +6,22 @@
 import { Browserbase } from '@browserbasehq/sdk';
 import { Stagehand } from '@browserbasehq/stagehand';
 import { writeFileSync } from 'node:fs';
-import { getGitHubCredentials } from './onepassword';
+import { getOrgCredentials } from './onepassword';
 
 /**
  * Run the main Stagehand script
  */
-async function main(stagehand: Stagehand) {
+async function main({
+  stagehand,
+  organizationId,
+}: {
+  stagehand: Stagehand;
+  organizationId: string;
+}) {
   const page = stagehand.page;
 
   // Get credentials from 1Password
-  const { username, password } = await getGitHubCredentials();
+  const { username, password } = await getOrgCredentials({ organizationId });
 
   // In this example, we'll get the title of the Stagehand quickstart page
   await page.goto('https://github.com/login', { waitUntil: 'domcontentloaded' });
@@ -71,7 +77,13 @@ async function main(stagehand: Stagehand) {
 /**
  * Initialize and run the main() function
  */
-export async function runStagehand(sessionId?: string) {
+export async function runStagehand({
+  sessionId,
+  organizationId,
+}: {
+  sessionId?: string;
+  organizationId: string;
+}) {
   const stagehand = new Stagehand({
     env: 'BROWSERBASE',
     apiKey: process.env.BROWSERBASE_API_KEY,
@@ -82,7 +94,7 @@ export async function runStagehand(sessionId?: string) {
     disablePino: true,
   });
   await stagehand.init();
-  await main(stagehand);
+  await main({ stagehand, organizationId });
   await stagehand.close();
 }
 
