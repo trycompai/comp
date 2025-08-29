@@ -2,7 +2,6 @@
   "name": "@comp/app",
   "version": "0.1.0",
   "dependencies": {
-    "@1password/sdk": "^0.3.1",
     "@ai-sdk/anthropic": "^2.0.0",
     "@ai-sdk/groq": "^2.0.0",
     "@ai-sdk/openai": "^2.0.0",
@@ -13,8 +12,7 @@
     "@aws-sdk/client-sts": "^3.808.0",
     "@aws-sdk/s3-request-presigner": "^3.859.0",
     "@azure/core-rest-pipeline": "^1.21.0",
-    "@browserbasehq/sdk": "^2.6.0",
-    "@browserbasehq/stagehand": "^2.4.4",
+    "@browserbasehq/sdk": "^2.5.0",
     "@calcom/atoms": "^1.0.102-framer",
     "@calcom/embed-react": "^1.5.3",
     "@date-fns/tz": "^1.2.0",
@@ -68,7 +66,6 @@
     "next-safe-action": "^8.0.3",
     "next-themes": "^0.4.4",
     "nuqs": "^2.4.3",
-    "playwright": "^1.55.0",
     "playwright-core": "^1.52.0",
     "posthog-js": "^1.236.6",
     "posthog-node": "^4.14.0",
@@ -94,7 +91,7 @@
     "use-long-press": "^3.3.0",
     "xml2js": "^0.6.2",
     "zaraz-ts": "^1.2.0",
-    "zod": "^4.1.5",
+    "zod": "^4.0.17",
     "zustand": "^5.0.3"
   },
   "devDependencies": {
