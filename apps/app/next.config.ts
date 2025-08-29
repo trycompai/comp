@@ -35,8 +35,18 @@ const config: NextConfig = {
     optimizePackageImports: ['@trycompai/db', '@trycompai/ui'],
     // Reduce build peak memory
     webpackMemoryOptimizations: true,
+    // Ensure packages with native/wasm assets are externalized for RSC/Turbopack
+    serverComponentsExternalPackages: ['@1password/sdk', '@1password/sdk-core'],
   },
   outputFileTracingRoot: path.join(__dirname, '../../'),
+
+  // Make sure the 1Password core WASM is included in the traced output
+  outputFileTracingIncludes: {
+    '/*': [path.join(__dirname, '../../node_modules/@1password/sdk-core/nodejs/core_bg.wasm')],
+  },
+
+  // Externalize on the server runtime as well (Next 15)
+  serverExternalPackages: ['@1password/sdk', '@1password/sdk-core'],
 
   // Reduce memory usage during production build
   productionBrowserSourceMaps: false,

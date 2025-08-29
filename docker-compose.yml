@@ -5,14 +5,14 @@ services:
       dockerfile: Dockerfile
       target: migrator
     env_file:
-      - .env
+      - packages/db/.env
   seeder:
     build:
       context: .
       dockerfile: Dockerfile
       target: migrator
     env_file:
-      - .env
+      - packages/db/.env
     command: sh -lc "bunx prisma generate --schema=node_modules/@trycompai/db/dist/schema.prisma && bun packages/db/prisma/seed/seed.js"
   app:
     build:
@@ -24,7 +24,7 @@ services:
     ports:
       - '3000:3000'
     env_file:
-      - .env
+      - apps/app/.env
     healthcheck:
       test: ['CMD-SHELL', 'curl -f http://localhost:3000/api/health || exit 1']
       interval: 30s
@@ -42,7 +42,7 @@ services:
     ports:
       - '3002:3000'
     env_file:
-      - .env
+      - apps/portal/.env
     healthcheck:
       test: ['CMD-SHELL', 'curl -f http://localhost:3002/ || exit 1']
       interval: 30s
