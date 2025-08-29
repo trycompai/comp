@@ -44,7 +44,7 @@ export const auth = betterAuth({
     provider: 'postgresql',
   }),
   baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
-  trustedOrigins: ['http://localhost:3000', 'https://*.trycomp.ai', 'http://localhost:3002'],
+  trustedOrigins: process.env.AUTH_TRUSTED_ORIGINS ? process.env.AUTH_TRUSTED_ORIGINS.split(",").map(o => o.trim()) : ['http://localhost:3000', 'https://*.trycomp.ai', 'http://localhost:3002'],  
   emailAndPassword: {
     enabled: true,
   },
