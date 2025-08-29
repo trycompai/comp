@@ -2,7 +2,7 @@
 
 import { Button } from '@comp/ui/button';
 import type { EmployeeTrainingVideoCompletion } from '@db';
-import { ArrowRight, Check } from 'lucide-react';
+import { ArrowRight, Check, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 
 // Define our own TrainingVideo interface since we can't find the import
@@ -26,6 +26,7 @@ interface YoutubeEmbedProps {
   onComplete: () => void;
   onNext?: () => void;
   allVideosCompleted: boolean;
+  isMarkingComplete: boolean;
   onWatchAgain: () => void;
 }
 
@@ -35,6 +36,7 @@ export function YoutubeEmbed({
   onComplete,
   onNext,
   allVideosCompleted,
+  isMarkingComplete,
   onWatchAgain,
 }: YoutubeEmbedProps) {
   const [isRewatching, setIsRewatching] = useState(false);
@@ -53,8 +55,17 @@ export function YoutubeEmbed({
             disabled={isCompleted}
             className="gap-2"
           >
-            <Check className="h-4 w-4" />
-            {isCompleted ? 'Completed' : 'Mark as Complete'}
+            {isMarkingComplete ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Marking as Complete...
+              </>
+            ) : (
+              <>
+                <Check className="h-4 w-4" />
+                {isCompleted ? 'Completed' : 'Mark as Complete'}
+              </>
+            )}
           </Button>
         )}
       </div>
