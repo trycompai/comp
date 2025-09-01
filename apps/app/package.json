@@ -68,7 +68,7 @@
     "nuqs": "^2.4.3",
     "playwright-core": "^1.52.0",
     "posthog-js": "^1.236.6",
-    "posthog-node": "^4.14.0",
+    "posthog-node": "^5.8.1",
     "puppeteer-core": "^24.7.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.0",
