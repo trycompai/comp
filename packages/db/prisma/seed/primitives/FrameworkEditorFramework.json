@@ -9,15 +9,6 @@
     "visible": false
   },
   {
-    "id": "frk_681ef1952907deb7cb85896d",
-    "name": "GDPR",
-    "description": "GDPR",
-    "version": "1.0.0",
-    "createdAt": "2025-05-14 19:20:44.920",
-    "updatedAt": "2025-05-14 19:20:44.920",
-    "visible": false
-  },
-  {
     "id": "frk_6820090a1653380dd386c5eb",
     "name": "NIST CSF",
     "description": "National Institute of Standards and Technology Cybersecurity Framework",
@@ -96,6 +87,15 @@
     "version": "2025",
     "createdAt": "2025-05-14 19:20:44.920",
     "updatedAt": "2025-07-29 01:20:39.551",
+    "visible": true
+  },
+  {
+    "id": "frk_681ef1952907deb7cb85896d",
+    "name": "GDPR",
+    "description": "GDPR",
+    "version": "1.0.0",
+    "createdAt": "2025-05-14 19:20:44.920",
+    "updatedAt": "2025-09-01 16:51:38.334",
     "visible": true
   }
 ]

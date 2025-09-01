@@ -32,6 +32,10 @@ export function mapFrameworkToBadge(framework: FrameworkInstanceWithControls) {
     return '/badges/hipaa.svg';
   }
 
+  if (framework.framework.name === 'GDPR') {
+    return '/badges/gdpr.svg';
+  }
+
   return null;
 }
 

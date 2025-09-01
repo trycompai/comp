@@ -7819,5 +7819,23 @@
     "identifier": "P2.1",
     "createdAt": "2025-06-03 23:18:27.903",
     "updatedAt": "2025-06-04 21:34:40.204"
+  },
+  {
+    "id": "frk_rq_68b59a381860dff55c1ab1aa",
+    "frameworkId": "frk_681ef1952907deb7cb85896d",
+    "name": "GDPR Requirement",
+    "description": "Everything related to GDPR",
+    "identifier": "1",
+    "createdAt": "2025-09-01 13:06:00.288",
+    "updatedAt": "2025-09-01 13:06:00.288"
+  },
+  {
+    "id": "frk_rq_68b59f4c9739efdb63dd807e",
+    "frameworkId": "frk_681ecc34e85064efdbb76993",
+    "name": "ISO Requirement",
+    "description": "Everything ISO",
+    "identifier": "1",
+    "createdAt": "2025-09-01 13:27:39.721",
+    "updatedAt": "2025-09-01 13:27:39.721"
   }
 ]
