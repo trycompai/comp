@@ -1,5 +1,6 @@
 'use server';
 
+import { createTrainingVideoEntries } from '@/lib/db/employee';
 import { db } from '@db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
@@ -96,7 +97,7 @@ export const completeInvitation = authActionClientWithoutOrg
           throw new Error('Invitation role is required');
         }
 
-        await db.member.create({
+        const newMember = await db.member.create({
           data: {
             userId: user.id,
             organizationId: invitation.organizationId,
@@ -104,6 +105,9 @@ export const completeInvitation = authActionClientWithoutOrg
             department: 'none',
           },
         });
+
+        // Create training video completion entries for the new member
+        await createTrainingVideoEntries(newMember.id);
 
         await db.invitation.update({
           where: {

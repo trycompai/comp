@@ -100,21 +100,22 @@ async function inviteEmployeeToPortal({
 }
 
 /**
- * Creates training video tracking entries for a new employee
+ * Creates training video tracking entries for a new member
+ * This function is exported so it can be used in other invitation flows
  */
-async function createTrainingVideoEntries(employeeId: string) {
-  console.log(`Creating training video entries for employee ${employeeId}`);
+export async function createTrainingVideoEntries(memberId: string) {
+  console.log(`Creating training video entries for member ${memberId}`);
 
   // Create an entry for each video in the system
   const result = await db.employeeTrainingVideoCompletion.createMany({
     data: trainingVideos.map((video) => ({
-      memberId: employeeId,
+      memberId: memberId,
       videoId: video.id,
     })),
     skipDuplicates: true,
   });
 
-  console.log(`Created ${result.count} training video entries for employee ${employeeId}`);
+  console.log(`Created ${result.count} training video entries for member ${memberId}`);
 
   return result;
 }

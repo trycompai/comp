@@ -187,5 +187,113 @@
     "department": "it",
     "createdAt": "2025-07-07 04:46:43.319",
     "updatedAt": "2025-07-07 04:46:43.319"
+  },
+  {
+    "id": "frk_tt_68b59e7a29bec89c57014868",
+    "name": "Statement of Applicability",
+    "description": "Statement of Applicability",
+    "frequency": "yearly",
+    "department": "admin",
+    "createdAt": "2025-09-01 13:24:09.841",
+    "updatedAt": "2025-09-01 13:24:09.841"
+  },
+  {
+    "id": "frk_tt_68b59fd5e41ed4c1d69161d6",
+    "name": "Records of Processing Activities",
+    "description": "In compliance with GDPR Article 30, ensure that controllers (and processors, where applicable) maintain up-to-date records of processing activities. These records must include:\n\n\n- The purposes of processing\n- Categories of data subjects and personal data\n- Categories of recipients (including third parties and international transfers)\n- Applicable retention periods\n- A description of security measures in place\nThis record should be documented in a structured format (e.g., register, inventory, or compliance tool) and kept readily available as evidence of compliance.",
+    "frequency": "yearly",
+    "department": "admin",
+    "createdAt": "2025-09-01 13:29:57.324",
+    "updatedAt": "2025-09-01 16:41:42.592"
+  },
+  {
+    "id": "frk_tt_68b5cd3678e4245e4867f07c",
+    "name": "Conduct Data Protection Impact Assessments",
+    "description": "For any processing activity that is likely to result in high risk to individuals (e.g., large-scale profiling, sensitive data processing, or new technologies), conduct a documented Data Protection Impact Assessment (DPIA). The DPIA must identify risks, assess their severity, and define mitigation measures.",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2025-09-01 16:43:34.345",
+    "updatedAt": "2025-09-01 16:43:34.345"
+  },
+  {
+    "id": "frk_tt_68b5ce9b5393ae083c3beadf",
+    "name": "Appoint or Review Data Protection Officer",
+    "description": "Assess whether your organization is required to appoint a Data Protection Officer (DPO) under GDPR (e.g., large-scale monitoring or sensitive data processing). If required, formally appoint a qualified DPO and document their role, responsibilities, and reporting line. Review the necessity of the DPO role if your processing scope or risk profile changes.",
+    "frequency": "yearly",
+    "department": "admin",
+    "createdAt": "2025-09-01 16:49:31.380",
+    "updatedAt": "2025-09-01 16:49:31.380"
+  },
+  {
+    "id": "frk_tt_68b5ce9c64f9e3b7410008d7",
+    "name": "Update Privacy Notices & Policies",
+    "description": "Maintain clear, transparent, and GDPR-compliant privacy notices and policies. Ensure they include lawful bases for processing, data subject rights, categories of data collected, and how data is used, shared, and retained. Update notices promptly when practices change.",
+    "frequency": "yearly",
+    "department": "admin",
+    "createdAt": "2025-09-01 16:49:31.632",
+    "updatedAt": "2025-09-01 16:49:31.632"
+  },
+  {
+    "id": "frk_tt_68b5ce9c5029f2a7ec6f4145",
+    "name": "Perform Security Reviews & Audits",
+    "description": "Conduct regular reviews of technical and organizational security measures to ensure they remain effective and aligned with GDPR’s accountability principle. Document findings, remediation actions, and audit results",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2025-09-01 16:49:31.916",
+    "updatedAt": "2025-09-01 16:49:31.916"
+  },
+  {
+    "id": "frk_tt_68b5ce9c979a280311c11af1",
+    "name": "Map and Review Data Flow & Inventory",
+    "description": "Maintain an up-to-date data inventory and data flow map that identifies what personal data is collected, how it is processed, where it is stored, retention periods, and its lifecycle. Update records when systems, vendors, or processing activities change.",
+    "frequency": "yearly",
+    "department": "admin",
+    "createdAt": "2025-09-01 16:49:32.093",
+    "updatedAt": "2025-09-01 16:49:32.093"
+  },
+  {
+    "id": "frk_tt_68b5ce9c6c1bdb171870f623",
+    "name": "Manage Third-party and EU Representative Relationships",
+    "description": "Ensure all third-party processors have GDPR-compliant Data Processing Agreements (DPAs) in place. If your organization is outside the EU but processes EU personal data, appoint an EU Representative and document the arrangement. Review contracts and representative status regularly.",
+    "frequency": "yearly",
+    "department": "admin",
+    "createdAt": "2025-09-01 16:49:32.236",
+    "updatedAt": "2025-09-01 16:49:32.236"
+  },
+  {
+    "id": "frk_tt_68b5ce9cba8271d8feaf0805",
+    "name": "Handle Data Subject Rights Requests",
+    "description": "Implement and document procedures to handle data subject rights requests (e.g., access, rectification, erasure, objection, portability). Maintain logs of requests, response times, and outcomes to demonstrate compliance.",
+    "frequency": "quarterly",
+    "department": "admin",
+    "createdAt": "2025-09-01 16:49:32.365",
+    "updatedAt": "2025-09-01 16:49:32.365"
+  },
+  {
+    "id": "frk_tt_68b5ce9c0a99e71cfa722917",
+    "name": "Maintain a Breach Response Plan & Train Staff",
+    "description": "Maintain a documented data breach response plan that includes detection, escalation, notification (within 72 hours), and remediation procedures. Train staff regularly on breach awareness and reporting obligations.",
+    "frequency": "yearly",
+    "department": "admin",
+    "createdAt": "2025-09-01 16:49:32.494",
+    "updatedAt": "2025-09-01 16:49:32.494"
+  },
+  {
+    "id": "frk_tt_68b5ce9dd597ac7d650e4915",
+    "name": "Reassess Legal Basis for Processing",
+    "description": "Review and document the lawful basis for each processing activity under GDPR Article 6 (e.g., consent, contract, legal obligation, legitimate interest). Ensure justifications are clear, up to date, and communicated in privacy notices.",
+    "frequency": "yearly",
+    "department": "admin",
+    "createdAt": "2025-09-01 16:49:32.603",
+    "updatedAt": "2025-09-01 16:49:32.603"
+  },
+  {
+    "id": "frk_tt_68b5ce9d508cacf8e4517b56",
+    "name": "Review International Data Transfers",
+    "description": "Review and document all international data transfers to ensure compliance with GDPR Chapter V. Confirm adequacy decisions, Standard Contractual Clauses (SCCs), or other safeguards are in place. Update documentation when new transfers are added or existing ones change.",
+    "frequency": "yearly",
+    "department": "admin",
+    "createdAt": "2025-09-01 16:49:32.719",
+    "updatedAt": "2025-09-01 16:49:32.719"
   }
 ]

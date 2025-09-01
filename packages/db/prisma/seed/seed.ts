@@ -11,6 +11,17 @@ async function seedJsonFiles(subDirectory: string) {
   const files = await fs.readdir(directoryPath);
   const jsonFiles = files.filter((file) => file.endsWith('.json'));
 
+  // Ensure deterministic order for primitives so FK dependencies are satisfied
+  // Specifically, seed Frameworks before Requirements (which reference Frameworks)
+  if (subDirectory === 'primitives') {
+    const priorityOrder = ['FrameworkEditorFramework.json'];
+    const getPriority = (fileName: string) => {
+      const index = priorityOrder.indexOf(fileName);
+      return index === -1 ? Number.MAX_SAFE_INTEGER : index;
+    };
+    jsonFiles.sort((a, b) => getPriority(a) - getPriority(b));
+  }
+
   for (const jsonFile of jsonFiles) {
     try {
       const filePath = path.join(directoryPath, jsonFile);

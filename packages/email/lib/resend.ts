@@ -1,7 +1,6 @@
 import { Resend } from 'resend';
 
 export const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
-export const domain = process.env.RESEND_DOMAIN ?? 'mail.trycomp.ai';
 
 export const sendEmail = async ({
   to,
@@ -26,18 +25,41 @@ export const sendEmail = async ({
     throw new Error('Resend not initialized - missing API key');
   }
 
+
+    // 1) Pull each env var into its own constant
+  const fromMarketing = process.env.RESEND_FROM_MARKETING;
+  const fromSystem    = process.env.RESEND_FROM_SYSTEM;
+  const fromDefault   = process.env.RESEND_FROM_DEFAULT;
+  const toTest        = process.env.RESEND_TO_TEST;
+  const replyMarketing= process.env.RESEND_REPLY_TO_MARKETING;
+
+  // 2) Decide which one you need for this email
+  const fromAddress = marketing
+    ? fromMarketing
+    : system
+      ? fromSystem
+      : fromDefault;
+
+  const toAddress = test ? toTest : to;
+
+  const replyTo = marketing ? replyMarketing : undefined;
+
+  // 3) Guard against undefined
+  if (!fromAddress) {
+    throw new Error('Missing FROM address in environment variables');
+  }
+  if (!toAddress) {
+    throw new Error('Missing TO address in environment variables');
+  }
+
   try {
     const { data, error } = await resend.emails.send({
-      from: marketing
-        ? `Lewis Carhart <lewis@${domain}>`
-        : system
-          ? `Comp AI <mail@${domain}>`
-          : `Comp AI <mail@${domain}>`,
-      to: test ? `mail@${domain}` : to,
+      from: fromAddress,      // now always a string
+      to: toAddress,          // now always a string
       cc,
-      replyTo: marketing ? `lewis@${domain}` : undefined,
+      replyTo,
       subject,
-      //@ts-ignore expected
+      // @ts-ignore – React node allowed by the SDK
       react,
       scheduledAt,
     });

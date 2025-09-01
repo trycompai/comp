@@ -2,6 +2,7 @@
 
 import { initializeOrganization } from '@/actions/organization/lib/initialize-organization';
 import { authActionClientWithoutOrg } from '@/actions/safe-action';
+import { createTrainingVideoEntries } from '@/lib/db/employee';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
 import { revalidatePath } from 'next/cache';
@@ -63,6 +64,19 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
       });
 
       const orgId = newOrg.id;
+
+      // Get the member that was created with the organization (the owner)
+      const ownerMember = await db.member.findFirst({
+        where: {
+          userId: session.user.id,
+          organizationId: orgId,
+        },
+      });
+
+      // Create training video completion entries for the owner
+      if (ownerMember) {
+        await createTrainingVideoEntries(ownerMember.id);
+      }
 
       // Create onboarding record for new org
       await db.onboarding.create({

@@ -52,7 +52,7 @@ export function VideoCarousel({ videos }: VideoCarouselProps) {
 
   const [completedVideoIds, setCompletedVideoIds] = useState<Set<string>>(initialCompletedVideoIds);
 
-  const { execute: executeMarkComplete } = useAction(markVideoAsCompleted, {
+  const { execute: executeMarkComplete, isExecuting } = useAction(markVideoAsCompleted, {
     onSuccess: (data) => {
       // Update local UI state immediately upon successful action
       const completedMetadataId = mergedVideos[currentIndex].id;
@@ -134,6 +134,7 @@ export function VideoCarousel({ videos }: VideoCarouselProps) {
             video={mergedVideos[currentIndex]} // Pass the merged object
             isCompleted={isCurrentVideoCompleted} // Use local state for UI
             onComplete={handleVideoComplete}
+            isMarkingComplete={isExecuting}
             onNext={isCurrentVideoCompleted && hasNextVideo ? goToNext : undefined}
             allVideosCompleted={allVideosCompleted} // Use local state for UI
             onWatchAgain={() => {
