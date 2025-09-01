@@ -14,36 +14,53 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
 import { Icons } from '@comp/ui/icons';
+import { Policy } from '@db';
+import { FileJson, FileText } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { switchPolicyDisplayFormatAction } from '../actions/switch-policy-display-format';
 
-export function PolicyHeaderActions({ policyId }: { policyId: string }) {
-  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
-  // Delete flows through query param to existing dialog in PolicyOverview
+export function PolicyHeaderActions({ policy }: { policy: Policy | null }) {
+  const [isRegenerateConfirmOpen, setRegenerateConfirmOpen] = useState(false);
+  const [isSwitchConfirmOpen, setSwitchConfirmOpen] = useState(false);
+
   const regenerate = useAction(regeneratePolicyAction, {
     onSuccess: () => toast.success('Regeneration triggered. This may take a moment.'),
     onError: () => toast.error('Failed to trigger policy regeneration'),
   });
 
+  const switchFormat = useAction(switchPolicyDisplayFormatAction, {
+    onSuccess: () => toast.success('View switched successfully.'),
+    onError: () => toast.error('Failed to switch view.'),
+  });
+
+  if (!policy) return null;
+
+  const isPendingApproval = !!policy.approverId;
+
+  const isPdfView = policy.displayFormat === 'PDF';
+  const newFormat = isPdfView ? 'EDITOR' : 'PDF';
+
+  const handleSwitchFormat = () => {
+    switchFormat.execute({ policyId: policy.id, format: newFormat });
+    setSwitchConfirmOpen(false);
+  };
+
   return (
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button
-            size="icon"
-            variant="ghost"
-            className="m-0 size-auto p-2"
-            aria-label="Policy actions"
-          >
+          <Button size="icon" variant="ghost" className="m-0 size-auto p-2">
             <Icons.Settings className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => setIsConfirmOpen(true)}>
+          <DropdownMenuItem onClick={() => setRegenerateConfirmOpen(true)} disabled={isPendingApproval}>
             <Icons.AI className="mr-2 h-4 w-4" /> Regenerate policy
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -55,6 +72,11 @@ export function PolicyHeaderActions({ policyId }: { policyId: string }) {
           >
             <Icons.Edit className="mr-2 h-4 w-4" /> Edit policy
           </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setSwitchConfirmOpen(true)} disabled={isPendingApproval}>
+            {isPdfView ? <FileJson className="mr-2 h-4 w-4" /> : <FileText className="mr-2 h-4 w-4" />}
+            Switch to {isPdfView ? 'Editor' : 'PDF'} View
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={() => {
               const url = new URL(window.location.href);
@@ -77,8 +99,8 @@ export function PolicyHeaderActions({ policyId }: { policyId: string }) {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <Dialog open={isConfirmOpen} onOpenChange={(open) => !open && setIsConfirmOpen(false)}>
-        <DialogContent className="sm:max-w-[420px]">
+      <Dialog open={isRegenerateConfirmOpen} onOpenChange={setRegenerateConfirmOpen}>
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Regenerate Policy</DialogTitle>
             <DialogDescription>
@@ -86,19 +108,14 @@ export function PolicyHeaderActions({ policyId }: { policyId: string }) {
               it for review. Continue?
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setIsConfirmOpen(false)}
-              disabled={regenerate.status === 'executing'}
-            >
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRegenerateConfirmOpen(false)}>
               Cancel
             </Button>
             <Button
               onClick={() => {
-                setIsConfirmOpen(false);
-                toast.info('Regenerating policy...');
-                regenerate.execute({ policyId });
+                regenerate.execute({ policyId: policy.id });
+                setRegenerateConfirmOpen(false);
               }}
               disabled={regenerate.status === 'executing'}
             >
@@ -108,7 +125,30 @@ export function PolicyHeaderActions({ policyId }: { policyId: string }) {
         </DialogContent>
       </Dialog>
 
-      {/* Delete confirmation handled by PolicyDeleteDialog via query param */}
+      <Dialog open={isSwitchConfirmOpen} onOpenChange={setSwitchConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Switch to {newFormat === 'EDITOR' ? 'Editor' : 'PDF'} View</DialogTitle>
+            <DialogDescription>
+              Are you sure? The current{' '}
+              <span className="font-semibold">{isPdfView ? 'PDF document' : 'editor content'}</span>{' '}
+              will be permanently deleted.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSwitchConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleSwitchFormat}
+              disabled={switchFormat.status === 'executing'}
+            >
+              {switchFormat.status === 'executing' ? 'Switching…' : 'Confirm & Switch'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

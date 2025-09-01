@@ -3,7 +3,9 @@
 import { PolicyEditor } from '@/components/editor/policy-editor';
 import { validateAndFixTipTapContent } from '@comp/ui/editor';
 import '@comp/ui/editor.css';
+import type { PolicyDisplayFormat } from '@db';
 import type { JSONContent } from '@tiptap/react';
+import { PdfViewer } from '../../components/PdfViewer';
 import { updatePolicy } from '../actions/update-policy';
 
 const removeUnsupportedMarks = (node: JSONContent): JSONContent => {
@@ -18,26 +20,32 @@ const removeUnsupportedMarks = (node: JSONContent): JSONContent => {
   return node;
 };
 
-interface PolicyDetailsProps {
+interface PolicyContentDisplayProps {
   policyId: string;
   policyContent: JSONContent | JSONContent[];
   isPendingApproval: boolean;
+  displayFormat?: PolicyDisplayFormat;
+  pdfUrl?: string | null;
 }
 
-export function PolicyPageEditor({
+export function PolicyContentDisplay({
   policyId,
   policyContent,
   isPendingApproval,
-}: PolicyDetailsProps) {
-  const formattedContent = Array.isArray(policyContent)
-    ? policyContent
-    : typeof policyContent === 'object' && policyContent !== null
-      ? [policyContent as JSONContent]
-      : [];
+  displayFormat,
+  pdfUrl,
+}: PolicyContentDisplayProps) {
+  // Conditionally render the PDF viewer or the editor based on the policy's display format.
+  if (displayFormat === 'PDF') {
+    return <PdfViewer policyId={policyId} pdfUrl={pdfUrl} isPendingApproval={isPendingApproval} />;
+  }
+
+  // Default to the rich text editor.
+  const formattedContent = Array.isArray(policyContent) ? policyContent : [policyContent as JSONContent];
   const sanitizedContent = formattedContent.map(removeUnsupportedMarks);
-  // Normalize via validator so editor always receives a clean array
   const validatedDoc = validateAndFixTipTapContent(sanitizedContent);
   const normalizedContent = (validatedDoc.content || []) as JSONContent[];
+
   const handleSavePolicy = async (policyContent: JSONContent[]): Promise<void> => {
     if (!policyId) return;
 
