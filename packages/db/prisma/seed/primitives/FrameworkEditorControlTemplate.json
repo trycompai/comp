@@ -292,5 +292,19 @@
     "description": "Hide sensitive fields",
     "createdAt": "2025-06-11 17:56:19.307",
     "updatedAt": "2025-06-11 17:56:19.307"
+  },
+  {
+    "id": "frk_ct_68b59a16b172e5c360e57536",
+    "name": "GDPR",
+    "description": "GDPR Controls",
+    "createdAt": "2025-09-01 13:05:26.037",
+    "updatedAt": "2025-09-01 13:05:26.037"
+  },
+  {
+    "id": "frk_ct_68b59e50eeb9f92ce425327c",
+    "name": "ISO",
+    "description": "ISO Controls",
+    "createdAt": "2025-09-01 13:23:28.289",
+    "updatedAt": "2025-09-01 13:23:28.289"
   }
 ]
