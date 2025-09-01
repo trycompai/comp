@@ -1,6 +1,3 @@
-// 🤘 Welcome to Stagehand!
-// This file is from the [Stagehand docs](https://docs.stagehand.dev/sections/examples/nextjs).
-
 'use server';
 
 import { Browserbase } from '@browserbasehq/sdk';

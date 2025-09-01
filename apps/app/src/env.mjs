@@ -36,14 +36,14 @@ export const env = createEnv({
     GA4_MEASUREMENT_ID: z.string().optional(),
     LINKEDIN_CONVERSIONS_ACCESS_TOKEN: z.string().optional(),
     // SMTP + 1Password
-    SMTP_HOST: z.string().min(1),
+    SMTP_HOST: z.string().optional(),
     SMTP_PORT: z.string().optional(),
     SMTP_SECURE: z.string().optional(),
-    SMTP_USER: z.string().min(1),
-    SMTP_PASSWORD: z.string().min(1),
+    SMTP_USER: z.string().optional(),
+    SMTP_PASSWORD: z.string().optional(),
     SMTP_FROM: z.string().optional(),
-    MAIL_PROVISION_DOMAIN: z.string().min(1),
-    OP_SERVICE_ACCOUNT_TOKEN: z.string().min(1),
+    SMTP_DOMAIN: z.string().optional(),
+    OP_SERVICE_ACCOUNT_TOKEN: z.string().optional(),
   },
 
   client: {
@@ -106,7 +106,7 @@ export const env = createEnv({
     SMTP_USER: process.env.SMTP_USER,
     SMTP_PASSWORD: process.env.SMTP_PASSWORD,
     SMTP_FROM: process.env.SMTP_FROM,
-    MAIL_PROVISION_DOMAIN: process.env.MAIL_PROVISION_DOMAIN,
+    SMTP_DOMAIN: process.env.SMTP_DOMAIN,
     OP_SERVICE_ACCOUNT_TOKEN: process.env.OP_SERVICE_ACCOUNT_TOKEN,
   },
 

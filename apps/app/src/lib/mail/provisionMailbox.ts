@@ -23,34 +23,23 @@ function generateStrongPassword(): string {
 
 export async function provisionOrgMailbox(params: {
   organizationId: string;
-  notifyEmail?: string; // optionally notify creator
 }): Promise<ProvisionMailboxResult> {
-  const domain = process.env.MAIL_PROVISION_DOMAIN!;
+  const domain = process.env.SMTP_DOMAIN!;
 
   // username like org-<id-short>
-  const localPart = `org-${params.organizationId}`;
-  const email = `${localPart}@${domain}`;
+  const localPart = params.organizationId;
+  const email = `comp-${localPart}@${domain}`;
   const password = generateStrongPassword();
 
-  // Optionally notify creator with the credentials using Nodemailer
-  if (params.notifyEmail) {
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST!,
-      port: Number(process.env.SMTP_PORT || 587),
-      secure: Boolean(process.env.SMTP_SECURE === 'true'),
-      auth: {
-        user: process.env.SMTP_USER!,
-        pass: process.env.SMTP_PASSWORD!,
-      },
-    });
-
-    await transporter.sendMail({
-      from: process.env.SMTP_FROM || process.env.SMTP_USER!,
-      to: params.notifyEmail,
-      subject: `New org mailbox created: ${email}`,
-      text: `Credentials for organization ${params.organizationId}\nEmail: ${email}\nPassword: ${password}`,
-    });
-  }
+  nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT),
+    secure: process.env.SMTP_SECURE === 'true',
+    auth: {
+      user: process.env.SES_SMTP_USER, // from SES console
+      pass: process.env.SES_SMTP_PASS, // from SES console
+    },
+  });
 
   return { email, password };
 }

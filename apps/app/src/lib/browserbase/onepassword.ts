@@ -24,13 +24,12 @@ export async function createOnePasswordLoginItem(params: {
   organizationId: string;
   username: string;
   password: string;
-  titleSuffix?: string;
 }) {
-  const { organizationId, username, password, titleSuffix } = params;
+  const { organizationId, username, password } = params;
   const client = await getOnePasswordClient();
 
   const loginItem = await client.items.create({
-    title: `${organizationId}${titleSuffix ? ` - ${titleSuffix}` : ''}`,
+    title: `${organizationId}`,
     vaultId: VAULT_NAME,
     category: ItemCategory.Login,
     fields: [

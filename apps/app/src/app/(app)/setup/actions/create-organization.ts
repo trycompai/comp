@@ -70,13 +70,12 @@ export const createOrganization = authActionClientWithoutOrg
       try {
         const { email, password } = await provisionOrgMailbox({
           organizationId: orgId,
-          notifyEmail: session.user.email ?? undefined,
         });
+
         await createOnePasswordLoginItem({
           organizationId: orgId,
           username: email,
           password,
-          titleSuffix: 'Org Mailbox',
         });
       } catch (e) {
         console.error('Mailbox provisioning failed', e);
