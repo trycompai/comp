@@ -1,11 +1,13 @@
 import { 
   Controller, 
   Get, 
+  Param,
   UseGuards 
 } from '@nestjs/common';
 import {
   ApiHeader,
   ApiOperation,
+  ApiParam,
   ApiResponse,
   ApiSecurity,
   ApiTags,
@@ -16,7 +18,7 @@ import {
 } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import type { AuthContext as AuthContextType } from '../auth/types';
-import { DeviceResponseDto } from './dto/device-responses.dto';
+import { DevicesByMemberResponseDto } from './dto/devices-by-member-response.dto';
 import { DevicesService } from './devices.service';
 
 @ApiTags('Devices')
@@ -133,6 +135,71 @@ export class DevicesController {
     return {
       data: devices,
       count: devices.length,
+      authType: authContext.authType,
+      ...(authContext.userId && authContext.userEmail && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
+  }
+
+  @Get('member/:memberId')
+  @ApiOperation({
+    summary: 'Get devices by member ID',
+    description:
+      'Returns all devices assigned to a specific member within the authenticated organization. Devices are fetched from FleetDM using the member\'s dedicated fleetDmLabelId. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).',
+  })
+  @ApiParam({
+    name: 'memberId',
+    description: 'Member ID to get devices for',
+    example: 'mem_abc123def456',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Member devices retrieved successfully',
+    type: DevicesByMemberResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description:
+      'Unauthorized - Invalid authentication or insufficient permissions',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Organization or member not found',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          examples: [
+            'Organization with ID org_abc123def456 not found',
+            'Member with ID mem_abc123def456 not found in organization org_abc123def456',
+          ],
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error - FleetDM integration issue',
+  })
+  async getDevicesByMember(
+    @Param('memberId') memberId: string,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ): Promise<DevicesByMemberResponseDto> {
+    const [devices, member] = await Promise.all([
+      this.devicesService.findAllByMember(organizationId, memberId),
+      this.devicesService.getMemberById(organizationId, memberId),
+    ]);
+
+    return {
+      data: devices,
+      count: devices.length,
+      member,
       authType: authContext.authType,
       ...(authContext.userId && authContext.userEmail && {
         authenticatedUser: {
