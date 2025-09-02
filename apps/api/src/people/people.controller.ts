@@ -25,6 +25,7 @@ import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import { CreatePeopleDto } from './dto/create-people.dto';
 import { UpdatePeopleDto } from './dto/update-people.dto';
+import { BulkCreatePeopleDto } from './dto/bulk-create-people.dto';
 import { PeopleResponseDto } from './dto/people-responses.dto';
 import { PeopleService } from './people.service';
 
@@ -215,6 +216,152 @@ export class PeopleController {
 
     return {
       ...member,
+      authType: authContext.authType,
+      ...(authContext.userId && authContext.userEmail && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
+  }
+
+  @Post('bulk')
+  @ApiOperation({
+    summary: 'Add multiple members to organization',
+    description:
+      'Bulk adds multiple members to the authenticated organization. Each member must have a valid user ID that exists in the system. Members who already exist in the organization or have invalid data will be skipped with error details returned. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).',
+  })
+  @ApiBody({
+    description: 'Bulk member creation data',
+    type: BulkCreatePeopleDto,
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Bulk member creation completed',
+    schema: {
+      type: 'object',
+      properties: {
+        created: {
+          type: 'array',
+          items: { $ref: '#/components/schemas/PeopleResponseDto' },
+          description: 'Successfully created members',
+        },
+        errors: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              index: {
+                type: 'number',
+                description: 'Index in the original array where the error occurred',
+                example: 2,
+              },
+              userId: {
+                type: 'string',
+                description: 'User ID that failed to be added',
+                example: 'usr_abc123def456',
+              },
+              error: {
+                type: 'string',
+                description: 'Error message explaining why the member could not be created',
+                example: 'User user@example.com is already a member of this organization',
+              },
+            },
+          },
+          description: 'Members that failed to be created with error details',
+        },
+        summary: {
+          type: 'object',
+          properties: {
+            total: {
+              type: 'number',
+              description: 'Total number of members in the request',
+              example: 5,
+            },
+            successful: {
+              type: 'number',
+              description: 'Number of members successfully created',
+              example: 3,
+            },
+            failed: {
+              type: 'number',
+              description: 'Number of members that failed to be created',
+              example: 2,
+            },
+          },
+        },
+        authType: {
+          type: 'string',
+          enum: ['api-key', 'session'],
+          description: 'How the request was authenticated',
+        },
+        authenticatedUser: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              description: 'User ID',
+              example: 'usr_abc123def456',
+            },
+            email: {
+              type: 'string',
+              description: 'User email',
+              example: 'user@company.com',
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid bulk data or validation errors',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          examples: [
+            'Validation failed',
+            'Members array cannot be empty',
+            'Maximum 100 members allowed per bulk request',
+          ],
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description:
+      'Unauthorized - Invalid authentication or insufficient permissions',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Organization not found',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          example: 'Organization with ID org_abc123def456 not found',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  async bulkCreateMembers(
+    @Body() bulkCreateData: BulkCreatePeopleDto,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const result = await this.peopleService.bulkCreate(organizationId, bulkCreateData);
+
+    return {
+      ...result,
       authType: authContext.authType,
       ...(authContext.userId && authContext.userEmail && {
         authenticatedUser: {

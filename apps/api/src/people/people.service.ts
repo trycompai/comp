@@ -3,6 +3,7 @@ import { db } from '@trycompai/db';
 import type { PeopleResponseDto } from './dto/people-responses.dto';
 import type { CreatePeopleDto } from './dto/create-people.dto';
 import type { UpdatePeopleDto } from './dto/update-people.dto';
+import type { BulkCreatePeopleDto } from './dto/bulk-create-people.dto';
 
 @Injectable()
 export class PeopleService {
@@ -192,6 +193,125 @@ export class PeopleService {
       }
       this.logger.error(`Failed to create member for organization ${organizationId}:`, error);
       throw new Error(`Failed to create member: ${error.message}`);
+    }
+  }
+
+  async bulkCreate(organizationId: string, bulkCreateData: BulkCreatePeopleDto): Promise<{
+    created: PeopleResponseDto[];
+    errors: Array<{ index: number; userId: string; error: string }>;
+    summary: { total: number; successful: number; failed: number };
+  }> {
+    try {
+      // First verify the organization exists
+      const organization = await db.organization.findUnique({
+        where: { id: organizationId },
+        select: { id: true, name: true },
+      });
+
+      if (!organization) {
+        throw new NotFoundException(`Organization with ID ${organizationId} not found`);
+      }
+
+      const created: PeopleResponseDto[] = [];
+      const errors: Array<{ index: number; userId: string; error: string }> = [];
+
+      // Process each member in the bulk request
+      for (let i = 0; i < bulkCreateData.members.length; i++) {
+        const memberData = bulkCreateData.members[i];
+        try {
+          // Verify the user exists
+          const user = await db.user.findUnique({
+            where: { id: memberData.userId },
+            select: { id: true, name: true, email: true },
+          });
+
+          if (!user) {
+            errors.push({
+              index: i,
+              userId: memberData.userId,
+              error: `User with ID ${memberData.userId} not found`,
+            });
+            continue;
+          }
+
+          // Check if user is already a member of this organization
+          const existingMember = await db.member.findFirst({
+            where: {
+              userId: memberData.userId,
+              organizationId,
+            },
+          });
+
+          if (existingMember) {
+            errors.push({
+              index: i,
+              userId: memberData.userId,
+              error: `User ${user.email} is already a member of this organization`,
+            });
+            continue;
+          }
+
+          // Create the new member
+          const member = await db.member.create({
+            data: {
+              organizationId,
+              userId: memberData.userId,
+              role: memberData.role,
+              department: memberData.department || 'none',
+              isActive: memberData.isActive ?? true,
+              fleetDmLabelId: memberData.fleetDmLabelId || null,
+            },
+            select: {
+              id: true,
+              organizationId: true,
+              userId: true,
+              role: true,
+              createdAt: true,
+              department: true,
+              isActive: true,
+              fleetDmLabelId: true,
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  emailVerified: true,
+                  image: true,
+                  createdAt: true,
+                  updatedAt: true,
+                  lastLogin: true,
+                },
+              },
+            },
+          });
+
+          created.push(member);
+          this.logger.log(`Created member: ${member.user.name} (${member.id}) for organization ${organizationId}`);
+        } catch (error) {
+          errors.push({
+            index: i,
+            userId: memberData.userId,
+            error: error.message || 'Unknown error occurred',
+          });
+          this.logger.error(`Failed to create member at index ${i} (userId: ${memberData.userId}):`, error);
+        }
+      }
+
+      const summary = {
+        total: bulkCreateData.members.length,
+        successful: created.length,
+        failed: errors.length,
+      };
+
+      this.logger.log(`Bulk create completed for organization ${organizationId}: ${summary.successful}/${summary.total} successful`);
+      
+      return { created, errors, summary };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(`Failed to bulk create members for organization ${organizationId}:`, error);
+      throw new Error(`Failed to bulk create members: ${error.message}`);
     }
   }
 
