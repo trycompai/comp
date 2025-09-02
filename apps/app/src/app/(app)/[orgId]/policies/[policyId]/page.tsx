@@ -24,7 +24,7 @@ export default async function PolicyDetails({
         { label: 'Policies', href: `/${orgId}/policies/all` },
         { label: policy?.name ?? 'Policy', current: true },
       ]}
-      headerRight={<PolicyHeaderActions policyId={policyId} />}
+      headerRight={<PolicyHeaderActions policy={policy} />}
     >
       <PolicyPage
         policy={policy}

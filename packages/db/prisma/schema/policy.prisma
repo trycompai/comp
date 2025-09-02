@@ -1,15 +1,22 @@
+enum PolicyDisplayFormat {
+  EDITOR
+  PDF
+}
+
 model Policy {
-  id               String       @id @default(dbgenerated("generate_prefixed_cuid('pol'::text)"))
+  id               String              @id @default(dbgenerated("generate_prefixed_cuid('pol'::text)"))
   name             String
   description      String?
-  status           PolicyStatus @default(draft)
+  status           PolicyStatus        @default(draft)
   content          Json[]
   frequency        Frequency?
   department       Departments?
-  isRequiredToSign Boolean      @default(true)
-  signedBy         String[]     @default([])
+  isRequiredToSign Boolean             @default(true)
+  signedBy         String[]            @default([])
   reviewDate       DateTime?
-  isArchived       Boolean      @default(false)
+  isArchived       Boolean             @default(false)
+  displayFormat    PolicyDisplayFormat @default(EDITOR)
+  pdfUrl           String?
 
   // Dates
   createdAt       DateTime  @default(now())
