@@ -2,6 +2,8 @@ import {
   Controller, 
   Get, 
   Post,
+  Patch,
+  Delete,
   Body,
   Param,
   UseGuards 
@@ -22,6 +24,7 @@ import {
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import { CreatePeopleDto } from './dto/create-people.dto';
+import { UpdatePeopleDto } from './dto/update-people.dto';
 import { PeopleResponseDto } from './dto/people-responses.dto';
 import { PeopleService } from './people.service';
 
@@ -272,6 +275,187 @@ export class PeopleController {
 
     return {
       ...person,
+      authType: authContext.authType,
+      ...(authContext.userId && authContext.userEmail && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
+  }
+
+  @Patch(':id')
+  @ApiOperation({
+    summary: 'Update member',
+    description:
+      'Partially updates a member. Only provided fields will be updated. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Member ID',
+    example: 'mem_abc123def456',
+  })
+  @ApiBody({
+    description: 'Member update data',
+    type: UpdatePeopleDto,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Member updated successfully',
+    type: PeopleResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid update data or user conflict',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          examples: [
+            'Validation failed',
+            'User user@example.com is already a member of this organization',
+            'Invalid user ID or role',
+          ],
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description:
+      'Unauthorized - Invalid authentication or insufficient permissions',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Organization, member, or user not found',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          examples: [
+            'Organization with ID org_abc123def456 not found',
+            'Member with ID mem_abc123def456 not found in organization org_abc123def456',
+            'User with ID usr_abc123def456 not found',
+          ],
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  async updateMember(
+    @Param('id') memberId: string,
+    @Body() updateData: UpdatePeopleDto,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const updatedMember = await this.peopleService.updateById(
+      memberId,
+      organizationId,
+      updateData,
+    );
+
+    return {
+      ...updatedMember,
+      authType: authContext.authType,
+      ...(authContext.userId && authContext.userEmail && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
+  }
+
+  @Delete(':id')
+  @ApiOperation({
+    summary: 'Delete member',
+    description:
+      'Permanently removes a member from the organization. This action cannot be undone. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Member ID',
+    example: 'mem_abc123def456',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Member deleted successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: {
+          type: 'boolean',
+          description: 'Indicates successful deletion',
+          example: true,
+        },
+        deletedMember: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              description: 'The deleted member ID',
+              example: 'mem_abc123def456',
+            },
+            name: {
+              type: 'string',
+              description: 'The deleted member name',
+              example: 'John Doe',
+            },
+            email: {
+              type: 'string',
+              description: 'The deleted member email',
+              example: 'john.doe@company.com',
+            },
+          },
+        },
+        authType: {
+          type: 'string',
+          enum: ['api-key', 'session'],
+          description: 'How the request was authenticated',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description:
+      'Unauthorized - Invalid authentication or insufficient permissions',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Organization or member not found',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          examples: [
+            'Organization with ID org_abc123def456 not found',
+            'Member with ID mem_abc123def456 not found in organization org_abc123def456',
+          ],
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  async deleteMember(
+    @Param('id') memberId: string,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const result = await this.peopleService.deleteById(memberId, organizationId);
+
+    return {
+      ...result,
       authType: authContext.authType,
       ...(authContext.userId && authContext.userEmail && {
         authenticatedUser: {
