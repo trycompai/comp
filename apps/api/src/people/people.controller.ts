@@ -1,10 +1,13 @@
 import { 
   Controller, 
   Get, 
+  Post,
+  Body,
   Param,
   UseGuards 
 } from '@nestjs/common';
 import {
+  ApiBody,
   ApiHeader,
   ApiOperation,
   ApiParam,
@@ -18,6 +21,7 @@ import {
 } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import type { AuthContext as AuthContextType } from '../auth/types';
+import { CreatePeopleDto } from './dto/create-people.dto';
 import { PeopleResponseDto } from './dto/people-responses.dto';
 import { PeopleService } from './people.service';
 
@@ -132,6 +136,82 @@ export class PeopleController {
     return {
       data: people,
       count: people.length,
+      authType: authContext.authType,
+      ...(authContext.userId && authContext.userEmail && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
+  }
+
+  @Post()
+  @ApiOperation({
+    summary: 'Create a new member',
+    description:
+      'Adds a new member to the authenticated organization. The user must already exist in the system. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).',
+  })
+  @ApiBody({
+    description: 'Member creation data',
+    type: CreatePeopleDto,
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Member created successfully',
+    type: PeopleResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid member data or user already exists',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          examples: [
+            'Validation failed',
+            'User user@example.com is already a member of this organization',
+            'Invalid user ID or role',
+          ],
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description:
+      'Unauthorized - Invalid authentication or insufficient permissions',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Organization or user not found',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          examples: [
+            'Organization with ID org_abc123def456 not found',
+            'User with ID usr_abc123def456 not found',
+          ],
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  async createMember(
+    @Body() createData: CreatePeopleDto,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const member = await this.peopleService.create(organizationId, createData);
+
+    return {
+      ...member,
       authType: authContext.authType,
       ...(authContext.userId && authContext.userEmail && {
         authenticatedUser: {
