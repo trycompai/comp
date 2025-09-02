@@ -1,5 +1,6 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Patch, UseGuards } from '@nestjs/common';
 import {
+  ApiBody,
   ApiHeader,
   ApiOperation,
   ApiResponse,
@@ -13,7 +14,13 @@ import {
 } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import type { AuthContext as AuthContextType } from '../auth/types';
+import type { UpdateOrganizationDto } from './dto/update-organization.dto';
 import { OrganizationService } from './organization.service';
+import { GET_ORGANIZATION_RESPONSES } from './schemas/get-organization.responses';
+import { UPDATE_ORGANIZATION_RESPONSES } from './schemas/update-organization.responses';
+import { DELETE_ORGANIZATION_RESPONSES } from './schemas/delete-organization.responses';
+import { UPDATE_ORGANIZATION_BODY } from './schemas/organization-api-bodies';
+import { ORGANIZATION_OPERATIONS } from './schemas/organization-operations';
 
 @ApiTags('Organization')
 @Controller({ path: 'organization', version: '1' })
@@ -29,64 +36,9 @@ export class OrganizationController {
   constructor(private readonly organizationService: OrganizationService) {}
 
   @Get()
-  @ApiOperation({
-    summary: 'Get organization information',
-    description:
-      'Returns detailed information about the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Organization information retrieved successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        id: {
-          type: 'string',
-          description: 'The organization ID',
-          example: 'org_abc123def456',
-        },
-        name: {
-          type: 'string',
-          description: 'Organization name',
-          example: 'Acme Corporation',
-        },
-        slug: {
-          type: 'string',
-          description: 'Organization slug',
-          example: 'acme-corp',
-        },
-        createdAt: {
-          type: 'string',
-          format: 'date-time',
-          description: 'When the organization was created',
-        },
-        authType: {
-          type: 'string',
-          enum: ['api-key', 'session'],
-          description: 'How the request was authenticated',
-        },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 401,
-    description:
-      'Unauthorized - Invalid authentication or insufficient permissions',
-    schema: {
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          examples: [
-            'Invalid or expired API key',
-            'Invalid or expired session',
-            'User does not have access to organization',
-            'Organization context required',
-          ],
-        },
-      },
-    },
-  })
+  @ApiOperation(ORGANIZATION_OPERATIONS.getOrganization)
+  @ApiResponse(GET_ORGANIZATION_RESPONSES[200])
+  @ApiResponse(GET_ORGANIZATION_RESPONSES[401])
   async getOrganization(
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
@@ -96,6 +48,60 @@ export class OrganizationController {
 
     return {
       ...org,
+      authType: authContext.authType,
+      // Include user context for session auth (helpful for debugging)
+      ...(authContext.userId && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
+  }
+
+  @Patch()
+  @ApiOperation(ORGANIZATION_OPERATIONS.updateOrganization)
+  @ApiBody(UPDATE_ORGANIZATION_BODY)
+  @ApiResponse(UPDATE_ORGANIZATION_RESPONSES[200])
+  @ApiResponse(UPDATE_ORGANIZATION_RESPONSES[400])
+  @ApiResponse(UPDATE_ORGANIZATION_RESPONSES[401])
+  @ApiResponse(UPDATE_ORGANIZATION_RESPONSES[404])
+  async updateOrganization(
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+    @Body() updateData: UpdateOrganizationDto,
+  ) {
+    const updatedOrg = await this.organizationService.updateById(
+      organizationId,
+      updateData,
+    );
+
+    return {
+      ...updatedOrg,
+      authType: authContext.authType,
+      // Include user context for session auth (helpful for debugging)
+      ...(authContext.userId && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
+  }
+
+  @Delete()
+  @ApiOperation(ORGANIZATION_OPERATIONS.deleteOrganization)
+  @ApiResponse(DELETE_ORGANIZATION_RESPONSES[200])
+  @ApiResponse(DELETE_ORGANIZATION_RESPONSES[401])
+  @ApiResponse(DELETE_ORGANIZATION_RESPONSES[404])
+  async deleteOrganization(
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const result = await this.organizationService.deleteById(organizationId);
+
+    return {
+      ...result,
       authType: authContext.authType,
       // Include user context for session auth (helpful for debugging)
       ...(authContext.userId && {
