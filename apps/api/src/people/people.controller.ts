@@ -28,6 +28,12 @@ import { UpdatePeopleDto } from './dto/update-people.dto';
 import { BulkCreatePeopleDto } from './dto/bulk-create-people.dto';
 import { PeopleResponseDto } from './dto/people-responses.dto';
 import { PeopleService } from './people.service';
+import { GET_ALL_PEOPLE_RESPONSES } from './responses/get-all-people.responses';
+import { CREATE_MEMBER_RESPONSES } from './responses/create-member.responses';
+import { BULK_CREATE_MEMBERS_RESPONSES } from './responses/bulk-create-members.responses';
+import { GET_PERSON_BY_ID_RESPONSES } from './responses/get-person-by-id.responses';
+import { UPDATE_MEMBER_RESPONSES } from './responses/update-member.responses';
+import { DELETE_MEMBER_RESPONSES } from './responses/delete-member.responses';
 
 @ApiTags('People')
 @Controller({ path: 'people', version: '1' })
@@ -48,89 +54,10 @@ export class PeopleController {
     description:
       'Returns all members for the authenticated organization with their user information. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).',
   })
-  @ApiResponse({
-    status: 200,
-    description: 'People retrieved successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        data: {
-          type: 'array',
-          items: { $ref: '#/components/schemas/PeopleResponseDto' },
-        },
-        count: {
-          type: 'number',
-          description: 'Total number of people',
-          example: 25,
-        },
-        authType: {
-          type: 'string',
-          enum: ['api-key', 'session'],
-          description: 'How the request was authenticated',
-        },
-        authenticatedUser: {
-          type: 'object',
-          properties: {
-            id: {
-              type: 'string',
-              description: 'User ID',
-              example: 'usr_abc123def456',
-            },
-            email: {
-              type: 'string',
-              description: 'User email',
-              example: 'user@company.com',
-            },
-          },
-        },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 401,
-    description:
-      'Unauthorized - Invalid authentication or insufficient permissions',
-    schema: {
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          examples: [
-            'Invalid or expired API key',
-            'Invalid or expired session',
-            'User does not have access to organization',
-            'Organization context required',
-          ],
-        },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Organization not found',
-    schema: {
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          example: 'Organization with ID org_abc123def456 not found',
-        },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 500,
-    description: 'Internal server error',
-    schema: {
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          example: 'Failed to retrieve members',
-        },
-      },
-    },
-  })
+  @ApiResponse(GET_ALL_PEOPLE_RESPONSES[200])
+  @ApiResponse(GET_ALL_PEOPLE_RESPONSES[401])
+  @ApiResponse(GET_ALL_PEOPLE_RESPONSES[404])
+  @ApiResponse(GET_ALL_PEOPLE_RESPONSES[500])
   async getAllPeople(
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
@@ -160,53 +87,11 @@ export class PeopleController {
     description: 'Member creation data',
     type: CreatePeopleDto,
   })
-  @ApiResponse({
-    status: 201,
-    description: 'Member created successfully',
-    type: PeopleResponseDto,
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Bad Request - Invalid member data or user already exists',
-    schema: {
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          examples: [
-            'Validation failed',
-            'User user@example.com is already a member of this organization',
-            'Invalid user ID or role',
-          ],
-        },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 401,
-    description:
-      'Unauthorized - Invalid authentication or insufficient permissions',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Organization or user not found',
-    schema: {
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          examples: [
-            'Organization with ID org_abc123def456 not found',
-            'User with ID usr_abc123def456 not found',
-          ],
-        },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 500,
-    description: 'Internal server error',
-  })
+  @ApiResponse(CREATE_MEMBER_RESPONSES[201])
+  @ApiResponse(CREATE_MEMBER_RESPONSES[400])
+  @ApiResponse(CREATE_MEMBER_RESPONSES[401])
+  @ApiResponse(CREATE_MEMBER_RESPONSES[404])
+  @ApiResponse(CREATE_MEMBER_RESPONSES[500])
   async createMember(
     @Body() createData: CreatePeopleDto,
     @OrganizationId() organizationId: string,
@@ -236,123 +121,11 @@ export class PeopleController {
     description: 'Bulk member creation data',
     type: BulkCreatePeopleDto,
   })
-  @ApiResponse({
-    status: 201,
-    description: 'Bulk member creation completed',
-    schema: {
-      type: 'object',
-      properties: {
-        created: {
-          type: 'array',
-          items: { $ref: '#/components/schemas/PeopleResponseDto' },
-          description: 'Successfully created members',
-        },
-        errors: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              index: {
-                type: 'number',
-                description: 'Index in the original array where the error occurred',
-                example: 2,
-              },
-              userId: {
-                type: 'string',
-                description: 'User ID that failed to be added',
-                example: 'usr_abc123def456',
-              },
-              error: {
-                type: 'string',
-                description: 'Error message explaining why the member could not be created',
-                example: 'User user@example.com is already a member of this organization',
-              },
-            },
-          },
-          description: 'Members that failed to be created with error details',
-        },
-        summary: {
-          type: 'object',
-          properties: {
-            total: {
-              type: 'number',
-              description: 'Total number of members in the request',
-              example: 5,
-            },
-            successful: {
-              type: 'number',
-              description: 'Number of members successfully created',
-              example: 3,
-            },
-            failed: {
-              type: 'number',
-              description: 'Number of members that failed to be created',
-              example: 2,
-            },
-          },
-        },
-        authType: {
-          type: 'string',
-          enum: ['api-key', 'session'],
-          description: 'How the request was authenticated',
-        },
-        authenticatedUser: {
-          type: 'object',
-          properties: {
-            id: {
-              type: 'string',
-              description: 'User ID',
-              example: 'usr_abc123def456',
-            },
-            email: {
-              type: 'string',
-              description: 'User email',
-              example: 'user@company.com',
-            },
-          },
-        },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Bad Request - Invalid bulk data or validation errors',
-    schema: {
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          examples: [
-            'Validation failed',
-            'Members array cannot be empty',
-            'Maximum 100 members allowed per bulk request',
-          ],
-        },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 401,
-    description:
-      'Unauthorized - Invalid authentication or insufficient permissions',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Organization not found',
-    schema: {
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          example: 'Organization with ID org_abc123def456 not found',
-        },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 500,
-    description: 'Internal server error',
-  })
+  @ApiResponse(BULK_CREATE_MEMBERS_RESPONSES[201])
+  @ApiResponse(BULK_CREATE_MEMBERS_RESPONSES[400])
+  @ApiResponse(BULK_CREATE_MEMBERS_RESPONSES[401])
+  @ApiResponse(BULK_CREATE_MEMBERS_RESPONSES[404])
+  @ApiResponse(BULK_CREATE_MEMBERS_RESPONSES[500])
   async bulkCreateMembers(
     @Body() bulkCreateData: BulkCreatePeopleDto,
     @OrganizationId() organizationId: string,
@@ -383,36 +156,10 @@ export class PeopleController {
     description: 'Member ID',
     example: 'mem_abc123def456',
   })
-  @ApiResponse({
-    status: 200,
-    description: 'Person retrieved successfully',
-    type: PeopleResponseDto,
-  })
-  @ApiResponse({
-    status: 401,
-    description:
-      'Unauthorized - Invalid authentication or insufficient permissions',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Organization or member not found',
-    schema: {
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          examples: [
-            'Organization with ID org_abc123def456 not found',
-            'Member with ID mem_abc123def456 not found in organization org_abc123def456',
-          ],
-        },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 500,
-    description: 'Internal server error',
-  })
+  @ApiResponse(GET_PERSON_BY_ID_RESPONSES[200])
+  @ApiResponse(GET_PERSON_BY_ID_RESPONSES[401])
+  @ApiResponse(GET_PERSON_BY_ID_RESPONSES[404])
+  @ApiResponse(GET_PERSON_BY_ID_RESPONSES[500])
   async getPersonById(
     @Param('id') memberId: string,
     @OrganizationId() organizationId: string,
@@ -447,54 +194,11 @@ export class PeopleController {
     description: 'Member update data',
     type: UpdatePeopleDto,
   })
-  @ApiResponse({
-    status: 200,
-    description: 'Member updated successfully',
-    type: PeopleResponseDto,
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Bad Request - Invalid update data or user conflict',
-    schema: {
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          examples: [
-            'Validation failed',
-            'User user@example.com is already a member of this organization',
-            'Invalid user ID or role',
-          ],
-        },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 401,
-    description:
-      'Unauthorized - Invalid authentication or insufficient permissions',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Organization, member, or user not found',
-    schema: {
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          examples: [
-            'Organization with ID org_abc123def456 not found',
-            'Member with ID mem_abc123def456 not found in organization org_abc123def456',
-            'User with ID usr_abc123def456 not found',
-          ],
-        },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 500,
-    description: 'Internal server error',
-  })
+  @ApiResponse(UPDATE_MEMBER_RESPONSES[200])
+  @ApiResponse(UPDATE_MEMBER_RESPONSES[400])
+  @ApiResponse(UPDATE_MEMBER_RESPONSES[401])
+  @ApiResponse(UPDATE_MEMBER_RESPONSES[404])
+  @ApiResponse(UPDATE_MEMBER_RESPONSES[500])
   async updateMember(
     @Param('id') memberId: string,
     @Body() updateData: UpdatePeopleDto,
@@ -530,70 +234,10 @@ export class PeopleController {
     description: 'Member ID',
     example: 'mem_abc123def456',
   })
-  @ApiResponse({
-    status: 200,
-    description: 'Member deleted successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        success: {
-          type: 'boolean',
-          description: 'Indicates successful deletion',
-          example: true,
-        },
-        deletedMember: {
-          type: 'object',
-          properties: {
-            id: {
-              type: 'string',
-              description: 'The deleted member ID',
-              example: 'mem_abc123def456',
-            },
-            name: {
-              type: 'string',
-              description: 'The deleted member name',
-              example: 'John Doe',
-            },
-            email: {
-              type: 'string',
-              description: 'The deleted member email',
-              example: 'john.doe@company.com',
-            },
-          },
-        },
-        authType: {
-          type: 'string',
-          enum: ['api-key', 'session'],
-          description: 'How the request was authenticated',
-        },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 401,
-    description:
-      'Unauthorized - Invalid authentication or insufficient permissions',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Organization or member not found',
-    schema: {
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          examples: [
-            'Organization with ID org_abc123def456 not found',
-            'Member with ID mem_abc123def456 not found in organization org_abc123def456',
-          ],
-        },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 500,
-    description: 'Internal server error',
-  })
+  @ApiResponse(DELETE_MEMBER_RESPONSES[200])
+  @ApiResponse(DELETE_MEMBER_RESPONSES[401])
+  @ApiResponse(DELETE_MEMBER_RESPONSES[404])
+  @ApiResponse(DELETE_MEMBER_RESPONSES[500])
   async deleteMember(
     @Param('id') memberId: string,
     @OrganizationId() organizationId: string,
