@@ -16,10 +16,11 @@ import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import type { UpdateOrganizationDto } from './dto/update-organization.dto';
 import { OrganizationService } from './organization.service';
-import { GET_ORGANIZATION_RESPONSES } from './responses/get-organization.responses';
-import { UPDATE_ORGANIZATION_RESPONSES } from './responses/update-organization.responses';
-import { DELETE_ORGANIZATION_RESPONSES } from './responses/delete-organization.responses';
+import { GET_ORGANIZATION_RESPONSES } from './schemas/get-organization.responses';
+import { UPDATE_ORGANIZATION_RESPONSES } from './schemas/update-organization.responses';
+import { DELETE_ORGANIZATION_RESPONSES } from './schemas/delete-organization.responses';
 import { UPDATE_ORGANIZATION_BODY } from './schemas/organization-api-bodies';
+import { ORGANIZATION_OPERATIONS } from './schemas/organization-operations';
 
 @ApiTags('Organization')
 @Controller({ path: 'organization', version: '1' })
@@ -35,11 +36,7 @@ export class OrganizationController {
   constructor(private readonly organizationService: OrganizationService) {}
 
   @Get()
-  @ApiOperation({
-    summary: 'Get organization information',
-    description:
-      'Returns detailed information about the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).',
-  })
+  @ApiOperation(ORGANIZATION_OPERATIONS.getOrganization)
   @ApiResponse(GET_ORGANIZATION_RESPONSES[200])
   @ApiResponse(GET_ORGANIZATION_RESPONSES[401])
   async getOrganization(
@@ -63,11 +60,7 @@ export class OrganizationController {
   }
 
   @Patch()
-  @ApiOperation({
-    summary: 'Update organization',
-    description:
-      'Partially updates the authenticated organization. Only provided fields will be updated. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).',
-  })
+  @ApiOperation(ORGANIZATION_OPERATIONS.updateOrganization)
   @ApiBody(UPDATE_ORGANIZATION_BODY)
   @ApiResponse(UPDATE_ORGANIZATION_RESPONSES[200])
   @ApiResponse(UPDATE_ORGANIZATION_RESPONSES[400])
@@ -97,11 +90,7 @@ export class OrganizationController {
   }
 
   @Delete()
-  @ApiOperation({
-    summary: 'Delete organization',
-    description:
-      'Permanently deletes the authenticated organization. This action cannot be undone. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).',
-  })
+  @ApiOperation(ORGANIZATION_OPERATIONS.deleteOrganization)
   @ApiResponse(DELETE_ORGANIZATION_RESPONSES[200])
   @ApiResponse(DELETE_ORGANIZATION_RESPONSES[401])
   @ApiResponse(DELETE_ORGANIZATION_RESPONSES[404])
