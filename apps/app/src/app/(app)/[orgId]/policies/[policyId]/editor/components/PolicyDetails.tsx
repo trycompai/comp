@@ -1,26 +1,19 @@
 'use client';
 
 import { PolicyEditor } from '@/components/editor/policy-editor';
+import { Card, CardContent } from '@comp/ui/card';
 import { validateAndFixTipTapContent } from '@comp/ui/editor';
 import '@comp/ui/editor.css';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
 import type { PolicyDisplayFormat } from '@db';
 import type { JSONContent } from '@tiptap/react';
+import { useAction } from 'next-safe-action/hooks';
+import { toast } from 'sonner';
 import { PdfViewer } from '../../components/PdfViewer';
+import { switchPolicyDisplayFormatAction } from '../../actions/switch-policy-display-format';
 import { updatePolicy } from '../actions/update-policy';
 
-const removeUnsupportedMarks = (node: JSONContent): JSONContent => {
-  if (node.marks) {
-    node.marks = node.marks.filter((mark) => mark.type !== 'textStyle');
-  }
-
-  if (node.content) {
-    node.content = node.content.map(removeUnsupportedMarks);
-  }
-
-  return node;
-};
-
-interface PolicyContentDisplayProps {
+interface PolicyContentManagerProps {
   policyId: string;
   policyContent: JSONContent | JSONContent[];
   isPendingApproval: boolean;
@@ -28,29 +21,80 @@ interface PolicyContentDisplayProps {
   pdfUrl?: string | null;
 }
 
-export function PolicyContentDisplay({
+export function PolicyContentManager({
   policyId,
   policyContent,
   isPendingApproval,
-  displayFormat,
+  displayFormat = 'EDITOR',
   pdfUrl,
-}: PolicyContentDisplayProps) {
-  // Conditionally render the PDF viewer or the editor based on the policy's display format.
-  if (displayFormat === 'PDF') {
-    return <PdfViewer policyId={policyId} pdfUrl={pdfUrl} isPendingApproval={isPendingApproval} />;
-  }
+}: PolicyContentManagerProps) {
+  const switchFormat = useAction(switchPolicyDisplayFormatAction, {
+    onSuccess: () => toast.info('View mode switched.'),
+    onError: () => toast.error('Failed to switch view.'),
+  });
 
-  // Default to the rich text editor.
+  const handleTabChange = (newFormat: string) => {
+    switchFormat.execute({
+      policyId,
+      format: newFormat as 'EDITOR' | 'PDF',
+    });
+  };
+
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <Tabs
+          defaultValue={displayFormat}
+          onValueChange={handleTabChange}
+          className="w-full"
+        >
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="EDITOR" disabled={isPendingApproval}>Editor View</TabsTrigger>
+            <TabsTrigger value="PDF" disabled={isPendingApproval}>PDF View</TabsTrigger>
+          </TabsList>
+          <TabsContent value="EDITOR" className="mt-4">
+            <PolicyEditorWrapper
+              policyId={policyId}
+              policyContent={policyContent}
+              isPendingApproval={isPendingApproval}
+            />
+          </TabsContent>
+          <TabsContent value="PDF" className="mt-4">
+            <PdfViewer
+              policyId={policyId}
+              pdfUrl={pdfUrl}
+              isPendingApproval={isPendingApproval}
+            />
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
+  );
+}
+
+function PolicyEditorWrapper({
+  policyId,
+  policyContent,
+  isPendingApproval,
+}: {
+  policyId: string;
+  policyContent: JSONContent | JSONContent[];
+  isPendingApproval: boolean;
+}) {
   const formattedContent = Array.isArray(policyContent) ? policyContent : [policyContent as JSONContent];
-  const sanitizedContent = formattedContent.map(removeUnsupportedMarks);
+  const sanitizedContent = formattedContent.map((node) => {
+    if (node.marks) node.marks = node.marks.filter((mark) => mark.type !== 'textStyle');
+    if (node.content) node.content = node.content.map((child) => child);
+    return node;
+  });
   const validatedDoc = validateAndFixTipTapContent(sanitizedContent);
   const normalizedContent = (validatedDoc.content || []) as JSONContent[];
 
-  const handleSavePolicy = async (policyContent: JSONContent[]): Promise<void> => {
+  const handleSavePolicy = async (content: JSONContent[]): Promise<void> => {
     if (!policyId) return;
 
     try {
-      await updatePolicy({ policyId, content: policyContent });
+      await updatePolicy({ policyId, content });
     } catch (error) {
       console.error('Error saving policy:', error);
       throw error;

@@ -2,7 +2,7 @@ import { Control, Member, Policy, User } from '@db';
 import type { JSONContent } from '@tiptap/react';
 import { Comments } from '../../../../../../components/comments/Comments';
 import { AuditLogWithRelations } from '../data';
-import { PolicyContentDisplay } from '../editor/components/PolicyDetails';
+import { PolicyContentManager } from '../editor/components/PolicyDetails';
 import { PolicyOverview } from './PolicyOverview';
 import { RecentAuditLogs } from './RecentAuditLogs';
 
@@ -32,7 +32,7 @@ export default function PolicyPage({
         allControls={allControls}
         isPendingApproval={isPendingApproval}
       />
-      <PolicyContentDisplay
+      <PolicyContentManager
         isPendingApproval={isPendingApproval}
         policyId={policyId}
         policyContent={policy?.content ? (policy.content as JSONContent[]) : []}

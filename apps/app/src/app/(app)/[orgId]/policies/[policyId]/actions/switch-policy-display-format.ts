@@ -1,7 +1,7 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
-import { db, PolicyDisplayFormat } from '@db';
+import { db } from '@db';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { z } from 'zod';
@@ -29,24 +29,11 @@ export const switchPolicyDisplayFormatAction = authActionClient
     }
 
     try {
-      const updateData: {
-        displayFormat: PolicyDisplayFormat;
-        pdfUrl?: null;
-        content?: [];
-      } = {
-        displayFormat: format,
-      };
-
-      // When switching, clear the data of the other view to prevent stale data.
-      if (format === 'EDITOR') {
-        updateData.pdfUrl = null;
-      } else if (format === 'PDF') {
-        updateData.content = [];
-      }
-
       await db.policy.update({
         where: { id: policyId, organizationId: session.activeOrganizationId },
-        data: updateData,
+        data: {
+          displayFormat: format,
+        },
       });
 
       const headersList = await headers();

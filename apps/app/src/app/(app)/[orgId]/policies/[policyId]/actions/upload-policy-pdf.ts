@@ -57,7 +57,6 @@ export const uploadPolicyPdfAction = authActionClient
         data: {
           pdfUrl: s3Key,
           displayFormat: PolicyDisplayFormat.PDF,
-          content: [], // Clear any old editor content
         },
       });
 
