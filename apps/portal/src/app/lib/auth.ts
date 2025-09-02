@@ -19,6 +19,7 @@ export const auth = betterAuth({
   secret: process.env.AUTH_SECRET!,
   plugins: [
     organization({
+      membershipLimit: 100000000000,
       async sendInvitationEmail(data) {
         console.log(
           'process.env.NEXT_PUBLIC_BETTER_AUTH_URL',
