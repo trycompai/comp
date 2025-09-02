@@ -28,12 +28,15 @@ import { UpdatePeopleDto } from './dto/update-people.dto';
 import { BulkCreatePeopleDto } from './dto/bulk-create-people.dto';
 import { PeopleResponseDto } from './dto/people-responses.dto';
 import { PeopleService } from './people.service';
-import { GET_ALL_PEOPLE_RESPONSES } from './responses/get-all-people.responses';
-import { CREATE_MEMBER_RESPONSES } from './responses/create-member.responses';
-import { BULK_CREATE_MEMBERS_RESPONSES } from './responses/bulk-create-members.responses';
-import { GET_PERSON_BY_ID_RESPONSES } from './responses/get-person-by-id.responses';
-import { UPDATE_MEMBER_RESPONSES } from './responses/update-member.responses';
-import { DELETE_MEMBER_RESPONSES } from './responses/delete-member.responses';
+import { GET_ALL_PEOPLE_RESPONSES } from './schemas/get-all-people.responses';
+import { CREATE_MEMBER_RESPONSES } from './schemas/create-member.responses';
+import { BULK_CREATE_MEMBERS_RESPONSES } from './schemas/bulk-create-members.responses';
+import { GET_PERSON_BY_ID_RESPONSES } from './schemas/get-person-by-id.responses';
+import { UPDATE_MEMBER_RESPONSES } from './schemas/update-member.responses';
+import { DELETE_MEMBER_RESPONSES } from './schemas/delete-member.responses';
+import { PEOPLE_OPERATIONS } from './schemas/people-operations';
+import { PEOPLE_PARAMS } from './schemas/people-params';
+import { PEOPLE_BODIES } from './schemas/people-bodies';
 
 @ApiTags('People')
 @Controller({ path: 'people', version: '1' })
@@ -49,11 +52,7 @@ export class PeopleController {
   constructor(private readonly peopleService: PeopleService) {}
 
   @Get()
-  @ApiOperation({
-    summary: 'Get all people',
-    description:
-      'Returns all members for the authenticated organization with their user information. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).',
-  })
+  @ApiOperation(PEOPLE_OPERATIONS.getAllPeople)
   @ApiResponse(GET_ALL_PEOPLE_RESPONSES[200])
   @ApiResponse(GET_ALL_PEOPLE_RESPONSES[401])
   @ApiResponse(GET_ALL_PEOPLE_RESPONSES[404])
@@ -78,15 +77,8 @@ export class PeopleController {
   }
 
   @Post()
-  @ApiOperation({
-    summary: 'Create a new member',
-    description:
-      'Adds a new member to the authenticated organization. The user must already exist in the system. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).',
-  })
-  @ApiBody({
-    description: 'Member creation data',
-    type: CreatePeopleDto,
-  })
+  @ApiOperation(PEOPLE_OPERATIONS.createMember)
+  @ApiBody(PEOPLE_BODIES.createMember)
   @ApiResponse(CREATE_MEMBER_RESPONSES[201])
   @ApiResponse(CREATE_MEMBER_RESPONSES[400])
   @ApiResponse(CREATE_MEMBER_RESPONSES[401])
@@ -112,15 +104,8 @@ export class PeopleController {
   }
 
   @Post('bulk')
-  @ApiOperation({
-    summary: 'Add multiple members to organization',
-    description:
-      'Bulk adds multiple members to the authenticated organization. Each member must have a valid user ID that exists in the system. Members who already exist in the organization or have invalid data will be skipped with error details returned. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).',
-  })
-  @ApiBody({
-    description: 'Bulk member creation data',
-    type: BulkCreatePeopleDto,
-  })
+  @ApiOperation(PEOPLE_OPERATIONS.bulkCreateMembers)
+  @ApiBody(PEOPLE_BODIES.bulkCreateMembers)
   @ApiResponse(BULK_CREATE_MEMBERS_RESPONSES[201])
   @ApiResponse(BULK_CREATE_MEMBERS_RESPONSES[400])
   @ApiResponse(BULK_CREATE_MEMBERS_RESPONSES[401])
@@ -146,16 +131,8 @@ export class PeopleController {
   }
 
   @Get(':id')
-  @ApiOperation({
-    summary: 'Get person by ID',
-    description:
-      'Returns a specific member by ID for the authenticated organization with their user information. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).',
-  })
-  @ApiParam({
-    name: 'id',
-    description: 'Member ID',
-    example: 'mem_abc123def456',
-  })
+  @ApiOperation(PEOPLE_OPERATIONS.getPersonById)
+  @ApiParam(PEOPLE_PARAMS.memberId)
   @ApiResponse(GET_PERSON_BY_ID_RESPONSES[200])
   @ApiResponse(GET_PERSON_BY_ID_RESPONSES[401])
   @ApiResponse(GET_PERSON_BY_ID_RESPONSES[404])
@@ -180,20 +157,9 @@ export class PeopleController {
   }
 
   @Patch(':id')
-  @ApiOperation({
-    summary: 'Update member',
-    description:
-      'Partially updates a member. Only provided fields will be updated. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).',
-  })
-  @ApiParam({
-    name: 'id',
-    description: 'Member ID',
-    example: 'mem_abc123def456',
-  })
-  @ApiBody({
-    description: 'Member update data',
-    type: UpdatePeopleDto,
-  })
+  @ApiOperation(PEOPLE_OPERATIONS.updateMember)
+  @ApiParam(PEOPLE_PARAMS.memberId)
+  @ApiBody(PEOPLE_BODIES.updateMember)
   @ApiResponse(UPDATE_MEMBER_RESPONSES[200])
   @ApiResponse(UPDATE_MEMBER_RESPONSES[400])
   @ApiResponse(UPDATE_MEMBER_RESPONSES[401])
@@ -224,16 +190,8 @@ export class PeopleController {
   }
 
   @Delete(':id')
-  @ApiOperation({
-    summary: 'Delete member',
-    description:
-      'Permanently removes a member from the organization. This action cannot be undone. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).',
-  })
-  @ApiParam({
-    name: 'id',
-    description: 'Member ID',
-    example: 'mem_abc123def456',
-  })
+  @ApiOperation(PEOPLE_OPERATIONS.deleteMember)
+  @ApiParam(PEOPLE_PARAMS.memberId)
   @ApiResponse(DELETE_MEMBER_RESPONSES[200])
   @ApiResponse(DELETE_MEMBER_RESPONSES[401])
   @ApiResponse(DELETE_MEMBER_RESPONSES[404])
