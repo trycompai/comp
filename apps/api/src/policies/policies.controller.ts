@@ -25,8 +25,15 @@ import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import { CreatePolicyDto } from './dto/create-policy.dto';
 import { UpdatePolicyDto } from './dto/update-policy.dto';
-import { PolicyResponseDto } from './dto/policy-responses.dto';
 import { PoliciesService } from './policies.service';
+import { GET_ALL_POLICIES_RESPONSES } from './schemas/get-all-policies.responses';
+import { GET_POLICY_BY_ID_RESPONSES } from './schemas/get-policy-by-id.responses';
+import { CREATE_POLICY_RESPONSES } from './schemas/create-policy.responses';
+import { UPDATE_POLICY_RESPONSES } from './schemas/update-policy.responses';
+import { DELETE_POLICY_RESPONSES } from './schemas/delete-policy.responses';
+import { POLICY_OPERATIONS } from './schemas/policy-operations';
+import { POLICY_PARAMS } from './schemas/policy-params';
+import { POLICY_BODIES } from './schemas/policy-bodies';
 
 @ApiTags('Policies')
 @Controller({ path: 'policies', version: '1' })
@@ -42,35 +49,9 @@ export class PoliciesController {
   constructor(private readonly policiesService: PoliciesService) {}
 
   @Get()
-  @ApiOperation({
-    summary: 'Get all policies',
-    description:
-      'Returns all policies for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Policies retrieved successfully',
-    type: [PolicyResponseDto],
-  })
-  @ApiResponse({
-    status: 401,
-    description:
-      'Unauthorized - Invalid authentication or insufficient permissions',
-    schema: {
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          examples: [
-            'Invalid or expired API key',
-            'Invalid or expired session',
-            'User does not have access to organization',
-            'Organization context required',
-          ],
-        },
-      },
-    },
-  })
+  @ApiOperation(POLICY_OPERATIONS.getAllPolicies)
+  @ApiResponse(GET_ALL_POLICIES_RESPONSES[200])
+  @ApiResponse(GET_ALL_POLICIES_RESPONSES[401])
   async getAllPolicies(
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
@@ -90,39 +71,11 @@ export class PoliciesController {
   }
 
   @Get(':id')
-  @ApiOperation({
-    summary: 'Get policy by ID',
-    description:
-      'Returns a specific policy by ID for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).',
-  })
-  @ApiParam({
-    name: 'id',
-    description: 'Policy ID',
-    example: 'pol_abc123def456',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Policy retrieved successfully',
-    type: PolicyResponseDto,
-  })
-  @ApiResponse({
-    status: 401,
-    description:
-      'Unauthorized - Invalid authentication or insufficient permissions',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Policy not found',
-    schema: {
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          example: 'Policy with ID pol_abc123def456 not found',
-        },
-      },
-    },
-  })
+  @ApiOperation(POLICY_OPERATIONS.getPolicyById)
+  @ApiParam(POLICY_PARAMS.policyId)
+  @ApiResponse(GET_POLICY_BY_ID_RESPONSES[200])
+  @ApiResponse(GET_POLICY_BY_ID_RESPONSES[401])
+  @ApiResponse(GET_POLICY_BY_ID_RESPONSES[404])
   async getPolicy(
     @Param('id') id: string,
     @OrganizationId() organizationId: string,
@@ -143,42 +96,11 @@ export class PoliciesController {
   }
 
   @Post()
-  @ApiOperation({
-    summary: 'Create a new policy',
-    description:
-      'Creates a new policy for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).',
-  })
-  @ApiBody({
-    description: 'Policy creation data',
-    type: CreatePolicyDto,
-  })
-  @ApiResponse({
-    status: 201,
-    description: 'Policy created successfully',
-    type: PolicyResponseDto,
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Bad Request - Invalid policy data',
-    schema: {
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          examples: [
-            'Validation failed',
-            'Invalid policy content format',
-            'Policy name already exists',
-          ],
-        },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 401,
-    description:
-      'Unauthorized - Invalid authentication or insufficient permissions',
-  })
+  @ApiOperation(POLICY_OPERATIONS.createPolicy)
+  @ApiBody(POLICY_BODIES.createPolicy)
+  @ApiResponse(CREATE_POLICY_RESPONSES[201])
+  @ApiResponse(CREATE_POLICY_RESPONSES[400])
+  @ApiResponse(CREATE_POLICY_RESPONSES[401])
   async createPolicy(
     @Body() createData: CreatePolicyDto,
     @OrganizationId() organizationId: string,
@@ -199,38 +121,13 @@ export class PoliciesController {
   }
 
   @Patch(':id')
-  @ApiOperation({
-    summary: 'Update policy',
-    description:
-      'Partially updates a policy. Only provided fields will be updated. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).',
-  })
-  @ApiParam({
-    name: 'id',
-    description: 'Policy ID',
-    example: 'pol_abc123def456',
-  })
-  @ApiBody({
-    description: 'Policy update data',
-    type: UpdatePolicyDto,
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Policy updated successfully',
-    type: PolicyResponseDto,
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Bad Request - Invalid update data',
-  })
-  @ApiResponse({
-    status: 401,
-    description:
-      'Unauthorized - Invalid authentication or insufficient permissions',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Policy not found',
-  })
+  @ApiOperation(POLICY_OPERATIONS.updatePolicy)
+  @ApiParam(POLICY_PARAMS.policyId)
+  @ApiBody(POLICY_BODIES.updatePolicy)
+  @ApiResponse(UPDATE_POLICY_RESPONSES[200])
+  @ApiResponse(UPDATE_POLICY_RESPONSES[400])
+  @ApiResponse(UPDATE_POLICY_RESPONSES[401])
+  @ApiResponse(UPDATE_POLICY_RESPONSES[404])
   async updatePolicy(
     @Param('id') id: string,
     @Body() updateData: UpdatePolicyDto,
@@ -256,59 +153,11 @@ export class PoliciesController {
   }
 
   @Delete(':id')
-  @ApiOperation({
-    summary: 'Delete policy',
-    description:
-      'Permanently deletes a policy. This action cannot be undone. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).',
-  })
-  @ApiParam({
-    name: 'id',
-    description: 'Policy ID',
-    example: 'pol_abc123def456',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Policy deleted successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        success: {
-          type: 'boolean',
-          description: 'Indicates successful deletion',
-          example: true,
-        },
-        deletedPolicy: {
-          type: 'object',
-          properties: {
-            id: {
-              type: 'string',
-              description: 'The deleted policy ID',
-              example: 'pol_abc123def456',
-            },
-            name: {
-              type: 'string',
-              description: 'The deleted policy name',
-              example: 'Data Privacy Policy',
-            },
-          },
-        },
-        authType: {
-          type: 'string',
-          enum: ['api-key', 'session'],
-          description: 'How the request was authenticated',
-        },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 401,
-    description:
-      'Unauthorized - Invalid authentication or insufficient permissions',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Policy not found',
-  })
+  @ApiOperation(POLICY_OPERATIONS.deletePolicy)
+  @ApiParam(POLICY_PARAMS.policyId)
+  @ApiResponse(DELETE_POLICY_RESPONSES[200])
+  @ApiResponse(DELETE_POLICY_RESPONSES[401])
+  @ApiResponse(DELETE_POLICY_RESPONSES[404])
   async deletePolicy(
     @Param('id') id: string,
     @OrganizationId() organizationId: string,
