@@ -35,6 +35,15 @@ export const env = createEnv({
     GA4_API_SECRET: z.string().optional(),
     GA4_MEASUREMENT_ID: z.string().optional(),
     LINKEDIN_CONVERSIONS_ACCESS_TOKEN: z.string().optional(),
+    // SMTP + 1Password
+    SMTP_HOST: z.string().optional(),
+    SMTP_PORT: z.string().optional(),
+    SMTP_SECURE: z.string().optional(),
+    SMTP_USER: z.string().optional(),
+    SMTP_PASSWORD: z.string().optional(),
+    SMTP_FROM: z.string().optional(),
+    SMTP_DOMAIN: z.string().optional(),
+    OP_SERVICE_ACCOUNT_TOKEN: z.string().optional(),
   },
 
   client: {
@@ -91,6 +100,14 @@ export const env = createEnv({
     NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL: process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL,
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
     NEXT_PUBLIC_BETTER_AUTH_URL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
+    SMTP_HOST: process.env.SMTP_HOST,
+    SMTP_PORT: process.env.SMTP_PORT,
+    SMTP_SECURE: process.env.SMTP_SECURE,
+    SMTP_USER: process.env.SMTP_USER,
+    SMTP_PASSWORD: process.env.SMTP_PASSWORD,
+    SMTP_FROM: process.env.SMTP_FROM,
+    SMTP_DOMAIN: process.env.SMTP_DOMAIN,
+    OP_SERVICE_ACCOUNT_TOKEN: process.env.OP_SERVICE_ACCOUNT_TOKEN,
   },
 
   skipValidation: !!process.env.CI || !!process.env.SKIP_ENV_VALIDATION,
