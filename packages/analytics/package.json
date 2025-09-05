@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "dependencies": {
     "posthog-js": "^1.236.6",
-    "posthog-node": "^4.14.0"
+    "posthog-node": "^5.8.2"
   },
   "devDependencies": {
     "tsup": "^8.5.0",
