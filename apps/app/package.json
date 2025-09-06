@@ -91,7 +91,7 @@
     "use-long-press": "^3.3.0",
     "xml2js": "^0.6.2",
     "zaraz-ts": "^1.2.0",
-    "zod": "^4.0.17",
+    "zod": "^3.25.76",
     "zustand": "^5.0.3"
   },
   "devDependencies": {

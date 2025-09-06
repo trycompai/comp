@@ -8,13 +8,13 @@ import {
   Likelihood,
   Risk,
   RiskCategory,
+  RiskStatus,
   RiskTreatmentType,
   VendorCategory,
 } from '@db';
 import { logger, tasks } from '@trigger.dev/sdk';
-import { generateObject, generateText } from 'ai';
+import { generateObject, generateText, jsonSchema } from 'ai';
 import axios from 'axios';
-import z from 'zod';
 import type { researchVendor } from '../scrape/research';
 import { RISK_MITIGATION_PROMPT } from './prompts/risk-mitigation';
 import { VENDOR_RISK_ASSESSMENT_PROMPT } from './prompts/vendor-risk-assessment';
@@ -52,6 +52,58 @@ export type RiskData = {
   category: RiskCategory;
   department: Departments;
 };
+
+// Baseline risks that must always exist for every organization regardless of frameworks
+const BASELINE_RISKS: Array<{
+  title: string;
+  description: string;
+  category: RiskCategory;
+  department: Departments;
+  status: RiskStatus;
+}> = [
+  {
+    title: 'Intentional Fraud and Misuse',
+    description:
+      'Intentional misrepresentation or deception by an internal actor (employee, contractor) or by the organization as a whole, for the purpose of achieving an unauthorized or improper gain.',
+    category: RiskCategory.governance,
+    department: Departments.gov,
+    status: RiskStatus.closed,
+  },
+];
+
+/**
+ * Ensures baseline risks are present for the organization.
+ * Creates them if missing. Returns the list of risks that were created.
+ */
+export async function ensureBaselineRisks(organizationId: string): Promise<Risk[]> {
+  const created: Risk[] = [];
+
+  for (const base of BASELINE_RISKS) {
+    const existing = await db.risk.findFirst({
+      where: {
+        organizationId,
+        title: base.title,
+      },
+    });
+
+    if (!existing) {
+      const risk = await db.risk.create({
+        data: {
+          title: base.title,
+          description: base.description,
+          category: base.category,
+          department: base.department,
+          status: base.status,
+          organizationId,
+        },
+      });
+      created.push(risk);
+      logger.info(`Created baseline risk: ${risk.id} (${risk.title})`);
+    }
+  }
+
+  return created;
+}
 
 /**
  * Revalidates the organization path for cache busting
@@ -114,28 +166,47 @@ export async function getOrganizationContext(organizationId: string) {
 export async function extractVendorsFromContext(
   questionsAndAnswers: ContextItem[],
 ): Promise<VendorData[]> {
-  const result = await generateObject({
+  const { object } = await generateObject({
     model: openai('gpt-4.1-mini'),
-    schema: z.object({
-      vendors: z.array(
-        z.object({
-          vendor_name: z.string(),
-          vendor_website: z.string(),
-          vendor_description: z.string(),
-          category: z.enum(Object.values(VendorCategory) as [string, ...string[]]),
-          inherent_probability: z.enum(Object.values(Likelihood) as [string, ...string[]]),
-          inherent_impact: z.enum(Object.values(Impact) as [string, ...string[]]),
-          residual_probability: z.enum(Object.values(Likelihood) as [string, ...string[]]),
-          residual_impact: z.enum(Object.values(Impact) as [string, ...string[]]),
-        }),
-      ),
+    mode: 'json',
+    schema: jsonSchema({
+      type: 'object',
+      properties: {
+        vendors: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              vendor_name: { type: 'string' },
+              vendor_website: { type: 'string' },
+              vendor_description: { type: 'string' },
+              category: { type: 'string', enum: Object.values(VendorCategory) },
+              inherent_probability: { type: 'string', enum: Object.values(Likelihood) },
+              inherent_impact: { type: 'string', enum: Object.values(Impact) },
+              residual_probability: { type: 'string', enum: Object.values(Likelihood) },
+              residual_impact: { type: 'string', enum: Object.values(Impact) },
+            },
+            required: [
+              'vendor_name',
+              'vendor_website',
+              'vendor_description',
+              'category',
+              'inherent_probability',
+              'inherent_impact',
+              'residual_probability',
+              'residual_impact',
+            ],
+          },
+        },
+      },
+      required: ['vendors'],
     }),
     system:
       'Extract vendor names from the following questions and answers. Return their name (grammar-correct), website, description, category, inherent probability, inherent impact, residual probability, and residual impact.',
     prompt: questionsAndAnswers.map((q) => `${q.question}\n${q.answer}`).join('\n'),
   });
 
-  return result.object.vendors as VendorData[];
+  return (object as { vendors: VendorData[] }).vendors;
 }
 
 /**
@@ -335,23 +406,40 @@ export async function extractRisksFromContext(
   organizationName: string,
   existingRisks: { title: string }[],
 ): Promise<RiskData[]> {
-  const result = await generateObject({
+  const { object } = await generateObject({
     model: openai('gpt-4.1-mini'),
-    schema: z.object({
-      risks: z.array(
-        z.object({
-          risk_name: z.string(),
-          risk_description: z.string(),
-          risk_treatment_strategy: z.enum(
-            Object.values(RiskTreatmentType) as [string, ...string[]],
-          ),
-          risk_treatment_strategy_description: z.string(),
-          risk_residual_probability: z.enum(Object.values(Likelihood) as [string, ...string[]]),
-          risk_residual_impact: z.enum(Object.values(Impact) as [string, ...string[]]),
-          category: z.enum(Object.values(RiskCategory) as [string, ...string[]]),
-          department: z.enum(Object.values(Departments) as [string, ...string[]]),
-        }),
-      ),
+    mode: 'json',
+    schema: jsonSchema({
+      type: 'object',
+      properties: {
+        risks: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              risk_name: { type: 'string' },
+              risk_description: { type: 'string' },
+              risk_treatment_strategy: { type: 'string', enum: Object.values(RiskTreatmentType) },
+              risk_treatment_strategy_description: { type: 'string' },
+              risk_residual_probability: { type: 'string', enum: Object.values(Likelihood) },
+              risk_residual_impact: { type: 'string', enum: Object.values(Impact) },
+              category: { type: 'string', enum: Object.values(RiskCategory) },
+              department: { type: 'string', enum: Object.values(Departments) },
+            },
+            required: [
+              'risk_name',
+              'risk_description',
+              'risk_treatment_strategy',
+              'risk_treatment_strategy_description',
+              'risk_residual_probability',
+              'risk_residual_impact',
+              'category',
+              'department',
+            ],
+          },
+        },
+      },
+      required: ['risks'],
     }),
     system: `Create a list of 8-12 risks that are relevant to the organization. Use action-oriented language, assume reviewers understand basic termilology - skip definitions.
           Your mandate is to propose risks that satisfy both ISO 27001:2022 clause 6.1 (risk management) and SOC 2 trust services criteria CC3 and CC4.
@@ -367,7 +455,7 @@ export async function extractRisksFromContext(
           `,
   });
 
-  return result.object.risks as RiskData[];
+  return (object as { risks: RiskData[] }).risks;
 }
 
 /**
@@ -489,7 +577,10 @@ export async function createRisks(
   organizationId: string,
   organizationName: string,
 ): Promise<Risk[]> {
-  // Get existing risks to avoid duplicates
+  // Ensure baseline risks exist first so the AI doesn't recreate them
+  await ensureBaselineRisks(organizationId);
+
+  // Get existing risks to avoid duplicates (includes baseline)
   const existingRisks = await getExistingRisks(organizationId);
 
   // Extract risks using AI
