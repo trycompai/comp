@@ -50,10 +50,4 @@ export const employee = ac.newRole({
   portal: ['read', 'update'],
 });
 
-export const readonly = ac.newRole({
-  app: ['read'],
-  portal: ['read'],
-  organization: ['read'],
-});
-
-export const allRoles = { owner, admin, auditor, employee, readonly } as const;
+export const allRoles = { owner, admin, auditor, employee } as const;

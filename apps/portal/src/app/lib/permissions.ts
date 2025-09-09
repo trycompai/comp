@@ -43,9 +43,3 @@ export const employee = ac.newRole({
   invitation: ['create', 'cancel'],
   app: ['read', 'update'],
 });
-
-export const readonly = ac.newRole({
-  portal: ['read'],
-  organization: ['read'],
-  app: ['read'],
-});

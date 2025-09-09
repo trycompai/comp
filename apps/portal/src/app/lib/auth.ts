@@ -4,7 +4,7 @@ import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { nextCookies } from 'better-auth/next-js';
 import { emailOTP, multiSession, organization } from 'better-auth/plugins';
-import { ac, admin, auditor, employee, owner, readonly } from './permissions';
+import { ac, admin, auditor, employee, owner } from './permissions';
 
 export const auth = betterAuth({
   database: prismaAdapter(db, {
@@ -45,7 +45,6 @@ export const auth = betterAuth({
         admin,
         auditor,
         employee,
-        readonly,
       },
       schema: {
         organization: {

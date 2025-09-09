@@ -124,7 +124,6 @@ enum Role {
     admin
     auditor
     employee
-    readonly
 }
 
 enum PolicyStatus {
