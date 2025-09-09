@@ -36,7 +36,6 @@ interface ControlDeleteDialogProps {
 export function ControlDeleteDialog({ isOpen, onClose, control }: ControlDeleteDialogProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
