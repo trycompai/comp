@@ -11,7 +11,9 @@ import { awsConfig } from './config/aws.config';
 import { HealthModule } from './health/health.module';
 import { OrganizationModule } from './organization/organization.module';
 import { TasksModule } from './tasks/tasks.module';
+import { VendorsModule } from './vendors/vendors.module';
 import { ContextModule } from './context/context.module';
+
 
 @Module({
   imports: [
@@ -25,6 +27,7 @@ import { ContextModule } from './context/context.module';
     }),
     AuthModule,
     OrganizationModule,
+    VendorsModule,
     ContextModule,
     DevicesModule,
     DeviceAgentModule,
