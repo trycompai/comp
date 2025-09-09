@@ -47,7 +47,7 @@
   "scripts": {
     "build": "next build",
     "db:generate": "bun run db:getschema && prisma generate",
-    "db:getschema": "cp ../../node_modules/@trycompai/db/dist/schema.prisma prisma/schema.prisma",
+    "db:getschema": "cp ../../packages/db/prisma/schema.prisma prisma/schema.prisma",
     "dev": "next dev --turbopack -p 3002",
     "lint": "next lint && prettier --check .",
     "prebuild": "bun run db:generate",
