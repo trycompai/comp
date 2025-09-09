@@ -158,8 +158,8 @@ export function PdfViewer({ policyId, pdfUrl, isPendingApproval }: PdfViewerProp
                     className={cn(
                       'cursor-pointer rounded-md border-2 border-dashed p-4 text-center transition-colors',
                       isDragActive
-                        ? 'border-emerald-400 bg-emerald-50 dark:border-emerald-500 dark:bg-emerald-950/20'
-                        : 'border-emerald-200 hover:border-emerald-300 dark:border-emerald-800 dark:hover:border-emerald-700',
+                        ? 'border-primary bg-primary/10 dark:border-primary dark:bg-primary/10'
+                        : 'border-primary/30 hover:border-primary/50 dark:border-primary/30 dark:hover:border-primary/50',
                       isUploading && 'pointer-events-none opacity-60',
                     )}
                   >
@@ -191,16 +191,16 @@ export function PdfViewer({ policyId, pdfUrl, isPendingApproval }: PdfViewerProp
                 className={cn(
                   'flex cursor-pointer flex-col items-center justify-center space-y-4 rounded-md border-2 border-dashed p-12 text-center transition-colors',
                   isDragActive
-                    ? 'border-emerald-400 bg-emerald-50 dark:border-emerald-500 dark:bg-emerald-950/20'
-                    : 'border-emerald-200 hover:border-emerald-300 dark:border-emerald-800 dark:hover:border-emerald-700',
+                    ? 'border-primary bg-primary/10 dark:border-primary dark:bg-primary/10'
+                    : 'border-primary/30 hover:border-primary/50 dark:border-primary/30 dark:hover:border-primary/50',
                   isUploading && 'pointer-events-none opacity-60',
                 )}
               >
                 <input {...getInputProps()} />
                 {isUploading ? (
-                  <Loader2 className="h-12 w-12 animate-spin text-emerald-600 dark:text-emerald-400" />
+                  <Loader2 className="h-12 w-12 animate-spin text-primary" />
                 ) : (
-                  <FileText className="h-12 w-12 text-emerald-600 dark:text-emerald-400" />
+                  <FileText className="h-12 w-12 text-primary" />
                 )}
                 <h3 className="text-lg font-semibold">
                   {isUploading
@@ -214,7 +214,7 @@ export function PdfViewer({ policyId, pdfUrl, isPendingApproval }: PdfViewerProp
                     ? 'Please wait while we upload your PDF.'
                     : isDragActive
                       ? 'Release to upload your PDF.'
-                      : 'Drag and drop a PDF here or click to browse (up to 100MB).'}
+                      : 'Drag and drop a PDF here or click to browse (up to 100MB)'}
                 </p>
               </div>
             )}
