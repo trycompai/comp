@@ -135,10 +135,6 @@ export const authActionClient = actionClientWithMeta
       headers: headersList,
     });
 
-    const member = await auth.api.getActiveMember({
-      headers: headersList,
-    });
-
     if (!session) {
       throw new Error('Unauthorized');
     }
@@ -147,8 +143,21 @@ export const authActionClient = actionClientWithMeta
       throw new Error('Organization not found');
     }
 
+    // Get the current user's member record to check their role
+    const member = await db.member.findFirst({
+      where: {
+        userId: session.user.id,
+        organizationId: session.session.activeOrganizationId,
+      },
+    });
+
     if (!member) {
       throw new Error('Member not found');
+    }
+
+    // Check if user has strictly readonly role - prevent all write operations
+    if (member.role === 'readonly') {
+      throw new Error('Read-only users cannot perform write operations');
     }
 
     const { fileData: _, ...inputForAuditLog } = clientInput as any;
@@ -242,6 +251,11 @@ export const authWithOrgAccessClient = authActionClient.use(async ({ next, clien
 
   if (!member) {
     throw new Error('You do not have access to this organization');
+  }
+
+  // Check if user has strictly readonly role - prevent all write operations
+  if (member.role === 'readonly') {
+    throw new Error('Read-only users cannot perform write operations');
   }
 
   return next({
