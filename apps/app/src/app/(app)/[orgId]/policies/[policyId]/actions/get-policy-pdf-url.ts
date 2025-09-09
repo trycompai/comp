@@ -43,6 +43,8 @@ export const getPolicyPdfUrlAction = authActionClient
       const command = new GetObjectCommand({
         Bucket: BUCKET_NAME,
         Key: policy.pdfUrl,
+        ResponseContentDisposition: 'inline',
+        ResponseContentType: 'application/pdf',
       });
       const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 900 }); // URL is valid for 15 minutes
 

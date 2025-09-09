@@ -1,12 +1,12 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
-import { Input } from '@comp/ui/input';
-import { FileText, Loader2, UploadCloud } from 'lucide-react';
+import { cn } from '@comp/ui/cn';
+import { ExternalLink, FileText, Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import Dropzone from 'react-dropzone';
 import { toast } from 'sonner';
 import { getPolicyPdfUrlAction } from '../actions/get-policy-pdf-url';
 import { uploadPolicyPdfAction } from '../actions/upload-policy-pdf';
@@ -19,7 +19,7 @@ interface PdfViewerProps {
 
 export function PdfViewer({ policyId, pdfUrl, isPendingApproval }: PdfViewerProps) {
   const router = useRouter();
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [isUrlLoading, setUrlLoading] = useState(true);
 
@@ -48,21 +48,17 @@ export function PdfViewer({ policyId, pdfUrl, isPendingApproval }: PdfViewerProp
   const { execute: upload, status: uploadStatus } = useAction(uploadPolicyPdfAction, {
     onSuccess: () => {
       toast.success('PDF uploaded successfully.');
-      setFile(null);
+      setFiles([]);
       router.refresh();
     },
     onError: (error) => toast.error(error.error.serverError || 'Failed to upload PDF.'),
   });
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0]) {
-      setFile(e.target.files[0]);
-    }
-  };
+  // Handle file upload from FileUploader component
+  const handleUpload = async (uploadFiles: File[]) => {
+    if (!uploadFiles.length) return;
+    const file = uploadFiles[0]; // Only handle first file since we accept single files
 
-  // The file is read as a base64 string on the client before being sent to the server action.
-  const handleUpload = () => {
-    if (!file) return;
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = () => {
@@ -77,12 +73,47 @@ export function PdfViewer({ policyId, pdfUrl, isPendingApproval }: PdfViewerProp
     reader.onerror = () => toast.error('Failed to read the file for uploading.');
   };
 
+  // Handle direct drop on main card area
+  const handleMainCardDrop = (acceptedFiles: File[]) => {
+    if (acceptedFiles.length === 0) {
+      toast.error('No valid PDF file selected');
+      return;
+    }
+
+    if (acceptedFiles.length > 1) {
+      toast.error('Please upload only one PDF file at a time');
+      return;
+    }
+
+    const file = acceptedFiles[0];
+    if (file.size > 100 * 1024 * 1024) {
+      toast.error('File size must be less than 100MB');
+      return;
+    }
+
+    handleUpload(acceptedFiles);
+  };
+
   const isUploading = uploadStatus === 'executing';
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Policy Document (PDF View)</CardTitle>
+        <CardTitle>
+          {signedUrl ? (
+            <a
+              href={signedUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:underline cursor-pointer flex items-center gap-2"
+            >
+              {pdfUrl?.split('/').pop()}
+              <ExternalLink className="h-4 w-4" />
+            </a>
+          ) : (
+            pdfUrl?.split('/').pop()
+          )}
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {pdfUrl ? (
@@ -92,12 +123,17 @@ export function PdfViewer({ policyId, pdfUrl, isPendingApproval }: PdfViewerProp
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
             ) : signedUrl ? (
-              <iframe
-                key={signedUrl}
-                src={signedUrl}
-                className="h-[800px] w-full rounded-md border"
-                title="Policy PDF"
-              />
+              <div className="relative">
+                <iframe
+                  key={signedUrl}
+                  src={`${signedUrl}#toolbar=0&navpanes=0&scrollbar=0`}
+                  className="h-[800px] w-full rounded-md border"
+                  title="Policy PDF"
+                  onError={() => {
+                    console.error('PDF failed to load in iframe, trying fallback');
+                  }}
+                />
+              </div>
             ) : (
               <div className="flex h-[800px] w-full flex-col items-center justify-center rounded-md border text-center">
                 <FileText className="h-12 w-12 text-destructive" />
@@ -108,34 +144,88 @@ export function PdfViewer({ policyId, pdfUrl, isPendingApproval }: PdfViewerProp
               </div>
             )}
             {!isPendingApproval && (
-              <p className="text-sm text-muted-foreground">
-                To replace this PDF, you can upload a new one below.
-              </p>
+              <Dropzone
+                onDrop={handleMainCardDrop}
+                accept={{ 'application/pdf': [] }}
+                maxSize={100 * 1024 * 1024}
+                maxFiles={1}
+                multiple={false}
+                disabled={isUploading}
+              >
+                {({ getRootProps, getInputProps, isDragActive }) => (
+                  <div
+                    {...getRootProps()}
+                    className={cn(
+                      'cursor-pointer rounded-md border-2 border-dashed p-4 text-center transition-colors',
+                      isDragActive
+                        ? 'border-emerald-400 bg-emerald-50 dark:border-emerald-500 dark:bg-emerald-950/20'
+                        : 'border-emerald-200 hover:border-emerald-300 dark:border-emerald-800 dark:hover:border-emerald-700',
+                      isUploading && 'pointer-events-none opacity-60',
+                    )}
+                  >
+                    <input {...getInputProps()} />
+                    <p className="text-sm text-muted-foreground">
+                      {isUploading
+                        ? 'Uploading new PDF...'
+                        : isDragActive
+                          ? 'Drop your new PDF here to replace the current one'
+                          : 'Drag and drop a new PDF here to replace the current one, or click to browse (up to 100MB)'}
+                    </p>
+                  </div>
+                )}
+              </Dropzone>
             )}
           </div>
+        ) : !isPendingApproval ? (
+          <Dropzone
+            onDrop={handleMainCardDrop}
+            accept={{ 'application/pdf': [] }}
+            maxSize={100 * 1024 * 1024}
+            maxFiles={1}
+            multiple={false}
+            disabled={isUploading}
+          >
+            {({ getRootProps, getInputProps, isDragActive }) => (
+              <div
+                {...getRootProps()}
+                className={cn(
+                  'flex cursor-pointer flex-col items-center justify-center space-y-4 rounded-md border-2 border-dashed p-12 text-center transition-colors',
+                  isDragActive
+                    ? 'border-emerald-400 bg-emerald-50 dark:border-emerald-500 dark:bg-emerald-950/20'
+                    : 'border-emerald-200 hover:border-emerald-300 dark:border-emerald-800 dark:hover:border-emerald-700',
+                  isUploading && 'pointer-events-none opacity-60',
+                )}
+              >
+                <input {...getInputProps()} />
+                {isUploading ? (
+                  <Loader2 className="h-12 w-12 animate-spin text-emerald-600 dark:text-emerald-400" />
+                ) : (
+                  <FileText className="h-12 w-12 text-emerald-600 dark:text-emerald-400" />
+                )}
+                <h3 className="text-lg font-semibold">
+                  {isUploading
+                    ? 'Uploading PDF...'
+                    : isDragActive
+                      ? 'Drop your PDF here'
+                      : 'No PDF Uploaded'}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {isUploading
+                    ? 'Please wait while we upload your PDF.'
+                    : isDragActive
+                      ? 'Release to upload your PDF.'
+                      : 'Drag and drop a PDF here or click to browse (up to 100MB).'}
+                </p>
+              </div>
+            )}
+          </Dropzone>
         ) : (
-          <div className="flex flex-col items-center justify-center space-y-4 rounded-md border-2 border-dashed p-12 text-center">
+          <div className="flex flex-col items-center justify-center space-y-4 rounded-md border-2 border-dashed border-muted p-12 text-center">
             <FileText className="h-12 w-12 text-muted-foreground" />
             <h3 className="text-lg font-semibold">No PDF Uploaded</h3>
             <p className="text-sm text-muted-foreground">
-              Please upload a PDF document for this policy to continue.
+              A PDF document is required for this policy.
             </p>
-          </div>
-        )}
-
-        {!isPendingApproval && (
-          <div className="flex items-center gap-4">
-            <Input
-              type="file"
-              accept="application/pdf"
-              onChange={handleFileChange}
-              disabled={isUploading}
-              className="max-w-xs"
-            />
-            <Button onClick={handleUpload} disabled={!file || isUploading}>
-              {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-2 h-4 w-4" />}
-              {pdfUrl ? 'Re-upload' : 'Upload PDF'}
-            </Button>
           </div>
         )}
       </CardContent>
