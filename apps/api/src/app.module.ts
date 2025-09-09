@@ -10,6 +10,7 @@ import { DeviceAgentModule } from './device-agent/device-agent.module';
 import { awsConfig } from './config/aws.config';
 import { HealthModule } from './health/health.module';
 import { OrganizationModule } from './organization/organization.module';
+import { PoliciesModule } from './policies/policies.module';
 import { RisksModule } from './risks/risks.module';
 import { TasksModule } from './tasks/tasks.module';
 import { VendorsModule } from './vendors/vendors.module';
@@ -32,6 +33,7 @@ import { ContextModule } from './context/context.module';
     VendorsModule,
     ContextModule,
     DevicesModule,
+    PoliciesModule,
     DeviceAgentModule,
     AttachmentsModule,
     TasksModule,
