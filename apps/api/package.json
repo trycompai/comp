@@ -70,7 +70,7 @@
   "scripts": {
     "build": "nest build",
     "db:generate": "bun run db:getschema && prisma generate",
-    "db:getschema": "cp ../../packages/db/prisma/schema.prisma prisma/schema.prisma",
+    "db:getschema": "node ../../packages/db/scripts/combine-schemas.js && cp ../../packages/db/dist/schema.prisma prisma/schema.prisma",
     "dev": "nest start --watch",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
