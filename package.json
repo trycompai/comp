@@ -48,8 +48,7 @@
     "tsup": "^8.5.0",
     "turbo": "^2.5.4",
     "typescript": "^5.8.3",
-    "use-debounce": "^10.0.4",
-    "zod": "^4.0.14"
+    "use-debounce": "^10.0.4"
   },
   "engines": {
     "node": ">=18"
@@ -92,5 +91,8 @@
     "packages/tsconfig",
     "packages/ui",
     "packages/utils"
-  ]
+  ],
+  "dependencies": {
+    "zod": "^3.25.76"
+  }
 }
