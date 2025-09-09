@@ -44,7 +44,9 @@ export const auth = betterAuth({
     provider: 'postgresql',
   }),
   baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
-  trustedOrigins: process.env.AUTH_TRUSTED_ORIGINS ? process.env.AUTH_TRUSTED_ORIGINS.split(",").map(o => o.trim()) : ['http://localhost:3000', 'https://*.trycomp.ai', 'http://localhost:3002'],  
+  trustedOrigins: process.env.AUTH_TRUSTED_ORIGINS
+    ? process.env.AUTH_TRUSTED_ORIGINS.split(',').map((o) => o.trim())
+    : ['http://localhost:3000', 'https://*.trycomp.ai', 'http://localhost:3002'],
   emailAndPassword: {
     enabled: true,
   },
@@ -109,6 +111,7 @@ export const auth = betterAuth({
   secret: process.env.AUTH_SECRET!,
   plugins: [
     organization({
+      membershipLimit: 100000000000,
       async sendInvitationEmail(data) {
         const isLocalhost = process.env.NODE_ENV === 'development';
         const protocol = isLocalhost ? 'http' : 'https';
