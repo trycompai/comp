@@ -1,5 +1,7 @@
 import { jsPDF } from 'jspdf';
 import type { JSONContent as TipTapJSONContent } from '@tiptap/react';
+import { AuditLog, User, Member, Organization } from '@db';
+import { format } from 'date-fns';
 
 // Type definition for the JSON content structure
 interface JSONContent {
@@ -10,10 +12,16 @@ interface JSONContent {
   marks?: Array<{ type: string }>;
 }
 
+type AuditLogWithRelations = AuditLog & {
+  user: User | null;
+  member: Member | null;
+  organization: Organization;
+};
+
 /**
  * Converts JSON content to a formatted PDF document
  */
-export function generatePolicyPDF(jsonContent: TipTapJSONContent[], policyTitle?: string): void {
+export function generatePolicyPDF(jsonContent: TipTapJSONContent[], logs: AuditLogWithRelations[], policyTitle?: string): void {
   // Convert TipTap JSONContent to our internal format
   const convertToInternalFormat = (content: TipTapJSONContent[]): JSONContent[] => {
     return content.map(item => ({
@@ -246,8 +254,146 @@ export function generatePolicyPDF(jsonContent: TipTapJSONContent[], policyTitle?
     }
   };
   
+  // Function to add audit logs section (table or no activity message)
+  const addAuditLogsSection = (auditLogs: AuditLogWithRelations[]) => {
+    // Add some space before the section
+    yPosition += lineHeight * 2;
+    checkPageBreak(lineHeight * 3); // Ensure we have space for at least the header
+    
+    // Add section title
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Recent Activity', margin, yPosition);
+    yPosition += lineHeight * 1.5;
+    
+    if (!auditLogs || auditLogs.length === 0) {
+      // Show "No recent activity" message
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(100, 100, 100); // Gray color
+      doc.text('No recent activity', margin, yPosition);
+      yPosition += lineHeight;
+      return;
+    }
+    
+    // Show the table
+    addAuditLogsTable(auditLogs);
+  };
+  
+  // Function to add audit logs table
+  const addAuditLogsTable = (auditLogs: AuditLogWithRelations[]) => {
+    checkPageBreak(lineHeight * 6); // Ensure we have space for at least the header
+    
+    // Reset text color to black for table
+    doc.setTextColor(0, 0, 0);
+    
+    // Table configuration
+    const tableStartY = yPosition;
+    const colWidths = {
+      name: contentWidth * 0.25,      // 25% for Name
+      description: contentWidth * 0.55, // 55% for Description  
+      datetime: contentWidth * 0.20     // 20% for Date/Time
+    };
+    
+    const colPositions = {
+      name: margin,
+      description: margin + colWidths.name,
+      datetime: margin + colWidths.name + colWidths.description
+    };
+    
+    // Draw table header
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    
+    // Header background (light gray)
+    doc.setFillColor(240, 240, 240);
+    doc.rect(margin, yPosition - 2, contentWidth, lineHeight + 2, 'F');
+    
+    // Header text
+    doc.setTextColor(0, 0, 0);
+    doc.text('Name', colPositions.name + 2, yPosition + 4);
+    doc.text('Description', colPositions.description + 2, yPosition + 4);
+    doc.text('Date/Time', colPositions.datetime + 2, yPosition + 4);
+    
+    yPosition += lineHeight + 2;
+    
+    // Draw table rows
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    
+    auditLogs.forEach((log, index) => {
+      const rowY = yPosition;
+      
+      // Check for page break
+      checkPageBreak(lineHeight * 2);
+      
+      // Alternate row background
+      if (index % 2 === 0) {
+        doc.setFillColor(248, 248, 248);
+        doc.rect(margin, yPosition - 1, contentWidth, lineHeight + 2, 'F');
+      }
+      
+      // Extract user info
+      const userName = log.user?.name || `User ${log.userId.substring(0, 6)}`;
+      const description = log.description || 'No description available';
+      const dateTime = format(log.timestamp, 'MMM d, yyyy h:mm a');
+      
+      // Draw cell contents with text wrapping for description
+      doc.setTextColor(0, 0, 0);
+      
+      // Name column (truncate if too long)
+      const nameText = userName.length > 20 ? userName.substring(0, 17) + '...' : userName;
+      doc.text(nameText, colPositions.name + 2, yPosition + 4);
+      
+      // Description column (wrap text)
+      const descLines = doc.splitTextToSize(description, colWidths.description - 4);
+      const maxDescLines = 2; // Limit to 2 lines to keep row height manageable
+      const displayLines = descLines.slice(0, maxDescLines);
+      
+      displayLines.forEach((line: string, lineIndex: number) => {
+        doc.text(line, colPositions.description + 2, yPosition + 4 + (lineIndex * 4));
+      });
+      
+      // If text was truncated, add ellipsis
+      if (descLines.length > maxDescLines) {
+        const lastLine = displayLines[displayLines.length - 1];
+        const ellipsisLine = lastLine.length > 40 ? lastLine.substring(0, 37) + '...' : lastLine + '...';
+        doc.text(ellipsisLine, colPositions.description + 2, yPosition + 4 + ((maxDescLines - 1) * 4));
+      }
+      
+      // Date/Time column
+      doc.text(dateTime, colPositions.datetime + 2, yPosition + 4);
+      
+      // Calculate row height based on description lines
+      const rowHeight = Math.max(lineHeight + 2, (displayLines.length * 4) + 2);
+      yPosition += rowHeight;
+      
+      // Draw row border
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.1);
+      doc.line(margin, rowY + rowHeight, margin + contentWidth, rowY + rowHeight);
+    });
+    
+    // Draw table borders
+    doc.setDrawColor(150, 150, 150);
+    doc.setLineWidth(0.3);
+    
+    // Outer border
+    doc.rect(margin, tableStartY - 2, contentWidth, yPosition - (tableStartY - 2));
+    
+    // Column separators
+    doc.line(colPositions.description, tableStartY - 2, colPositions.description, yPosition);
+    doc.line(colPositions.datetime, tableStartY - 2, colPositions.datetime, yPosition);
+    
+    // Add some space after the table
+    yPosition += lineHeight;
+  };
+  
   // Process the main content
   processContent(internalContent);
+  
+  // Add audit logs section (table or no activity message)
+  addAuditLogsSection(logs);
   
   // Add footer with page numbers
   const totalPages = doc.internal.pages.length - 1; // Subtract 1 because of the null page at index 0

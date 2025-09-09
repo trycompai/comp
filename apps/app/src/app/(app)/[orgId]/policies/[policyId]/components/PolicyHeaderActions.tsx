@@ -23,13 +23,16 @@ import type { JSONContent } from '@tiptap/react';
 import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { AuditLogWithRelations } from '../data';
 
 export function PolicyHeaderActions({ 
   policyId, 
-  policy 
+  policy,
+  logs
 }: { 
   policyId: string; 
   policy: (Policy & { approver: (Member & { user: User }) | null }) | null;
+  logs: AuditLogWithRelations[];
 }) {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   // Delete flows through query param to existing dialog in PolicyOverview
@@ -57,7 +60,7 @@ export function PolicyHeaderActions({
       }
 
       // Generate and download the PDF
-      generatePolicyPDF(policyContent as any, policy.name || 'Policy Document');
+      generatePolicyPDF(policyContent as any, logs, policy.name || 'Policy Document');
       toast.success('PDF download started');
     } catch (error) {
       console.error('Error downloading policy PDF:', error);
