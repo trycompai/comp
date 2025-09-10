@@ -61,7 +61,6 @@ export function PolicyHeaderActions({
 
       // Generate and download the PDF
       generatePolicyPDF(policyContent as any, logs, policy.name || 'Policy Document');
-      toast.success('PDF download started');
     } catch (error) {
       console.error('Error downloading policy PDF:', error);
       toast.error('Failed to generate policy PDF');
