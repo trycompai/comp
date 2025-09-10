@@ -658,16 +658,10 @@ export function downloadAllPolicies(
     // Reset text color to black for each policy
     config.doc.setTextColor(0, 0, 0);
     
-    // Add policy separator if not the first policy
+    // Start each policy on a new page (except the first one)
     if (index > 0) {
-      checkPageBreak(config, config.lineHeight * 4);
-      config.yPosition += config.lineHeight * 2;
-      
-      // Add separator line
-      config.doc.setDrawColor(200, 200, 200);
-      config.doc.setLineWidth(0.5);
-      config.doc.line(config.margin, config.yPosition, config.margin + config.contentWidth, config.yPosition);
-      config.yPosition += config.lineHeight * 2;
+      config.doc.addPage();
+      config.yPosition = config.margin;
     }
     
     // Add policy title
