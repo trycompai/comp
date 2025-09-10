@@ -158,9 +158,10 @@ export function InviteMembersModal({
 
         // Process each invitation sequentially
         for (const invite of values.manualInvites) {
-          const hasEmployeeRole = invite.roles.includes('employee');
+          const hasEmployeeRoleAndNoAdmin =
+            !invite.roles.includes('admin') && invite.roles.includes('employee');
           try {
-            if (hasEmployeeRole) {
+            if (hasEmployeeRoleAndNoAdmin) {
               await addEmployeeWithoutInvite({
                 organizationId,
                 email: invite.email,
@@ -318,9 +319,10 @@ export function InviteMembersModal({
             }
 
             // Attempt to invite
-            const hasEmployeeRole = validRoles.includes('employee');
+            const hasEmployeeRoleAndNoAdmin =
+              validRoles.includes('employee') && !validRoles.includes('admin');
             try {
-              if (hasEmployeeRole) {
+              if (hasEmployeeRoleAndNoAdmin) {
                 await addEmployeeWithoutInvite({
                   organizationId,
                   email,
