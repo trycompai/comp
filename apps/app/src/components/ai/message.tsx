@@ -112,25 +112,26 @@ const StreamableMarkdown = memo(({ text }: { text: string | StreamableValue<stri
   const streamedText = useStreamableText(text);
 
   return (
-    <MemoizedReactMarkdown
-      className="prose text-xs prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0"
-      components={{
-        p({ children }) {
-          return <p className="my-1 last:mb-0">{children}</p>;
-        },
-        ol({ children }) {
-          return <ol className="list-decimal list-inside space-y-0.5 my-1">{children}</ol>;
-        },
-        ul({ children }) {
-          return <ul className="list-disc list-inside space-y-0.5 my-1">{children}</ul>;
-        },
-        li({ children }) {
-          return <li className="leading-tight my-0">{children}</li>;
-        },
-      }}
-    >
-      {streamedText}
-    </MemoizedReactMarkdown>
+    <div className="prose text-xs prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0">
+      <MemoizedReactMarkdown
+        components={{
+          p({ children }) {
+            return <p className="my-1 last:mb-0">{children}</p>;
+          },
+          ol({ children }) {
+            return <ol className="list-decimal list-inside space-y-0.5 my-1">{children}</ol>;
+          },
+          ul({ children }) {
+            return <ul className="list-disc list-inside space-y-0.5 my-1">{children}</ul>;
+          },
+          li({ children }) {
+            return <li className="leading-tight my-0">{children}</li>;
+          },
+        }}
+      >
+        {streamedText}
+      </MemoizedReactMarkdown>
+    </div>
   );
 });
 
