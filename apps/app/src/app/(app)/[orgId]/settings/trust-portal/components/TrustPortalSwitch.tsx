@@ -17,20 +17,24 @@ import { z } from 'zod';
 import { isFriendlyAvailable } from '../actions/is-friendly-available';
 import { trustPortalSwitchAction } from '../actions/trust-portal-switch';
 import { updateTrustPortalFrameworks } from '../actions/update-trust-portal-frameworks';
-import { GDPR, HIPAA, ISO27001, SOC2 } from './logos';
+import { GDPR, HIPAA, ISO27001, SOC2, SOC2Type1, SOC2Type2, PCIDSS } from './logos';
 
 const trustPortalSwitchSchema = z.object({
   enabled: z.boolean(),
   contactEmail: z.string().email().or(z.literal('')).optional(),
   friendlyUrl: z.string().optional(),
-  soc2: z.boolean(),
+  soc2type1: z.boolean(),
+  soc2type2: z.boolean(),
   iso27001: z.boolean(),
   gdpr: z.boolean(),
   hipaa: z.boolean(),
-  soc2Status: z.enum(['started', 'in_progress', 'compliant']),
+  pcidss: z.boolean(),
+  soc2type1Status: z.enum(['started', 'in_progress', 'compliant']),
+  soc2type2Status: z.enum(['started', 'in_progress', 'compliant']),
   iso27001Status: z.enum(['started', 'in_progress', 'compliant']),
   gdprStatus: z.enum(['started', 'in_progress', 'compliant']),
   hipaaStatus: z.enum(['started', 'in_progress', 'compliant']),
+  pcidssStatus: z.enum(['started', 'in_progress', 'compliant']),
 });
 
 export function TrustPortalSwitch({
@@ -40,14 +44,18 @@ export function TrustPortalSwitch({
   domain,
   contactEmail,
   orgId,
-  soc2,
+  soc2type1,
+  soc2type2,
   iso27001,
   gdpr,
   hipaa,
-  soc2Status,
+  pcidss,
+  soc2type1Status,
+  soc2type2Status,
   iso27001Status,
   gdprStatus,
   hipaaStatus,
+  pcidssStatus,
   friendlyUrl,
 }: {
   enabled: boolean;
@@ -56,14 +64,18 @@ export function TrustPortalSwitch({
   domain: string;
   contactEmail: string | null;
   orgId: string;
-  soc2: boolean;
+  soc2type1: boolean;
+  soc2type2: boolean;
   iso27001: boolean;
   gdpr: boolean;
   hipaa: boolean;
-  soc2Status: 'started' | 'in_progress' | 'compliant';
+  pcidss: boolean;
+  soc2type1Status: 'started' | 'in_progress' | 'compliant';
+  soc2type2Status: 'started' | 'in_progress' | 'compliant';
   iso27001Status: 'started' | 'in_progress' | 'compliant';
   gdprStatus: 'started' | 'in_progress' | 'compliant';
   hipaaStatus: 'started' | 'in_progress' | 'compliant';
+  pcidssStatus: 'started' | 'in_progress' | 'compliant';
   friendlyUrl: string | null;
 }) {
   const trustPortalSwitch = useAction(trustPortalSwitchAction, {
@@ -82,14 +94,18 @@ export function TrustPortalSwitch({
     defaultValues: {
       enabled: enabled,
       contactEmail: contactEmail ?? undefined,
-      soc2: soc2 ?? false,
+      soc2type1: soc2type1 ?? false,
+      soc2type2: soc2type2 ?? false,
       iso27001: iso27001 ?? false,
       gdpr: gdpr ?? false,
       hipaa: hipaa ?? false,
-      soc2Status: soc2Status ?? 'started',
+      pcidss: pcidss ?? false,
+      soc2type1Status: soc2type1Status ?? 'started',
+      soc2type2Status: soc2type2Status ?? 'started',
       iso27001Status: iso27001Status ?? 'started',
       gdprStatus: gdprStatus ?? 'started',
       hipaaStatus: hipaaStatus ?? 'started',
+      pcidssStatus: pcidssStatus ?? 'started',
       friendlyUrl: friendlyUrl ?? undefined,
     },
   });
@@ -314,35 +330,6 @@ export function TrustPortalSwitch({
                     Share the frameworks your organization is compliant with or working towards.
                   </p>
                   <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
-                    {/* SOC 2 */}
-                    <ComplianceFramework
-                      title="SOC 2"
-                      description="A compliance framework focused on data security, availability, and confidentiality."
-                      isEnabled={soc2}
-                      status={soc2Status}
-                      onStatusChange={async (value) => {
-                        try {
-                          await updateTrustPortalFrameworks({
-                            orgId,
-                            soc2Status: value as 'started' | 'in_progress' | 'compliant',
-                          });
-                          toast.success('SOC 2 status updated');
-                        } catch (error) {
-                          toast.error('Failed to update SOC 2 status');
-                        }
-                      }}
-                      onToggle={async (checked) => {
-                        try {
-                          await updateTrustPortalFrameworks({
-                            orgId,
-                            soc2: checked,
-                          });
-                          toast.success('SOC 2 status updated');
-                        } catch (error) {
-                          toast.error('Failed to update SOC 2 status');
-                        }
-                      }}
-                    />
                     {/* ISO 27001 */}
                     <ComplianceFramework
                       title="ISO 27001"
@@ -430,6 +417,93 @@ export function TrustPortalSwitch({
                         }
                       }}
                     />
+                    {/* SOC 2 TYPE I*/}
+                    <ComplianceFramework
+                      title="SOC 2 TYPE I"
+                      description="A compliance framework focused on data security, availability, and confidentiality."
+                      isEnabled={soc2type1}
+                      status={soc2type1Status}
+                      onStatusChange={async (value) => {
+                        try {
+                          await updateTrustPortalFrameworks({
+                            orgId,
+                            soc2type1Status: value as 'started' | 'in_progress' | 'compliant',
+                          });
+                          toast.success('SOC 2 TYPE I status updated');
+                        } catch (error) {
+                          toast.error('Failed to update SOC 2 TYPE I status');
+                        }
+                      }}
+                      onToggle={async (checked) => {
+                        try {
+                          await updateTrustPortalFrameworks({
+                            orgId,
+                            soc2type1: checked,
+                          });
+                          toast.success('SOC 2 TYPE I status updated');
+                        } catch (error) {
+                          toast.error('Failed to update SOC 2 TYPE I status');
+                        }
+                      }}
+                    />
+                    {/* SOC 2 TYPE II*/}
+                    <ComplianceFramework
+                      title="SOC 2 TYPE II"
+                      description="A compliance framework focused on data security, availability, and confidentiality."
+                      isEnabled={soc2type2}
+                      status={soc2type2Status}
+                      onStatusChange={async (value) => {
+                        try {
+                          await updateTrustPortalFrameworks({
+                            orgId,
+                            soc2type2Status: value as 'started' | 'in_progress' | 'compliant',
+                          });
+                          toast.success('SOC 2 TYPE II status updated');
+                        } catch (error) {
+                          toast.error('Failed to update SOC 2 TYPE II status');
+                        }
+                      }}
+                      onToggle={async (checked) => {
+                        try {
+                          await updateTrustPortalFrameworks({
+                            orgId,
+                            soc2type2: checked,
+                          });
+                          toast.success('SOC 2 TYPE II status updated');
+                        } catch (error) {
+                          toast.error('Failed to update SOC 2 TYPE II status');
+                        }
+                      }}
+                    />
+                    {/* PCI DSS */}
+                    <ComplianceFramework
+                      title="PCI DSS"
+                      description="A compliance framework focused on data security, availability, and confidentiality."
+                      isEnabled={pcidss}
+                      status={pcidssStatus}
+                      onStatusChange={async (value) => {
+                        try {
+                          await updateTrustPortalFrameworks({
+                            orgId,
+                            pcidssStatus: value as 'started' | 'in_progress' | 'compliant',
+                          });
+                          toast.success('PCI DSS status updated');
+                        } catch (error) {
+                          toast.error('Failed to update PCI DSS status');
+                        }
+                      }}
+                      onToggle={async (checked) => {
+                        try {
+                          await updateTrustPortalFrameworks({
+                            orgId,
+                            pcidss: checked,
+                          });
+                          toast.success('PCI DSS status updated');
+                        } catch (error) {
+                          toast.error('Failed to update PCI DSS status');
+                        }
+                      }}
+                    />
                   </div>
                 </div>
               </div>
@@ -458,11 +532,7 @@ function ComplianceFramework({
   onToggle: (checked: boolean) => Promise<void>;
 }) {
   const logo =
-    title === 'SOC 2' ? (
-      <div className="h-16 w-16 flex items-center justify-center">
-        <SOC2 className="max-h-full max-w-full" />
-      </div>
-    ) : title === 'ISO 27001' ? (
+    title === 'ISO 27001' ? (
       <div className="h-16 w-16 flex items-center justify-center">
         <ISO27001 className="max-h-full max-w-full" />
       </div>
@@ -474,6 +544,18 @@ function ComplianceFramework({
       <div className="h-16 w-16 flex items-center justify-center">
         <HIPAA className="max-h-full max-w-full" />
       </div>
+    ) : title === 'SOC 2 TYPE I' ? (
+      <div className="h-16 w-16 flex items-center justify-center">
+        <SOC2Type1 className="max-h-full max-w-full" />
+      </div>
+    ) : title === 'SOC 2 TYPE II' ? (
+      <div className="h-16 w-16 flex items-center justify-center">
+        <SOC2Type2 className="max-h-full max-w-full" />
+      </div>
+    ) : title === 'PCI DSS' ? (
+        <div className="h-16 w-16 flex items-center justify-center">
+          <PCIDSS className="max-h-full max-w-full" />
+        </div>
     ) : null;
 
   return (
