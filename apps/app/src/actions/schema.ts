@@ -61,6 +61,10 @@ export const organizationWebsiteSchema = z.object({
     .max(255, 'Website cannot exceed 255 characters'),
 });
 
+export const organizationAdvancedModeSchema = z.object({
+  advancedModeEnabled: z.boolean(),
+});
+
 // Risks
 export const createRiskSchema = z.object({
   title: z

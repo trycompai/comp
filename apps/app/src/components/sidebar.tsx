@@ -30,7 +30,11 @@ export async function Sidebar({
             organization={organization}
             isCollapsed={isCollapsed}
           />
-          <MainMenu organizationId={organization?.id ?? ''} isCollapsed={isCollapsed} />
+          <MainMenu
+            organizationId={organization?.id ?? ''}
+            organization={organization}
+            isCollapsed={isCollapsed}
+          />
         </div>
       </div>
       <div className="flex-1" />
