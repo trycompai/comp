@@ -91,8 +91,8 @@ export function CreateTaskSheet({
   );
 
   // Memoize filter function to prevent re-renders
-  const filterFunction = useMemo(
-    () => (value: string, search: string) => {
+  const filterFunction = useCallback(
+    (value: string, search: string) => {
       // Find the option with this value (control ID)
       const option = controlOptions.find((opt) => opt.value === value);
       if (!option) return 0;
@@ -235,17 +235,13 @@ export function CreateTaskSheet({
           control={form.control}
           name="controlIds"
           render={({ field }) => {
-            // Memoize selected options computation
-            const selectedOptions: Option[] = useMemo(
-              () =>
-                (field.value || [])
-                  .map((id) => {
-                    const control = controls.find((c) => c.id === id);
-                    return control ? { value: control.id, label: control.name } : null;
-                  })
-                  .filter(Boolean) as Option[],
-              [field.value, controls],
-            );
+            // Convert current field value to selected options (computed inline since it depends on field.value)
+            const selectedOptions: Option[] = (field.value || [])
+              .map((id) => {
+                const control = controls.find((c) => c.id === id);
+                return control ? { value: control.id, label: control.name } : null;
+              })
+              .filter(Boolean) as Option[];
 
             return (
               <FormItem className="w-full">
