@@ -23,14 +23,18 @@ export default async function TrustPortalSettings({
         domainVerified={trustPortal?.domainVerified ?? false}
         contactEmail={trustPortal?.contactEmail ?? null}
         orgId={orgId}
-        soc2={trustPortal?.soc2 ?? false}
+        soc2type1={trustPortal?.soc2type1 ?? false}
+        soc2type2={trustPortal?.soc2type2 ?? false}
         iso27001={trustPortal?.iso27001 ?? false}
         gdpr={trustPortal?.gdpr ?? false}
         hipaa={trustPortal?.hipaa ?? false}
-        soc2Status={trustPortal?.soc2Status ?? 'started'}
+        pcidss={trustPortal?.pcidss ?? false}
+        soc2type1Status={trustPortal?.soc2type1Status ?? 'started'}
+        soc2type2Status={trustPortal?.soc2type2Status ?? 'started'}
         iso27001Status={trustPortal?.iso27001Status ?? 'started'}
         gdprStatus={trustPortal?.gdprStatus ?? 'started'}
         hipaaStatus={trustPortal?.hipaaStatus ?? 'started'}
+        pcidssStatus={trustPortal?.pcidssStatus ?? 'started'}
         friendlyUrl={trustPortal?.friendlyUrl ?? null}
       />
       <TrustPortalDomain
@@ -64,14 +68,18 @@ const getTrustPortal = cache(async (orgId: string) => {
     domain: trustPortal?.domain,
     domainVerified: trustPortal?.domainVerified,
     contactEmail: trustPortal?.contactEmail ?? '',
-    soc2: trustPortal?.soc2,
+    soc2type1: trustPortal?.soc2type1,
+    soc2type2: trustPortal?.soc2type2 || trustPortal?.soc2,
     iso27001: trustPortal?.iso27001,
     gdpr: trustPortal?.gdpr,
     hipaa: trustPortal?.hipaa,
-    soc2Status: trustPortal?.soc2_status,
+    pcidss: trustPortal?.pci_dss,
+    soc2type1Status: trustPortal?.soc2type1_status,
+    soc2type2Status: !trustPortal?.soc2type2 && trustPortal?.soc2 ? trustPortal?.soc2_status : trustPortal?.soc2type2_status,
     iso27001Status: trustPortal?.iso27001_status,
     gdprStatus: trustPortal?.gdpr_status,
     hipaaStatus: trustPortal?.hipaa_status,
+    pcidssStatus: trustPortal?.pci_dss_status,
     isVercelDomain: trustPortal?.isVercelDomain,
     vercelVerification: trustPortal?.vercelVerification,
     friendlyUrl: trustPortal?.friendlyUrl,
