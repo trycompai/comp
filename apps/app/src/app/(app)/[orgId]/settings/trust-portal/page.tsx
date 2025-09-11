@@ -29,12 +29,14 @@ export default async function TrustPortalSettings({
         iso27001={trustPortal?.iso27001 ?? false}
         gdpr={trustPortal?.gdpr ?? false}
         hipaa={trustPortal?.hipaa ?? false}
+        pcidss={trustPortal?.pcidss ?? false}
         soc2Status={trustPortal?.soc2Status ?? 'started'}
         soc2typeiStatus={trustPortal?.soc2typeiStatus ?? 'started'}
         soc2typeiiStatus={trustPortal?.soc2typeiiStatus ?? 'started'}
         iso27001Status={trustPortal?.iso27001Status ?? 'started'}
         gdprStatus={trustPortal?.gdprStatus ?? 'started'}
         hipaaStatus={trustPortal?.hipaaStatus ?? 'started'}
+        pcidssStatus={trustPortal?.pcidssStatus ?? 'started'}
         friendlyUrl={trustPortal?.friendlyUrl ?? null}
       />
       <TrustPortalDomain
@@ -74,12 +76,14 @@ const getTrustPortal = cache(async (orgId: string) => {
     iso27001: trustPortal?.iso27001,
     gdpr: trustPortal?.gdpr,
     hipaa: trustPortal?.hipaa,
+    pcidss: trustPortal?.pci_dss,
     soc2Status: trustPortal?.soc2_status,
     soc2typeiStatus: trustPortal?.soc2typei_status,
     soc2typeiiStatus: trustPortal?.soc2typeii_status,
     iso27001Status: trustPortal?.iso27001_status,
     gdprStatus: trustPortal?.gdpr_status,
     hipaaStatus: trustPortal?.hipaa_status,
+    pcidssStatus: trustPortal?.pci_dss_status,
     isVercelDomain: trustPortal?.isVercelDomain,
     vercelVerification: trustPortal?.vercelVerification,
     friendlyUrl: trustPortal?.friendlyUrl,

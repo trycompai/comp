@@ -13,12 +13,14 @@ interface UpdateTrustPortalFrameworksParams {
   iso27001?: boolean;
   gdpr?: boolean;
   hipaa?: boolean;
+  pcidss?: boolean;
   soc2Status?: 'started' | 'in_progress' | 'compliant';
   soc2typeiStatus?: 'started' | 'in_progress' | 'compliant';
   soc2typeiiStatus?: 'started' | 'in_progress' | 'compliant';
   iso27001Status?: 'started' | 'in_progress' | 'compliant';
   gdprStatus?: 'started' | 'in_progress' | 'compliant';
   hipaaStatus?: 'started' | 'in_progress' | 'compliant';
+  pcidssStatus?: 'started' | 'in_progress' | 'compliant';
 }
 
 export async function updateTrustPortalFrameworks({
@@ -29,12 +31,14 @@ export async function updateTrustPortalFrameworks({
   iso27001,
   gdpr,
   hipaa,
+  pcidss,
   soc2Status,
   soc2typeiStatus,
   soc2typeiiStatus,
   iso27001Status,
   gdprStatus,
   hipaaStatus,
+  pcidssStatus,
 }: UpdateTrustPortalFrameworksParams) {
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -65,12 +69,14 @@ export async function updateTrustPortalFrameworks({
       iso27001: iso27001 ?? trustPortal.iso27001,
       gdpr: gdpr ?? trustPortal.gdpr,
       hipaa: hipaa ?? trustPortal.hipaa,
+      pci_dss: pcidss ?? trustPortal.pci_dss,
       soc2_status: soc2Status ?? trustPortal.soc2_status,
       soc2typei_status: soc2typeiStatus ?? trustPortal.soc2typei_status,
       soc2typeii_status: soc2typeiiStatus ?? trustPortal.soc2typeii_status,
       iso27001_status: iso27001Status ?? trustPortal.iso27001_status,
       gdpr_status: gdprStatus ?? trustPortal.gdpr_status,
       hipaa_status: hipaaStatus ?? trustPortal.hipaa_status,
+      pci_dss_status: pcidssStatus ?? trustPortal.pci_dss_status,
     },
   });
 

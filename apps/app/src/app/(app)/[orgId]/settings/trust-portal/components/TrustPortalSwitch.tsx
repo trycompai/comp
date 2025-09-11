@@ -17,7 +17,7 @@ import { z } from 'zod';
 import { isFriendlyAvailable } from '../actions/is-friendly-available';
 import { trustPortalSwitchAction } from '../actions/trust-portal-switch';
 import { updateTrustPortalFrameworks } from '../actions/update-trust-portal-frameworks';
-import { GDPR, HIPAA, ISO27001, SOC2, SOC2Type1, SOC2Type2 } from './logos';
+import { GDPR, HIPAA, ISO27001, SOC2, SOC2Type1, SOC2Type2, PCIDSS } from './logos';
 
 const trustPortalSwitchSchema = z.object({
   enabled: z.boolean(),
@@ -29,12 +29,14 @@ const trustPortalSwitchSchema = z.object({
   iso27001: z.boolean(),
   gdpr: z.boolean(),
   hipaa: z.boolean(),
+  pcidss: z.boolean(),
   soc2Status: z.enum(['started', 'in_progress', 'compliant']),
   soc2typeiStatus: z.enum(['started', 'in_progress', 'compliant']),
   soc2typeiiStatus: z.enum(['started', 'in_progress', 'compliant']),
   iso27001Status: z.enum(['started', 'in_progress', 'compliant']),
   gdprStatus: z.enum(['started', 'in_progress', 'compliant']),
   hipaaStatus: z.enum(['started', 'in_progress', 'compliant']),
+  pcidssStatus: z.enum(['started', 'in_progress', 'compliant']),
 });
 
 export function TrustPortalSwitch({
@@ -50,12 +52,14 @@ export function TrustPortalSwitch({
   iso27001,
   gdpr,
   hipaa,
+  pcidss,
   soc2Status,
   soc2typeiStatus,
   soc2typeiiStatus,
   iso27001Status,
   gdprStatus,
   hipaaStatus,
+  pcidssStatus,
   friendlyUrl,
 }: {
   enabled: boolean;
@@ -70,12 +74,14 @@ export function TrustPortalSwitch({
   iso27001: boolean;
   gdpr: boolean;
   hipaa: boolean;
+  pcidss: boolean;
   soc2Status: 'started' | 'in_progress' | 'compliant';
   soc2typeiStatus: 'started' | 'in_progress' | 'compliant';
   soc2typeiiStatus: 'started' | 'in_progress' | 'compliant';
   iso27001Status: 'started' | 'in_progress' | 'compliant';
   gdprStatus: 'started' | 'in_progress' | 'compliant';
   hipaaStatus: 'started' | 'in_progress' | 'compliant';
+  pcidssStatus: 'started' | 'in_progress' | 'compliant';
   friendlyUrl: string | null;
 }) {
   const trustPortalSwitch = useAction(trustPortalSwitchAction, {
@@ -100,12 +106,14 @@ export function TrustPortalSwitch({
       iso27001: iso27001 ?? false,
       gdpr: gdpr ?? false,
       hipaa: hipaa ?? false,
+      pcidss: pcidss ?? false,
       soc2Status: soc2Status ?? 'started',
       soc2typeiStatus: soc2typeiStatus ?? 'started',
       soc2typeiiStatus: soc2typeiiStatus ?? 'started',
       iso27001Status: iso27001Status ?? 'started',
       gdprStatus: gdprStatus ?? 'started',
       hipaaStatus: hipaaStatus ?? 'started',
+      pcidssStatus: pcidssStatus ?? 'started',
       friendlyUrl: friendlyUrl ?? undefined,
     },
   });
@@ -504,6 +512,35 @@ export function TrustPortalSwitch({
                         }
                       }}
                     />
+                    {/* PCI DSS */}
+                    <ComplianceFramework
+                      title="PCI DSS"
+                      description="A compliance framework focused on data security, availability, and confidentiality."
+                      isEnabled={pcidss}
+                      status={pcidssStatus}
+                      onStatusChange={async (value) => {
+                        try {
+                          await updateTrustPortalFrameworks({
+                            orgId,
+                            pcidssStatus: value as 'started' | 'in_progress' | 'compliant',
+                          });
+                          toast.success('PCI DSS status updated');
+                        } catch (error) {
+                          toast.error('Failed to update PCI DSS status');
+                        }
+                      }}
+                      onToggle={async (checked) => {
+                        try {
+                          await updateTrustPortalFrameworks({
+                            orgId,
+                            pcidss: checked,
+                          });
+                          toast.success('PCI DSS status updated');
+                        } catch (error) {
+                          toast.error('Failed to update PCI DSS status');
+                        }
+                      }}
+                    />
                   </div>
                 </div>
               </div>
@@ -556,6 +593,10 @@ function ComplianceFramework({
       <div className="h-16 w-16 flex items-center justify-center">
         <SOC2Type2 className="max-h-full max-w-full" />
       </div>
+    ) : title === 'PCI DSS' ? (
+        <div className="h-16 w-16 flex items-center justify-center">
+          <PCIDSS className="max-h-full max-w-full" />
+        </div>
     ) : null;
 
   return (
