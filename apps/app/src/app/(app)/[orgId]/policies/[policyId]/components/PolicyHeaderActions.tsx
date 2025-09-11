@@ -1,6 +1,7 @@
 'use client';
 
 import { regeneratePolicyAction } from '@/app/(app)/[orgId]/policies/[policyId]/actions/regenerate-policy';
+import { generatePolicyPDF } from '@/lib/pdf-generator';
 import { Button } from '@comp/ui/button';
 import {
   Dialog,
@@ -18,18 +19,52 @@ import {
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
 import { Icons } from '@comp/ui/icons';
-import { Policy } from '@db';
+import type { Policy, Member, User } from '@db';
+import type { JSONContent } from '@tiptap/react';
 import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { AuditLogWithRelations } from '../data';
 
-export function PolicyHeaderActions({ policy }: { policy: Policy | null }) {
+export function PolicyHeaderActions({ 
+  policy,
+  logs
+}: { 
+  policy: (Policy & { approver: (Member & { user: User }) | null }) | null;
+  logs: AuditLogWithRelations[];
+}) {
   const [isRegenerateConfirmOpen, setRegenerateConfirmOpen] = useState(false);
-
+  // Delete flows through query param to existing dialog in PolicyOverview
   const regenerate = useAction(regeneratePolicyAction, {
     onSuccess: () => toast.success('Regeneration triggered. This may take a moment.'),
     onError: () => toast.error('Failed to trigger policy regeneration'),
   });
+
+  const handleDownloadPDF = () => {
+    try {
+      if (!policy || !policy.content) {
+        toast.error('Policy content not available for download');
+        return;
+      }
+
+      // Convert policy content to JSONContent array if needed
+      let policyContent: JSONContent[];
+      if (Array.isArray(policy.content)) {
+        policyContent = policy.content as JSONContent[];
+      } else if (typeof policy.content === 'object' && policy.content !== null) {
+        policyContent = [policy.content as JSONContent];
+      } else {
+        toast.error('Invalid policy content format');
+        return;
+      }
+
+      // Generate and download the PDF
+      generatePolicyPDF(policyContent as any, logs, policy.name || 'Policy Document');
+    } catch (error) {
+      console.error('Error downloading policy PDF:', error);
+      toast.error('Failed to generate policy PDF');
+    }
+  };
 
   if (!policy) return null;
 
@@ -57,6 +92,11 @@ export function PolicyHeaderActions({ policy }: { policy: Policy | null }) {
             <Icons.Edit className="mr-2 h-4 w-4" /> Edit policy
           </DropdownMenuItem>
           <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={() => handleDownloadPDF()}
+          >
+            <Icons.Download className="mr-2 h-4 w-4" /> Download as PDF
+          </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => {
               const url = new URL(window.location.href);
