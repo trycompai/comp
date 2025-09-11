@@ -1,4 +1,5 @@
 import { DeleteOrganization } from '@/components/forms/organization/delete-organization';
+import { UpdateOrganizationAdvancedMode } from '@/components/forms/organization/update-organization-advanced-mode';
 import { UpdateOrganizationName } from '@/components/forms/organization/update-organization-name';
 import { UpdateOrganizationWebsite } from '@/components/forms/organization/update-organization-website';
 import { auth } from '@/utils/auth';
@@ -14,6 +15,9 @@ export default async function OrganizationSettings() {
     <div className="space-y-4">
       <UpdateOrganizationName organizationName={organization?.name ?? ''} />
       <UpdateOrganizationWebsite organizationWebsite={organization?.website ?? ''} />
+      <UpdateOrganizationAdvancedMode
+        advancedModeEnabled={organization?.advancedModeEnabled ?? false}
+      />
       <DeleteOrganization organizationId={organization?.id ?? ''} />
     </div>
   );
@@ -40,6 +44,7 @@ const organizationDetails = cache(async () => {
       name: true,
       id: true,
       website: true,
+      advancedModeEnabled: true,
     },
   });
 

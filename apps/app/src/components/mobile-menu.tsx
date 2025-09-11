@@ -45,7 +45,11 @@ export function MobileMenu({ organizationId, organizations }: MobileMenuProps) {
             organization={currentOrganization}
             isCollapsed={false}
           />
-          <MainMenu organizationId={organizationId} onItemClick={handleCloseSheet} />
+          <MainMenu
+            organizationId={organizationId}
+            organization={currentOrganization}
+            onItemClick={handleCloseSheet}
+          />
         </div>
       </SheetContent>
     </Sheet>
