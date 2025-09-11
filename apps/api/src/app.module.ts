@@ -37,6 +37,7 @@ import { ContextModule } from './context/context.module';
     DevicesModule,
     PoliciesModule,
     DeviceAgentModule,
+    DevicesModule,
     AttachmentsModule,
     TasksModule,
     CommentsModule,
