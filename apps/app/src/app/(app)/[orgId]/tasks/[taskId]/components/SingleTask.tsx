@@ -1,9 +1,21 @@
 'use client';
 
+import { regenerateTaskAction } from '@/actions/tasks/regenerate-task-action';
+import { Button } from '@comp/ui/button';
 import { Card } from '@comp/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@comp/ui/dialog';
 import type { Control, Member, Task, User } from '@db';
+import { useAction } from 'next-safe-action/hooks';
 import { useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { updateTask } from '../../actions/updateTask';
 import { TaskDeleteDialog } from './TaskDeleteDialog';
 import { TaskMainContent } from './TaskMainContent';
@@ -16,8 +28,18 @@ interface SingleTaskProps {
 
 export function SingleTask({ task, members }: SingleTaskProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isRegenerateConfirmOpen, setRegenerateConfirmOpen] = useState(false);
   const params = useParams<{ orgId: string }>();
   const orgIdFromParams = params.orgId;
+
+  const regenerate = useAction(regenerateTaskAction, {
+    onSuccess: () => {
+      toast.success('Task updated with latest template content.');
+    },
+    onError: (error) => {
+      toast.error(error.error?.serverError || 'Failed to regenerate task');
+    },
+  });
 
   const assignedMember = useMemo(() => {
     if (!task.assigneeId || !members) return null;
@@ -57,6 +79,7 @@ export function SingleTask({ task, members }: SingleTaskProps) {
         assignedMember={assignedMember}
         handleUpdateTask={handleUpdateTask}
         onDeleteClick={() => setDeleteDialogOpen(true)}
+        onRegenerateClick={() => setRegenerateConfirmOpen(true)}
         orgId={orgIdFromParams}
       />
 
@@ -66,6 +89,33 @@ export function SingleTask({ task, members }: SingleTaskProps) {
         onClose={() => setDeleteDialogOpen(false)}
         task={task}
       />
+
+      {/* Regenerate Confirmation Dialog */}
+      <Dialog open={isRegenerateConfirmOpen} onOpenChange={setRegenerateConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Regenerate Task</DialogTitle>
+            <DialogDescription>
+              This will update the task title and description with the latest content from the
+              framework template. The current content will be replaced. Continue?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRegenerateConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                regenerate.execute({ taskId: task.id });
+                setRegenerateConfirmOpen(false);
+              }}
+              disabled={regenerate.status === 'executing'}
+            >
+              {regenerate.status === 'executing' ? 'Working…' : 'Confirm'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
