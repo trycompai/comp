@@ -24,15 +24,15 @@ const trustPortalSwitchSchema = z.object({
   contactEmail: z.string().email().or(z.literal('')).optional(),
   friendlyUrl: z.string().optional(),
   soc2: z.boolean(),
-  soc2typei: z.boolean(),
-  soc2typeii: z.boolean(),
+  soc2type1: z.boolean(),
+  soc2type2: z.boolean(),
   iso27001: z.boolean(),
   gdpr: z.boolean(),
   hipaa: z.boolean(),
   pcidss: z.boolean(),
   soc2Status: z.enum(['started', 'in_progress', 'compliant']),
-  soc2typeiStatus: z.enum(['started', 'in_progress', 'compliant']),
-  soc2typeiiStatus: z.enum(['started', 'in_progress', 'compliant']),
+  soc2type1Status: z.enum(['started', 'in_progress', 'compliant']),
+  soc2type2Status: z.enum(['started', 'in_progress', 'compliant']),
   iso27001Status: z.enum(['started', 'in_progress', 'compliant']),
   gdprStatus: z.enum(['started', 'in_progress', 'compliant']),
   hipaaStatus: z.enum(['started', 'in_progress', 'compliant']),
@@ -47,15 +47,15 @@ export function TrustPortalSwitch({
   contactEmail,
   orgId,
   soc2,
-  soc2typei,
-  soc2typeii,
+  soc2type1,
+  soc2type2,
   iso27001,
   gdpr,
   hipaa,
   pcidss,
   soc2Status,
-  soc2typeiStatus,
-  soc2typeiiStatus,
+  soc2type1Status,
+  soc2type2Status,
   iso27001Status,
   gdprStatus,
   hipaaStatus,
@@ -69,15 +69,15 @@ export function TrustPortalSwitch({
   contactEmail: string | null;
   orgId: string;
   soc2: boolean;
-  soc2typei: boolean;
-  soc2typeii: boolean;
+  soc2type1: boolean;
+  soc2type2: boolean;
   iso27001: boolean;
   gdpr: boolean;
   hipaa: boolean;
   pcidss: boolean;
   soc2Status: 'started' | 'in_progress' | 'compliant';
-  soc2typeiStatus: 'started' | 'in_progress' | 'compliant';
-  soc2typeiiStatus: 'started' | 'in_progress' | 'compliant';
+  soc2type1Status: 'started' | 'in_progress' | 'compliant';
+  soc2type2Status: 'started' | 'in_progress' | 'compliant';
   iso27001Status: 'started' | 'in_progress' | 'compliant';
   gdprStatus: 'started' | 'in_progress' | 'compliant';
   hipaaStatus: 'started' | 'in_progress' | 'compliant';
@@ -101,15 +101,15 @@ export function TrustPortalSwitch({
       enabled: enabled,
       contactEmail: contactEmail ?? undefined,
       soc2: soc2 ?? false,
-      soc2typei: soc2typei ?? false,
-      soc2typeii: soc2typeii ?? false,
+      soc2type1: soc2type1 ?? false,
+      soc2type2: soc2type2 ?? false,
       iso27001: iso27001 ?? false,
       gdpr: gdpr ?? false,
       hipaa: hipaa ?? false,
       pcidss: pcidss ?? false,
       soc2Status: soc2Status ?? 'started',
-      soc2typeiStatus: soc2typeiStatus ?? 'started',
-      soc2typeiiStatus: soc2typeiiStatus ?? 'started',
+      soc2type1Status: soc2type1Status ?? 'started',
+      soc2type2Status: soc2type2Status ?? 'started',
       iso27001Status: iso27001Status ?? 'started',
       gdprStatus: gdprStatus ?? 'started',
       hipaaStatus: hipaaStatus ?? 'started',
@@ -458,13 +458,13 @@ export function TrustPortalSwitch({
                     <ComplianceFramework
                       title="SOC 2 TYPE I"
                       description="A compliance framework focused on data security, availability, and confidentiality."
-                      isEnabled={soc2typei}
-                      status={soc2typeiStatus}
+                      isEnabled={soc2type1}
+                      status={soc2type1Status}
                       onStatusChange={async (value) => {
                         try {
                           await updateTrustPortalFrameworks({
                             orgId,
-                            soc2typeiStatus: value as 'started' | 'in_progress' | 'compliant',
+                            soc2type1Status: value as 'started' | 'in_progress' | 'compliant',
                           });
                           toast.success('SOC 2 TYPE I status updated');
                         } catch (error) {
@@ -475,7 +475,7 @@ export function TrustPortalSwitch({
                         try {
                           await updateTrustPortalFrameworks({
                             orgId,
-                            soc2typei: checked,
+                            soc2type1: checked,
                           });
                           toast.success('SOC 2 TYPE I status updated');
                         } catch (error) {
@@ -487,13 +487,13 @@ export function TrustPortalSwitch({
                     <ComplianceFramework
                       title="SOC 2 TYPE II"
                       description="A compliance framework focused on data security, availability, and confidentiality."
-                      isEnabled={soc2typeii}
-                      status={soc2typeiiStatus}
+                      isEnabled={soc2type2}
+                      status={soc2type2Status}
                       onStatusChange={async (value) => {
                         try {
                           await updateTrustPortalFrameworks({
                             orgId,
-                            soc2typeiiStatus: value as 'started' | 'in_progress' | 'compliant',
+                            soc2type2Status: value as 'started' | 'in_progress' | 'compliant',
                           });
                           toast.success('SOC 2 TYPE II status updated');
                         } catch (error) {
@@ -504,7 +504,7 @@ export function TrustPortalSwitch({
                         try {
                           await updateTrustPortalFrameworks({
                             orgId,
-                            soc2typeii: checked,
+                            soc2type2: checked,
                           });
                           toast.success('SOC 2 TYPE II status updated');
                         } catch (error) {
