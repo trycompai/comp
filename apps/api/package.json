@@ -72,6 +72,7 @@
     "build:docker": "prisma generate && nest build",
     "db:generate": "bun run db:getschema && prisma generate",
     "db:getschema": "node ../../packages/db/scripts/combine-schemas.js && cp ../../packages/db/dist/schema.prisma prisma/schema.prisma",
+    "db:migrate": "cd ../../packages/db && bunx prisma migrate dev && cd ../../apps/api",
     "dev": "nest start --watch",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",

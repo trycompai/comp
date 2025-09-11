@@ -10,6 +10,7 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 // updateTaskOrder is called directly within the StatusGroup component now.
 
 import { updateTaskAction } from '@/actions/risk/task/update-task-action';
+import { CreateTaskSheet } from './CreateTaskSheet';
 import { StatusGroup } from './StatusGroup';
 import type { DragItem, StatusId } from './TaskCard';
 import { TaskFilterHeader } from './TaskFilterHeader';
@@ -32,9 +33,11 @@ const statusIdParser = parseAsStringLiteral<StatusId>(['in_progress', 'todo', 'd
 export function TaskList({
   tasks: initialTasks,
   members,
+  controls,
 }: {
   tasks: Task[];
   members: (Member & { user: User })[];
+  controls: { id: string; name: string }[];
 }) {
   // Hook to execute the server action for updating a task's status.
   const { execute: updateTaskExecute, status: updateTaskStatus } = useAction(updateTaskAction, {});
@@ -122,6 +125,9 @@ export function TaskList({
           ))}
         </div>
       </DndProvider>
+
+      {/* Create Task Sheet */}
+      <CreateTaskSheet members={members} controls={controls} />
     </div>
   );
 }
