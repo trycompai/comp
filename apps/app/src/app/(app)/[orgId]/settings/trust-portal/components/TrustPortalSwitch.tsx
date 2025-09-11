@@ -17,17 +17,21 @@ import { z } from 'zod';
 import { isFriendlyAvailable } from '../actions/is-friendly-available';
 import { trustPortalSwitchAction } from '../actions/trust-portal-switch';
 import { updateTrustPortalFrameworks } from '../actions/update-trust-portal-frameworks';
-import { GDPR, HIPAA, ISO27001, SOC2 } from './logos';
+import { GDPR, HIPAA, ISO27001, SOC2, SOC2Type1, SOC2Type2 } from './logos';
 
 const trustPortalSwitchSchema = z.object({
   enabled: z.boolean(),
   contactEmail: z.string().email().or(z.literal('')).optional(),
   friendlyUrl: z.string().optional(),
   soc2: z.boolean(),
+  soc2typei: z.boolean(),
+  soc2typeii: z.boolean(),
   iso27001: z.boolean(),
   gdpr: z.boolean(),
   hipaa: z.boolean(),
   soc2Status: z.enum(['started', 'in_progress', 'compliant']),
+  soc2typeiStatus: z.enum(['started', 'in_progress', 'compliant']),
+  soc2typeiiStatus: z.enum(['started', 'in_progress', 'compliant']),
   iso27001Status: z.enum(['started', 'in_progress', 'compliant']),
   gdprStatus: z.enum(['started', 'in_progress', 'compliant']),
   hipaaStatus: z.enum(['started', 'in_progress', 'compliant']),
@@ -41,10 +45,14 @@ export function TrustPortalSwitch({
   contactEmail,
   orgId,
   soc2,
+  soc2typei,
+  soc2typeii,
   iso27001,
   gdpr,
   hipaa,
   soc2Status,
+  soc2typeiStatus,
+  soc2typeiiStatus,
   iso27001Status,
   gdprStatus,
   hipaaStatus,
@@ -57,10 +65,14 @@ export function TrustPortalSwitch({
   contactEmail: string | null;
   orgId: string;
   soc2: boolean;
+  soc2typei: boolean;
+  soc2typeii: boolean;
   iso27001: boolean;
   gdpr: boolean;
   hipaa: boolean;
   soc2Status: 'started' | 'in_progress' | 'compliant';
+  soc2typeiStatus: 'started' | 'in_progress' | 'compliant';
+  soc2typeiiStatus: 'started' | 'in_progress' | 'compliant';
   iso27001Status: 'started' | 'in_progress' | 'compliant';
   gdprStatus: 'started' | 'in_progress' | 'compliant';
   hipaaStatus: 'started' | 'in_progress' | 'compliant';
@@ -83,10 +95,14 @@ export function TrustPortalSwitch({
       enabled: enabled,
       contactEmail: contactEmail ?? undefined,
       soc2: soc2 ?? false,
+      soc2typei: soc2typei ?? false,
+      soc2typeii: soc2typeii ?? false,
       iso27001: iso27001 ?? false,
       gdpr: gdpr ?? false,
       hipaa: hipaa ?? false,
       soc2Status: soc2Status ?? 'started',
+      soc2typeiStatus: soc2typeiStatus ?? 'started',
+      soc2typeiiStatus: soc2typeiiStatus ?? 'started',
       iso27001Status: iso27001Status ?? 'started',
       gdprStatus: gdprStatus ?? 'started',
       hipaaStatus: hipaaStatus ?? 'started',
@@ -430,6 +446,64 @@ export function TrustPortalSwitch({
                         }
                       }}
                     />
+                    {/* SOC 2 TYPE I*/}
+                    <ComplianceFramework
+                      title="SOC 2 TYPE I"
+                      description="A compliance framework focused on data security, availability, and confidentiality."
+                      isEnabled={soc2typei}
+                      status={soc2typeiStatus}
+                      onStatusChange={async (value) => {
+                        try {
+                          await updateTrustPortalFrameworks({
+                            orgId,
+                            soc2typeiStatus: value as 'started' | 'in_progress' | 'compliant',
+                          });
+                          toast.success('SOC 2 TYPE I status updated');
+                        } catch (error) {
+                          toast.error('Failed to update SOC 2 TYPE I status');
+                        }
+                      }}
+                      onToggle={async (checked) => {
+                        try {
+                          await updateTrustPortalFrameworks({
+                            orgId,
+                            soc2typei: checked,
+                          });
+                          toast.success('SOC 2 TYPE I status updated');
+                        } catch (error) {
+                          toast.error('Failed to update SOC 2 TYPE I status');
+                        }
+                      }}
+                    />
+                    {/* SOC 2 TYPE II*/}
+                    <ComplianceFramework
+                      title="SOC 2 TYPE II"
+                      description="A compliance framework focused on data security, availability, and confidentiality."
+                      isEnabled={soc2typeii}
+                      status={soc2typeiiStatus}
+                      onStatusChange={async (value) => {
+                        try {
+                          await updateTrustPortalFrameworks({
+                            orgId,
+                            soc2typeiiStatus: value as 'started' | 'in_progress' | 'compliant',
+                          });
+                          toast.success('SOC 2 TYPE II status updated');
+                        } catch (error) {
+                          toast.error('Failed to update SOC 2 TYPE II status');
+                        }
+                      }}
+                      onToggle={async (checked) => {
+                        try {
+                          await updateTrustPortalFrameworks({
+                            orgId,
+                            soc2typeii: checked,
+                          });
+                          toast.success('SOC 2 TYPE II status updated');
+                        } catch (error) {
+                          toast.error('Failed to update SOC 2 TYPE II status');
+                        }
+                      }}
+                    />
                   </div>
                 </div>
               </div>
@@ -473,6 +547,14 @@ function ComplianceFramework({
     ) : title === 'HIPAA' ? (
       <div className="h-16 w-16 flex items-center justify-center">
         <HIPAA className="max-h-full max-w-full" />
+      </div>
+    ) : title === 'SOC 2 TYPE I' ? (
+      <div className="h-16 w-16 flex items-center justify-center">
+        <SOC2Type1 className="max-h-full max-w-full" />
+      </div>
+    ) : title === 'SOC 2 TYPE II' ? (
+      <div className="h-16 w-16 flex items-center justify-center">
+        <SOC2Type2 className="max-h-full max-w-full" />
       </div>
     ) : null;
 

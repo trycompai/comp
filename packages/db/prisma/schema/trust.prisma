@@ -12,14 +12,18 @@ model Trust {
     email         String?
     privacyPolicy String?
     soc2          Boolean @default(false)
+    soc2typei     Boolean @default(false)
+    soc2typeii    Boolean @default(false)
     iso27001      Boolean @default(false)
     gdpr          Boolean @default(false)
     hipaa         Boolean @default(false)
 
-    soc2_status     FrameworkStatus @default(started)
-    iso27001_status FrameworkStatus @default(started)
-    gdpr_status     FrameworkStatus @default(started)
-    hipaa_status    FrameworkStatus @default(started)
+    soc2_status        FrameworkStatus @default(started)
+    soc2typei_status   FrameworkStatus @default(started)
+    soc2typeii_status  FrameworkStatus @default(started)
+    iso27001_status    FrameworkStatus @default(started)
+    gdpr_status        FrameworkStatus @default(started)
+    hipaa_status       FrameworkStatus @default(started)
 
     @@id([status, organizationId])
     @@unique([organizationId])
