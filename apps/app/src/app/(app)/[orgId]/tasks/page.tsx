@@ -29,10 +29,11 @@ export default async function TasksPage({
 
   const tasks = await getTasks(statusFilter);
   const members = await getMembersWithMetadata();
+  const controls = await getControls();
 
   return (
     <PageWithBreadcrumb breadcrumbs={[{ label: 'Tasks', href: `/${orgId}/tasks` }]}>
-      <TaskList tasks={tasks} members={members} />
+      <TaskList tasks={tasks} members={members} controls={controls} />
     </PageWithBreadcrumb>
   );
 }
@@ -89,4 +90,31 @@ const getMembersWithMetadata = async () => {
   });
 
   return members;
+};
+
+const getControls = async () => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  const orgId = session?.session.activeOrganizationId;
+
+  if (!orgId) {
+    return [];
+  }
+
+  const controls = await db.control.findMany({
+    where: {
+      organizationId: orgId,
+    },
+    select: {
+      id: true,
+      name: true,
+    },
+    orderBy: {
+      name: 'asc',
+    },
+  });
+
+  return controls;
 };
