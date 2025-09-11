@@ -3,6 +3,7 @@
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
 import { StatusIndicator } from '@/components/status-indicator';
 import { formatDate } from '@/lib/format';
+import { Badge } from '@comp/ui/badge';
 import { Policy } from '@db';
 import { ColumnDef } from '@tanstack/react-table';
 import { ExternalLink } from 'lucide-react';
@@ -52,6 +53,23 @@ export function getPolicyColumns(orgId: string): ColumnDef<Policy>[] {
         placeholder: 'Search status...',
         variant: 'select',
       },
+    },
+    {
+      id: 'department',
+      accessorKey: 'department',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Department" />,
+      cell: ({ row }) => {
+        return (
+          <Badge variant="marketing" className="w-fit uppercase">
+            {row.original.department}
+          </Badge>
+        );
+      },
+      meta: {
+        label: 'Department',
+      },
+      enableColumnFilter: true,
+      enableSorting: true,
     },
     {
       id: 'updatedAt',

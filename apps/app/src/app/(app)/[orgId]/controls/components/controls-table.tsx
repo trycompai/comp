@@ -8,12 +8,22 @@ import { useDataTable } from '@/hooks/use-data-table';
 import { useParams } from 'next/navigation';
 import { ControlWithRelations } from '../data/queries';
 import { getControlColumns } from './controls-table-columns';
+import { CreateControlSheet } from './CreateControlSheet';
 
 interface ControlsTableProps {
   promises: Promise<[{ data: ControlWithRelations[]; pageCount: number }]>;
+  policies: { id: string; name: string }[];
+  tasks: { id: string; title: string }[];
+  requirements: {
+    id: string;
+    name: string;
+    identifier: string;
+    frameworkInstanceId: string;
+    frameworkName: string;
+  }[];
 }
 
-export function ControlsTable({ promises }: ControlsTableProps) {
+export function ControlsTable({ promises, policies, tasks, requirements }: ControlsTableProps) {
   const [{ data, pageCount }] = React.use(promises);
   const { orgId } = useParams();
   const columns = React.useMemo(() => getControlColumns(), []);
@@ -35,8 +45,9 @@ export function ControlsTable({ promises }: ControlsTableProps) {
   return (
     <>
       <DataTable table={table} getRowId={(row) => row.id} rowClickBasePath={`/${orgId}/controls`}>
-        <DataTableToolbar table={table} />
+        <DataTableToolbar table={table} sheet="create-control" action="Create Control" />
       </DataTable>
+      <CreateControlSheet policies={policies} tasks={tasks} requirements={requirements} />
     </>
   );
 }
