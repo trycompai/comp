@@ -126,4 +126,35 @@ export class MemberQueries {
       where: { id: memberId },
     });
   }
+
+  /**
+   * Bulk create members for an organization
+   */
+  static async bulkCreateMembers(organizationId: string, memberData: CreatePeopleDto[]): Promise<PeopleResponseDto[]> {
+    // Prepare data for createMany
+    const data = memberData.map(member => ({
+      organizationId,
+      userId: member.userId,
+      role: member.role,
+      department: member.department || 'none',
+      isActive: member.isActive ?? true,
+      fleetDmLabelId: member.fleetDmLabelId || null,
+    }));
+
+    // Perform bulk insert
+    await db.member.createMany({
+      data,
+      skipDuplicates: true, // Prevents error if userId is already a member
+    });
+
+    // Fetch the created members for response (by userId, since ids are generated)
+    return db.member.findMany({
+      where: {
+        organizationId,
+        userId: { in: memberData.map(m => m.userId) },
+      },
+      select: this.MEMBER_SELECT,
+      orderBy: { createdAt: 'desc' },
+    });
+  }
 }

@@ -77,23 +77,32 @@ export class PeopleService {
       const errors: Array<{ index: number; userId: string; error: string }> = [];
 
       // Process each member in the bulk request
+      // Validate all users and membership status first, collecting errors
+      const validMembers: CreatePeopleDto[] = [];
       for (let i = 0; i < bulkCreateData.members.length; i++) {
         const memberData = bulkCreateData.members[i];
         try {
           await MemberValidator.validateUser(memberData.userId);
           await MemberValidator.validateUserNotMember(memberData.userId, organizationId);
-
-          const member = await MemberQueries.createMember(organizationId, memberData);
-          created.push(member);
-          this.logger.log(`Created member: ${member.user.name} (${member.id}) for organization ${organizationId}`);
+          validMembers.push(memberData);
         } catch (error) {
           errors.push({
             index: i,
             userId: memberData.userId,
             error: error.message || 'Unknown error occurred',
           });
-          this.logger.error(`Failed to create member at index ${i} (userId: ${memberData.userId}):`, error);
+          this.logger.error(`Failed to validate member at index ${i} (userId: ${memberData.userId}):`, error);
         }
+      }
+
+      // Bulk insert valid members using createMany
+      if (validMembers.length > 0) {
+        const createdMembers = await MemberQueries.bulkCreateMembers(organizationId, validMembers);
+
+        created.push(...createdMembers);
+        createdMembers.forEach(member => {
+          this.logger.log(`Created member: ${member.user.name} (${member.id}) for organization ${organizationId}`);
+        });
       }
 
       const summary = {

@@ -25,7 +25,7 @@ export class BulkCreatePeopleDto {
   })
   @IsArray()
   @ArrayMinSize(1, { message: 'Members array cannot be empty' })
-  @ArrayMaxSize(100, { message: 'Maximum 100 members allowed per bulk request' })
+  @ArrayMaxSize(1000, { message: 'Maximum 1000 members allowed per bulk request' })
   @ValidateNested({ each: true })
   @Type(() => CreatePeopleDto)
   members: CreatePeopleDto[];
