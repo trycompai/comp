@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
 import type { Control, Departments, Member, Task, TaskFrequency, TaskStatus, User } from '@db';
-import { MoreVertical, Trash2 } from 'lucide-react';
+import { MoreVertical, RefreshCw, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { TaskStatusIndicator } from '../../components/TaskStatusIndicator';
@@ -23,6 +23,7 @@ interface TaskPropertiesSidebarProps {
     data: Partial<Pick<Task, 'status' | 'assigneeId' | 'frequency' | 'department'>>,
   ) => void;
   onDeleteClick?: () => void;
+  onRegenerateClick?: () => void;
   orgId: string;
 }
 
@@ -32,6 +33,7 @@ export function TaskPropertiesSidebar({
   assignedMember,
   handleUpdateTask,
   onDeleteClick,
+  onRegenerateClick,
   orgId,
 }: TaskPropertiesSidebarProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -48,6 +50,15 @@ export function TaskPropertiesSidebar({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onClick={() => {
+                setDropdownOpen(false);
+                if (onRegenerateClick) onRegenerateClick();
+              }}
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Regenerate
+            </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => {
                 setDropdownOpen(false);
