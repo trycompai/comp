@@ -56,4 +56,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
           HUSKY: 0 # Skip husky hooks in CI
-        run: bunx semantic-release
+        run: bun run semantic-release
