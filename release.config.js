@@ -3,16 +3,6 @@ module.exports = {
   plugins: [
     '@semantic-release/commit-analyzer',
     '@semantic-release/release-notes-generator',
-    [
-      'semantic-release-discord-notifier',
-      {
-        embedJson: {
-          title: 'New Release of Comp AI: ${nextRelease.version}',
-          description: '${nextRelease.notes}',
-          color: 5814783,
-        },
-      },
-    ],
     '@semantic-release/changelog',
     [
       '@semantic-release/git',
