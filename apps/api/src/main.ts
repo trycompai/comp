@@ -36,7 +36,6 @@ async function bootstrap(): Promise<void> {
 
   // Get server configuration from environment variables
   const port = process.env.PORT ?? 3333;
-  const baseUrl = process.env.BASE_URL ?? `http://localhost:${port}`;
 
   // Swagger/OpenAPI configuration
   const config = new DocumentBuilder()
@@ -52,7 +51,7 @@ async function bootstrap(): Promise<void> {
       },
       'apikey',
     )
-    .addServer(baseUrl, 'API Server')
+    .addServer('https://api.trycomp.ai', 'API Server')
     .build();
   const document: OpenAPIObject = SwaggerModule.createDocument(app, config);
 

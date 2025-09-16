@@ -6272,7 +6272,7 @@
   "tags": [],
   "servers": [
     {
-      "url": "http://localhost:3333",
+      "url": "https://api.trycomp.ai",
       "description": "API Server"
     }
   ],
