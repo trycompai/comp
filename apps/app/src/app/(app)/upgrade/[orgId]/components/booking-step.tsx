@@ -1,9 +1,12 @@
 'use client';
 
+import { useState } from 'react';
+import { ArrowRight, Check, Copy } from 'lucide-react';
+import { toast } from 'sonner';
+import Link from 'next/link';
 import { Button } from '@comp/ui/button';
 import { Card } from '@comp/ui/card';
-import { ArrowRight } from 'lucide-react';
-import Link from 'next/link';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 
 export function BookingStep({
   email,
@@ -20,6 +23,8 @@ export function BookingStep({
   complianceFrameworks: string[];
   hasAccess: boolean;
 }) {
+  const [isCopied, setIsCopied] = useState(false);
+
   const title = !hasAccess ? `Let's get ${company} approved` : 'Talk to us to upgrade';
 
   const description = !hasAccess
@@ -27,6 +32,23 @@ export function BookingStep({
     : `A quick 20-minute call with our team to understand your compliance needs and upgrade your plan.`;
 
   const cta = !hasAccess ? 'Book Your Demo' : 'Book a Call';
+
+  const handleCopyOrgId = async () => {
+    if (isCopied) return;
+    
+    try {
+      await navigator.clipboard.writeText(orgId);
+      setIsCopied(true);
+      toast.success('Org ID copied to clipboard');
+      
+      // Reset after 3 seconds
+      setTimeout(() => {
+        setIsCopied(false);
+      }, 3000);
+    } catch (error) {
+      toast.error('Failed to copy Org ID');
+    }
+  };
 
   return (
     <div className="flex justify-center w-full animate-in fade-in-50 duration-500">
@@ -36,6 +58,36 @@ export function BookingStep({
           <div className="text-center space-y-3 mb-6">
             <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
             <p className="text-muted-foreground text-base max-w-xl mx-auto">{description}</p>
+          </div>
+
+          {/* Org ID Display with Copy Button */}
+          <div className="flex items-center justify-center mb-4">
+            <span className="text-xs font-mono px-3 rounded-sm border bg-background border-input text-foreground select-all flex items-center h-9 border-r-0 rounded-tr-none rounded-br-none">
+              Org ID: {orgId}
+            </span>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="outline"
+                    className="text-xs rounded-tl-none rounded-bl-none"
+                    onClick={handleCopyOrgId}
+                    aria-label={isCopied ? "Copied!" : "Copy Org ID"}
+                  >
+                    {isCopied ? (
+                      <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
+                    ) : (
+                      <Copy className="w-4 h-4" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs">{isCopied ? "Copied!" : "Copy Org ID"}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
 
           {/* CTA Button */}
