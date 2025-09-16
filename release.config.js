@@ -15,55 +15,6 @@ module.exports = {
     ],
     '@semantic-release/changelog',
     [
-      '@semantic-release/npm',
-      {
-        npmPublish: false, // Root package stays private
-      },
-    ],
-    // Publish each package individually
-    [
-      '@semantic-release/npm',
-      {
-        npmPublish: true,
-        pkgRoot: 'packages/db',
-      },
-    ],
-    [
-      '@semantic-release/npm',
-      {
-        npmPublish: true,
-        pkgRoot: 'packages/email',
-      },
-    ],
-    [
-      '@semantic-release/npm',
-      {
-        npmPublish: true,
-        pkgRoot: 'packages/kv',
-      },
-    ],
-    [
-      '@semantic-release/npm',
-      {
-        npmPublish: true,
-        pkgRoot: 'packages/ui',
-      },
-    ],
-    [
-      '@semantic-release/npm',
-      {
-        npmPublish: true,
-        pkgRoot: 'packages/analytics',
-      },
-    ],
-    [
-      '@semantic-release/npm',
-      {
-        npmPublish: true,
-        pkgRoot: 'packages/tsconfig',
-      },
-    ],
-    [
       '@semantic-release/git',
       {
         assets: ['package.json', 'bun.lockb', 'CHANGELOG.md', 'packages/*/package.json'],

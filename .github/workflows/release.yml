@@ -51,19 +51,9 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile # Use --frozen-lockfile in CI
 
-      - name: Build packages
-        run: |
-          echo "🔨 Building packages before release..."
-          bun run -F @trycompai/db build
-          bun run -F @trycompai/email build
-          bun run -F @trycompai/kv build
-          bun run -F @trycompai/ui build
-          bun run -F @trycompai/analytics build
-
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }} # Enable npm publishing
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
           HUSKY: 0 # Skip husky hooks in CI
         run: npx semantic-release
