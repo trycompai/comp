@@ -66,7 +66,12 @@ const getMembers = async (orgId: string, session: Session) => {
   }
 
   const members = await db.member.findMany({
-    where: { organizationId: activeOrgId },
+    where: {
+      organizationId: activeOrgId,
+      role: {
+        notIn: ['employee'],
+      },
+    },
     include: { user: true },
   });
   return members;
