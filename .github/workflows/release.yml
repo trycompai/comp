@@ -39,16 +39,37 @@ jobs:
 
       - name: Get version after release
         id: version_after
-        if: success()
+        if: ${{ success() }}
         run: echo "version=$(git describe --tags --abbrev=0 2>/dev/null || echo '')" >> $GITHUB_OUTPUT
 
+      - name: Get release notes
+        id: get_notes
+        if: ${{ success() && steps.version_after.outputs.version && steps.version_before.outputs.version != steps.version_after.outputs.version }}
+        run: |
+          NOTES=$(gh release view ${{ steps.version_after.outputs.version }} --json body -q .body | head -c 3900)
+          # Escape for JSON and handle multiline
+          NOTES=$(echo "$NOTES" | jq -Rs . | sed 's/^"//;s/"$//')
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Send Discord notification
-        if: success() && steps.version_after.outputs.version && steps.version_before.outputs.version != steps.version_after.outputs.version
+        if: ${{ success() && steps.version_after.outputs.version && steps.version_before.outputs.version != steps.version_after.outputs.version }}
         continue-on-error: true
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
           VERSION: ${{ steps.version_after.outputs.version }}
+          NOTES: ${{ steps.get_notes.outputs.notes }}
         run: |
           curl -X POST -H "Content-Type: application/json" \
-            -d "{\"embeds\":[{\"title\":\"New Release of Comp AI: ${VERSION}\",\"description\":\"A new version has been released!\",\"color\":5814783,\"fields\":[{\"name\":\"Version\",\"value\":\"${VERSION}\",\"inline\":true},{\"name\":\"View Release\",\"value\":\"[GitHub Release](https://github.com/trycompai/comp/releases/tag/${VERSION})\",\"inline\":true}]}]}" \
-            "$DISCORD_WEBHOOK" || true
+            -d @- "$DISCORD_WEBHOOK" <<EOF
+          {
+            "embeds": [{
+              "title": "New Release of Comp AI: ${VERSION}",
+              "description": "${NOTES}",
+              "color": 5814783
+            }]
+          }
+          EOF
