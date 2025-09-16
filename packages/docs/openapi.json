@@ -7687,6 +7687,196 @@
           "authType"
         ]
       },
+      "PolicyResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The policy ID",
+            "example": "pol_abc123def456"
+          },
+          "name": {
+            "type": "string",
+            "description": "Name of the policy",
+            "example": "Data Privacy Policy"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the policy",
+            "example": "This policy outlines how we handle and protect personal data",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "description": "Status of the policy",
+            "enum": [
+              "draft",
+              "published",
+              "needs_review"
+            ],
+            "example": "draft"
+          },
+          "content": {
+            "type": "array",
+            "description": "Content of the policy as TipTap JSON (array of nodes)",
+            "example": [
+              {
+                "type": "heading",
+                "attrs": {
+                  "level": 2,
+                  "textAlign": null
+                },
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Purpose"
+                  }
+                ]
+              },
+              {
+                "type": "paragraph",
+                "attrs": {
+                  "textAlign": null
+                },
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Verify workforce integrity and grant the right access at start, revoke at end."
+                  }
+                ]
+              }
+            ],
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "frequency": {
+            "type": "string",
+            "description": "Review frequency of the policy",
+            "enum": [
+              "monthly",
+              "quarterly",
+              "yearly"
+            ],
+            "example": "yearly",
+            "nullable": true
+          },
+          "department": {
+            "type": "string",
+            "description": "Department this policy applies to",
+            "enum": [
+              "none",
+              "admin",
+              "gov",
+              "hr",
+              "it",
+              "itsm",
+              "qms"
+            ],
+            "example": "it",
+            "nullable": true
+          },
+          "isRequiredToSign": {
+            "type": "boolean",
+            "description": "Whether this policy requires a signature",
+            "example": true
+          },
+          "signedBy": {
+            "type": "array",
+            "description": "List of user IDs who have signed this policy",
+            "example": [
+              "usr_123",
+              "usr_456"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "reviewDate": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Review date for the policy",
+            "example": "2024-12-31T00:00:00.000Z",
+            "nullable": true
+          },
+          "isArchived": {
+            "type": "boolean",
+            "description": "Whether this policy is archived",
+            "example": false
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "When the policy was created",
+            "example": "2024-01-01T00:00:00.000Z"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "When the policy was last updated",
+            "example": "2024-01-15T00:00:00.000Z"
+          },
+          "lastArchivedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "When the policy was last archived",
+            "example": "2024-02-01T00:00:00.000Z",
+            "nullable": true
+          },
+          "lastPublishedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "When the policy was last published",
+            "example": "2024-01-10T00:00:00.000Z",
+            "nullable": true
+          },
+          "organizationId": {
+            "type": "string",
+            "description": "Organization ID this policy belongs to",
+            "example": "org_abc123def456"
+          },
+          "assigneeId": {
+            "type": "string",
+            "description": "ID of the user assigned to this policy",
+            "example": "usr_abc123def456",
+            "nullable": true
+          },
+          "approverId": {
+            "type": "string",
+            "description": "ID of the user who approved this policy",
+            "example": "usr_xyz789abc123",
+            "nullable": true
+          },
+          "policyTemplateId": {
+            "type": "string",
+            "description": "ID of the policy template this policy is based on",
+            "example": "plt_template123",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "status",
+          "content",
+          "frequency",
+          "department",
+          "isRequiredToSign",
+          "signedBy",
+          "reviewDate",
+          "isArchived",
+          "createdAt",
+          "updatedAt",
+          "lastArchivedAt",
+          "lastPublishedAt",
+          "organizationId",
+          "assigneeId",
+          "approverId",
+          "policyTemplateId"
+        ]
+      },
       "CreatePolicyDto": {
         "type": "object",
         "properties": {
@@ -7935,6 +8125,100 @@
             "example": false
           }
         }
+      },
+      "TaskResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the task",
+            "example": "tsk_abc123def456"
+          },
+          "title": {
+            "type": "string",
+            "description": "Task title",
+            "example": "Implement user authentication"
+          },
+          "description": {
+            "type": "string",
+            "description": "Task description",
+            "example": "Add OAuth 2.0 authentication to the platform"
+          },
+          "status": {
+            "type": "string",
+            "description": "Task status",
+            "example": "in_progress",
+            "enum": [
+              "todo",
+              "in_progress",
+              "done",
+              "blocked"
+            ]
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Task creation timestamp",
+            "example": "2024-01-15T10:30:00Z"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Task last update timestamp",
+            "example": "2024-01-15T10:30:00Z"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "AttachmentResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the attachment",
+            "example": "att_abc123def456"
+          },
+          "name": {
+            "type": "string",
+            "description": "Original filename",
+            "example": "document.pdf"
+          },
+          "type": {
+            "type": "string",
+            "description": "File type/MIME type",
+            "example": "application/pdf"
+          },
+          "size": {
+            "type": "number",
+            "description": "File size in bytes",
+            "example": 1024000
+          },
+          "downloadUrl": {
+            "type": "string",
+            "description": "Signed URL for downloading the file (temporary)",
+            "example": "https://bucket.s3.amazonaws.com/path/to/file.pdf?signature=..."
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Upload timestamp",
+            "example": "2024-01-15T10:30:00Z"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "type",
+          "size",
+          "downloadUrl",
+          "createdAt"
+        ]
       },
       "UploadAttachmentDto": {
         "type": "object",
