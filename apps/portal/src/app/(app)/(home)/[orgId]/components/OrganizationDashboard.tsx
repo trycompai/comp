@@ -28,6 +28,7 @@ export async function OrganizationDashboard({
     where: {
       organizationId: organizationId,
       isRequiredToSign: true, // Keep original logic for required policies
+      status: 'published',
     },
   });
 
