@@ -27,23 +27,27 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Get version before release
+        id: version_before
+        run: echo "version=$(git describe --tags --abbrev=0 2>/dev/null || echo '')" >> $GITHUB_OUTPUT
+
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
           HUSKY: 0
         run: bun run semantic-release
 
-      - name: Get latest version
-        id: get_version
+      - name: Get version after release
+        id: version_after
         if: success()
         run: echo "version=$(git describe --tags --abbrev=0 2>/dev/null || echo '')" >> $GITHUB_OUTPUT
 
       - name: Send Discord notification
-        if: success() && steps.get_version.outputs.version
+        if: success() && steps.version_after.outputs.version && steps.version_before.outputs.version != steps.version_after.outputs.version
         continue-on-error: true
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-          VERSION: ${{ steps.get_version.outputs.version }}
+          VERSION: ${{ steps.version_after.outputs.version }}
         run: |
           curl -X POST -H "Content-Type: application/json" \
             -d "{\"embeds\":[{\"title\":\"New Release of Comp AI: ${VERSION}\",\"description\":\"A new version has been released!\",\"color\":5814783,\"fields\":[{\"name\":\"Version\",\"value\":\"${VERSION}\",\"inline\":true},{\"name\":\"View Release\",\"value\":\"[GitHub Release](https://github.com/trycompai/comp/releases/tag/${VERSION})\",\"inline\":true}]}]}" \
