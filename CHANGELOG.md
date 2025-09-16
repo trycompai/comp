@@ -1,3 +1,10 @@
+## [1.51.1](https://github.com/trycompai/comp/compare/v1.51.0...v1.51.1) (2025-09-16)
+
+
+### Bug Fixes
+
+* **portal:** show only published policies on portal ([#1520](https://github.com/trycompai/comp/issues/1520)) ([ceb99d7](https://github.com/trycompai/comp/commit/ceb99d786644bc86ed8968a71502e25a35ffca1f))
+
 # [1.51.0](https://github.com/trycompai/comp/compare/v1.50.0...v1.51.0) (2025-09-16)
 
 
