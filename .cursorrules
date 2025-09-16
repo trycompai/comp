@@ -1,0 +1,40 @@
+# Commit Message Rules
+
+When generating commit messages, ALWAYS follow the Conventional Commits specification:
+
+## Format
+
+`<type>(<scope>): <description>`
+
+## Types (use exactly these):
+
+- feat: A new feature
+- fix: A bug fix
+- docs: Documentation only changes
+- style: Changes that do not affect the meaning of the code (formatting, missing semi-colons, etc)
+- refactor: A code change that neither fixes a bug nor adds a feature
+- perf: A code change that improves performance
+- test: Adding missing tests or correcting existing tests
+- build: Changes that affect the build system or external dependencies
+- ci: Changes to CI configuration files and scripts
+- chore: Other changes that don't modify src or test files
+- revert: Reverts a previous commit
+
+## Rules:
+
+1. Use lowercase for type
+2. Scope is optional but recommended (e.g., auth, api, ui, db)
+3. Description must be in imperative mood ("add" not "added" or "adds")
+4. Description must start with lowercase
+5. No period at the end of the description
+6. Keep the first line under 72 characters
+
+## Examples:
+
+- ✅ feat(auth): add social login with Google OAuth
+- ✅ fix(api): resolve race condition in user update endpoint
+- ✅ chore: update dependencies to latest versions
+- ✅ docs(readme): add installation instructions for Windows
+- ❌ Added new feature (missing type)
+- ❌ feat: Added login (wrong tense, capitalized)
+- ❌ fix(api): fixes bug. (wrong tense, has period)
