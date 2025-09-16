@@ -1,15 +1,14 @@
 name: Release
 
 on:
-  push: # Runs AFTER merge to release branch
+  push:
     branches:
       - release
 
 permissions:
-  contents: write # Allow check out and commit changes (version, changelog)
-  issues: write # Allow commenting on issues/PRs
-  pull-requests: write # Allow commenting on issues/PRs
-  id-token: write # Needed for provenance
+  contents: write
+  issues: write
+  pull-requests: write
 
 jobs:
   release:
@@ -19,41 +18,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          # Fetch all history so semantic-release can analyze commits
           fetch-depth: 0
-          # Use a token that has permission to push to the repository
-          # Either a PAT stored in GH_TOKEN or the default GITHUB_TOKEN
           token: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20' # Or your preferred Node.js version
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest # Optional: specify a bun version
-
-      - name: Cache dependencies
-        uses: WarpBuilds/cache@v1
-        with:
-          path: |
-            ~/.bun/install/cache
-            node_modules
-            apps/*/node_modules
-            packages/*/node_modules
-          key: ${{ runner.os }}-bun-release-${{ hashFiles('**/bun.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-bun-release-
-            ${{ runner.os }}-bun-
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile # Use --frozen-lockfile in CI
+        run: bun install --frozen-lockfile
 
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-          HUSKY: 0 # Skip husky hooks in CI
+          HUSKY: 0
         run: bun run semantic-release
