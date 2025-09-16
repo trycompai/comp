@@ -41,7 +41,7 @@
     "react-dnd-html5-backend": "^16.0.1",
     "react-email": "^4.0.15",
     "react-hook-form": "^7.61.1",
-    "semantic-release": "^24.2.5",
+    "semantic-release": "^24.2.8",
     "semantic-release-discord": "^1.2.0",
     "semantic-release-discord-notifier": "^1.0.11",
     "sharp": "^0.34.2",
