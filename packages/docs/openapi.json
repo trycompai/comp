@@ -6286,6 +6286,140 @@
       }
     },
     "schemas": {
+      "UserResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "User ID",
+            "example": "usr_abc123def456"
+          },
+          "name": {
+            "type": "string",
+            "description": "User name",
+            "example": "John Doe"
+          },
+          "email": {
+            "type": "string",
+            "description": "User email",
+            "example": "john.doe@company.com"
+          },
+          "emailVerified": {
+            "type": "boolean",
+            "description": "Whether email is verified",
+            "example": true
+          },
+          "image": {
+            "type": "object",
+            "description": "User profile image URL",
+            "example": "https://example.com/avatar.jpg",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "When the user was created",
+            "example": "2024-01-01T00:00:00Z"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "When the user was last updated",
+            "example": "2024-01-15T00:00:00Z"
+          },
+          "lastLogin": {
+            "type": "object",
+            "description": "Last login time",
+            "example": "2024-01-15T12:00:00Z",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "emailVerified",
+          "image",
+          "createdAt",
+          "updatedAt",
+          "lastLogin"
+        ]
+      },
+      "PeopleResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Member ID",
+            "example": "mem_abc123def456"
+          },
+          "organizationId": {
+            "type": "string",
+            "description": "Organization ID this member belongs to",
+            "example": "org_abc123def456"
+          },
+          "userId": {
+            "type": "string",
+            "description": "User ID associated with member",
+            "example": "usr_abc123def456"
+          },
+          "role": {
+            "type": "string",
+            "description": "Member role",
+            "example": "admin"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "When the member was created",
+            "example": "2024-01-01T00:00:00Z"
+          },
+          "department": {
+            "type": "string",
+            "description": "Member department",
+            "enum": [
+              "none",
+              "admin",
+              "gov",
+              "hr",
+              "it",
+              "itsm",
+              "qms"
+            ],
+            "example": "it"
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Whether member is active",
+            "example": true
+          },
+          "fleetDmLabelId": {
+            "type": "object",
+            "description": "FleetDM label ID for member devices",
+            "example": 123,
+            "nullable": true
+          },
+          "user": {
+            "description": "User information",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UserResponseDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "organizationId",
+          "userId",
+          "role",
+          "createdAt",
+          "department",
+          "isActive",
+          "fleetDmLabelId",
+          "user"
+        ]
+      },
       "CreatePeopleDto": {
         "type": "object",
         "properties": {

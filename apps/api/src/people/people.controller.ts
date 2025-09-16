@@ -1,15 +1,16 @@
-import { 
-  Controller, 
-  Get, 
+import {
+  Controller,
+  Get,
   Post,
   Patch,
   Delete,
   Body,
   Param,
-  UseGuards 
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBody,
+  ApiExtraModels,
   ApiHeader,
   ApiOperation,
   ApiParam,
@@ -17,16 +18,13 @@ import {
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
-import {
-  AuthContext,
-  OrganizationId,
-} from '../auth/auth-context.decorator';
+import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import { CreatePeopleDto } from './dto/create-people.dto';
 import { UpdatePeopleDto } from './dto/update-people.dto';
 import { BulkCreatePeopleDto } from './dto/bulk-create-people.dto';
-import { PeopleResponseDto } from './dto/people-responses.dto';
+import { PeopleResponseDto, UserResponseDto } from './dto/people-responses.dto';
 import { PeopleService } from './people.service';
 import { GET_ALL_PEOPLE_RESPONSES } from './schemas/get-all-people.responses';
 import { CREATE_MEMBER_RESPONSES } from './schemas/create-member.responses';
@@ -39,6 +37,7 @@ import { PEOPLE_PARAMS } from './schemas/people-params';
 import { PEOPLE_BODIES } from './schemas/people-bodies';
 
 @ApiTags('People')
+@ApiExtraModels(PeopleResponseDto, UserResponseDto)
 @Controller({ path: 'people', version: '1' })
 @UseGuards(HybridAuthGuard)
 @ApiSecurity('apikey')
@@ -61,18 +60,20 @@ export class PeopleController {
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
   ) {
-    const people = await this.peopleService.findAllByOrganization(organizationId);
+    const people =
+      await this.peopleService.findAllByOrganization(organizationId);
 
     return {
       data: people,
       count: people.length,
       authType: authContext.authType,
-      ...(authContext.userId && authContext.userEmail && {
-        authenticatedUser: {
-          id: authContext.userId,
-          email: authContext.userEmail,
-        },
-      }),
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
     };
   }
 
@@ -94,12 +95,13 @@ export class PeopleController {
     return {
       ...member,
       authType: authContext.authType,
-      ...(authContext.userId && authContext.userEmail && {
-        authenticatedUser: {
-          id: authContext.userId,
-          email: authContext.userEmail,
-        },
-      }),
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
     };
   }
 
@@ -116,17 +118,21 @@ export class PeopleController {
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
   ) {
-    const result = await this.peopleService.bulkCreate(organizationId, bulkCreateData);
+    const result = await this.peopleService.bulkCreate(
+      organizationId,
+      bulkCreateData,
+    );
 
     return {
       ...result,
       authType: authContext.authType,
-      ...(authContext.userId && authContext.userEmail && {
-        authenticatedUser: {
-          id: authContext.userId,
-          email: authContext.userEmail,
-        },
-      }),
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
     };
   }
 
@@ -147,12 +153,13 @@ export class PeopleController {
     return {
       ...person,
       authType: authContext.authType,
-      ...(authContext.userId && authContext.userEmail && {
-        authenticatedUser: {
-          id: authContext.userId,
-          email: authContext.userEmail,
-        },
-      }),
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
     };
   }
 
@@ -180,12 +187,13 @@ export class PeopleController {
     return {
       ...updatedMember,
       authType: authContext.authType,
-      ...(authContext.userId && authContext.userEmail && {
-        authenticatedUser: {
-          id: authContext.userId,
-          email: authContext.userEmail,
-        },
-      }),
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
     };
   }
 
@@ -201,17 +209,21 @@ export class PeopleController {
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
   ) {
-    const result = await this.peopleService.deleteById(memberId, organizationId);
+    const result = await this.peopleService.deleteById(
+      memberId,
+      organizationId,
+    );
 
     return {
       ...result,
       authType: authContext.authType,
-      ...(authContext.userId && authContext.userEmail && {
-        authenticatedUser: {
-          id: authContext.userId,
-          email: authContext.userEmail,
-        },
-      }),
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
     };
   }
 }
