@@ -4,38 +4,42 @@ export const DELETE_MEMBER_RESPONSES: Record<string, ApiResponseOptions> = {
   200: {
     status: 200,
     description: 'Member deleted successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        success: {
-          type: 'boolean',
-          description: 'Indicates successful deletion',
-          example: true,
-        },
-        deletedMember: {
+    content: {
+      'application/json': {
+        schema: {
           type: 'object',
           properties: {
-            id: {
-              type: 'string',
-              description: 'The deleted member ID',
-              example: 'mem_abc123def456',
+            success: {
+              type: 'boolean',
+              description: 'Indicates successful deletion',
+              example: true,
             },
-            name: {
-              type: 'string',
-              description: 'The deleted member name',
-              example: 'John Doe',
+            deletedMember: {
+              type: 'object',
+              properties: {
+                id: {
+                  type: 'string',
+                  description: 'The deleted member ID',
+                  example: 'mem_abc123def456',
+                },
+                name: {
+                  type: 'string',
+                  description: 'The deleted member name',
+                  example: 'John Doe',
+                },
+                email: {
+                  type: 'string',
+                  description: 'The deleted member email',
+                  example: 'john.doe@company.com',
+                },
+              },
             },
-            email: {
+            authType: {
               type: 'string',
-              description: 'The deleted member email',
-              example: 'john.doe@company.com',
+              enum: ['api-key', 'session'],
+              description: 'How the request was authenticated',
             },
           },
-        },
-        authType: {
-          type: 'string',
-          enum: ['api-key', 'session'],
-          description: 'How the request was authenticated',
         },
       },
     },
@@ -44,19 +48,31 @@ export const DELETE_MEMBER_RESPONSES: Record<string, ApiResponseOptions> = {
     status: 401,
     description:
       'Unauthorized - Invalid authentication or insufficient permissions',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            message: { type: 'string', example: 'Unauthorized' },
+          },
+        },
+      },
+    },
   },
   404: {
     status: 404,
     description: 'Organization or member not found',
-    schema: {
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          examples: [
-            'Organization with ID org_abc123def456 not found',
-            'Member with ID mem_abc123def456 not found in organization org_abc123def456',
-          ],
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            message: {
+              type: 'string',
+              example:
+                'Member with ID mem_abc123def456 not found in organization org_abc123def456',
+            },
+          },
         },
       },
     },
@@ -64,5 +80,15 @@ export const DELETE_MEMBER_RESPONSES: Record<string, ApiResponseOptions> = {
   500: {
     status: 500,
     description: 'Internal server error',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            message: { type: 'string', example: 'Failed to delete member' },
+          },
+        },
+      },
+    },
   },
 };

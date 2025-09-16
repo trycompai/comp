@@ -46,7 +46,7 @@
       },
       {
         "tab": "API",
-        "openapi": "https://api.trycomp.ai/api/docs-json"
+        "openapi": { "source": "./openapi.json" }
       }
     ],
     "global": {

@@ -1,9 +1,4 @@
-import { 
-  Controller, 
-  Get, 
-  Param,
-  UseGuards 
-} from '@nestjs/common';
+import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import {
   ApiHeader,
   ApiOperation,
@@ -12,10 +7,7 @@ import {
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
-import {
-  AuthContext,
-  OrganizationId,
-} from '../auth/auth-context.decorator';
+import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import { DevicesByMemberResponseDto } from './dto/devices-by-member-response.dto';
@@ -43,35 +35,39 @@ export class DevicesController {
   @ApiResponse({
     status: 200,
     description: 'Devices retrieved successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        data: {
-          type: 'array',
-          items: { $ref: '#/components/schemas/DeviceResponseDto' },
-        },
-        count: {
-          type: 'number',
-          description: 'Total number of devices',
-          example: 25,
-        },
-        authType: {
-          type: 'string',
-          enum: ['api-key', 'session'],
-          description: 'How the request was authenticated',
-        },
-        authenticatedUser: {
+    content: {
+      'application/json': {
+        schema: {
           type: 'object',
           properties: {
-            id: {
-              type: 'string',
-              description: 'User ID',
-              example: 'usr_abc123def456',
+            data: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/DeviceResponseDto' },
             },
-            email: {
+            count: {
+              type: 'number',
+              description: 'Total number of devices',
+              example: 25,
+            },
+            authType: {
               type: 'string',
-              description: 'User email',
-              example: 'user@company.com',
+              enum: ['api-key', 'session'],
+              description: 'How the request was authenticated',
+            },
+            authenticatedUser: {
+              type: 'object',
+              properties: {
+                id: {
+                  type: 'string',
+                  description: 'User ID',
+                  example: 'usr_abc123def456',
+                },
+                email: {
+                  type: 'string',
+                  description: 'User email',
+                  example: 'user@company.com',
+                },
+              },
             },
           },
         },
@@ -82,17 +78,16 @@ export class DevicesController {
     status: 401,
     description:
       'Unauthorized - Invalid authentication or insufficient permissions',
-    schema: {
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          examples: [
-            'Invalid or expired API key',
-            'Invalid or expired session',
-            'User does not have access to organization',
-            'Organization context required',
-          ],
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            message: {
+              type: 'string',
+              example: 'Invalid or expired API key',
+            },
+          },
         },
       },
     },
@@ -100,12 +95,16 @@ export class DevicesController {
   @ApiResponse({
     status: 404,
     description: 'Organization not found',
-    schema: {
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          example: 'Organization with ID org_abc123def456 not found',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            message: {
+              type: 'string',
+              example: 'Organization with ID org_abc123def456 not found',
+            },
+          },
         },
       },
     },
@@ -113,15 +112,16 @@ export class DevicesController {
   @ApiResponse({
     status: 500,
     description: 'Internal server error - FleetDM integration issue',
-    schema: {
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          examples: [
-            'Failed to retrieve devices: FleetDM connection failed',
-            'Organization does not have FleetDM configured',
-          ],
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            message: {
+              type: 'string',
+              example: 'Organization does not have FleetDM configured',
+            },
+          },
         },
       },
     },
@@ -130,18 +130,20 @@ export class DevicesController {
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
   ) {
-    const devices = await this.devicesService.findAllByOrganization(organizationId);
+    const devices =
+      await this.devicesService.findAllByOrganization(organizationId);
 
     return {
       data: devices,
       count: devices.length,
       authType: authContext.authType,
-      ...(authContext.userId && authContext.userEmail && {
-        authenticatedUser: {
-          id: authContext.userId,
-          email: authContext.userEmail,
-        },
-      }),
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
     };
   }
 
@@ -149,7 +151,7 @@ export class DevicesController {
   @ApiOperation({
     summary: 'Get devices by member ID',
     description:
-      'Returns all devices assigned to a specific member within the authenticated organization. Devices are fetched from FleetDM using the member\'s dedicated fleetDmLabelId. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).',
+      "Returns all devices assigned to a specific member within the authenticated organization. Devices are fetched from FleetDM using the member's dedicated fleetDmLabelId. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
   })
   @ApiParam({
     name: 'memberId',
@@ -165,19 +167,31 @@ export class DevicesController {
     status: 401,
     description:
       'Unauthorized - Invalid authentication or insufficient permissions',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            message: { type: 'string', example: 'Unauthorized' },
+          },
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 404,
     description: 'Organization or member not found',
-    schema: {
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          examples: [
-            'Organization with ID org_abc123def456 not found',
-            'Member with ID mem_abc123def456 not found in organization org_abc123def456',
-          ],
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            message: {
+              type: 'string',
+              example:
+                'Member with ID mem_abc123def456 not found in organization org_abc123def456',
+            },
+          },
         },
       },
     },
@@ -201,12 +215,13 @@ export class DevicesController {
       count: devices.length,
       member,
       authType: authContext.authType,
-      ...(authContext.userId && authContext.userEmail && {
-        authenticatedUser: {
-          id: authContext.userId,
-          email: authContext.userEmail,
-        },
-      }),
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
     };
   }
 }

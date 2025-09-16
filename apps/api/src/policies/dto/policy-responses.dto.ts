@@ -29,12 +29,28 @@ export class PolicyResponseDto {
   status: PolicyStatus;
 
   @ApiProperty({
-    description: 'Content of the policy in JSON format',
-    example: [{ type: 'paragraph', content: 'Policy content here' }],
+    description: 'Content of the policy as TipTap JSON (array of nodes)',
+    example: [
+      {
+        type: 'heading',
+        attrs: { level: 2, textAlign: null },
+        content: [{ type: 'text', text: 'Purpose' }],
+      },
+      {
+        type: 'paragraph',
+        attrs: { textAlign: null },
+        content: [
+          {
+            type: 'text',
+            text: 'Verify workforce integrity and grant the right access at start, revoke at end.',
+          },
+        ],
+      },
+    ],
     type: 'array',
-    items: { type: 'object' },
+    items: { type: 'object', additionalProperties: true },
   })
-  content: any[];
+  content: unknown[];
 
   @ApiProperty({
     description: 'Review frequency of the policy',

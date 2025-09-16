@@ -16,6 +16,7 @@ import {
   ApiOperation,
   ApiParam,
   ApiResponse,
+  ApiNoContentResponse,
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
@@ -56,11 +57,36 @@ export class TasksController {
   @ApiResponse({
     status: 200,
     description: 'Tasks retrieved successfully',
-    type: [TaskResponseDto],
+    content: {
+      'application/json': {
+        schema: {
+          type: 'array',
+          items: { $ref: '#/components/schemas/TaskResponseDto' },
+        },
+        example: [
+          {
+            id: 'tsk_abc123def456',
+            title: 'Implement user authentication',
+            description: 'Add OAuth 2.0 authentication to the platform',
+            status: 'in_progress',
+            createdAt: '2024-01-15T10:30:00Z',
+            updatedAt: '2024-01-15T10:30:00Z',
+          },
+        ],
+      },
+    },
   })
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - Invalid authentication',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: { message: { type: 'string', example: 'Unauthorized' } },
+        },
+      },
+    },
   })
   async getTasks(
     @OrganizationId() organizationId: string,
@@ -81,11 +107,36 @@ export class TasksController {
   @ApiResponse({
     status: 200,
     description: 'Task retrieved successfully',
-    type: TaskResponseDto,
+    content: {
+      'application/json': {
+        schema: { $ref: '#/components/schemas/TaskResponseDto' },
+        example: {
+          id: 'tsk_abc123def456',
+          title: 'Implement user authentication',
+          description: 'Add OAuth 2.0 authentication to the platform',
+          status: 'in_progress',
+          createdAt: '2024-01-15T10:30:00Z',
+          updatedAt: '2024-01-15T10:30:00Z',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 404,
     description: 'Task not found',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            message: {
+              type: 'string',
+              example: 'Task with ID tsk_abc123def456 not found',
+            },
+          },
+        },
+      },
+    },
   })
   async getTask(
     @OrganizationId() organizationId: string,
@@ -109,7 +160,54 @@ export class TasksController {
   @ApiResponse({
     status: 200,
     description: 'Attachments retrieved successfully',
-    type: [AttachmentResponseDto],
+    content: {
+      'application/json': {
+        schema: {
+          type: 'array',
+          items: { $ref: '#/components/schemas/AttachmentResponseDto' },
+        },
+        example: [
+          {
+            id: 'att_abc123def456',
+            name: 'evidence.pdf',
+            type: 'application/pdf',
+            size: 123456,
+            downloadUrl:
+              'https://bucket.s3.amazonaws.com/path/to/file.pdf?signature=...',
+            createdAt: '2024-01-15T10:30:00Z',
+          },
+        ],
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid authentication',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: { message: { type: 'string', example: 'Unauthorized' } },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Task not found',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            message: {
+              type: 'string',
+              example: 'Task with ID tsk_abc123def456 not found',
+            },
+          },
+        },
+      },
+    },
   })
   async getTaskAttachments(
     @OrganizationId() organizationId: string,
@@ -138,11 +236,67 @@ export class TasksController {
   @ApiResponse({
     status: 201,
     description: 'Attachment uploaded successfully',
-    type: AttachmentResponseDto,
+    content: {
+      'application/json': {
+        schema: { $ref: '#/components/schemas/AttachmentResponseDto' },
+        example: {
+          id: 'att_abc123def456',
+          entityId: 'tsk_abc123def456',
+          entityType: 'task',
+          fileName: 'evidence.pdf',
+          fileType: 'application/pdf',
+          fileSize: 123456,
+          createdAt: '2024-01-01T00:00:00Z',
+          createdBy: 'usr_abc123def456',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 400,
     description: 'Invalid file data or file too large',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            message: {
+              type: 'string',
+              example: 'File exceeds maximum allowed size',
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid authentication',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: { message: { type: 'string', example: 'Unauthorized' } },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Task not found',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            message: {
+              type: 'string',
+              example: 'Task with ID tsk_abc123def456 not found',
+            },
+          },
+        },
+      },
+    },
   })
   async uploadTaskAttachment(
     @AuthContext() authContext: AuthContextType,
@@ -187,19 +341,52 @@ export class TasksController {
   @ApiResponse({
     status: 200,
     description: 'Download URL generated successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        downloadUrl: {
-          type: 'string',
-          description: 'Signed URL for downloading the file',
-          example:
-            'https://bucket.s3.amazonaws.com/path/to/file.pdf?signature=...',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            downloadUrl: {
+              type: 'string',
+              description: 'Signed URL for downloading the file',
+              example:
+                'https://bucket.s3.amazonaws.com/path/to/file.pdf?signature=...',
+            },
+            expiresIn: {
+              type: 'number',
+              description: 'URL expiration time in seconds',
+              example: 900,
+            },
+          },
         },
-        expiresIn: {
-          type: 'number',
-          description: 'URL expiration time in seconds',
-          example: 900,
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid authentication',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: { message: { type: 'string', example: 'Unauthorized' } },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Task or attachment not found',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            message: {
+              type: 'string',
+              example: 'Task or attachment not found',
+            },
+          },
         },
       },
     },
@@ -219,7 +406,6 @@ export class TasksController {
   }
 
   @Delete(':taskId/attachments/:attachmentId')
-  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: 'Delete task attachment',
     description: 'Delete a specific attachment from a task',
@@ -235,18 +421,65 @@ export class TasksController {
     example: 'att_abc123def456',
   })
   @ApiResponse({
-    status: 204,
+    status: 200,
     description: 'Attachment deleted successfully',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean', example: true },
+            deletedAttachmentId: {
+              type: 'string',
+              example: 'att_abc123def456',
+            },
+            message: {
+              type: 'string',
+              example: 'Attachment deleted successfully',
+            },
+          },
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 404,
     description: 'Task or attachment not found',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            message: {
+              type: 'string',
+              example: 'Task or attachment not found',
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid authentication',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: { message: { type: 'string', example: 'Unauthorized' } },
+        },
+      },
+    },
   })
   async deleteTaskAttachment(
     @OrganizationId() organizationId: string,
     @Param('taskId') taskId: string,
     @Param('attachmentId') attachmentId: string,
-  ): Promise<void> {
+  ): Promise<{
+    success: boolean;
+    deletedAttachmentId: string;
+    message: string;
+  }> {
     // Verify task access
     await this.tasksService.verifyTaskAccess(organizationId, taskId);
 
@@ -254,5 +487,11 @@ export class TasksController {
       organizationId,
       attachmentId,
     );
+
+    return {
+      success: true,
+      deletedAttachmentId: attachmentId,
+      message: 'Attachment deleted successfully',
+    };
   }
 }

@@ -137,7 +137,6 @@ export class CommentsController {
   }
 
   @Delete(':commentId')
-  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: 'Delete a comment',
     description: 'Delete a comment and all its attachments (author only)',
@@ -148,22 +147,72 @@ export class CommentsController {
     example: 'cmt_abc123def456',
   })
   @ApiResponse({
-    status: 204,
+    status: 200,
     description: 'Comment deleted successfully',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean', example: true },
+            deletedCommentId: { type: 'string', example: 'cmt_abc123def456' },
+            message: {
+              type: 'string',
+              example: 'Comment deleted successfully',
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid authentication',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: { message: { type: 'string', example: 'Unauthorized' } },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Comment not found',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            message: {
+              type: 'string',
+              example: 'Comment with ID cmt_abc123def456 not found',
+            },
+          },
+        },
+      },
+    },
   })
   async deleteComment(
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
     @Param('commentId') commentId: string,
-  ): Promise<void> {
+  ): Promise<{ success: boolean; deletedCommentId: string; message: string }> {
     if (!authContext.userId) {
       throw new BadRequestException('User ID is required');
     }
 
-    return await this.commentsService.deleteComment(
+    await this.commentsService.deleteComment(
       organizationId,
       commentId,
       authContext.userId,
     );
+
+    return {
+      success: true,
+      deletedCommentId: commentId,
+      message: 'Comment deleted successfully',
+    };
   }
 }
