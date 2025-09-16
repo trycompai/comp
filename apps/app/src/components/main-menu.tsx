@@ -44,7 +44,12 @@ interface ItemProps {
   itemRef: (el: HTMLDivElement | null) => void;
 }
 
-export function MainMenu({ organizationId, isCollapsed = false, onItemClick }: Props) {
+export function MainMenu({
+  organizationId,
+  organization,
+  isCollapsed = false,
+  onItemClick,
+}: Props) {
   const pathname = usePathname();
   const [activeStyle, setActiveStyle] = useState({ top: '0px', height: '0px' });
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -65,6 +70,7 @@ export function MainMenu({ organizationId, isCollapsed = false, onItemClick }: P
       disabled: false,
       icon: ShieldEllipsis,
       protected: false,
+      hidden: !organization?.advancedModeEnabled,
     },
     {
       id: 'policies',
@@ -314,6 +320,7 @@ const Item = ({
 
 type Props = {
   organizationId?: string;
+  organization?: { advancedModeEnabled?: boolean } | null;
   isCollapsed?: boolean;
   onItemClick?: () => void;
 };
