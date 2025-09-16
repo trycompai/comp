@@ -417,9 +417,9 @@ export function TrustPortalSwitch({
                         }
                       }}
                     />
-                    {/* SOC 2 TYPE I*/}
+                    {/* SOC 2 Type 1*/}
                     <ComplianceFramework
-                      title="SOC 2 TYPE I"
+                      title="SOC 2 Type 1"
                       description="A compliance framework focused on data security, availability, and confidentiality."
                       isEnabled={soc2type1}
                       status={soc2type1Status}
@@ -429,9 +429,9 @@ export function TrustPortalSwitch({
                             orgId,
                             soc2type1Status: value as 'started' | 'in_progress' | 'compliant',
                           });
-                          toast.success('SOC 2 TYPE I status updated');
+                          toast.success('SOC 2 Type 1 status updated');
                         } catch (error) {
-                          toast.error('Failed to update SOC 2 TYPE I status');
+                          toast.error('Failed to update SOC 2 Type 1 status');
                         }
                       }}
                       onToggle={async (checked) => {
@@ -440,15 +440,15 @@ export function TrustPortalSwitch({
                             orgId,
                             soc2type1: checked,
                           });
-                          toast.success('SOC 2 TYPE I status updated');
+                          toast.success('SOC 2 Type 1 status updated');
                         } catch (error) {
-                          toast.error('Failed to update SOC 2 TYPE I status');
+                          toast.error('Failed to update SOC 2 Type 1 status');
                         }
                       }}
                     />
-                    {/* SOC 2 TYPE II*/}
+                    {/* SOC 2 Type 2*/}
                     <ComplianceFramework
-                      title="SOC 2 TYPE II"
+                      title="SOC 2 Type 2"
                       description="A compliance framework focused on data security, availability, and confidentiality."
                       isEnabled={soc2type2}
                       status={soc2type2Status}
@@ -458,9 +458,9 @@ export function TrustPortalSwitch({
                             orgId,
                             soc2type2Status: value as 'started' | 'in_progress' | 'compliant',
                           });
-                          toast.success('SOC 2 TYPE II status updated');
+                          toast.success('SOC 2 Type 2 status updated');
                         } catch (error) {
-                          toast.error('Failed to update SOC 2 TYPE II status');
+                          toast.error('Failed to update SOC 2 Type 2 status');
                         }
                       }}
                       onToggle={async (checked) => {
@@ -469,9 +469,9 @@ export function TrustPortalSwitch({
                             orgId,
                             soc2type2: checked,
                           });
-                          toast.success('SOC 2 TYPE II status updated');
+                          toast.success('SOC 2 Type 2 status updated');
                         } catch (error) {
-                          toast.error('Failed to update SOC 2 TYPE II status');
+                          toast.error('Failed to update SOC 2 Type 2 status');
                         }
                       }}
                     />
@@ -544,11 +544,11 @@ function ComplianceFramework({
       <div className="h-16 w-16 flex items-center justify-center">
         <HIPAA className="max-h-full max-w-full" />
       </div>
-    ) : title === 'SOC 2 TYPE I' ? (
+    ) : title === 'SOC 2 Type 1' ? (
       <div className="h-16 w-16 flex items-center justify-center">
         <SOC2Type1 className="max-h-full max-w-full" />
       </div>
-    ) : title === 'SOC 2 TYPE II' ? (
+    ) : title === 'SOC 2 Type 2' ? (
       <div className="h-16 w-16 flex items-center justify-center">
         <SOC2Type2 className="max-h-full max-w-full" />
       </div>
