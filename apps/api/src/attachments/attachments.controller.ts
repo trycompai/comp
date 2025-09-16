@@ -37,19 +37,23 @@ export class AttachmentsController {
   @ApiResponse({
     status: 200,
     description: 'Download URL generated successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        downloadUrl: {
-          type: 'string',
-          description: 'Signed URL for downloading the file',
-          example:
-            'https://bucket.s3.amazonaws.com/path/to/file.pdf?signature=...',
-        },
-        expiresIn: {
-          type: 'number',
-          description: 'URL expiration time in seconds',
-          example: 900,
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            downloadUrl: {
+              type: 'string',
+              description: 'Signed URL for downloading the file',
+              example:
+                'https://bucket.s3.amazonaws.com/path/to/file.pdf?signature=...',
+            },
+            expiresIn: {
+              type: 'number',
+              description: 'URL expiration time in seconds',
+              example: 900,
+            },
+          },
         },
       },
     },

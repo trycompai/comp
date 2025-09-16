@@ -4,33 +4,37 @@ export const DELETE_POLICY_RESPONSES: Record<string, ApiResponseOptions> = {
   200: {
     status: 200,
     description: 'Policy deleted successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        success: {
-          type: 'boolean',
-          description: 'Indicates successful deletion',
-          example: true,
-        },
-        deletedPolicy: {
+    content: {
+      'application/json': {
+        schema: {
           type: 'object',
           properties: {
-            id: {
-              type: 'string',
-              description: 'The deleted policy ID',
-              example: 'pol_abc123def456',
+            success: {
+              type: 'boolean',
+              description: 'Indicates successful deletion',
+              example: true,
             },
-            name: {
+            deletedPolicy: {
+              type: 'object',
+              properties: {
+                id: {
+                  type: 'string',
+                  description: 'The deleted policy ID',
+                  example: 'pol_abc123def456',
+                },
+                name: {
+                  type: 'string',
+                  description: 'The deleted policy name',
+                  example: 'Data Privacy Policy',
+                },
+              },
+            },
+            authType: {
               type: 'string',
-              description: 'The deleted policy name',
-              example: 'Data Privacy Policy',
+              enum: ['api-key', 'session'],
+              description: 'How the request was authenticated',
             },
           },
-        },
-        authType: {
-          type: 'string',
-          enum: ['api-key', 'session'],
-          description: 'How the request was authenticated',
         },
       },
     },
@@ -39,9 +43,32 @@ export const DELETE_POLICY_RESPONSES: Record<string, ApiResponseOptions> = {
     status: 401,
     description:
       'Unauthorized - Invalid authentication or insufficient permissions',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            message: { type: 'string', example: 'Unauthorized' },
+          },
+        },
+      },
+    },
   },
   404: {
     status: 404,
     description: 'Policy not found',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            message: {
+              type: 'string',
+              example: 'Policy with ID pol_abc123def456 not found',
+            },
+          },
+        },
+      },
+    },
   },
 };

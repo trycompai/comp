@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { db } from '@trycompai/db';
+import type { Prisma } from '@trycompai/db';
 import type { CreatePolicyDto } from './dto/create-policy.dto';
 import type { UpdatePolicyDto } from './dto/update-policy.dto';
 
@@ -35,10 +36,15 @@ export class PoliciesService {
         orderBy: { createdAt: 'desc' },
       });
 
-      this.logger.log(`Retrieved ${policies.length} policies for organization ${organizationId}`);
+      this.logger.log(
+        `Retrieved ${policies.length} policies for organization ${organizationId}`,
+      );
       return policies;
     } catch (error) {
-      this.logger.error(`Failed to retrieve policies for organization ${organizationId}:`, error);
+      this.logger.error(
+        `Failed to retrieve policies for organization ${organizationId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -46,7 +52,7 @@ export class PoliciesService {
   async findById(id: string, organizationId: string) {
     try {
       const policy = await db.policy.findFirst({
-        where: { 
+        where: {
           id,
           organizationId,
         },
@@ -93,6 +99,8 @@ export class PoliciesService {
       const policy = await db.policy.create({
         data: {
           ...createData,
+          // Ensure JSON[] type compatibility for Prisma
+          content: createData.content as Prisma.InputJsonValue[],
           organizationId,
           status: createData.status || 'draft',
           isRequiredToSign: createData.isRequiredToSign ?? true,
@@ -123,16 +131,23 @@ export class PoliciesService {
       this.logger.log(`Created policy: ${policy.name} (${policy.id})`);
       return policy;
     } catch (error) {
-      this.logger.error(`Failed to create policy for organization ${organizationId}:`, error);
+      this.logger.error(
+        `Failed to create policy for organization ${organizationId}:`,
+        error,
+      );
       throw error;
     }
   }
 
-  async updateById(id: string, organizationId: string, updateData: UpdatePolicyDto) {
+  async updateById(
+    id: string,
+    organizationId: string,
+    updateData: UpdatePolicyDto,
+  ) {
     try {
       // First check if the policy exists and belongs to the organization
       const existingPolicy = await db.policy.findFirst({
-        where: { 
+        where: {
           id,
           organizationId,
         },
@@ -144,16 +159,21 @@ export class PoliciesService {
       }
 
       // Prepare update data with special handling for status changes
-      const updatePayload: any = { ...updateData };
-      
+      const updatePayload: Record<string, unknown> = { ...updateData };
+
       // If status is being changed to published, update lastPublishedAt
       if (updateData.status === 'published') {
         updatePayload.lastPublishedAt = new Date();
       }
-      
+
       // If isArchived is being set to true, update lastArchivedAt
       if (updateData.isArchived === true) {
         updatePayload.lastArchivedAt = new Date();
+      }
+
+      // Coerce content to Prisma JSON[] input if provided
+      if (Array.isArray(updateData.content)) {
+        updatePayload.content = updateData.content as Prisma.InputJsonValue[];
       }
 
       // Update the policy
@@ -198,7 +218,7 @@ export class PoliciesService {
     try {
       // First check if the policy exists and belongs to the organization
       const policy = await db.policy.findFirst({
-        where: { 
+        where: {
           id,
           organizationId,
         },
