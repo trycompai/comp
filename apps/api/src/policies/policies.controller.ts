@@ -1,12 +1,12 @@
-import { 
-  Body, 
-  Controller, 
-  Delete, 
-  Get, 
-  Param, 
-  Patch, 
-  Post, 
-  UseGuards 
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBody,
@@ -16,11 +16,9 @@ import {
   ApiResponse,
   ApiSecurity,
   ApiTags,
+  ApiExtraModels,
 } from '@nestjs/swagger';
-import {
-  AuthContext,
-  OrganizationId,
-} from '../auth/auth-context.decorator';
+import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import { CreatePolicyDto } from './dto/create-policy.dto';
@@ -34,8 +32,10 @@ import { DELETE_POLICY_RESPONSES } from './schemas/delete-policy.responses';
 import { POLICY_OPERATIONS } from './schemas/policy-operations';
 import { POLICY_PARAMS } from './schemas/policy-params';
 import { POLICY_BODIES } from './schemas/policy-bodies';
+import { PolicyResponseDto } from './dto/policy-responses.dto';
 
 @ApiTags('Policies')
+@ApiExtraModels(PolicyResponseDto)
 @Controller({ path: 'policies', version: '1' })
 @UseGuards(HybridAuthGuard)
 @ApiSecurity('apikey')
@@ -106,7 +106,10 @@ export class PoliciesController {
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
   ) {
-    const policy = await this.policiesService.create(organizationId, createData);
+    const policy = await this.policiesService.create(
+      organizationId,
+      createData,
+    );
 
     return {
       ...policy,

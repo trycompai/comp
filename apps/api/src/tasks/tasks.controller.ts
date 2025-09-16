@@ -19,6 +19,7 @@ import {
   ApiNoContentResponse,
   ApiSecurity,
   ApiTags,
+  ApiExtraModels,
 } from '@nestjs/swagger';
 import { AttachmentsService } from '../attachments/attachments.service';
 import { UploadAttachmentDto } from '../attachments/upload-attachment.dto';
@@ -32,6 +33,7 @@ import {
 import { TasksService } from './tasks.service';
 
 @ApiTags('Tasks')
+@ApiExtraModels(TaskResponseDto, AttachmentResponseDto)
 @Controller({ path: 'tasks', version: '1' })
 @UseGuards(HybridAuthGuard)
 @ApiSecurity('apikey')
