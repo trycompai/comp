@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 export function OnboardingStatus({ runId }: { runId: string }) {
-  const { run, error, isLoading } = useRun<typeof onboardOrganization>(runId, {
+  const { run, error, isLoading } = useRun(runId, {
     refreshInterval: 1000,
   });
 
