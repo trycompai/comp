@@ -1,3 +1,10 @@
+## [1.52.1](https://github.com/trycompai/comp/compare/v1.52.0...v1.52.1) (2025-09-17)
+
+
+### Bug Fixes
+
+* force version bump past v1.52.0 ([d7c58c0](https://github.com/trycompai/comp/commit/d7c58c0411d0d467cdc99a4211d197c86cae1f06))
+
 # [1.52.0](https://github.com/trycompai/comp/compare/v1.51.0...v1.52.0) (2025-09-17)
 
 
