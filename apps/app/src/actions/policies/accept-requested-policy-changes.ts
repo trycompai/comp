@@ -128,7 +128,7 @@ export const acceptRequestedPolicyChangesAction = authActionClient
                 console.error(`Failed to send email to ${employee.user.email}:`, emailError);
                 // Don't fail the whole operation if email fails
               }
-            })
+            }),
           );
 
           // Only delay if there are more emails to send

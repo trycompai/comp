@@ -17,24 +17,12 @@ export const sendPolicyNotificationEmail = async (params: {
     organizationId,
     notificationType,
   } = params;
-
-  const getSubjectText = () => {
-    switch (notificationType) {
-      case 'new':
-        return `New Policy: ${policyName} - Requires Your Acceptance`;
-      case 'updated':
-        return `Updated Policy: ${policyName} - Requires Your Acceptance`;
-      case 're-acceptance':
-        return `Policy Updated: ${policyName} - Please Accept Again`;
-      default:
-        return `Policy Notification: ${policyName}`;
-    }
-  };
+  const subjectText = 'Please review and accept this policy';
 
   try {
     const sent = await sendEmail({
       to: email,
-      subject: getSubjectText(),
+      subject: subjectText,
       react: PolicyNotificationEmail({
         email,
         userName,

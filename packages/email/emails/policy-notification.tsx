@@ -32,28 +32,15 @@ export const PolicyNotificationEmail = ({
   notificationType,
 }: Props) => {
   const link = `${process.env.NEXT_PUBLIC_PORTAL_URL ?? 'https://portal.trycomp.ai'}/${organizationId}`;
-
-  const getSubjectText = () => {
-    switch (notificationType) {
-      case 'new':
-        return 'New Policy Requires Your Acceptance';
-      case 'updated':
-        return 'Updated Policy Requires Your Acceptance';
-      case 're-acceptance':
-        return 'Policy Updated - Please Accept Again';
-      default:
-        return 'Policy Notification';
-    }
-  };
+  const subjectText = 'Please review and accept this policy';
 
   const getBodyText = () => {
     switch (notificationType) {
       case 'new':
-        return `A new policy "${policyName}" has been created and requires your acceptance.`;
+        return `The "${policyName}" policy has been created.`;
       case 'updated':
-        return `The policy "${policyName}" has been updated and now requires your acceptance.`;
       case 're-acceptance':
-        return `The policy "${policyName}" has been updated. Please review and accept it again.`;
+        return `The "${policyName}" policy has been updated.`;
       default:
         return `Please review and accept the policy "${policyName}".`;
     }
@@ -86,7 +73,7 @@ export const PolicyNotificationEmail = ({
           />
         </head>
 
-        <Preview>{getSubjectText()}</Preview>
+        <Preview>{subjectText}</Preview>
 
         <Body className="mx-auto my-auto bg-[#fff] font-sans">
           <Container
@@ -95,7 +82,7 @@ export const PolicyNotificationEmail = ({
           >
             <Logo />
             <Heading className="mx-0 my-[30px] p-0 text-center text-[24px] font-normal text-[#121212]">
-              {getSubjectText()}
+              {subjectText}
             </Heading>
 
             <Text className="text-[14px] leading-[24px] text-[#121212]">
