@@ -42,7 +42,9 @@
       "@comp/kv": ["../../packages/kv/src/index.ts"],
       "@comp/kv/*": ["../../packages/kv/src/*"],
       "@comp/tsconfig": ["../../packages/tsconfig/index.ts"],
-      "@comp/tsconfig/*": ["../../packages/tsconfig/*"]
+      "@comp/tsconfig/*": ["../../packages/tsconfig/*"],
+      "@trycompai/email": ["../../packages/email/index.ts"],
+      "@trycompai/email/*": ["../../packages/email/*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "trigger.config.ts"],
