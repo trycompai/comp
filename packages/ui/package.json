@@ -39,7 +39,7 @@
     "@tiptap/extension-bold": "2.14.0",
     "@tiptap/extension-character-count": "2.14.0",
     "@tiptap/extension-code-block-lowlight": "2.14.0",
-    "@tiptap/extension-highlight": "3.3.0",
+    "@tiptap/extension-highlight": "3.4.4",
     "@tiptap/extension-image": "2.14.0",
     "@tiptap/extension-link": "2.14.0",
     "@tiptap/extension-placeholder": "2.14.0",
