@@ -76,7 +76,7 @@ export const PolicyReviewNotificationEmail = ({
             <Text className="text-[14px] leading-[24px] text-[#121212]">Hi {userName},</Text>
 
             <Text className="text-[14px] leading-[24px] text-[#121212]">
-              The "{policyName}" policy for <strong>{organizationName}</strong> is due for review. Please review and update it.
+              The "{policyName}" policy for <strong>{organizationName}</strong> is due for review. Please review and publish.
             </Text>
 
             <Section className="mt-[32px] mb-[42px] text-center">
