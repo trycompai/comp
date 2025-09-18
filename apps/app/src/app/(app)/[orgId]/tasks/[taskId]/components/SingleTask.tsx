@@ -47,9 +47,9 @@ export function SingleTask({ task, members }: SingleTaskProps) {
   }, [task.assigneeId, members]);
 
   const handleUpdateTask = (
-    data: Partial<Pick<Task, 'status' | 'assigneeId' | 'frequency' | 'department'>>,
+    data: Partial<Pick<Task, 'status' | 'assigneeId' | 'frequency' | 'department' | 'reviewDate'>>,
   ) => {
-    const updatePayload: Partial<Pick<Task, 'status' | 'assigneeId' | 'frequency' | 'department'>> =
+    const updatePayload: Partial<Pick<Task, 'status' | 'assigneeId' | 'frequency' | 'department' | 'reviewDate'>> =
       {};
 
     if (data.status !== undefined) {
@@ -64,7 +64,9 @@ export function SingleTask({ task, members }: SingleTaskProps) {
     if (Object.prototype.hasOwnProperty.call(data, 'frequency')) {
       updatePayload.frequency = data.frequency;
     }
-
+    if (data.reviewDate !== undefined) {
+      updatePayload.reviewDate = data.reviewDate;
+    }
     if (Object.keys(updatePayload).length > 0) {
       updateTask({ id: task.id, ...updatePayload });
     }
