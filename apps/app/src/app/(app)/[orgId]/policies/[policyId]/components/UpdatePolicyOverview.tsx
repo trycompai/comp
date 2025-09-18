@@ -119,7 +119,7 @@ export function UpdatePolicyOverview({
           reviewDate.toDateString());
 
     // If policy is draft and being published OR policy is published and has changes
-    if ((policy.status === 'draft' && status === 'published') || isPublishedWithChanges) {
+    if ((['draft', 'needs_review'].includes(policy.status) && status === 'published') || isPublishedWithChanges) {
       setIsApprovalDialogOpen(true);
       setIsSubmitting(false);
     } else {
@@ -172,7 +172,7 @@ export function UpdatePolicyOverview({
   // Determine button text based on status and form interaction
   let buttonText = 'Save';
   if (
-    (policy.status === 'draft' && selectedStatus === 'published') ||
+    (['draft', 'needs_review'].includes(policy.status) && selectedStatus === 'published') ||
     (policy.status === 'published' && hasFormChanges)
   ) {
     buttonText = 'Submit for Approval';

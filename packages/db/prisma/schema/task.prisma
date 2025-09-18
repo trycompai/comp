@@ -12,6 +12,7 @@ model Task {
     createdAt       DateTime  @default(now())
     updatedAt       DateTime  @updatedAt
     lastCompletedAt DateTime?
+    reviewDate      DateTime?
 
     // Relationships
     controls       Control[]
