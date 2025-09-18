@@ -1,3 +1,11 @@
+# [1.53.0](https://github.com/trycompai/comp/compare/v1.52.1...v1.53.0) (2025-09-18)
+
+
+### Features
+
+* **app:** Add reviewDate column to Task table ([#1541](https://github.com/trycompai/comp/issues/1541)) ([68e0e42](https://github.com/trycompai/comp/commit/68e0e42fe26ac5391afa696a1cd15ae3148aadd3))
+* **app:** Create a scheduled task for Recurring policy ([#1540](https://github.com/trycompai/comp/issues/1540)) ([1eb9623](https://github.com/trycompai/comp/commit/1eb9623c05a88b8c04b303ac505d32ae0c13baeb))
+
 ## [1.52.1](https://github.com/trycompai/comp/compare/v1.52.0...v1.52.1) (2025-09-17)
 
 
