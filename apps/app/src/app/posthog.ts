@@ -12,6 +12,9 @@ function getPostHogClient(): PostHog | null {
 
   const apiKey = process.env.NEXT_PUBLIC_POSTHOG_KEY;
   const apiHost = process.env.NEXT_PUBLIC_POSTHOG_HOST;
+  const appEnvironment = process.env.APP_ENVIRONMENT?.toLowerCase();
+  const suppressFlag = process.env.SUPPRESS_POSTHOG_WARNING?.toLowerCase();
+  const suppressWarning = appEnvironment === 'local' || suppressFlag === 'true';
 
   if (apiKey && apiHost) {
     posthogInstance = new PostHog(apiKey, {
@@ -21,10 +24,12 @@ function getPostHogClient(): PostHog | null {
     return posthogInstance;
   }
 
-  // If keys are not set, warn and return null
-  console.warn(
-    'PostHog keys (NEXT_PUBLIC_POSTHOG_KEY, NEXT_PUBLIC_POSTHOG_HOST) are not set, tracking is disabled.',
-  );
+  // If keys are not set, optionally warn and return null
+  if (!suppressWarning) {
+    console.warn(
+      'PostHog keys (NEXT_PUBLIC_POSTHOG_KEY, NEXT_PUBLIC_POSTHOG_HOST) are not set, tracking is disabled.',
+    );
+  }
   return null;
 }
 

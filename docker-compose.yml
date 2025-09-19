@@ -26,6 +26,8 @@ services:
       - '3000:3000'
     env_file:
       - .env
+    environment:
+      APP_ENVIRONMENT: ${APP_ENVIRONMENT:-local}
     healthcheck:
       test: ['CMD-SHELL', 'curl -f http://localhost:3000/api/health || exit 1']
       interval: 30s
@@ -44,6 +46,8 @@ services:
       - '3002:3000'
     env_file:
       - .env
+    environment:
+      APP_ENVIRONMENT: ${APP_ENVIRONMENT:-local}
     healthcheck:
       test: ['CMD-SHELL', 'curl -f http://localhost:3002/ || exit 1']
       interval: 30s

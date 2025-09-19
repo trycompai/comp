@@ -1,6 +1,14 @@
 import { createEnv } from '@t3-oss/env-nextjs';
 import { z } from 'zod';
 
+const normalizedAppEnvironment = process.env.APP_ENVIRONMENT?.toLowerCase();
+const normalizedSuppressPosthogWarning = (() => {
+  const value = process.env.SUPPRESS_POSTHOG_WARNING;
+  if (!value) return undefined;
+  const lowered = value.toLowerCase();
+  return lowered === 'true' || lowered === 'false' ? lowered : undefined;
+})();
+
 export const env = createEnv({
   server: {
     AUTH_GOOGLE_ID: z.string().optional(),
@@ -35,6 +43,10 @@ export const env = createEnv({
     GA4_API_SECRET: z.string().optional(),
     GA4_MEASUREMENT_ID: z.string().optional(),
     LINKEDIN_CONVERSIONS_ACCESS_TOKEN: z.string().optional(),
+    APP_ENVIRONMENT: z
+      .enum(['local', 'development', 'staging', 'production'])
+      .optional(),
+    SUPPRESS_POSTHOG_WARNING: z.enum(['true', 'false']).optional(),
   },
 
   client: {
@@ -91,6 +103,8 @@ export const env = createEnv({
     NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL: process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL,
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
     NEXT_PUBLIC_BETTER_AUTH_URL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
+    APP_ENVIRONMENT: normalizedAppEnvironment,
+    SUPPRESS_POSTHOG_WARNING: normalizedSuppressPosthogWarning,
   },
 
   skipValidation: !!process.env.CI || !!process.env.SKIP_ENV_VALIDATION,
