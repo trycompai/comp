@@ -20,11 +20,12 @@ services:
       dockerfile: Dockerfile
       target: app
       args:
-        NEXT_PUBLIC_BETTER_AUTH_URL: ${BETTER_AUTH_URL}
+        NEXT_PUBLIC_BETTER_AUTH_URL: ${NEXT_PUBLIC_BETTER_AUTH_URL}
+        NEXT_PUBLIC_PORTAL_URL: ${NEXT_PUBLIC_PORTAL_URL}
     ports:
       - '3000:3000'
     env_file:
-      - apps/app/.env
+      - .env
     healthcheck:
       test: ['CMD-SHELL', 'curl -f http://localhost:3000/api/health || exit 1']
       interval: 30s
@@ -38,11 +39,11 @@ services:
       dockerfile: Dockerfile
       target: portal
       args:
-        NEXT_PUBLIC_BETTER_AUTH_URL: ${BETTER_AUTH_URL_PORTAL}
+        NEXT_PUBLIC_BETTER_AUTH_URL: ${NEXT_PUBLIC_BETTER_AUTH_URL}
     ports:
       - '3002:3000'
     env_file:
-      - apps/portal/.env
+      - .env
     healthcheck:
       test: ['CMD-SHELL', 'curl -f http://localhost:3002/ || exit 1']
       interval: 30s
