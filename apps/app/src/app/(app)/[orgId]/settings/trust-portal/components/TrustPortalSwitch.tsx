@@ -17,7 +17,7 @@ import { z } from 'zod';
 import { isFriendlyAvailable } from '../actions/is-friendly-available';
 import { trustPortalSwitchAction } from '../actions/trust-portal-switch';
 import { updateTrustPortalFrameworks } from '../actions/update-trust-portal-frameworks';
-import { GDPR, HIPAA, ISO27001, SOC2, SOC2Type1, SOC2Type2, PCIDSS } from './logos';
+import { GDPR, HIPAA, ISO27001, SOC2Type1, SOC2Type2, PCIDSS, ISO42001 } from './logos';
 
 const trustPortalSwitchSchema = z.object({
   enabled: z.boolean(),
@@ -26,12 +26,14 @@ const trustPortalSwitchSchema = z.object({
   soc2type1: z.boolean(),
   soc2type2: z.boolean(),
   iso27001: z.boolean(),
+  iso42001: z.boolean(),
   gdpr: z.boolean(),
   hipaa: z.boolean(),
   pcidss: z.boolean(),
   soc2type1Status: z.enum(['started', 'in_progress', 'compliant']),
   soc2type2Status: z.enum(['started', 'in_progress', 'compliant']),
   iso27001Status: z.enum(['started', 'in_progress', 'compliant']),
+  iso42001Status: z.enum(['started', 'in_progress', 'compliant']),
   gdprStatus: z.enum(['started', 'in_progress', 'compliant']),
   hipaaStatus: z.enum(['started', 'in_progress', 'compliant']),
   pcidssStatus: z.enum(['started', 'in_progress', 'compliant']),
@@ -47,12 +49,14 @@ export function TrustPortalSwitch({
   soc2type1,
   soc2type2,
   iso27001,
+  iso42001,
   gdpr,
   hipaa,
   pcidss,
   soc2type1Status,
   soc2type2Status,
   iso27001Status,
+  iso42001Status,
   gdprStatus,
   hipaaStatus,
   pcidssStatus,
@@ -67,12 +71,14 @@ export function TrustPortalSwitch({
   soc2type1: boolean;
   soc2type2: boolean;
   iso27001: boolean;
+  iso42001: boolean;
   gdpr: boolean;
   hipaa: boolean;
   pcidss: boolean;
   soc2type1Status: 'started' | 'in_progress' | 'compliant';
   soc2type2Status: 'started' | 'in_progress' | 'compliant';
   iso27001Status: 'started' | 'in_progress' | 'compliant';
+  iso42001Status: 'started' | 'in_progress' | 'compliant';
   gdprStatus: 'started' | 'in_progress' | 'compliant';
   hipaaStatus: 'started' | 'in_progress' | 'compliant';
   pcidssStatus: 'started' | 'in_progress' | 'compliant';
@@ -97,12 +103,14 @@ export function TrustPortalSwitch({
       soc2type1: soc2type1 ?? false,
       soc2type2: soc2type2 ?? false,
       iso27001: iso27001 ?? false,
+      iso42001: iso42001 ?? false,
       gdpr: gdpr ?? false,
       hipaa: hipaa ?? false,
       pcidss: pcidss ?? false,
       soc2type1Status: soc2type1Status ?? 'started',
       soc2type2Status: soc2type2Status ?? 'started',
       iso27001Status: iso27001Status ?? 'started',
+      iso42001Status: iso42001Status ?? 'started',
       gdprStatus: gdprStatus ?? 'started',
       hipaaStatus: hipaaStatus ?? 'started',
       pcidssStatus: pcidssStatus ?? 'started',
@@ -359,6 +367,35 @@ export function TrustPortalSwitch({
                         }
                       }}
                     />
+                    {/* ISO 42001 */}
+                    <ComplianceFramework
+                      title="ISO 42001"
+                      description="An international standard for an Artificial Intelligence Management System."
+                      isEnabled={iso42001}
+                      status={iso42001Status}
+                      onStatusChange={async (value) => {
+                        try {
+                          await updateTrustPortalFrameworks({
+                            orgId,
+                            iso42001Status: value as 'started' | 'in_progress' | 'compliant',
+                          });
+                          toast.success('ISO 42001 status updated');
+                        } catch (error) {
+                          toast.error('Failed to update ISO 42001 status');
+                        }
+                      }}
+                      onToggle={async (checked) => {
+                        try {
+                          await updateTrustPortalFrameworks({
+                            orgId,
+                            iso42001: checked,
+                          });
+                          toast.success('ISO 42001 status updated');
+                        } catch (error) {
+                          toast.error('Failed to update ISO 42001 status');
+                        }
+                      }}
+                    />
                     {/* GDPR */}
                     <ComplianceFramework
                       title="GDPR"
@@ -535,6 +572,10 @@ function ComplianceFramework({
     title === 'ISO 27001' ? (
       <div className="h-16 w-16 flex items-center justify-center">
         <ISO27001 className="max-h-full max-w-full" />
+      </div>
+    ) : title === 'ISO 42001' ? (
+      <div className="h-16 w-16 flex items-center justify-center">
+        <ISO42001 className="max-h-full max-w-full" />
       </div>
     ) : title === 'GDPR' ? (
       <div className="h-16 w-16 flex items-center justify-center">
