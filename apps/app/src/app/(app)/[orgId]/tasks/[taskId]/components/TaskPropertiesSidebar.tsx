@@ -102,6 +102,7 @@ export function TaskPropertiesSidebar({
             onSelect={(selectedStatus) => {
               handleUpdateTask({
                 status: selectedStatus as TaskStatus,
+                reviewDate: selectedStatus === 'done' ? new Date() : task.reviewDate,
               });
             }}
             trigger={
