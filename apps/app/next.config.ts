@@ -11,7 +11,7 @@ const config: NextConfig = {
       ? `${process.env.STATIC_ASSETS_URL}/app`
       : '',
   reactStrictMode: true,
-  transpilePackages: ['@trycompai/db'],
+  transpilePackages: ['@trycompai/db', '@prisma/client'],
   images: {
     remotePatterns: [
       {
