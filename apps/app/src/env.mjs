@@ -87,7 +87,7 @@ export const env = createEnv({
     APP_AWS_SECRET_ACCESS_KEY: process.env.APP_AWS_SECRET_ACCESS_KEY,
     APP_AWS_REGION: process.env.APP_AWS_REGION,
     APP_AWS_BUCKET_NAME: process.env.APP_AWS_BUCKET_NAME,
-    NEXT_PUBLIC_PORTAL_URL: process.env.NEXT_PUBLIC_PORTAL_URL ?? "http://localhost:3000",
+    NEXT_PUBLIC_PORTAL_URL: process.env.NEXT_PUBLIC_PORTAL_URL,
     FIRECRAWL_API_KEY: process.env.FIRECRAWL_API_KEY,
     FLEET_URL: process.env.FLEET_URL,
     FLEET_TOKEN: process.env.FLEET_TOKEN,
