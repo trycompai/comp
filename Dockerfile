@@ -45,8 +45,22 @@ RUN bun install
 RUN cp -R packages/db/prisma/migrations node_modules/@trycompai/db/dist/
 
 # Run migrations against the combined schema published by @trycompai/db
-RUN echo "Running migrations against @trycompai/db combined schema"
-CMD ["bunx", "prisma", "migrate", "deploy", "--schema=node_modules/@trycompai/db/dist/schema.prisma"]
+RUN cat <<'EOF' > /migrate.sh
+#!/bin/sh
+set -eu
+
+echo "[Migrator] Starting prisma migrate deploy"
+
+if [ "${FORCE_DATABASE_WIPE_AND_RESEED:-false}" = "true" ]; then
+  echo "[Migrator] FORCE_DATABASE_WIPE_AND_RESEED=true detected. Resetting database before running migrations."
+  bunx prisma migrate reset --force --skip-seed --schema=node_modules/@trycompai/db/dist/schema.prisma
+fi
+
+bunx prisma migrate deploy --schema=node_modules/@trycompai/db/dist/schema.prisma
+echo "[Migrator] Prisma migrate deploy finished"
+EOF
+RUN chmod +x /migrate.sh
+CMD ["/migrate.sh"]
 
 # =============================================================================
 # STAGE 3: App Builder

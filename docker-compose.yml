@@ -5,15 +5,29 @@ services:
       dockerfile: Dockerfile
       target: migrator
     env_file:
-      - packages/db/.env
+      - .env
+    restart: 'no'
   seeder:
     build:
       context: .
       dockerfile: Dockerfile
       target: migrator
     env_file:
-      - packages/db/.env
-    command: sh -lc "bunx prisma generate --schema=node_modules/@trycompai/db/dist/schema.prisma && bun packages/db/prisma/seed/seed.js"
+      - .env
+    command: >-
+      sh -lc "set -eu;
+      echo '[Seeder] Starting seed job';
+      echo '[Seeder] Generating Prisma client';
+      bunx prisma generate --schema=node_modules/@trycompai/db/dist/schema.prisma;
+      echo '[Seeder] Running seed script';
+      bun packages/db/prisma/seed/seed.ts;
+      echo '[Seeder] Seed job finished'"
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
+    environment:
+      FORCE_DATABASE_WIPE_AND_RESEED: ${FORCE_DATABASE_WIPE_AND_RESEED:-false}
+    restart: 'no'
   app:
     build:
       context: .
@@ -28,6 +42,11 @@ services:
       - .env
     environment:
       APP_ENVIRONMENT: ${APP_ENVIRONMENT:-local}
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
+      seeder:
+        condition: service_completed_successfully
     healthcheck:
       test: ['CMD-SHELL', 'curl -f http://localhost:3000/api/health || exit 1']
       interval: 30s
@@ -48,6 +67,11 @@ services:
       - .env
     environment:
       APP_ENVIRONMENT: ${APP_ENVIRONMENT:-local}
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
+      seeder:
+        condition: service_completed_successfully
     healthcheck:
       test: ['CMD-SHELL', 'curl -f http://localhost:3002/ || exit 1']
       interval: 30s

@@ -5,11 +5,68 @@ import { frameworkEditorModelSchemas } from './frameworkEditorSchemas';
 
 const prisma = new PrismaClient();
 
+const forceDatabaseWipeAndReseed =
+  process.env.FORCE_DATABASE_WIPE_AND_RESEED?.toLowerCase() === 'true';
+
+async function shouldSkipSeeding(): Promise<boolean> {
+  try {
+    const count = await prisma.frameworkEditorFramework.count();
+
+    if (count > 0) {
+      if (!forceDatabaseWipeAndReseed) {
+        console.log(
+          `[Seeder] Seed data already present (FrameworkEditorFramework count: ${count}). Skipping seed.`,
+        );
+        await prisma.$disconnect();
+        return true;
+      }
+
+      console.log(
+        `[Seeder] FORCE_DATABASE_WIPE_AND_RESEED=true detected. Wiping ${count} existing FrameworkEditor frameworks before reseeding.`,
+      );
+      return false;
+    }
+
+    if (forceDatabaseWipeAndReseed) {
+      console.log('[Seeder] FORCE_DATABASE_WIPE_AND_RESEED=true detected but no existing data found. Proceeding with seed.');
+    }
+
+    return false;
+  } catch (error) {
+    console.warn('[Seeder] Seed pre-check failed; proceeding with seeding anyway.', error);
+    return false;
+  }
+}
+
+async function wipeSeededData() {
+  console.log('[Seeder] Clearing existing Framework Editor seed data...');
+
+  const joinTables = [
+    '_FrameworkEditorControlTemplateToFrameworkEditorPolicyTemplate',
+    '_FrameworkEditorControlTemplateToFrameworkEditorRequirement',
+    '_FrameworkEditorControlTemplateToFrameworkEditorTaskTemplate',
+  ];
+
+  for (const table of joinTables) {
+    await prisma.$executeRawUnsafe(`DELETE FROM "${table}";`);
+  }
+
+  await prisma.frameworkEditorControlTemplate.deleteMany({});
+  await prisma.frameworkEditorPolicyTemplate.deleteMany({});
+  await prisma.frameworkEditorTaskTemplate.deleteMany({});
+  await prisma.frameworkEditorRequirement.deleteMany({});
+  await prisma.frameworkEditorFramework.deleteMany({});
+  await prisma.frameworkEditorVideo.deleteMany({});
+
+  console.log('[Seeder] Existing Framework Editor seed data cleared.');
+}
+
 async function seedJsonFiles(subDirectory: string) {
   const directoryPath = path.join(__dirname, subDirectory);
-  console.log(`Starting to seed files from: ${directoryPath}`);
+  console.log(`[Seeder] Starting to seed files from: ${directoryPath}`);
   const files = await fs.readdir(directoryPath);
   const jsonFiles = files.filter((file) => file.endsWith('.json'));
+  console.log(`[Seeder] Found ${jsonFiles.length} JSON file(s) in ${subDirectory}`);
 
   // Ensure deterministic order for primitives so FK dependencies are satisfied
   // Specifically, seed Frameworks before Requirements (which reference Frameworks)
@@ -22,7 +79,10 @@ async function seedJsonFiles(subDirectory: string) {
     jsonFiles.sort((a, b) => getPriority(a) - getPriority(b));
   }
 
-  for (const jsonFile of jsonFiles) {
+  for (const [index, jsonFile] of jsonFiles.entries()) {
+    console.log(
+      `[Seeder] -> Processing ${jsonFile} (${index + 1}/${jsonFiles.length}) from ${subDirectory}`,
+    );
     try {
       const filePath = path.join(directoryPath, jsonFile);
       const jsonContent = await fs.readFile(filePath, 'utf-8');
@@ -86,7 +146,7 @@ async function seedJsonFiles(subDirectory: string) {
         });
 
         console.log(
-          `Seeding ${processedData.length} records from ${jsonFile} into ${prismaModelKey}...`,
+          `[Seeder] Seeding ${processedData.length} records from ${jsonFile} into ${prismaModelKey}...`,
         );
 
         // Use upsert to update existing records instead of skipping them
@@ -98,7 +158,7 @@ async function seedJsonFiles(subDirectory: string) {
           });
         }
 
-        console.log(`Finished seeding ${jsonFile} from primitives.`);
+        console.log(`[Seeder] Finished seeding ${jsonFile} from primitives.`);
       } else if (subDirectory === 'relations') {
         // Expected filename format: _ModelAToModelB.json
         if (!jsonFile.startsWith('_') || !jsonFile.includes('To')) {
@@ -149,7 +209,7 @@ async function seedJsonFiles(subDirectory: string) {
         }
 
         console.log(
-          `Processing relations from ${jsonFile} for ${prismaModelAName} to connect via ${relationFieldNameOnModelA}...`,
+          `[Seeder] Processing relations from ${jsonFile} for ${prismaModelAName} to connect via ${relationFieldNameOnModelA}...`,
         );
         let connectionsMade = 0;
         for (const relationItem of jsonData) {
@@ -178,23 +238,36 @@ async function seedJsonFiles(subDirectory: string) {
             // Decide if one error should stop the whole process for this file or continue
           }
         }
-        console.log(`Finished processing ${jsonFile}. Made ${connectionsMade} connections.`);
+        console.log(`[Seeder] Finished processing ${jsonFile}. Made ${connectionsMade} connections.`);
       }
     } catch (error) {
       console.error(`Error processing ${jsonFile}:`, error);
       throw error;
     }
+    console.log(`[Seeder] <- Completed ${jsonFile}`);
   }
+
+  console.log(`[Seeder] Completed directory ${subDirectory}`);
 }
 
 async function main() {
+  if (await shouldSkipSeeding()) {
+    return;
+  }
+
   try {
+    if (forceDatabaseWipeAndReseed) {
+      await wipeSeededData();
+    }
+
+    console.log('[Seeder] Beginning primitives seed pass');
     await seedJsonFiles('primitives');
+    console.log('[Seeder] Beginning relations seed pass');
     await seedJsonFiles('relations');
     await prisma.$disconnect();
-    console.log('Seeding completed successfully for primitives and relations.');
+    console.log('[Seeder] Seeding completed successfully for primitives and relations.');
   } catch (error: unknown) {
-    console.error('Seeding failed:', error);
+    console.error('[Seeder] Seeding failed:', error);
     await prisma.$disconnect();
     process.exit(1);
   }
