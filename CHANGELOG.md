@@ -1,3 +1,16 @@
+# [1.54.0](https://github.com/trycompai/comp/compare/v1.53.0...v1.54.0) (2025-09-19)
+
+
+### Bug Fixes
+
+* **app:** show only published policies on Employee Tasks ([#1547](https://github.com/trycompai/comp/issues/1547)) ([92b2dc9](https://github.com/trycompai/comp/commit/92b2dc9312c183e54c09e86e85706dbe01942196))
+
+
+### Features
+
+* **app:** Add support for ISO 42001 ([#1549](https://github.com/trycompai/comp/issues/1549)) ([1a9d57b](https://github.com/trycompai/comp/commit/1a9d57b8dc748016ab1a5389041017984455de5b))
+* **app:** Auto mark tasks as todo when review period starts ([#1546](https://github.com/trycompai/comp/issues/1546)) ([777c0db](https://github.com/trycompai/comp/commit/777c0db8473c464d909ebce5ea6e0c2c3f72e31f))
+
 # [1.53.0](https://github.com/trycompai/comp/compare/v1.52.1...v1.53.0) (2025-09-18)
 
 
