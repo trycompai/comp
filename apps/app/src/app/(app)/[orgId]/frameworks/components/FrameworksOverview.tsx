@@ -28,6 +28,10 @@ export function mapFrameworkToBadge(framework: FrameworkInstanceWithControls) {
     return '/badges/iso27001.svg';
   }
 
+  if (framework.framework.name === 'ISO 42001') {
+    return '/badges/iso42001.svg';
+  }
+
   if (framework.framework.name === 'HIPAA') {
     return '/badges/hipaa.svg';
   }
