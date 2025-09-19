@@ -290,14 +290,14 @@ export function TaskPropertiesSidebar({
           <div className="flex items-center justify-end p-0 px-1 min-h-[2.25rem]">
             {task.reviewDate ? (
               <>
-                <span>
+                <span className="font-medium">
                   {format(new Date(task.reviewDate), 'M/d/yyyy')}
                 </span>
                 <CalendarIcon className="ml-2 h-4 w-4 opacity-50" />
               </>
             ) : (
               <>
-                <span className="text-muted-foreground px-1">None</span>
+                <span className="text-muted-foreground px-1 font-medium">None</span>
                 <CalendarIcon className="ml-2 h-4 w-4 opacity-50" />
               </>
             )}
