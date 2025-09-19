@@ -36,6 +36,7 @@ services:
       args:
         NEXT_PUBLIC_BETTER_AUTH_URL: ${NEXT_PUBLIC_BETTER_AUTH_URL:-http://localhost:3000}
         NEXT_PUBLIC_PORTAL_URL: ${NEXT_PUBLIC_PORTAL_URL:-http://localhost:3002}
+        APP_ENVIRONMENT: ${APP_ENVIRONMENT:-local}
     ports:
       - '3000:3000'
     env_file:

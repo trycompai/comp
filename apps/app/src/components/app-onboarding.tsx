@@ -41,6 +41,8 @@ export function AppOnboarding({
   const [open, setOpen] = useQueryState(sheetName ?? 'sheet');
   const isOpen = Boolean(open);
   const { theme } = useTheme();
+  const disableImageOptimization =
+    process.env.NEXT_PUBLIC_DISABLE_IMAGE_OPTIMIZATION === 'true';
 
   return (
     <Card className="w-full overflow-hidden border">
@@ -131,6 +133,7 @@ export function AppOnboarding({
                     height={400}
                     width={400}
                     quality={100}
+                    unoptimized={disableImageOptimization}
                     className="relative z-10 rounded-lg drop-shadow-md"
                   />
                 </div>
