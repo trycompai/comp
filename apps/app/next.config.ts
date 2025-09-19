@@ -3,6 +3,7 @@ import path from 'path';
 import './src/env.mjs';
 
 const isStandalone = process.env.NEXT_OUTPUT_STANDALONE === 'true';
+const isLocalEnvironment = (process.env.APP_ENVIRONMENT ?? '').toLowerCase() === 'local';
 
 const config: NextConfig = {
   // Use S3 bucket for static assets with app-specific path
@@ -13,6 +14,7 @@ const config: NextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@trycompai/db'],
   images: {
+    unoptimized: isLocalEnvironment,
     remotePatterns: [
       {
         protocol: 'https',
