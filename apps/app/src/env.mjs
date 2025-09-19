@@ -26,7 +26,7 @@ export const env = createEnv({
     APP_AWS_SECRET_ACCESS_KEY: z.string().optional(),
     APP_AWS_REGION: z.string().optional(),
     APP_AWS_BUCKET_NAME: z.string().optional(),
-    NEXT_PUBLIC_PORTAL_URL: z.string(),
+    NEXT_PUBLIC_PORTAL_URL: z.string().optional(),
     FIRECRAWL_API_KEY: z.string().optional(),
     FLEET_URL: z.string().optional(),
     FLEET_TOKEN: z.string().optional(),
