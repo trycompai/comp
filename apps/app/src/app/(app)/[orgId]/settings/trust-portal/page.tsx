@@ -26,12 +26,14 @@ export default async function TrustPortalSettings({
         soc2type1={trustPortal?.soc2type1 ?? false}
         soc2type2={trustPortal?.soc2type2 ?? false}
         iso27001={trustPortal?.iso27001 ?? false}
+        iso42001={trustPortal?.iso42001 ?? false}
         gdpr={trustPortal?.gdpr ?? false}
         hipaa={trustPortal?.hipaa ?? false}
         pcidss={trustPortal?.pcidss ?? false}
         soc2type1Status={trustPortal?.soc2type1Status ?? 'started'}
         soc2type2Status={trustPortal?.soc2type2Status ?? 'started'}
         iso27001Status={trustPortal?.iso27001Status ?? 'started'}
+        iso42001Status={trustPortal?.iso42001Status ?? 'started'}
         gdprStatus={trustPortal?.gdprStatus ?? 'started'}
         hipaaStatus={trustPortal?.hipaaStatus ?? 'started'}
         pcidssStatus={trustPortal?.pcidssStatus ?? 'started'}
@@ -71,12 +73,14 @@ const getTrustPortal = cache(async (orgId: string) => {
     soc2type1: trustPortal?.soc2type1,
     soc2type2: trustPortal?.soc2type2 || trustPortal?.soc2,
     iso27001: trustPortal?.iso27001,
+    iso42001: trustPortal?.iso42001,
     gdpr: trustPortal?.gdpr,
     hipaa: trustPortal?.hipaa,
     pcidss: trustPortal?.pci_dss,
     soc2type1Status: trustPortal?.soc2type1_status,
     soc2type2Status: !trustPortal?.soc2type2 && trustPortal?.soc2 ? trustPortal?.soc2_status : trustPortal?.soc2type2_status,
     iso27001Status: trustPortal?.iso27001_status,
+    iso42001Status: trustPortal?.iso42001_status,
     gdprStatus: trustPortal?.gdpr_status,
     hipaaStatus: trustPortal?.hipaa_status,
     pcidssStatus: trustPortal?.pci_dss_status,
