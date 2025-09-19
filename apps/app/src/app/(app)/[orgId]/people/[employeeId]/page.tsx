@@ -114,6 +114,7 @@ const getPoliciesTasks = async (employeeId: string) => {
   const policies = await db.policy.findMany({
     where: {
       organizationId: organizationId,
+      status: 'published',
     },
     orderBy: {
       name: 'asc',
