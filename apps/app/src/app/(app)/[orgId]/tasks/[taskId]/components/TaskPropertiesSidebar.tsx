@@ -14,8 +14,6 @@ import { useState } from 'react';
 import { TaskStatusIndicator } from '../../components/TaskStatusIndicator';
 import { PropertySelector } from './PropertySelector';
 import { DEPARTMENT_COLORS, taskDepartments, taskFrequencies, taskStatuses } from './constants';
-import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
-import { Calendar } from '@comp/ui/calendar';
 import { format } from 'date-fns';
 
 interface TaskPropertiesSidebarProps {
@@ -40,15 +38,6 @@ export function TaskPropertiesSidebar({
   orgId,
 }: TaskPropertiesSidebarProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-  const [tempDate, setTempDate] = useState<Date | undefined>(undefined);
-
-  // Function to handle date confirmation
-  const handleDateConfirm = (date: Date | undefined) => {
-    setTempDate(date);
-    setIsDatePickerOpen(false);
-    handleUpdateTask({ reviewDate: date });
-  };
 
   return (
     <aside className="hidden w-full shrink-0 flex-col md:w-64 md:border-l md:pt-8 md:pl-8 lg:flex lg:w-72">
@@ -298,63 +287,21 @@ export function TaskPropertiesSidebar({
         {/* Review Date Selector */}
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">Review Date</span>
-          <Popover
-            open={isDatePickerOpen}
-            onOpenChange={(open) => {
-              setIsDatePickerOpen(open);
-              if (!open) {
-                setTempDate(undefined);
-              }
-            }}
-          >
-            <PopoverTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                className="flex h-auto w-auto items-center justify-end p-0 px-1 hover:bg-transparent data-[state=open]:bg-transparent"
-              >
-                {tempDate ? (
-                  format(tempDate, 'M/d/yyyy')
-                ) : task.reviewDate ? (
-                  format(new Date(task.reviewDate), 'M/d/yyyy')
-                ) : (
-                  <span className="text-muted-foreground px-1">Select ...</span>
-                )}
-                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="end">
-              <Calendar
-                mode="single"
-                selected={
-                  tempDate || (task.reviewDate ? new Date(task.reviewDate) : undefined)
-                }
-                onSelect={(date) => setTempDate(date)}
-                disabled={(date) => date <= new Date()}
-                initialFocus
-              />
-            <div className="mt-4 flex justify-end gap-2 px-4 pb-2">
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  setIsDatePickerOpen(false);
-                  setTempDate(undefined);
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                onClick={() => handleDateConfirm(tempDate)}
-              >
-                Confirm Date
-              </Button>
-            </div>
-            </PopoverContent>
-          </Popover>
+          <div className="flex items-center justify-end p-0 px-1 min-h-[2.25rem]">
+            {task.reviewDate ? (
+              <>
+                <span>
+                  {format(new Date(task.reviewDate), 'M/d/yyyy')}
+                </span>
+                <CalendarIcon className="ml-2 h-4 w-4 opacity-50" />
+              </>
+            ) : (
+              <>
+                <span className="text-muted-foreground px-1">None</span>
+                <CalendarIcon className="ml-2 h-4 w-4 opacity-50" />
+              </>
+            )}
+          </div>
         </div>
       </div>
     </aside>
