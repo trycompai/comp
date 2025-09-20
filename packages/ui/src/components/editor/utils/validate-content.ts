@@ -58,13 +58,12 @@ function fixContentArray(contentArray: any[]): JSONContent[] {
   return fixedContent;
 }
 
-function ensureNonEmptyText(value: unknown): string {
+function ensureNonEmptyText(value: unknown): string | null {
   const text = typeof value === 'string' ? value : '';
-  // Normalize NBSP and narrow no-break space for emptiness checks
-  const normalized = text.replace(/[\u00A0\u202F]/g, '');
+  // Normalize NBSP, narrow no-break space, and zero-width space for emptiness checks
+  const normalized = text.replace(/[\u00A0\u202F\u200B]/g, '');
   if (normalized.trim().length > 0) return text;
-  // Return zero-width space to ensure non-empty text node without visual change
-  return '\u200B';
+  return null;
 }
 
 /**
@@ -133,9 +132,13 @@ function fixParagraph(node: any): JSONContent {
     .map((item: any) => {
       // Fix text nodes that are missing the type property
       if (item.text && !item.type) {
+        const cleaned = ensureNonEmptyText(item.text);
+        if (!cleaned) {
+          return null;
+        }
         return {
           type: 'text',
-          text: ensureNonEmptyText(item.text),
+          text: cleaned,
           ...(item.marks && { marks: fixMarks(item.marks) }),
         };
       }
@@ -210,10 +213,13 @@ function fixListItem(node: any): JSONContent {
 /**
  * Fixes text nodes
  */
-function fixTextNode(node: any): JSONContent {
+function fixTextNode(node: any): JSONContent | null {
   const { text, marks, ...rest } = node;
 
   const value = ensureNonEmptyText(text);
+  if (!value) {
+    return null;
+  }
   return {
     type: 'text',
     text: value,

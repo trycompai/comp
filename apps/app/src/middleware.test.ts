@@ -110,8 +110,8 @@ describe('Middleware', () => {
 
       // Assert
       expect(mockAuth.api.setActiveOrganization).not.toHaveBeenCalled();
-      // Since user has no org, they should be allowed to access setup
-      expect(response.status).toBe(200);
+      expect(response.status).toBe(307);
+      expect(response.headers.get('location')).toBe('http://localhost:3000/setup');
     });
 
     it('should allow existing users to create additional orgs with intent param', async () => {
@@ -148,9 +148,9 @@ describe('Middleware', () => {
       // Act
       const response = await middleware(request);
 
-      // Assert
-      expect(response.status).toBe(307);
-      expect(response.headers.get('location')).toBe('http://localhost:3000/org_123/frameworks');
+      // Assert - middleware now lets setup render client-side instead of redirecting
+      expect(response.status).toBe(200);
+      expect(response.headers.get('location')).toBeNull();
     });
   });
 
@@ -171,9 +171,10 @@ describe('Middleware', () => {
       // Act
       const response = await middleware(request);
 
-      // Assert
-      expect(response.status).toBe(307);
-      expect(response.headers.get('location')).toBe('http://localhost:3000/upgrade/org_123');
+      // Assert - middleware no longer redirects to upgrade from middleware layer
+      expect(mockDb.organization.findFirst).not.toHaveBeenCalled();
+      expect(response.status).toBe(200);
+      expect(response.headers.get('location')).toBeNull();
     });
 
     it('should allow access with hasAccess = true', async () => {
@@ -195,6 +196,7 @@ describe('Middleware', () => {
 
       // Assert
       expect(response.status).toBe(200);
+      expect(response.headers.get('location')).toBeNull();
     });
 
     it('should bypass access check for unprotected routes', async () => {
@@ -230,9 +232,10 @@ describe('Middleware', () => {
       // Act
       const response = await middleware(request);
 
-      // Assert
-      expect(response.status).toBe(307);
-      expect(response.headers.get('location')).toBe('http://localhost:3000/upgrade/org_123');
+      // Assert - middleware does not perform upgrade redirects anymore
+      expect(mockDb.organization.findFirst).not.toHaveBeenCalled();
+      expect(response.status).toBe(200);
+      expect(response.headers.get('location')).toBeNull();
     });
 
     it('should preserve query parameters when redirecting to upgrade', async () => {
@@ -252,9 +255,10 @@ describe('Middleware', () => {
       const response = await middleware(request);
 
       // Assert
-      expect(response.status).toBe(307);
+      expect(mockDb.organization.findFirst).not.toHaveBeenCalled();
+      expect(response.status).toBe(200);
       const location = response.headers.get('location');
-      expect(location).toBe('http://localhost:3000/upgrade/org_123?redirect=policies&tab=active');
+      expect(location).toBeNull();
     });
   });
 
@@ -275,12 +279,9 @@ describe('Middleware', () => {
       // Act
       const response = await middleware(request);
 
-      // Assert
-      expect(mockAuth.api.setActiveOrganization).toHaveBeenCalledWith({
-        headers: expect.any(Object),
-        body: { organizationId: 'org_123' },
-      });
-      expect(response.status).toBe(307); // Redirect to refresh session
+      // Assert - middleware no longer heals sessions
+      expect(mockAuth.api.setActiveOrganization).not.toHaveBeenCalled();
+      expect(response.status).toBe(200);
     });
   });
 
@@ -306,9 +307,10 @@ describe('Middleware', () => {
       // Act
       const response = await middleware(request);
 
-      // Assert
-      expect(response.status).toBe(307);
-      expect(response.headers.get('location')).toBe('http://localhost:3000/onboarding/org_123');
+      // Assert - onboarding gating handled downstream now
+      expect(mockDb.organization.findUnique).not.toHaveBeenCalled();
+      expect(response.status).toBe(200);
+      expect(response.headers.get('location')).toBeNull();
     });
 
     it('should allow access to product when onboarding is completed', async () => {
@@ -361,11 +363,10 @@ describe('Middleware', () => {
       const response = await middleware(request);
 
       // Assert
-      expect(response.status).toBe(307);
+      expect(mockDb.organization.findUnique).not.toHaveBeenCalled();
+      expect(response.status).toBe(200);
       const location = response.headers.get('location');
-      expect(location).toBe(
-        'http://localhost:3000/onboarding/org_123?checkoutComplete=starter&value=99',
-      );
+      expect(location).toBeNull();
     });
 
     it('should not check onboarding for unprotected routes', async () => {
