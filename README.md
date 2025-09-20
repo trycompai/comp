@@ -73,107 +73,131 @@ To get a local copy up and running, please follow these simple steps.
 
 ### Prerequisites
 
-Here is what you need to be able to run Comp AI.
+Here is what you need to be able to run Comp AI without Docker.
 
 - Node.js (Version: >=20.x)
 - Bun (Version: >=1.1.36)
 - Postgres (Version: >=15.x)
 
-## Development
+- Turbo (Optional):
+```sh
+   bun add -g turbo
+```
 
-To get the project working locally with all integrations, follow these extended development steps.
+### Local Development Setup
 
-### Setup
+1. There are 3 main serices that have independent `.env` files, these need to be updated/maintained independently.
 
-1. Clone the repo:
+- Main Application:
+```sh
+   cp apps/app/.env.example apps/app/.env
+```
 
-   ```sh
+- Employee Portal:
+```sh
+   cp apps/portal/.env.example apps/portal/.env
+```
+
+- Migrator/Seeder Service
+```sh
+   cp packages/db/.env.example packages/db/.env
+```
+
+2. Clone the repo:
+
+```sh
    git clone https://github.com/trycompai/comp.git
-   ```
+```
 
-2. Navigate to the project directory:
+3. Navigate to the project directory:
 
-   ```sh
+```sh
    cd comp
-   ```
+```
 
-3. Install dependencies using Bun:
+4. Install dependencies using Bun:
 
 ```sh
    bun install
 ```
 
-4. Install `concurrently` as a dev dependency:
+5. Start the apps:
 
 ```sh
-   bun add -d concurrently
+   bun run dev
+```
+
+Or use the Turbo repo script:
+
+```sh
+   turbo dev
 ```
 
 ---
 
-### Environment Setup
+### Docker Compose
+This still requires you to bring your own Postgres DB, AWS S3 Bucket, Firecrawl API Key, OpenAPI compatible Endpoint, Resend API Key, Trigger Project + Key, and Upstash redis API Key. -- Work to move these into the compose still needs to be done, SeaweedFS should be looked at as an AWS replacment --
 
-Create the following `.env` files and fill them out with your credentials:
-
-- `comp/apps/app/.env`
-- `comp/apps/portal/.env`
-- `comp/packages/db/.env`
-
-You can copy from the `.env.example` files:
-
-### Linux / macOS
+1. Clone the repo:
 
 ```sh
-cp apps/app/.env.example apps/app/.env
-cp apps/portal/.env.example apps/portal/.env
-cp packages/db/.env.example packages/db/.env
+   git clone https://github.com/trycompai/comp.git
 ```
 
-### Windows (Command Prompt)
+2. Navigate to the project directory:
 
-```cmd
-copy apps\app\.env.example apps\app\.env
-copy apps\portal\.env.example apps\portal\.env
-copy packages\db\.env.example packages\db\.env
+```sh
+   cd comp
 ```
 
-### Windows (PowerShell)
+3. Copy the root example file and fill in the required values.
 
-```powershell
-Copy-Item apps\app\.env.example -Destination apps\app\.env
-Copy-Item apps\portal\.env.example -Destination apps\portal\.env
-Copy-Item packages\db\.env.example -Destination packages\db\.env
+```sh
+   cp .env.example .env
 ```
 
-Additionally, ensure the following required environment variables are added to `.env` in `comp/apps/app/.env`:
+4. Set the required values (at minimum):
+Variables that are uncommeented in `.env.example` are required, the commented out ones are optional and can be enabled as needed. 
+Setting `FORCE_DATABASE_WIPE_AND_RESEED="true"` will wipe and reseed the local database the next time the containers start. And will continue to do it on every start until you flip it to `FORCE_DATABASE_WIPE_AND_RESEED="false"`.
+Anytime you are using docker it is recomended that you set APP_ENVIRONMENT="local" there are other options but their implementation is experimental.
 
-```env
-AUTH_SECRET=""                  # Use `openssl rand -base64 32` to generate
-DATABASE_URL="postgresql://user:password@host:port/database"
-RESEND_API_KEY="" # Resend (https://resend.com/api-keys) - Resend Dashboard -> API Keys
-NEXT_PUBLIC_PORTAL_URL="http://localhost:3002"
-REVALIDATION_SECRET=""         # Use `openssl rand -base64 32` to generate
+5. Bring the full stack up:
+
+```sh
+   docker compose up --build -d
 ```
 
-> ✅ Make sure you have all of these variables in your `.env` file.
-> If you're copying from `.env.example`, it might be missing the last two (`NEXT_PUBLIC_PORTAL_URL` and `REVALIDATION_SECRET`), so be sure to add them manually.
+6. SPECIAL NOTE: If you are getting stuck on resolving metadata provenance or the build hangs (more likely on MacOs) just restart the build, this is normal behavior related to your dns settings and/or a misconfigured envrionment variable which cannot connect to your service at build time. You can use Bake(docker-cacheing) to bypass the provenance hang.
 
-Some environment variables may not load correctly from `.env` — in such cases, **hard-code** the values directly in the relevant files (see Hardcoding section below).
+```sh
+   docker buildx bake --set *.provenance=false
+   docker compose up --build --progress plain -d
+```
 
----
+To see why your are hanging you can run the following, which will do the docker build but maintain all logs, so you can audit the process.
 
-### Cloud & Auth Configuration
+```sh
+   docker compose build --progress plain
+```
 
-#### 1. Trigger.dev
+The compose stack automatically runs database migrations and seeds if your database does not have them yet. 
+Static images are served without Next.js image optimisation when `APP_ENVIRONMENT=local`, which resolves the server/client mismatch when requesting/serving images.
+
+To force optimisation while still self-hosting, set `SELF_HOSTING=false` in `.env`; setting it to `true` (or leaving it empty while `APP_ENVIRONMENT=local`) keeps optimisation disabled so images/artwork load correctly. -- UnTested But Theoretically Correct-- 
+
+
+## Cloud & Auth Configuration
+
+### 1. Trigger.dev - Required
 
 - Create an account on [https://cloud.trigger.dev](https://cloud.trigger.dev)
 - Create a project and copy the Project ID
-- In `comp/apps/app/trigger.config.ts`, set:
-  ```ts
-  project: 'proj_****az***ywb**ob*';
-  ```
+- In `comp/apps/app/.env`, set:
+```sh
+  TRIGGER_PROJECT_ID="proj_****az***ywb**ob*"
+```
 
-#### 2. Google OAuth
+### 2. Google OAuth - Optional
 
 - Go to [Google Cloud OAuth Console](https://console.cloud.google.com/auth/clients)
 - Create an OAuth client:
@@ -181,7 +205,7 @@ Some environment variables may not load correctly from `.env` — in such cases,
   - Name: `comp_app` # You can choose a different name if you prefer!
 - Add these **Authorized Redirect URIs**:
 
-  ```
+```
   http://localhost
   http://localhost:3000
   http://localhost:3002
@@ -189,122 +213,48 @@ Some environment variables may not load correctly from `.env` — in such cases,
   http://localhost:3002/api/auth/callback/google
   http://localhost:3000/auth
   http://localhost:3002/auth
-  ```
+```
 
 - After creating the app, copy the `GOOGLE_ID` and `GOOGLE_SECRET`
-  - Add them to your `.env` files
-  - If that doesn’t work, hard-code them in:
-    ```
-    comp/apps/portal/src/app/lib/auth.ts
-    ```
+  - Add them to your `.env` files as `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET`
 
-#### 3. Redis (Upstash)
+### 3. Redis (Upstash) - Required
 
 - Go to [https://console.upstash.com](https://console.upstash.com)
 - Create a Redis database
-- Copy the **Redis URL** and **TOKEN**
-- Add them to your `.env` file, or hard-code them if the environment variables are not being recognized in:
-  ```
-  comp/packages/kv/src/index.ts
-  ```
+- Copy the **TOKEN** and **Redis URL**
+- Add them to your `.env` files as `UPSTASH_REDIS_REST_TOKEN` and `UPSTASH_REDIS_REST_URL`
 
 ---
 
-### Database Setup
+### 4. Database Setup = Required-ish (NOT Required for Docker Compose setups)
 
-Start and initialize the PostgreSQL database using Docker:
+Start and initialize your own PostgreSQL database. Add the PostgreSQL connection URI to the .env files as `DATABASE_URL` example: DATABASE_URL="postgresql://[username[:password]@]host[:port]/database[?options]"
 
-1. Start the database:
-
-   ```sh
-   bun docker:up
-   ```
-
-2. Default credentials:
-   - Database name: `comp`
-   - Username: `postgres`
-   - Password: `postgres`
-
-3. To change the default password:
-
-   ```sql
-   ALTER USER postgres WITH PASSWORD 'new_password';
-   ```
-
-4. If you encounter the following error:
-
-   ```
-   HINT: No function matches the given name and argument types...
-   ```
-
-   Run the fix:
-
-   ```sh
-   psql "postgresql://postgres:<your_password>@localhost:5432/comp" -f ./packages/db/prisma/functionDefinition.sql
-   ```
-
-   Expected output: `CREATE FUNCTION`
-
-   > 💡 `comp` is the database name. Make sure to use the correct **port** and **database name** for your setup.
-
-5. Apply schema and seed:
+1. Initialize schema and seed - Automatic if using Docker Compose additionally docker compose installations will automatically apply new migrations if there is any on every startup without harming your data.
 
 ```sh
- # Generate Prisma client
- bun db:generate
+   # Generate Prisma client (Build "Migrator" Templates)
+   bun db:generate
 
- # Push the schema to the database
- bun db:push
+   # Push the schema to your Postgres database
+   bun db:push
 
- # Optional: Seed the database with initial data
- bun db:seed
+   # CAUTION: Run only once! - Seed the database with initial data
+   bun db:seed
 ```
 
 Other useful database commands:
 
 ```sh
-# Open Prisma Studio to view/edit data
-bun db:studio
+   # Open Prisma Studio to view/edit data
+   bun db:studio
 
-# Run database migrations
-bun db:migrate
-
-# Stop the database container
-bun docker:down
-
-# Remove the database container and volume
-bun docker:clean
+   # Run database migrations
+   bun db:migrate
 ```
 
 ---
-
-### Start Development
-
-Once everything is configured:
-
-```sh
-bun run dev
-```
-
-Or use the Turbo repo script:
-
-```sh
-turbo dev
-```
-
-> 💡 Make sure you have Turbo installed. If not, you can install it using Bun:
-
-```sh
-bun add -g turbo
-```
-
-🎉 Yay! You now have a working local instance of Comp AI! 🚀
-
-## Deployment
-
-### Docker
-
-Steps to deploy Comp AI on Docker are coming soon.
 
 ### Vercel
 
@@ -328,25 +278,25 @@ This repository uses semantic-release to automatically publish packages to npm w
 ### Usage
 
 ```bash
-# Install a published package
-npm install @comp/ui
+   # Install a published package
+   npm install @comp/ui
 
-# Use in your project
-import { Button } from '@comp/ui/button'
-import { client } from '@comp/kv'
+   # Use in your project
+   import { Button } from '@comp/ui/button'
+   import { client } from '@comp/kv'
 ```
 
 ### Development
 
 ```bash
-# Build all packages
-bun run build
+   # Build all packages
+   bun run build
 
-# Build specific package
-bun run -F @comp/ui build
+   # Build specific package
+   bun run -F @comp/ui build
 
-# Test packages locally
-bun run release:packages --dry-run
+   # Test packages locally
+   bun run release:packages --dry-run
 ```
 
 ## Contributors

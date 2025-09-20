@@ -2,6 +2,15 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+### 1. Trigger.dev - Required
+
+- Create an account on [https://cloud.trigger.dev](https://cloud.trigger.dev)
+- Create a project and copy the Project ID
+- In `comp/apps/app/.env`, set:
+```sh
+  TRIGGER_PROJECT_ID="proj_****az***ywb**ob*"
+```
+
 First, run the development server:
 
 ```bash
