@@ -3,6 +3,16 @@ import path from 'path';
 import './src/env.mjs';
 
 const isStandalone = process.env.NEXT_OUTPUT_STANDALONE === 'true';
+const isLocalEnvironment = (process.env.APP_ENVIRONMENT ?? '').toLowerCase() === 'local';
+const isSelfHosting = (() => {
+  const raw = process.env.SELF_HOSTING;
+  if (raw) {
+    const normalized = raw.toLowerCase();
+    if (normalized === 'true' || normalized === '1') return true;
+    if (normalized === 'false' || normalized === '0') return false;
+  }
+  return isLocalEnvironment;
+})();
 
 const config: NextConfig = {
   // Use S3 bucket for static assets with app-specific path
@@ -10,9 +20,13 @@ const config: NextConfig = {
     process.env.NODE_ENV === 'production' && process.env.STATIC_ASSETS_URL
       ? `${process.env.STATIC_ASSETS_URL}/app`
       : '',
+  env: {
+    NEXT_PUBLIC_DISABLE_IMAGE_OPTIMIZATION: String(isSelfHosting),
+  },
   reactStrictMode: true,
   transpilePackages: ['@trycompai/db'],
   images: {
+    unoptimized: isSelfHosting,
     remotePatterns: [
       {
         protocol: 'https',
