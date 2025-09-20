@@ -68,6 +68,7 @@ services:
       - .env
     environment:
       APP_ENVIRONMENT: ${APP_ENVIRONMENT:-local}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3002}
     depends_on:
       migrator:
         condition: service_completed_successfully
