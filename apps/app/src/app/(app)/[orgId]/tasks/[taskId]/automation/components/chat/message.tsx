@@ -6,6 +6,9 @@ import type { ChatUIMessage } from './types';
 
 interface Props {
   message: ChatUIMessage;
+  orgId?: string;
+  onSecretAdded?: (secretName: string) => void;
+  onInfoProvided?: (info: Record<string, string>) => void;
 }
 
 interface ReasoningContextType {
@@ -20,7 +23,12 @@ export const useReasoningContext = () => {
   return context;
 };
 
-export const Message = memo(function Message({ message }: Props) {
+export const Message = memo(function Message({
+  message,
+  orgId,
+  onSecretAdded,
+  onInfoProvided,
+}: Props) {
   const [expandedReasoningIndex, setExpandedReasoningIndex] = useState<number | null>(null);
 
   const reasoningParts = message.parts
@@ -79,9 +87,37 @@ export const Message = memo(function Message({ message }: Props) {
 
           {/* Message Content */}
           <div className="space-y-4 relative z-10">
-            {message.parts.map((part, index) => (
-              <MessagePart key={index} part={part} partIndex={index} />
-            ))}
+            {(() => {
+              // Reorder parts to ensure text messages appear before tool UI components
+              const reorderedParts = [...message.parts];
+              const promptParts = ['tool-promptForSecret', 'tool-promptForInfo'];
+
+              // Sort so that prompt tool parts come after text parts
+              reorderedParts.sort((a, b) => {
+                const aIsPrompt = promptParts.includes(a.type);
+                const bIsPrompt = promptParts.includes(b.type);
+                const aIsText = a.type === 'text';
+                const bIsText = b.type === 'text';
+
+                // If one is text and the other is a prompt tool, text comes first
+                if (aIsText && bIsPrompt) return -1;
+                if (bIsText && aIsPrompt) return 1;
+
+                // Otherwise maintain original order
+                return 0;
+              });
+
+              return reorderedParts.map((part, index) => (
+                <MessagePart
+                  key={`${part.type}-${index}`}
+                  part={part}
+                  partIndex={message.parts.indexOf(part)}
+                  orgId={orgId}
+                  onSecretAdded={onSecretAdded}
+                  onInfoProvided={onInfoProvided}
+                />
+              ));
+            })()}
           </div>
 
           {/* Clean depth separator */}

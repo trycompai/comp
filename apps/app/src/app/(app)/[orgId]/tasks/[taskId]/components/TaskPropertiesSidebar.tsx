@@ -8,13 +8,13 @@ import {
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
 import type { Control, Departments, Member, Task, TaskFrequency, TaskStatus, User } from '@db';
-import { CalendarIcon, MoreVertical, RefreshCw, Trash2 } from 'lucide-react';
+import { format } from 'date-fns';
+import { CalendarIcon, MoreVertical, RefreshCw, Sparkles, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { TaskStatusIndicator } from '../../components/TaskStatusIndicator';
 import { PropertySelector } from './PropertySelector';
 import { DEPARTMENT_COLORS, taskDepartments, taskFrequencies, taskStatuses } from './constants';
-import { format } from 'date-fns';
 
 interface TaskPropertiesSidebarProps {
   task: Task & { controls?: Control[] };
@@ -74,6 +74,7 @@ export function TaskPropertiesSidebar({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
       <div className="space-y-4 overflow-y-auto">
         {/* Status Selector */}
         <div className="group flex items-center justify-between text-sm">
@@ -290,9 +291,7 @@ export function TaskPropertiesSidebar({
           <div className="flex items-center justify-end p-0 px-1 min-h-[2.25rem]">
             {task.reviewDate ? (
               <>
-                <span className="font-medium">
-                  {format(new Date(task.reviewDate), 'M/d/yyyy')}
-                </span>
+                <span className="font-medium">{format(new Date(task.reviewDate), 'M/d/yyyy')}</span>
                 <CalendarIcon className="ml-2 h-4 w-4 opacity-50" />
               </>
             ) : (
@@ -302,6 +301,16 @@ export function TaskPropertiesSidebar({
               </>
             )}
           </div>
+        </div>
+
+        {/* Automation Button */}
+        <div className="pt-4 mt-4 border-t">
+          <Link href={`/${orgId}/tasks/${task.id}/automation`} className="block">
+            <Button variant="outline" className="w-full" size="sm">
+              <Sparkles className="mr-2 h-4 w-4" />
+              AI Automation
+            </Button>
+          </Link>
         </div>
       </div>
     </aside>

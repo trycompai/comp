@@ -2,12 +2,12 @@
 
 import { DataPart } from '@/ai/messages/data-parts';
 import { Chat } from '@ai-sdk/react';
-import { DataUIPart } from 'ai';
+import { DataUIPart, DefaultChatTransport } from 'ai';
 import { createContext, useContext, useMemo, useRef, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import { mutate } from 'swr';
+import { useTaskAutomationDataMapper } from './task-automation-store';
 import { type ChatUIMessage } from '../components/chat/types';
-import { useDataStateMapper } from '../state';
 
 interface ChatContextValue {
   chat: Chat<ChatUIMessage>;
@@ -16,13 +16,16 @@ interface ChatContextValue {
 const ChatContext = createContext<ChatContextValue | undefined>(undefined);
 
 export function ChatProvider({ children }: { children: ReactNode }) {
-  const mapDataToState = useDataStateMapper();
+  const mapDataToState = useTaskAutomationDataMapper();
   const mapDataToStateRef = useRef(mapDataToState);
   mapDataToStateRef.current = mapDataToState;
 
   const chat = useMemo(
     () =>
       new Chat<ChatUIMessage>({
+        transport: new DefaultChatTransport({
+          api: '/api/tasks-automations/chat',
+        }),
         onToolCall: () => mutate('/api/auth/info'),
         onData: (data: DataUIPart<DataPart>) => mapDataToStateRef.current(data),
         onError: (error) => {

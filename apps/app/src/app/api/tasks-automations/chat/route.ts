@@ -1,7 +1,7 @@
 import { DEFAULT_MODEL } from '@/ai/constants';
 import { getAvailableModels, getModelOptions } from '@/ai/gateway';
-import { listSecrets } from '@/ai/secrets';
-import { tools } from '@/ai/tools';
+import { getTaskAutomationTools } from '@/ai/tools/task-automation-tools';
+import { db } from '@db';
 import {
   convertToModelMessages,
   createUIMessageStream,
@@ -11,7 +11,7 @@ import {
 } from 'ai';
 import { checkBotId } from 'botid/server';
 import { NextResponse } from 'next/server';
-import { type ChatUIMessage } from '../../../(app)/[orgId]/tasks/[taskId]/automations/components/chat/types';
+import { type ChatUIMessage } from '../../../(app)/[orgId]/tasks/[taskId]/automation/components/chat/types';
 import automationPrompt from './automation-prompt.md';
 import lambdaPrompt from './prompt.md';
 
@@ -19,6 +19,8 @@ interface BodyData {
   messages: ChatUIMessage[];
   modelId?: string;
   reasoningEffort?: 'low' | 'medium';
+  orgId: string;
+  taskId: string;
 }
 
 export async function POST(req: Request) {
@@ -27,29 +29,42 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: `Bot detected` }, { status: 403 });
   }
 
-  const [models, { messages, modelId = DEFAULT_MODEL, reasoningEffort }] = await Promise.all([
-    getAvailableModels(),
-    req.json() as Promise<BodyData>,
-  ]);
+  const [models, { messages, modelId = DEFAULT_MODEL, reasoningEffort, orgId, taskId }] =
+    await Promise.all([getAvailableModels(), req.json() as Promise<BodyData>]);
 
   const model = models.find((model) => model.id === modelId);
   if (!model) {
     return NextResponse.json({ error: `Model ${modelId} not found.` }, { status: 400 });
   }
 
-  // Compose system prompt with available secrets injected as JSON for the model.
-  const availableSecretsJson = JSON.stringify(
-    listSecrets().map((s) => ({
-      id: s.id,
-      provider: s.provider,
-      name: s.name,
-      envVar: s.envVar,
-      required: s.required,
-    })),
-  );
-  const testConstantsJson = JSON.stringify({
-    ORG_ID: 'org_689ce3dced87cc45f600a04b',
-    TASK_ID: 'tsk_689ce3dd6f19f4cf1f0ea061',
+  // Validate required parameters
+  if (!orgId || !taskId) {
+    return NextResponse.json(
+      { error: 'Missing required parameters: orgId and taskId' },
+      { status: 400 },
+    );
+  }
+
+  // Fetch available integrations and their secrets
+  // Get all configured secrets for the organization
+  const secrets = await db.secret.findMany({
+    where: {
+      organizationId: orgId,
+    },
+    select: {
+      name: true,
+      category: true,
+      description: true,
+    },
+  });
+
+  // Build list of available secret names
+  const availableSecrets = secrets.map((s) => s.name);
+
+  const actualValuesJson = JSON.stringify({
+    ORG_ID: orgId,
+    TASK_ID: taskId,
+    AVAILABLE_SECRETS: availableSecrets,
   });
   // Include Lambda prompt content.
   const fullPromptContext = `
@@ -58,7 +73,7 @@ ${lambdaPrompt}
 ---
 `;
 
-  const prompt = `${automationPrompt}\n\nFULL_PROMPT_CONTEXT:\n${fullPromptContext}\n\nAVAILABLE_SECRETS_JSON:\n${availableSecretsJson}\n\nTEST_CONSTANTS_JSON:\n${testConstantsJson}`;
+  const prompt = `${automationPrompt}\n\nFULL_PROMPT_CONTEXT:\n${fullPromptContext}\n\nACTUAL_VALUES_JSON:\n${actualValuesJson}`;
 
   return createUIMessageStreamResponse({
     stream: createUIMessageStream({
@@ -89,7 +104,7 @@ ${lambdaPrompt}
             }),
           ),
           stopWhen: stepCountIs(20),
-          tools: tools({ writer, modelId }),
+          tools: getTaskAutomationTools({ writer, modelId }),
           onError: (error) => {
             console.error('Error communicating with AI');
             console.error(JSON.stringify(error, null, 2));

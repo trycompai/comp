@@ -84,7 +84,7 @@ export const storeToS3 = ({ writer }: Params) => {
       const resolvedOrgId = orgId || DEFAULTS.orgId;
       const resolvedTaskId = taskId || DEFAULTS.taskId;
       const keyBase = `${resolvedOrgId}/${resolvedTaskId}`;
-      const key = `${keyBase}.js`;
+      const key = `${keyBase}.automation.js`;
 
       writer.write({
         id: toolCallId,

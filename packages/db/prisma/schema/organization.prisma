@@ -30,6 +30,7 @@ model Organization {
   attachments        Attachment[]
   trust              Trust[]
   context            Context[]
+  secrets            Secret[]
 
   @@index([slug])
 }

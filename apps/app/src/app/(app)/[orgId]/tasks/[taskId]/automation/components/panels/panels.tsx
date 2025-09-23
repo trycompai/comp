@@ -11,11 +11,13 @@ export function Panel({ className, children }: Props) {
     <div
       className={cn(
         'flex flex-col relative w-full h-full overflow-hidden',
-        // Use semantic background
+        // Subtle card background
         'bg-card',
-        // Clear border definition
+        // Full border for clear separation
         'border border-border',
-        'shadow-lg',
+        // Light shadow for elevation
+        'shadow-sm',
+        // Slight rounding
         'rounded-sm',
         className,
       )}
@@ -29,11 +31,11 @@ export function PanelHeader({ className, children }: Props) {
   return (
     <div
       className={cn(
-        'relative flex items-center px-6 py-4',
-        // Distinct header background
-        'bg-muted/30',
-        // Strong bottom border
-        'border-b border-border',
+        'relative flex items-center px-5 py-3',
+        // Primary-tinted header for better contrast
+        'bg-primary/5',
+        // Primary-accented divider
+        'border-b border-primary/20',
         className,
       )}
     >

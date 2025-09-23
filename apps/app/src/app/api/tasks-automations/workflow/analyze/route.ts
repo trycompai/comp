@@ -20,7 +20,10 @@ const WorkflowStepSchema = z.object({
 });
 
 const WorkflowAnalysisSchema = z.object({
-  steps: z.array(WorkflowStepSchema).max(8).describe('The workflow steps in order of execution'),
+  steps: z
+    .array(WorkflowStepSchema)
+    .max(5)
+    .describe('The workflow steps in order of execution (maximum 5 steps)'),
 });
 
 export async function POST(request: Request) {
@@ -57,7 +60,9 @@ Guidelines:
 6. End with what results are returned (type: "output")
 7. Keep titles short (3-5 words)
 8. Make descriptions clear and friendly
-9. Maximum 8 steps total - combine related actions if needed
+9. MAXIMUM 5 STEPS TOTAL - you MUST summarize and combine related actions
+10. Group multiple similar operations into one step (e.g., "Process multiple items" instead of listing each)
+11. Focus on the high-level flow, not implementation details
 
 Example steps with correct types:
 {
@@ -123,7 +128,7 @@ Example steps with correct types:
           };
         });
 
-        return NextResponse.json({ steps: fixedSteps.slice(0, 8) });
+        return NextResponse.json({ steps: fixedSteps.slice(0, 5) });
       }
 
       // If we can't recover, return a generic workflow

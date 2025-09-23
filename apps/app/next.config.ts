@@ -5,6 +5,14 @@ import './src/env.mjs';
 const isStandalone = process.env.NEXT_OUTPUT_STANDALONE === 'true';
 
 const config: NextConfig = {
+  turbopack: {
+    rules: {
+      '*.md': {
+        loaders: ['raw-loader'],
+        as: '*.js',
+      },
+    },
+  },
   // Use S3 bucket for static assets with app-specific path
   assetPrefix:
     process.env.NODE_ENV === 'production' && process.env.STATIC_ASSETS_URL

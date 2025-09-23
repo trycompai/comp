@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server';
 import {
   linesSchema,
   resultSchema,
-} from '../../../(app)/[orgId]/tasks/[taskId]/automations/components/error-monitor/schemas';
+} from '../../../(app)/[orgId]/tasks/[taskId]/automation/components/error-monitor/schemas';
 import prompt from './prompt.md';
 
 export async function POST(req: Request) {

@@ -1,10 +1,14 @@
-import { initBotId } from 'botid/client/core';
+// import { initBotId } from 'botid/client/core';
 
-initBotId({
-  protect: [
-    {
-      path: '/api/tasks-automations/chat',
-      method: 'POST',
-    },
-  ],
-});
+// initBotId({
+//   protect: [
+//     {
+//       path: '/api/chat',
+//       method: 'POST',
+//     },
+//     {
+//       path: '/api/tasks-automations/chat',
+//       method: 'POST',
+//     },
+//   ],
+// });
