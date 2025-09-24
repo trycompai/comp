@@ -3,7 +3,7 @@
 import { Models } from '@/ai/constants';
 import { cn } from '@/lib/utils';
 import { useChat } from '@ai-sdk/react';
-import { Button } from '@trycompai/ui/button';
+import { Button } from '@comp/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -11,7 +11,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
+} from '@comp/ui/dialog';
 import { AlertCircle, CheckCircle2, Play, Sparkles, Zap } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useEffect, useMemo } from 'react';
