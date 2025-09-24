@@ -3,12 +3,12 @@
   "description": "Database package with Prisma client and schema for Comp AI",
   "version": "1.3.6",
   "dependencies": {
-    "@prisma/client": "^6.13.0",
+    "@prisma/client": "6.16.0",
     "dotenv": "^16.4.5"
   },
   "devDependencies": {
     "@types/node": "^24.2.0",
-    "prisma": "^6.13.0",
+    "prisma": "6.16.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.2"
   },
