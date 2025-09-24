@@ -4,6 +4,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.859.0",
     "@aws-sdk/s3-request-presigner": "^3.859.0",
+    "@prisma/adapter-pg": "^6.16.2",
     "@prisma/client": "6.16.0",
     "@react-email/components": "^0.0.41",
     "@react-email/render": "^1.1.2",

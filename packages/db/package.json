@@ -3,6 +3,7 @@
   "description": "Database package with Prisma client and schema for Comp AI",
   "version": "1.3.6",
   "dependencies": {
+    "@prisma/adapter-pg": "^6.16.2",
     "@prisma/client": "6.16.0",
     "dotenv": "^16.4.5"
   },
