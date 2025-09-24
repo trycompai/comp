@@ -1,5 +1,6 @@
 'use client';
 
+import { Models } from '@/ai/constants';
 import { cn } from '@/lib/utils';
 import { useChat } from '@ai-sdk/react';
 import { Button } from '@trycompai/ui/button';
@@ -142,7 +143,7 @@ Please fix the automation script to resolve this error.`;
     // Send the error to the chat
     sendMessage(
       { text: errorMessage },
-      { body: { modelId: 'GPT-5', reasoningEffort: 'medium', orgId, taskId } },
+      { body: { modelId: Models.OpenAIGPT5, reasoningEffort: 'medium', orgId, taskId } },
     );
 
     // Close the dialog

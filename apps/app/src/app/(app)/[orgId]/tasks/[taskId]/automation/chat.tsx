@@ -1,6 +1,6 @@
 'use client';
 
-import { TEST_PROMPTS } from '@/ai/constants';
+import { Models, TEST_PROMPTS } from '@/ai/constants';
 import { useChat } from '@ai-sdk/react';
 import { MessageCircleIcon, SendIcon } from 'lucide-react';
 import { useCallback, useEffect } from 'react';
@@ -36,7 +36,7 @@ export function Chat({ className, orgId, taskId }: Props) {
       if (text.trim()) {
         sendMessage(
           { text },
-          { body: { modelId: 'GPT-5', reasoningEffort: 'medium', orgId, taskId } },
+          { body: { modelId: Models.OpenAIGPT5, reasoningEffort: 'medium', orgId, taskId } },
         );
         setInput('');
       }
@@ -51,7 +51,7 @@ export function Chat({ className, orgId, taskId }: Props) {
         {
           text: `I've added the secret "${secretName}". You can now use it in the automation script.`,
         },
-        { body: { modelId: 'GPT-5', reasoningEffort: 'medium', orgId, taskId } },
+        { body: { modelId: Models.OpenAIGPT5, reasoningEffort: 'medium', orgId, taskId } },
       );
     },
     [sendMessage, orgId, taskId],
@@ -69,7 +69,7 @@ export function Chat({ className, orgId, taskId }: Props) {
         {
           text: `I've provided the following information:\n\n${infoText}\n\nYou can now continue with creating the automation script.`,
         },
-        { body: { modelId: 'GPT-5', reasoningEffort: 'medium', orgId, taskId } },
+        { body: { modelId: Models.OpenAIGPT5, reasoningEffort: 'medium', orgId, taskId } },
       );
     },
     [sendMessage, orgId, taskId],

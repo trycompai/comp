@@ -4,7 +4,6 @@ import { toast } from 'sonner';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { Label } from '../../ui/label';
-import { Textarea } from '../../ui/textarea';
 
 interface PromptSecretProps {
   input?: any; // Will be the parsed input from the tool
@@ -53,18 +52,22 @@ export const PromptSecret = memo(function PromptSecret({
     setIsSubmitting(true);
 
     try {
+      const payload = {
+        name: finalSecretName.toUpperCase().replace(/[^A-Z0-9_]/g, '_'),
+        value,
+        description: description || secretData?.description || '',
+        category: secretData?.category || 'automation',
+        organizationId: orgId,
+      };
+
+      console.log('Creating secret with payload:', { ...payload, value: '[REDACTED]' });
+
       const response = await fetch('/api/secrets', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          name: finalSecretName.toUpperCase().replace(/[^A-Z0-9_]/g, '_'),
-          value,
-          description,
-          category: secretData?.category || 'automation',
-          organizationId: orgId,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -182,22 +185,12 @@ export const PromptSecret = memo(function PromptSecret({
           </p>
         </div>
 
-        {(!secretData?.description || description) && (
+        {secretData?.description && (
           <div className="grid gap-2">
-            <Label htmlFor="secret-description" className="text-sm">
-              Description (optional)
-            </Label>
-            <Textarea
-              id="secret-description"
-              value={description}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                setDescription(e.target.value)
-              }
-              placeholder="What is this secret used for?"
-              rows={2}
-              disabled={isSubmitting}
-              className="resize-none"
-            />
+            <Label className="text-sm">Description</Label>
+            <div className="text-sm text-muted-foreground bg-muted/50 rounded-md p-3">
+              {secretData.description}
+            </div>
           </div>
         )}
 

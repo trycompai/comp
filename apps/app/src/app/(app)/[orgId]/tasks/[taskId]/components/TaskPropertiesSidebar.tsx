@@ -1,15 +1,9 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
 import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@comp/ui/dropdown-menu';
 import type { Control, Departments, Member, Task, TaskFrequency, TaskStatus, User } from '@db';
 import { format } from 'date-fns';
-import { CalendarIcon, MoreVertical, RefreshCw, Sparkles, Trash2 } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { TaskStatusIndicator } from '../../components/TaskStatusIndicator';
@@ -40,45 +34,13 @@ export function TaskPropertiesSidebar({
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   return (
-    <aside className="hidden w-full shrink-0 flex-col md:w-64 md:border-l md:pt-8 md:pl-8 lg:flex lg:w-72">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-muted-foreground shrink-0 text-xs font-semibold tracking-wider uppercase">
-          Properties
-        </h2>
-        <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
-          <DropdownMenuTrigger asChild>
-            <Button size="icon" variant="ghost" className="m-0 size-auto p-2">
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              onClick={() => {
-                setDropdownOpen(false);
-                if (onRegenerateClick) onRegenerateClick();
-              }}
-            >
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Regenerate
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => {
-                setDropdownOpen(false);
-                if (onDeleteClick) onDeleteClick();
-              }}
-              className="text-destructive focus:text-destructive"
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+    <div className="space-y-4">
+      <h3 className="text-lg font-semibold">Properties</h3>
 
-      <div className="space-y-4 overflow-y-auto">
+      <div className="space-y-3">
         {/* Status Selector */}
-        <div className="group flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Status</span>
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium">Status</span>
           <PropertySelector<TaskStatus>
             value={task.status}
             options={taskStatuses}
@@ -111,8 +73,8 @@ export function TaskPropertiesSidebar({
         </div>
 
         {/* Assignee Selector */}
-        <div className="group flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Assignee</span>
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium">Assignee</span>
           <PropertySelector<Member & { user: User }>
             value={task.assigneeId}
             options={members ?? []}
@@ -152,10 +114,10 @@ export function TaskPropertiesSidebar({
                         {assignedMember.user?.name?.charAt(0) ?? '?'}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="text-foreground font-medium">{assignedMember.user.name}</span>
+                    <span className="font-medium">{assignedMember.user.name}</span>
                   </>
                 ) : (
-                  <span className="text-muted-foreground">Unassigned</span>
+                  <span className="font-medium">Unassigned</span>
                 )}
               </Button>
             }
@@ -168,8 +130,8 @@ export function TaskPropertiesSidebar({
         </div>
 
         {/* Frequency Selector */}
-        <div className="group flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Frequency</span>
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium">Frequency</span>
           <PropertySelector<TaskFrequency>
             value={task.frequency}
             options={taskFrequencies}
@@ -198,8 +160,8 @@ export function TaskPropertiesSidebar({
         </div>
 
         {/* Department Selector */}
-        <div className="group flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Department</span>
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium">Department</span>
           <PropertySelector<Departments>
             value={task.department ?? 'none'}
             options={taskDepartments}
@@ -240,7 +202,7 @@ export function TaskPropertiesSidebar({
                   const currentDept = task.department ?? 'none';
                   if (currentDept === 'none') {
                     // Render 'None' as plain text for the trigger
-                    return <span className="text-muted-foreground px-1">None</span>;
+                    return <span className="px-1 font-medium">None</span>;
                   }
                   // Render other departments as colored badges
                   const mainColor = DEPARTMENT_COLORS[currentDept] ?? DEPARTMENT_COLORS.none; // Fallback
@@ -267,52 +229,50 @@ export function TaskPropertiesSidebar({
         </div>
 
         {/* Control */}
-        {task.controls && (
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Control</span>
-            <div className="flex flex-wrap gap-2">
+        {task.controls && task.controls.length > 0 && (
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Control</span>
+            <div className="flex flex-col items-end gap-1">
               {task.controls.map((control) => (
-                <div key={control.id} className="font-medium max-w-48">
-                  <Link
-                    href={`/${orgId}/controls/${control.id}`}
-                    className="block truncate hover:underline"
-                    title={control.name}
-                  >
-                    {control.name}
-                  </Link>
-                </div>
+                <Link
+                  key={control.id}
+                  href={`/${orgId}/controls/${control.id}`}
+                  className="inline-flex items-center px-2 py-1 text-xs bg-muted rounded hover:bg-muted/80 transition-colors max-w-[200px] truncate"
+                  title={control.name}
+                >
+                  {control.name}
+                </Link>
               ))}
             </div>
           </div>
         )}
         {/* Review Date Selector */}
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Review Date</span>
-          <div className="flex items-center justify-end p-0 px-1 min-h-[2.25rem]">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium">Review Date</span>
+          <div className="flex items-center gap-2">
             {task.reviewDate ? (
-              <>
-                <span className="font-medium">{format(new Date(task.reviewDate), 'M/d/yyyy')}</span>
-                <CalendarIcon className="ml-2 h-4 w-4 opacity-50" />
-              </>
+              <span className="text-sm font-medium">
+                {format(new Date(task.reviewDate), 'M/d/yyyy')}
+              </span>
             ) : (
-              <>
-                <span className="text-muted-foreground px-1 font-medium">None</span>
-                <CalendarIcon className="ml-2 h-4 w-4 opacity-50" />
-              </>
+              <span className="text-sm px-1 font-medium">None</span>
             )}
           </div>
         </div>
-
-        {/* Automation Button */}
-        <div className="pt-4 mt-4 border-t">
-          <Link href={`/${orgId}/tasks/${task.id}/automation`} className="block">
-            <Button variant="outline" className="w-full" size="sm">
-              <Sparkles className="mr-2 h-4 w-4" />
-              AI Automation
-            </Button>
-          </Link>
-        </div>
       </div>
-    </aside>
+
+      {/* Automation Button */}
+      <div className="mt-6">
+        <Link href={`/${orgId}/tasks/${task.id}/automation`} className="block">
+          <Button
+            className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+            size="sm"
+          >
+            <Sparkles className="mr-2 h-4 w-4" />
+            AI Automation
+          </Button>
+        </Link>
+      </div>
+    </div>
   );
 }

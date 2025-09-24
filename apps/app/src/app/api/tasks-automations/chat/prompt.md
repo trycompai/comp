@@ -75,6 +75,15 @@ module.exports = async (event) => {
    - Include example values when appropriate (e.g., format of API keys)
    - After calling the tool, wait for the user to respond that they've added the secret
 
+   **IMPORTANT: Secret Description Requirements**
+   - Always provide a comprehensive description that includes:
+     - What the secret is for (e.g., "Personal access token for GitHub API")
+     - Required permissions/scopes (e.g., "Required scopes: repo, read:org, workflow")
+     - Any special configuration needed (e.g., "Must be generated from Settings > Developer settings > Personal access tokens")
+     - Expiration considerations (e.g., "Recommend setting expiration to 90 days")
+   - The description will be saved in the database for future reference
+   - Be specific about the minimum required permissions to follow the principle of least privilege
+
    Example usage:
 
    ```
@@ -82,10 +91,29 @@ module.exports = async (event) => {
 
    Use promptForSecret with:
    - secretName: "GITHUB_TOKEN"
-   - description: "Personal access token for GitHub API"
-   - category: "api"
+   - description: "Personal access token for GitHub API. Required scopes: repo (full control), read:org (read org membership), read:user (read user profile data). Generate from Settings > Developer settings > Personal access tokens > Fine-grained tokens."
+   - category: "api_keys"
    - exampleValue: "ghp_xxxxxxxxxxxxxxxxxxxx"
    - reason: "This token is required to authenticate with the GitHub API and access repository information"
+   ```
+
+   More examples:
+
+   ```
+   AWS Credentials:
+   - secretName: "AWS_ACCESS_KEY_ID"
+   - description: "AWS access key ID for programmatic access. Required permissions: S3 read/write, CloudWatch logs read. Create from IAM console with minimal required permissions."
+   - category: "authentication"
+
+   OpenAI API:
+   - secretName: "OPENAI_API_KEY"
+   - description: "OpenAI API key for GPT models. Requires active billing. Usage tier determines rate limits. Monitor usage to control costs."
+   - category: "api_keys"
+
+   Slack Webhook:
+   - secretName: "SLACK_WEBHOOK_URL"
+   - description: "Slack incoming webhook URL for posting messages. Scoped to specific channel. Create from Slack App settings > Incoming Webhooks."
+   - category: "integration"
    ```
 
 3. After the user adds the secret:
