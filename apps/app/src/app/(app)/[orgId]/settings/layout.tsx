@@ -36,6 +36,10 @@ export default async function Layout({ children }: { children: React.ReactNode }
               path: `/${orgId}/settings/api-keys`,
               label: 'API',
             },
+            {
+              path: `/${orgId}/settings/secrets`,
+              label: 'Secrets',
+            },
           ]}
         />
       </Suspense>

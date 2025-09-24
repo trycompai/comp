@@ -21,6 +21,7 @@ const config: {
     value: string;
   }[];
   category: string;
+  sync: boolean;
   fetch: any;
 } = {
   name: 'Google Cloud Platform',
@@ -52,6 +53,7 @@ const config: {
     },
   ],
   category: 'Cloud',
+  sync: true, // This integration syncs on a schedule
   fetch: fetch,
 };
 
