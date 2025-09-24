@@ -72,7 +72,7 @@
         "@nestjs/core": "^11.0.1",
         "@nestjs/platform-express": "^11.1.5",
         "@nestjs/swagger": "^11.2.0",
-        "@trycompai/db": "^1.3.4",
+        "@trycompai/db": "^1.3.6",
         "archiver": "^7.0.1",
         "axios": "^1.12.2",
         "class-transformer": "^0.5.1",
@@ -161,7 +161,7 @@
         "@tiptap/extension-table-row": "^3.4.4",
         "@trigger.dev/react-hooks": "4.0.0",
         "@trigger.dev/sdk": "4.0.0",
-        "@trycompai/db": "^1.3.4",
+        "@trycompai/db": "^1.3.6",
         "@trycompai/email": "workspace:*",
         "@types/canvas-confetti": "^1.9.0",
         "@types/react-syntax-highlighter": "^15.5.13",
@@ -180,7 +180,7 @@
         "framer-motion": "^12.18.1",
         "geist": "^1.3.1",
         "jspdf": "^3.0.2",
-        "lucide-react": "^0.534.0",
+        "lucide-react": "^0.544.0",
         "motion": "^12.9.2",
         "next": "^15.4.6",
         "next-safe-action": "^8.0.3",
@@ -260,7 +260,7 @@
         "@react-email/render": "^1.1.2",
         "@t3-oss/env-nextjs": "^0.13.8",
         "@trycompai/analytics": "workspace:*",
-        "@trycompai/db": "^1.3.4",
+        "@trycompai/db": "^1.3.6",
         "@trycompai/email": "workspace:*",
         "@trycompai/kv": "workspace:*",
         "@trycompai/ui": "workspace:*",
@@ -431,7 +431,7 @@
         "embla-carousel-react": "8.6.0",
         "input-otp": "1.4.2",
         "jsonfile": "^6.1.0",
-        "lucide-react": "^0.534.0",
+        "lucide-react": "^0.544.0",
         "react-day-picker": "8.10.1",
         "react-dropzone": "^14.3.5",
         "react-icons": "^5.3.0",
@@ -1824,7 +1824,7 @@
 
     "@trycompai/analytics": ["@trycompai/analytics@workspace:packages/analytics"],
 
-    "@trycompai/db": ["@trycompai/db@1.3.5", "", { "dependencies": { "@prisma/client": "^6.13.0", "dotenv": "^16.4.5" } }, "sha512-Ce5ojRVzQtaABqrFurHTpMhgVCcRO2VIcXqDr0N2c7viszkMrGiciZmxoPsRg9YIUFUgp/N8FL3NR9AhtMBzug=="],
+    "@trycompai/db": ["@trycompai/db@1.3.6", "", { "dependencies": { "@prisma/client": "^6.13.0", "dotenv": "^16.4.5" } }, "sha512-ALBbiIwimokU5bofrDMQlTwQvhvEvfbAqxQRORrCayrcqk4AUeC3rCdqIoMbv+3iC1VAhtUqN24Vfi8QH5G8fw=="],
 
     "@trycompai/email": ["@trycompai/email@workspace:packages/email"],
 
@@ -3698,7 +3698,7 @@
 
     "lru-cache": ["lru-cache@10.4.3", "", {}, "sha512-JNAzZcXrCt42VGLuYz0zfAzDfAvJWW6AfYlDBQyDV5DClI2m5sAmK+OIO7s59XfsRsWHp02jAJrRadPRGTt6SQ=="],
 
-    "lucide-react": ["lucide-react@0.534.0", "", { "peerDependencies": { "react": "^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0" } }, "sha512-4Bz7rujQ/mXHqCwjx09ih/Q9SCizz9CjBV5repw9YSHZZZaop9/Oj0RgCDt6WdEaeAPfbcZ8l2b4jzApStqgNw=="],
+    "lucide-react": ["lucide-react@0.544.0", "", { "peerDependencies": { "react": "^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0" } }, "sha512-t5tS44bqd825zAW45UQxpG2CvcC4urOwn2TrwSH8u+MjeE+1NnWl6QqeQ/6NdjMqdOygyiT9p3Ev0p1NJykxjw=="],
 
     "lz-string": ["lz-string@1.5.0", "", { "bin": { "lz-string": "bin/bin.js" } }, "sha512-h5bgJWpxJNswbU7qCrV0tIKQCaS3blPDrqKWx+QxzuzL1zGUzij9XCWLrSLsJPu5t+eWA/ycetzYAO5IOMcWAQ=="],
 
