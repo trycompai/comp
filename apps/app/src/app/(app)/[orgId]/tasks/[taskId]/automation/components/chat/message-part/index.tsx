@@ -10,6 +10,7 @@ import { PromptInfo } from './prompt-info';
 import { PromptSecret } from './prompt-secret';
 import { Reasoning } from './reasoning';
 import { ReportErrors } from './report-errors';
+import { ResearchActivity } from './research-activity';
 import { RunCommand } from './run-command';
 import { Text } from './text';
 
@@ -61,6 +62,16 @@ export const MessagePart = memo(function MessagePart({
         state={part.state}
         errorText={part.errorText}
         onInfoProvided={onInfoProvided}
+      />
+    );
+  } else if (part.type === 'tool-exaSearch' || part.type === 'tool-firecrawl') {
+    return (
+      <ResearchActivity
+        toolName={part.type === 'tool-exaSearch' ? 'exaSearch' : 'firecrawl'}
+        input={part.input}
+        state={part.state}
+        output={part.output}
+        isAnimating={partIndex === 0}
       />
     );
   }

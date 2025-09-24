@@ -7,6 +7,8 @@
 
 import type { InferUITools, UIMessage, UIMessageStreamWriter } from 'ai';
 import type { DataPart } from '../messages/data-parts';
+import { exaSearchTool } from './exa-search';
+import { firecrawlTool } from './firecrawl';
 import { promptForInfoTool } from './prompt-for-info';
 import { promptForSecretTool } from './prompt-for-secret';
 import { storeToS3 } from './store-to-s3';
@@ -22,12 +24,16 @@ interface Params {
  * - storeToS3: For saving scripts directly
  * - promptForSecret: For requesting missing secrets from users
  * - promptForInfo: For requesting missing information/parameters from users
+ * - exaSearch: For searching the web using Exa AI's neural search
+ * - firecrawl: For crawling and extracting content from websites
  */
 export function getTaskAutomationTools({ modelId, writer }: Params) {
   return {
     storeToS3: storeToS3({ writer }),
     promptForSecret: promptForSecretTool(),
     promptForInfo: promptForInfoTool(),
+    exaSearch: exaSearchTool(),
+    firecrawl: firecrawlTool(),
   };
 }
 

@@ -90,18 +90,23 @@ export const Message = memo(function Message({
             {(() => {
               // Reorder parts to ensure text messages appear before tool UI components
               const reorderedParts = [...message.parts];
-              const promptParts = ['tool-promptForSecret', 'tool-promptForInfo'];
+              const uiToolParts = [
+                'tool-promptForSecret',
+                'tool-promptForInfo',
+                'tool-exaSearch',
+                'tool-firecrawl',
+              ];
 
-              // Sort so that prompt tool parts come after text parts
+              // Sort so that UI tool parts come after text parts
               reorderedParts.sort((a, b) => {
-                const aIsPrompt = promptParts.includes(a.type);
-                const bIsPrompt = promptParts.includes(b.type);
+                const aIsUITool = uiToolParts.includes(a.type);
+                const bIsUITool = uiToolParts.includes(b.type);
                 const aIsText = a.type === 'text';
                 const bIsText = b.type === 'text';
 
-                // If one is text and the other is a prompt tool, text comes first
-                if (aIsText && bIsPrompt) return -1;
-                if (bIsText && aIsPrompt) return 1;
+                // If one is text and the other is a UI tool, text comes first
+                if (aIsText && bIsUITool) return -1;
+                if (bIsText && aIsUITool) return 1;
 
                 // Otherwise maintain original order
                 return 0;
