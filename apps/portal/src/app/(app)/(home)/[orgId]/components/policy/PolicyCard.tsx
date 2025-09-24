@@ -14,6 +14,7 @@ import type { JSONContent } from '@tiptap/react';
 import { ArrowRight, Check } from 'lucide-react';
 import { useState } from 'react';
 import { PolicyEditor } from './PolicyEditor';
+import { PortalPdfViewer } from './PortalPdfViewer';
 
 interface PolicyCardProps {
   policy: Policy;
@@ -24,20 +25,15 @@ interface PolicyCardProps {
   isLastPolicy?: boolean;
 }
 
-export function PolicyCard({
-  policy,
-  onNext,
-  onComplete,
-  onClick,
-  member,
-  isLastPolicy,
-}: PolicyCardProps) {
+export function PolicyCard({ policy, onNext, onComplete, member, isLastPolicy }: PolicyCardProps) {
   const [isAccepted, setIsAccepted] = useState(policy.signedBy.includes(member.id));
 
   const handleAccept = () => {
     setIsAccepted(true);
     onComplete?.();
   };
+
+  const isPdfPolicy = policy.displayFormat === 'PDF';
 
   return (
     <Card className="relative flex max-h-[calc(100vh-450px)] w-full flex-col shadow-md">
@@ -68,7 +64,11 @@ export function PolicyCard({
       <CardContent className="w-full flex-1 overflow-y-auto">
         <div className="w-full border-t pt-6">
           <div className="max-w-none">
-            <PolicyEditor content={policy.content as JSONContent[]} />
+            {isPdfPolicy ? (
+              <PortalPdfViewer policyId={policy.id} s3Key={policy.pdfUrl} />
+            ) : (
+              <PolicyEditor content={policy.content as JSONContent[]} />
+            )}
           </div>
           <p className="text-muted-foreground mt-4 text-sm">
             Status: {policy.status}{' '}
