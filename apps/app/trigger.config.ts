@@ -13,7 +13,7 @@ export default defineConfig({
     extensions: [
       prismaExtension({
         version: '6.13.0',
-        dbPackageVersion: '^1.3.0', // Version of @trycompai/db package with compiled JS
+        dbPackageVersion: '^1.3.6', // Version of @trycompai/db package with compiled JS
       }),
       puppeteer(),
       syncVercelEnvVars(),
