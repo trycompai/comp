@@ -13,6 +13,16 @@ const config: NextConfig = {
       },
     },
   },
+  // Ensure .md files can be imported as strings during webpack builds
+  webpack: (cfg) => {
+    cfg.module = cfg.module || { rules: [] };
+    cfg.module.rules = cfg.module.rules || [];
+    cfg.module.rules.push({
+      test: /\.md$/,
+      type: 'asset/source',
+    });
+    return cfg;
+  },
   // Use S3 bucket for static assets with app-specific path
   assetPrefix:
     process.env.NODE_ENV === 'production' && process.env.STATIC_ASSETS_URL

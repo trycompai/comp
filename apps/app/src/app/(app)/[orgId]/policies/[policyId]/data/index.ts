@@ -192,6 +192,7 @@ export const getComments = async (policyId: string): Promise<CommentWithAuthor[]
           id: comment.author.user.id,
           name: comment.author.user.name,
           email: comment.author.user.email,
+          image: comment.author.user.image,
         },
         attachments: attachments.map((att) => ({
           id: att.id,
