@@ -1,12 +1,10 @@
+import { s3Client } from '@/app/s3';
 import { decrypt, type EncryptedData } from '@/lib/encryption';
-import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { db } from '@db';
 import { logger, queue, task } from '@trigger.dev/sdk';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
-
-// Initialize S3 client
-const s3 = new S3Client({ region: 'us-east-1' });
 
 // Queue for automation execution
 const automationExecutionQueue = queue({
@@ -44,9 +42,9 @@ export const executeAutomationScript = task({
       const scriptKey = `${orgId}/${taskId}.automation.js`;
       logs.push(`[SYSTEM] Fetching script from S3: ${scriptKey}`);
 
-      const { Body } = await s3.send(
+      const { Body } = await s3Client.send(
         new GetObjectCommand({
-          Bucket: 'comp-testing-lambda-tasks',
+          Bucket: process.env.TASKS_AUTOMATION_BUCKET || 'comp-testing-lambda-tasks',
           Key: scriptKey,
         }),
       );
