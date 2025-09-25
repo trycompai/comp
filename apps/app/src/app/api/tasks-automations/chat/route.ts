@@ -1,6 +1,7 @@
 import { DEFAULT_MODEL } from '@/ai/constants';
 import { getAvailableModels, getModelOptions } from '@/ai/gateway';
 import { getTaskAutomationTools } from '@/ai/tools/task-automation-tools';
+import { readMarkdownFromModule } from '@/lib/read-markdown';
 import { db } from '@db';
 import {
   convertToModelMessages,
@@ -12,8 +13,6 @@ import {
 import { checkBotId } from 'botid/server';
 import { NextResponse } from 'next/server';
 import { type ChatUIMessage } from '../../../(app)/[orgId]/tasks/[taskId]/automation/components/chat/types';
-import automationPrompt from './automation-prompt.md';
-import lambdaPrompt from './prompt.md';
 
 interface BodyData {
   messages: ChatUIMessage[];
@@ -24,9 +23,12 @@ interface BodyData {
 }
 
 export async function POST(req: Request) {
-  const checkResult = await checkBotId();
-  if (checkResult.isBot) {
-    return NextResponse.json({ error: `Bot detected` }, { status: 403 });
+  const { isBot } = await checkBotId();
+  if (isBot) {
+    return NextResponse.json(
+      { error: 'Bot is not allowed to access this endpoint' },
+      { status: 401 },
+    );
   }
 
   const [models, { messages, modelId = DEFAULT_MODEL, reasoningEffort, orgId, taskId }] =
@@ -67,11 +69,11 @@ export async function POST(req: Request) {
     AVAILABLE_SECRETS: availableSecrets,
   });
   // Include Lambda prompt content.
-  const fullPromptContext = `
-${lambdaPrompt}
-
----
-`;
+  const [automationPrompt, lambdaPrompt] = await Promise.all([
+    readMarkdownFromModule('./automation-prompt.md', import.meta.url),
+    readMarkdownFromModule('./prompt.md', import.meta.url),
+  ]);
+  const fullPromptContext = `\n${lambdaPrompt}\n\n---\n`;
 
   const prompt = `${automationPrompt}\n\nFULL_PROMPT_CONTEXT:\n${fullPromptContext}\n\nACTUAL_VALUES_JSON:\n${actualValuesJson}`;
 

@@ -1,3 +1,4 @@
+import { withBotId } from 'botid/next/config';
 import type { NextConfig } from 'next';
 import path from 'path';
 import './src/env.mjs';
@@ -5,24 +6,6 @@ import './src/env.mjs';
 const isStandalone = process.env.NEXT_OUTPUT_STANDALONE === 'true';
 
 const config: NextConfig = {
-  turbopack: {
-    rules: {
-      '*.md': {
-        loaders: ['raw-loader'],
-        as: '*.js',
-      },
-    },
-  },
-  // Ensure .md files can be imported as strings during webpack builds
-  webpack: (cfg) => {
-    cfg.module = cfg.module || { rules: [] };
-    cfg.module.rules = cfg.module.rules || [];
-    cfg.module.rules.push({
-      test: /\.md$/,
-      type: 'asset/source',
-    });
-    return cfg;
-  },
   // Use S3 bucket for static assets with app-specific path
   assetPrefix:
     process.env.NODE_ENV === 'production' && process.env.STATIC_ASSETS_URL
@@ -85,4 +68,4 @@ const config: NextConfig = {
   },
 };
 
-export default config;
+export default withBotId(config);
