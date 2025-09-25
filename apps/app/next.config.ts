@@ -14,6 +14,14 @@ const config: NextConfig = {
       config.plugins = [...config.plugins, new PrismaPlugin()];
     }
 
+    // Re-enable .md imports as raw strings
+    config.module = config.module || { rules: [] };
+    config.module.rules = config.module.rules || [];
+    config.module.rules.push({
+      test: /\.md$/,
+      type: 'asset/source',
+    });
+
     return config;
   },
   // Use S3 bucket for static assets with app-specific path

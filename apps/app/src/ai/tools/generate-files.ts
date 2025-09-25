@@ -1,17 +1,12 @@
 import { Sandbox } from '@vercel/sandbox';
 import type { UIMessage, UIMessageStreamWriter } from 'ai';
 import { tool } from 'ai';
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import z from 'zod/v3';
 import type { DataPart } from '../messages/data-parts';
+import description from './generate-files.md';
 import { getContents, type File } from './generate-files/get-contents';
 import { getWriteFiles } from './generate-files/get-write-files';
 import { getRichError } from './get-rich-error';
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const description = readFileSync(join(__dirname, 'generate-files.md'), 'utf8');
 
 interface Params {
   modelId: string;

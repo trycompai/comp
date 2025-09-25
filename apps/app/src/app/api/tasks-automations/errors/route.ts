@@ -1,5 +1,4 @@
 import { Models } from '@/ai/constants';
-import { readMarkdownFromModule } from '@/lib/read-markdown';
 import { generateObject } from 'ai';
 import { checkBotId } from 'botid/server';
 import { NextResponse } from 'next/server';
@@ -7,9 +6,9 @@ import {
   linesSchema,
   resultSchema,
 } from '../../../(app)/[orgId]/tasks/[taskId]/automation/components/error-monitor/schemas';
+import prompt from './prompt.md';
 
 export async function POST(req: Request) {
-  const prompt = await readMarkdownFromModule('./prompt.md', import.meta.url);
   const { isBot } = await checkBotId();
   if (isBot) {
     return NextResponse.json(
