@@ -1,4 +1,5 @@
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { s3Client } from '@/app/s3';
+import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { NextResponse } from 'next/server';
 
 const DEFAULTS = {
@@ -24,16 +25,7 @@ export async function POST(req: Request) {
     const resolvedRegion = region || DEFAULTS.region;
     const key = `${orgId}/${taskId}.js`;
 
-    const credentials =
-      process.env.APP_AWS_ACCESS_KEY_ID && process.env.APP_AWS_SECRET_ACCESS_KEY
-        ? {
-            accessKeyId: process.env.APP_AWS_ACCESS_KEY_ID as string,
-            secretAccessKey: process.env.APP_AWS_SECRET_ACCESS_KEY as string,
-          }
-        : undefined;
-
-    const s3 = new S3Client({ region: resolvedRegion, credentials });
-    await s3.send(
+    await s3Client.send(
       new PutObjectCommand({
         Bucket: resolvedBucket,
         Key: key,

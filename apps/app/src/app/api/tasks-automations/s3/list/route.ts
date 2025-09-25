@@ -1,7 +1,8 @@
-import { ListObjectsV2Command, S3Client } from '@aws-sdk/client-s3';
+import { s3Client } from '@/app/s3';
+import { ListObjectsV2Command } from '@aws-sdk/client-s3';
 import { NextResponse } from 'next/server';
 
-const s3 = new S3Client({ region: 'us-east-1' });
+export const runtime = 'nodejs';
 
 export async function GET(req: Request) {
   try {
@@ -13,9 +14,9 @@ export async function GET(req: Request) {
     }
 
     // List objects in the organization's folder
-    const response = await s3.send(
+    const response = await s3Client.send(
       new ListObjectsV2Command({
-        Bucket: 'comp-testing-lambda-tasks',
+        Bucket: process.env.TASKS_AUTOMATION_BUCKET || 'comp-testing-lambda-tasks',
         Prefix: `${orgId}/`,
         MaxKeys: 100,
       }),
