@@ -1,6 +1,5 @@
-import { s3Client } from '@/app/s3';
 import { decrypt, type EncryptedData } from '@/lib/encryption';
-import { GetObjectCommand } from '@aws-sdk/client-s3';
+import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { db } from '@db';
 import { logger, queue, task } from '@trigger.dev/sdk';
 import axios from 'axios';
@@ -35,12 +34,28 @@ export const executeAutomationScript = task({
     const { orgId, taskId } = payload;
     const logs: string[] = [];
 
+    if (
+      !process.env.APP_AWS_REGION ||
+      !process.env.APP_AWS_ACCESS_KEY_ID ||
+      !process.env.APP_AWS_SECRET_ACCESS_KEY
+    ) {
+      throw new Error('AWS S3 credentials or configuration missing. Check environment variables.');
+    }
+
     try {
       logger.info(`Executing automation script for task ${taskId} in org ${orgId}`);
 
       // Fetch the script from S3
       const scriptKey = `${orgId}/${taskId}.automation.js`;
       logs.push(`[SYSTEM] Fetching script from S3: ${scriptKey}`);
+
+      const s3Client = new S3Client({
+        region: process.env.APP_AWS_REGION,
+        credentials: {
+          accessKeyId: process.env.APP_AWS_ACCESS_KEY_ID,
+          secretAccessKey: process.env.APP_AWS_SECRET_ACCESS_KEY,
+        },
+      });
 
       const { Body } = await s3Client.send(
         new GetObjectCommand({
