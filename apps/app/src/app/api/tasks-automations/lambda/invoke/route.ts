@@ -8,6 +8,8 @@ const DEFAULTS = {
   taskId: 'tsk_689ce3dd6f19f4cf1f0ea061',
 };
 
+export const runtime = 'nodejs';
+
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as {
@@ -29,7 +31,10 @@ export async function POST(req: Request) {
           }
         : undefined;
 
-    const lambda = new LambdaClient({ region, credentials });
+    const lambda = new LambdaClient({
+      region: region || process.env.APP_AWS_REGION || 'us-east-1',
+      credentials,
+    });
     const resp = await lambda.send(
       new InvokeCommand({
         FunctionName: functionName,

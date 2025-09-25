@@ -2,6 +2,8 @@ import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import { Sandbox } from '@vercel/sandbox';
 import { NextResponse } from 'next/server';
 
+export const runtime = 'nodejs';
+
 export async function POST(req: Request) {
   try {
     const { orgId, taskId, sandboxId } = await req.json();
@@ -23,7 +25,10 @@ export async function POST(req: Request) {
         : undefined;
 
     // Invoke the Lambda
-    const lambda = new LambdaClient({ region: 'us-east-1', credentials });
+    const lambda = new LambdaClient({
+      region: process.env.APP_AWS_REGION || 'us-east-1',
+      credentials,
+    });
     const invokeCommand = new InvokeCommand({
       FunctionName: 'automated-tasks',
       Payload: JSON.stringify({ orgId, taskId }),
