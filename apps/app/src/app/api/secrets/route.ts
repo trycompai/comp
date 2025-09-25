@@ -1,6 +1,7 @@
+'use server';
+
 import { encrypt } from '@/lib/encryption';
 import { auth } from '@/utils/auth';
-
 import { db } from '@db';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -12,8 +13,9 @@ const createSecretSchema = z.object({
     .max(100)
     .regex(/^[A-Z0-9_]+$/, 'Name must be uppercase letters, numbers, and underscores only'),
   value: z.string().min(1),
-  description: z.string().optional(),
-  category: z.string().optional(),
+  // Optional in UI; accept undefined or null
+  description: z.string().nullish(),
+  category: z.string().nullish(),
   organizationId: z.string().min(1),
 });
 
@@ -126,6 +128,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ secret }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
+      console.error('Invalid input:', error.errors);
       return NextResponse.json({ error: 'Invalid input', details: error.errors }, { status: 400 });
     }
     console.error('Error creating secret:', error);
