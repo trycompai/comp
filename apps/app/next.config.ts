@@ -8,19 +8,21 @@ import './src/env.mjs';
 const isStandalone = process.env.NEXT_OUTPUT_STANDALONE === 'true';
 
 const config: NextConfig = {
+  // Ensure Turbopack can import .md files as raw strings during dev
+  turbopack: {
+    root: path.join(__dirname, '..', '..'),
+    rules: {
+      '*.md': {
+        loaders: ['raw-loader'],
+        as: '*.js',
+      },
+    },
+  },
   webpack: (config, { isServer }) => {
     if (isServer) {
       // Very important, DO NOT REMOVE, it's needed for Prisma to work in the server bundle
       config.plugins = [...config.plugins, new PrismaPlugin()];
     }
-
-    // Re-enable .md imports as raw strings
-    config.module = config.module || { rules: [] };
-    config.module.rules = config.module.rules || [];
-    config.module.rules.push({
-      test: /\.md$/,
-      type: 'asset/source',
-    });
 
     return config;
   },
