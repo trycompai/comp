@@ -1,4 +1,5 @@
-import { GetObjectCommand, ListObjectsV2Command, S3Client } from '@aws-sdk/client-s3';
+import { s3Client } from '@/app/s3';
+import { GetObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
 import { NextResponse } from 'next/server';
 
 const DEFAULTS = {
@@ -13,16 +14,9 @@ export async function GET(req: Request) {
     const region = url.searchParams.get('region') || DEFAULTS.region;
     const taskId = url.searchParams.get('taskId');
 
-    const credentials =
-      process.env.APP_AWS_ACCESS_KEY_ID && process.env.APP_AWS_SECRET_ACCESS_KEY
-        ? {
-            accessKeyId: process.env.APP_AWS_ACCESS_KEY_ID as string,
-            secretAccessKey: process.env.APP_AWS_SECRET_ACCESS_KEY as string,
-          }
-        : undefined;
-
-    const s3 = new S3Client({ region, credentials });
-    const res = await s3.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: `${orgId}/` }));
+    const res = await s3Client.send(
+      new ListObjectsV2Command({ Bucket: bucket, Prefix: `${orgId}/` }),
+    );
     const items = (res.Contents || [])
       .map((o) => ({ key: o.Key!, size: o.Size ?? 0, lastModified: o.LastModified }))
       .filter((o) => o.key && o.key.endsWith('.js'));
@@ -33,7 +27,7 @@ export async function GET(req: Request) {
       try {
         const key = `${orgId}/${taskId}.js`;
         console.log(`[S3 API] Fetching object: ${bucket}/${key}`);
-        const obj = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
+        const obj = await s3Client.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
         const body = await obj.Body?.transformToString('utf-8');
         content = body;
         console.log(`[S3 API] Fetched content:`, {
