@@ -5,7 +5,6 @@ export * from './emails/magic-link';
 export * from './emails/marketing/welcome';
 export * from './emails/otp';
 export * from './emails/policy-notification';
-export * from './emails/policy-review-notification';
 export * from './emails/task-review-notification';
 export * from './emails/waitlist';
 
@@ -13,7 +12,6 @@ export * from './emails/waitlist';
 export * from './lib/invite-member';
 export * from './lib/magic-link';
 export * from './lib/policy-notification';
-export * from './lib/policy-review-notification';
 export * from './lib/task-review-notification';
 export * from './lib/resend';
 export * from './lib/waitlist';
