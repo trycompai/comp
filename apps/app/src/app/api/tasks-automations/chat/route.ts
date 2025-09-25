@@ -15,6 +15,10 @@ import { type ChatUIMessage } from '../../../(app)/[orgId]/tasks/[taskId]/automa
 import automationPrompt from './automation-prompt.md';
 import lambdaPrompt from './prompt.md';
 
+// Ensure sufficient time for long-running automation orchestration
+export const runtime = 'nodejs';
+export const maxDuration = 300; // seconds (Vercel max)
+
 interface BodyData {
   messages: ChatUIMessage[];
   modelId?: string;
