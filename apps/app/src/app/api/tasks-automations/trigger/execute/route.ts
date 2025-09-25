@@ -1,8 +1,9 @@
+import { s3Client } from '@/app/s3';
 import { executeAutomationScript } from '@/jobs/tasks/automation/execute-script';
-import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { NextResponse } from 'next/server';
 
-const s3 = new S3Client({ region: 'us-east-1' });
+export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
   try {
@@ -14,9 +15,9 @@ export async function POST(req: Request) {
 
     // Ensure the script exists in S3 before triggering the task
     try {
-      const { Body } = await s3.send(
+      const { Body } = await s3Client.send(
         new GetObjectCommand({
-          Bucket: 'comp-testing-lambda-tasks',
+          Bucket: process.env.TASKS_AUTOMATION_BUCKET || 'comp-testing-lambda-tasks',
           Key: `${orgId}/${taskId}.automation.js`,
         }),
       );
@@ -33,8 +34,6 @@ export async function POST(req: Request) {
       sandboxId,
     });
 
-    // In v4, we need to poll for the result or use a different pattern
-    // For now, return the run ID and let the client poll for updates
     return NextResponse.json({
       success: true,
       runId: handle.id,
