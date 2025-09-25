@@ -24,6 +24,14 @@ const config: NextConfig = {
       config.plugins = [...config.plugins, new PrismaPlugin()];
     }
 
+    // Enable importing .md files as raw strings during webpack builds
+    config.module = config.module || { rules: [] };
+    config.module.rules = config.module.rules || [];
+    config.module.rules.push({
+      test: /\.md$/,
+      type: 'asset/source',
+    });
+
     return config;
   },
   // Use S3 bucket for static assets with app-specific path
