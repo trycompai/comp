@@ -1,4 +1,5 @@
 import { Models } from '@/ai/constants';
+import { readMarkdownFromModule } from '@/lib/read-markdown';
 import { generateObject } from 'ai';
 import { checkBotId } from 'botid/server';
 import { NextResponse } from 'next/server';
@@ -6,12 +7,15 @@ import {
   linesSchema,
   resultSchema,
 } from '../../../(app)/[orgId]/tasks/[taskId]/automation/components/error-monitor/schemas';
-import prompt from './prompt.md';
 
 export async function POST(req: Request) {
-  const checkResult = await checkBotId();
-  if (checkResult.isBot) {
-    return NextResponse.json({ error: `Bot detected` }, { status: 403 });
+  const prompt = await readMarkdownFromModule('./prompt.md', import.meta.url);
+  const { isBot } = await checkBotId();
+  if (isBot) {
+    return NextResponse.json(
+      { error: 'Bot is not allowed to access this endpoint' },
+      { status: 401 },
+    );
   }
 
   const body = await req.json();
