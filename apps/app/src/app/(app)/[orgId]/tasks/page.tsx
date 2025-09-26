@@ -32,9 +32,11 @@ export default async function TasksPage({
   const controls = await getControls();
 
   return (
-    <PageWithBreadcrumb breadcrumbs={[{ label: 'Tasks', href: `/${orgId}/tasks` }]}>
-      <TaskList tasks={tasks} members={members} controls={controls} />
-    </PageWithBreadcrumb>
+    <div className="max-w-[1200px] mx-auto py-8">
+      <PageWithBreadcrumb breadcrumbs={[{ label: 'Tasks', href: `/${orgId}/tasks` }]}>
+        <TaskList tasks={tasks} members={members} controls={controls} />
+      </PageWithBreadcrumb>
+    </div>
   );
 }
 
