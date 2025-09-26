@@ -43,7 +43,7 @@ export default async function Page({
         <ScriptInitializer orgId={orgId} taskId={taskId} />
 
         {/* Breadcrumb Navigation */}
-        <div className="px-4 py-3 border-b bg-muted/30">
+        <div className="px-4 py-3 bg-muted/30">
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>

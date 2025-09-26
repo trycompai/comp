@@ -1,9 +1,12 @@
+import { getModelOptions } from '@/ai/gateway';
 import { decrypt, type EncryptedData } from '@/lib/encryption';
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { db } from '@db';
 import { logger, queue, task } from '@trigger.dev/sdk';
+import { generateObject } from 'ai';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
+import { z } from 'zod';
 
 // Queue for automation execution
 const automationExecutionQueue = queue({
@@ -262,10 +265,27 @@ export const executeAutomationScript = task({
       // Log the output for debugging
       console.log(`[Automation Execution] Script output for ${orgId}/${taskId}:`, result);
 
+      // Create a friendly summary using AI (structured)
+      let summary: string | undefined;
+      try {
+        const { object } = await generateObject({
+          ...getModelOptions('gpt-4o-mini'),
+          system:
+            'You are a helpful assistant that summarizes automation test results. Focus only on describing what happened or what was found. Do not provide advice, suggestions, or commentary. Be factual and concise. 1-2 short sentences.',
+          prompt: `Summarize what this automation discovered or accomplished. Focus only on the outcome, not advice.\nRESULT:\n${JSON.stringify(
+            result,
+          )}\n\nRECENT_LOGS:\n${logs.slice(-20).join('\n')}`,
+          schema: z.object({ summary: z.string().min(1) }),
+        });
+        summary = object.summary;
+      } catch {}
+
       return {
         success: true,
         output: result,
         logs,
+        // @ts-expect-error propagate summary to API mapper
+        summary,
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -283,10 +303,27 @@ export const executeAutomationScript = task({
         taskId,
       });
 
+      // Friendly error summary (structured)
+      let summary: string | undefined;
+      try {
+        const { object } = await generateObject({
+          ...getModelOptions('gpt-4o-mini'),
+          system:
+            'You are a helpful assistant that explains an automation test failure to an end-user in a friendly, concise way. Avoid technical jargon. 1-2 short sentences.',
+          prompt: `Summarize this failure for an end user.\nERROR:\n${errorMessage}\n\nRECENT_LOGS:\n${logs
+            .slice(-20)
+            .join('\n')}`,
+          schema: z.object({ summary: z.string().min(1) }),
+        });
+        summary = object.summary;
+      } catch {}
+
       return {
         success: false,
         error: errorMessage,
         logs,
+        // @ts-expect-error propagate summary to API mapper
+        summary,
       };
     }
   },
