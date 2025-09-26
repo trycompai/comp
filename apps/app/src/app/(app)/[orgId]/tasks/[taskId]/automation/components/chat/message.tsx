@@ -36,7 +36,16 @@ export const Message = memo(function Message({
     .filter(({ part }) => part.type === 'reasoning');
 
   useEffect(() => {
-    // Only auto-expand once or when no selection exists.
+    // Prefer expanding the latest streaming reasoning part if present.
+    const latestStreaming = [...reasoningParts]
+      .reverse()
+      .find(({ part }) => (part as any)?.state === 'streaming');
+    if (latestStreaming && latestStreaming.index !== expandedReasoningIndex) {
+      setExpandedReasoningIndex(latestStreaming.index);
+      return;
+    }
+
+    // Otherwise, if nothing expanded yet, expand the latest reasoning block.
     if (expandedReasoningIndex === null && reasoningParts.length > 0) {
       const latestReasoningIndex = reasoningParts[reasoningParts.length - 1].index;
       setExpandedReasoningIndex(latestReasoningIndex);
