@@ -5,6 +5,7 @@ import { Dialog, DialogContent } from '@comp/ui/dialog';
 import { AlertCircle, Bug, CheckCircle2, Loader2, Sparkles, Terminal } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { TestResult } from '../types';
+import { ConfettiEffect } from './ConfettiEffect';
 
 interface Props {
   open: boolean;
@@ -18,19 +19,42 @@ export function TestDialog({ open, isExecuting, result, onClose, onLetAIFix }: P
   const [showLogs, setShowLogs] = useState(false);
   const [showOutput, setShowOutput] = useState(false);
   const [animateSuccess, setAnimateSuccess] = useState(false);
+  // Store the display result to prevent flashing during close
+  const [displayResult, setDisplayResult] = useState<TestResult | null>(null);
+  const [displayIsExecuting, setDisplayIsExecuting] = useState(false);
+
+  // Update display states only when dialog is open
+  useEffect(() => {
+    if (open) {
+      setDisplayResult(result);
+      setDisplayIsExecuting(isExecuting);
+    }
+  }, [open, result, isExecuting]);
 
   useEffect(() => {
-    if (result?.status === 'success') {
+    if (displayResult?.status === 'success') {
       setAnimateSuccess(true);
-      const timer = setTimeout(() => setAnimateSuccess(false), 1000);
+      // Wait for bounce animation to complete (bounce animation is typically 1s)
+      const timer = setTimeout(() => setAnimateSuccess(false), 2000);
       return () => clearTimeout(timer);
     }
-  }, [result?.status]);
+  }, [displayResult?.status]);
+
+  // Reset states when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setShowLogs(false);
+      setShowOutput(false);
+      setAnimateSuccess(false);
+    }
+  }, [open]);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
+      {/* Confetti Effect */}
+      <ConfettiEffect trigger={displayResult?.status === 'success' && open} />
       <DialogContent className="w-[720px] max-w-[720px] h-[560px] overflow-hidden flex flex-col p-0">
-        {isExecuting && !result ? (
+        {displayIsExecuting && !displayResult ? (
           <div className="flex-1 flex flex-col">
             <div className="h-1.5 bg-gradient-to-r from-primary/40 via-primary to-primary/40 animate-pulse" />
             <div className="flex-1 flex flex-col items-center justify-center px-8">
@@ -55,12 +79,12 @@ export function TestDialog({ open, isExecuting, result, onClose, onLetAIFix }: P
             <div
               className={cn(
                 'relative overflow-hidden border-b',
-                result?.status === 'success'
+                displayResult?.status === 'success'
                   ? 'bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5 border-primary/20'
                   : 'bg-gradient-to-br from-destructive/5 via-destructive/10 to-destructive/5 border-destructive/20',
               )}
             >
-              {result?.status === 'success' && (
+              {displayResult?.status === 'success' && (
                 <div className="absolute inset-0 overflow-hidden">
                   <div
                     className={cn(
@@ -73,8 +97,13 @@ export function TestDialog({ open, isExecuting, result, onClose, onLetAIFix }: P
               )}
               <div className="relative px-8 py-6">
                 <div className="flex items-center gap-4">
-                  <div className={cn('relative', animateSuccess && 'animate-bounce')}>
-                    {result?.status === 'success' ? (
+                  <div
+                    className={cn(
+                      'relative transition-transform duration-500',
+                      animateSuccess && 'animate-[bounce_1.5s_ease-in-out]',
+                    )}
+                  >
+                    {displayResult?.status === 'success' ? (
                       <div className="relative">
                         <div className="absolute inset-0 bg-primary rounded-full blur-md opacity-20" />
                         <div className="relative inline-flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-primary to-primary/80 shadow-lg">
@@ -92,10 +121,10 @@ export function TestDialog({ open, isExecuting, result, onClose, onLetAIFix }: P
                   </div>
                   <div className="flex-1">
                     <h3 className="text-xl font-semibold text-foreground">
-                      {result?.status === 'success' ? '🎉 Success!' : '🚨 Error!'}
+                      {displayResult?.status === 'success' ? '🎉 Success!' : '🚨 Error!'}
                     </h3>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      {result?.status === 'success'
+                      {displayResult?.status === 'success'
                         ? 'Your automation ran successfully without any errors.'
                         : 'There was an issue running your automation. Please check the output and logs below to understand what went wrong.'}
                     </p>
@@ -110,18 +139,20 @@ export function TestDialog({ open, isExecuting, result, onClose, onLetAIFix }: P
                 <div className="flex-1 flex flex-col items-center justify-center px-8 py-12">
                   <div className="text-center max-w-md">
                     <h3 className="text-lg font-semibold mb-4">
-                      {result?.status === 'success' ? 'Test completed successfully' : 'Test failed'}
+                      {displayResult?.status === 'success'
+                        ? 'Test completed successfully'
+                        : 'Test failed'}
                     </h3>
 
                     {/* Show summary or error here if available */}
-                    {(result?.summary || result?.error) && (
+                    {(displayResult?.summary || displayResult?.error) && (
                       <div className="mb-6 p-4 bg-muted/50 rounded-lg text-sm">
-                        {result?.summary || result?.error}
+                        {displayResult?.summary || displayResult?.error}
                       </div>
                     )}
 
                     <p className="text-sm text-muted-foreground mb-8">
-                      {result?.status === 'success'
+                      {displayResult?.status === 'success'
                         ? 'View the output to see the results.'
                         : 'Check the output and logs below to understand what went wrong.'}
                     </p>
@@ -136,7 +167,7 @@ export function TestDialog({ open, isExecuting, result, onClose, onLetAIFix }: P
                         <span className="text-sm font-medium text-primary">View Output</span>
                       </button>
 
-                      {result?.logs && result.logs.length > 0 && (
+                      {displayResult?.logs && displayResult.logs.length > 0 && (
                         <button
                           onClick={() => setShowLogs(true)}
                           className="group flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all bg-primary/5 hover:bg-primary/10 border border-primary/20 hover:border-primary/30"
@@ -177,7 +208,7 @@ export function TestDialog({ open, isExecuting, result, onClose, onLetAIFix }: P
                     >
                       Output
                     </button>
-                    {result?.logs && result.logs.length > 0 && (
+                    {displayResult?.logs && displayResult.logs.length > 0 && (
                       <button
                         onClick={() => {
                           setShowOutput(false);
@@ -208,9 +239,9 @@ export function TestDialog({ open, isExecuting, result, onClose, onLetAIFix }: P
                         Execution Output
                       </h4>
                       <pre className="p-4 bg-primary/5 rounded-lg text-xs leading-relaxed overflow-x-auto font-mono border border-primary/10">
-                        {result?.data !== undefined && result?.data !== null
-                          ? JSON.stringify(result.data, null, 2)
-                          : result?.status === 'success'
+                        {displayResult?.data !== undefined && displayResult?.data !== null
+                          ? JSON.stringify(displayResult.data, null, 2)
+                          : displayResult?.status === 'success'
                             ? '// No output returned'
                             : '// Execution failed'}
                       </pre>
@@ -218,14 +249,14 @@ export function TestDialog({ open, isExecuting, result, onClose, onLetAIFix }: P
                   )}
 
                   {/* Logs Tab */}
-                  {showLogs && result?.logs && result.logs.length > 0 && (
+                  {showLogs && displayResult?.logs && displayResult.logs.length > 0 && (
                     <div className="space-y-4">
                       <h4 className="text-sm font-semibold flex items-center gap-2">
                         <Bug className="w-4 h-4 text-primary" />
                         System Logs
                       </h4>
                       <pre className="p-4 bg-primary/5 rounded-lg text-xs leading-relaxed overflow-x-auto font-mono text-muted-foreground border border-primary/10">
-                        {result.logs.join('\n')}
+                        {displayResult.logs.join('\n')}
                       </pre>
                     </div>
                   )}
@@ -233,7 +264,7 @@ export function TestDialog({ open, isExecuting, result, onClose, onLetAIFix }: P
               )}
             </div>
 
-            {result?.status === 'error' && (
+            {displayResult?.status === 'error' && (
               <div className="px-8 pb-6 pt-2">
                 <button
                   onClick={onLetAIFix}
