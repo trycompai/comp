@@ -1,4 +1,3 @@
-import { cn } from '@/lib/utils';
 import { BotIcon, UserIcon } from 'lucide-react';
 import { createContext, memo, useContext, useEffect, useState } from 'react';
 import { MessagePart } from './message-part';
@@ -54,48 +53,37 @@ export const Message = memo(function Message({
 
   return (
     <ReasoningContext.Provider value={{ expandedReasoningIndex, setExpandedReasoningIndex }}>
-      <div
-        className={cn({
-          'group relative': true,
-          'mr-8 lg:mr-20': message.role === 'assistant',
-          'ml-8 lg:ml-20': message.role === 'user',
-        })}
-      >
-        <div
-          className={cn({
-            'relative p-6 lg:p-8 rounded-sm transition-all duration-500': true,
-            // Assistant messages - clean background
-            'bg-card border border-border shadow-sm hover:shadow-md': message.role === 'assistant',
-            // User messages - subtle accent background for contrast
-            'bg-muted/30 border border-border shadow-md hover:shadow-lg': message.role === 'user',
-          })}
-        >
-          {/* Message Header */}
-          <div className="flex items-center gap-4 mb-6">
-            {message.role === 'user' ? (
-              <>
-                <div className="ml-auto p-2 rounded-sm bg-primary text-primary-foreground">
-                  <UserIcon className="w-4 h-4" />
-                </div>
-                <span className="text-sm font-semibold text-foreground">You</span>
-              </>
-            ) : (
-              <>
-                <div className="p-2 rounded-sm bg-primary border border-primary">
-                  <BotIcon className="w-4 h-4 text-primary-foreground" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-sm font-semibold text-foreground">Assistant</span>
-                  <span className="text-xs text-muted-foreground font-mono uppercase tracking-wider">
-                    {message.metadata?.model}
-                  </span>
-                </div>
-              </>
-            )}
+      <div className="group relative flex gap-3 px-4 py-2 hover:bg-muted/30 transition-colors duration-150">
+        {/* Avatar */}
+        <div className="flex-shrink-0 mt-0.5">
+          {message.role === 'user' ? (
+            <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
+              <UserIcon className="w-4 h-4 text-primary" />
+            </div>
+          ) : (
+            <div className="relative">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/25 flex items-center justify-center">
+                <BotIcon className="w-4 h-4 text-primary" />
+              </div>
+              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-500 border-2 border-background" />
+            </div>
+          )}
+        </div>
+
+        {/* Message Content */}
+        <div className="flex-1 min-w-0">
+          {/* Header - Clean and simple */}
+          <div className="flex items-baseline gap-2 mb-1">
+            <span className="text-sm font-semibold text-foreground">
+              {message.role === 'user' ? 'You' : 'AI Agent'}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
           </div>
 
-          {/* Message Content */}
-          <div className="space-y-4 relative z-10">
+          {/* Content */}
+          <div className="space-y-1.5">
             {(() => {
               // Reorder parts to ensure text messages appear before tool UI components
               const reorderedParts = [...message.parts];
@@ -133,9 +121,6 @@ export const Message = memo(function Message({
               ));
             })()}
           </div>
-
-          {/* Clean depth separator */}
-          <div className="absolute inset-x-0 -bottom-px h-px bg-gradient-to-r from-transparent via-border to-transparent" />
         </div>
       </div>
     </ReasoningContext.Provider>

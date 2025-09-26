@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { RefObject, useEffect, useRef } from 'react';
 
 // Confetti particle class
 class Particle {
@@ -48,9 +48,14 @@ class Particle {
 interface ConfettiEffectProps {
   trigger: boolean;
   particleCount?: number;
+  containerRef?: RefObject<HTMLDivElement | null>;
 }
 
-export function ConfettiEffect({ trigger, particleCount = 100 }: ConfettiEffectProps) {
+export function ConfettiEffect({
+  trigger,
+  particleCount = 100,
+  containerRef,
+}: ConfettiEffectProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<Particle[]>([]);
   const animationRef = useRef<number>(0);
@@ -65,9 +70,15 @@ export function ConfettiEffect({ trigger, particleCount = 100 }: ConfettiEffectP
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
 
-      // Create initial particles from dialog center
-      const centerX = canvas.width / 2;
-      const centerY = canvas.height / 2 - 100; // Slightly above center
+      // Calculate center based on container or fallback to screen center
+      let centerX = canvas.width / 2;
+      let centerY = canvas.height / 2 - 100;
+
+      if (containerRef?.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        centerX = rect.left + rect.width / 2;
+        centerY = rect.top + rect.height / 2 - 50; // Slightly above center
+      }
 
       particlesRef.current = Array.from(
         { length: particleCount },

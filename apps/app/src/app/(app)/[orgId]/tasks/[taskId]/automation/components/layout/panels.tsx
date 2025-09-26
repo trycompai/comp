@@ -1,24 +1,20 @@
 'use client';
 
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
-import { HORIZONTAL_COOKIE, VERTICAL_COOKIE } from './sizing';
+import { VERTICAL_COOKIE } from './sizing';
 
 interface HProps {
   left: React.ReactNode;
   right: React.ReactNode;
-  defaultLayout: number[];
+  defaultLayout?: number[]; // Now optional since we're not using it
 }
 
 export function Horizontal({ defaultLayout, left, right }: HProps) {
-  const onLayout = (sizes: number[]) => {
-    document.cookie = `${HORIZONTAL_COOKIE}=${JSON.stringify(sizes)}`;
-  };
   return (
-    <PanelGroup direction="horizontal" onLayout={onLayout} className="h-full">
-      <Panel defaultSize={defaultLayout[0]}>{left}</Panel>
-      <PanelResizeHandle className="w-2" />
-      <Panel defaultSize={defaultLayout[1]}>{right}</Panel>
-    </PanelGroup>
+    <div className="h-full w-full flex gap-2">
+      <div className="w-1/2 h-full flex-shrink-0">{left}</div>
+      <div className="w-1/2 h-full flex-shrink-0">{right}</div>
+    </div>
   );
 }
 

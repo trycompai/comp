@@ -11,6 +11,8 @@ export function Panel({ className, children }: Props) {
     <div
       className={cn(
         'flex flex-col relative w-full h-full overflow-hidden',
+        // Ensure consistent width regardless of content and prevent layout shift
+        'min-w-0',
         // Subtle card background
         'bg-card',
         // Full border for clear separation

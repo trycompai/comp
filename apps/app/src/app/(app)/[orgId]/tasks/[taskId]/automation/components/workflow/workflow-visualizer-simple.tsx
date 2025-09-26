@@ -19,7 +19,7 @@ import { Panel, PanelHeader } from '../panels/panels';
 import {
   CodeViewer,
   EmptyState,
-  TestDialog,
+  TestResultsPanel,
   ViewModeSwitch,
   WorkflowSkeleton,
   WorkflowStepCard,
@@ -98,8 +98,6 @@ export function WorkflowVisualizerSimple({ className }: Props) {
     return null;
   }, [executionResult, executionError]);
 
-  const isDialogOpen = isExecuting || !!testResult;
-
   const handleTest = async () => {
     if (!orgId || !taskId) return;
     await execute();
@@ -175,33 +173,46 @@ Please fix the automation script to resolve this error.`;
         </div>
       </PanelHeader>
 
-      <div className={cn('flex-1 overflow-auto', viewMode === 'visual' && 'p-8')}>
-        <div className={cn(viewMode === 'visual' && 'max-w-3xl mx-auto')}>
-          {viewMode === 'visual' ? (
-            // Visual Mode
-            showLoading ? (
-              <WorkflowSkeleton />
-            ) : steps.length > 0 ? (
-              <div className="space-y-6 pb-6">
-                {steps.map((step, index) => (
-                  <WorkflowStepCard
-                    key={step.id}
-                    step={step}
-                    index={index}
-                    showConnection={index > 0}
-                  />
-                ))}
-              </div>
-            ) : (
-              <EmptyState type="workflow" />
-            )
-          ) : (
-            // Code Mode
-            <div className="h-full">
-              <CodeViewer content={script?.content || ''} isLoading={showLoading} />
+      <div className="flex-1 overflow-auto">
+        {/* Show Test Results Panel INSTEAD of regular content when testing/results available */}
+        {isExecuting || testResult ? (
+          <TestResultsPanel
+            isExecuting={isExecuting}
+            result={testResult}
+            onLetAIFix={handleLetAIFix}
+            onBack={() => resetExecution()}
+          />
+        ) : (
+          /* Regular Content - Only show when NOT testing */
+          <div className={cn('h-full', viewMode === 'visual' && 'p-8')}>
+            <div className={cn(viewMode === 'visual' && 'max-w-3xl mx-auto')}>
+              {viewMode === 'visual' ? (
+                // Visual Mode
+                showLoading ? (
+                  <WorkflowSkeleton />
+                ) : steps.length > 0 ? (
+                  <div className="space-y-6 pb-6 max-w-md mx-auto">
+                    {steps.map((step, index) => (
+                      <WorkflowStepCard
+                        key={step.id}
+                        step={step}
+                        index={index}
+                        showConnection={index > 0}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState type="workflow" />
+                )
+              ) : (
+                // Code Mode
+                <div className="h-full">
+                  <CodeViewer content={script?.content || ''} isLoading={showLoading} />
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Fixed Test Button */}
@@ -220,14 +231,6 @@ Please fix the automation script to resolve this error.`;
           </div>
         </div>
       )}
-
-      <TestDialog
-        open={isDialogOpen}
-        isExecuting={isExecuting}
-        result={testResult}
-        onClose={() => resetExecution()}
-        onLetAIFix={handleLetAIFix}
-      />
     </Panel>
   );
 }
