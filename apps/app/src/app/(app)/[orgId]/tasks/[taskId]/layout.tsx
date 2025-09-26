@@ -5,5 +5,5 @@ export default async function Layout({
   params: Promise<{ taskId: string; orgId: string }>;
 }) {
   // Just pass through the children without any wrapper
-  return <>{children}</>;
+  return <div className="h-full p-8">{children}</div>;
 }

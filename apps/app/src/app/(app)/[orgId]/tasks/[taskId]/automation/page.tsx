@@ -39,11 +39,14 @@ export default async function Page({
 
   return (
     <AutomationLayoutWrapper>
-      <div className="flex flex-col h-full overflow-hidden bg-background">
+      <div
+        className="flex flex-col overflow-hidden bg-background"
+        style={{ height: 'calc(100vh - 8rem)' }}
+      >
         <ScriptInitializer orgId={orgId} taskId={taskId} />
 
         {/* Breadcrumb Navigation */}
-        <div className="px-4 py-3 bg-muted/30">
+        <div className="pb-3 px-4">
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
@@ -85,7 +88,7 @@ export default async function Page({
         </div>
 
         {/* Desktop layout: Chat on left, Workflow on right */}
-        <div className="hidden flex-1 w-full min-h-0 overflow-hidden md:flex">
+        <div className="hidden flex-1 w-full min-h-0 overflow-hidden md:flex px-4 pb-1">
           <Horizontal
             defaultLayout={horizontalSizes ?? [50, 50]}
             left={<Chat className="h-full" orgId={orgId} taskId={taskId} />}
