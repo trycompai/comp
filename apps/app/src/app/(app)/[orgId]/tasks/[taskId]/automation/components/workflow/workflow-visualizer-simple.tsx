@@ -4,15 +4,7 @@ import { Models } from '@/ai/constants';
 import { cn } from '@/lib/utils';
 import { useChat } from '@ai-sdk/react';
 import { Button } from '@comp/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@comp/ui/dialog';
-import { AlertCircle, CheckCircle2, Play, Sparkles, Zap } from 'lucide-react';
+import { Play, Zap } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useEffect, useMemo } from 'react';
 import {
@@ -27,18 +19,12 @@ import { Panel, PanelHeader } from '../panels/panels';
 import {
   CodeViewer,
   EmptyState,
+  TestDialog,
   ViewModeSwitch,
   WorkflowSkeleton,
   WorkflowStepCard,
 } from './components';
-
-interface TestResult {
-  status: 'success' | 'error';
-  message?: string;
-  data?: any;
-  error?: string;
-  logs?: string[];
-}
+import type { TestResult } from './types';
 
 interface Props {
   className?: string;
@@ -106,10 +92,13 @@ export function WorkflowVisualizerSimple({ className }: Props) {
         data: executionResult.data,
         logs: executionResult.logs,
         error: executionResult.error || (hasErrorInData ? executionResult.data.error : undefined),
+        summary: (executionResult as any).summary,
       };
     }
     return null;
   }, [executionResult, executionError]);
+
+  const isDialogOpen = isExecuting || !!testResult;
 
   const handleTest = async () => {
     if (!orgId || !taskId) return;
@@ -143,7 +132,7 @@ Please fix the automation script to resolve this error.`;
     // Send the error to the chat
     sendMessage(
       { text: errorMessage },
-      { body: { modelId: Models.OpenAIGPT5, reasoningEffort: 'medium', orgId, taskId } },
+      { body: { modelId: Models.OpenAIGPT5Mini, reasoningEffort: 'medium', orgId, taskId } },
     );
 
     // Close the dialog
@@ -232,62 +221,13 @@ Please fix the automation script to resolve this error.`;
         </div>
       )}
 
-      {/* Test Result Dialog */}
-      <Dialog open={!!testResult} onOpenChange={() => resetExecution()}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              {testResult?.status === 'success' ? (
-                <>
-                  <CheckCircle2 className="w-5 h-5 text-green-500" />
-                  Test Successful
-                </>
-              ) : (
-                <>
-                  <AlertCircle className="w-5 h-5 text-destructive" />
-                  Test Failed
-                </>
-              )}
-            </DialogTitle>
-            <DialogDescription>
-              {testResult?.message || testResult?.error || 'View the test results below'}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="flex-1 overflow-auto space-y-4">
-            {testResult && testResult.logs && testResult.logs.length > 0 && (
-              <div>
-                <h4 className="text-sm font-medium mb-2">Execution Logs:</h4>
-                <pre className="bg-muted p-3 rounded-md text-xs overflow-x-auto max-h-48 overflow-y-auto">
-                  {testResult.logs.join('\n')}
-                </pre>
-              </div>
-            )}
-
-            {testResult && (
-              <div>
-                <h4 className="text-sm font-medium mb-2">Function Output:</h4>
-                <pre className="bg-muted p-3 rounded-md text-xs overflow-x-auto">
-                  {testResult.data !== undefined && testResult.data !== null
-                    ? JSON.stringify(testResult.data, null, 2)
-                    : testResult.status === 'success'
-                      ? '(No output returned)'
-                      : '(Execution failed)'}
-                </pre>
-              </div>
-            )}
-          </div>
-
-          {testResult?.status === 'error' && (
-            <DialogFooter>
-              <Button onClick={handleLetAIFix}>
-                <Sparkles className="w-4 h-4 mr-2" />
-                Let AI Fix It
-              </Button>
-            </DialogFooter>
-          )}
-        </DialogContent>
-      </Dialog>
+      <TestDialog
+        open={isDialogOpen}
+        isExecuting={isExecuting}
+        result={testResult}
+        onClose={() => resetExecution()}
+        onLetAIFix={handleLetAIFix}
+      />
     </Panel>
   );
 }

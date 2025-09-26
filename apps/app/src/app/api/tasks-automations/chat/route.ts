@@ -1,4 +1,4 @@
-import { DEFAULT_MODEL } from '@/ai/constants';
+import { Models } from '@/ai/constants';
 import { getAvailableModels, getModelOptions } from '@/ai/gateway';
 import { getTaskAutomationTools } from '@/ai/tools/task-automation-tools';
 import { db } from '@db';
@@ -36,12 +36,18 @@ export async function POST(req: Request) {
     );
   }
 
-  const [models, { messages, modelId = DEFAULT_MODEL, reasoningEffort, orgId, taskId }] =
+  const [models, { messages, modelId = Models.OpenAIGPT5Mini, reasoningEffort, orgId, taskId }] =
     await Promise.all([getAvailableModels(), req.json() as Promise<BodyData>]);
 
-  const model = models.find((model) => model.id === modelId);
+  const model = models.find((m) => m.id === modelId);
+
   if (!model) {
-    return NextResponse.json({ error: `Model ${modelId} not found.` }, { status: 400 });
+    return NextResponse.json(
+      {
+        error: `Model ${modelId} not found., Valid models are: ${models.map((m) => m.id).join(', ')}`,
+      },
+      { status: 400 },
+    );
   }
 
   // Validate required parameters

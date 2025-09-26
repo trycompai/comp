@@ -6,7 +6,7 @@ import { useModelId, useReasoningEffort } from './use-settings';
 export function ReasoningEffort() {
   const [modelId] = useModelId();
   const [effort, setEffort] = useReasoningEffort();
-  if (modelId !== Models.OpenAIGPT5) {
+  if (modelId !== Models.OpenAIGPT5 && modelId !== Models.OpenAIGPT5Mini) {
     return null;
   }
 

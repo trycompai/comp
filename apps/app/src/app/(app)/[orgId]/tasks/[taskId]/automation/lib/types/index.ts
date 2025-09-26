@@ -35,6 +35,7 @@ export interface TaskAutomationExecutionResult {
   logs?: string[];
   taskId?: string;
   modelName?: string;
+  summary?: string;
 }
 
 export interface TaskAutomationTestResult {

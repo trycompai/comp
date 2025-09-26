@@ -6,8 +6,8 @@ import { DataUIPart, DefaultChatTransport } from 'ai';
 import { createContext, useContext, useMemo, useRef, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import { mutate } from 'swr';
-import { useTaskAutomationDataMapper } from './task-automation-store';
 import { type ChatUIMessage } from '../components/chat/types';
+import { useTaskAutomationDataMapper } from './task-automation-store';
 
 interface ChatContextValue {
   chat: Chat<ChatUIMessage>;
