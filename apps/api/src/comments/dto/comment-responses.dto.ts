@@ -82,6 +82,13 @@ export class AuthorResponseDto {
     example: 'john.doe@company.com',
   })
   email: string;
+
+  @ApiProperty({
+    description: 'User profile image URL',
+    example: 'https://example.com/avatar.jpg',
+    nullable: true,
+  })
+  image: string | null;
 }
 
 export class CommentResponseDto {

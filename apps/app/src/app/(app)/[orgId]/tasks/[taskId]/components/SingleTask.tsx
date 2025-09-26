@@ -11,11 +11,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@comp/ui/dialog';
-import type { Control, Member, Task, User } from '@db';
+import { CommentEntityType, type Control, type Member, type Task, type User } from '@db';
+import { RefreshCw, Trash2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { Comments } from '../../../../../../components/comments/Comments';
 import { updateTask } from '../../actions/updateTask';
 import { TaskDeleteDialog } from './TaskDeleteDialog';
 import { TaskMainContent } from './TaskMainContent';
@@ -49,8 +51,9 @@ export function SingleTask({ task, members }: SingleTaskProps) {
   const handleUpdateTask = (
     data: Partial<Pick<Task, 'status' | 'assigneeId' | 'frequency' | 'department' | 'reviewDate'>>,
   ) => {
-    const updatePayload: Partial<Pick<Task, 'status' | 'assigneeId' | 'frequency' | 'department' | 'reviewDate'>> =
-      {};
+    const updatePayload: Partial<
+      Pick<Task, 'status' | 'assigneeId' | 'frequency' | 'department' | 'reviewDate'>
+    > = {};
 
     if (data.status !== undefined) {
       updatePayload.status = data.status;
@@ -73,17 +76,76 @@ export function SingleTask({ task, members }: SingleTaskProps) {
   };
 
   return (
-    <Card className="flex h-full flex-col overflow-hidden p-4 lg:flex-row lg:gap-16">
-      <TaskMainContent task={task} />
-      <TaskPropertiesSidebar
-        task={task}
-        members={members}
-        assignedMember={assignedMember}
-        handleUpdateTask={handleUpdateTask}
-        onDeleteClick={() => setDeleteDialogOpen(true)}
-        onRegenerateClick={() => setRegenerateConfirmOpen(true)}
-        orgId={orgIdFromParams}
-      />
+    <div className="mx-auto max-w-6xl px-4 py-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Main Content Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left Column - Title, Description, Content */}
+        <div className="lg:col-span-2">
+          {/* Header Section */}
+          <div className="mb-6">
+            <h1 className="text-3xl font-semibold tracking-tight text-foreground mb-3">
+              {task.title}
+            </h1>
+            {task.description && (
+              <p className="text-base text-muted-foreground leading-relaxed">{task.description}</p>
+            )}
+          </div>
+
+          {/* Main Content Area */}
+          <div className="space-y-6">
+            <TaskMainContent task={task} showComments={false} />
+
+            {/* Comments Section - integrated */}
+            <div className="pt-6">
+              <Comments
+                entityId={task.id}
+                entityType={CommentEntityType.task}
+                variant="inline"
+                title=""
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column - Properties (starts at top) */}
+        <div className="lg:col-span-1">
+          <Card className="border border-border bg-card shadow-sm sticky top-4 overflow-hidden">
+            <div className="relative">
+              <div className="absolute top-4 right-4 flex items-center gap-1 z-10">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setRegenerateConfirmOpen(true)}
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                  title="Regenerate task"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setDeleteDialogOpen(true)}
+                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                  title="Delete task"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="p-6">
+                <TaskPropertiesSidebar
+                  task={task}
+                  members={members}
+                  assignedMember={assignedMember}
+                  handleUpdateTask={handleUpdateTask}
+                  onDeleteClick={() => setDeleteDialogOpen(true)}
+                  onRegenerateClick={() => setRegenerateConfirmOpen(true)}
+                  orgId={orgIdFromParams}
+                />
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
 
       {/* Delete Dialog */}
       <TaskDeleteDialog
@@ -118,6 +180,6 @@ export function SingleTask({ task, members }: SingleTaskProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Card>
+    </div>
   );
 }

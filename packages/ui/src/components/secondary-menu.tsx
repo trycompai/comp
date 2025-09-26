@@ -142,7 +142,7 @@ export function SecondaryMenu({
           </Button>
         )}
 
-        <div className="border-border relative mb-0 w-full border bg-card rounded-sm pb-2">
+        <div className="relative mb-0 w-full bg-card rounded-sm pb-2">
           {/* Hover Highlight */}
           <div
             className="bg-muted absolute h-9 rounded-xs transition-all duration-300 ease-out"
@@ -152,10 +152,13 @@ export function SecondaryMenu({
             }}
           />
 
+          {/* Inactive Tab Underline */}
+          <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-border/50" />
+
           {/* Active Indicator */}
           {activeIndex >= 0 && (
             <div
-              className="bg-primary absolute bottom-0 h-[3px] rounded-t-xs transition-all duration-300 ease-out"
+              className="bg-primary absolute bottom-0 h-[3px] rounded-t-xs transition-all duration-300 ease-out z-10"
               style={activeStyle}
             />
           )}

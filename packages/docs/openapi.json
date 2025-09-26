@@ -8279,12 +8279,19 @@
             "type": "string",
             "description": "User email",
             "example": "john.doe@company.com"
+          },
+          "image": {
+            "type": "object",
+            "description": "User profile image URL",
+            "example": "https://example.com/avatar.jpg",
+            "nullable": true
           }
         },
         "required": [
           "id",
           "name",
-          "email"
+          "email",
+          "image"
         ]
       },
       "AttachmentMetadataDto": {

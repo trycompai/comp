@@ -42,7 +42,7 @@ export function DynamicMinHeight({ children, className }: DynamicMinHeightProps)
   const style = useMemo(() => ({ minHeight: `calc(100vh - ${offsetPx}px)` }), [offsetPx]);
 
   return (
-    <div ref={containerRef} className={cn('mx-auto px-4 py-4', className)} style={style}>
+    <div ref={containerRef} className={cn(className)} style={style}>
       {children}
     </div>
   );

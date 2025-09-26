@@ -19,6 +19,7 @@ export interface Comment {
     id: string;
     name: string;
     email: string;
+    image: string | null;
   };
   attachments: Array<{
     id: string;
@@ -173,6 +174,7 @@ export function useOptimisticComments(entityId: string, entityType: CommentEntit
           id: 'temp-user',
           name: 'You', // Will be replaced with real author data
           email: '',
+          image: null,
         },
         attachments: [], // Will be populated by real response
         createdAt: new Date().toISOString(),

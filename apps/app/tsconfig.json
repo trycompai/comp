@@ -21,6 +21,8 @@
     "paths": {
       "@/*": ["./src/*"],
       "@db": ["./prisma"],
+      "@/jobs": ["./src/jobs"],
+      "@/jobs/*": ["./src/jobs/*"],
       "@comp/email": ["../../packages/email/index.ts"],
       "@comp/email/*": ["../../packages/email/*"],
       "@comp/utils": ["../../packages/utils/src/index.ts"],

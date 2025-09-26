@@ -9,7 +9,7 @@ export default async function Layout({ children, params }: LayoutProps) {
   const { orgId } = await params;
 
   return (
-    <div className="m-auto flex max-w-[1200px] flex-col">
+    <div className="m-auto flex max-w-[1200px] flex-col py-8">
       <SecondaryMenu
         items={[
           {

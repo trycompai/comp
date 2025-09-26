@@ -43,6 +43,7 @@ export function IntegrationsCard({
   installedSettings,
   lastRunAt,
   nextRunAt,
+  sync = true,
 }: {
   id: string;
   logo: React.ComponentType;
@@ -58,6 +59,7 @@ export function IntegrationsCard({
   installedSettings: Record<string, any>;
   lastRunAt?: Date | null;
   nextRunAt?: Date | null;
+  sync?: boolean;
 }) {
   const router = useRouter();
 
@@ -306,7 +308,7 @@ export function IntegrationsCard({
                   </AccordionContent>
                 </AccordionItem>
 
-                {installed && (
+                {installed && sync && (
                   <AccordionItem value="sync-status" className="border-0 border-b">
                     <AccordionTrigger className="py-3 hover:no-underline">
                       <div className="flex items-center gap-2">
