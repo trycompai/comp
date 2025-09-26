@@ -1,5 +1,5 @@
 import { db } from '@db';
-import { sendTaskReviewNotificationEmail } from '@trycompai/email';
+import { Novu } from '@novu/api';
 import { logger, schedules } from '@trigger.dev/sdk';
 
 export const taskSchedule = schedules.task({
@@ -8,6 +8,9 @@ export const taskSchedule = schedules.task({
   maxDuration: 1000 * 60 * 10, // 10 minutes
   run: async () => {
     const now = new Date();
+    const novu = new Novu({ 
+      secretKey: process.env.NOVU_API_KEY
+    });
 
     // Find all Done tasks that have a review date and frequency set
     const candidateTasks = await db.task.findMany({
@@ -23,18 +26,39 @@ export const taskSchedule = schedules.task({
       include: {
         organization: {
           select: {
+            id: true,
             name: true,
+            members: {
+              where: {
+                role: { contains: 'owner' }
+              },
+              select: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                  },
+                },
+              },
+            },
           },
         },
         assignee: {
-          include: {
-            user: true,
+          select: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
           },
         },
       },
     });
 
-    // Helpers to compute next due date based on frequency
+    // FIle all tasks past their review deadline.
     const addDaysToDate = (date: Date, days: number) => {
       const result = new Date(date.getTime());
       result.setDate(result.getDate() + days);
@@ -90,8 +114,8 @@ export const taskSchedule = schedules.task({
       };
     }
 
-    // Update all overdue tasks to "todo" status
     try {
+      // Update all overdue tasks to "todo" status
       const taskIds = overdueTasks.map((task) => task.id);
 
       const updateResult = await db.task.updateMany({
@@ -105,7 +129,65 @@ export const taskSchedule = schedules.task({
         },
       });
 
-      
+      const recipientsMap = new Map<string, {
+        email: string;
+        userId: string;
+        name: string;
+        task: typeof overdueTasks[number];
+      }>();
+      const addRecipients = (
+        users: Array<{ user: { id: string; email: string; name?: string } }>,
+        task: typeof overdueTasks[number],
+      ) => {
+        for (const entry of users) {
+          const user = entry.user;
+          if (user && user.email && user.id) {
+            const key = `${user.id}-${task.id}`;
+            if (!recipientsMap.has(key)) {
+              recipientsMap.set(key, {
+                email: user.email,
+                userId: user.id,
+                name: user.name ?? '',
+                task,
+              });
+            }
+          }
+        }
+      };
+
+      // Find recipients (org owner and assignee) for each task and add to recipientsMap
+      for (const task of overdueTasks) {
+        // Org owners
+        if (task.organization && Array.isArray(task.organization.members)) {
+            addRecipients(task.organization.members, task);
+        }
+        // Policy assignee
+        if (task.assignee) {
+          addRecipients([task.assignee], task);
+        }
+      }
+
+      // Final deduplicated recipients array.
+      const recipients = Array.from(recipientsMap.values());
+      // Trigger notification for each recipient.
+      for (const recipient of recipients) {
+        novu.trigger({
+          workflowId: 'task-review-required',
+          to: {
+            subscriberId: `${recipient.userId}-${recipient.task.organizationId}`,
+            email: recipient.email,
+          },
+          payload: {
+            email: recipient.email,
+            userName: recipient.name,
+            taskName: recipient.task.title,
+            organizationName: recipient.task.organization.name,
+            organizationId: recipient.task.organizationId,
+            taskId: recipient.task.id,
+            taskUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.trycomp.ai'}/${recipient.task.organizationId}/tasks/${recipient.task.id}`,
+          }
+        });
+      }
 
       // Log details about updated tasks
       overdueTasks.forEach((task) => {
@@ -115,109 +197,6 @@ export const taskSchedule = schedules.task({
       });
 
       logger.info(`Successfully updated ${updateResult.count} tasks to "todo" status`);
-
-      // Build a map of admins by organization for targeted notifications
-      const uniqueOrgIds = Array.from(new Set(overdueTasks.map((t) => t.organizationId)));
-      const admins = await db.member.findMany({
-        where: {
-          organizationId: { in: uniqueOrgIds },
-          isActive: true,
-          // role is a comma-separated string sometimes
-          role: { contains: 'admin' },
-        },
-        include: {
-          user: true,
-        },
-      });
-
-      const adminsByOrgId = new Map<string, { email: string; name: string }[]>();
-      admins.forEach((admin) => {
-        const email = admin.user?.email;
-        if (!email) return;
-        const list = adminsByOrgId.get(admin.organizationId) ?? [];
-        list.push({ email, name: admin.user.name ?? email });
-        adminsByOrgId.set(admin.organizationId, list);
-      });
-
-      // Rate limit: 2 emails per second
-      const EMAIL_BATCH_SIZE = 2;
-      const EMAIL_BATCH_DELAY_MS = 1000;
-
-      // Build a flat list of email jobs
-      type EmailJob = {
-        email: string;
-        name: string;
-        task: typeof overdueTasks[number];
-      };
-      const emailJobs: EmailJob[] = [];
-
-      // Helper to compute next due date again for email content
-      const computeNextDueDate = (reviewDate: Date, frequency: string): Date | null => {
-        switch (frequency) {
-          case 'daily':
-            return addDaysToDate(reviewDate, 1);
-          case 'weekly':
-            return addDaysToDate(reviewDate, 7);
-          case 'monthly':
-            return addMonthsToDate(reviewDate, 1);
-          case 'quarterly':
-            return addMonthsToDate(reviewDate, 3);
-          case 'yearly':
-            return addMonthsToDate(reviewDate, 12);
-          default:
-            return null;
-        }
-      };
-
-      for (const task of overdueTasks) {
-        const recipients = new Map<string, string>(); // email -> name
-
-        // Assignee (if any)
-        const assigneeEmail = task.assignee?.user?.email;
-        if (assigneeEmail) {
-          recipients.set(assigneeEmail, task.assignee?.user?.name ?? assigneeEmail);
-        }
-
-        // Organization admins
-        const orgAdmins = adminsByOrgId.get(task.organizationId) ?? [];
-        orgAdmins.forEach((a) => recipients.set(a.email, a.name));
-
-        if (recipients.size === 0) {
-          logger.info(`No recipients found for task ${task.id} (${task.title})`);
-          continue;
-        }
-
-        for (const [email, name] of recipients.entries()) {
-          emailJobs.push({ email, name, task });
-        }
-      }
-
-      for (let i = 0; i < emailJobs.length; i += EMAIL_BATCH_SIZE) {
-        const batch = emailJobs.slice(i, i + EMAIL_BATCH_SIZE);
-
-        await Promise.all(
-          batch.map(async ({ email, name, task }) => {
-            try {
-              await sendTaskReviewNotificationEmail({
-                email,
-                userName: name,
-                taskName: task.title,
-                organizationName: task.organization.name,
-                organizationId: task.organizationId,
-                taskId: task.id,
-              });
-              logger.info(`Sent task review notification to ${email} for task ${task.id}`);
-            } catch (emailError) {
-              logger.error(`Failed to send review email to ${email} for task ${task.id}: ${emailError}`);
-            }
-          }),
-        );
-
-        // Only delay if there are more emails to send
-        if (i + EMAIL_BATCH_SIZE < emailJobs.length) {
-          await new Promise((resolve) => setTimeout(resolve, EMAIL_BATCH_DELAY_MS));
-        }
-      }
 
       return {
         success: true,
