@@ -410,13 +410,19 @@ export const initializeOrganization = async ({
     );
   }
 
-  const result = await db.$transaction(async (tx) => {
-    return _upsertOrgFrameworkStructureCore({
-      organizationId,
-      targetFrameworkEditorIds: frameworkIds,
-      frameworkEditorFrameworks: frameworksAndReqsToProcess,
-      tx,
-    });
-  });
+  const result = await db.$transaction(
+    async (tx) => {
+      return _upsertOrgFrameworkStructureCore({
+        organizationId,
+        targetFrameworkEditorIds: frameworkIds,
+        frameworkEditorFrameworks: frameworksAndReqsToProcess,
+        tx,
+      });
+    },
+    {
+      timeout: 30_000, // higher than default to handle slower DBs without hanging too long
+      maxWait: 5_000,
+    },
+  );
   return result;
 };

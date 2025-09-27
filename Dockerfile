@@ -45,8 +45,22 @@ RUN bun install
 RUN cp -R packages/db/prisma/migrations node_modules/@trycompai/db/dist/
 
 # Run migrations against the combined schema published by @trycompai/db
-RUN echo "Running migrations against @trycompai/db combined schema"
-CMD ["bunx", "prisma", "migrate", "deploy", "--schema=node_modules/@trycompai/db/dist/schema.prisma"]
+RUN cat <<'EOF' > /migrate.sh
+#!/bin/sh
+set -eu
+
+echo "[Migrator] Starting prisma migrate deploy"
+
+if [ "${FORCE_DATABASE_WIPE_AND_RESEED:-false}" = "true" ]; then
+  echo "[Migrator] FORCE_DATABASE_WIPE_AND_RESEED=true detected. Resetting database before running migrations."
+  bunx prisma migrate reset --force --skip-seed --schema=node_modules/@trycompai/db/dist/schema.prisma
+fi
+
+bunx prisma migrate deploy --schema=node_modules/@trycompai/db/dist/schema.prisma
+echo "[Migrator] Prisma migrate deploy finished"
+EOF
+RUN chmod +x /migrate.sh
+CMD ["/migrate.sh"]
 
 # =============================================================================
 # STAGE 3: App Builder
@@ -69,6 +83,7 @@ RUN cp packages/db/dist/schema.prisma apps/app/prisma/schema.prisma
 # Ensure Next build has required public env at build-time
 ARG NEXT_PUBLIC_BETTER_AUTH_URL
 ARG NEXT_PUBLIC_PORTAL_URL
+ARG APP_ENVIRONMENT
 ARG NEXT_PUBLIC_POSTHOG_KEY
 ARG NEXT_PUBLIC_POSTHOG_HOST
 ARG NEXT_PUBLIC_IS_DUB_ENABLED
@@ -87,6 +102,7 @@ ENV NEXT_PUBLIC_BETTER_AUTH_URL=$NEXT_PUBLIC_BETTER_AUTH_URL \
     NEXT_PUBLIC_LINKEDIN_CONVERSION_ID=$NEXT_PUBLIC_LINKEDIN_CONVERSION_ID \
     NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL=$NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL \
     NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+    APP_ENVIRONMENT=$APP_ENVIRONMENT \
     NEXT_TELEMETRY_DISABLED=1 NODE_ENV=production \
     NEXT_OUTPUT_STANDALONE=true \
     NODE_OPTIONS=--max_old_space_size=6144
@@ -99,13 +115,36 @@ RUN cd apps/app && SKIP_ENV_VALIDATION=true bun run build:docker
 # =============================================================================
 FROM node:22-alpine AS app
 
+ARG NEXT_PUBLIC_BETTER_AUTH_URL
+ARG NEXT_PUBLIC_PORTAL_URL
+ARG APP_ENVIRONMENT
+ARG NEXT_PUBLIC_POSTHOG_KEY
+ARG NEXT_PUBLIC_POSTHOG_HOST
+ARG NEXT_PUBLIC_IS_DUB_ENABLED
+ARG NEXT_PUBLIC_GTM_ID
+ARG NEXT_PUBLIC_LINKEDIN_PARTNER_ID
+ARG NEXT_PUBLIC_LINKEDIN_CONVERSION_ID
+ARG NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL
+ARG NEXT_PUBLIC_API_URL
+
+ENV NEXT_PUBLIC_BETTER_AUTH_URL=${NEXT_PUBLIC_BETTER_AUTH_URL} \
+    NEXT_PUBLIC_PORTAL_URL=${NEXT_PUBLIC_PORTAL_URL} \
+    NEXT_PUBLIC_POSTHOG_KEY=${NEXT_PUBLIC_POSTHOG_KEY} \
+    NEXT_PUBLIC_POSTHOG_HOST=${NEXT_PUBLIC_POSTHOG_HOST} \
+    NEXT_PUBLIC_IS_DUB_ENABLED=${NEXT_PUBLIC_IS_DUB_ENABLED} \
+    NEXT_PUBLIC_GTM_ID=${NEXT_PUBLIC_GTM_ID} \
+    NEXT_PUBLIC_LINKEDIN_PARTNER_ID=${NEXT_PUBLIC_LINKEDIN_PARTNER_ID} \
+    NEXT_PUBLIC_LINKEDIN_CONVERSION_ID=${NEXT_PUBLIC_LINKEDIN_CONVERSION_ID} \
+    NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL=${NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL} \
+    NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL} \
+    APP_ENVIRONMENT=${APP_ENVIRONMENT}
+
 WORKDIR /app
 
 # Copy Next standalone output
 COPY --from=app-builder /app/apps/app/.next/standalone ./
 COPY --from=app-builder /app/apps/app/.next/static ./apps/app/.next/static
 COPY --from=app-builder /app/apps/app/public ./apps/app/public
-
 
 EXPOSE 3000
 CMD ["node", "apps/app/server.js"]
