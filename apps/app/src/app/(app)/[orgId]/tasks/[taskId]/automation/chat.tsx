@@ -82,7 +82,7 @@ export function Chat({ className, orgId, taskId }: Props) {
   const [input, setInput] = useLocalStorageValue('prompt-input');
   const { chat } = useSharedChatContext();
   const { messages, sendMessage, status } = useChat<ChatUIMessage>({ chat });
-  const { setChatStatus } = useTaskAutomationStore();
+  const { setChatStatus, scriptUrl } = useTaskAutomationStore();
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const handleExampleClick = useCallback(
@@ -175,7 +175,7 @@ export function Chat({ className, orgId, taskId }: Props) {
       {/* Messages Area */}
       {!hasMessages ? (
         <form
-          className="flex flex-col w-full h-full px-58"
+          className={cn('flex flex-col w-full h-full px-58', scriptUrl && 'px-0')}
           onSubmit={async (event) => {
             event.preventDefault();
             validateAndSubmitMessage(input);
@@ -205,7 +205,7 @@ export function Chat({ className, orgId, taskId }: Props) {
                 </h3>
 
                 {/* All Examples Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-w-3xl mx-auto">
                   {AUTOMATION_EXAMPLES.map((example) => (
                     <Card
                       key={example.title}
