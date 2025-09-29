@@ -91,7 +91,7 @@ export const Message = memo(function Message({
           </div>
 
           {/* Content */}
-          <div className="space-y-1.5">
+          <div className="flex flex-col gap-1">
             {(() => {
               // Reorder parts to ensure text messages appear before tool UI components
               const reorderedParts = [...message.parts];

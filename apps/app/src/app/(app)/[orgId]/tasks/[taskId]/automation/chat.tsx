@@ -5,7 +5,7 @@ import { Github, VercelIcon } from '@/components/ai/icons';
 import { cn } from '@/lib/utils';
 import { useChat } from '@ai-sdk/react';
 import { Card, CardDescription, CardHeader } from '@comp/ui/card';
-import { ArrowLeft, Cloud, Globe, MessageCircleIcon, SendIcon } from 'lucide-react';
+import { ArrowLeft, Cloud, Globe, MessageCircleIcon } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef } from 'react';
@@ -17,7 +17,6 @@ import {
 import { Message } from './components/chat/message';
 import type { ChatUIMessage } from './components/chat/types';
 import { PanelHeader } from './components/panels/panels';
-import { Button } from './components/ui/button';
 import { Input } from './components/ui/input';
 import { useSharedChatContext } from './lib/chat-context';
 import { useTaskAutomationStore } from './lib/task-automation-store';
@@ -150,16 +149,6 @@ export function Chat({ className, orgId, taskId }: Props) {
       className={cn(className, 'selection:bg-primary selection:text-white')}
       style={{ height: 'calc(100vh - 6em)' }}
     >
-      <style jsx global>{`
-        ::selection {
-          background-color: hsl(var(--primary));
-          color: white;
-        }
-        ::-moz-selection {
-          background-color: hsl(var(--primary));
-          color: white;
-        }
-      `}</style>
       <Image
         src="/automation-bg.svg"
         alt="Automation"
@@ -260,26 +249,18 @@ export function Chat({ className, orgId, taskId }: Props) {
           </Conversation>
 
           <form
-            className="shrink-0 flex items-center p-4 gap-3 border-t border-primary/20 bg-primary/5"
+            className="flex py-6 px-4"
             onSubmit={async (event) => {
               event.preventDefault();
               validateAndSubmitMessage(input);
             }}
           >
             <Input
-              className="flex-1 font-normal text-sm rounded-sm border border-border bg-background focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 placeholder:text-muted-foreground px-4 py-2.5"
               disabled={status === 'streaming' || status === 'submitted'}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask me to create an automation..."
               value={input}
             />
-            <Button
-              type="submit"
-              disabled={status !== 'ready' || !input.trim()}
-              className="px-4 py-2.5"
-            >
-              <SendIcon className="w-4 h-4" />
-            </Button>
           </form>
         </div>
       )}
