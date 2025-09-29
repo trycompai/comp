@@ -11,7 +11,7 @@ interface HProps {
 
 export function Horizontal({ defaultLayout, left, right }: HProps) {
   return (
-    <div className="h-full w-full flex gap-2">
+    <div className="h-full w-full flex">
       <div className="w-1/2 h-full flex-shrink-0">{left}</div>
       <div className="w-1/2 h-full flex-shrink-0">{right}</div>
     </div>

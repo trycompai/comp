@@ -112,6 +112,7 @@ export interface TaskAutomationStoreState {
   scriptGenerated: boolean;
   scriptPath?: string;
   viewMode: ViewMode;
+  scriptUrl?: string;
 }
 
 // ============================================================================

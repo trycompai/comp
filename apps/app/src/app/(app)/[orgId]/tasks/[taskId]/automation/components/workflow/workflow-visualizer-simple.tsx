@@ -31,7 +31,7 @@ interface Props {
 }
 
 export function WorkflowVisualizerSimple({ className }: Props) {
-  const { scriptGenerated, viewMode, setViewMode } = useTaskAutomationStore();
+  const { scriptGenerated, viewMode, setViewMode, setScriptUrl } = useTaskAutomationStore();
   const { orgId, taskId } = useParams<{ orgId: string; taskId: string }>();
   const { chat } = useSharedChatContext();
   const { sendMessage } = useChat<ChatUIMessage>({ chat });
@@ -40,6 +40,7 @@ export function WorkflowVisualizerSimple({ className }: Props) {
     script,
     isLoading: isLoadingScript,
     refresh,
+    scriptExists,
   } = useTaskAutomationScript({
     orgId: orgId || '',
     taskId: taskId || '',
@@ -58,6 +59,11 @@ export function WorkflowVisualizerSimple({ className }: Props) {
       setScriptGenerated(true, script.key);
     }
   }, [script, scriptGenerated]);
+
+  useEffect(() => {
+    // Update store with script URL (empty string if no script exists)
+    setScriptUrl(script?.key || undefined);
+  }, [script, setScriptUrl]);
 
   const {
     execute,
