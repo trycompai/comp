@@ -71,7 +71,7 @@ export function NotificationBell() {
             className="relative cursor-pointer"
           >
             <Bell size={20} />
-            {total > -1 && (
+            {total > 0 && (
               <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500" />
             )}
           </button>
