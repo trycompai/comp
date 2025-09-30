@@ -14,11 +14,12 @@ export async function POST(req: Request) {
 
     // Determine the S3 key based on the type
     const s3Key = type === 'lambda' ? `${orgId}/${taskId}.js` : `${orgId}/${taskId}.${type}.js`;
+    const bucket = process.env.TASKS_AUTOMATION_BUCKET;
 
     // Upload to S3
     await s3Client.send(
       new PutObjectCommand({
-        Bucket: process.env.TASKS_AUTOMATION_BUCKET || 'comp-testing-lambda-tasks',
+        Bucket: bucket,
         Key: s3Key,
         Body: content,
         ContentType: 'application/javascript',
@@ -35,7 +36,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      bucket: 'comp-testing-lambda-tasks',
+      bucket: bucket,
       key: s3Key,
       message: 'Script uploaded successfully',
     });

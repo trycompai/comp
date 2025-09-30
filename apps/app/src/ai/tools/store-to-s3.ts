@@ -1,4 +1,5 @@
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { s3Client } from '@/app/s3';
+import { PutObjectCommand } from '@aws-sdk/client-s3';
 import type { UIMessage, UIMessageStreamWriter } from 'ai';
 import { tool } from 'ai';
 import z from 'zod/v3';
@@ -8,25 +9,14 @@ interface Params {
   writer: UIMessageStreamWriter<UIMessage<never, DataPart>>;
 }
 
-const DEFAULTS = {
-  bucket: 'comp-testing-lambda-tasks',
-  region: 'us-east-1',
-  orgId: 'org_689ce3dced87cc45f600a04b',
-  taskId: 'tsk_689ce3dd6f19f4cf1f0ea061',
-};
-
 const inputSchema = z.object({
   content: z.string().min(1).describe('The full file content to store'),
-  bucket: z.string().optional().describe('Target S3 bucket'),
-  region: z.string().optional().describe('AWS region for the S3 bucket'),
   orgId: z.string().optional().describe('Organization identifier'),
   taskId: z.string().optional().describe('Task identifier'),
   contentType: z.string().optional().describe('MIME type, defaults to text/plain for generic code'),
 });
 interface ToolInput {
   content: string;
-  bucket?: string;
-  region?: string;
   orgId?: string;
   taskId?: string;
   contentType?: string;
@@ -41,7 +31,7 @@ export const storeToS3 = ({ writer }: Params) => {
       const { toolCallId } = ctx;
       const parsed: unknown = inputSchema.parse(args);
       const input = parsed as ToolInput;
-      const { content, bucket, region, orgId, taskId, contentType } = input;
+      const { content, orgId, taskId, contentType } = input;
 
       // Validate task format: must export a function via module.exports
       // Validate task format: must export a function with only event parameter
@@ -79,10 +69,9 @@ export const storeToS3 = ({ writer }: Params) => {
         });
         return message;
       }
-      const resolvedBucket = bucket || DEFAULTS.bucket;
-      const resolvedRegion = region || DEFAULTS.region;
-      const resolvedOrgId = orgId || DEFAULTS.orgId;
-      const resolvedTaskId = taskId || DEFAULTS.taskId;
+      const resolvedBucket = process.env.TASKS_AUTOMATION_BUCKET;
+      const resolvedOrgId = orgId;
+      const resolvedTaskId = taskId;
       const keyBase = `${resolvedOrgId}/${resolvedTaskId}`;
       const key = `${keyBase}.automation.js`;
 
@@ -93,20 +82,11 @@ export const storeToS3 = ({ writer }: Params) => {
           status: 'uploading',
           bucket: resolvedBucket,
           key,
-          region: resolvedRegion,
         },
       });
 
       try {
-        const credentials =
-          process.env.APP_AWS_ACCESS_KEY_ID && process.env.APP_AWS_SECRET_ACCESS_KEY
-            ? {
-                accessKeyId: process.env.APP_AWS_ACCESS_KEY_ID as string,
-                secretAccessKey: process.env.APP_AWS_SECRET_ACCESS_KEY as string,
-              }
-            : undefined;
-        const s3 = new S3Client({ region: resolvedRegion, credentials });
-        await s3.send(
+        await s3Client.send(
           new PutObjectCommand({
             Bucket: resolvedBucket,
             Key: key,
@@ -130,7 +110,6 @@ export const storeToS3 = ({ writer }: Params) => {
             status: 'done',
             bucket: resolvedBucket,
             key,
-            region: resolvedRegion,
           },
         });
 
@@ -144,7 +123,6 @@ export const storeToS3 = ({ writer }: Params) => {
             status: 'error',
             bucket: resolvedBucket,
             key,
-            region: resolvedRegion,
             error: { message },
           },
         });

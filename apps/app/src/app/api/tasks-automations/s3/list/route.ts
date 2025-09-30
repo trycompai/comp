@@ -16,7 +16,7 @@ export async function GET(req: Request) {
     // List objects in the organization's folder
     const response = await s3Client.send(
       new ListObjectsV2Command({
-        Bucket: process.env.TASKS_AUTOMATION_BUCKET || 'comp-testing-lambda-tasks',
+        Bucket: process.env.TASKS_AUTOMATION_BUCKET,
         Prefix: `${orgId}/`,
         MaxKeys: 100,
       }),
