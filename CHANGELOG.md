@@ -1,3 +1,13 @@
+# [1.55.0](https://github.com/trycompai/comp/compare/v1.54.0...v1.55.0) (2025-09-30)
+
+
+### Features
+
+* **app:** implement automated tasks ([#1550](https://github.com/trycompai/comp/issues/1550)) ([56f019d](https://github.com/trycompai/comp/commit/56f019d7508c19f24fc3fd31113d9c0fa788fb81))
+* **portal:** add gmail signin ([#1587](https://github.com/trycompai/comp/issues/1587)) ([f8d6af4](https://github.com/trycompai/comp/commit/f8d6af4e8723b4c79a7ae7c508ad8ac34892db84))
+* **portal:** display policies with PDF format ([#1559](https://github.com/trycompai/comp/issues/1559)) ([3d7ee5f](https://github.com/trycompai/comp/commit/3d7ee5fd37f40258b11615a48d57e330567ae7fc))
+* **secrets:** fix secrets ([b3af710](https://github.com/trycompai/comp/commit/b3af710412ff76200eefb87ac8fc6ccd6774b455))
+
 # [1.54.0](https://github.com/trycompai/comp/compare/v1.53.0...v1.54.0) (2025-09-19)
 
 
