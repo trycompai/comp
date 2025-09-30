@@ -41,3 +41,12 @@ body {
 .animate-shimmer {
   animation: shimmer 2s infinite;
 }
+
+::selection {
+  background-color: hsl(var(--primary));
+  color: white;
+}
+::-moz-selection {
+  background-color: hsl(var(--primary));
+  color: white;
+}

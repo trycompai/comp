@@ -94,6 +94,10 @@
     "packages/utils"
   ],
   "dependencies": {
+    "@types/cheerio": "^1.0.0",
+    "@types/react-syntax-highlighter": "^15.5.13",
+    "cheerio": "^1.1.2",
+    "react-syntax-highlighter": "^15.6.6",
     "zod": "^3.25.76"
   }
 }

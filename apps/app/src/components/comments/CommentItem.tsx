@@ -4,7 +4,6 @@ import { useApi } from '@/hooks/use-api';
 import { useCommentActions } from '@/hooks/use-comments-api';
 import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
 import { Button } from '@comp/ui/button';
-import { Card, CardContent } from '@comp/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -20,12 +19,24 @@ import {
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
 import { Textarea } from '@comp/ui/textarea';
-import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { FileIcon, FileText, ImageIcon, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import type React from 'react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { formatRelativeTime } from '../../app/(app)/[orgId]/tasks/[taskId]/components/commentUtils';
 import type { CommentWithAuthor } from './Comments';
+
+// Helper function to generate gravatar URL
+function getGravatarUrl(email: string | null | undefined, size = 64): string {
+  if (!email)
+    return `https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&s=${size}`;
+
+  // Simple MD5 hash implementation for gravatar
+  // In production, you might want to use a proper library or server-side generation
+  const emailHash = email.toLowerCase().trim();
+  // For now, we'll use the email as a placeholder - ideally this should be MD5 hashed
+  return `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(emailHash)}&size=${size}`;
+}
 
 // Helper function to render content with clickable links
 function renderContentWithLinks(text: string): React.ReactNode[] {
@@ -145,11 +156,16 @@ export function CommentItem({ comment, refreshComments }: CommentItemProps) {
   };
 
   return (
-    <Card className="bg-foreground/5 rounded-lg">
-      <CardContent className="text-foreground flex items-start gap-3 p-4">
-        <Avatar className="h-6 w-6">
-          <AvatarImage src={undefined} alt={comment.author.name ?? 'User'} />
-          <AvatarFallback>{comment.author.name?.charAt(0).toUpperCase() ?? '?'}</AvatarFallback>
+    <>
+      <div className="flex items-start gap-3 p-4 rounded-lg border border-border bg-card hover:shadow-sm transition-all group">
+        <Avatar className="h-8 w-8 border border-border">
+          <AvatarImage
+            src={comment.author.image || getGravatarUrl(comment.author.email)}
+            alt={comment.author.name ?? 'User'}
+          />
+          <AvatarFallback className="text-xs bg-muted">
+            {comment.author.name?.charAt(0).toUpperCase() ?? '?'}
+          </AvatarFallback>
         </Avatar>
         <div className="flex-1 items-start space-y-2 text-sm">
           <div>
@@ -168,10 +184,10 @@ export function CommentItem({ comment, refreshComments }: CommentItemProps) {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-6 w-6 shrink-0"
+                      className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
                       aria-label="Comment options"
                     >
-                      <MoreHorizontal className="h-4 w-4" />
+                      <MoreHorizontal className="h-3.5 w-3.5" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
@@ -201,27 +217,53 @@ export function CommentItem({ comment, refreshComments }: CommentItemProps) {
                 onChange={(e: { target: { value: React.SetStateAction<string> } }) =>
                   setEditedContent(e.target.value)
                 }
-                className="bg-background/50 min-h-[60px] text-sm"
+                className="bg-muted/50 border-border min-h-[80px] text-sm resize-none"
                 placeholder="Edit comment..."
+                autoFocus
               />
             )}
 
-            {/* Show existing attachments (read-only for now) */}
+            {/* Show existing attachments */}
             {comment.attachments.length > 0 && (
-              <div className="pt-3">
-                <div className="text-xs text-muted-foreground mb-2">Attachments:</div>
-                <div className="space-y-1">
-                  {comment.attachments.map((att) => (
-                    <div key={att.id} className="flex items-center gap-2 text-xs">
-                      <span>📎</span>
+              <div className="pt-3 mt-2 border-t border-border/50">
+                <div className="flex flex-wrap gap-2">
+                  {comment.attachments.map((att) => {
+                    const fileExt = att.name.split('.').pop()?.toLowerCase() || '';
+                    const isPDF = fileExt === 'pdf';
+                    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExt);
+                    const isDoc = ['doc', 'docx'].includes(fileExt);
+
+                    const getFileTypeStyles = () => {
+                      if (isPDF || isImage || isDoc)
+                        return 'bg-primary/10 border-primary/20 hover:bg-primary/20 hover:border-primary/30';
+                      return 'bg-muted/50 border-border hover:bg-muted/70';
+                    };
+
+                    const getFileIconColor = () => {
+                      if (isPDF || isImage || isDoc) return 'text-primary';
+                      return 'text-muted-foreground';
+                    };
+
+                    return (
                       <button
+                        key={att.id}
                         onClick={() => handleAttachmentClick(att.id, att.name)}
-                        className="text-blue-600 hover:underline cursor-pointer text-left"
+                        className={`inline-flex items-center gap-2 px-2.5 py-1.5 border rounded-md transition-all text-sm ${getFileTypeStyles()}`}
+                        title={att.name}
                       >
-                        {att.name}
+                        {isPDF ? (
+                          <FileText className={`h-3.5 w-3.5 ${getFileIconColor()}`} />
+                        ) : isImage ? (
+                          <ImageIcon className={`h-3.5 w-3.5 ${getFileIconColor()}`} />
+                        ) : isDoc ? (
+                          <FileText className={`h-3.5 w-3.5 ${getFileIconColor()}`} />
+                        ) : (
+                          <FileIcon className={`h-3.5 w-3.5 ${getFileIconColor()}`} />
+                        )}
+                        <span className="hover:underline max-w-[200px] truncate">{att.name}</span>
                       </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -238,7 +280,7 @@ export function CommentItem({ comment, refreshComments }: CommentItemProps) {
             )}
           </div>
         </div>
-      </CardContent>
+      </div>
       {/* Delete confirmation dialog */}
       <Dialog open={isDeleteOpen} onOpenChange={(open) => !open && setIsDeleteOpen(false)}>
         <DialogContent className="sm:max-w-[420px]">
@@ -258,6 +300,6 @@ export function CommentItem({ comment, refreshComments }: CommentItemProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Card>
+    </>
   );
 }

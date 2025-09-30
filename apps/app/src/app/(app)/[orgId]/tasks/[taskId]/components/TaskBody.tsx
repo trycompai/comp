@@ -1,24 +1,20 @@
 'use client';
 
 import { useTaskAttachmentActions, useTaskAttachments } from '@/hooks/use-tasks-api';
-import { Button } from '@comp/ui/button';
-import { Label } from '@comp/ui/label';
-import { Textarea } from '@comp/ui/textarea';
 import type { AttachmentEntityType } from '@db';
-import { Loader2, Paperclip, Plus } from 'lucide-react';
+import { FileIcon, FileText, ImageIcon, Loader2, Plus, X } from 'lucide-react';
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { AttachmentItem } from './AttachmentItem';
 
 // Removed ApiAttachment interface - using database Attachment type directly
 
 interface TaskBodyProps {
   taskId: string;
-  title: string;
-  description: string;
-  onTitleChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  onDescriptionChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  title?: string;
+  description?: string;
+  onTitleChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onDescriptionChange?: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
   disabled?: boolean;
 }
 
@@ -163,29 +159,6 @@ export function TaskBody({
   return (
     <div className="flex flex-col gap-4">
       <input
-        value={title}
-        onChange={onTitleChange}
-        className="h-auto shrink-0 border-none bg-transparent p-0 md:text-lg font-semibold tracking-tight shadow-none focus-visible:ring-0"
-        placeholder="Task Title"
-        disabled={disabled || isUploading || !!busyAttachmentId}
-      />
-      <Textarea
-        ref={textareaRef}
-        value={description}
-        onChange={(e) => {
-          onDescriptionChange(e);
-          // Auto-resize after onChange to handle programmatic changes
-          setTimeout(autoResizeTextarea, 0);
-        }}
-        placeholder="Add description..."
-        className="text-muted-foreground text-md min-h-[80px] resize-none border-none p-2 shadow-none focus-visible:ring-0"
-        disabled={disabled || isUploading || !!busyAttachmentId}
-        style={{
-          height: 'auto',
-          minHeight: '80px',
-        }}
-      />
-      <input
         type="file"
         ref={fileInputRef}
         onChange={handleFileSelectMultiple}
@@ -194,30 +167,9 @@ export function TaskBody({
         multiple
       />
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <Label className="flex-1 text-sm font-medium">Attachments</Label>
-          {/* Show loading state while fetching attachments or when data hasn't loaded yet */}
-          {attachmentsLoading || attachmentsData === undefined ? (
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          ) : (
-            attachments.length === 0 && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={triggerFileInput}
-                disabled={isUploading || !!busyAttachmentId}
-                className="text-muted-foreground hover:text-foreground flex h-7 w-7 items-center justify-center"
-                aria-label="Add attachment"
-              >
-                {isUploading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Paperclip className="h-4 w-4" />
-                )}
-              </Button>
-            )
-          )}
-        </div>
+        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          Attachments
+        </h3>
 
         {/* Show error state if attachments failed to load */}
         {attachmentsError && (
@@ -225,66 +177,126 @@ export function TaskBody({
         )}
 
         {(attachmentsLoading || attachmentsData === undefined) && (
-          <div className="space-y-2 pt-1">
-            {/* Simplified loading skeleton for attachments */}
-            {[1, 2].map((i) => (
-              <div key={i} className="bg-muted/20 rounded-lg h-12 animate-pulse"></div>
+          <div className="flex flex-wrap gap-2">
+            {/* Enhanced loading skeleton for attachments */}
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="inline-flex items-center gap-2 px-2.5 py-1.5 bg-muted/30 border border-border/50 rounded-md h-8 animate-pulse"
+                style={{ width: `${80 + i * 20}px` }}
+              >
+                <div className="w-3.5 h-3.5 bg-muted/50 rounded" />
+                <div className="flex-1 h-3 bg-muted/50 rounded" />
+              </div>
             ))}
           </div>
         )}
 
         {!attachmentsLoading && attachmentsData !== undefined && attachments.length > 0 ? (
-          <div className="space-y-2 pt-1">
-            {attachments.map((attachment) => {
-              const isBusy = busyAttachmentId === attachment.id;
-              // Use attachment directly since it already has the correct structure
-              const attachmentForItem = {
-                ...attachment,
-                // Ensure proper date objects and types
-                createdAt: new Date(attachment.createdAt),
-                updatedAt: new Date(attachment.updatedAt),
-                entityType: attachment.entityType as AttachmentEntityType,
-              };
-              return (
-                <AttachmentItem
-                  key={attachment.id}
-                  attachment={attachmentForItem}
-                  onClickFilename={handleDownloadClick}
-                  onDelete={handleDeleteAttachment}
-                  isBusy={isBusy}
-                  isParentBusy={isUploading}
-                />
-              );
-            })}
+          <div className="space-y-2">
+            <div className="flex flex-wrap gap-2">
+              {attachments.map((attachment) => {
+                const isBusy = busyAttachmentId === attachment.id;
+                // Use attachment directly since it already has the correct structure
+                const attachmentForItem = {
+                  ...attachment,
+                  // Ensure proper date objects and types
+                  createdAt: new Date(attachment.createdAt),
+                  updatedAt: new Date(attachment.updatedAt),
+                  entityType: attachment.entityType as AttachmentEntityType,
+                };
+                const fileExt = attachment.name.split('.').pop()?.toLowerCase() || '';
+                const isPDF = fileExt === 'pdf';
+                const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExt);
+                const isDoc = ['doc', 'docx'].includes(fileExt);
+
+                const getFileTypeStyles = () => {
+                  if (isPDF)
+                    return 'bg-primary/10 border-primary/20 hover:bg-primary/20 hover:border-primary/30';
+                  if (isImage)
+                    return 'bg-primary/10 border-primary/20 hover:bg-primary/20 hover:border-primary/30';
+                  if (isDoc)
+                    return 'bg-primary/10 border-primary/20 hover:bg-primary/20 hover:border-primary/30';
+                  return 'bg-muted/50 border-border hover:bg-muted/70';
+                };
+
+                const getFileIconColor = () => {
+                  if (isPDF || isImage || isDoc) return 'text-primary';
+                  return 'text-muted-foreground';
+                };
+
+                return (
+                  <div
+                    key={attachment.id}
+                    className={`inline-flex items-center gap-2 px-2.5 py-1.5 border rounded-md transition-all group ${getFileTypeStyles()}`}
+                  >
+                    {isPDF ? (
+                      <FileText className={`h-3.5 w-3.5 ${getFileIconColor()}`} />
+                    ) : isImage ? (
+                      <ImageIcon className={`h-3.5 w-3.5 ${getFileIconColor()}`} />
+                    ) : isDoc ? (
+                      <FileText className={`h-3.5 w-3.5 ${getFileIconColor()}`} />
+                    ) : (
+                      <FileIcon className={`h-3.5 w-3.5 ${getFileIconColor()}`} />
+                    )}
+                    <button
+                      onClick={() => handleDownloadClick(attachment.id)}
+                      disabled={isBusy || isUploading}
+                      className="text-sm hover:underline disabled:opacity-50 disabled:cursor-not-allowed max-w-[200px] truncate"
+                      title={attachment.name}
+                    >
+                      {attachment.name}
+                    </button>
+                    <button
+                      onClick={() => handleDeleteAttachment(attachment.id)}
+                      disabled={isBusy || isUploading}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive disabled:cursor-not-allowed"
+                    >
+                      {isBusy ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <X className="h-3 w-3" />
+                      )}
+                    </button>
+                  </div>
+                );
+              })}
+              {/* Add button inline with attachments */}
+              <button
+                onClick={triggerFileInput}
+                disabled={isUploading || !!busyAttachmentId}
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-sm rounded-md border border-dashed border-border hover:border-border/80 hover:bg-muted/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isUploading ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Plus className="h-3 w-3" />
+                )}
+                Add
+              </button>
+            </div>
           </div>
         ) : (
           !attachmentsLoading &&
           attachmentsData !== undefined &&
-          !attachmentsError &&
-          !isUploading &&
-          attachmentsData && (
-            <p className="text-muted-foreground pt-1 text-sm italic">
-              No attachments yet. Click the <Paperclip className="inline h-4 w-4" /> icon above to
-              add one.
-            </p>
+          attachments.length === 0 && (
+            <button
+              onClick={triggerFileInput}
+              disabled={isUploading || !!busyAttachmentId}
+              className="w-full rounded-lg border border-dashed border-border/40 bg-transparent px-4 py-8 text-center hover:border-border/60 hover:bg-muted/5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <div className="flex flex-col items-center gap-2">
+                {isUploading ? (
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                ) : (
+                  <Plus className="h-5 w-5 text-muted-foreground" />
+                )}
+                <span className="text-sm text-muted-foreground">
+                  {isUploading ? 'Uploading...' : 'Add attachments'}
+                </span>
+              </div>
+            </button>
           )
-        )}
-
-        {!attachmentsLoading && attachmentsData !== undefined && attachments.length > 0 && (
-          <Button
-            variant="outline"
-            onClick={triggerFileInput}
-            disabled={isUploading || !!busyAttachmentId || attachmentsLoading}
-            className="mt-2 w-full justify-center gap-2"
-            aria-label="Add attachment"
-          >
-            {isUploading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Plus className="h-4 w-4" />
-            )}
-            Add Attachment
-          </Button>
         )}
       </div>
     </div>

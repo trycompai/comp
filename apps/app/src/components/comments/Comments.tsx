@@ -13,6 +13,7 @@ export type CommentWithAuthor = {
     id: string;
     name: string;
     email: string;
+    image: string | null;
   };
   attachments: Array<{
     id: string;
@@ -79,9 +80,24 @@ export const Comments = ({
 
       {commentsLoading && (
         <div className="space-y-3">
-          {/* Simple comment skeletons */}
+          {/* Enhanced comment skeletons */}
           {[1, 2].map((i) => (
-            <div key={i} className="bg-muted/20 rounded-lg h-16 animate-pulse"></div>
+            <div
+              key={i}
+              className="flex items-start gap-3 p-4 rounded-lg border border-border bg-card animate-pulse"
+            >
+              <div className="h-8 w-8 rounded-full bg-muted/50 flex-shrink-0" />
+              <div className="flex-1 space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="h-3 w-24 bg-muted/50 rounded" />
+                  <div className="h-3 w-16 bg-muted/30 rounded" />
+                </div>
+                <div className="space-y-1.5">
+                  <div className="h-3 w-full bg-muted/40 rounded" />
+                  <div className="h-3 w-3/4 bg-muted/30 rounded" />
+                </div>
+              </div>
+            </div>
           ))}
         </div>
       )}
@@ -99,10 +115,12 @@ export const Comments = ({
   if (variant === 'inline') {
     return (
       <div className="space-y-4">
-        <div>
-          <h3 className="text-lg font-medium">{title}</h3>
-          {description && <p className="text-muted-foreground text-sm mt-1">{description}</p>}
-        </div>
+        {title && (
+          <div>
+            <h3 className="text-lg font-medium">{title}</h3>
+            {description && <p className="text-muted-foreground text-sm mt-1">{description}</p>}
+          </div>
+        )}
         {content}
       </div>
     );
