@@ -65,7 +65,7 @@ export default async function PolicyPage({
         {isAccepted && (
           <div className="bg-green-50 border-green-200 mb-4 flex items-center gap-2 rounded-t-xs border p-3">
             <Check className="text-green-600 h-5 w-5" />
-            <span className="text-green-800  text-sm font-medium">
+            <span className="text-green-800 text-sm font-medium">
               You have accepted this policy
             </span>
           </div>
@@ -79,8 +79,8 @@ export default async function PolicyPage({
           )}
         </CardHeader>
         <CardContent>
-          <div className="prose  max-w-none">
-            <PolicyViewer content={policy.content} />
+          <div className="prose max-w-none">
+            <PolicyViewer policy={policy} />
           </div>
           {policy.updatedAt && (
             <p className="text-muted-foreground mt-6 text-sm">

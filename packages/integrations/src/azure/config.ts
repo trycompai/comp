@@ -24,6 +24,7 @@ const config: {
     value: string;
   }[];
   category: string;
+  sync: boolean;
   fetch: any;
 } = {
   name: 'Microsoft Azure',
@@ -74,6 +75,7 @@ const config: {
     },
   ],
   category: 'Cloud',
+  sync: true, // This integration syncs on a schedule
   // Use the fetch method from the handler
   fetch: azureHandler?.fetch,
 };

@@ -40,6 +40,7 @@ interface PageLayoutProps {
   maxItems?: number;
   maxLabelLength?: number;
   headerRight?: React.ReactNode;
+  className?: string;
 }
 
 export default function PageWithBreadcrumb({
@@ -48,6 +49,7 @@ export default function PageWithBreadcrumb({
   maxItems = 3,
   maxLabelLength = 40,
   headerRight,
+  className,
 }: PageLayoutProps) {
   const totalItems = breadcrumbs.length;
   const shouldCollapse = totalItems > maxItems;
@@ -59,7 +61,7 @@ export default function PageWithBreadcrumb({
   const hiddenItems = shouldCollapse ? breadcrumbs.slice(1, totalItems - (maxItems - 1)) : [];
 
   return (
-    <PageCore>
+    <PageCore className={className}>
       <div className="mb-2 flex items-center justify-between">
         <Breadcrumb>
           <BreadcrumbList>

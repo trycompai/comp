@@ -9,7 +9,7 @@ export function CommentList({
   refreshComments: () => void;
 }) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       {comments.map((comment) => (
         <CommentItem key={comment.id} comment={comment} refreshComments={refreshComments} />
       ))}

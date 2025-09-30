@@ -3,16 +3,13 @@
 import { useComments, useCommentWithAttachments } from '@/hooks/use-comments-api';
 import { authClient } from '@/utils/auth-client';
 import { Button } from '@comp/ui/button';
-import { Label } from '@comp/ui/label';
 import { Textarea } from '@comp/ui/textarea';
 import type { CommentEntityType } from '@db';
-import clsx from 'clsx';
-import { ArrowUp, Loader2, Paperclip } from 'lucide-react';
+import { FileIcon, Loader2, Paperclip, X } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { AttachmentItem } from '../../app/(app)/[orgId]/tasks/[taskId]/components/AttachmentItem';
 
 interface CommentFormProps {
   entityId: string;
@@ -132,7 +129,7 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
   };
 
   return (
-    <div className="bg-foreground/5 rounded-sm border p-0">
+    <div className="rounded-lg border border-border bg-muted/10">
       <div className="flex items-start gap-3">
         <input
           type="file"
@@ -145,79 +142,62 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
         <div className="flex-1 space-y-3">
           <Textarea
             placeholder="Leave a comment..."
-            className="resize-none border-none p-4 shadow-none"
+            className="resize-none border-0 bg-transparent p-4 placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0"
             value={newComment}
             onChange={(e: { target: { value: React.SetStateAction<string> } }) =>
               setNewComment(e.target.value)
             }
             disabled={isSubmitting}
             onKeyDown={handleKeyDown}
-            rows={2}
+            rows={3}
           />
 
           {pendingFiles.length > 0 && (
-            <div className="space-y-2 px-4 pt-2">
-              <Label className="text-muted-foreground text-xs">Pending Files:</Label>
-              {pendingFiles.map((file, index) => (
-                <AttachmentItem
-                  key={`${file.name}-${index}`}
-                  pendingAttachment={{
-                    id: `temp-${index}`,
-                    name: file.name,
-                    fileType: file.type,
-                  }}
-                  onClickFilename={() => handlePendingFileClick(index)}
-                  onDelete={() => handleRemovePendingFile(index)}
-                  isParentBusy={isSubmitting}
-                />
-              ))}
-              {/* Button to add more attachments */}
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-2 w-full justify-center gap-2"
-                onClick={triggerFileInput}
-                disabled={isSubmitting}
-                aria-label="Add another attachment"
-              >
-                <Paperclip className="h-4 w-4" />
-                Add attachment
-              </Button>
+            <div className="px-4 pb-2">
+              <div className="flex flex-wrap gap-2">
+                {pendingFiles.map((file, index) => (
+                  <div
+                    key={`${file.name}-${index}`}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-md text-sm group"
+                  >
+                    <FileIcon className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                    <span className="truncate max-w-[150px]" title={file.name}>
+                      {file.name}
+                    </span>
+                    <button
+                      onClick={() => handleRemovePendingFile(index)}
+                      disabled={isSubmitting}
+                      className="text-muted-foreground hover:text-destructive transition-colors flex-shrink-0"
+                      aria-label={`Remove ${file.name}`}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
-          <div
-            className={clsx(
-              'flex items-center px-4 pt-1 pb-4',
-              pendingFiles.length === 0 ? 'justify-between' : 'justify-end',
-            )}
-          >
-            {pendingFiles.length === 0 && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-muted-foreground h-8 w-8 rounded-full"
-                onClick={triggerFileInput}
-                disabled={isSubmitting}
-                aria-label="Add attachment"
-              >
-                <Paperclip className="h-4 w-4" />
-              </Button>
-            )}
+          <div className="flex items-center justify-between px-3 pb-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground hover:text-foreground h-8 w-8"
+              onClick={triggerFileInput}
+              disabled={isSubmitting}
+              aria-label="Add attachment"
+            >
+              <Paperclip className="h-4 w-4" />
+            </Button>
 
             <Button
               size="sm"
-              variant="outline"
-              className="border-muted-foreground/50 cursor-pointer rounded-full px-2"
               onClick={handleCommentSubmit}
               disabled={isSubmitting || (!newComment.trim() && pendingFiles.length === 0)}
               aria-label="Submit comment"
+              className="h-8 px-3 bg-primary text-primary-foreground hover:bg-primary/90"
             >
-              {isSubmitting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <ArrowUp className="h-4 w-4" />
-              )}
+              {isSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Comment'}
             </Button>
           </div>
         </div>

@@ -1,7 +1,5 @@
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 
-console.log('[S3] S3 module is being loaded...');
-
 const APP_AWS_REGION = process.env.APP_AWS_REGION;
 const APP_AWS_ACCESS_KEY_ID = process.env.APP_AWS_ACCESS_KEY_ID;
 const APP_AWS_SECRET_ACCESS_KEY = process.env.APP_AWS_SECRET_ACCESS_KEY;
@@ -10,26 +8,11 @@ export const BUCKET_NAME = process.env.APP_AWS_BUCKET_NAME;
 
 let s3ClientInstance: S3Client;
 
-const redact = (value?: string) => {
-  if (!value) return 'undefined';
-  return `${value.substring(0, 4)}****`;
-};
-
 try {
-  console.log('[S3] Initializing S3 Client');
-  console.error('--- Provided Configuration ---');
-  console.error(`APP_AWS_REGION: ${APP_AWS_REGION}`);
-  console.error(`APP_AWS_ACCESS_KEY_ID: ${redact(APP_AWS_ACCESS_KEY_ID)}`);
-  console.error(`APP_AWS_SECRET_ACCESS_KEY: ${redact(APP_AWS_SECRET_ACCESS_KEY)}`);
-  console.error(`APP_AWS_BUCKET_NAME: ${BUCKET_NAME}`);
-  console.error('-----------------------------');
-
   if (!APP_AWS_ACCESS_KEY_ID || !APP_AWS_SECRET_ACCESS_KEY || !BUCKET_NAME || !APP_AWS_REGION) {
     console.error('[S3] AWS S3 credentials or configuration missing. Check environment variables.');
     throw new Error('AWS S3 credentials or configuration missing. Check environment variables.');
   }
-
-  console.log('[S3] AWS S3 credentials or configuration found. Initializing S3 Client');
 
   s3ClientInstance = new S3Client({
     region: APP_AWS_REGION,
@@ -38,8 +21,6 @@ try {
       secretAccessKey: APP_AWS_SECRET_ACCESS_KEY,
     },
   });
-
-  console.log('[S3] S3 Client initialized successfully');
 } catch (error) {
   console.error('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
   console.error('!!! FAILED TO INITIALIZE S3 CLIENT !!!');
