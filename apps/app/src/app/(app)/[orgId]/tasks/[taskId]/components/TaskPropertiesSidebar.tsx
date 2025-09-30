@@ -5,6 +5,7 @@ import type { Control, Departments, Member, Task, TaskFrequency, TaskStatus, Use
 import { format } from 'date-fns';
 import { Sparkles } from 'lucide-react';
 import Link from 'next/link';
+import { useFeatureFlagEnabled } from 'posthog-js/react';
 import { useState } from 'react';
 import { TaskStatusIndicator } from '../../components/TaskStatusIndicator';
 import { PropertySelector } from './PropertySelector';
@@ -32,6 +33,7 @@ export function TaskPropertiesSidebar({
   orgId,
 }: TaskPropertiesSidebarProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const isTaskAutomationEnabled = useFeatureFlagEnabled('is-task-automation-enabled');
 
   return (
     <div className="space-y-4">
@@ -262,17 +264,19 @@ export function TaskPropertiesSidebar({
       </div>
 
       {/* Automation Button */}
-      <div className="mt-6">
-        <Link href={`/${orgId}/tasks/${task.id}/automation`} className="block">
-          <Button
-            className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-            size="sm"
-          >
-            <Sparkles className="mr-2 h-4 w-4" />
-            AI Automation
-          </Button>
-        </Link>
-      </div>
+      {isTaskAutomationEnabled && (
+        <div className="mt-6">
+          <Link href={`/${orgId}/tasks/${task.id}/automation`} className="block">
+            <Button
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+              size="sm"
+            >
+              <Sparkles className="mr-2 h-4 w-4" />
+              AI Automation
+            </Button>
+          </Link>
+        </div>
+      )}
     </div>
   );
 }
