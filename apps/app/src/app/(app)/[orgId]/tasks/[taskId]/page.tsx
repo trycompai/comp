@@ -11,14 +11,10 @@ export default async function TaskPage({
 }: {
   params: Promise<{ taskId: string; orgId: string; locale: string }>;
 }) {
-  console.log('[TaskPage] Starting page render');
   const { taskId, orgId } = await params;
-  console.log('[TaskPage] Params extracted:', { taskId, orgId });
-  console.log('[TaskPage] Getting session');
   const session = await auth.api.getSession({
     headers: await headers(),
   });
-  console.log('[TaskPage] Session obtained, fetching data');
 
   const [task, members] = await Promise.all([getTask(taskId, session), getMembers(orgId, session)]);
 
@@ -30,7 +26,6 @@ export default async function TaskPage({
 }
 
 const getTask = async (taskId: string, session: Session) => {
-  console.log('[getTask] Starting task fetch for:', taskId);
   const activeOrgId = session?.session.activeOrganizationId;
 
   if (!activeOrgId) {
@@ -38,7 +33,6 @@ const getTask = async (taskId: string, session: Session) => {
     return null;
   }
 
-  console.log('[getTask] Querying database for task');
   try {
     const task = await db.task.findUnique({
       where: {
@@ -50,7 +44,6 @@ const getTask = async (taskId: string, session: Session) => {
       },
     });
 
-    console.log('[getTask] Database query successful');
     return task;
   } catch (error) {
     console.error('[getTask] Database query failed:', error);
