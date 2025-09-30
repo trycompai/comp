@@ -119,6 +119,7 @@ export function OrganizationIntegration({
                 installed: installedIntegrations.includes(integration.id),
                 category: integration.category,
                 installedSettings: installedSettings[integration.id] || {},
+                sync: 'sync' in integration ? (integration as any).sync : true,
                 // Pass the last run and next run information
                 lastRunAt: installedIntegration?.lastRunAt,
                 nextRunAt: installedIntegration?.nextRunAt,

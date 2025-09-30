@@ -48,6 +48,7 @@ export default {
     },
   },
   images: [], // Add empty images array for compatibility
+  sync: true, // This integration syncs on a schedule
   // Use the fetch method from the handler
   fetch: deelHandler?.fetch,
 };
