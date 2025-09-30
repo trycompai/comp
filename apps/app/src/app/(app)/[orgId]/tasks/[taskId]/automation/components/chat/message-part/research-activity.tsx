@@ -1,7 +1,7 @@
 'use client';
 
-import { cn } from '@/lib/utils';
 import { CheckCircle2, Globe, Loader2, Search, XCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface ResearchActivityProps {
   toolName: 'exaSearch' | 'firecrawl';
@@ -21,6 +21,17 @@ export function ResearchActivity({
   const isComplete = state === 'output-available';
   const isError = state === 'output-error';
   const isLoading = state === 'input-streaming' || state === 'input-available';
+  const [startTime] = useState(() => Date.now());
+  const [duration, setDuration] = useState<number | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  // Track actual timing
+  useEffect(() => {
+    if ((isComplete || isError) && duration === null) {
+      const elapsed = Math.round((Date.now() - startTime) / 1000);
+      setDuration(elapsed);
+    }
+  }, [isComplete, isError, startTime, duration]);
 
   const getIcon = () => {
     if (isError) return <XCircle className="h-4 w-4 text-muted-foreground" />;
@@ -35,24 +46,24 @@ export function ResearchActivity({
 
   const getTitle = () => {
     if (isError) {
-      return 'Research encountered an issue';
+      return duration ? `Research failed after ${duration}s` : 'Research encountered an issue';
     }
 
     if (toolName === 'exaSearch') {
-      if (isComplete) {
+      if (isComplete && duration !== null) {
         const results = output?.results || [];
         if (results.length === 0) {
-          return 'No relevant information found';
+          return `Searched for ${duration}s - No results found`;
         }
-        return 'Found relevant documentation';
+        return `Searched for ${duration}s - Found relevant documentation`;
       }
-      return 'Looking for information...';
+      return 'Searching...';
     }
 
-    if (isComplete) {
-      return 'Successfully gathered information';
+    if (isComplete && duration !== null) {
+      return `Researched for ${duration}s - Successfully gathered information`;
     }
-    return 'Reading documentation...';
+    return 'Researching...';
   };
 
   const getResultSummary = () => {
@@ -67,27 +78,20 @@ export function ResearchActivity({
   };
 
   return (
-    <div
-      className={cn(
-        'rounded-lg border bg-muted/30 p-3 transition-all',
-        isAnimating && 'animate-in fade-in-0 slide-in-from-bottom-2 duration-300',
-        isError && 'border-muted bg-muted/20',
-        isComplete && 'border-muted bg-muted/20',
-        isLoading && 'border-muted bg-muted/40',
-      )}
-    >
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5">{getIcon()}</div>
-        <div className="flex-1 space-y-1">
-          <p className="text-sm font-medium">{getTitle()}</p>
-          {isError && (
-            <p className="text-xs text-muted-foreground">
-              I'll try a different approach to gather the information needed
-            </p>
-          )}
-          {getResultSummary()}
+    <div className="py-0.5">
+      <button
+        type="button"
+        className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <div className="w-1 h-1 rounded-full bg-muted-foreground/40" />
+        <span>{getTitle()}</span>
+      </button>
+      {isExpanded && (isComplete || isError) && output?.summary && (
+        <div className="mt-1 ml-3 text-xs text-muted-foreground/80 leading-relaxed">
+          {output.summary}
         </div>
-      </div>
+      )}
     </div>
   );
 }

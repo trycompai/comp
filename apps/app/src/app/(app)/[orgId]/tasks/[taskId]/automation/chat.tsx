@@ -8,7 +8,7 @@ import { Card, CardDescription, CardHeader } from '@comp/ui/card';
 import { ArrowLeft, Cloud, Globe, MessageCircleIcon } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Conversation,
   ConversationContent,
@@ -20,7 +20,6 @@ import { PanelHeader } from './components/panels/panels';
 import { Input } from './components/ui/input';
 import { useSharedChatContext } from './lib/chat-context';
 import { useTaskAutomationStore } from './lib/task-automation-store';
-import { useLocalStorageValue } from './lib/use-local-storage-value';
 
 interface Props {
   className: string;
@@ -79,7 +78,7 @@ const AUTOMATION_EXAMPLES: Example[] = [
 ];
 
 export function Chat({ className, orgId, taskId }: Props) {
-  const [input, setInput] = useLocalStorageValue('prompt-input');
+  const [input, setInput] = useState('');
   const { chat } = useSharedChatContext();
   const { messages, sendMessage, status } = useChat<ChatUIMessage>({ chat });
   const { setChatStatus, scriptUrl } = useTaskAutomationStore();
@@ -146,7 +145,7 @@ export function Chat({ className, orgId, taskId }: Props) {
 
   return (
     <div
-      className={cn(className, 'selection:bg-primary selection:text-white')}
+      className={cn(className, 'selection:bg-primary selection:text-white relative')}
       style={{ height: 'calc(100vh - 6em)' }}
     >
       <Image
@@ -154,9 +153,10 @@ export function Chat({ className, orgId, taskId }: Props) {
         alt="Automation"
         width={538}
         height={561}
-        className="absolute top-0 right-0 z-1"
+        className="absolute top-0 right-0 z-10 pointer-events-none opacity-50"
       />
-      <PanelHeader className="shrink-0">
+
+      <PanelHeader className="shrink-0 relative z-20">
         <div className="flex items-center gap-3">
           <Link
             href={`/${orgId}/tasks/${taskId}`}
@@ -175,17 +175,17 @@ export function Chat({ className, orgId, taskId }: Props) {
       {/* Messages Area */}
       {!hasMessages ? (
         <form
-          className={cn('flex flex-col w-full h-full px-58', scriptUrl && 'px-0')}
+          className={cn('flex flex-col w-full h-full px-58 z-20', scriptUrl && 'px-0')}
           onSubmit={async (event) => {
             event.preventDefault();
             validateAndSubmitMessage(input);
           }}
         >
-          <div className="flex-1 min-h-0 overflow-y-auto h-full">
+          <div className="flex-1 min-h-0 overflow-y-auto h-full z-20">
             <div className="w-full h-full flex flex-col items-center py-48">
               {/* Top Section - Fixed Position */}
               <div className="w-full max-w-3xl text-center space-y-8 mb-80">
-                <p className="text-2xl font-medium text-primary tracking-wide">
+                <p className="text-2xl font-medium text-primary tracking-wide z-20">
                   What do you want to automate today?
                 </p>
                 <Input
@@ -232,9 +232,9 @@ export function Chat({ className, orgId, taskId }: Props) {
           </div>
         </form>
       ) : (
-        <div className="flex flex-col h-full">
-          <Conversation className="flex-1 min-h-0 z-10">
-            <ConversationContent className="space-y-4 z-10">
+        <div className="flex flex-col h-full relative z-20">
+          <Conversation className="flex-1 min-h-0">
+            <ConversationContent className="space-y-4">
               {messages.map((message) => (
                 <Message
                   key={message.id}

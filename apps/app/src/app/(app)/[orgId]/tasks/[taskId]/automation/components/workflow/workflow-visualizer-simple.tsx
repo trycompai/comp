@@ -40,7 +40,6 @@ export function WorkflowVisualizerSimple({ className }: Props) {
     script,
     isLoading: isLoadingScript,
     refresh,
-    scriptExists,
   } = useTaskAutomationScript({
     orgId: orgId || '',
     taskId: taskId || '',
