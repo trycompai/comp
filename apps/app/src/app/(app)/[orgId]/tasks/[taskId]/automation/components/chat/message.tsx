@@ -30,7 +30,6 @@ export const Message = memo(function Message({
   onInfoProvided,
 }: Props) {
   const [expandedReasoningIndex, setExpandedReasoningIndex] = useState<number | null>(null);
-  const [isThinkingExpanded, setIsThinkingExpanded] = useState(false);
 
   const reasoningParts = message.parts
     .map((part, index) => ({ part, index }))
@@ -52,6 +51,193 @@ export const Message = memo(function Message({
       setExpandedReasoningIndex(latestReasoningIndex);
     }
   }, [reasoningParts, expandedReasoningIndex]);
+
+  const renderMessageParts = () => {
+    const hasStreamingReasoning = message.parts.some(
+      (part) => part.type === 'reasoning' && (part as any)?.state === 'streaming',
+    );
+
+    const hasTextContent = message.parts.some((part) => part.type === 'text');
+
+    const allReasoningParts = message.parts.filter((part) => part.type === 'reasoning');
+    const allResearchParts = message.parts.filter(
+      (part) => part.type === 'tool-exaSearch' || part.type === 'tool-firecrawl',
+    );
+
+    // Show thinking only if actively streaming reasoning AND no other content yet
+    const hasAnyOtherContent = hasTextContent || allResearchParts.length > 0;
+    const isStillThinking = hasStreamingReasoning && !hasAnyOtherContent;
+
+    const hasStreamingResearch = allResearchParts.some(
+      (part) =>
+        (part as any)?.state === 'input-streaming' || (part as any)?.state === 'input-available',
+    );
+
+    const result = [];
+    let thinkingSessionCount = 0;
+    let researchSessionCount = 0;
+    let currentThinkingParts = [];
+    let currentResearchParts = [];
+
+    // Render parts in their ORIGINAL order, creating new sessions when needed
+    for (let i = 0; i < message.parts.length; i++) {
+      const part = message.parts[i];
+
+      // Collect reasoning parts for current session
+      if (part.type === 'reasoning') {
+        currentThinkingParts.push(part);
+        continue;
+      }
+
+      // Collect research parts for current session
+      if (part.type === 'tool-exaSearch' || part.type === 'tool-firecrawl') {
+        currentResearchParts.push(part);
+        continue;
+      }
+
+      // When we hit other content, flush any accumulated sessions
+
+      // Flush thinking session
+      if (currentThinkingParts.length > 0) {
+        const sessionId = thinkingSessionCount++;
+        const sessionTime = currentThinkingParts.reduce((total, reasoningPart) => {
+          const text = (reasoningPart as any)?.text || '';
+          return total + Math.floor(text.length / 100);
+        }, 0);
+
+        // Check if THIS session is still streaming
+        const thisSessionIsThinking = currentThinkingParts.some(
+          (part) => (part as any)?.state === 'streaming',
+        );
+
+        if (thisSessionIsThinking) {
+          result.push(
+            <div key={`thinking-${sessionId}-active`} className="flex items-center gap-2 py-1">
+              <span className="text-xs text-muted-foreground">Thinking...</span>
+            </div>,
+          );
+        } else {
+          result.push(
+            <div key={`thinking-${sessionId}-done`} className="flex items-center gap-2 py-1">
+              <span className="text-xs text-muted-foreground">
+                Thought for {Math.max(1, sessionTime)}s
+              </span>
+            </div>,
+          );
+        }
+        currentThinkingParts = [];
+      }
+
+      // Flush research session
+      if (currentResearchParts.length > 0) {
+        const sessionId = researchSessionCount++;
+        const sessionTime = currentResearchParts.reduce((total, researchPart) => {
+          const output = (researchPart as any)?.output;
+          const summary = output?.summary || '';
+          return total + Math.max(1, Math.floor(summary.length / 50));
+        }, 0);
+
+        // Check if THIS session has streaming research (not all research globally)
+        const thisSessionIsStreaming = currentResearchParts.some(
+          (part) =>
+            (part as any)?.state === 'input-streaming' ||
+            (part as any)?.state === 'input-available',
+        );
+
+        if (thisSessionIsStreaming) {
+          result.push(
+            <div key={`research-${sessionId}-active`} className="flex items-center gap-2 py-1">
+              <span className="text-xs text-muted-foreground">Researching...</span>
+            </div>,
+          );
+        } else {
+          result.push(
+            <div key={`research-${sessionId}-done`} className="flex items-center gap-2 py-1">
+              <span className="text-xs text-muted-foreground">
+                Researched for {Math.max(1, sessionTime)}s
+              </span>
+            </div>,
+          );
+        }
+        currentResearchParts = [];
+      }
+
+      // Render all other parts (text, tools, etc.)
+      result.push(
+        <MessagePart
+          key={`part-${i}`}
+          part={part}
+          partIndex={i}
+          orgId={orgId}
+          onSecretAdded={onSecretAdded}
+          onInfoProvided={onInfoProvided}
+        />,
+      );
+    }
+
+    // Flush any remaining sessions at the end
+    if (currentThinkingParts.length > 0) {
+      const sessionId = thinkingSessionCount++;
+      const sessionTime = currentThinkingParts.reduce((total, reasoningPart) => {
+        const text = (reasoningPart as any)?.text || '';
+        return total + Math.floor(text.length / 100);
+      }, 0);
+
+      // Check if THIS final session is still streaming
+      const finalThinkingIsActive = currentThinkingParts.some(
+        (part) => (part as any)?.state === 'streaming',
+      );
+
+      if (finalThinkingIsActive) {
+        result.push(
+          <div key={`thinking-${sessionId}-active`} className="flex items-center gap-2 py-1">
+            <span className="text-xs text-muted-foreground">Thinking...</span>
+          </div>,
+        );
+      } else {
+        result.push(
+          <div key={`thinking-${sessionId}-done`} className="flex items-center gap-2 py-1">
+            <span className="text-xs text-muted-foreground">
+              Thought for {Math.max(1, sessionTime)}s
+            </span>
+          </div>,
+        );
+      }
+    }
+
+    if (currentResearchParts.length > 0) {
+      const sessionId = researchSessionCount++;
+      const sessionTime = currentResearchParts.reduce((total, researchPart) => {
+        const output = (researchPart as any)?.output;
+        const summary = output?.summary || '';
+        return total + Math.max(1, Math.floor(summary.length / 50));
+      }, 0);
+
+      // Check if THIS final session has streaming research
+      const finalSessionIsStreaming = currentResearchParts.some(
+        (part) =>
+          (part as any)?.state === 'input-streaming' || (part as any)?.state === 'input-available',
+      );
+
+      if (finalSessionIsStreaming) {
+        result.push(
+          <div key={`research-${sessionId}-active`} className="flex items-center gap-2 py-1">
+            <span className="text-xs text-muted-foreground">Researching...</span>
+          </div>,
+        );
+      } else {
+        result.push(
+          <div key={`research-${sessionId}-done`} className="flex items-center gap-2 py-1">
+            <span className="text-xs text-muted-foreground">
+              Researched for {Math.max(1, sessionTime)}s
+            </span>
+          </div>,
+        );
+      }
+    }
+
+    return result;
+  };
 
   return (
     <ReasoningContext.Provider value={{ expandedReasoningIndex, setExpandedReasoningIndex }}>
@@ -92,116 +278,7 @@ export const Message = memo(function Message({
           </div>
 
           {/* Content */}
-          <div className="flex flex-col gap-2">
-            {(() => {
-              const hasStreamingReasoning = message.parts.some(
-                (part) => part.type === 'reasoning' && (part as any)?.state === 'streaming',
-              );
-
-              const hasTextContent = message.parts.some((part) => part.type === 'text');
-
-              const allReasoningParts = message.parts.filter((part) => part.type === 'reasoning');
-              const allResearchParts = message.parts.filter(
-                (part) => part.type === 'tool-exaSearch' || part.type === 'tool-firecrawl',
-              );
-
-              // Show thinking if actively streaming OR if we have reasoning but no text yet
-              const isStillThinking =
-                hasStreamingReasoning || (allReasoningParts.length > 0 && !hasTextContent);
-
-              const hasStreamingResearch = allResearchParts.some(
-                (part) =>
-                  (part as any)?.state === 'input-streaming' ||
-                  (part as any)?.state === 'input-available',
-              );
-
-              const result = [];
-              let hasShownThinking = false;
-              let hasShownResearch = false;
-
-              // Render parts in their ORIGINAL order, but consolidate reasoning and research
-              for (let i = 0; i < message.parts.length; i++) {
-                const part = message.parts[i];
-
-                // Consolidate reasoning
-                if (part.type === 'reasoning') {
-                  if (!hasShownThinking) {
-                    hasShownThinking = true;
-                    if (isStillThinking) {
-                      result.push(
-                        <div key="thinking-active" className="flex items-center gap-2 py-1">
-                          <span className="text-xs text-muted-foreground">Thinking...</span>
-                        </div>,
-                      );
-                    } else {
-                      result.push(
-                        <div key="thinking-done" className="flex items-center gap-2 py-1">
-                          <span className="text-xs text-muted-foreground">
-                            Thought for{' '}
-                            {Math.max(
-                              1,
-                              Math.round(
-                                allReasoningParts.reduce((total, part) => {
-                                  const text = (part as any)?.text || '';
-                                  return total + Math.floor(text.length / 100);
-                                }, 0),
-                              ),
-                            )}
-                            s
-                          </span>
-                        </div>,
-                      );
-                    }
-                  }
-                  continue;
-                }
-
-                // Consolidate research
-                if (part.type === 'tool-exaSearch' || part.type === 'tool-firecrawl') {
-                  if (!hasShownResearch) {
-                    hasShownResearch = true;
-                    const totalResearchTime = allResearchParts.reduce((total, part) => {
-                      const output = (part as any)?.output;
-                      const summary = output?.summary || '';
-                      return total + Math.max(1, Math.floor(summary.length / 50));
-                    }, 0);
-
-                    if (hasStreamingResearch) {
-                      result.push(
-                        <div key="research-active" className="flex items-center gap-2 py-1">
-                          <div className="w-1 h-1 rounded-full bg-primary animate-pulse" />
-                          <span className="text-xs text-muted-foreground">Researching...</span>
-                        </div>,
-                      );
-                    } else if (allResearchParts.length > 0) {
-                      result.push(
-                        <div key="research-done" className="flex items-center gap-2 py-1">
-                          <span className="text-xs text-muted-foreground">
-                            Researched for {Math.max(1, totalResearchTime)}s
-                          </span>
-                        </div>,
-                      );
-                    }
-                  }
-                  continue;
-                }
-
-                // Render all other parts (text, tools, etc.)
-                result.push(
-                  <MessagePart
-                    key={`part-${i}`}
-                    part={part}
-                    partIndex={i}
-                    orgId={orgId}
-                    onSecretAdded={onSecretAdded}
-                    onInfoProvided={onInfoProvided}
-                  />,
-                );
-              }
-
-              return result;
-            })()}
-          </div>
+          <div className="flex flex-col gap-2">{renderMessageParts()}</div>
         </div>
       </div>
     </ReasoningContext.Provider>
