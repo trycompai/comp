@@ -23,8 +23,3 @@ export const SUPPORTED_MODELS: GatewayModelId[] = [
   Models.OpenAIGPT4oMini,
   Models.XaiGrok3Fast,
 ];
-
-export const TEST_PROMPTS = [
-  'I need an automation that calls github to check if trycompai/comp has dependabot enabled.',
-  'Create an automation to list all open issues in a GitHub repository.',
-];

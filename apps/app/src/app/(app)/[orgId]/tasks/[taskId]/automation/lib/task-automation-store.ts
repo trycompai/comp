@@ -14,6 +14,7 @@ interface TaskAutomationStore extends TaskAutomationStoreState {
   setChatStatus: (status: ChatStatus) => void;
   setScriptGenerated: (generated: boolean, path?: string) => void;
   setViewMode: (mode: ViewMode) => void;
+  setScriptUrl: (url?: string) => void;
 }
 
 /**
@@ -27,6 +28,7 @@ export const useTaskAutomationStore = create<TaskAutomationStore>()((set) => ({
   scriptGenerated: false,
   scriptPath: undefined,
   viewMode: 'visual',
+  scriptUrl: undefined,
 
   // Actions
   setChatStatus: (status) =>
@@ -39,6 +41,8 @@ export const useTaskAutomationStore = create<TaskAutomationStore>()((set) => ({
     }),
 
   setViewMode: (mode) => set({ viewMode: mode }),
+
+  setScriptUrl: (url) => set({ scriptUrl: url }),
 }));
 
 /**

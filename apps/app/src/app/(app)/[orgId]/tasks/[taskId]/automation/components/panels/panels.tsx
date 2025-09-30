@@ -31,17 +31,6 @@ export function Panel({ className, children }: Props) {
 
 export function PanelHeader({ className, children }: Props) {
   return (
-    <div
-      className={cn(
-        'relative flex items-center shrink-0 h-12 px-4',
-        // Primary-tinted header for better contrast
-        'bg-primary/5',
-        // Primary-accented divider
-        'border-b border-primary/20',
-        className,
-      )}
-    >
-      {children}
-    </div>
+    <div className={cn('relative flex items-center shrink-0 h-12 px-4', className)}>{children}</div>
   );
 }

@@ -1,21 +1,36 @@
 import type { ReasoningUIPart } from 'ai';
-import { ChevronDown } from 'lucide-react';
-import { MarkdownRenderer } from '../../markdown-renderer/markdown-renderer';
+import { useEffect, useState } from 'react';
 import { useReasoningContext } from '../message';
-import { MessageSpinner } from '../message-spinner';
 
 export function Reasoning({ part, partIndex }: { part: ReasoningUIPart; partIndex: number }) {
   const context = useReasoningContext();
   const isExpanded = context?.expandedReasoningIndex === partIndex;
-
-  if (part.state === 'done' && !part.text) {
-    return null;
-  }
+  const [startTime] = useState(() => Date.now());
+  const [duration, setDuration] = useState<number | null>(null);
 
   const text = part.text || '';
   const isStreaming = part.state === 'streaming';
   const firstLine = text.split('\n')[0].replace(/\*\*/g, '');
   const hasMoreContent = text.includes('\n') || text.length > 80;
+
+  // Track actual timing
+  useEffect(() => {
+    if (part.state === 'done' && duration === null) {
+      const elapsed = Math.round((Date.now() - startTime) / 1000);
+      setDuration(elapsed);
+    }
+  }, [part.state, startTime, duration]);
+
+  // Early return after all hooks
+  if (part.state === 'done' && !part.text) {
+    return null;
+  }
+
+  const getReasoningLabel = () => {
+    if (isStreaming) return 'Thinking...';
+    if (duration !== null) return `Thought for ${duration}s`;
+    return 'Thinking...';
+  };
 
   const summarize = (s: string) => {
     let t = (s || '').trim();
@@ -46,21 +61,8 @@ export function Reasoning({ part, partIndex }: { part: ReasoningUIPart; partInde
         className="text-left w-full flex items-center gap-2.5 transition-all duration-200 group/btn"
         onClick={handleClick}
       >
-        <ChevronDown
-          className={`w-3 h-3 text-muted-foreground transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
-        />
-        <span className="font-mono text-xs truncate block text-muted-foreground">Processing</span>
+        <span className="text-xs text-muted-foreground truncate block">{getReasoningLabel()}</span>
       </button>
-      {isExpanded && (
-        <div className="mt-3 overflow-hidden">
-          <div className="animate-in slide-in-from-top-2 fade-in duration-300">
-            <div className="font-mono text-xs leading-relaxed border-l-2 border-border pl-4 ml-1 text-muted-foreground">
-              <MarkdownRenderer content={text || summary} />
-              {isStreaming && <MessageSpinner />}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
