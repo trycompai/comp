@@ -276,8 +276,6 @@ Most APIs require specific identifiers:
    - Reply with ONLY "✓ Created automation script and saved to S3"
 
 2. S3 Storage Details:
-   - Bucket: `comp-testing-lambda-tasks`
-   - Region: `us-east-1`
    - Key: `{ORG_ID}/{TASK_ID}.automation.js` (from ACTUAL_VALUES_JSON)
    - The storeToS3 tool will handle all metadata automatically
 

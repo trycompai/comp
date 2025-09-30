@@ -17,7 +17,7 @@ export async function POST(req: Request) {
     try {
       const { Body } = await s3Client.send(
         new GetObjectCommand({
-          Bucket: process.env.TASKS_AUTOMATION_BUCKET || 'comp-testing-lambda-tasks',
+          Bucket: process.env.TASKS_AUTOMATION_BUCKET,
           Key: `${orgId}/${taskId}.automation.js`,
         }),
       );
