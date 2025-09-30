@@ -4,8 +4,15 @@ import { Models } from '@/ai/constants';
 import { Github, VercelIcon } from '@/components/ai/icons';
 import { cn } from '@/lib/utils';
 import { useChat } from '@ai-sdk/react';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator,
+} from '@comp/ui/breadcrumb';
 import { Card, CardDescription, CardHeader } from '@comp/ui/card';
-import { ArrowLeft, Cloud, Globe, MessageCircleIcon } from 'lucide-react';
+import { ChevronRight, Cloud, Globe, MessageCircleIcon } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -26,6 +33,7 @@ interface Props {
   modelId?: string;
   orgId: string;
   taskId: string;
+  taskName?: string;
 }
 
 type Category = 'recommended' | 'github' | 'website' | 'vercel' | 'cloudflare';
@@ -77,7 +85,7 @@ const AUTOMATION_EXAMPLES: Example[] = [
   },
 ];
 
-export function Chat({ className, orgId, taskId }: Props) {
+export function Chat({ className, orgId, taskId, taskName }: Props) {
   const [input, setInput] = useState('');
   const { chat } = useSharedChatContext();
   const { messages, sendMessage, status } = useChat<ChatUIMessage>({ chat });
@@ -157,18 +165,50 @@ export function Chat({ className, orgId, taskId }: Props) {
       />
 
       <PanelHeader className="shrink-0 relative z-20">
-        <div className="flex items-center gap-3">
-          <Link
-            href={`/${orgId}/tasks/${taskId}`}
-            className="p-1 -ml-1 rounded hover:bg-muted/50 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4 text-muted-foreground hover:text-foreground" />
-          </Link>
-          <div className="relative">
-            <div className="absolute inset-0 blur-md rounded-full" />
-            <MessageCircleIcon className="relative w-4 h-4 text-primary" />
+        <div className="flex items-center justify-between w-full">
+          <div className="flex items-center gap-4">
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link
+                      href={`/${orgId}/tasks`}
+                      className="text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      Tasks
+                    </Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator>
+                  <ChevronRight className="w-3 h-3" />
+                </BreadcrumbSeparator>
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link
+                      href={`/${orgId}/tasks/${taskId}`}
+                      className="text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      {taskName || 'Task'}
+                    </Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator>
+                  <ChevronRight className="w-3 h-3" />
+                </BreadcrumbSeparator>
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link
+                      href={`/${orgId}/tasks/${taskId}/automation`}
+                      className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      <MessageCircleIcon className="relative w-3 h-3" />
+                      <span className="font-medium text-xs text-foreground/90">Chat</span>
+                    </Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
           </div>
-          <span className="font-medium text-sm tracking-wide text-foreground/90">Chat</span>
         </div>
       </PanelHeader>
 

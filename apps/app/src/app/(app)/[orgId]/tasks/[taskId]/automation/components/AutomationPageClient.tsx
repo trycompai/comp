@@ -14,9 +14,10 @@ import { WorkflowVisualizerSimple as WorkflowVisualizer } from './workflow/workf
 interface Props {
   orgId: string;
   taskId: string;
+  taskName: string;
 }
 
-export function AutomationPageClient({ orgId, taskId }: Props) {
+export function AutomationPageClient({ orgId, taskId, taskName }: Props) {
   const { scriptUrl } = useTaskAutomationStore();
   const { chat } = useSharedChatContext();
   const { messages } = useChat<ChatUIMessage>({ chat });
@@ -38,7 +39,7 @@ export function AutomationPageClient({ orgId, taskId }: Props) {
       {/* Mobile layout tabs taking the whole space*/}
       <div className="flex flex-1 w-full min-h-0 overflow-hidden md:hidden">
         <TabContent tabId="chat" className="flex-1 min-h-0">
-          <Chat className="h-full" orgId={orgId} taskId={taskId} />
+          <Chat className="h-full" orgId={orgId} taskId={taskId} taskName={taskName} />
         </TabContent>
         <TabContent tabId="lambda" className="flex-1">
           <AutomationTester className="flex-1 overflow-hidden" orgId={orgId} taskId={taskId} />
@@ -52,11 +53,11 @@ export function AutomationPageClient({ orgId, taskId }: Props) {
       <div className="hidden flex-1 w-full min-h-0 overflow-hidden md:flex">
         {scriptUrl || hasMessages ? (
           <Horizontal
-            left={<Chat className="h-full" orgId={orgId} taskId={taskId} />}
+            left={<Chat className="h-full" orgId={orgId} taskId={taskId} taskName={taskName} />}
             right={<WorkflowVisualizer className="h-full" />}
           />
         ) : (
-          <Chat className="h-full w-full" orgId={orgId} taskId={taskId} />
+          <Chat className="h-full w-full" orgId={orgId} taskId={taskId} taskName={taskName} />
         )}
       </div>
     </div>
