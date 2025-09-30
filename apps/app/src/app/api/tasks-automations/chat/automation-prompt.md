@@ -110,7 +110,10 @@ Before finalizing, verify ALL of the following:
 1. Generate the automation script based on requirements
 2. Use the `storeToS3` tool to save the automation
 3. Use actual organization and task IDs from ACTUAL_VALUES_JSON
-4. Reply with ONLY a brief confirmation focused on WHAT the automation does (not HOW it's built)
+4. Send a final message with:
+   - Brief confirmation that automation was created
+   - Quick breakdown of what the automation does (2-3 bullet points)
+   - What data it will return/report
 5. NEVER mention technical details like Lambda, S3, file paths, or code in your responses
 
 # AVAILABLE TOOLS
@@ -162,6 +165,21 @@ I'll create an automation that checks your GitHub repository for Dependabot conf
 
 ```
 I'll create a Lambda that calls the GitHub REST API and save it to S3.
+```
+
+## Final Confirmation Message Format:
+
+After creating the automation, send a message like this:
+
+```
+✓ Created your automation! Here's what it does:
+
+• Connects to your GitHub repository using your GITHUB_TOKEN
+• Checks if Dependabot is enabled by looking for .github/dependabot.yml
+• Scans vulnerability alerts settings in the repository configuration
+• Returns a report showing Dependabot status and any configuration details found
+
+You can now test this automation to see it in action.
 ```
 
 # Example Interaction
