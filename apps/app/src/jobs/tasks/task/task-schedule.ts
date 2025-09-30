@@ -170,8 +170,8 @@ export const taskSchedule = schedules.task({
       // Final deduplicated recipients array.
       const recipients = Array.from(recipientsMap.values());
       // Trigger notification for each recipient.
-      for (const recipient of recipients) {
-        novu.trigger({
+      novu.triggerBulk({
+        events: recipients.map((recipient) => ({
           workflowId: 'task-review-required',
           to: {
             subscriberId: `${recipient.userId}-${recipient.task.organizationId}`,
@@ -186,8 +186,8 @@ export const taskSchedule = schedules.task({
             taskId: recipient.task.id,
             taskUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.trycomp.ai'}/${recipient.task.organizationId}/tasks/${recipient.task.id}`,
           }
-        });
-      }
+        })),
+      });
 
       // Log details about updated tasks
       overdueTasks.forEach((task) => {

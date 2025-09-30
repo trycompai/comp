@@ -162,8 +162,8 @@ export const policySchedule = schedules.task({
 
       // Final deduplicated recipients array
       const recipients = Array.from(recipientsMap.values());
-      for (const recipient of recipients) {
-        novu.trigger({
+      novu.triggerBulk({
+        events: recipients.map((recipient) => ({
           workflowId: 'policy-review-required',
           to: {
             subscriberId: `${recipient.userId}-${recipient.policy.organizationId}`,
@@ -178,8 +178,8 @@ export const policySchedule = schedules.task({
             policyId: recipient.policy.id,
             policyUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.trycomp.ai'}/${recipient.policy.organizationId}/policies/${recipient.policy.id}`,
           }
-        });
-      }
+        })),
+      });
 
       // Log details about updated policies
       overduePolicies.forEach((policy) => {
