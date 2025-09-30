@@ -48,9 +48,16 @@ export function NotificationBell() {
         left: 'auto !important',
         marginTop: '8px',
         width: '360px',
+        borderRadius: '8px',
+      },
+      notification: {
+        paddingLeft: '24px',
       },
       notificationDot: {
         backgroundColor: 'hsl(var(--primary))',
+      },
+      notificationImage: {
+        display: 'none',
       },
       notificationBar: ({ notification }: { notification: any }) => {
         return notification.isRead ? 'bg-transparent' : 'bg-primary';
