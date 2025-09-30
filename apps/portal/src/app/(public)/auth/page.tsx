@@ -1,5 +1,9 @@
+import { LoginForm } from '@/app/components/login-form';
 import { OtpSignIn } from '@/app/components/otp';
+import { env } from '@/env.mjs';
 import { Button } from '@comp/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@comp/ui/card';
+import { Icons } from '@comp/ui/icons';
 import { ArrowRight } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -15,51 +19,50 @@ export default async function Page() {
     </div>
   );
 
+  const showGoogle = !!(env.AUTH_GOOGLE_ID && env.AUTH_GOOGLE_SECRET);
+
   return (
-    <>
-      <div className="flex min-h-[calc(100vh-15rem)] items-center justify-center overflow-hidden p-6 md:p-0">
-        <div className="relative z-20 m-auto flex w-full max-w-[380px] flex-col py-8">
-          <div className="relative flex w-full flex-col">
-            <div className="from-primary inline-block bg-clip-text pb-4">
-              <div className="flex flex-row items-center gap-2">
-                <Link href="/" className="flex flex-row items-center gap-2">
-                  <h1 className="font-mono text-xl font-semibold">Comp AI</h1>
+    <div className="flex min-h-dvh flex-col text-foreground">
+      <main className="flex flex-1 items-center justify-center p-6">
+        <Card className="w-full max-w-lg">
+          <CardHeader className="text-center space-y-3 pt-10">
+            <Icons.Logo className="h-10 w-10 mx-auto" />
+            <CardTitle className="text-2xl tracking-tight text-card-foreground">
+              Employee Portal
+            </CardTitle>
+            <CardDescription className="text-base text-muted-foreground px-4">
+              Enter your email address to receive a one time password.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6 pb-6">
+            {defaultSignInOptions}
+            <LoginForm showGoogle={showGoogle} />
+          </CardContent>
+          <CardFooter className="pb-10">
+            <div className="from-primary/10 via-primary/5 to-primary/5 rounded-sm bg-gradient-to-r p-4">
+              <h3 className="text-sm font-medium">
+                Comp AI - AI that handles compliance for you in hours.
+              </h3>
+              <p className="text-muted-foreground mt-1 text-xs">
+                Comp AI makes SOC 2, ISO 27001, HIPAA and GDPR effortless. Eliminate compliance
+                busywork, win more deals and accelerate growth.
+              </p>
+              <Button variant="link" className="mt-2 p-0" asChild>
+                <Link
+                  href="https://trycomp.ai"
+                  target="_blank"
+                  className="hover:underline hover:underline-offset-2"
+                >
+                  <span className="text-primary mt-2 inline-flex items-center gap-2 text-xs font-medium">
+                    Learn More
+                    <ArrowRight className="h-3 w-3" />
+                  </span>
                 </Link>
-              </div>
-              <h2 className="mt-4 text-lg font-medium">Employee Portal</h2>
-              <div className="mt-2">
-                <span className="text-muted-foreground text-xs">
-                  Enter your email address to receive a one time password.
-                </span>
-              </div>
+              </Button>
             </div>
-
-            <div className="pointer-events-auto flex flex-col">{defaultSignInOptions}</div>
-          </div>
-
-          <div className="from-primary/10 via-primary/5 to-primary/5 mt-8 rounded-sm bg-gradient-to-r p-4">
-            <h3 className="text-sm font-medium">
-              Comp AI - AI that handles compliance for you in hours.
-            </h3>
-            <p className="text-muted-foreground mt-1 text-xs">
-              Comp AI makes SOC 2, ISO 27001, HIPAA and GDPR effortless. Eliminate compliance
-              busywork, win more deals and accelerate growth.
-            </p>
-            <Button variant="link" className="mt-2 p-0" asChild>
-              <Link
-                href="https://trycomp.ai"
-                target="_blank"
-                className="hover:underline hover:underline-offset-2"
-              >
-                <span className="text-primary mt-2 inline-flex items-center gap-2 text-xs font-medium">
-                  Learn More
-                  <ArrowRight className="h-3 w-3" />
-                </span>
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </div>
-    </>
+          </CardFooter>
+        </Card>
+      </main>
+    </div>
   );
 }
