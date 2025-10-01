@@ -5,6 +5,7 @@ import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { nextCookies } from 'better-auth/next-js';
 import { emailOTP, multiSession, organization } from 'better-auth/plugins';
 import { ac, admin, auditor, employee, owner } from './permissions';
+import { env } from '@/env.mjs';
 
 export const auth = betterAuth({
   database: prismaAdapter(db, {
@@ -16,7 +17,7 @@ export const auth = betterAuth({
     generateId: false,
   },
   trustedOrigins: ['http://localhost:3000', 'https://*.trycomp.ai'],
-  secret: process.env.AUTH_SECRET!,
+  secret: env.AUTH_SECRET!,
   plugins: [
     organization({
       membershipLimit: 100000000000,
