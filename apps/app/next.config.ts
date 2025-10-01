@@ -1,5 +1,8 @@
+import { PrismaPlugin } from '@prisma/nextjs-monorepo-workaround-plugin';
+import { withBotId } from 'botid/next/config';
 import type { NextConfig } from 'next';
 import path from 'path';
+
 import './src/env.mjs';
 
 const isStandalone = process.env.NEXT_OUTPUT_STANDALONE === 'true';
@@ -15,6 +18,32 @@ const isSelfHosting = (() => {
 })();
 
 const config: NextConfig = {
+  // Ensure Turbopack can import .md files as raw strings during dev
+  turbopack: {
+    root: path.join(__dirname, '..', '..'),
+    rules: {
+      '*.md': {
+        loaders: ['raw-loader'],
+        as: '*.js',
+      },
+    },
+  },
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      // Very important, DO NOT REMOVE, it's needed for Prisma to work in the server bundle
+      config.plugins = [...config.plugins, new PrismaPlugin()];
+    }
+
+    // Enable importing .md files as raw strings during webpack builds
+    config.module = config.module || { rules: [] };
+    config.module.rules = config.module.rules || [];
+    config.module.rules.push({
+      test: /\.md$/,
+      type: 'asset/source',
+    });
+
+    return config;
+  },
   // Use S3 bucket for static assets with app-specific path
   assetPrefix:
     process.env.NODE_ENV === 'production' && process.env.STATIC_ASSETS_URL
@@ -24,7 +53,7 @@ const config: NextConfig = {
     NEXT_PUBLIC_DISABLE_IMAGE_OPTIMIZATION: String(isSelfHosting),
   },
   reactStrictMode: true,
-  transpilePackages: ['@trycompai/db'],
+  transpilePackages: ['@trycompai/db', '@prisma/client'],
   images: {
     unoptimized: isSelfHosting,
     remotePatterns: [
@@ -81,4 +110,4 @@ const config: NextConfig = {
   },
 };
 
-export default config;
+export default withBotId(config);

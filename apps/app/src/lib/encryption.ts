@@ -1,3 +1,5 @@
+'use server';
+
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'node:crypto';
 
 const ALGORITHM = 'aes-256-gcm';
@@ -14,7 +16,7 @@ export interface EncryptedData {
 }
 
 // Simple key derivation using Node's built-in scrypt instead of argon2
-function deriveKey(secret: string, salt: Buffer): Buffer {
+async function deriveKey(secret: string, salt: Buffer): Promise<Buffer> {
   return scryptSync(secret, salt, KEY_LENGTH, {
     // These are reasonable defaults for scrypt
     N: 16384,
@@ -32,7 +34,7 @@ export async function encrypt(text: string): Promise<EncryptedData> {
 
   const salt = randomBytes(SALT_LENGTH);
   const iv = randomBytes(IV_LENGTH);
-  const key = deriveKey(secretKey, salt);
+  const key = await deriveKey(secretKey, salt);
   const cipher = createCipheriv(ALGORITHM, key, iv);
 
   const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
@@ -58,7 +60,7 @@ export async function decrypt(encryptedData: EncryptedData): Promise<string> {
   const tag = Buffer.from(encryptedData.tag, 'base64');
   const salt = Buffer.from(encryptedData.salt, 'base64');
 
-  const key = deriveKey(secretKey, salt);
+  const key = await deriveKey(secretKey, salt);
 
   const decipher = createDecipheriv(ALGORITHM, key, iv);
   decipher.setAuthTag(tag);
@@ -68,14 +70,14 @@ export async function decrypt(encryptedData: EncryptedData): Promise<string> {
   return decrypted.toString('utf8');
 }
 
-export function encryptObject<T extends object>(obj: T): T {
+export async function encryptObject<T extends object>(obj: T): Promise<T> {
   const encrypted: any = {};
 
   for (const [key, value] of Object.entries(obj)) {
     if (typeof value === 'string') {
-      encrypted[key] = encrypt(value);
+      encrypted[key] = await encrypt(value);
     } else if (typeof value === 'object' && value !== null) {
-      encrypted[key] = encryptObject(value);
+      encrypted[key] = await encryptObject(value);
     } else {
       encrypted[key] = value;
     }
@@ -84,14 +86,14 @@ export function encryptObject<T extends object>(obj: T): T {
   return encrypted as T;
 }
 
-export function decryptObject<T extends object>(obj: T): T {
+export async function decryptObject<T extends object>(obj: T): Promise<T> {
   const decrypted: any = {};
 
   for (const [key, value] of Object.entries(obj)) {
     if (value && typeof value === 'object' && 'encrypted' in value) {
-      decrypted[key] = decrypt(value as EncryptedData);
+      decrypted[key] = await decrypt(value as EncryptedData);
     } else if (typeof value === 'object' && value !== null) {
-      decrypted[key] = decryptObject(value);
+      decrypted[key] = await decryptObject(value);
     } else {
       decrypted[key] = value;
     }
