@@ -36,20 +36,10 @@ interface Props {
   taskName?: string;
 }
 
-type Category = 'recommended' | 'github' | 'website' | 'vercel' | 'cloudflare';
-const AUTOMATION_CATEGORIES: Category[] = [
-  'recommended',
-  'github',
-  'website',
-  'vercel',
-  'cloudflare',
-];
-
 interface Example {
   title: string;
   prompt: string;
   icon: React.ReactNode;
-  categories: Category[];
 }
 
 const AUTOMATION_EXAMPLES: Example[] = [
@@ -57,31 +47,26 @@ const AUTOMATION_EXAMPLES: Example[] = [
     title: 'Check if I have dependabot enabled in my GitHub repository',
     prompt: 'Check if I have dependabot enabled in my GitHub repository',
     icon: <Github className="w-4 h-4" />,
-    categories: ['recommended', 'github'],
   },
   {
     title: 'Check if I have branch protection enabled for the main branch in my GitHub repository',
     prompt: 'Check if I have branch protection enabled for the main branch in my GitHub repository',
     icon: <Github className="w-4 h-4" />,
-    categories: ['recommended', 'github'],
   },
   {
     title: 'Check if my website has a privacy policy',
     prompt: 'Check if my website has a privacy policy',
     icon: <Globe className="w-4 h-4" />,
-    categories: ['recommended', 'website'],
   },
   {
     title: 'Give me a list of failed deployments in my Vercel project',
     prompt: 'Give me a list of failed deployments in my Vercel project',
     icon: <VercelIcon size={16} />,
-    categories: ['recommended', 'vercel'],
   },
   {
     title: 'Check that DDoS protection is enabled for my Cloudflare project',
     prompt: 'Check that DDoS protection is enabled for my Cloudflare project',
     icon: <Cloud size={16} />,
-    categories: ['recommended', 'cloudflare'],
   },
 ];
 
@@ -215,7 +200,7 @@ export function Chat({ className, orgId, taskId, taskName }: Props) {
       {/* Messages Area */}
       {!hasMessages ? (
         <form
-          className={cn('flex flex-col w-full h-full px-58 z-20', scriptUrl && 'px-0')}
+          className={cn('flex flex-col w-full h-full px-58 z-20', scriptUrl && 'px-8 pb-4')}
           onSubmit={async (event) => {
             event.preventDefault();
             validateAndSubmitMessage(input);

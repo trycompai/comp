@@ -24,8 +24,6 @@ export function AutomationPageClient({ orgId, taskId, taskName }: Props) {
 
   const hasMessages = messages.length > 0;
 
-  console.log('hasMessages', hasMessages);
-
   return (
     <div className="h-full flex flex-col">
       <ScriptInitializer orgId={orgId} taskId={taskId} />
