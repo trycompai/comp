@@ -42,36 +42,6 @@ export function UnifiedWorkflowCard({ steps, title, onTest }: Props) {
   }, [steps.length]);
   return (
     <Card className="w-full min-w-md max-w-md mx-auto bg-background border border-border shadow-md rounded-2xl overflow-hidden flex flex-col flex-1 animate-in fade-in slide-in-from-bottom-4 duration-1000 ease-out">
-      <style jsx>{`
-        @keyframes reveal-step {
-          from {
-            opacity: 0;
-            transform: translateY(16px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes zoom-icon {
-          from {
-            transform: scale(0);
-          }
-          to {
-            transform: scale(1);
-          }
-        }
-
-        @keyframes expand-height {
-          from {
-            max-height: 0;
-          }
-          to {
-            max-height: var(--final-height);
-          }
-        }
-      `}</style>
       {/* Header with integration icons */}
       <CardHeader className="p-4">
         <div className="flex items-center gap-2 mb-4">

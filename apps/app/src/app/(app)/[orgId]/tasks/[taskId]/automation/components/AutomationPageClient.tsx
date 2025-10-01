@@ -7,7 +7,6 @@ import { useTaskAutomationStore } from '../lib/task-automation-store';
 import { ScriptInitializer } from '../script-initializer';
 import { AutomationTester } from './automation/AutomationTester';
 import { ChatUIMessage } from './chat/types';
-import { Horizontal } from './layout/panels';
 import { TabContent, TabItem } from './tabs';
 import { WorkflowVisualizerSimple as WorkflowVisualizer } from './workflow/workflow-visualizer-simple';
 
@@ -48,15 +47,27 @@ export function AutomationPageClient({ orgId, taskId, taskName }: Props) {
       </div>
 
       {/* Desktop layout: Chat on left, Workflow on right OR Chat full-screen */}
-      <div className="hidden flex-1 w-full min-h-0 overflow-hidden md:flex">
-        {scriptUrl || hasMessages ? (
-          <Horizontal
-            left={<Chat className="h-full" orgId={orgId} taskId={taskId} taskName={taskName} />}
-            right={<WorkflowVisualizer className="h-full" />}
-          />
-        ) : (
+      <div className="hidden flex-1 w-full min-h-0 overflow-hidden md:flex transition-all duration-500 ease-out">
+        <div
+          className={`transition-all duration-500 ease-out ${
+            scriptUrl || hasMessages ? 'w-1/2' : 'w-full'
+          }`}
+        >
           <Chat className="h-full w-full" orgId={orgId} taskId={taskId} taskName={taskName} />
-        )}
+        </div>
+
+        {/* Workflow panel - slides in from right */}
+        <div
+          className={`transition-all duration-500 ease-out overflow-hidden ${
+            scriptUrl || hasMessages ? 'w-1/2 opacity-100' : 'w-0 opacity-0'
+          }`}
+        >
+          {(scriptUrl || hasMessages) && (
+            <div className="w-full h-full ml-2">
+              <WorkflowVisualizer className="h-full" />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

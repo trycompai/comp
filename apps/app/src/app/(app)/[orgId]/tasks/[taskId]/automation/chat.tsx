@@ -259,7 +259,7 @@ export function Chat({ className, orgId, taskId, taskName }: Props) {
       ) : (
         <div className="flex flex-col h-full relative z-20">
           <Conversation className="flex-1 min-h-0">
-            <ConversationContent className="space-y-4">
+            <ConversationContent className="space-y-4 chat-scrollbar">
               {messages.map((message) => (
                 <Message
                   key={message.id}
