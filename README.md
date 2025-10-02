@@ -173,7 +173,12 @@ Some environment variables may not load correctly from `.env` — in such cases,
   project: 'proj_****az***ywb**ob*';
   ```
 
-#### 2. Google OAuth
+### 2. PostgreSQL Requirements
+
+- Enable the `pgcrypto` extension on your database (run `CREATE EXTENSION IF NOT EXISTS "pgcrypto";` once per cluster).
+- Keep connection pooling in place for Trigger.dev (PgBouncer, Prisma Accelerate/Data Proxy, or managed pooling from your cloud provider) so application and Trigger.dev workloads stay within Postgres `max_connections`. Do not use PgBouncer on the App side, it will cause migrations to fail.
+
+### 3. Google OAuth - Optional
 
 - Go to [Google Cloud OAuth Console](https://console.cloud.google.com/auth/clients)
 - Create an OAuth client:
