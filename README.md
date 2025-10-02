@@ -207,7 +207,12 @@ To force optimisation while still self-hosting, set `SELF_HOSTING=false` in `.en
   ngrok http 3002
 ```
 
-### 2. Google OAuth - Optional
+### 2. PostgreSQL Requirements
+
+- Enable the `pgcrypto` extension on your database (run `CREATE EXTENSION IF NOT EXISTS "pgcrypto";` once per cluster).
+- Keep connection pooling in place for Trigger.dev (PgBouncer, Prisma Accelerate/Data Proxy, or managed pooling from your cloud provider) so application and Trigger.dev workloads stay within Postgres `max_connections`. Do not use PgBouncer on the App side, it will cause migrations to fail.
+
+### 3. Google OAuth - Optional
 
 - Go to [Google Cloud OAuth Console](https://console.cloud.google.com/auth/clients)
 - Create an OAuth client:
@@ -228,7 +233,7 @@ To force optimisation while still self-hosting, set `SELF_HOSTING=false` in `.en
 - After creating the app, copy the `GOOGLE_ID` and `GOOGLE_SECRET`
   - Add them to your `.env` files as `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET`
 
-### 3. Redis (Upstash) - Required
+### 4. Redis (Upstash) - Required
 
 - Go to [https://console.upstash.com](https://console.upstash.com)
 - Create a Redis database
@@ -237,7 +242,7 @@ To force optimisation while still self-hosting, set `SELF_HOSTING=false` in `.en
 
 ---
 
-### 4. Database Setup = Required-ish (NOT Required for Docker Compose setups)
+### 5. Database Setup = Required-ish (NOT Required for Docker Compose setups)
 
 Start and initialize your own PostgreSQL database. Add the PostgreSQL connection URI to the .env files as `DATABASE_URL` example: DATABASE_URL="postgresql://[username[:password]@]host[:port]/database[?options]"
 
