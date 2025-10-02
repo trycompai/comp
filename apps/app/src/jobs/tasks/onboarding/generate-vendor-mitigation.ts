@@ -1,4 +1,5 @@
 import { VendorStatus, db } from '@db';
+import { env } from '@/env.mjs';
 import { logger, queue, task } from '@trigger.dev/sdk';
 import axios from 'axios';
 import {
@@ -8,10 +9,13 @@ import {
 } from './onboard-organization-helpers';
 
 // Queues
-const vendorMitigationQueue = queue({ name: 'vendor-risk-mitigations', concurrencyLimit: 100 });
+const vendorMitigationQueue = queue({
+  name: 'vendor-risk-mitigations',
+  concurrencyLimit: env.TRIGGER_QUEUE_CONCURRENCY ?? 10,
+});
 const vendorMitigationFanoutQueue = queue({
   name: 'vendor-risk-mitigations-fanout',
-  concurrencyLimit: 100,
+  concurrencyLimit: env.TRIGGER_QUEUE_CONCURRENCY ?? 10,
 });
 
 export const generateVendorMitigation = task({

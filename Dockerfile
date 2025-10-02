@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.6
 # =============================================================================
 # STAGE 1: Dependencies - Install and cache workspace dependencies
 # =============================================================================
@@ -69,6 +70,11 @@ FROM deps AS app-builder
 
 WORKDIR /app
 
+# Install system packages needed for Trigger CLI during build
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
 # Copy all source code needed for build
 COPY packages ./packages
 COPY apps/app ./apps/app
@@ -81,6 +87,7 @@ RUN cd packages/db && node scripts/combine-schemas.js
 RUN cp packages/db/dist/schema.prisma apps/app/prisma/schema.prisma
 
 # Ensure Next build has required public env at build-time
+ARG TRIGGER_PROJECT_ID
 ARG NEXT_PUBLIC_BETTER_AUTH_URL
 ARG NEXT_PUBLIC_PORTAL_URL
 ARG APP_ENVIRONMENT
@@ -92,7 +99,8 @@ ARG NEXT_PUBLIC_LINKEDIN_PARTNER_ID
 ARG NEXT_PUBLIC_LINKEDIN_CONVERSION_ID
 ARG NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL
 ARG NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_BETTER_AUTH_URL=$NEXT_PUBLIC_BETTER_AUTH_URL \
+ENV TRIGGER_PROJECT_ID=$TRIGGER_PROJECT_ID \
+    NEXT_PUBLIC_BETTER_AUTH_URL=$NEXT_PUBLIC_BETTER_AUTH_URL \
     NEXT_PUBLIC_PORTAL_URL=$NEXT_PUBLIC_PORTAL_URL \
     NEXT_PUBLIC_POSTHOG_KEY=$NEXT_PUBLIC_POSTHOG_KEY \
     NEXT_PUBLIC_POSTHOG_HOST=$NEXT_PUBLIC_POSTHOG_HOST \
@@ -110,11 +118,21 @@ ENV NEXT_PUBLIC_BETTER_AUTH_URL=$NEXT_PUBLIC_BETTER_AUTH_URL \
 # Build the app (schema already combined above)
 RUN cd apps/app && SKIP_ENV_VALIDATION=true bun run build:docker
 
+# Run Trigger.dev deploy during build (pinned version)
+RUN --mount=type=secret,id=trigger_env_file \
+    sh -c 'set -eu; \
+      set -a; \
+      . /run/secrets/trigger_env_file; \
+      set +a; \
+      cd apps/app; \
+      CI=1 bun x trigger.dev@4.0.0 deploy --env-file /run/secrets/trigger_env_file'
+
 # =============================================================================
 # STAGE 4: App Production
 # =============================================================================
 FROM node:22-alpine AS app
 
+ARG TRIGGER_PROJECT_ID
 ARG NEXT_PUBLIC_BETTER_AUTH_URL
 ARG NEXT_PUBLIC_PORTAL_URL
 ARG APP_ENVIRONMENT
@@ -127,7 +145,8 @@ ARG NEXT_PUBLIC_LINKEDIN_CONVERSION_ID
 ARG NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL
 ARG NEXT_PUBLIC_API_URL
 
-ENV NEXT_PUBLIC_BETTER_AUTH_URL=${NEXT_PUBLIC_BETTER_AUTH_URL} \
+ENV TRIGGER_PROJECT_ID=${TRIGGER_PROJECT_ID} \
+    NEXT_PUBLIC_BETTER_AUTH_URL=${NEXT_PUBLIC_BETTER_AUTH_URL} \
     NEXT_PUBLIC_PORTAL_URL=${NEXT_PUBLIC_PORTAL_URL} \
     NEXT_PUBLIC_POSTHOG_KEY=${NEXT_PUBLIC_POSTHOG_KEY} \
     NEXT_PUBLIC_POSTHOG_HOST=${NEXT_PUBLIC_POSTHOG_HOST} \

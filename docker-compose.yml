@@ -37,12 +37,16 @@ services:
         NEXT_PUBLIC_BETTER_AUTH_URL: ${NEXT_PUBLIC_BETTER_AUTH_URL:-http://localhost:3000}
         NEXT_PUBLIC_PORTAL_URL: ${NEXT_PUBLIC_PORTAL_URL:-http://localhost:3002}
         APP_ENVIRONMENT: ${APP_ENVIRONMENT:-local}
+        TRIGGER_PROJECT_ID: ${TRIGGER_PROJECT_ID}
+      secrets:
+        - trigger_env_file
     ports:
       - '3000:3000'
     env_file:
       - .env
     environment:
       APP_ENVIRONMENT: ${APP_ENVIRONMENT:-local}
+      TRIGGER_PROJECT_ID: ${TRIGGER_PROJECT_ID}
     depends_on:
       migrator:
         condition: service_completed_successfully
@@ -79,3 +83,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
+secrets:
+  trigger_env_file:
+    file: .env

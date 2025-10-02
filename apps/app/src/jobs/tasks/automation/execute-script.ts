@@ -1,3 +1,4 @@
+import { env } from '@/env.mjs';
 import { getModelOptions } from '@/ai/gateway';
 import { decrypt, type EncryptedData } from '@/lib/encryption';
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
@@ -11,7 +12,7 @@ import { z } from 'zod';
 // Queue for automation execution
 const automationExecutionQueue = queue({
   name: 'automation-execution',
-  concurrencyLimit: 10,
+  concurrencyLimit: env.TRIGGER_QUEUE_CONCURRENCY ?? 10,
 });
 
 interface ExecuteScriptPayload {

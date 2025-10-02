@@ -43,6 +43,7 @@ export const env = createEnv({
     GA4_API_SECRET: z.string().optional(),
     GA4_MEASUREMENT_ID: z.string().optional(),
     LINKEDIN_CONVERSIONS_ACCESS_TOKEN: z.string().optional(),
+    TRIGGER_QUEUE_CONCURRENCY: z.coerce.number().int().positive().max(100).optional(),
     APP_ENVIRONMENT: z
       .enum(['local', 'development', 'staging', 'production'])
       .optional(),
@@ -103,6 +104,7 @@ export const env = createEnv({
     NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL: process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL,
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
     NEXT_PUBLIC_BETTER_AUTH_URL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
+    TRIGGER_QUEUE_CONCURRENCY: process.env.TRIGGER_QUEUE_CONCURRENCY,
     APP_ENVIRONMENT: normalizedAppEnvironment,
     SUPPRESS_POSTHOG_WARNING: normalizedSuppressPosthogWarning,
   },

@@ -1,4 +1,5 @@
 import { RiskStatus, db } from '@db';
+import { env } from '@/env.mjs';
 import { logger, queue, task } from '@trigger.dev/sdk';
 import axios from 'axios';
 import {
@@ -8,8 +9,14 @@ import {
 } from './onboard-organization-helpers';
 
 // Queues
-const riskMitigationQueue = queue({ name: 'risk-mitigations', concurrencyLimit: 100 });
-const riskMitigationFanoutQueue = queue({ name: 'risk-mitigations-fanout', concurrencyLimit: 100 });
+const riskMitigationQueue = queue({
+  name: 'risk-mitigations',
+  concurrencyLimit: env.TRIGGER_QUEUE_CONCURRENCY ?? 10,
+});
+const riskMitigationFanoutQueue = queue({
+  name: 'risk-mitigations-fanout',
+  concurrencyLimit: env.TRIGGER_QUEUE_CONCURRENCY ?? 10,
+});
 
 export const generateRiskMitigation = task({
   id: 'generate-risk-mitigation',

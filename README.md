@@ -192,9 +192,19 @@ To force optimisation while still self-hosting, set `SELF_HOSTING=false` in `.en
 
 - Create an account on [https://cloud.trigger.dev](https://cloud.trigger.dev)
 - Create a project and copy the Project ID
+- Generate a Personal Access Token from **Account → Tokens** (or [https://cloud.trigger.dev/account/tokens](https://cloud.trigger.dev/account/tokens)) and copy the value; this becomes your `TRIGGER_ACCESS_TOKEN`.
 - In `comp/apps/app/.env`, set:
 ```sh
   TRIGGER_PROJECT_ID="proj_****az***ywb**ob*"
+  TRIGGER_ACCESS_TOKEN="tr_pat_***************"
+```
+- Optionally set `TRIGGER_QUEUE_CONCURRENCY` (defaults to 10) in `.env` to control how many Trigger.dev jobs run in parallel ie connect to your database.
+- Expose your local app and portal to Trigger.dev with a public tunnel (e.g. ngrok). Trigger.dev will need to have a hopy of your env secrets so it can run. There you can place  NEXT_PUBLIC_BETTER_AUTH_URL and NEXT_PUBLIC_PORTAL_URL with the public values. This way Trigger.dev can validate its actions are working. 
+```sh
+  brew install ngrok
+  ngrok config add-authtoken <your-token>
+  ngrok http 3000
+  ngrok http 3002
 ```
 
 ### 2. Google OAuth - Optional
