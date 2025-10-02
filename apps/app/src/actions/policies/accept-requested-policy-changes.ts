@@ -1,7 +1,6 @@
 'use server';
 
 import { db, PolicyStatus } from '@db';
-import { sendPolicyNotificationEmail } from '@trycompai/email';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { authActionClient } from '../safe-action';
@@ -92,56 +91,34 @@ export const acceptRequestedPolicyChangesAction = authActionClient
         return roles.includes('employee');
       });
 
-      // Send notification emails to all employees
-      // Send emails in batches of 2 per second to respect rate limit
-      const BATCH_SIZE = 2;
-      const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+      // Call /api/send-policy-email to send emails to employees
 
-      const sendEmailsInBatches = async () => {
-        for (let i = 0; i < employeeMembers.length; i += BATCH_SIZE) {
-          const batch = employeeMembers.slice(i, i + BATCH_SIZE);
+      // Prepare the events array for the API
+      const events = employeeMembers
+        .filter((employee) => employee.user.email)
+        .map((employee) => ({
+          subscriberId: `${employee.user.id}-${session.activeOrganizationId}`,
+          email: employee.user.email,
+          userName: employee.user.name || employee.user.email || 'Employee',
+          policyName: policy.name,
+          organizationName: policy.organization.name,
+          url: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.trycomp.ai'}/${session.activeOrganizationId}/policies/${policy.id}`,
+          description: `The "${policy.name}" policy has been ${isNewPolicy ? 'created' : 'updated'}.`,
+        }));
 
-          await Promise.all(
-            batch.map(async (employee) => {
-              if (!employee.user.email) return;
-
-              let notificationType: 'new' | 're-acceptance' | 'updated';
-              const wasAlreadySigned = policy.signedBy.includes(employee.id);
-              if (isNewPolicy) {
-                notificationType = 'new';
-              } else if (wasAlreadySigned) {
-                notificationType = 're-acceptance';
-              } else {
-                notificationType = 'updated';
-              }
-
-              try {
-                await sendPolicyNotificationEmail({
-                  email: employee.user.email,
-                  userName: employee.user.name || employee.user.email || 'Employee',
-                  policyName: policy.name,
-                  organizationName: policy.organization.name,
-                  organizationId: session.activeOrganizationId,
-                  notificationType,
-                });
-              } catch (emailError) {
-                console.error(`Failed to send email to ${employee.user.email}:`, emailError);
-                // Don't fail the whole operation if email fails
-              }
-            }),
-          );
-
-          // Only delay if there are more emails to send
-          if (i + BATCH_SIZE < employeeMembers.length) {
-            await delay(1000); // wait 1 second between batches
-          }
-        }
-      };
-
-      // Fire and forget, but log errors if any
-      sendEmailsInBatches().catch((error) => {
-        console.error('Some emails failed to send:', error);
-      });
+      // Call the API route to send the emails
+      try {
+        await fetch(`${process.env.BETTER_AUTH_URL ?? ''}/api/send-policy-email`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(events),
+        });
+      } catch (error) {
+        console.error('Failed to call /api/send-policy-email:', error);
+        // Don't throw, just log
+      }
 
       // If a comment was provided, create a comment
       if (comment && comment.trim() !== '') {

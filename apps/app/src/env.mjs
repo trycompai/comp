@@ -48,6 +48,7 @@ export const env = createEnv({
       .enum(['local', 'development', 'staging', 'production'])
       .optional(),
     SUPPRESS_POSTHOG_WARNING: z.enum(['true', 'false']).optional(),
+    NOVU_API_KEY: z.string().optional(),
   },
 
   client: {
@@ -60,6 +61,7 @@ export const env = createEnv({
     NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL: z.string().optional(),
     NEXT_PUBLIC_API_URL: z.string().optional(),
     NEXT_PUBLIC_BETTER_AUTH_URL: z.string().optional(),
+    NEXT_PUBLIC_NOVU_APPLICATION_IDENTIFIER: z.string().optional(),
   },
 
   runtimeEnv: {
@@ -104,9 +106,14 @@ export const env = createEnv({
     NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL: process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL,
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
     NEXT_PUBLIC_BETTER_AUTH_URL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
+<<<<<<< HEAD
     TRIGGER_QUEUE_CONCURRENCY: process.env.TRIGGER_QUEUE_CONCURRENCY,
     APP_ENVIRONMENT: normalizedAppEnvironment,
     SUPPRESS_POSTHOG_WARNING: normalizedSuppressPosthogWarning,
+=======
+    NOVU_API_KEY: process.env.NOVU_API_KEY,
+    NEXT_PUBLIC_NOVU_APPLICATION_IDENTIFIER: process.env.NEXT_PUBLIC_NOVU_APPLICATION_IDENTIFIER,
+>>>>>>> upstream/main
   },
 
   skipValidation: !!process.env.CI || !!process.env.SKIP_ENV_VALIDATION,
