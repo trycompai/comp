@@ -1,3 +1,4 @@
+import { env } from '@/env.mjs';
 import { db } from '@db';
 import { Novu } from '@novu/api'; 
 import { logger, schedules } from '@trigger.dev/sdk';
@@ -9,8 +10,10 @@ export const policySchedule = schedules.task({
   run: async () => {
     const now = new Date();
 
+    logger.info(`env.NOVU_API_KEY: ${env.NOVU_API_KEY}`);
+    logger.info(`process.env.NOVU_API_KEY: ${process.env.NOVU_API_KEY}`);
     const novu = new Novu({ 
-      secretKey: process.env.NOVU_API_KEY
+      secretKey: env.NOVU_API_KEY
     });
 
     // Find all published policies that have a review date and frequency set
@@ -143,6 +146,9 @@ export const policySchedule = schedules.task({
                 name: user.name ?? '',
                 policy,
               });
+              logger.info(
+                `New recipient "${user.email}" (${user.id}) for policy "${policy.name}" (${policy.id}) from org "${policy.organization.name}" - frequency ${policy.frequency} - last reviewed ${policy.reviewDate?.toISOString()}`,
+              );
             }
           }
         }
