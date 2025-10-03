@@ -1,3 +1,4 @@
+import { env } from '@/env.mjs';
 import { logger, queue, schemaTask } from '@trigger.dev/sdk';
 import { z } from 'zod';
 import { processPolicyUpdate } from './update-policies-helpers';
@@ -7,7 +8,10 @@ if (!process.env.OPENAI_API_KEY) {
 }
 
 // v4: define queue ahead of time
-export const updatePolicyQueue = queue({ name: 'update-policy', concurrencyLimit: 100 });
+export const updatePolicyQueue = queue({
+  name: 'update-policy',
+  concurrencyLimit: env.TRIGGER_QUEUE_CONCURRENCY ?? 10,
+});
 
 export const updatePolicy = schemaTask({
   id: 'update-policy',

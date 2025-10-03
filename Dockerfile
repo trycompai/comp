@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.6
 # =============================================================================
 # STAGE 1: Dependencies - Install and cache workspace dependencies
 # =============================================================================
@@ -45,8 +46,22 @@ RUN bun install
 RUN cp -R packages/db/prisma/migrations node_modules/@trycompai/db/dist/
 
 # Run migrations against the combined schema published by @trycompai/db
-RUN echo "Running migrations against @trycompai/db combined schema"
-CMD ["bunx", "prisma", "migrate", "deploy", "--schema=node_modules/@trycompai/db/dist/schema.prisma"]
+RUN cat <<'EOF' > /migrate.sh
+#!/bin/sh
+set -eu
+
+echo "[Migrator] Starting prisma migrate deploy"
+
+if [ "${FORCE_DATABASE_WIPE_AND_RESEED:-false}" = "true" ]; then
+  echo "[Migrator] FORCE_DATABASE_WIPE_AND_RESEED=true detected. Resetting database before running migrations."
+  bunx prisma migrate reset --force --skip-seed --schema=node_modules/@trycompai/db/dist/schema.prisma
+fi
+
+bunx prisma migrate deploy --schema=node_modules/@trycompai/db/dist/schema.prisma
+echo "[Migrator] Prisma migrate deploy finished"
+EOF
+RUN chmod +x /migrate.sh
+CMD ["/migrate.sh"]
 
 # =============================================================================
 # STAGE 3: App Builder
@@ -54,6 +69,11 @@ CMD ["bunx", "prisma", "migrate", "deploy", "--schema=node_modules/@trycompai/db
 FROM deps AS app-builder
 
 WORKDIR /app
+
+# Install system packages needed for Trigger CLI during build
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy all source code needed for build
 COPY packages ./packages
@@ -67,8 +87,10 @@ RUN cd packages/db && node scripts/combine-schemas.js
 RUN cp packages/db/dist/schema.prisma apps/app/prisma/schema.prisma
 
 # Ensure Next build has required public env at build-time
+ARG TRIGGER_PROJECT_ID
 ARG NEXT_PUBLIC_BETTER_AUTH_URL
 ARG NEXT_PUBLIC_PORTAL_URL
+ARG APP_ENVIRONMENT
 ARG NEXT_PUBLIC_POSTHOG_KEY
 ARG NEXT_PUBLIC_POSTHOG_HOST
 ARG NEXT_PUBLIC_IS_DUB_ENABLED
@@ -77,7 +99,8 @@ ARG NEXT_PUBLIC_LINKEDIN_PARTNER_ID
 ARG NEXT_PUBLIC_LINKEDIN_CONVERSION_ID
 ARG NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL
 ARG NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_BETTER_AUTH_URL=$NEXT_PUBLIC_BETTER_AUTH_URL \
+ENV TRIGGER_PROJECT_ID=$TRIGGER_PROJECT_ID \
+    NEXT_PUBLIC_BETTER_AUTH_URL=$NEXT_PUBLIC_BETTER_AUTH_URL \
     NEXT_PUBLIC_PORTAL_URL=$NEXT_PUBLIC_PORTAL_URL \
     NEXT_PUBLIC_POSTHOG_KEY=$NEXT_PUBLIC_POSTHOG_KEY \
     NEXT_PUBLIC_POSTHOG_HOST=$NEXT_PUBLIC_POSTHOG_HOST \
@@ -87,6 +110,7 @@ ENV NEXT_PUBLIC_BETTER_AUTH_URL=$NEXT_PUBLIC_BETTER_AUTH_URL \
     NEXT_PUBLIC_LINKEDIN_CONVERSION_ID=$NEXT_PUBLIC_LINKEDIN_CONVERSION_ID \
     NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL=$NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL \
     NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+    APP_ENVIRONMENT=$APP_ENVIRONMENT \
     NEXT_TELEMETRY_DISABLED=1 NODE_ENV=production \
     NEXT_OUTPUT_STANDALONE=true \
     NODE_OPTIONS=--max_old_space_size=6144
@@ -94,10 +118,45 @@ ENV NEXT_PUBLIC_BETTER_AUTH_URL=$NEXT_PUBLIC_BETTER_AUTH_URL \
 # Build the app (schema already combined above)
 RUN cd apps/app && SKIP_ENV_VALIDATION=true bun run build:docker
 
+# Run Trigger.dev deploy during build (pinned version)
+RUN --mount=type=secret,id=trigger_env_file \
+    sh -c 'set -eu; \
+      set -a; \
+      . /run/secrets/trigger_env_file; \
+      set +a; \
+      cd apps/app; \
+      CI=1 bun x trigger.dev@4.0.0 deploy --env-file /run/secrets/trigger_env_file'
+
 # =============================================================================
 # STAGE 4: App Production
 # =============================================================================
 FROM node:22-alpine AS app
+
+ARG TRIGGER_PROJECT_ID
+ARG NEXT_PUBLIC_BETTER_AUTH_URL
+ARG NEXT_PUBLIC_PORTAL_URL
+ARG APP_ENVIRONMENT
+ARG NEXT_PUBLIC_POSTHOG_KEY
+ARG NEXT_PUBLIC_POSTHOG_HOST
+ARG NEXT_PUBLIC_IS_DUB_ENABLED
+ARG NEXT_PUBLIC_GTM_ID
+ARG NEXT_PUBLIC_LINKEDIN_PARTNER_ID
+ARG NEXT_PUBLIC_LINKEDIN_CONVERSION_ID
+ARG NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL
+ARG NEXT_PUBLIC_API_URL
+
+ENV TRIGGER_PROJECT_ID=${TRIGGER_PROJECT_ID} \
+    NEXT_PUBLIC_BETTER_AUTH_URL=${NEXT_PUBLIC_BETTER_AUTH_URL} \
+    NEXT_PUBLIC_PORTAL_URL=${NEXT_PUBLIC_PORTAL_URL} \
+    NEXT_PUBLIC_POSTHOG_KEY=${NEXT_PUBLIC_POSTHOG_KEY} \
+    NEXT_PUBLIC_POSTHOG_HOST=${NEXT_PUBLIC_POSTHOG_HOST} \
+    NEXT_PUBLIC_IS_DUB_ENABLED=${NEXT_PUBLIC_IS_DUB_ENABLED} \
+    NEXT_PUBLIC_GTM_ID=${NEXT_PUBLIC_GTM_ID} \
+    NEXT_PUBLIC_LINKEDIN_PARTNER_ID=${NEXT_PUBLIC_LINKEDIN_PARTNER_ID} \
+    NEXT_PUBLIC_LINKEDIN_CONVERSION_ID=${NEXT_PUBLIC_LINKEDIN_CONVERSION_ID} \
+    NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL=${NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL} \
+    NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL} \
+    APP_ENVIRONMENT=${APP_ENVIRONMENT}
 
 WORKDIR /app
 
@@ -105,7 +164,6 @@ WORKDIR /app
 COPY --from=app-builder /app/apps/app/.next/standalone ./
 COPY --from=app-builder /app/apps/app/.next/static ./apps/app/.next/static
 COPY --from=app-builder /app/apps/app/public ./apps/app/public
-
 
 EXPOSE 3000
 CMD ["node", "apps/app/server.js"]

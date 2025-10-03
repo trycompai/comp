@@ -12,9 +12,10 @@ export const auth = betterAuth({
     provider: 'postgresql',
   }),
   advanced: {
-    // This will enable us to fall back to DB for ID generation.
-    // It's important so we can use custom IDs specified in Prisma Schema.
-    generateId: false,
+    database: {
+      // Fallback to DB for ID generation to respect Prisma model IDs.
+      generateId: false,
+    },
   },
   trustedOrigins: ['http://localhost:3000', 'https://*.trycomp.ai'],
   secret: env.AUTH_SECRET!,

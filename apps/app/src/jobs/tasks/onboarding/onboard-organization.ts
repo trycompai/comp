@@ -1,4 +1,5 @@
 import { db } from '@db';
+import { env } from '@/env.mjs';
 import { logger, queue, task, tasks } from '@trigger.dev/sdk';
 import axios from 'axios';
 import { generateRiskMitigationsForOrg } from './generate-risk-mitigation';
@@ -11,7 +12,10 @@ import {
 } from './onboard-organization-helpers';
 
 // v4 queues must be declared in advance
-const onboardOrgQueue = queue({ name: 'onboard-organization', concurrencyLimit: 100 });
+const onboardOrgQueue = queue({
+  name: 'onboard-organization',
+  concurrencyLimit: env.TRIGGER_QUEUE_CONCURRENCY ?? 10,
+});
 
 export const onboardOrganization = task({
   id: 'onboard-organization',

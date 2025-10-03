@@ -1,5 +1,7 @@
-import { Departments, type Member, type Session, type User } from '@db';
+import type { Member, Session, User } from '@db';
 import { vi } from 'vitest';
+
+let latestSession: Session | null = null;
 
 // Mock auth API structure
 export const mockAuthApi = {
@@ -59,7 +61,7 @@ export const createMockMember = (overrides?: Partial<Member>): Member => ({
   organizationId: 'org_test123',
   role: 'owner',
   createdAt: new Date(),
-  department: Departments.none,
+  department: 'none' as Member['department'],
   isActive: true,
   fleetDmLabelId: null,
   ...overrides,
@@ -82,6 +84,8 @@ export const setupAuthMocks = (options?: {
         })
       : null);
 
+  latestSession = sessionData;
+
   // Mock getSession to return the proper structure
   mockAuthApi.getSession.mockResolvedValue(
     sessionData && userData ? { session: sessionData, user: userData } : null,
@@ -96,3 +100,5 @@ export const setupAuthMocks = (options?: {
     member: memberData,
   };
 };
+
+export const getLatestSession = () => latestSession;

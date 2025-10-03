@@ -1,10 +1,14 @@
+import { env } from '@/env.mjs';
 import { getFleetInstance } from '@/lib/fleet';
 import { db } from '@db';
 
 import { logger, queue, task } from '@trigger.dev/sdk';
 import { AxiosError } from 'axios';
 // Optional: define a queue if we want to control concurrency in v4
-const fleetQueue = queue({ name: 'create-fleet-label-for-org', concurrencyLimit: 10 });
+const fleetQueue = queue({
+  name: 'create-fleet-label-for-org',
+  concurrencyLimit: env.TRIGGER_QUEUE_CONCURRENCY ?? 10,
+});
 
 export const createFleetLabelForOrg = task({
   id: 'create-fleet-label-for-org',
@@ -13,6 +17,13 @@ export const createFleetLabelForOrg = task({
     maxAttempts: 3,
   },
   run: async ({ organizationId }: { organizationId: string }) => {
+    if (!env.FLEET_URL) {
+      logger.warn('FLEET_URL is not configured; skipping Fleet label creation', {
+        organizationId,
+      });
+      return;
+    }
+
     const organization = await db.organization.findUnique({
       where: {
         id: organizationId,
