@@ -1,14 +1,10 @@
-import type { DataPart } from '@/ai/messages/data-parts'
-import { BugIcon } from 'lucide-react'
-import { ToolHeader } from '../tool-header'
-import { ToolMessage } from '../tool-message'
-import Markdown from 'react-markdown'
+import { BugIcon } from 'lucide-react';
+import Markdown from 'react-markdown';
+import type { DataPart } from '../../../lib/types/data-parts';
+import { ToolHeader } from '../tool-header';
+import { ToolMessage } from '../tool-message';
 
-export function ReportErrors({
-  message,
-}: {
-  message: DataPart['report-errors']
-}) {
+export function ReportErrors({ message }: { message: DataPart['report-errors'] }) {
   return (
     <ToolMessage>
       <ToolHeader>
@@ -19,5 +15,5 @@ export function ReportErrors({
         <Markdown>{message.summary}</Markdown>
       </div>
     </ToolMessage>
-  )
+  );
 }
