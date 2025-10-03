@@ -108,7 +108,6 @@ export const acceptRequestedPolicyChangesAction = authActionClient
 
       // Call the API route to send the emails
       try {
-        console.log('***** process.env.BETTER_AUTH_URL ', process.env.BETTER_AUTH_URL);
         await fetch(`${process.env.BETTER_AUTH_URL ?? ''}/api/send-policy-email`, {
           method: 'POST',
           headers: {
@@ -118,7 +117,6 @@ export const acceptRequestedPolicyChangesAction = authActionClient
         });
       } catch (error) {
         console.error('Failed to call /api/send-policy-email:', error);
-        console.log('***** process.env.BETTER_AUTH_URL error ', process.env.BETTER_AUTH_URL);
         // Don't throw, just log
       }
 
