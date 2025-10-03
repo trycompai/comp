@@ -30,8 +30,13 @@ class EnterpriseApiError extends Error {
  */
 function getEnterpriseConfig() {
   const enterpriseApiUrl = process.env.NEXT_PUBLIC_ENTERPRISE_API_URL || 'http://localhost:3006';
+  const enterpriseApiKey = process.env.ENTERPRISE_API_SECRET;
 
-  return { enterpriseApiUrl };
+  if (!enterpriseApiKey) {
+    throw new Error('Not authorized to access enterprise API');
+  }
+
+  return { enterpriseApiUrl, enterpriseApiKey };
 }
 
 /**
@@ -45,7 +50,7 @@ async function callEnterpriseApi<T>(
     params?: Record<string, string>;
   } = {},
 ): Promise<T> {
-  const { enterpriseApiUrl } = getEnterpriseConfig();
+  const { enterpriseApiUrl, enterpriseApiKey } = getEnterpriseConfig();
 
   const url = new URL(endpoint, enterpriseApiUrl);
 
@@ -61,6 +66,7 @@ async function callEnterpriseApi<T>(
     method,
     headers: {
       'Content-Type': 'application/json',
+      'x-api-secret': enterpriseApiKey,
     },
     body: options.body ? JSON.stringify(options.body) : undefined,
   });
