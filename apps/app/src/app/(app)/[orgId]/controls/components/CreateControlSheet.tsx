@@ -3,17 +3,25 @@
 import { createControlAction } from '@/actions/controls/create-control-action';
 import { Button } from '@comp/ui/button';
 import { Drawer, DrawerContent, DrawerTitle } from '@comp/ui/drawer';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@comp/ui/form';
 import { useMediaQuery } from '@comp/ui/hooks';
 import { Input } from '@comp/ui/input';
 import MultipleSelector, { Option } from '@comp/ui/multiple-selector';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@comp/ui/sheet';
 import { Textarea } from '@comp/ui/textarea';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowRightIcon, X } from 'lucide-react';
+import { ArrowRightIcon, Plus, X } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useQueryState } from 'nuqs';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -37,11 +45,14 @@ const createControlSchema = z.object({
     .optional(),
 });
 
+const CREATE_TASK_OPTION_VALUE = '__create_new_task__';
+
 export function CreateControlSheet({
   policies,
   tasks,
   requirements,
   prefillRequirementMappings = [],
+  onRequestCreateTask,
 }: {
   policies: { id: string; name: string }[];
   tasks: { id: string; title: string }[];
@@ -53,20 +64,55 @@ export function CreateControlSheet({
     frameworkName: string;
   }[];
   prefillRequirementMappings?: { requirementId: string; frameworkInstanceId: string }[];
+  onRequestCreateTask?: (payload: {
+    control: { id: string; name: string; description: string | null };
+    prefill: { title?: string; description?: string };
+  }) => void;
 }) {
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const [createControlOpen, setCreateControlOpen] = useQueryState('create-control');
   const isOpen = Boolean(createControlOpen);
+  const [createTaskFollowUp, setCreateTaskFollowUp] = useState(false);
+  const createTaskIntentRef = useRef(false);
+  const pendingTaskPrefillRef = useRef<{ title?: string; description?: string } | null>(null);
+  const cancelTaskFollowUp = useCallback(() => {
+    setCreateTaskFollowUp(false);
+    createTaskIntentRef.current = false;
+    pendingTaskPrefillRef.current = null;
+  }, []);
 
   const handleOpenChange = (open: boolean) => {
     setCreateControlOpen(open ? 'true' : null);
   };
 
   const createControl = useAction(createControlAction, {
-    onSuccess: () => {
+    onSuccess: ({ data }) => {
+      const control = data?.control;
+      const shouldLaunchTask = createTaskIntentRef.current && Boolean(control);
+      const pendingPrefill = pendingTaskPrefillRef.current;
+
       toast.success('Control created successfully');
       setCreateControlOpen(null);
       form.reset();
+      if (shouldLaunchTask && control) {
+        const launchTask = () =>
+          onRequestCreateTask?.({
+            control: {
+              id: control.id,
+              name: control.name,
+              description: control.description ?? null,
+            },
+            prefill: {
+              title: pendingPrefill?.title ?? control.name,
+              description: pendingPrefill?.description ?? control.description ?? undefined,
+            },
+          });
+        // ensure query param removal flushes before opening the task sheet
+        setTimeout(launchTask, 0);
+      }
+      createTaskIntentRef.current = false;
+      pendingTaskPrefillRef.current = null;
+      setCreateTaskFollowUp(false);
     },
     onError: (error) => {
       toast.error(error.error?.serverError || 'Failed to create control');
@@ -86,6 +132,7 @@ export function CreateControlSheet({
 
   useEffect(() => {
     if (!isOpen) {
+      cancelTaskFollowUp();
       return;
     }
 
@@ -95,13 +142,21 @@ export function CreateControlSheet({
     }
 
     form.setValue('requirementMappings', []);
-  }, [form, isOpen, prefillRequirementMappings]);
+  }, [cancelTaskFollowUp, form, isOpen, prefillRequirementMappings]);
 
   const onSubmit = useCallback(
     (data: z.infer<typeof createControlSchema>) => {
+      if (createTaskFollowUp) {
+        pendingTaskPrefillRef.current = {
+          title: data.name,
+          description: data.description,
+        };
+      } else {
+        pendingTaskPrefillRef.current = null;
+      }
       createControl.execute(data);
     },
-    [createControl],
+    [createControl, createTaskFollowUp],
   );
 
   // Memoize policy options to prevent re-renders
@@ -115,14 +170,20 @@ export function CreateControlSheet({
   );
 
   // Memoize task options to prevent re-renders
-  const taskOptions = useMemo(
-    () =>
-      tasks.map((task) => ({
+  const taskOptions = useMemo(() => {
+    const createTaskOption: Option = {
+      value: CREATE_TASK_OPTION_VALUE,
+      label: 'Create new task',
+    };
+
+    return [
+      createTaskOption,
+      ...tasks.map((task) => ({
         value: task.id,
         label: task.title,
       })),
-    [tasks],
-  );
+    ];
+  }, [tasks]);
 
   // Memoize requirement options to prevent re-renders
   const requirementOptions = useMemo(
@@ -147,6 +208,9 @@ export function CreateControlSheet({
 
   const taskFilterFunction = useCallback(
     (value: string, search: string) => {
+      if (value === CREATE_TASK_OPTION_VALUE) {
+        return 1;
+      }
       const option = taskOptions.find((opt) => opt.value === value);
       if (!option) return 0;
       return option.label.toLowerCase().includes(search.toLowerCase()) ? 1 : 0;
@@ -159,9 +223,26 @@ export function CreateControlSheet({
     onChange(options.map((option) => option.value));
   }, []);
 
-  const handleTasksChange = useCallback((options: Option[], onChange: (value: any) => void) => {
-    onChange(options.map((option) => option.value));
-  }, []);
+  const handleTasksChange = useCallback(
+    (options: Option[], onChange: (value: any) => void) => {
+      const hasCreateTask = options.some((option) => option.value === CREATE_TASK_OPTION_VALUE);
+
+      if (hasCreateTask) {
+        setCreateTaskFollowUp(true);
+        createTaskIntentRef.current = true;
+      }
+
+      const filteredOptions = options.filter(
+        (option) => option.value !== CREATE_TASK_OPTION_VALUE,
+      );
+      onChange(filteredOptions.map((option) => option.value));
+
+      if (!hasCreateTask) {
+        cancelTaskFollowUp();
+      }
+    },
+    [cancelTaskFollowUp],
+  );
 
   const requirementFilterFunction = useCallback(
     (value: string, search: string) => {
@@ -273,6 +354,16 @@ export function CreateControlSheet({
               })
               .filter(Boolean) as Option[];
 
+            if (
+              createTaskFollowUp &&
+              !selectedOptions.some((option) => option.value === CREATE_TASK_OPTION_VALUE)
+            ) {
+              selectedOptions.push({
+                value: CREATE_TASK_OPTION_VALUE,
+                label: 'Create new task',
+              });
+            }
+
             return (
               <FormItem className="w-full">
                 <FormLabel>Tasks (Optional)</FormLabel>
@@ -292,9 +383,30 @@ export function CreateControlSheet({
                       commandProps={{
                         filter: taskFilterFunction,
                       }}
+                      renderOption={(option) => (
+                        <div className="flex items-center gap-2">
+                          {option.value === CREATE_TASK_OPTION_VALUE && (
+                            <Plus className="h-4 w-4 text-muted-foreground" />
+                          )}
+                          <span>{option.label}</span>
+                        </div>
+                      )}
                     />
                   </div>
                 </FormControl>
+                {createTaskFollowUp && (
+                  <FormDescription className="mt-2 flex items-center gap-2 text-xs">
+                    <Plus className="h-3 w-3 text-muted-foreground" />
+                    After this control is created, we'll continue in the task creator.
+                    <button
+                      type="button"
+                      className="text-primary underline-offset-2 hover:underline"
+                      onClick={cancelTaskFollowUp}
+                    >
+                      Cancel
+                    </button>
+                  </FormDescription>
+                )}
                 <FormMessage />
               </FormItem>
             );
@@ -359,6 +471,7 @@ export function CreateControlSheet({
   );
 
   if (isDesktop) {
+    const submitLabel = createTaskFollowUp ? 'Create & Continue' : 'Create Control';
     return (
       <>
         <Sheet open={isOpen} onOpenChange={handleOpenChange}>
@@ -387,7 +500,7 @@ export function CreateControlSheet({
                 onClick={form.handleSubmit(onSubmit)}
               >
                 <div className="flex items-center justify-center">
-                  Create Control
+                  {submitLabel}
                   <ArrowRightIcon className="ml-2 h-4 w-4" />
                 </div>
               </Button>
@@ -398,6 +511,7 @@ export function CreateControlSheet({
     );
   }
 
+  const submitLabel = createTaskFollowUp ? 'Create & Continue' : 'Create Control';
   return (
     <Drawer open={isOpen} onOpenChange={handleOpenChange}>
       <DrawerTitle hidden>Create New Control</DrawerTitle>
@@ -414,7 +528,7 @@ export function CreateControlSheet({
             onClick={form.handleSubmit(onSubmit)}
           >
             <div className="flex items-center justify-center">
-              Create Control
+              {submitLabel}
               <ArrowRightIcon className="ml-2 h-4 w-4" />
             </div>
           </Button>

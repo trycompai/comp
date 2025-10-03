@@ -34,14 +34,18 @@ export default async function ControlsPage({ ...props }: ControlTableProps) {
   const policies = await getPolicies();
   const tasks = await getTasks();
   const requirements = await getRequirements();
+  const members = await getMembers();
+  const taskControls = await getControlSummaries();
 
   return (
-    <PageWithBreadcrumb breadcrumbs={[{ label: 'Controls', current: true }]}>
+    <PageWithBreadcrumb breadcrumbs={[{ label: 'Controls', current: true }]}> 
       <ControlsTable
         promises={promises}
         policies={policies}
         tasks={tasks}
         requirements={requirements}
+        members={members}
+        taskControls={taskControls}
       />
     </PageWithBreadcrumb>
   );
@@ -99,6 +103,61 @@ const getTasks = async () => {
   });
 
   return tasks;
+};
+
+const getMembers = async () => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  const orgId = session?.session.activeOrganizationId;
+
+  if (!orgId) {
+    return [];
+  }
+
+  const members = await db.member.findMany({
+    where: {
+      organizationId: orgId,
+    },
+    include: {
+      user: true,
+    },
+    orderBy: {
+      user: {
+        name: 'asc',
+      },
+    },
+  });
+
+  return members;
+};
+
+const getControlSummaries = async () => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  const orgId = session?.session.activeOrganizationId;
+
+  if (!orgId) {
+    return [];
+  }
+
+  const controls = await db.control.findMany({
+    where: {
+      organizationId: orgId,
+    },
+    select: {
+      id: true,
+      name: true,
+    },
+    orderBy: {
+      name: 'asc',
+    },
+  });
+
+  return controls;
 };
 
 const getRequirements = async () => {

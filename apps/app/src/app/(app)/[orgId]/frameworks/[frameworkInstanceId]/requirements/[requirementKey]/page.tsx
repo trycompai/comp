@@ -114,6 +114,33 @@ export default async function RequirementPage({ params }: PageProps) {
     frameworkName,
   }));
 
+  const members = await db.member.findMany({
+    where: {
+      organizationId,
+    },
+    include: {
+      user: true,
+    },
+    orderBy: {
+      user: {
+        name: 'asc',
+      },
+    },
+  });
+
+  const organizationControls = await db.control.findMany({
+    where: {
+      organizationId,
+    },
+    select: {
+      id: true,
+      name: true,
+    },
+    orderBy: {
+      name: 'asc',
+    },
+  });
+
   return (
     <PageWithBreadcrumb
       breadcrumbs={[
@@ -139,6 +166,8 @@ export default async function RequirementPage({ params }: PageProps) {
           relatedControls={relatedControls}
           policies={policies}
           requirements={requirementOptions}
+          members={members}
+          controlSummaries={organizationControls}
         />
       </div>
     </PageWithBreadcrumb>
