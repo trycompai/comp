@@ -3,7 +3,7 @@ import { PutObjectCommand } from '@aws-sdk/client-s3';
 import type { UIMessage, UIMessageStreamWriter } from 'ai';
 import { tool } from 'ai';
 import z from 'zod/v3';
-import type { DataPart } from '../messages/data-parts';
+import type { DataPart } from '../lib/types/data-parts';
 
 interface Params {
   writer: UIMessageStreamWriter<UIMessage<never, DataPart>>;
