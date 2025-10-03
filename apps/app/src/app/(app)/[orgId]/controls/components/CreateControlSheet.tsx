@@ -13,7 +13,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRightIcon, X } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useQueryState } from 'nuqs';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -41,6 +41,7 @@ export function CreateControlSheet({
   policies,
   tasks,
   requirements,
+  prefillRequirementMappings = [],
 }: {
   policies: { id: string; name: string }[];
   tasks: { id: string; title: string }[];
@@ -51,6 +52,7 @@ export function CreateControlSheet({
     frameworkInstanceId: string;
     frameworkName: string;
   }[];
+  prefillRequirementMappings?: { requirementId: string; frameworkInstanceId: string }[];
 }) {
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const [createControlOpen, setCreateControlOpen] = useQueryState('create-control');
@@ -81,6 +83,19 @@ export function CreateControlSheet({
       requirementMappings: [],
     },
   });
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    if (prefillRequirementMappings && prefillRequirementMappings.length > 0) {
+      form.setValue('requirementMappings', prefillRequirementMappings);
+      return;
+    }
+
+    form.setValue('requirementMappings', []);
+  }, [form, isOpen, prefillRequirementMappings]);
 
   const onSubmit = useCallback(
     (data: z.infer<typeof createControlSchema>) => {

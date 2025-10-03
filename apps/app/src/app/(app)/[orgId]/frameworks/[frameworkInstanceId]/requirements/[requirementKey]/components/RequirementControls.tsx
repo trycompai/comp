@@ -1,19 +1,67 @@
 'use client';
 
+import { Button } from '@comp/ui/button';
 import type { Control, FrameworkEditorRequirement, RequirementMap, Task } from '@db';
+import { Plus } from 'lucide-react';
+import { useParams } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
+import { useQueryState } from 'nuqs';
+import { CreateControlSheet } from '../../../../../controls/components/CreateControlSheet';
 import { RequirementControlsTable } from './table/RequirementControlsTable';
+
+type RequirementMapping = {
+  requirementId: string;
+  frameworkInstanceId: string;
+};
 
 interface RequirementControlsProps {
   requirement: FrameworkEditorRequirement;
   tasks: (Task & { controls: Control[] })[];
   relatedControls: (RequirementMap & { control: Control })[];
+  policies: { id: string; name: string }[];
+  requirements: {
+    id: string;
+    name: string;
+    identifier: string;
+    frameworkInstanceId: string;
+    frameworkName: string;
+  }[];
 }
 
 export function RequirementControls({
   requirement,
   tasks,
   relatedControls,
+  policies,
+  requirements,
 }: RequirementControlsProps) {
+  const { frameworkInstanceId } = useParams<{ frameworkInstanceId: string }>();
+  const [createControlOpen, setCreateControlOpen] = useQueryState('create-control');
+  const [prefillRequirementMappings, setPrefillRequirementMappings] =
+    useState<RequirementMapping[]>([]);
+
+  const sheetTasks = useMemo(() => tasks.map((task) => ({ id: task.id, title: task.title })), [tasks]);
+  const currentRequirementOption = useMemo(
+    () => requirements.find((req) => req.id === requirement.id),
+    [requirements, requirement.id],
+  );
+
+  const handleAddControl = () => {
+    const mapping: RequirementMapping = {
+      requirementId: requirement.id,
+      frameworkInstanceId: currentRequirementOption?.frameworkInstanceId ?? frameworkInstanceId ?? '',
+    };
+
+    setPrefillRequirementMappings([mapping]);
+    void setCreateControlOpen('true');
+  };
+
+  useEffect(() => {
+    if (!createControlOpen) {
+      setPrefillRequirementMappings([]);
+    }
+  }, [createControlOpen]);
+
   return (
     <div className="space-y-6">
       {/* Requirement Header */}
@@ -33,6 +81,10 @@ export function RequirementControls({
               {relatedControls.length}
             </span>
           </div>
+          <Button variant="default" size="sm" onClick={handleAddControl}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Control
+          </Button>
         </div>
 
         <RequirementControlsTable
@@ -40,6 +92,13 @@ export function RequirementControls({
           tasks={tasks}
         />
       </div>
+
+      <CreateControlSheet
+        policies={policies}
+        tasks={sheetTasks}
+        requirements={requirements}
+        prefillRequirementMappings={prefillRequirementMappings}
+      />
     </div>
   );
 }

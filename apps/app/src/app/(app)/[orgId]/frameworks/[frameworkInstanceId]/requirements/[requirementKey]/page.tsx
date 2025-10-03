@@ -76,7 +76,23 @@ export default async function RequirementPage({ params }: PageProps) {
       include: {
         controls: true,
       },
+      orderBy: {
+        title: 'asc',
+      },
     })) || [];
+
+  const policies = await db.policy.findMany({
+    where: {
+      organizationId,
+    },
+    select: {
+      id: true,
+      name: true,
+    },
+    orderBy: {
+      name: 'asc',
+    },
+  });
 
   const relatedControls = await db.requirementMap.findMany({
     where: {
@@ -88,9 +104,15 @@ export default async function RequirementPage({ params }: PageProps) {
     },
   });
 
-  console.log('relatedControls', relatedControls);
-
   const maxLabelLength = 40;
+
+  const requirementOptions = allReqDefsForFramework.map((def) => ({
+    id: def.id,
+    name: def.name,
+    identifier: def.identifier ?? def.name,
+    frameworkInstanceId,
+    frameworkName,
+  }));
 
   return (
     <PageWithBreadcrumb
@@ -115,6 +137,8 @@ export default async function RequirementPage({ params }: PageProps) {
           requirement={currentRequirementDetails}
           tasks={tasks}
           relatedControls={relatedControls}
+          policies={policies}
+          requirements={requirementOptions}
         />
       </div>
     </PageWithBreadcrumb>
