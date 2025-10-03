@@ -1,6 +1,5 @@
 'use client';
 
-import { Models } from '@/ai/constants';
 import { cn } from '@/lib/utils';
 import { useChat } from '@ai-sdk/react';
 import { Button } from '@comp/ui/button';
@@ -41,8 +40,8 @@ export function WorkflowVisualizerSimple({ className }: Props) {
     isLoading: isLoadingScript,
     refresh,
   } = useTaskAutomationScript({
-    orgId: orgId || '',
-    taskId: taskId || '',
+    orgId: orgId,
+    taskId: taskId,
     enabled: !!orgId && !!taskId,
   });
 
@@ -70,7 +69,7 @@ export function WorkflowVisualizerSimple({ className }: Props) {
     result: executionResult,
     error: executionError,
     reset: resetExecution,
-  } = useTaskAutomationExecution({ orgId: orgId || '', taskId: taskId || '' });
+  } = useTaskAutomationExecution({ orgId: orgId, taskId: taskId });
 
   const { steps, isAnalyzing } = useTaskAutomationWorkflow({
     scriptContent: script?.content,
@@ -135,7 +134,7 @@ Please fix the automation script to resolve this error.`;
     // Send the error to the chat
     sendMessage(
       { text: errorMessage },
-      { body: { modelId: Models.OpenAIGPT5Mini, reasoningEffort: 'medium', orgId, taskId } },
+      { body: { modelId: 'openai/gpt-5-mini', reasoningEffort: 'medium', orgId, taskId } },
     );
 
     // Close the dialog

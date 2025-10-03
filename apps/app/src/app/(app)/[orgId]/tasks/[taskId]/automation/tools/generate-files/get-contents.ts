@@ -1,7 +1,7 @@
-import { getModelOptions } from '@/ai/gateway';
 import { streamObject, type ModelMessage } from 'ai';
 import z from 'zod/v3';
-import { Deferred } from '../../../app/(app)/[orgId]/tasks/[taskId]/automation/lib/deferred';
+import { getModelOptions } from '../../tools/gateway';
+import { Deferred } from './deferred';
 
 export type File = z.infer<typeof fileSchema>;
 

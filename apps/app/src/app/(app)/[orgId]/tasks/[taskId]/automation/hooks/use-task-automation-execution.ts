@@ -43,7 +43,8 @@ export function useTaskAutomationExecution({
 
     const pollRunStatus = async () => {
       try {
-        const response = await fetch(`/api/tasks-automations/runs/${runId}`);
+        const url = `${process.env.NEXT_PUBLIC_ENTERPRISE_API_URL}/api/tasks-automations/runs/${runId}`;
+        const response = await fetch(url);
         const data = await response.json();
 
         if (!response.ok) {
@@ -51,11 +52,6 @@ export function useTaskAutomationExecution({
         }
 
         if (data.status === 'COMPLETED' && data.output) {
-          // Debug logging
-          console.log('[Automation Execution] Raw API response:', data);
-          console.log('[Automation Execution] data.output:', data.output);
-          console.log('[Automation Execution] data.output.output:', data.output.output);
-
           const executionResult: TaskAutomationExecutionResult = {
             success: data.output.success,
             data: data.output.output,

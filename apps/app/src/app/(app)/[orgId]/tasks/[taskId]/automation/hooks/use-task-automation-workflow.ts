@@ -14,7 +14,11 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import type { TaskAutomationWorkflowStep, UseTaskAutomationWorkflowOptions } from '../lib/types';
+import type {
+  TaskAutomationWorkflow,
+  TaskAutomationWorkflowStep,
+  UseTaskAutomationWorkflowOptions,
+} from '../lib/types';
 
 import { taskAutomationApi } from '../lib/task-automation-api';
 
@@ -36,7 +40,9 @@ export function useTaskAutomationWorkflow({
 
     try {
       // Call the AI-powered workflow analysis API
-      const result = await taskAutomationApi.workflow.analyzeWorkflow(content);
+      const result = (await taskAutomationApi.workflow.analyzeWorkflow(
+        content,
+      )) as TaskAutomationWorkflow;
 
       // Map the API response to our workflow steps format
       const steps: TaskAutomationWorkflowStep[] = result.steps.map((step, index) => ({

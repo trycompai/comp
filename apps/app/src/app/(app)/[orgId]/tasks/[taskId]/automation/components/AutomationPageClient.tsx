@@ -4,8 +4,6 @@ import { useChat } from '@ai-sdk/react';
 import { Chat } from '../chat';
 import { useSharedChatContext } from '../lib';
 import { useTaskAutomationStore } from '../lib/task-automation-store';
-import { ScriptInitializer } from '../script-initializer';
-import { AutomationTester } from './automation/AutomationTester';
 import { ChatUIMessage } from './chat/types';
 import { TabContent, TabItem } from './tabs';
 import { WorkflowVisualizerSimple as WorkflowVisualizer } from './workflow/workflow-visualizer-simple';
@@ -25,11 +23,8 @@ export function AutomationPageClient({ orgId, taskId, taskName }: Props) {
 
   return (
     <div className="h-full flex flex-col">
-      <ScriptInitializer orgId={orgId} taskId={taskId} />
-
       <ul className="flex space-x-5 font-mono text-sm tracking-tight py-2 md:hidden shrink-0">
         <TabItem tabId="chat">Chat</TabItem>
-        <TabItem tabId="lambda">Test Scripts</TabItem>
         <TabItem tabId="workflow">Workflow</TabItem>
       </ul>
 
@@ -37,9 +32,6 @@ export function AutomationPageClient({ orgId, taskId, taskName }: Props) {
       <div className="flex flex-1 w-full min-h-0 overflow-hidden md:hidden">
         <TabContent tabId="chat" className="flex-1 min-h-0">
           <Chat className="h-full" orgId={orgId} taskId={taskId} taskName={taskName} />
-        </TabContent>
-        <TabContent tabId="lambda" className="flex-1">
-          <AutomationTester className="flex-1 overflow-hidden" orgId={orgId} taskId={taskId} />
         </TabContent>
         <TabContent tabId="workflow" className="flex-1">
           <WorkflowVisualizer className="flex-1 overflow-hidden" />

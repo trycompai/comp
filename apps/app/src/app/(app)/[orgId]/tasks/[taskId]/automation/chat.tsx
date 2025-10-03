@@ -1,6 +1,5 @@
 'use client';
 
-import { Models } from '@/ai/constants';
 import { Github, VercelIcon } from '@/components/ai/icons';
 import { cn } from '@/lib/utils';
 import { useChat } from '@ai-sdk/react';
@@ -91,7 +90,7 @@ export function Chat({ className, orgId, taskId, taskName }: Props) {
       if (text.trim()) {
         sendMessage(
           { text },
-          { body: { modelId: Models.OpenAIGPT5Mini, reasoningEffort: 'medium', orgId, taskId } },
+          { body: { modelId: 'openai/gpt-5-mini', reasoningEffort: 'medium', orgId, taskId } },
         );
         setInput('');
       }
@@ -106,7 +105,7 @@ export function Chat({ className, orgId, taskId, taskName }: Props) {
         {
           text: `I've added the secret "${secretName}". You can now use it in the automation script.`,
         },
-        { body: { modelId: Models.OpenAIGPT5Mini, reasoningEffort: 'medium', orgId, taskId } },
+        { body: { modelId: 'openai/gpt-5-mini', reasoningEffort: 'medium', orgId, taskId } },
       );
     },
     [sendMessage, orgId, taskId],
@@ -124,7 +123,7 @@ export function Chat({ className, orgId, taskId, taskName }: Props) {
         {
           text: `I've provided the following information:\n\n${infoText}\n\nYou can now continue with creating the automation script.`,
         },
-        { body: { modelId: Models.OpenAIGPT5Mini, reasoningEffort: 'medium', orgId, taskId } },
+        { body: { modelId: 'openai/gpt-5-mini', reasoningEffort: 'medium', orgId, taskId } },
       );
     },
     [sendMessage, orgId, taskId],

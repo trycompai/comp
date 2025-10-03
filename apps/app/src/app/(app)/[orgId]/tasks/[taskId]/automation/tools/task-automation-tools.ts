@@ -6,7 +6,7 @@
  */
 
 import type { InferUITools, UIMessage, UIMessageStreamWriter } from 'ai';
-import type { DataPart } from '../messages/data-parts';
+import type { DataPart } from '../lib/types/data-parts';
 import { exaSearchTool } from './exa-search';
 import { firecrawlTool } from './firecrawl';
 import { promptForInfoTool } from './prompt-for-info';
