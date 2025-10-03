@@ -1,17 +1,13 @@
-import type { DataPart } from '@/ai/messages/data-parts';
-import type { Metadata } from '@/ai/messages/metadata';
-import type { TaskAutomationToolSet } from '@/ai/tools/task-automation-tools';
 import type { UIMessage } from 'ai';
 import { memo } from 'react';
-import { CreateSandbox } from './create-sandbox';
-import { GenerateFiles } from './generate-files';
-import { GetSandboxURL } from './get-sandbox-url';
+import { DataPart } from '../../../lib/types/data-parts';
+import { Metadata } from '../../../lib/types/metadata';
+import { TaskAutomationToolSet } from '../../../tools/task-automation-tools';
 import { PromptInfo } from './prompt-info';
 import { PromptSecret } from './prompt-secret';
 import { Reasoning } from './reasoning';
 import { ReportErrors } from './report-errors';
 import { ResearchActivity } from './research-activity';
-import { RunCommand } from './run-command';
 import { Text } from './text';
 
 interface Props {
@@ -29,15 +25,7 @@ export const MessagePart = memo(function MessagePart({
   onSecretAdded,
   onInfoProvided,
 }: Props) {
-  if (part.type === 'data-generating-files') {
-    return <GenerateFiles message={part.data} />;
-  } else if (part.type === 'data-create-sandbox') {
-    return <CreateSandbox message={part.data} />;
-  } else if (part.type === 'data-get-sandbox-url') {
-    return <GetSandboxURL message={part.data} />;
-  } else if (part.type === 'data-run-command') {
-    return <RunCommand message={part.data} />;
-  } else if (part.type === 'reasoning') {
+  if (part.type === 'reasoning') {
     return <Reasoning part={part} partIndex={partIndex} />;
   } else if (part.type === 'data-report-errors') {
     return <ReportErrors message={part.data} />;
