@@ -71,6 +71,7 @@ export const acceptRequestedPolicyChangesAction = authActionClient
           approverId: null,
           signedBy: [], // Clear the signedBy field
           lastPublishedAt: new Date(), // Update last published date
+          reviewDate: new Date(), // Update reviewDate to current date
         },
       });
 

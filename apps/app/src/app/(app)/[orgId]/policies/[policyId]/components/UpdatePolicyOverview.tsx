@@ -5,16 +5,14 @@ import { updatePolicyFormAction } from '@/actions/policies/update-policy-form-ac
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { StatusIndicator } from '@/components/status-indicator';
 import { Button } from '@comp/ui/button';
-import { Calendar } from '@comp/ui/calendar';
 import { cn } from '@comp/ui/cn';
-import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Departments, Frequency, Member, type Policy, PolicyStatus, User } from '@db';
 import { format } from 'date-fns';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { SubmitApprovalDialog } from './SubmitApprovalDialog';
 
@@ -41,11 +39,6 @@ export function UpdatePolicyOverview({
 
   // Track selected assignee
   const [selectedAssigneeId, setSelectedAssigneeId] = useState<string | null>(policy.assigneeId);
-
-  // Date picker state - UI only
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-  const [tempDate, setTempDate] = useState<Date | undefined>(undefined);
-  const popoverRef = useRef<HTMLDivElement>(null);
 
   // Loading state
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -83,12 +76,6 @@ export function UpdatePolicyOverview({
     },
   });
 
-  // Function to handle date confirmation
-  const handleDateConfirm = (date: Date | undefined) => {
-    setTempDate(date);
-    setIsDatePickerOpen(false);
-  };
-
   // Function to handle form field changes
   const handleFormChange = () => {
     setFormInteracted(true);
@@ -106,7 +93,7 @@ export function UpdatePolicyOverview({
     const reviewFrequency = formData.get('review_frequency') as Frequency;
 
     // Get review date from the form or use the existing one
-    const reviewDate = tempDate || (policy.reviewDate ? new Date(policy.reviewDate) : new Date());
+    const reviewDate = policy.reviewDate ? new Date(policy.reviewDate) : new Date();
 
     // Check if the policy is published and if there are changes
     const isPublishedWithChanges =
@@ -150,7 +137,7 @@ export function UpdatePolicyOverview({
     const reviewFrequency = formData.get('review_frequency') as Frequency;
 
     // Get review date from the form or use the existing one
-    const reviewDate = tempDate || (policy.reviewDate ? new Date(policy.reviewDate) : new Date());
+    const reviewDate = policy.reviewDate ? new Date(policy.reviewDate) : new Date();
 
     setIsSubmitting(true);
     submitForApproval.execute({
@@ -285,82 +272,32 @@ export function UpdatePolicyOverview({
             <label htmlFor="review_date" className="text-sm font-medium">
               Review Date
             </label>
-            <Popover
-              open={isDatePickerOpen}
-              onOpenChange={(open) => {
-                setIsDatePickerOpen(open);
-                if (!open) {
-                  setTempDate(undefined);
-                }
-              }}
-            >
-              <PopoverTrigger
-                asChild
-                disabled={fieldsDisabled}
+            <div className="pt-1.5">
+              <Button
+                type="button"
+                variant="outline"
+                disabled
                 className={cn(
-                  fieldsDisabled && 'pointer-events-none cursor-not-allowed select-none',
+                  'w-full pl-3 text-left font-normal pointer-events-none cursor-not-allowed select-none'
                 )}
               >
-                <div className="pt-1.5">
-                  <Button
-                    type="button"
-                    variant={'outline'}
-                    disabled={fieldsDisabled}
-                    className={cn('w-full pl-3 text-left font-normal')}
-                  >
-                    {tempDate ? (
-                      format(tempDate, 'PPP')
-                    ) : policy.reviewDate ? (
-                      format(new Date(policy.reviewDate), 'PPP')
-                    ) : (
-                      <span>Select review date</span>
-                    )}
-                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                  </Button>
-                </div>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto" align="start" ref={popoverRef}>
-                <div className="p-1">
-                  <Calendar
-                    mode="single"
-                    selected={
-                      tempDate || (policy.reviewDate ? new Date(policy.reviewDate) : undefined)
-                    }
-                    onSelect={(date) => {
-                      setTempDate(date);
-                      handleFormChange();
-                    }}
-                    disabled={(date) => date <= new Date()}
-                    initialFocus
-                  />
-                  <div className="mt-4 flex justify-end gap-2">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setIsDatePickerOpen(false);
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                    <Button type="button" size="sm" onClick={() => handleDateConfirm(tempDate)}>
-                      Confirm Date
-                    </Button>
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
+                {policy.reviewDate ? (
+                  format(new Date(policy.reviewDate), 'PPP')
+                ) : (
+                  <span>None</span>
+                )}
+                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+              </Button>
+            </div>
             {/* Hidden input to store the date value */}
             <input
               type="hidden"
               id="review_date"
               name="review_date"
               value={
-                tempDate?.toISOString() ||
-                (policy.reviewDate
+                policy.reviewDate
                   ? new Date(policy.reviewDate).toISOString()
-                  : new Date().toISOString())
+                  : new Date().toISOString()
               }
             />
           </div>

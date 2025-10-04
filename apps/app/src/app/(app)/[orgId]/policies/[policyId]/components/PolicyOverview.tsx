@@ -37,7 +37,6 @@ export function PolicyOverview({
   isPendingApproval: boolean;
 }) {
   const { data: activeMember } = authClient.useActiveMember();
-  const [, setOpen] = useQueryState('policy-overview-sheet');
   const [, setArchiveOpen] = useQueryState('archive-policy-sheet');
   const canCurrentUserApprove = policy?.approverId === activeMember?.id;
 
