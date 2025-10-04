@@ -3,7 +3,7 @@
 import { cn } from '@/lib/utils';
 import { useChat } from '@ai-sdk/react';
 import { Button } from '@comp/ui/button';
-import { Play, Zap } from 'lucide-react';
+import { Code, Play, Zap } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useEffect, useMemo } from 'react';
 import {
@@ -152,7 +152,7 @@ Please fix the automation script to resolve this error.`;
             <div>
               <h2 className="text-sm font-semibold flex items-center gap-2">
                 <Zap className="w-4 h-4 text-primary" />
-                Automation
+                Integration Builder
               </h2>
             </div>
             <ViewModeSwitch value={viewMode} onChange={setViewMode} />
@@ -164,13 +164,13 @@ Please fix the automation script to resolve this error.`;
   }
 
   return (
-    <Panel className={cn('flex flex-col', className)}>
+    <Panel className={cn('flex flex-col border-t-0 rounded-t-none', className)}>
       <PanelHeader className="border-b border-border">
         <div className="flex items-center justify-between w-full">
           <div>
             <h2 className="text-sm font-semibold flex items-center gap-2">
-              <Zap className={`w-4 h-4 text-primary ${isAnalyzing ? 'animate-pulse' : ''}`} />
-              Automation
+              <Code className={`w-4 h-4 text-primary ${isAnalyzing ? 'animate-pulse' : ''}`} />
+              Integration Builder
             </h2>
           </div>
           <div className="flex items-center gap-2">
