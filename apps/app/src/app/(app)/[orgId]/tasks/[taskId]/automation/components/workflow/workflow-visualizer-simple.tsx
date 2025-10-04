@@ -146,7 +146,7 @@ Please fix the automation script to resolve this error.`;
 
   if (showEmptyState) {
     return (
-      <Panel className={cn('flex flex-col', className)}>
+      <Panel className={cn('flex flex-col border-t-0 rounded-t-none', className)}>
         <PanelHeader>
           <div className="flex items-center justify-between w-full">
             <div>
