@@ -27,6 +27,10 @@ export function useTaskAutomationWorkflow({
   enabled = true,
 }: UseTaskAutomationWorkflowOptions) {
   const [steps, setSteps] = useState<TaskAutomationWorkflowStep[]>([]);
+  const [title, setTitle] = useState<string>('');
+  const [integrationsUsed, setIntegrationsUsed] = useState<
+    TaskAutomationWorkflow['integrationsUsed']
+  >([]);
   const [description, setDescription] = useState<string>('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -54,6 +58,8 @@ export function useTaskAutomationWorkflow({
       }));
 
       setSteps(steps);
+      setTitle(result.title);
+      setIntegrationsUsed(result.integrationsUsed);
       setDescription('Automation workflow');
 
       return { steps, description: 'Automation workflow' };
@@ -104,6 +110,8 @@ export function useTaskAutomationWorkflow({
 
   return {
     steps,
+    integrationsUsed,
+    title,
     description,
     isAnalyzing,
     error,
