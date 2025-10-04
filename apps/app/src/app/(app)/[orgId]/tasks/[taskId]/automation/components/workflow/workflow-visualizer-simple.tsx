@@ -71,7 +71,7 @@ export function WorkflowVisualizerSimple({ className }: Props) {
     reset: resetExecution,
   } = useTaskAutomationExecution({ orgId: orgId, taskId: taskId });
 
-  const { steps, isAnalyzing } = useTaskAutomationWorkflow({
+  const { steps, isAnalyzing, integrationsUsed, title } = useTaskAutomationWorkflow({
     scriptContent: script?.content,
     enabled: !!script?.content,
   });
@@ -215,8 +215,9 @@ Please fix the automation script to resolve this error.`;
                 ) : steps.length > 0 ? (
                   <UnifiedWorkflowCard
                     steps={steps}
-                    title="Dependabot Security Check"
+                    title={title}
                     onTest={handleTest}
+                    integrationsUsed={integrationsUsed}
                   />
                 ) : (
                   <EmptyState type="workflow" />

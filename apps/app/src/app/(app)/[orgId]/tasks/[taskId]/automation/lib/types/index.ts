@@ -71,9 +71,16 @@ export interface TaskAutomationWorkflowStep {
   iconType: WorkflowIconType;
 }
 
+type IntegrationsUsed = Array<{
+  name: string;
+  link: string;
+}>;
+
 export interface TaskAutomationWorkflow {
   steps: TaskAutomationWorkflowStep[];
+  title: string;
   description: string;
+  integrationsUsed: IntegrationsUsed;
 }
 
 // ============================================================================
