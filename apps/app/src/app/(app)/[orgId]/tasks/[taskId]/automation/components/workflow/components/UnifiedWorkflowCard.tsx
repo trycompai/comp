@@ -137,7 +137,7 @@ export function UnifiedWorkflowCard({ steps, title, onTest, integrationsUsed }: 
             <div className="flex items-center justify-center">
               <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
             </div>
-            <span className="text-sm text-blue-500">Building automation</span>
+            <span className="text-sm text-blue-500">Building integration</span>
           </div>
         ) : (
           <button
@@ -145,7 +145,7 @@ export function UnifiedWorkflowCard({ steps, title, onTest, integrationsUsed }: 
             className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors animate-in fade-in duration-500"
           >
             <Play className="w-4 h-4" />
-            Test Automation
+            Test Integration
           </button>
         )}
       </div>

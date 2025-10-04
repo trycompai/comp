@@ -1,6 +1,5 @@
 'use client';
 
-import { Github, VercelIcon } from '@/components/ai/icons';
 import { cn } from '@/lib/utils';
 import { useChat } from '@ai-sdk/react';
 import {
@@ -11,7 +10,7 @@ import {
   BreadcrumbSeparator,
 } from '@comp/ui/breadcrumb';
 import { Card, CardDescription, CardHeader } from '@comp/ui/card';
-import { ChevronRight, Cloud, Globe, MessageCircleIcon } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -38,34 +37,34 @@ interface Props {
 interface Example {
   title: string;
   prompt: string;
-  icon: React.ReactNode;
+  url: string;
 }
 
 const AUTOMATION_EXAMPLES: Example[] = [
   {
     title: 'Check if I have dependabot enabled in my GitHub repository',
     prompt: 'Check if I have dependabot enabled in my GitHub repository',
-    icon: <Github className="w-4 h-4" />,
+    url: 'https://img.logo.dev/github.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ',
   },
   {
     title: 'Check if I have branch protection enabled for the main branch in my GitHub repository',
     prompt: 'Check if I have branch protection enabled for the main branch in my GitHub repository',
-    icon: <Github className="w-4 h-4" />,
+    url: 'https://img.logo.dev/github.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ',
   },
   {
     title: 'Check if my website has a privacy policy',
     prompt: 'Check if my website has a privacy policy',
-    icon: <Globe className="w-4 h-4" />,
+    url: 'https://img.logo.dev/trycomp.ai?token=pk_AZatYxV5QDSfWpRDaBxzRQ',
   },
   {
     title: 'Give me a list of failed deployments in my Vercel project',
     prompt: 'Give me a list of failed deployments in my Vercel project',
-    icon: <VercelIcon size={16} />,
+    url: 'https://img.logo.dev/vercel.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ',
   },
   {
     title: 'Check that DDoS protection is enabled for my Cloudflare project',
     prompt: 'Check that DDoS protection is enabled for my Cloudflare project',
-    icon: <Cloud size={16} />,
+    url: 'https://img.logo.dev/cloudflare.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ',
   },
 ];
 
@@ -183,10 +182,11 @@ export function Chat({ className, orgId, taskId, taskName }: Props) {
                   <BreadcrumbLink asChild>
                     <Link
                       href={`/${orgId}/tasks/${taskId}/automation`}
-                      className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground"
+                      className="flex items-center text-xs text-muted-foreground hover:text-foreground"
                     >
-                      <MessageCircleIcon className="relative w-3 h-3" />
-                      <span className="font-medium text-xs text-foreground/90">Chat</span>
+                      <span className="font-medium text-xs text-foreground/90">
+                        Integration Builder
+                      </span>
                     </Link>
                   </BreadcrumbLink>
                 </BreadcrumbItem>
@@ -210,7 +210,7 @@ export function Chat({ className, orgId, taskId, taskName }: Props) {
               {/* Top Section - Fixed Position */}
               <div className="w-full max-w-3xl text-center space-y-8 mb-80">
                 <p className="text-2xl font-medium text-primary tracking-wide z-20">
-                  What do you want to automate today?
+                  What evidence do you want to collect?
                 </p>
                 <Input
                   ref={inputRef}
@@ -238,9 +238,13 @@ export function Chat({ className, orgId, taskId, taskName }: Props) {
                     >
                       <CardHeader className="p-4">
                         <div className="flex items-start gap-3">
-                          <span className="border p-1.5 bg-background w-fit rounded-sm flex-shrink-0">
-                            {example.icon}
-                          </span>
+                          <Image
+                            src={example.url}
+                            alt={example.title}
+                            width={24}
+                            height={24}
+                            className="rounded-sm"
+                          />
                           <CardDescription className="flex-1">
                             <p className="text-sm font-normal text-foreground leading-relaxed">
                               {example.title}
