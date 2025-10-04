@@ -35,6 +35,7 @@ export const env = createEnv({
     GA4_API_SECRET: z.string().optional(),
     GA4_MEASUREMENT_ID: z.string().optional(),
     LINKEDIN_CONVERSIONS_ACCESS_TOKEN: z.string().optional(),
+    NOVU_API_KEY: z.string().optional(),
   },
 
   client: {
@@ -47,6 +48,7 @@ export const env = createEnv({
     NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL: z.string().optional(),
     NEXT_PUBLIC_API_URL: z.string().optional(),
     NEXT_PUBLIC_BETTER_AUTH_URL: z.string().optional(),
+    NEXT_PUBLIC_NOVU_APPLICATION_IDENTIFIER: z.string().optional(),
   },
 
   runtimeEnv: {
@@ -91,6 +93,8 @@ export const env = createEnv({
     NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL: process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL,
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
     NEXT_PUBLIC_BETTER_AUTH_URL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
+    NOVU_API_KEY: process.env.NOVU_API_KEY,
+    NEXT_PUBLIC_NOVU_APPLICATION_IDENTIFIER: process.env.NEXT_PUBLIC_NOVU_APPLICATION_IDENTIFIER,
   },
 
   skipValidation: !!process.env.CI || !!process.env.SKIP_ENV_VALIDATION,

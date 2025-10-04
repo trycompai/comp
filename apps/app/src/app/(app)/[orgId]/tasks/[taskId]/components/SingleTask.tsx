@@ -76,7 +76,7 @@ export function SingleTask({ task, members }: SingleTaskProps) {
   };
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="mx-auto max-w-6xl px-4 animate-in fade-in slide-in-from-bottom-4 duration-500 py-8">
       {/* Main Content Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column - Title, Description, Content */}

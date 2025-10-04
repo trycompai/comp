@@ -1,6 +1,6 @@
-import type { DataPart } from '@/ai/messages/data-parts';
-import type { Metadata } from '@/ai/messages/metadata';
-import type { TaskAutomationToolSet } from '@/ai/tools/task-automation-tools';
 import type { UIMessage } from 'ai';
+import type { DataPart } from '../../lib/types/data-parts';
+import { Metadata } from '../../lib/types/metadata';
+import { TaskAutomationToolSet } from '../../tools/task-automation-tools';
 
 export type ChatUIMessage = UIMessage<Metadata, DataPart, TaskAutomationToolSet>;

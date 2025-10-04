@@ -94,31 +94,38 @@ export function PostPaymentOnboarding({
             </div>
           </CardHeader>
           <CardContent className="flex min-h-[150px] flex-1 flex-col overflow-y-auto">
-            {!isLoading && step && (
-              <Form {...form} key={step.key}>
+            {!isLoading && (
+              <Form {...form}>
                 <form
                   id="onboarding-form"
                   onSubmit={form.handleSubmit(onSubmit)}
                   className="mt-4 w-full"
                   autoComplete="off"
                 >
-                  <FormField
-                    name={step.key}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormControl>
-                          <OnboardingStepInput
-                            currentStep={step}
-                            form={form}
-                            savedAnswers={savedAnswers}
-                          />
-                        </FormControl>
-                        <div className="min-h-[20px]">
-                          <FormMessage />
-                        </div>
-                      </FormItem>
-                    )}
-                  />
+                  {steps.map((s, idx) => (
+                    <div
+                      key={s.key}
+                      style={{ display: idx === stepIndex ? 'block' : 'none' }}
+                    >
+                      <FormField
+                        name={s.key}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <OnboardingStepInput
+                                currentStep={s}
+                                form={form}
+                                savedAnswers={savedAnswers}
+                              />
+                            </FormControl>
+                            <div className="min-h-[20px]">
+                              <FormMessage />
+                            </div>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  ))}
                 </form>
               </Form>
             )}

@@ -1,11 +1,16 @@
 'use client';
 
-import { Models } from '@/ai/constants';
-import { Github, VercelIcon } from '@/components/ai/icons';
 import { cn } from '@/lib/utils';
 import { useChat } from '@ai-sdk/react';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator,
+} from '@comp/ui/breadcrumb';
 import { Card, CardDescription, CardHeader } from '@comp/ui/card';
-import { ArrowLeft, Cloud, Globe, MessageCircleIcon } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -26,58 +31,44 @@ interface Props {
   modelId?: string;
   orgId: string;
   taskId: string;
+  taskName?: string;
 }
-
-type Category = 'recommended' | 'github' | 'website' | 'vercel' | 'cloudflare';
-const AUTOMATION_CATEGORIES: Category[] = [
-  'recommended',
-  'github',
-  'website',
-  'vercel',
-  'cloudflare',
-];
 
 interface Example {
   title: string;
   prompt: string;
-  icon: React.ReactNode;
-  categories: Category[];
+  url: string;
 }
 
 const AUTOMATION_EXAMPLES: Example[] = [
   {
     title: 'Check if I have dependabot enabled in my GitHub repository',
     prompt: 'Check if I have dependabot enabled in my GitHub repository',
-    icon: <Github className="w-4 h-4" />,
-    categories: ['recommended', 'github'],
+    url: 'https://img.logo.dev/github.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ',
   },
   {
     title: 'Check if I have branch protection enabled for the main branch in my GitHub repository',
     prompt: 'Check if I have branch protection enabled for the main branch in my GitHub repository',
-    icon: <Github className="w-4 h-4" />,
-    categories: ['recommended', 'github'],
+    url: 'https://img.logo.dev/github.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ',
   },
   {
     title: 'Check if my website has a privacy policy',
     prompt: 'Check if my website has a privacy policy',
-    icon: <Globe className="w-4 h-4" />,
-    categories: ['recommended', 'website'],
+    url: 'https://img.logo.dev/trycomp.ai?token=pk_AZatYxV5QDSfWpRDaBxzRQ',
   },
   {
     title: 'Give me a list of failed deployments in my Vercel project',
     prompt: 'Give me a list of failed deployments in my Vercel project',
-    icon: <VercelIcon size={16} />,
-    categories: ['recommended', 'vercel'],
+    url: 'https://img.logo.dev/vercel.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ',
   },
   {
     title: 'Check that DDoS protection is enabled for my Cloudflare project',
     prompt: 'Check that DDoS protection is enabled for my Cloudflare project',
-    icon: <Cloud size={16} />,
-    categories: ['recommended', 'cloudflare'],
+    url: 'https://img.logo.dev/cloudflare.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ',
   },
 ];
 
-export function Chat({ className, orgId, taskId }: Props) {
+export function Chat({ className, orgId, taskId, taskName }: Props) {
   const [input, setInput] = useState('');
   const { chat } = useSharedChatContext();
   const { messages, sendMessage, status } = useChat<ChatUIMessage>({ chat });
@@ -98,7 +89,7 @@ export function Chat({ className, orgId, taskId }: Props) {
       if (text.trim()) {
         sendMessage(
           { text },
-          { body: { modelId: Models.OpenAIGPT5Mini, reasoningEffort: 'medium', orgId, taskId } },
+          { body: { modelId: 'openai/gpt-5-mini', reasoningEffort: 'medium', orgId, taskId } },
         );
         setInput('');
       }
@@ -113,7 +104,7 @@ export function Chat({ className, orgId, taskId }: Props) {
         {
           text: `I've added the secret "${secretName}". You can now use it in the automation script.`,
         },
-        { body: { modelId: Models.OpenAIGPT5Mini, reasoningEffort: 'medium', orgId, taskId } },
+        { body: { modelId: 'openai/gpt-5-mini', reasoningEffort: 'medium', orgId, taskId } },
       );
     },
     [sendMessage, orgId, taskId],
@@ -131,7 +122,7 @@ export function Chat({ className, orgId, taskId }: Props) {
         {
           text: `I've provided the following information:\n\n${infoText}\n\nYou can now continue with creating the automation script.`,
         },
-        { body: { modelId: Models.OpenAIGPT5Mini, reasoningEffort: 'medium', orgId, taskId } },
+        { body: { modelId: 'openai/gpt-5-mini', reasoningEffort: 'medium', orgId, taskId } },
       );
     },
     [sendMessage, orgId, taskId],
@@ -157,25 +148,58 @@ export function Chat({ className, orgId, taskId }: Props) {
       />
 
       <PanelHeader className="shrink-0 relative z-20">
-        <div className="flex items-center gap-3">
-          <Link
-            href={`/${orgId}/tasks/${taskId}`}
-            className="p-1 -ml-1 rounded hover:bg-muted/50 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4 text-muted-foreground hover:text-foreground" />
-          </Link>
-          <div className="relative">
-            <div className="absolute inset-0 blur-md rounded-full" />
-            <MessageCircleIcon className="relative w-4 h-4 text-primary" />
+        <div className="flex items-center justify-between w-full">
+          <div className="flex items-center gap-4">
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link
+                      href={`/${orgId}/tasks`}
+                      className="text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      Tasks
+                    </Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator>
+                  <ChevronRight className="w-3 h-3" />
+                </BreadcrumbSeparator>
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link
+                      href={`/${orgId}/tasks/${taskId}`}
+                      className="text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      {taskName || 'Task'}
+                    </Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator>
+                  <ChevronRight className="w-3 h-3" />
+                </BreadcrumbSeparator>
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link
+                      href={`/${orgId}/tasks/${taskId}/automation`}
+                      className="flex items-center text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      <span className="font-medium text-xs text-foreground/90">
+                        Integration Builder
+                      </span>
+                    </Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
           </div>
-          <span className="font-medium text-sm tracking-wide text-foreground/90">Chat</span>
         </div>
       </PanelHeader>
 
       {/* Messages Area */}
       {!hasMessages ? (
         <form
-          className={cn('flex flex-col w-full h-full px-58 z-20', scriptUrl && 'px-0')}
+          className={cn('flex flex-col w-full h-full px-58 z-20', scriptUrl && 'px-8 pb-4')}
           onSubmit={async (event) => {
             event.preventDefault();
             validateAndSubmitMessage(input);
@@ -186,7 +210,7 @@ export function Chat({ className, orgId, taskId }: Props) {
               {/* Top Section - Fixed Position */}
               <div className="w-full max-w-3xl text-center space-y-8 mb-80">
                 <p className="text-2xl font-medium text-primary tracking-wide z-20">
-                  What do you want to automate today?
+                  What evidence do you want to collect?
                 </p>
                 <Input
                   ref={inputRef}
@@ -214,9 +238,13 @@ export function Chat({ className, orgId, taskId }: Props) {
                     >
                       <CardHeader className="p-4">
                         <div className="flex items-start gap-3">
-                          <span className="border p-1.5 bg-background w-fit rounded-sm flex-shrink-0">
-                            {example.icon}
-                          </span>
+                          <Image
+                            src={example.url}
+                            alt={example.title}
+                            width={24}
+                            height={24}
+                            className="rounded-sm"
+                          />
                           <CardDescription className="flex-1">
                             <p className="text-sm font-normal text-foreground leading-relaxed">
                               {example.title}
@@ -234,7 +262,7 @@ export function Chat({ className, orgId, taskId }: Props) {
       ) : (
         <div className="flex flex-col h-full relative z-20">
           <Conversation className="flex-1 min-h-0">
-            <ConversationContent className="space-y-4">
+            <ConversationContent className="space-y-4 chat-scrollbar">
               {messages.map((message) => (
                 <Message
                   key={message.id}

@@ -77,11 +77,6 @@ export function usePostPaymentOnboarding({
     defaultValues: { [step.key]: savedAnswers[step.key] || '' },
   });
 
-  // Reset form when step changes
-  useEffect(() => {
-    form.reset({ [step.key]: savedAnswers[step.key] || '' });
-  }, [savedAnswers, step.key, form]);
-
   // Track onboarding start
   useEffect(() => {
     trackEvent('onboarding_started', {
