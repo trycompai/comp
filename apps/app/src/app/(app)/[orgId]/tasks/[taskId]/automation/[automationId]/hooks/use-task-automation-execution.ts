@@ -18,6 +18,7 @@
  * ```
  */
 
+import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { taskAutomationApi } from '../lib/task-automation-api';
 import type {
@@ -26,11 +27,14 @@ import type {
 } from '../lib/types';
 
 export function useTaskAutomationExecution({
-  orgId,
-  taskId,
   onSuccess,
   onError,
-}: UseTaskAutomationExecutionOptions) {
+}: UseTaskAutomationExecutionOptions = {}) {
+  const { orgId, taskId, automationId } = useParams<{
+    orgId: string;
+    taskId: string;
+    automationId: string;
+  }>();
   const [runId, setRunId] = useState<string | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
   const [result, setResult] = useState<TaskAutomationExecutionResult | null>(null);
@@ -105,7 +109,11 @@ export function useTaskAutomationExecution({
     setRunId(null);
 
     try {
-      const response = await taskAutomationApi.execution.executeScript({ orgId, taskId });
+      const response = await taskAutomationApi.execution.executeScript({
+        orgId,
+        taskId,
+        automationId,
+      });
 
       // The API now returns a run ID that we can monitor
       if (

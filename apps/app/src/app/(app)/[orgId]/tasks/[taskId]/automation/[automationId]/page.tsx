@@ -6,9 +6,9 @@ import { AutomationPageClient } from './components/AutomationPageClient';
 export default async function Page({
   params,
 }: {
-  params: Promise<{ taskId: string; orgId: string }>;
+  params: Promise<{ taskId: string; orgId: string; automationId: string }>;
 }) {
-  const { taskId, orgId } = await params;
+  const { taskId, orgId, automationId } = await params;
 
   const task = await db.task.findUnique({
     where: {
@@ -26,7 +26,12 @@ export default async function Page({
   return (
     <AutomationLayoutWrapper>
       <div className="h-screen overflow-hidden">
-        <AutomationPageClient orgId={orgId} taskId={taskId} taskName={taskName} />
+        <AutomationPageClient
+          orgId={orgId}
+          taskId={taskId}
+          automationId={automationId}
+          taskName={taskName}
+        />
       </div>
     </AutomationLayoutWrapper>
   );

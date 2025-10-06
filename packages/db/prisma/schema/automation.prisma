@@ -1,0 +1,15 @@
+model EvidenceAutomation {
+    id          String    @id @default(dbgenerated("generate_prefixed_cuid('aut'::text)"))
+    name        String
+    description String?
+    createdAt   DateTime  @default(now())
+    lastRunAt   DateTime?
+
+    organizationId String
+    organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+    taskId         String
+    task           Task         @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+    @@index([organizationId])
+    @@index([taskId])
+}

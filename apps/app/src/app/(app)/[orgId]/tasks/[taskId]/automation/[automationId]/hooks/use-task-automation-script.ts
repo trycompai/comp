@@ -20,9 +20,10 @@ import { taskAutomationApi } from '../lib/task-automation-api';
 export function useTaskAutomationScript({
   orgId,
   taskId,
+  automationId,
   enabled = true,
 }: UseTaskAutomationScriptOptions) {
-  const scriptKey = `${orgId}/${taskId}.automation.js`;
+  const scriptKey = `${orgId}/${taskId}/${automationId}.automation.js`;
 
   const { data, error, isLoading, mutate } = useSWR<TaskAutomationScript>(
     enabled ? ['task-automation-script', scriptKey] : null,

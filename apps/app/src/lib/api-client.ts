@@ -51,9 +51,6 @@ export class ApiClient {
 
         if (token) {
           headers['Authorization'] = `Bearer ${token}`;
-          console.log('🎯 Using fresh JWT token for API authentication');
-        } else {
-          console.log('⚠️ No JWT token available for API authentication');
         }
       } catch (error) {
         console.error('❌ Error getting JWT token for API call:', error);

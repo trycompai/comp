@@ -22,7 +22,9 @@ export default async function TaskPage({
     redirect(`/${orgId}/tasks`);
   }
 
-  return <SingleTask task={task} members={members} />;
+  const automations = await getAutomations(orgId, session);
+
+  return <SingleTask task={task} members={members} automations={automations} />;
 }
 
 const getTask = async (taskId: string, session: Session) => {
@@ -68,4 +70,20 @@ const getMembers = async (orgId: string, session: Session) => {
     include: { user: true },
   });
   return members;
+};
+
+const getAutomations = async (orgId: string, session: Session) => {
+  const activeOrgId = orgId ?? session?.session.activeOrganizationId;
+  if (!activeOrgId) {
+    console.warn('Could not determine active organization ID in getAutomations');
+    return [];
+  }
+
+  const automations = await db.evidenceAutomation.findMany({
+    where: {
+      organizationId: activeOrgId,
+    },
+  });
+
+  return automations;
 };

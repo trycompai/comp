@@ -182,7 +182,7 @@ export async function listAutomationScripts(orgId: string) {
 export async function executeAutomationScript(data: {
   orgId: string;
   taskId: string;
-  sandboxId?: string;
+  automationId: string;
 }) {
   try {
     const result = await callEnterpriseApi('/api/tasks-automations/trigger/execute', {

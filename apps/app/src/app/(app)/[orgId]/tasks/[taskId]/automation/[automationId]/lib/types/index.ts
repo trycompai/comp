@@ -104,6 +104,7 @@ export interface TaskAutomationUploadResponse {
 export interface TaskAutomationExecuteRequest {
   orgId: string;
   taskId: string;
+  automationId: string;
 }
 
 // ============================================================================
@@ -129,6 +130,7 @@ export interface TaskAutomationStoreState {
 export interface UseTaskAutomationScriptOptions {
   orgId: string;
   taskId: string;
+  automationId: string;
   enabled?: boolean;
 }
 
@@ -138,8 +140,6 @@ export interface UseTaskAutomationScriptsListOptions {
 }
 
 export interface UseTaskAutomationExecutionOptions {
-  orgId: string;
-  taskId: string;
   onSuccess?: (result: TaskAutomationExecutionResult) => void;
   onError?: (error: Error) => void;
 }

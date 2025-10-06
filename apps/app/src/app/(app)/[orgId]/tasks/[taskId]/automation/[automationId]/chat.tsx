@@ -32,6 +32,7 @@ interface Props {
   orgId: string;
   taskId: string;
   taskName?: string;
+  automationId: string;
 }
 
 interface Example {
@@ -68,7 +69,7 @@ const AUTOMATION_EXAMPLES: Example[] = [
   },
 ];
 
-export function Chat({ className, orgId, taskId, taskName }: Props) {
+export function Chat({ className, orgId, taskId, taskName, automationId }: Props) {
   const [input, setInput] = useState('');
   const { chat } = useSharedChatContext();
   const { messages, sendMessage, status } = useChat<ChatUIMessage>({ chat });
@@ -89,12 +90,20 @@ export function Chat({ className, orgId, taskId, taskName }: Props) {
       if (text.trim()) {
         sendMessage(
           { text },
-          { body: { modelId: 'openai/gpt-5-mini', reasoningEffort: 'medium', orgId, taskId } },
+          {
+            body: {
+              modelId: 'openai/gpt-5-mini',
+              reasoningEffort: 'medium',
+              orgId,
+              taskId,
+              automationId,
+            },
+          },
         );
         setInput('');
       }
     },
-    [sendMessage, setInput, orgId, taskId],
+    [sendMessage, setInput, orgId, taskId, automationId],
   );
 
   const handleSecretAdded = useCallback(
@@ -180,14 +189,9 @@ export function Chat({ className, orgId, taskId, taskName }: Props) {
                 </BreadcrumbSeparator>
                 <BreadcrumbItem>
                   <BreadcrumbLink asChild>
-                    <Link
-                      href={`/${orgId}/tasks/${taskId}/automation`}
-                      className="flex items-center text-xs text-muted-foreground hover:text-foreground"
-                    >
-                      <span className="font-medium text-xs text-foreground/90">
-                        Integration Builder
-                      </span>
-                    </Link>
+                    <span className="font-medium text-xs text-foreground/90 cursor-default">
+                      Integration Builder
+                    </span>
                   </BreadcrumbLink>
                 </BreadcrumbItem>
               </BreadcrumbList>
@@ -208,7 +212,7 @@ export function Chat({ className, orgId, taskId, taskName }: Props) {
           <div className="flex-1 min-h-0 overflow-y-auto h-full z-20">
             <div className="w-full h-full flex flex-col items-center py-48">
               {/* Top Section - Fixed Position */}
-              <div className="w-full max-w-3xl text-center space-y-8 mb-80">
+              <div className="w-full max-w-3xl text-center space-y-8 mb-16">
                 <p className="text-2xl font-medium text-primary tracking-wide z-20">
                   What evidence do you want to collect?
                 </p>
@@ -223,10 +227,8 @@ export function Chat({ className, orgId, taskId, taskName }: Props) {
               </div>
 
               {/* Examples Section */}
-              <div className="w-full max-w-4xl space-y-8">
-                <h3 className="text-xl font-normal text-center text-primary">
-                  Get started with examples
-                </h3>
+              <div className="w-full max-w-4xl space-y-4 mt-16">
+                <h3 className="text-lg font-normal text-center">Get started with examples</h3>
 
                 {/* All Examples Grid */}
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-w-3xl mx-auto">

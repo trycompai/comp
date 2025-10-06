@@ -11,7 +11,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@comp/ui/dialog';
-import { CommentEntityType, type Control, type Member, type Task, type User } from '@db';
+import {
+  CommentEntityType,
+  EvidenceAutomation,
+  type Control,
+  type Member,
+  type Task,
+  type User,
+} from '@db';
 import { RefreshCw, Trash2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useParams } from 'next/navigation';
@@ -19,6 +26,7 @@ import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { Comments } from '../../../../../../components/comments/Comments';
 import { updateTask } from '../../actions/updateTask';
+import { TaskAutomations } from './TaskAutomations';
 import { TaskDeleteDialog } from './TaskDeleteDialog';
 import { TaskMainContent } from './TaskMainContent';
 import { TaskPropertiesSidebar } from './TaskPropertiesSidebar';
@@ -26,9 +34,10 @@ import { TaskPropertiesSidebar } from './TaskPropertiesSidebar';
 interface SingleTaskProps {
   task: Task & { fileUrls?: string[]; controls?: Control[] };
   members?: (Member & { user: User })[];
+  automations: EvidenceAutomation[];
 }
 
-export function SingleTask({ task, members }: SingleTaskProps) {
+export function SingleTask({ task, members, automations }: SingleTaskProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isRegenerateConfirmOpen, setRegenerateConfirmOpen] = useState(false);
   const params = useParams<{ orgId: string }>();
@@ -108,7 +117,7 @@ export function SingleTask({ task, members }: SingleTaskProps) {
         </div>
 
         {/* Right Column - Properties (starts at top) */}
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 space-y-4">
           <Card className="border border-border bg-card shadow-sm sticky top-4 overflow-hidden">
             <div className="relative">
               <div className="absolute top-4 right-4 flex items-center gap-1 z-10">
@@ -143,6 +152,11 @@ export function SingleTask({ task, members }: SingleTaskProps) {
                 />
               </div>
             </div>
+          </Card>
+
+          {/* Automations section */}
+          <Card className="border border-border bg-card shadow-sm sticky top-4 overflow-hidden">
+            <TaskAutomations automations={automations} />
           </Card>
         </div>
       </div>

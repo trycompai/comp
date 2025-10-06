@@ -15,15 +15,16 @@ model Task {
     reviewDate      DateTime?
 
     // Relationships
-    controls       Control[]
-    vendors        Vendor[]
-    risks          Risk[]
-    assigneeId     String?
-    assignee       Member?                      @relation(fields: [assigneeId], references: [id])
-    organizationId String
-    organization   Organization                 @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-    taskTemplateId String?
-    taskTemplate   FrameworkEditorTaskTemplate? @relation(fields: [taskTemplateId], references: [id])
+    assigneeId          String?
+    assignee            Member?                      @relation(fields: [assigneeId], references: [id])
+    organizationId      String
+    organization        Organization                 @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+    taskTemplateId      String?
+    taskTemplate        FrameworkEditorTaskTemplate? @relation(fields: [taskTemplateId], references: [id])
+    controls            Control[]
+    vendors             Vendor[]
+    risks               Risk[]
+    evidenceAutomations EvidenceAutomation[]
 }
 
 enum TaskStatus {
