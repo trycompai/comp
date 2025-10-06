@@ -1,3 +1,14 @@
+## [1.55.1](https://github.com/trycompai/comp/compare/v1.55.0...v1.55.1) (2025-10-06)
+
+
+### Bug Fixes
+
+* **app:** fix AWS cloud test error caused by improper usage of batchTriggerAndWait ([#1608](https://github.com/trycompai/comp/issues/1608)) ([0cddf49](https://github.com/trycompai/comp/commit/0cddf49a7373a538c25eae13239b2eff5bbbdf55))
+* **app:** make reviewDate readonly and update it once policy is published ([#1603](https://github.com/trycompai/comp/issues/1603)) ([c966652](https://github.com/trycompai/comp/commit/c966652189c15506fc01caea1bdfdf3b175ce20d))
+* **app:** onboarding flow being overriden ([#1595](https://github.com/trycompai/comp/issues/1595)) ([572003f](https://github.com/trycompai/comp/commit/572003fba63662f7c92ef9efb69afbbda527f1d3))
+* **auth:** improve OTP error handling with specific user messages ([#1596](https://github.com/trycompai/comp/issues/1596)) ([0bb7b2b](https://github.com/trycompai/comp/commit/0bb7b2b8c5e6cb0f3809ffcd9574b121707ec5ae))
+* **portal:** fix build error to add AUTH_SECRET env to portal ([#1590](https://github.com/trycompai/comp/issues/1590)) ([3596376](https://github.com/trycompai/comp/commit/3596376014660ce688d5ee13efed9bae880a18ee))
+
 # [1.55.0](https://github.com/trycompai/comp/compare/v1.54.0...v1.55.0) (2025-09-30)
 
 
