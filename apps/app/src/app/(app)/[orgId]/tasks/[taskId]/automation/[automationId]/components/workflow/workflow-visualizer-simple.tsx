@@ -7,9 +7,9 @@ import { Code, Play, Zap } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useEffect, useMemo } from 'react';
 import {
+  useTaskAutomationAnalyze,
   useTaskAutomationExecution,
   useTaskAutomationScript,
-  useTaskAutomationWorkflow,
 } from '../../hooks';
 import { useSharedChatContext } from '../../lib/chat-context';
 import { useTaskAutomationStore } from '../../lib/task-automation-store';
@@ -76,7 +76,7 @@ export function WorkflowVisualizerSimple({ className }: Props) {
     reset: resetExecution,
   } = useTaskAutomationExecution();
 
-  const { steps, isAnalyzing, integrationsUsed, title } = useTaskAutomationWorkflow({
+  const { steps, isAnalyzing, integrationsUsed, title } = useTaskAutomationAnalyze({
     scriptContent: script?.content,
     enabled: !!script?.content,
   });

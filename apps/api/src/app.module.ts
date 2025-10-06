@@ -4,7 +4,6 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AttachmentsModule } from './attachments/attachments.module';
 import { AuthModule } from './auth/auth.module';
-import { AutomationModule } from './automation/automation.module';
 import { CommentsModule } from './comments/comments.module';
 import { PeopleModule } from './people/people.module';
 import { DevicesModule } from './devices/devices.module';
@@ -29,7 +28,6 @@ import { ContextModule } from './context/context.module';
       },
     }),
     AuthModule,
-    AutomationModule,
     OrganizationModule,
     PeopleModule,
     RisksModule,

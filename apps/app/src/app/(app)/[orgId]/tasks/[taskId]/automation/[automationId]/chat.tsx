@@ -10,7 +10,13 @@ import {
   BreadcrumbSeparator,
 } from '@comp/ui/breadcrumb';
 import { Card, CardDescription, CardHeader } from '@comp/ui/card';
-import { ChevronRight } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@comp/ui/dropdown-menu';
+import { ChevronRight, CogIcon, Edit, Settings, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -19,10 +25,16 @@ import {
   ConversationContent,
   ConversationScrollButton,
 } from './components/ai-elements/conversation';
+import {
+  DeleteAutomationDialog,
+  EditDescriptionDialog,
+  EditNameDialog,
+} from './components/AutomationSettingsDialogs';
 import { Message } from './components/chat/message';
 import type { ChatUIMessage } from './components/chat/types';
 import { PanelHeader } from './components/panels/panels';
 import { Input } from './components/ui/input';
+import { useTaskAutomation } from './hooks/use-task-automation';
 import { useSharedChatContext } from './lib/chat-context';
 import { useTaskAutomationStore } from './lib/task-automation-store';
 
@@ -75,6 +87,12 @@ export function Chat({ className, orgId, taskId, taskName, automationId }: Props
   const { messages, sendMessage, status } = useChat<ChatUIMessage>({ chat });
   const { setChatStatus, scriptUrl } = useTaskAutomationStore();
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const { automation } = useTaskAutomation();
+
+  // Dialog states
+  const [editNameOpen, setEditNameOpen] = useState(false);
+  const [editDescriptionOpen, setEditDescriptionOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const handleExampleClick = useCallback(
     (prompt: string) => {
@@ -190,13 +208,36 @@ export function Chat({ className, orgId, taskId, taskName, automationId }: Props
                 <BreadcrumbItem>
                   <BreadcrumbLink asChild>
                     <span className="font-medium text-xs text-foreground/90 cursor-default">
-                      Integration Builder
+                      {automation?.name || 'Automation'}
                     </span>
                   </BreadcrumbLink>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
           </div>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger className="p-1 hover:bg-muted/50 rounded transition-colors">
+              <CogIcon className="w-4 h-4 text-muted-foreground" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => setEditNameOpen(true)}>
+                <Edit className="w-4 h-4 mr-2" />
+                Edit Name
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setEditDescriptionOpen(true)}>
+                <Settings className="w-4 h-4 mr-2" />
+                Edit Description
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={() => setDeleteDialogOpen(true)}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete Automation
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </PanelHeader>
 
@@ -294,6 +335,11 @@ export function Chat({ className, orgId, taskId, taskName, automationId }: Props
           </form>
         </div>
       )}
+
+      {/* Settings Dialogs */}
+      <EditNameDialog open={editNameOpen} onOpenChange={setEditNameOpen} />
+      <EditDescriptionDialog open={editDescriptionOpen} onOpenChange={setEditDescriptionOpen} />
+      <DeleteAutomationDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} />
     </div>
   );
 }

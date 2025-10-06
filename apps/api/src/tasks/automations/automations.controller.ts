@@ -1,0 +1,182 @@
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiHeader,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiSecurity,
+  ApiTags,
+} from '@nestjs/swagger';
+import { OrganizationId } from '../../auth/auth-context.decorator';
+import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
+import { TasksService } from '../tasks.service';
+import { AutomationsService } from './automations.service';
+import { CreateAutomationDto } from './dto/create-automation.dto';
+import { UpdateAutomationDto } from './dto/update-automation.dto';
+import { AUTOMATION_OPERATIONS } from './schemas/automation-operations';
+import { CREATE_AUTOMATION_RESPONSES } from './schemas/create-automation.responses';
+import { UPDATE_AUTOMATION_RESPONSES } from './schemas/update-automation.responses';
+
+@ApiTags('Task Automations')
+@Controller({ path: 'tasks/:taskId/automations', version: '1' })
+@UseGuards(HybridAuthGuard)
+@ApiSecurity('apikey')
+@ApiHeader({
+  name: 'X-Organization-Id',
+  description:
+    'Organization ID (required for session auth, optional for API key auth)',
+  required: false,
+})
+export class AutomationsController {
+  constructor(
+    private readonly automationsService: AutomationsService,
+    private readonly tasksService: TasksService,
+  ) {}
+
+  @Get()
+  @ApiOperation({
+    summary: 'Get all automations for a task',
+    description: 'Retrieve all automations for a specific task',
+  })
+  @ApiParam({
+    name: 'taskId',
+    description: 'Unique task identifier',
+    example: 'tsk_abc123def456',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Automations retrieved successfully',
+  })
+  async getTaskAutomations(
+    @OrganizationId() organizationId: string,
+    @Param('taskId') taskId: string,
+  ) {
+    // Verify task access first
+    await this.tasksService.verifyTaskAccess(organizationId, taskId);
+
+    return this.automationsService.findByTaskId(organizationId, taskId);
+  }
+
+  @Get(':automationId')
+  @ApiOperation({
+    summary: 'Get automation details',
+    description: 'Retrieve details for a specific automation',
+  })
+  @ApiParam({
+    name: 'taskId',
+    description: 'Unique task identifier',
+    example: 'tsk_abc123def456',
+  })
+  @ApiParam({
+    name: 'automationId',
+    description: 'Unique automation identifier',
+    example: 'auto_abc123def456',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Automation details retrieved successfully',
+  })
+  async getAutomation(
+    @OrganizationId() organizationId: string,
+    @Param('taskId') taskId: string,
+    @Param('automationId') automationId: string,
+  ) {
+    // Verify task access first
+    await this.tasksService.verifyTaskAccess(organizationId, taskId);
+
+    return this.automationsService.findById(organizationId, automationId);
+  }
+
+  @Post()
+  @ApiOperation(AUTOMATION_OPERATIONS.createAutomation)
+  @ApiParam({
+    name: 'taskId',
+    description: 'Unique task identifier',
+    example: 'tsk_abc123def456',
+  })
+  @ApiResponse(CREATE_AUTOMATION_RESPONSES[201])
+  @ApiResponse(CREATE_AUTOMATION_RESPONSES[400])
+  @ApiResponse(CREATE_AUTOMATION_RESPONSES[401])
+  @ApiResponse(CREATE_AUTOMATION_RESPONSES[404])
+  async createAutomation(
+    @OrganizationId() organizationId: string,
+    @Param('taskId') taskId: string,
+    @Body() createAutomationDto: CreateAutomationDto,
+  ) {
+    // Verify task access first
+    await this.tasksService.verifyTaskAccess(organizationId, taskId);
+
+    return this.automationsService.create(organizationId, { taskId });
+  }
+
+  @Patch(':automationId')
+  @ApiOperation(AUTOMATION_OPERATIONS.updateAutomation)
+  @ApiParam({
+    name: 'taskId',
+    description: 'Unique task identifier',
+    example: 'tsk_abc123def456',
+  })
+  @ApiParam({
+    name: 'automationId',
+    description: 'Unique automation identifier',
+    example: 'auto_abc123def456',
+  })
+  @ApiResponse(UPDATE_AUTOMATION_RESPONSES[200])
+  @ApiResponse(UPDATE_AUTOMATION_RESPONSES[400])
+  @ApiResponse(UPDATE_AUTOMATION_RESPONSES[401])
+  @ApiResponse(UPDATE_AUTOMATION_RESPONSES[404])
+  async updateAutomation(
+    @OrganizationId() organizationId: string,
+    @Param('taskId') taskId: string,
+    @Param('automationId') automationId: string,
+    @Body() updateAutomationDto: UpdateAutomationDto,
+  ) {
+    // Verify task access first
+    await this.tasksService.verifyTaskAccess(organizationId, taskId);
+
+    return this.automationsService.update(
+      organizationId,
+      automationId,
+      updateAutomationDto,
+    );
+  }
+
+  @Delete(':automationId')
+  @ApiOperation({
+    summary: 'Delete an automation',
+    description: 'Delete a specific automation and all its associated data',
+  })
+  @ApiParam({
+    name: 'taskId',
+    description: 'Unique task identifier',
+    example: 'tsk_abc123def456',
+  })
+  @ApiParam({
+    name: 'automationId',
+    description: 'Unique automation identifier',
+    example: 'auto_abc123def456',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Automation deleted successfully',
+  })
+  async deleteAutomation(
+    @OrganizationId() organizationId: string,
+    @Param('taskId') taskId: string,
+    @Param('automationId') automationId: string,
+  ) {
+    // Verify task access first
+    await this.tasksService.verifyTaskAccess(organizationId, taskId);
+
+    return this.automationsService.delete(organizationId, automationId);
+  }
+}

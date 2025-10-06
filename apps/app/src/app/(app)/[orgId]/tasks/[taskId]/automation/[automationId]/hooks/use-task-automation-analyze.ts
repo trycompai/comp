@@ -1,12 +1,12 @@
 /**
- * useTaskAutomationWorkflow Hook
+ * useTaskAutomationAnalyze Hook
  *
  * Analyzes task automation scripts to extract workflow steps and descriptions.
  * Provides both client-side parsing and future support for AI-powered analysis.
  *
  * @example
  * ```tsx
- * const { steps, description, isAnalyzing } = useTaskAutomationWorkflow({
+ * const { steps, description, isAnalyzing } = useTaskAutomationAnalyze({
  *   scriptContent: scriptContent,
  *   enabled: !!scriptContent
  * });
@@ -15,28 +15,28 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import type {
-  TaskAutomationWorkflow,
-  TaskAutomationWorkflowStep,
-  UseTaskAutomationWorkflowOptions,
+  TaskAutomationAnalyze,
+  TaskAutomationAnalyzeStep,
+  UseTaskAutomationAnalyzeOptions,
 } from '../lib/types';
 
 import { taskAutomationApi } from '../lib/task-automation-api';
 
-export function useTaskAutomationWorkflow({
+export function useTaskAutomationAnalyze({
   scriptContent,
   enabled = true,
-}: UseTaskAutomationWorkflowOptions) {
-  const [steps, setSteps] = useState<TaskAutomationWorkflowStep[]>([]);
+}: UseTaskAutomationAnalyzeOptions) {
+  const [steps, setSteps] = useState<TaskAutomationAnalyzeStep[]>([]);
   const [title, setTitle] = useState<string>('');
   const [integrationsUsed, setIntegrationsUsed] = useState<
-    TaskAutomationWorkflow['integrationsUsed']
+    TaskAutomationAnalyze['integrationsUsed']
   >([]);
   const [description, setDescription] = useState<string>('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
   /**
-   * Analyze the script content to extract workflow using AI
+   * Analyze the script content using AI
    */
   const analyze = useCallback(async (content: string) => {
     setIsAnalyzing(true);
@@ -46,15 +46,15 @@ export function useTaskAutomationWorkflow({
       // Call the AI-powered workflow analysis API
       const result = (await taskAutomationApi.workflow.analyzeWorkflow(
         content,
-      )) as TaskAutomationWorkflow;
+      )) as TaskAutomationAnalyze;
 
       // Map the API response to our workflow steps format
-      const steps: TaskAutomationWorkflowStep[] = result.steps.map((step, index) => ({
+      const steps: TaskAutomationAnalyzeStep[] = result.steps.map((step, index) => ({
         id: `step-${index}`,
         title: step.title,
         description: step.description,
-        type: step.type as TaskAutomationWorkflowStep['type'],
-        iconType: step.iconType as TaskAutomationWorkflowStep['iconType'],
+        type: step.type as TaskAutomationAnalyzeStep['type'],
+        iconType: step.iconType as TaskAutomationAnalyzeStep['iconType'],
       }));
 
       setSteps(steps);
@@ -68,7 +68,7 @@ export function useTaskAutomationWorkflow({
       setError(error);
 
       // Fallback to a generic workflow on error
-      const fallbackSteps: TaskAutomationWorkflowStep[] = [
+      const fallbackSteps: TaskAutomationAnalyzeStep[] = [
         {
           id: 'start',
           title: 'Start Automation',

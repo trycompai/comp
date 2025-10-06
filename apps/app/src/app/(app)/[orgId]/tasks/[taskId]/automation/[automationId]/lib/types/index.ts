@@ -47,12 +47,12 @@ export interface TaskAutomationTestResult {
 }
 
 // ============================================================================
-// Workflow Types
+// Analyze Types
 // ============================================================================
 
-export type WorkflowStepType = 'trigger' | 'action' | 'condition' | 'output';
+export type AnalyzeStepType = 'trigger' | 'action' | 'condition' | 'output';
 
-export type WorkflowIconType =
+export type AnalyzeIconType =
   | 'start'
   | 'fetch'
   | 'login'
@@ -63,12 +63,12 @@ export type WorkflowIconType =
   | 'complete'
   | 'error';
 
-export interface TaskAutomationWorkflowStep {
+export interface TaskAutomationAnalyzeStep {
   id: string;
   title: string;
   description: string;
-  type: WorkflowStepType;
-  iconType: WorkflowIconType;
+  type: AnalyzeStepType;
+  iconType: AnalyzeIconType;
 }
 
 type IntegrationsUsed = Array<{
@@ -76,8 +76,8 @@ type IntegrationsUsed = Array<{
   link: string;
 }>;
 
-export interface TaskAutomationWorkflow {
-  steps: TaskAutomationWorkflowStep[];
+export interface TaskAutomationAnalyze {
+  steps: TaskAutomationAnalyzeStep[];
   title: string;
   description: string;
   integrationsUsed: IntegrationsUsed;
@@ -144,7 +144,7 @@ export interface UseTaskAutomationExecutionOptions {
   onError?: (error: Error) => void;
 }
 
-export interface UseTaskAutomationWorkflowOptions {
+export interface UseTaskAutomationAnalyzeOptions {
   scriptContent?: string;
   enabled?: boolean;
 }
@@ -158,7 +158,7 @@ export interface TaskAutomationTesterProps {
   orgId: string;
 }
 
-export interface TaskAutomationWorkflowVisualizerProps {
+export interface TaskAutomationAnalyzeVisualizerProps {
   className?: string;
 }
 

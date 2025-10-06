@@ -1,19 +1,22 @@
 'use client';
 
 import { api } from '@/lib/api-client';
+import { cn } from '@/lib/utils';
 import { Button } from '@comp/ui/button';
 import { CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { EvidenceAutomation } from '@db';
-import { ArrowRight, Loader2, Plus, Zap } from 'lucide-react';
+import { ArrowRight, Code, Loader2, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { useTaskAutomations } from '../hooks/use-task-automations';
 
 export const TaskAutomations = ({ automations }: { automations: EvidenceAutomation[] }) => {
   const { orgId, taskId } = useParams<{ orgId: string; taskId: string }>();
   const router = useRouter();
   const [isCreating, setIsCreating] = useState(false);
+  const { mutate: mutateAutomations } = useTaskAutomations();
 
   const handleCreateAutomation = async () => {
     setIsCreating(true);
@@ -25,7 +28,7 @@ export const TaskAutomations = ({ automations }: { automations: EvidenceAutomati
           id: string;
           name: string;
         };
-      }>('/v1/automations', { taskId }, orgId);
+      }>(`/v1/tasks/${taskId}/automations`, {}, orgId);
 
       if (response.error) {
         throw new Error(response.error);
@@ -36,6 +39,9 @@ export const TaskAutomations = ({ automations }: { automations: EvidenceAutomati
       }
 
       toast.success('Automation created successfully!');
+
+      // Refresh automations list
+      await mutateAutomations();
 
       // Keep loading state during redirect
       await router.push(`/${orgId}/tasks/${taskId}/automation/${response.data.automation.id}`);
@@ -60,7 +66,7 @@ export const TaskAutomations = ({ automations }: { automations: EvidenceAutomati
         {automations.length === 0 ? (
           <div className="text-center py-8 space-y-4">
             <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-              <Zap className="w-6 h-6 text-primary" />
+              <Code className="w-6 h-6 text-primary" />
             </div>
             <div className="space-y-2">
               <h4 className="font-medium text-foreground">No automations yet</h4>
@@ -78,21 +84,20 @@ export const TaskAutomations = ({ automations }: { automations: EvidenceAutomati
             </Button>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="flex flex-col gap-2">
             {automations.map((automation) => (
-              <div
+              <Link
+                href={`/${orgId}/tasks/${taskId}/automation/${automation.id}`}
                 key={automation.id}
-                className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                className={cn(
+                  'flex flex-row items-center justify-between p-3 rounded-lg border border-border',
+                  'hover:scale-102 transition-all duration-300',
+                  'cursor-pointer',
+                )}
               >
-                <div className="flex items-center gap-3">
-                  <h4 className="font-medium text-foreground text-sm">{automation.name}</h4>
-                </div>
-                <Button variant="ghost" size="sm" asChild>
-                  <Link href={`/${orgId}/tasks/${taskId}/automation/${automation.id}`}>
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </Button>
-              </div>
+                <p className="font-medium text-foreground text-xs">{automation.name}</p>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
             ))}
 
             <Button

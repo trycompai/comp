@@ -1,4 +1,11 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiHeader,
   ApiOperation,
@@ -10,8 +17,10 @@ import { OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { AutomationService } from './automation.service';
 import { CreateAutomationDto } from './dto/create-automation.dto';
+import { UpdateAutomationDto } from './dto/update-automation.dto';
 import { AUTOMATION_OPERATIONS } from './schemas/automation-operations';
 import { CREATE_AUTOMATION_RESPONSES } from './schemas/create-automation.responses';
+import { UPDATE_AUTOMATION_RESPONSES } from './schemas/update-automation.responses';
 
 @ApiTags('Automations')
 @Controller({ path: 'automations', version: '1' })
@@ -37,5 +46,23 @@ export class AutomationController {
     @Body() createAutomationDto: CreateAutomationDto,
   ) {
     return this.automationService.create(organizationId, createAutomationDto);
+  }
+
+  @Patch(':automationId')
+  @ApiOperation(AUTOMATION_OPERATIONS.updateAutomation)
+  @ApiResponse(UPDATE_AUTOMATION_RESPONSES[200])
+  @ApiResponse(UPDATE_AUTOMATION_RESPONSES[400])
+  @ApiResponse(UPDATE_AUTOMATION_RESPONSES[401])
+  @ApiResponse(UPDATE_AUTOMATION_RESPONSES[404])
+  async updateAutomation(
+    @OrganizationId() organizationId: string,
+    @Param('automationId') automationId: string,
+    @Body() updateAutomationDto: UpdateAutomationDto,
+  ) {
+    return this.automationService.update(
+      organizationId,
+      automationId,
+      updateAutomationDto,
+    );
   }
 }

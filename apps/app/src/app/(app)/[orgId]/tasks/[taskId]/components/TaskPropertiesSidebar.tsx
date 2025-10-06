@@ -3,10 +3,7 @@ import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
 import type { Control, Departments, Member, Task, TaskFrequency, TaskStatus, User } from '@db';
 import { format } from 'date-fns';
-import { Code } from 'lucide-react';
 import Link from 'next/link';
-import { useFeatureFlagEnabled } from 'posthog-js/react';
-import { useState } from 'react';
 import { TaskStatusIndicator } from '../../components/TaskStatusIndicator';
 import { PropertySelector } from './PropertySelector';
 import { DEPARTMENT_COLORS, taskDepartments, taskFrequencies, taskStatuses } from './constants';
@@ -18,8 +15,6 @@ interface TaskPropertiesSidebarProps {
   handleUpdateTask: (
     data: Partial<Pick<Task, 'status' | 'assigneeId' | 'frequency' | 'department' | 'reviewDate'>>,
   ) => void;
-  onDeleteClick?: () => void;
-  onRegenerateClick?: () => void;
   orgId: string;
 }
 
@@ -28,13 +23,8 @@ export function TaskPropertiesSidebar({
   members,
   assignedMember,
   handleUpdateTask,
-  onDeleteClick,
-  onRegenerateClick,
   orgId,
 }: TaskPropertiesSidebarProps) {
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const isTaskAutomationEnabled = useFeatureFlagEnabled('is-task-automation-enabled');
-
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold">Properties</h3>
@@ -262,21 +252,6 @@ export function TaskPropertiesSidebar({
           </div>
         </div>
       </div>
-
-      {/* Automation Button */}
-      {isTaskAutomationEnabled && (
-        <div className="mt-6">
-          <Link href={`/${orgId}/tasks/${task.id}/automation`} className="block">
-            <Button
-              className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-              size="sm"
-            >
-              <Code className="h-4 w-4" />
-              Integration Builder
-            </Button>
-          </Link>
-        </div>
-      )}
     </div>
   );
 }

@@ -24,7 +24,7 @@ export default async function TaskPage({
 
   const automations = await getAutomations(orgId, session);
 
-  return <SingleTask task={task} members={members} automations={automations} />;
+  return <SingleTask task={task} members={members} initialAutomations={automations} />;
 }
 
 const getTask = async (taskId: string, session: Session) => {
@@ -82,6 +82,9 @@ const getAutomations = async (orgId: string, session: Session) => {
   const automations = await db.evidenceAutomation.findMany({
     where: {
       organizationId: activeOrgId,
+    },
+    orderBy: {
+      createdAt: 'asc',
     },
   });
 

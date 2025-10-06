@@ -22,10 +22,12 @@ import {
 import { RefreshCw, Trash2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useParams } from 'next/navigation';
+import { useFeatureFlagEnabled } from 'posthog-js/react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { Comments } from '../../../../../../components/comments/Comments';
 import { updateTask } from '../../actions/updateTask';
+import { useTaskAutomations } from '../hooks/use-task-automations';
 import { TaskAutomations } from './TaskAutomations';
 import { TaskDeleteDialog } from './TaskDeleteDialog';
 import { TaskMainContent } from './TaskMainContent';
@@ -34,14 +36,19 @@ import { TaskPropertiesSidebar } from './TaskPropertiesSidebar';
 interface SingleTaskProps {
   task: Task & { fileUrls?: string[]; controls?: Control[] };
   members?: (Member & { user: User })[];
-  automations: EvidenceAutomation[];
+  initialAutomations: EvidenceAutomation[];
 }
 
-export function SingleTask({ task, members, automations }: SingleTaskProps) {
+export function SingleTask({ task, members, initialAutomations }: SingleTaskProps) {
+  // Use SWR hook with initial data from server
+  const { automations } = useTaskAutomations({
+    initialData: initialAutomations,
+  });
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isRegenerateConfirmOpen, setRegenerateConfirmOpen] = useState(false);
   const params = useParams<{ orgId: string }>();
   const orgIdFromParams = params.orgId;
+  const isTaskAutomationEnabled = useFeatureFlagEnabled('is-task-automation-enabled');
 
   const regenerate = useAction(regenerateTaskAction, {
     onSuccess: () => {
@@ -146,18 +153,17 @@ export function SingleTask({ task, members, automations }: SingleTaskProps) {
                   members={members}
                   assignedMember={assignedMember}
                   handleUpdateTask={handleUpdateTask}
-                  onDeleteClick={() => setDeleteDialogOpen(true)}
-                  onRegenerateClick={() => setRegenerateConfirmOpen(true)}
                   orgId={orgIdFromParams}
                 />
               </div>
             </div>
           </Card>
-
           {/* Automations section */}
-          <Card className="border border-border bg-card shadow-sm sticky top-4 overflow-hidden">
-            <TaskAutomations automations={automations} />
-          </Card>
+          {isTaskAutomationEnabled && (
+            <Card className="border border-border bg-card shadow-sm sticky top-4 overflow-hidden">
+              <TaskAutomations automations={automations || []} />
+            </Card>
+          )}
         </div>
       </div>
 
