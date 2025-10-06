@@ -1,8 +1,7 @@
 'use server';
 
-import { sendIntegrationResults } from '@/jobs/tasks/integration/integration-results';
+import { runIntegrationTests } from '@/jobs/tasks/integration/run-integration-tests';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
 import { tasks } from '@trigger.dev/sdk';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
@@ -27,54 +26,29 @@ export const runTests = async () => {
     };
   }
 
-  const integrations = await db.integration.findMany({
-    where: {
+  try {
+    const handle = await tasks.trigger<typeof runIntegrationTests>('run-integration-tests', {
       organizationId: orgId,
-      integrationId: {
-        in: ['aws', 'gcp', 'azure'],
-      },
-    },
-    select: {
-      id: true,
-      name: true,
-      integrationId: true,
-      settings: true,
-      userSettings: true,
-      organization: {
-        select: {
-          id: true,
-          name: true,
-        },
-      },
-    },
-  });
+    });
 
-  if (!integrations) {
+    const headersList = await headers();
+    let path =
+      headersList.get("x-pathname") || headersList.get("referer") || "";
+    path = path.replace(/\/[a-z]{2}\//, "/");
+
+    revalidatePath(path);
+
+    return {
+      success: true,
+      errors: null,
+      taskId: handle.id,
+    };
+  } catch (error) {
+    console.error('Error triggering integration tests:', error);
+    
     return {
       success: false,
-      errors: ['No integrations found'],
+      errors: [error instanceof Error ? error.message : 'Failed to trigger integration tests'],
     };
   }
-
-  const batchHandle = await tasks.batchTriggerAndWait<typeof sendIntegrationResults>(
-    'send-integration-results',
-    integrations.map((integration) => ({
-      payload: {
-        integration: {
-          id: integration.id,
-          name: integration.name,
-          integration_id: integration.integrationId,
-          settings: integration.settings,
-          user_settings: integration.userSettings,
-          organization: integration.organization,
-        },
-      },
-    })),
-  );
-
-  revalidatePath(`/${orgId}/tests/dashboard`);
-  return {
-    success: true,
-    errors: null,
-  };
 };
