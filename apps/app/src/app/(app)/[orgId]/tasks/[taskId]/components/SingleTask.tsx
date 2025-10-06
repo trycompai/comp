@@ -21,12 +21,12 @@ import {
 } from '@db';
 import { RefreshCw, Trash2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { useParams } from 'next/navigation';
 import { useFeatureFlagEnabled } from 'posthog-js/react';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { Comments } from '../../../../../../components/comments/Comments';
 import { updateTask } from '../../actions/updateTask';
+import { useTask } from '../hooks/use-task';
 import { useTaskAutomations } from '../hooks/use-task-automations';
 import { TaskAutomations } from './TaskAutomations';
 import { TaskDeleteDialog } from './TaskDeleteDialog';
@@ -34,21 +34,23 @@ import { TaskMainContent } from './TaskMainContent';
 import { TaskPropertiesSidebar } from './TaskPropertiesSidebar';
 
 interface SingleTaskProps {
-  task: Task & { fileUrls?: string[]; controls?: Control[] };
-  members?: (Member & { user: User })[];
+  initialTask: Task & { fileUrls?: string[]; controls?: Control[] };
+  initialMembers?: (Member & { user: User })[];
   initialAutomations: EvidenceAutomation[];
 }
 
-export function SingleTask({ task, members, initialAutomations }: SingleTaskProps) {
-  // Use SWR hook with initial data from server
+export function SingleTask({ initialTask, initialAutomations }: SingleTaskProps) {
+  // Use SWR hooks with initial data from server
+  const { task, isLoading } = useTask({
+    initialData: initialTask,
+  });
   const { automations } = useTaskAutomations({
     initialData: initialAutomations,
   });
+  const isTaskAutomationEnabled = useFeatureFlagEnabled('is-task-automation-enabled');
+
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isRegenerateConfirmOpen, setRegenerateConfirmOpen] = useState(false);
-  const params = useParams<{ orgId: string }>();
-  const orgIdFromParams = params.orgId;
-  const isTaskAutomationEnabled = useFeatureFlagEnabled('is-task-automation-enabled');
 
   const regenerate = useAction(regenerateTaskAction, {
     onSuccess: () => {
@@ -59,17 +61,14 @@ export function SingleTask({ task, members, initialAutomations }: SingleTaskProp
     },
   });
 
-  const assignedMember = useMemo(() => {
-    if (!task.assigneeId || !members) return null;
-    return members.find((m) => m.id === task.assigneeId);
-  }, [task.assigneeId, members]);
-
   const handleUpdateTask = (
     data: Partial<Pick<Task, 'status' | 'assigneeId' | 'frequency' | 'department' | 'reviewDate'>>,
   ) => {
     const updatePayload: Partial<
       Pick<Task, 'status' | 'assigneeId' | 'frequency' | 'department' | 'reviewDate'>
     > = {};
+
+    if (!task) return;
 
     if (data.status !== undefined) {
       updatePayload.status = data.status;
@@ -90,6 +89,11 @@ export function SingleTask({ task, members, initialAutomations }: SingleTaskProp
       updateTask({ id: task.id, ...updatePayload });
     }
   };
+
+  // Early return if task doesn't exist
+  if (!task || isLoading) {
+    return null;
+  }
 
   return (
     <div className="mx-auto max-w-6xl px-4 animate-in fade-in slide-in-from-bottom-4 duration-500 py-8">
@@ -148,13 +152,7 @@ export function SingleTask({ task, members, initialAutomations }: SingleTaskProp
                 </Button>
               </div>
               <div className="p-6">
-                <TaskPropertiesSidebar
-                  task={task}
-                  members={members}
-                  assignedMember={assignedMember}
-                  handleUpdateTask={handleUpdateTask}
-                  orgId={orgIdFromParams}
-                />
+                <TaskPropertiesSidebar handleUpdateTask={handleUpdateTask} />
               </div>
             </div>
           </Card>

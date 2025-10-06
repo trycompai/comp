@@ -16,7 +16,7 @@ export default async function TaskPage({
     headers: await headers(),
   });
 
-  const [task, members] = await Promise.all([getTask(taskId, session), getMembers(orgId, session)]);
+  const [task] = await Promise.all([getTask(taskId, session)]);
 
   if (!task) {
     redirect(`/${orgId}/tasks`);
@@ -24,7 +24,7 @@ export default async function TaskPage({
 
   const automations = await getAutomations(orgId, session);
 
-  return <SingleTask task={task} members={members} initialAutomations={automations} />;
+  return <SingleTask initialTask={task} initialAutomations={automations} />;
 }
 
 const getTask = async (taskId: string, session: Session) => {
@@ -51,25 +51,6 @@ const getTask = async (taskId: string, session: Session) => {
     console.error('[getTask] Database query failed:', error);
     throw error;
   }
-};
-
-const getMembers = async (orgId: string, session: Session) => {
-  const activeOrgId = orgId ?? session?.session.activeOrganizationId;
-  if (!activeOrgId) {
-    console.warn('Could not determine active organization ID in getMembers');
-    return [];
-  }
-
-  const members = await db.member.findMany({
-    where: {
-      organizationId: activeOrgId,
-      role: {
-        notIn: ['employee'],
-      },
-    },
-    include: { user: true },
-  });
-  return members;
 };
 
 const getAutomations = async (orgId: string, session: Session) => {

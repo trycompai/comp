@@ -49,20 +49,16 @@ export class TasksService {
           id: taskId,
           organizationId,
         },
+        include: {
+          assignee: true,
+        },
       });
 
       if (!task) {
         throw new BadRequestException('Task not found or access denied');
       }
 
-      return {
-        id: task.id,
-        title: task.title,
-        description: task.description,
-        status: task.status,
-        createdAt: task.createdAt,
-        updatedAt: task.updatedAt,
-      };
+      return task;
     } catch (error) {
       console.error('Error fetching task:', error);
       if (error instanceof BadRequestException) {
