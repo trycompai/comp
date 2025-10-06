@@ -14,6 +14,7 @@ interface UpdateTrustPortalFrameworksParams {
   gdpr?: boolean;
   hipaa?: boolean;
   pcidss?: boolean;
+  nen7510?: boolean;
   soc2type1Status?: 'started' | 'in_progress' | 'compliant';
   soc2type2Status?: 'started' | 'in_progress' | 'compliant';
   iso27001Status?: 'started' | 'in_progress' | 'compliant';
@@ -21,6 +22,7 @@ interface UpdateTrustPortalFrameworksParams {
   gdprStatus?: 'started' | 'in_progress' | 'compliant';
   hipaaStatus?: 'started' | 'in_progress' | 'compliant';
   pcidssStatus?: 'started' | 'in_progress' | 'compliant';
+  nen7510Status?: 'started' | 'in_progress' | 'compliant';
 }
 
 export async function updateTrustPortalFrameworks({
@@ -32,6 +34,7 @@ export async function updateTrustPortalFrameworks({
   gdpr,
   hipaa,
   pcidss,
+  nen7510,
   soc2type1Status,
   soc2type2Status,
   iso27001Status,
@@ -39,6 +42,7 @@ export async function updateTrustPortalFrameworks({
   gdprStatus,
   hipaaStatus,
   pcidssStatus,
+  nen7510Status,
 }: UpdateTrustPortalFrameworksParams) {
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -71,6 +75,7 @@ export async function updateTrustPortalFrameworks({
       gdpr: gdpr ?? trustPortal.gdpr,
       hipaa: hipaa ?? trustPortal.hipaa,
       pci_dss: pcidss ?? trustPortal.pci_dss,
+      nen7510: nen7510 ?? trustPortal.nen7510,
       soc2_status: soc2type2Status ?? trustPortal.soc2_status,
       soc2type1_status: soc2type1Status ?? trustPortal.soc2type1_status,
       soc2type2_status: soc2type2Status ?? trustPortal.soc2type2_status,
@@ -79,6 +84,7 @@ export async function updateTrustPortalFrameworks({
       gdpr_status: gdprStatus ?? trustPortal.gdpr_status,
       hipaa_status: hipaaStatus ?? trustPortal.hipaa_status,
       pci_dss_status: pcidssStatus ?? trustPortal.pci_dss_status,
+      nen7510_status: nen7510Status ?? trustPortal.nen7510_status,
     },
   });
 
