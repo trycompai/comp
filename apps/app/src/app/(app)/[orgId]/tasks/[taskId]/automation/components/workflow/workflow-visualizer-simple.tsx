@@ -215,9 +215,9 @@ Please fix the automation script to resolve this error.`;
                 ) : steps.length > 0 ? (
                   <UnifiedWorkflowCard
                     steps={steps}
-                    title={title}
+                    title={title || 'Automation Workflow'}
                     onTest={handleTest}
-                    integrationsUsed={integrationsUsed}
+                    integrationsUsed={integrationsUsed || []}
                   />
                 ) : (
                   <EmptyState type="workflow" />
