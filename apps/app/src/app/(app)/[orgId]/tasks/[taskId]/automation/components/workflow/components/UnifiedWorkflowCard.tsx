@@ -49,13 +49,14 @@ export function UnifiedWorkflowCard({ steps, title, onTest, integrationsUsed }: 
       {/* Header with integration icons */}
       <CardHeader className="p-4">
         <div className="flex items-center gap-2 mb-4">
-          {integrationsUsed.map((integration) => (
+          {integrationsUsed?.map((integration) => (
             <div key={`https://img.logo.dev/${integration.link}?token=pk_AZatYxV5QDSfWpRDaBxzRQ`}>
               <Image
                 src={`https://img.logo.dev/${integration.link}?token=pk_AZatYxV5QDSfWpRDaBxzRQ`}
                 alt={integration.link}
                 width={20}
                 height={20}
+                unoptimized
               />
             </div>
           ))}
