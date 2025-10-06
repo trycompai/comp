@@ -10,10 +10,8 @@ export const policySchedule = schedules.task({
   run: async () => {
     const now = new Date();
 
-    logger.info(`env.NOVU_API_KEY: ${env.NOVU_API_KEY}`);
-    logger.info(`process.env.NOVU_API_KEY: ${process.env.NOVU_API_KEY}`);
     const novu = new Novu({ 
-      secretKey: env.NOVU_API_KEY
+      secretKey: process.env.NOVU_API_KEY
     });
 
     // Find all published policies that have a review date and frequency set
@@ -146,9 +144,6 @@ export const policySchedule = schedules.task({
                 name: user.name ?? '',
                 policy,
               });
-              logger.info(
-                `New recipient "${user.email}" (${user.id}) for policy "${policy.name}" (${policy.id}) from org "${policy.organization.name}" - frequency ${policy.frequency} - last reviewed ${policy.reviewDate?.toISOString()}`,
-              );
             }
           }
         }
