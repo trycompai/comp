@@ -3,7 +3,7 @@ import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
 import type { Control, Departments, Member, Task, TaskFrequency, TaskStatus, User } from '@db';
 import { format } from 'date-fns';
-import { Sparkles } from 'lucide-react';
+import { Code } from 'lucide-react';
 import Link from 'next/link';
 import { useFeatureFlagEnabled } from 'posthog-js/react';
 import { useState } from 'react';
@@ -271,8 +271,8 @@ export function TaskPropertiesSidebar({
               className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
               size="sm"
             >
-              <Sparkles className="mr-2 h-4 w-4" />
-              AI Automation
+              <Code className="h-4 w-4" />
+              Integration Builder
             </Button>
           </Link>
         </div>

@@ -1,5 +1,6 @@
+import { env } from '@/env.mjs';
 import { db } from '@db';
-import { sendPolicyReviewNotificationEmail } from '@trycompai/email';
+import { Novu } from '@novu/api'; 
 import { logger, schedules } from '@trigger.dev/sdk';
 
 export const policySchedule = schedules.task({
@@ -8,6 +9,10 @@ export const policySchedule = schedules.task({
   maxDuration: 1000 * 60 * 10, // 10 minutes
   run: async () => {
     const now = new Date();
+
+    const novu = new Novu({ 
+      secretKey: process.env.NOVU_API_KEY
+    });
 
     // Find all published policies that have a review date and frequency set
     const candidatePolicies = await db.policy.findMany({
@@ -23,12 +28,33 @@ export const policySchedule = schedules.task({
       include: {
         organization: {
           select: {
+            id: true,
             name: true,
+            members: {
+              where: {
+                role: { contains: 'owner' }
+              },
+              select: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                  },
+                },
+              },
+            },
           },
         },
         assignee: {
-          include: {
-            user: true,
+          select: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
           },
         },
       },
@@ -96,6 +122,66 @@ export const policySchedule = schedules.task({
         },
       });
 
+      // Build array of recipients (org owner(s) and policy assignee(s)) for each overdue policy
+      const recipientsMap = new Map<string, {
+        email: string;
+        userId: string;
+        name: string;
+        policy: typeof overduePolicies[number];
+      }>();
+      const addRecipients = (
+        users: Array<{ user: { id: string; email: string; name?: string } }>,
+        policy: typeof overduePolicies[number],
+      ) => {
+        for (const entry of users) {
+          const user = entry.user;
+          if (user && user.email && user.id) {
+            const key = `${user.id}-${policy.id}`;
+            if (!recipientsMap.has(key)) {
+              recipientsMap.set(key, {
+                email: user.email,
+                userId: user.id,
+                name: user.name ?? '',
+                policy,
+              });
+            }
+          }
+        }
+      };
+
+      // trigger notification for each policy
+      for (const policy of overduePolicies) {
+        // Org owners
+        if (policy.organization && Array.isArray(policy.organization.members)) {
+          addRecipients(policy.organization.members, policy);
+        }
+        // Policy assignee
+        if (policy.assignee) {
+          addRecipients([policy.assignee], policy);
+        }
+      }
+
+      // Final deduplicated recipients array
+      const recipients = Array.from(recipientsMap.values());
+      novu.triggerBulk({
+        events: recipients.map((recipient) => ({
+          workflowId: 'policy-review-required',
+          to: {
+            subscriberId: `${recipient.userId}-${recipient.policy.organizationId}`,
+            email: recipient.email,
+          },
+          payload: {
+            email: recipient.email,
+            userName: recipient.name,
+            policyName: recipient.policy.name,
+            organizationName: recipient.policy.organization.name,
+            organizationId: recipient.policy.organizationId,
+            policyId: recipient.policy.id,
+            policyUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.trycomp.ai'}/${recipient.policy.organizationId}/policies/${recipient.policy.id}`,
+          }
+        })),
+      });
+
       // Log details about updated policies
       overduePolicies.forEach((policy) => {
         logger.info(
@@ -104,93 +190,6 @@ export const policySchedule = schedules.task({
       });
 
       logger.info(`Successfully updated ${updateResult.count} policies to "needs_review" status`);
-
-      // Build a map of owners by organization for targeted notifications
-      const uniqueOrgIds = Array.from(new Set(overduePolicies.map((p) => p.organizationId)));
-      const owners = await db.member.findMany({
-        where: {
-          organizationId: { in: uniqueOrgIds },
-          isActive: true,
-          // role is a comma-separated string sometimes
-          role: { contains: 'owner' },
-        },
-        include: {
-          user: true,
-        },
-      });
-
-      const ownersByOrgId = new Map<string, { email: string; name: string }[]>();
-      owners.forEach((owner) => {
-        const email = owner.user?.email;
-        if (!email) return;
-        const list = ownersByOrgId.get(owner.organizationId) ?? [];
-        list.push({ email, name: owner.user.name ?? email });
-        ownersByOrgId.set(owner.organizationId, list);
-      });
-
-      // Send review notifications to org owners and the policy assignee only
-      // Send review notifications to org owners and the policy assignee only, rate-limited to 2 emails/sec
-      const EMAIL_BATCH_SIZE = 2;
-      const EMAIL_BATCH_DELAY_MS = 1000;
-
-      // Build a flat list of all emails to send, with their policy context
-      type EmailJob = {
-        email: string;
-        name: string;
-        policy: typeof overduePolicies[number];
-      };
-      const emailJobs: EmailJob[] = [];
-
-      for (const policy of overduePolicies) {
-        const recipients = new Map<string, string>(); // email -> name
-
-        // Assignee (if any)
-        const assigneeEmail = policy.assignee?.user?.email;
-        if (assigneeEmail) {
-          recipients.set(assigneeEmail, policy.assignee?.user?.name ?? assigneeEmail);
-        }
-
-        // Organization owners
-        const orgOwners = ownersByOrgId.get(policy.organizationId) ?? [];
-        orgOwners.forEach((o) => recipients.set(o.email, o.name));
-
-        if (recipients.size === 0) {
-          logger.info(`No recipients found for policy ${policy.id} (${policy.name})`);
-          continue;
-        }
-
-        for (const [email, name] of recipients.entries()) {
-          emailJobs.push({ email, name, policy });
-        }
-      }
-
-      // Send emails in batches of EMAIL_BATCH_SIZE per second
-      for (let i = 0; i < emailJobs.length; i += EMAIL_BATCH_SIZE) {
-        const batch = emailJobs.slice(i, i + EMAIL_BATCH_SIZE);
-
-        await Promise.all(
-          batch.map(async ({ email, name, policy }) => {
-            try {
-              await sendPolicyReviewNotificationEmail({
-                email,
-                userName: name,
-                policyName: policy.name,
-                organizationName: policy.organization.name,
-                organizationId: policy.organizationId,
-                policyId: policy.id,
-              });
-              logger.info(`Sent policy review notification to ${email} for policy ${policy.id}`);
-            } catch (emailError) {
-              logger.error(`Failed to send review email to ${email} for policy ${policy.id}: ${emailError}`);
-            }
-          }),
-        );
-
-        // Only delay if there are more emails to send
-        if (i + EMAIL_BATCH_SIZE < emailJobs.length) {
-          await new Promise((resolve) => setTimeout(resolve, EMAIL_BATCH_DELAY_MS));
-        }
-      }
 
       return {
         success: true,

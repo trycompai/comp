@@ -5,10 +5,10 @@
  * Manages chat status, script generation state, and data mapping.
  */
 
-import type { DataPart } from '@/ai/messages/data-parts';
 import type { ChatStatus, DataUIPart } from 'ai';
 import { create } from 'zustand';
 import type { TaskAutomationStoreState, ViewMode } from './types';
+import type { DataPart } from './types/data-parts';
 
 interface TaskAutomationStore extends TaskAutomationStoreState {
   setChatStatus: (status: ChatStatus) => void;

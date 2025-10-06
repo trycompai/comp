@@ -1,0 +1,134 @@
+import { s3Client } from '@/app/s3';
+import { PutObjectCommand } from '@aws-sdk/client-s3';
+import type { UIMessage, UIMessageStreamWriter } from 'ai';
+import { tool } from 'ai';
+import z from 'zod/v3';
+import type { DataPart } from '../lib/types/data-parts';
+
+interface Params {
+  writer: UIMessageStreamWriter<UIMessage<never, DataPart>>;
+}
+
+const inputSchema = z.object({
+  content: z.string().min(1).describe('The full file content to store'),
+  orgId: z.string().optional().describe('Organization identifier'),
+  taskId: z.string().optional().describe('Task identifier'),
+  contentType: z.string().optional().describe('MIME type, defaults to text/plain for generic code'),
+});
+interface ToolInput {
+  content: string;
+  orgId?: string;
+  taskId?: string;
+  contentType?: string;
+}
+
+export const storeToS3 = ({ writer }: Params) => {
+  const config = {
+    description:
+      'Upload a generated code artifact to S3 for persistence. Use after user confirms the code is good.',
+    inputSchema,
+    execute: async (args: unknown, ctx: { toolCallId: string }) => {
+      const { toolCallId } = ctx;
+      const parsed: unknown = inputSchema.parse(args);
+      const input = parsed as ToolInput;
+      const { content, orgId, taskId, contentType } = input;
+
+      // Validate task format: must export a function via module.exports
+      // Validate task format: must export a function with only event parameter
+      // (getSecret and fetch are provided as globals in the Lambda sandbox)
+      const isTaskFn =
+        /module\.exports\s*=\s*async\s*\(\s*event\s*\)\s*=>\s*\{/.test(content) ||
+        /module\.exports\s*=\s*\(\s*event\s*\)\s*=>\s*\{/.test(content) ||
+        /module\.exports\s*=\s*async\s*function\s*\(\s*event\s*\)\s*\{/.test(content) ||
+        /module\.exports\s*=\s*function\s*\(\s*event\s*\)\s*\{/.test(content);
+
+      if (!isTaskFn) {
+        const message =
+          'Task module must export a function via module.exports = async (event) => { ... }';
+        writer.write({
+          id: toolCallId,
+          type: 'data-store-to-s3',
+          data: {
+            status: 'error',
+            error: { message },
+          },
+        });
+        return message;
+      }
+      // Enforce: no usage of process.env in task code
+      if (/process\.env\b/.test(content)) {
+        const message =
+          'Do not use process.env in task code; use the global getSecret function provided by the Lambda sandbox.';
+        writer.write({
+          id: toolCallId,
+          type: 'data-store-to-s3',
+          data: {
+            status: 'error',
+            error: { message },
+          },
+        });
+        return message;
+      }
+      const resolvedBucket = process.env.TASKS_AUTOMATION_BUCKET;
+      const resolvedOrgId = orgId;
+      const resolvedTaskId = taskId;
+      const keyBase = `${resolvedOrgId}/${resolvedTaskId}`;
+      const key = `${keyBase}.automation.js`;
+
+      writer.write({
+        id: toolCallId,
+        type: 'data-store-to-s3',
+        data: {
+          status: 'uploading',
+          bucket: resolvedBucket,
+          key,
+        },
+      });
+
+      try {
+        await s3Client.send(
+          new PutObjectCommand({
+            Bucket: resolvedBucket,
+            Key: key,
+            Body: Buffer.from(content, 'utf8'),
+            ContentType: contentType || 'application/javascript; charset=utf-8',
+            Metadata: {
+              runtime: 'nodejs20.x',
+              handler: 'task-fn',
+              language: 'javascript',
+              entry: 'task.js',
+              packaging: 'task-fn',
+              filename: key,
+            },
+          }),
+        );
+
+        writer.write({
+          id: toolCallId,
+          type: 'data-store-to-s3',
+          data: {
+            status: 'done',
+            bucket: resolvedBucket,
+            key,
+          },
+        });
+
+        return `Stored code in s3://${resolvedBucket}/${key}`;
+      } catch (error) {
+        const message = (error as Error)?.message || 'Unknown error uploading to S3';
+        writer.write({
+          id: toolCallId,
+          type: 'data-store-to-s3',
+          data: {
+            status: 'error',
+            bucket: resolvedBucket,
+            key,
+            error: { message },
+          },
+        });
+        return message;
+      }
+    },
+  } as const;
+  return tool(config as any);
+};
