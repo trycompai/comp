@@ -31,7 +31,6 @@ model Organization {
   trust              Trust[]
   context            Context[]
   secrets            Secret[]
-  automations        EvidenceAutomation[]
 
   @@index([slug])
 }

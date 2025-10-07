@@ -254,7 +254,7 @@ export function TaskPropertiesSidebar({ handleUpdateTask }: TaskPropertiesSideba
                 {format(new Date(task.reviewDate), 'M/d/yyyy')}
               </span>
             ) : (
-              <span className="text-sm px-1 font-medium">None</span>
+              <span className="text-sm px-2 font-medium">None</span>
             )}
           </div>
         </div>

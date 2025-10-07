@@ -43,8 +43,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         onToolCall: () => mutate(`/api/auth/info`),
         onData: (data: DataUIPart<DataPart>) => mapDataToStateRef.current(data),
         onError: (error) => {
-          toast.error(`Communication error with the AI: ${error.message}`);
-          console.error('Error sending message:', error);
+          // Use setTimeout to avoid triggering state updates during render
+          setTimeout(() => {
+            toast.error(`Communication error with the AI: ${error.message}`);
+            console.error('Error sending message:', error);
+          }, 0);
         },
       }),
     [],
