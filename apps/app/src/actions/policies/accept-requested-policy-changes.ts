@@ -103,7 +103,7 @@ export const acceptRequestedPolicyChangesAction = authActionClient
           userName: employee.user.name || employee.user.email || 'Employee',
           policyName: policy.name,
           organizationName: policy.organization.name,
-          url: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.trycomp.ai'}/${session.activeOrganizationId}/policies/${policy.id}`,
+          url: `${process.env.NEXT_PUBLIC_PORTAL_URL ?? 'https://portal.trycomp.ai'}/${session.activeOrganizationId}`,
           description: `The "${policy.name}" policy has been ${isNewPolicy ? 'created' : 'updated'}.`,
         }));
 
