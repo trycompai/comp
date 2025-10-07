@@ -1,3 +1,11 @@
+## [1.55.2](https://github.com/trycompai/comp/compare/v1.55.1...v1.55.2) (2025-10-07)
+
+
+### Bug Fixes
+
+* **app:** handle potential null for integrationsUsed in UnifiedWorkflowCard ([#1612](https://github.com/trycompai/comp/issues/1612)) ([561d9b1](https://github.com/trycompai/comp/commit/561d9b18f60d280d8a6627d6ebbdc552ecc8efff))
+* **app:** set portal url to new-policy-email sent to employees ([#1614](https://github.com/trycompai/comp/issues/1614)) ([5264c76](https://github.com/trycompai/comp/commit/5264c76690ae3ec27bb7d66b13c497fda8dc6d5e))
+
 ## [1.55.1](https://github.com/trycompai/comp/compare/v1.55.0...v1.55.1) (2025-10-06)
 
 
