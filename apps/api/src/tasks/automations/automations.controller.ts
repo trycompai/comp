@@ -63,7 +63,7 @@ export class AutomationsController {
     // Verify task access first
     await this.tasksService.verifyTaskAccess(organizationId, taskId);
 
-    return this.automationsService.findByTaskId(organizationId, taskId);
+    return this.automationsService.findByTaskId(taskId);
   }
 
   @Get(':automationId')
@@ -93,7 +93,7 @@ export class AutomationsController {
     // Verify task access first
     await this.tasksService.verifyTaskAccess(organizationId, taskId);
 
-    return this.automationsService.findById(organizationId, automationId);
+    return this.automationsService.findById(automationId);
   }
 
   @Post()
@@ -143,11 +143,7 @@ export class AutomationsController {
     // Verify task access first
     await this.tasksService.verifyTaskAccess(organizationId, taskId);
 
-    return this.automationsService.update(
-      organizationId,
-      automationId,
-      updateAutomationDto,
-    );
+    return this.automationsService.update(automationId, updateAutomationDto);
   }
 
   @Delete(':automationId')
@@ -177,6 +173,6 @@ export class AutomationsController {
     // Verify task access first
     await this.tasksService.verifyTaskAccess(organizationId, taskId);
 
-    return this.automationsService.delete(organizationId, automationId);
+    return this.automationsService.delete(automationId);
   }
 }

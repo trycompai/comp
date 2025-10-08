@@ -5,11 +5,10 @@ import { UpdateAutomationDto } from './dto/update-automation.dto';
 
 @Injectable()
 export class AutomationsService {
-  async findByTaskId(organizationId: string, taskId: string) {
+  async findByTaskId(taskId: string) {
     const automations = await db.evidenceAutomation.findMany({
       where: {
         taskId: taskId,
-        organizationId: organizationId,
       },
       orderBy: {
         createdAt: 'asc',
@@ -22,11 +21,10 @@ export class AutomationsService {
     };
   }
 
-  async findById(organizationId: string, automationId: string) {
+  async findById(automationId: string) {
     const automation = await db.evidenceAutomation.findFirst({
       where: {
         id: automationId,
-        organizationId: organizationId,
       },
     });
 
@@ -63,7 +61,6 @@ export class AutomationsService {
       data: {
         name: `${task.title} - Evidence Collection`,
         taskId: taskId,
-        organizationId: organizationId,
       },
     });
 
@@ -76,16 +73,11 @@ export class AutomationsService {
     };
   }
 
-  async update(
-    organizationId: string,
-    automationId: string,
-    updateAutomationDto: UpdateAutomationDto,
-  ) {
+  async update(automationId: string, updateAutomationDto: UpdateAutomationDto) {
     // Verify automation exists and belongs to organization
     const existingAutomation = await db.evidenceAutomation.findFirst({
       where: {
         id: automationId,
-        organizationId: organizationId,
       },
     });
 
@@ -111,12 +103,11 @@ export class AutomationsService {
     };
   }
 
-  async delete(organizationId: string, automationId: string) {
+  async delete(automationId: string) {
     // Verify automation exists and belongs to organization
     const existingAutomation = await db.evidenceAutomation.findFirst({
       where: {
         id: automationId,
-        organizationId: organizationId,
       },
     });
 

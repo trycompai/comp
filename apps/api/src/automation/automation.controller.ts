@@ -13,7 +13,6 @@ import {
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
-import { OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { AutomationService } from './automation.service';
 import { CreateAutomationDto } from './dto/create-automation.dto';
@@ -41,11 +40,8 @@ export class AutomationController {
   @ApiResponse(CREATE_AUTOMATION_RESPONSES[400])
   @ApiResponse(CREATE_AUTOMATION_RESPONSES[401])
   @ApiResponse(CREATE_AUTOMATION_RESPONSES[404])
-  async createAutomation(
-    @OrganizationId() organizationId: string,
-    @Body() createAutomationDto: CreateAutomationDto,
-  ) {
-    return this.automationService.create(organizationId, createAutomationDto);
+  async createAutomation(@Body() createAutomationDto: CreateAutomationDto) {
+    return this.automationService.create(createAutomationDto);
   }
 
   @Patch(':automationId')
@@ -55,14 +51,9 @@ export class AutomationController {
   @ApiResponse(UPDATE_AUTOMATION_RESPONSES[401])
   @ApiResponse(UPDATE_AUTOMATION_RESPONSES[404])
   async updateAutomation(
-    @OrganizationId() organizationId: string,
     @Param('automationId') automationId: string,
     @Body() updateAutomationDto: UpdateAutomationDto,
   ) {
-    return this.automationService.update(
-      organizationId,
-      automationId,
-      updateAutomationDto,
-    );
+    return this.automationService.update(automationId, updateAutomationDto);
   }
 }

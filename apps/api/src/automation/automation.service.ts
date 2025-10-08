@@ -5,17 +5,12 @@ import { UpdateAutomationDto } from './dto/update-automation.dto';
 
 @Injectable()
 export class AutomationService {
-  async create(
-    organizationId: string,
-    createAutomationDto: CreateAutomationDto,
-  ) {
+  async create(createAutomationDto: CreateAutomationDto) {
     const { taskId } = createAutomationDto;
 
-    // Verify task exists and belongs to organization
     const task = await db.task.findFirst({
       where: {
         id: taskId,
-        organizationId: organizationId,
       },
     });
 
@@ -23,12 +18,10 @@ export class AutomationService {
       throw new NotFoundException('Task not found');
     }
 
-    // Create the automation
     const automation = await db.evidenceAutomation.create({
       data: {
         name: `${task.title} - AI Automation`,
         taskId: taskId,
-        organizationId: organizationId,
       },
     });
 
@@ -41,16 +34,10 @@ export class AutomationService {
     };
   }
 
-  async update(
-    organizationId: string,
-    automationId: string,
-    updateAutomationDto: UpdateAutomationDto,
-  ) {
-    // Verify automation exists and belongs to organization
+  async update(automationId: string, updateAutomationDto: UpdateAutomationDto) {
     const existingAutomation = await db.evidenceAutomation.findFirst({
       where: {
         id: automationId,
-        organizationId: organizationId,
       },
     });
 
@@ -58,7 +45,6 @@ export class AutomationService {
       throw new NotFoundException('Automation not found');
     }
 
-    // Update the automation
     const automation = await db.evidenceAutomation.update({
       where: {
         id: automationId,
