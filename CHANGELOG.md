@@ -1,3 +1,17 @@
+# [1.56.0](https://github.com/trycompai/comp/compare/v1.55.2...v1.56.0) (2025-10-08)
+
+
+### Bug Fixes
+
+* **app:** add ConditionalOnboardingTracker component and update layout ([#1618](https://github.com/trycompai/comp/issues/1618)) ([af4977c](https://github.com/trycompai/comp/commit/af4977c439794bb79f8f86f41c129c7599cd4284))
+* **app:** show the image on onboarding section by setting unoptimized ([#1619](https://github.com/trycompai/comp/issues/1619)) ([1f4639f](https://github.com/trycompai/comp/commit/1f4639ff0a3149e5ba446083c58391e616913789))
+* **app:** task dates should be creation date instead of defaults ([#1620](https://github.com/trycompai/comp/issues/1620)) ([12e5e15](https://github.com/trycompai/comp/commit/12e5e15b52cc85dfb007b026d762231c603a1a16))
+
+
+### Features
+
+* **db:** add Fraud to RiskCategory ([#1615](https://github.com/trycompai/comp/issues/1615)) ([cc265e6](https://github.com/trycompai/comp/commit/cc265e65ddc171cbd5b09d125ae6a6933528896c))
+
 ## [1.55.2](https://github.com/trycompai/comp/compare/v1.55.1...v1.55.2) (2025-10-07)
 
 
