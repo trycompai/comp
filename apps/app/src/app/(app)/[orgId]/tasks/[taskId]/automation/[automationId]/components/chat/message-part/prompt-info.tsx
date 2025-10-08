@@ -1,5 +1,5 @@
 import { AlertCircle, CheckCircle2, Info } from 'lucide-react';
-import { memo, useEffect, useState } from 'react';
+import { memo, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
@@ -37,22 +37,18 @@ export const PromptInfo = memo(function PromptInfo({
       }
     : null;
 
-  const [values, setValues] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
 
-  // Initialize values from props only once
-  useEffect(() => {
-    if (infoData?.fields && !isInitialized) {
-      const initial: Record<string, string> = {};
-      infoData.fields.forEach((field: FieldInfo) => {
-        initial[field.name] = field.defaultValue || '';
-      });
-      setValues(initial);
-      setIsInitialized(true);
-    }
-  }, [infoData, isInitialized]);
+  // Initialize values from props only once on mount
+  const [values, setValues] = useState<Record<string, string>>(() => {
+    if (!infoData?.fields) return {};
+    const initial: Record<string, string> = {};
+    infoData.fields.forEach((field: FieldInfo) => {
+      initial[field.name] = field.defaultValue || '';
+    });
+    return initial;
+  });
 
   const handleSubmit = async () => {
     // Validate required fields

@@ -27,7 +27,9 @@ import { toast } from 'sonner';
 import { Comments } from '../../../../../../components/comments/Comments';
 import { updateTask } from '../../actions/updateTask';
 import { useTask } from '../hooks/use-task';
+import { useTaskAutomationRuns } from '../hooks/use-task-automation-runs';
 import { useTaskAutomations } from '../hooks/use-task-automations';
+import { AutomationRunsCard } from './AutomationRunsCard';
 import { TaskAutomations } from './TaskAutomations';
 import { TaskDeleteDialog } from './TaskDeleteDialog';
 import { TaskMainContent } from './TaskMainContent';
@@ -41,12 +43,17 @@ interface SingleTaskProps {
 
 export function SingleTask({ initialTask, initialAutomations }: SingleTaskProps) {
   // Use SWR hooks with initial data from server
-  const { task, isLoading } = useTask({
+  const {
+    task,
+    isLoading,
+    mutate: mutateTask,
+  } = useTask({
     initialData: initialTask,
   });
   const { automations } = useTaskAutomations({
     initialData: initialAutomations,
   });
+  const { runs } = useTaskAutomationRuns();
   const isTaskAutomationEnabled = useFeatureFlagEnabled('is-task-automation-enabled');
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -61,7 +68,7 @@ export function SingleTask({ initialTask, initialAutomations }: SingleTaskProps)
     },
   });
 
-  const handleUpdateTask = (
+  const handleUpdateTask = async (
     data: Partial<Pick<Task, 'status' | 'assigneeId' | 'frequency' | 'department' | 'reviewDate'>>,
   ) => {
     const updatePayload: Partial<
@@ -86,7 +93,11 @@ export function SingleTask({ initialTask, initialAutomations }: SingleTaskProps)
       updatePayload.reviewDate = data.reviewDate;
     }
     if (Object.keys(updatePayload).length > 0) {
-      updateTask({ id: task.id, ...updatePayload });
+      const result = await updateTask({ id: task.id, ...updatePayload });
+      if (result.success) {
+        // Refresh the task data from the server
+        await mutateTask();
+      }
     }
   };
 
@@ -114,6 +125,13 @@ export function SingleTask({ initialTask, initialAutomations }: SingleTaskProps)
           {/* Main Content Area */}
           <div className="space-y-6">
             <TaskMainContent task={task} showComments={false} />
+
+            {/* Automation Runs Section */}
+            {runs && runs.length > 0 && (
+              <div className="pt-6">
+                <AutomationRunsCard runs={runs} />
+              </div>
+            )}
 
             {/* Comments Section - integrated */}
             <div className="pt-6">

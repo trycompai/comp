@@ -139,7 +139,15 @@ Please fix the automation script to resolve this error.`;
     // Send the error to the chat
     sendMessage(
       { text: errorMessage },
-      { body: { modelId: 'openai/gpt-5-mini', reasoningEffort: 'medium', orgId, taskId } },
+      {
+        body: {
+          modelId: 'openai/gpt-5-mini',
+          reasoningEffort: 'medium',
+          orgId,
+          taskId,
+          automationId,
+        },
+      },
     );
 
     // Close the dialog

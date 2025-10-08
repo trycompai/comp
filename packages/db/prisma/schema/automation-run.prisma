@@ -1,33 +1,32 @@
 model EvidenceAutomationRun {
-    id        String   @id @default(dbgenerated("generate_prefixed_cuid('ear'::text)")) @map("id")
-    createdAt DateTime @default(now()) @map("created_at")
-    updatedAt DateTime @updatedAt @map("updated_at")
+    id        String   @id @default(dbgenerated("generate_prefixed_cuid('ear'::text)"))
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 
     // Relations
-    evidenceAutomationId String             @map("evidence_automation_id")
+    evidenceAutomationId String
     evidenceAutomation   EvidenceAutomation @relation(fields: [evidenceAutomationId], references: [id], onDelete: Cascade)
 
     // Run details
     status      EvidenceAutomationRunStatus @default(pending)
-    startedAt   DateTime?                   @map("started_at")
-    completedAt DateTime?                   @map("completed_at")
+    startedAt   DateTime?
+    completedAt DateTime?
 
     // Results
-    success Boolean? @map("success")
-    error   String?  @map("error")
-    logs    Json?    @map("logs")
-    output  Json?    @map("output")
+    success Boolean?
+    error   String?
+    logs    Json?
+    output  Json?
 
     // Metadata
-    triggeredBy EvidenceAutomationTrigger @default(scheduled) @map("triggered_by")
-    runDuration Int?                      @map("run_duration") // in milliseconds
+    triggeredBy EvidenceAutomationTrigger @default(scheduled)
+    runDuration Int? // in milliseconds
     Task        Task?                     @relation(fields: [taskId], references: [id])
     taskId      String?
 
     @@index([evidenceAutomationId])
     @@index([status])
     @@index([createdAt])
-    @@map("evidence_automation_runs")
 }
 
 enum EvidenceAutomationRunStatus {
@@ -36,14 +35,10 @@ enum EvidenceAutomationRunStatus {
     completed
     failed
     cancelled
-
-    @@map("evidence_automation_run_status")
 }
 
 enum EvidenceAutomationTrigger {
     manual
     scheduled
     api
-
-    @@map("evidence_automation_trigger")
 }

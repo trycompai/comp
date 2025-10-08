@@ -27,7 +27,7 @@ interface Params {
  * - exaSearch: For searching the web using Exa AI's neural search
  * - firecrawl: For crawling and extracting content from websites
  */
-export function getTaskAutomationTools({ modelId, writer }: Params) {
+export function getTaskAutomationTools({ writer }: Params) {
   return {
     storeToS3: storeToS3({ writer }),
     promptForSecret: promptForSecretTool(),

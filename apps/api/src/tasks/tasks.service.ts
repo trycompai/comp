@@ -86,4 +86,23 @@ export class TasksService {
       throw new BadRequestException('Task not found or access denied');
     }
   }
+
+  /**
+   * Get all automation runs for a task
+   */
+  async getTaskAutomationRuns(organizationId: string, taskId: string) {
+    // Verify task access
+    await this.verifyTaskAccess(organizationId, taskId);
+
+    const runs = await db.evidenceAutomationRun.findMany({
+      where: {
+        taskId,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return runs;
+  }
 }

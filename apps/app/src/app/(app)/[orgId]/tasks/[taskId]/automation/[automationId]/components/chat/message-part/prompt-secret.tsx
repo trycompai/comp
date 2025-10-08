@@ -1,5 +1,5 @@
 import { AlertCircle, CheckCircle2, Key } from 'lucide-react';
-import { memo, useEffect, useState } from 'react';
+import { memo, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
@@ -33,20 +33,12 @@ export const PromptSecret = memo(function PromptSecret({
       }
     : null;
 
-  // Use the secret name from AI or allow user to set one
-  const [name, setName] = useState('');
+  // Use the secret name from AI or allow user to set one - initialize on mount only
+  const [name, setName] = useState(() => secretData?.secretName || '');
   const [value, setValue] = useState('');
-  const [description, setDescription] = useState('');
+  const [description, setDescription] = useState(() => secretData?.description || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
-
-  // Initialize state from props only once
-  useEffect(() => {
-    if (secretData && !name && !description) {
-      setName(secretData.secretName || '');
-      setDescription(secretData.description || '');
-    }
-  }, [secretData, name, description]);
 
   // Use the provided secret name or the user-entered one
   const finalSecretName = secretData?.secretName || name;

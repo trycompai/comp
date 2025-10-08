@@ -31,8 +31,7 @@ export const useTaskAutomationStore = create<TaskAutomationStore>()((set) => ({
   scriptUrl: undefined,
 
   // Actions
-  setChatStatus: (status) =>
-    set((state) => (state.chatStatus === status ? state : { chatStatus: status })),
+  setChatStatus: (status) => set({ chatStatus: status }),
 
   setScriptGenerated: (generated, path) =>
     set({

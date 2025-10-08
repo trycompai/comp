@@ -131,7 +131,15 @@ export function Chat({ className, orgId, taskId, taskName, automationId }: Props
         {
           text: `I've added the secret "${secretName}". You can now use it in the automation script.`,
         },
-        { body: { modelId: 'openai/gpt-5-mini', reasoningEffort: 'medium', orgId, taskId } },
+        {
+          body: {
+            modelId: 'openai/gpt-5-mini',
+            reasoningEffort: 'medium',
+            orgId,
+            taskId,
+            automationId,
+          },
+        },
       );
     },
     [sendMessage, orgId, taskId],
@@ -149,7 +157,15 @@ export function Chat({ className, orgId, taskId, taskName, automationId }: Props
         {
           text: `I've provided the following information:\n\n${infoText}\n\nYou can now continue with creating the automation script.`,
         },
-        { body: { modelId: 'openai/gpt-5-mini', reasoningEffort: 'medium', orgId, taskId } },
+        {
+          body: {
+            modelId: 'openai/gpt-5-mini',
+            reasoningEffort: 'medium',
+            orgId,
+            taskId,
+            automationId,
+          },
+        },
       );
     },
     [sendMessage, orgId, taskId],
