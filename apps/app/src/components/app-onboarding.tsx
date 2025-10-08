@@ -132,6 +132,7 @@ export function AppOnboarding({
                     width={400}
                     quality={100}
                     className="relative z-10 rounded-lg drop-shadow-md"
+                    unoptimized
                   />
                 </div>
               </div>

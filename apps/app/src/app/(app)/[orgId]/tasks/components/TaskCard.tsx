@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
 import { TaskStatusSelector } from './TaskStatusSelector';
+import { format } from 'date-fns';
 
 // DnD Item Type identifier for tasks.
 export const ItemTypes = {
@@ -196,7 +197,11 @@ export function TaskCard({
       >
         <span className="min-w-0 flex-grow truncate py-2 text-sm">{task.title}</span>
         <div className="ml-auto flex shrink-0 items-center space-x-3 pl-2">
-          <span className="text-muted-foreground text-xs whitespace-nowrap">Apr 15</span>
+          <span className="text-muted-foreground text-xs whitespace-nowrap">
+            {task.createdAt
+              ? format(new Date(task.createdAt), 'MMM d, yyyy')
+              : ''}
+          </span>
           <div className="bg-muted flex h-5 w-5 items-center justify-center overflow-hidden rounded-full border">
             {assignedMember?.user?.image ? (
               <Image

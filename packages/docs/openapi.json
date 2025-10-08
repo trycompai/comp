@@ -6550,6 +6550,7 @@
             "description": "Risk category",
             "enum": [
               "customer",
+              "fraud",
               "governance",
               "operations",
               "other",
@@ -6693,6 +6694,7 @@
             "description": "Risk category",
             "enum": [
               "customer",
+              "fraud",
               "governance",
               "operations",
               "other",
