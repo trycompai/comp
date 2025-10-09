@@ -2,10 +2,22 @@
 
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@comp/ui/dropdown-menu';
 import { EvidenceAutomation, EvidenceAutomationRun, Task } from '@db';
-import { ArrowLeft, Edit, Settings } from 'lucide-react';
+import { ArrowLeft, Cog, Edit, Settings, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { useState } from 'react';
+import {
+  DeleteAutomationDialog,
+  EditDescriptionDialog,
+  EditNameDialog,
+} from '../../../../automation/[automationId]/components/AutomationSettingsDialogs';
 import { AutomationRunsCard } from '../../../../components/AutomationRunsCard';
 
 type RunWithAutomationName = EvidenceAutomationRun & {
@@ -26,6 +38,10 @@ export function AutomationOverview({ task, automation, initialRuns }: Automation
     taskId: string;
     automationId: string;
   }>();
+
+  const [editNameOpen, setEditNameOpen] = useState(false);
+  const [editDescriptionOpen, setEditDescriptionOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // Transform runs to include automation name
   const runsWithName = initialRuns.map((run) => ({
@@ -53,12 +69,30 @@ export function AutomationOverview({ task, automation, initialRuns }: Automation
               <p className="text-muted-foreground">{automation.description}</p>
             )}
           </div>
-          <Link href={`/${orgId}/tasks/${taskId}/automation/${automationId}`}>
-            <Button>
-              <Edit className="h-4 w-4 mr-2" />
-              Edit Automation
-            </Button>
-          </Link>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon">
+                <Cog className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => setEditNameOpen(true)}>
+                <Edit className="w-4 h-4 mr-2" />
+                Edit Name
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setEditDescriptionOpen(true)}>
+                <Edit className="w-4 h-4 mr-2" />
+                Edit Description
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={() => setDeleteDialogOpen(true)}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete Automation
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -66,10 +100,18 @@ export function AutomationOverview({ task, automation, initialRuns }: Automation
         {/* Automation Details */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base font-medium flex items-center gap-2">
-              <Settings className="h-4 w-4 text-primary" />
-              Details
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base font-medium flex items-center gap-2">
+                <Settings className="h-4 w-4 text-primary" />
+                Details
+              </CardTitle>
+              <Link href={`/${orgId}/tasks/${taskId}/automation/${automationId}`}>
+                <Button size="sm">
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Automation
+                </Button>
+              </Link>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
@@ -92,6 +134,11 @@ export function AutomationOverview({ task, automation, initialRuns }: Automation
         {/* Execution History */}
         <AutomationRunsCard runs={runsWithName} />
       </div>
+
+      {/* Settings Dialogs */}
+      <EditNameDialog open={editNameOpen} onOpenChange={setEditNameOpen} />
+      <EditDescriptionDialog open={editDescriptionOpen} onOpenChange={setEditDescriptionOpen} />
+      <DeleteAutomationDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} />
     </div>
   );
 }

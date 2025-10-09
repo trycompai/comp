@@ -1,6 +1,5 @@
 'use client';
 
-import { api } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 import { Button } from '@comp/ui/button';
 import { CardContent, CardHeader, CardTitle } from '@comp/ui/card';
@@ -10,7 +9,6 @@ import { ArrowRight, Code, Loader2, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { toast } from 'sonner';
 import { useTaskAutomations } from '../hooks/use-task-automations';
 
 type AutomationWithLatestRun = EvidenceAutomation & {
@@ -24,39 +22,9 @@ export const TaskAutomations = ({ automations }: { automations: AutomationWithLa
   const { mutate: mutateAutomations } = useTaskAutomations();
 
   const handleCreateAutomation = async () => {
-    setIsCreating(true);
-
-    try {
-      const response = await api.post<{
-        success: boolean;
-        automation: {
-          id: string;
-          name: string;
-        };
-      }>(`/v1/tasks/${taskId}/automations`, {}, orgId);
-
-      if (response.error) {
-        throw new Error(response.error);
-      }
-
-      if (!response.data?.success) {
-        throw new Error('Failed to create automation');
-      }
-
-      toast.success('Automation created successfully!');
-
-      // Refresh automations list
-      await mutateAutomations();
-
-      // Keep loading state during redirect
-      await router.push(`/${orgId}/tasks/${taskId}/automation/${response.data.automation.id}`);
-
-      // Don't set loading to false here - let the new page handle it
-    } catch (error) {
-      console.error('Failed to create automation:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to create automation');
-      setIsCreating(false); // Only stop loading on error
-    }
+    // Redirect to automation builder with ephemeral mode
+    // The automation will only be created once the user sends their first message
+    router.push(`/${orgId}/tasks/${taskId}/automation/new`);
   };
 
   return (
@@ -109,26 +77,24 @@ export const TaskAutomations = ({ automations }: { automations: AutomationWithLa
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      {latestRun && (
-                        <div
-                          className={`h-2 w-2 rounded-full flex-shrink-0 ${
-                            runStatus === 'completed'
+                      <div
+                        className={`h-2 w-2 rounded-full flex-shrink-0 ${
+                          !latestRun
+                            ? 'bg-muted-foreground/30'
+                            : runStatus === 'completed'
                               ? 'bg-chart-positive'
                               : runStatus === 'failed'
                                 ? 'bg-chart-destructive'
                                 : runStatus === 'running'
                                   ? 'bg-chart-other animate-pulse'
                                   : 'bg-chart-neutral'
-                          }`}
-                        />
-                      )}
+                        }`}
+                      />
                       <p className="font-medium text-foreground text-xs">{automation.name}</p>
                     </div>
-                    {lastRan && (
-                      <p className="text-[10px] text-muted-foreground mt-0.5 ml-4">
-                        Last ran {lastRan}
-                      </p>
-                    )}
+                    <p className="text-[10px] text-muted-foreground mt-0.5 ml-4">
+                      {lastRan ? `Last ran ${lastRan}` : 'No runs yet'}
+                    </p>
                   </div>
                   <ArrowRight className="w-4 h-4 flex-shrink-0" />
                 </Link>

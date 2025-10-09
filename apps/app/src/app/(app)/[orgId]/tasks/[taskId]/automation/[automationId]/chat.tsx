@@ -3,22 +3,13 @@
 import { cn } from '@/lib/utils';
 import { useChat } from '@ai-sdk/react';
 import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbSeparator,
-} from '@comp/ui/breadcrumb';
-import { Card, CardDescription, CardHeader } from '@comp/ui/card';
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
-import { ChevronRight, CogIcon, Edit, Settings, Trash2 } from 'lucide-react';
+import { CogIcon, Edit, Settings, Trash2 } from 'lucide-react';
 import Image from 'next/image';
-import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Conversation,
@@ -30,10 +21,13 @@ import {
   EditDescriptionDialog,
   EditNameDialog,
 } from './components/AutomationSettingsDialogs';
+import { ChatBreadcrumb } from './components/chat/ChatBreadcrumb';
+import { EmptyState } from './components/chat/EmptyState';
 import { Message } from './components/chat/message';
 import type { ChatUIMessage } from './components/chat/types';
 import { PanelHeader } from './components/panels/panels';
 import { Input } from './components/ui/input';
+import { useChatHandlers } from './hooks/use-chat-handlers';
 import { useTaskAutomation } from './hooks/use-task-automation';
 import { useSharedChatContext } from './lib/chat-context';
 import { useTaskAutomationStore } from './lib/task-automation-store';
@@ -47,40 +41,6 @@ interface Props {
   automationId: string;
 }
 
-interface Example {
-  title: string;
-  prompt: string;
-  url: string;
-}
-
-const AUTOMATION_EXAMPLES: Example[] = [
-  {
-    title: 'Check if I have dependabot enabled in my GitHub repository',
-    prompt: 'Check if I have dependabot enabled in my GitHub repository',
-    url: 'https://img.logo.dev/github.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ',
-  },
-  {
-    title: 'Check if I have branch protection enabled for the main branch in my GitHub repository',
-    prompt: 'Check if I have branch protection enabled for the main branch in my GitHub repository',
-    url: 'https://img.logo.dev/github.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ',
-  },
-  {
-    title: 'Check if my website has a privacy policy',
-    prompt: 'Check if my website has a privacy policy',
-    url: 'https://img.logo.dev/trycomp.ai?token=pk_AZatYxV5QDSfWpRDaBxzRQ',
-  },
-  {
-    title: 'Give me a list of failed deployments in my Vercel project',
-    prompt: 'Give me a list of failed deployments in my Vercel project',
-    url: 'https://img.logo.dev/vercel.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ',
-  },
-  {
-    title: 'Check that DDoS protection is enabled for my Cloudflare project',
-    prompt: 'Check that DDoS protection is enabled for my Cloudflare project',
-    url: 'https://img.logo.dev/cloudflare.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ',
-  },
-];
-
 export function Chat({ className, orgId, taskId, taskName, automationId }: Props) {
   const [input, setInput] = useState('');
   const { chat } = useSharedChatContext();
@@ -89,86 +49,29 @@ export function Chat({ className, orgId, taskId, taskName, automationId }: Props
   const inputRef = useRef<HTMLInputElement | null>(null);
   const { automation } = useTaskAutomation();
 
+  // Ephemeral mode - automation not created yet
+  const isEphemeral = automationId === 'new';
+
   // Dialog states
   const [editNameOpen, setEditNameOpen] = useState(false);
   const [editDescriptionOpen, setEditDescriptionOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
+  const { validateAndSubmitMessage, handleSecretAdded, handleInfoProvided } = useChatHandlers({
+    sendMessage,
+    setInput,
+    orgId,
+    taskId,
+    automationId,
+    isEphemeral,
+  });
+
   const handleExampleClick = useCallback(
     (prompt: string) => {
       setInput(prompt);
-      // Focus the input for immediate interaction
       inputRef.current?.focus();
     },
     [setInput],
-  );
-
-  const validateAndSubmitMessage = useCallback(
-    (text: string) => {
-      if (text.trim()) {
-        sendMessage(
-          { text },
-          {
-            body: {
-              modelId: 'openai/gpt-5-mini',
-              reasoningEffort: 'medium',
-              orgId,
-              taskId,
-              automationId,
-            },
-          },
-        );
-        setInput('');
-      }
-    },
-    [sendMessage, setInput, orgId, taskId, automationId],
-  );
-
-  const handleSecretAdded = useCallback(
-    (secretName: string) => {
-      // Send a message to the AI informing it that the secret was added
-      sendMessage(
-        {
-          text: `I've added the secret "${secretName}". You can now use it in the automation script.`,
-        },
-        {
-          body: {
-            modelId: 'openai/gpt-5-mini',
-            reasoningEffort: 'medium',
-            orgId,
-            taskId,
-            automationId,
-          },
-        },
-      );
-    },
-    [sendMessage, orgId, taskId],
-  );
-
-  const handleInfoProvided = useCallback(
-    (info: Record<string, string>) => {
-      // Format the provided information for the AI
-      const infoText = Object.entries(info)
-        .map(([key, value]) => `${key}: ${value}`)
-        .join('\n');
-
-      // Send a message to the AI with the provided information
-      sendMessage(
-        {
-          text: `I've provided the following information:\n\n${infoText}\n\nYou can now continue with creating the automation script.`,
-        },
-        {
-          body: {
-            modelId: 'openai/gpt-5-mini',
-            reasoningEffort: 'medium',
-            orgId,
-            taskId,
-            automationId,
-          },
-        },
-      );
-    },
-    [sendMessage, orgId, taskId],
   );
 
   useEffect(() => {
@@ -193,67 +96,40 @@ export function Chat({ className, orgId, taskId, taskName, automationId }: Props
       <PanelHeader className="shrink-0 relative z-20">
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-4">
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem>
-                  <BreadcrumbLink asChild>
-                    <Link
-                      href={`/${orgId}/tasks`}
-                      className="text-xs text-muted-foreground hover:text-foreground"
-                    >
-                      Tasks
-                    </Link>
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator>
-                  <ChevronRight className="w-3 h-3" />
-                </BreadcrumbSeparator>
-                <BreadcrumbItem>
-                  <BreadcrumbLink asChild>
-                    <Link
-                      href={`/${orgId}/tasks/${taskId}`}
-                      className="text-xs text-muted-foreground hover:text-foreground"
-                    >
-                      {taskName || 'Task'}
-                    </Link>
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator>
-                  <ChevronRight className="w-3 h-3" />
-                </BreadcrumbSeparator>
-                <BreadcrumbItem>
-                  <BreadcrumbLink asChild>
-                    <span className="font-medium text-xs text-foreground/90 cursor-default">
-                      {automation?.name || 'Automation'}
-                    </span>
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
+            <ChatBreadcrumb
+              orgId={orgId}
+              taskId={taskId}
+              taskName={taskName}
+              automationId={automationId}
+              automationName={automation?.name}
+              isEphemeral={isEphemeral}
+            />
           </div>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger className="p-1 hover:bg-muted/50 rounded transition-colors">
-              <CogIcon className="w-4 h-4 text-muted-foreground" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={() => setEditNameOpen(true)}>
-                <Edit className="w-4 h-4 mr-2" />
-                Edit Name
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setEditDescriptionOpen(true)}>
-                <Settings className="w-4 h-4 mr-2" />
-                Edit Description
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onClick={() => setDeleteDialogOpen(true)}
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete Automation
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {!isEphemeral && (
+            <DropdownMenu>
+              <DropdownMenuTrigger className="p-1 hover:bg-muted/50 rounded transition-colors">
+                <CogIcon className="w-4 h-4 text-muted-foreground" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => setEditNameOpen(true)}>
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit Name
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setEditDescriptionOpen(true)}>
+                  <Settings className="w-4 h-4 mr-2" />
+                  Edit Description
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => setDeleteDialogOpen(true)}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Automation
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       </PanelHeader>
 
@@ -266,57 +142,13 @@ export function Chat({ className, orgId, taskId, taskName, automationId }: Props
             validateAndSubmitMessage(input);
           }}
         >
-          <div className="flex-1 min-h-0 overflow-y-auto h-full z-20">
-            <div className="w-full h-full flex flex-col items-center py-48">
-              {/* Top Section - Fixed Position */}
-              <div className="w-full max-w-3xl text-center space-y-8 mb-16">
-                <p className="text-2xl font-medium text-primary tracking-wide z-20">
-                  What evidence do you want to collect?
-                </p>
-                <Input
-                  ref={inputRef}
-                  placeholder="Check if GitHub dependabot is enabled and tell me the result"
-                  className="w-full max-w-3xl transition-all duration-200 hover:shadow-md hover:shadow-primary/5 hover:scale-[1.01] focus:shadow-lg focus:shadow-primary/10 focus:scale-[1.02] focus:ring-2 focus:ring-primary/30"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  disabled={status === 'streaming' || status === 'submitted'}
-                />
-              </div>
-
-              {/* Examples Section */}
-              <div className="w-full max-w-4xl space-y-4 mt-16">
-                <h3 className="text-lg font-normal text-center">Get started with examples</h3>
-
-                {/* All Examples Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-w-3xl mx-auto">
-                  {AUTOMATION_EXAMPLES.map((example) => (
-                    <Card
-                      key={example.title}
-                      className="cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-xl"
-                      onClick={() => handleExampleClick(example.prompt)}
-                    >
-                      <CardHeader className="p-4">
-                        <div className="flex items-start gap-3">
-                          <Image
-                            src={example.url}
-                            alt={example.title}
-                            width={24}
-                            height={24}
-                            className="rounded-sm"
-                          />
-                          <CardDescription className="flex-1">
-                            <p className="text-sm font-normal text-foreground leading-relaxed">
-                              {example.title}
-                            </p>
-                          </CardDescription>
-                        </div>
-                      </CardHeader>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
+          <EmptyState
+            input={input}
+            onInputChange={setInput}
+            onExampleClick={handleExampleClick}
+            status={status}
+            inputRef={inputRef}
+          />
         </form>
       ) : (
         <div className="flex flex-col h-full relative z-20">
