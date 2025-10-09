@@ -263,3 +263,59 @@ export const getAutomationRunStatus = async (runId: string) => {
     };
   }
 };
+
+/**
+ * Load chat history for an automation
+ */
+export async function loadChatHistory(automationId: string, offset = 0, limit = 50) {
+  try {
+    const response = await callEnterpriseApi<{
+      messages: any[];
+      total: number;
+      hasMore: boolean;
+    }>('/api/tasks-automations/chat/history', {
+      method: 'GET',
+      params: {
+        automationId,
+        offset: offset.toString(),
+        limit: limit.toString(),
+      },
+    });
+
+    return {
+      success: true,
+      data: response,
+    };
+  } catch (error) {
+    console.error('[loadChatHistory] Failed:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to load chat history',
+    };
+  }
+}
+
+/**
+ * Save chat history for an automation
+ */
+export async function saveChatHistory(automationId: string, messages: any[]) {
+  try {
+    await callEnterpriseApi('/api/tasks-automations/chat/save', {
+      method: 'POST',
+      body: {
+        automationId,
+        messages,
+      },
+    });
+
+    return {
+      success: true,
+    };
+  } catch (error) {
+    console.error('[saveChatHistory] Failed:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to save chat history',
+    };
+  }
+}

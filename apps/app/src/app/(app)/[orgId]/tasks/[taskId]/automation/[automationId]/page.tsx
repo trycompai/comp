@@ -1,7 +1,9 @@
 import { db } from '@db';
 import { redirect } from 'next/navigation';
+import { loadChatHistory } from './actions/task-automation-actions';
 import { AutomationLayoutWrapper } from './automation-layout-wrapper';
 import { AutomationPageClient } from './components/AutomationPageClient';
+import { ChatProvider } from './lib/chat-context';
 
 export default async function Page({
   params,
@@ -23,16 +25,27 @@ export default async function Page({
 
   const taskName = task.title;
 
+  // Load chat history server-side (skip for ephemeral 'new' automations)
+  let initialMessages = [];
+  if (automationId !== 'new') {
+    const historyResult = await loadChatHistory(automationId);
+    if (historyResult.success && historyResult.data?.messages) {
+      initialMessages = historyResult.data.messages;
+    }
+  }
+
   return (
-    <AutomationLayoutWrapper>
-      <div className="h-screen overflow-hidden">
-        <AutomationPageClient
-          orgId={orgId}
-          taskId={taskId}
-          automationId={automationId}
-          taskName={taskName}
-        />
-      </div>
-    </AutomationLayoutWrapper>
+    <ChatProvider initialMessages={initialMessages}>
+      <AutomationLayoutWrapper>
+        <div className="h-screen overflow-hidden">
+          <AutomationPageClient
+            orgId={orgId}
+            taskId={taskId}
+            automationId={automationId}
+            taskName={taskName}
+          />
+        </div>
+      </AutomationLayoutWrapper>
+    </ChatProvider>
   );
 }

@@ -44,7 +44,9 @@ interface Props {
 export function Chat({ className, orgId, taskId, taskName, automationId }: Props) {
   const [input, setInput] = useState('');
   const { chat } = useSharedChatContext();
-  const { messages, sendMessage, status } = useChat<ChatUIMessage>({ chat });
+  const { messages, sendMessage, status } = useChat<ChatUIMessage>({
+    chat,
+  });
   const { setChatStatus, scriptUrl } = useTaskAutomationStore();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const { automation } = useTaskAutomation();
