@@ -51,9 +51,6 @@ export class ApiClient {
 
         if (token) {
           headers['Authorization'] = `Bearer ${token}`;
-          console.log('🎯 Using fresh JWT token for API authentication');
-        } else {
-          console.log('⚠️ No JWT token available for API authentication');
         }
       } catch (error) {
         console.error('❌ Error getting JWT token for API call:', error);
@@ -139,6 +136,21 @@ export class ApiClient {
   }
 
   /**
+   * PATCH request
+   */
+  async patch<T = unknown>(
+    endpoint: string,
+    body?: unknown,
+    organizationId?: string,
+  ): Promise<ApiResponse<T>> {
+    return this.call<T>(endpoint, {
+      method: 'PATCH',
+      body: body ? JSON.stringify(body) : undefined,
+      organizationId,
+    });
+  }
+
+  /**
    * DELETE request
    */
   async delete<T = unknown>(endpoint: string, organizationId?: string): Promise<ApiResponse<T>> {
@@ -159,6 +171,9 @@ export const api = {
 
   put: <T = unknown>(endpoint: string, body?: unknown, organizationId?: string) =>
     apiClient.put<T>(endpoint, body, organizationId),
+
+  patch: <T = unknown>(endpoint: string, body?: unknown, organizationId?: string) =>
+    apiClient.patch<T>(endpoint, body, organizationId),
 
   delete: <T = unknown>(endpoint: string, organizationId?: string) =>
     apiClient.delete<T>(endpoint, organizationId),

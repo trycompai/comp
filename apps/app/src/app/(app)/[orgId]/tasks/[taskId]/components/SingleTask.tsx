@@ -11,28 +11,55 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@comp/ui/dialog';
-import { CommentEntityType, type Control, type Member, type Task, type User } from '@db';
+import {
+  CommentEntityType,
+  EvidenceAutomation,
+  EvidenceAutomationRun,
+  type Control,
+  type Member,
+  type Task,
+  type User,
+} from '@db';
 import { RefreshCw, Trash2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { useParams } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useFeatureFlagEnabled } from 'posthog-js/react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { Comments } from '../../../../../../components/comments/Comments';
 import { updateTask } from '../../actions/updateTask';
+import { useTask } from '../hooks/use-task';
+import { useTaskAutomations } from '../hooks/use-task-automations';
+import { TaskAutomations } from './TaskAutomations';
 import { TaskDeleteDialog } from './TaskDeleteDialog';
 import { TaskMainContent } from './TaskMainContent';
 import { TaskPropertiesSidebar } from './TaskPropertiesSidebar';
 
+type AutomationWithRuns = EvidenceAutomation & {
+  runs: EvidenceAutomationRun[];
+};
+
 interface SingleTaskProps {
-  task: Task & { fileUrls?: string[]; controls?: Control[] };
-  members?: (Member & { user: User })[];
+  initialTask: Task & { fileUrls?: string[]; controls?: Control[] };
+  initialMembers?: (Member & { user: User })[];
+  initialAutomations: AutomationWithRuns[];
 }
 
-export function SingleTask({ task, members }: SingleTaskProps) {
+export function SingleTask({ initialTask, initialAutomations }: SingleTaskProps) {
+  // Use SWR hooks with initial data from server
+  const {
+    task,
+    isLoading,
+    mutate: mutateTask,
+  } = useTask({
+    initialData: initialTask,
+  });
+  const { automations } = useTaskAutomations({
+    initialData: initialAutomations,
+  });
+  const isTaskAutomationEnabled = useFeatureFlagEnabled('is-task-automation-enabled');
+
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isRegenerateConfirmOpen, setRegenerateConfirmOpen] = useState(false);
-  const params = useParams<{ orgId: string }>();
-  const orgIdFromParams = params.orgId;
 
   const regenerate = useAction(regenerateTaskAction, {
     onSuccess: () => {
@@ -43,17 +70,14 @@ export function SingleTask({ task, members }: SingleTaskProps) {
     },
   });
 
-  const assignedMember = useMemo(() => {
-    if (!task.assigneeId || !members) return null;
-    return members.find((m) => m.id === task.assigneeId);
-  }, [task.assigneeId, members]);
-
-  const handleUpdateTask = (
+  const handleUpdateTask = async (
     data: Partial<Pick<Task, 'status' | 'assigneeId' | 'frequency' | 'department' | 'reviewDate'>>,
   ) => {
     const updatePayload: Partial<
       Pick<Task, 'status' | 'assigneeId' | 'frequency' | 'department' | 'reviewDate'>
     > = {};
+
+    if (!task) return;
 
     if (data.status !== undefined) {
       updatePayload.status = data.status;
@@ -71,9 +95,18 @@ export function SingleTask({ task, members }: SingleTaskProps) {
       updatePayload.reviewDate = data.reviewDate;
     }
     if (Object.keys(updatePayload).length > 0) {
-      updateTask({ id: task.id, ...updatePayload });
+      const result = await updateTask({ id: task.id, ...updatePayload });
+      if (result.success) {
+        // Refresh the task data from the server
+        await mutateTask();
+      }
     }
   };
+
+  // Early return if task doesn't exist
+  if (!task || isLoading) {
+    return null;
+  }
 
   return (
     <div className="mx-auto max-w-6xl px-4 animate-in fade-in slide-in-from-bottom-4 duration-500 py-8">
@@ -92,24 +125,22 @@ export function SingleTask({ task, members }: SingleTaskProps) {
           </div>
 
           {/* Main Content Area */}
-          <div className="space-y-6">
+          <div className="space-y-4">
             <TaskMainContent task={task} showComments={false} />
 
             {/* Comments Section - integrated */}
-            <div className="pt-6">
-              <Comments
-                entityId={task.id}
-                entityType={CommentEntityType.task}
-                variant="inline"
-                title=""
-              />
-            </div>
+            <Comments
+              entityId={task.id}
+              entityType={CommentEntityType.task}
+              variant="inline"
+              title=""
+            />
           </div>
         </div>
 
         {/* Right Column - Properties (starts at top) */}
-        <div className="lg:col-span-1">
-          <Card className="border border-border bg-card shadow-sm sticky top-4 overflow-hidden">
+        <div className="lg:col-span-1 space-y-4">
+          <Card className="border border-border bg-card shadow-sm overflow-hidden">
             <div className="relative">
               <div className="absolute top-4 right-4 flex items-center gap-1 z-10">
                 <Button
@@ -132,18 +163,16 @@ export function SingleTask({ task, members }: SingleTaskProps) {
                 </Button>
               </div>
               <div className="p-6">
-                <TaskPropertiesSidebar
-                  task={task}
-                  members={members}
-                  assignedMember={assignedMember}
-                  handleUpdateTask={handleUpdateTask}
-                  onDeleteClick={() => setDeleteDialogOpen(true)}
-                  onRegenerateClick={() => setRegenerateConfirmOpen(true)}
-                  orgId={orgIdFromParams}
-                />
+                <TaskPropertiesSidebar handleUpdateTask={handleUpdateTask} />
               </div>
             </div>
           </Card>
+          {/* Automations section */}
+          {isTaskAutomationEnabled && (
+            <Card className="border border-border bg-card shadow-sm overflow-hidden">
+              <TaskAutomations automations={automations || []} />
+            </Card>
+          )}
         </div>
       </div>
 

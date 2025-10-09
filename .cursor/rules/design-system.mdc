@@ -1,6 +1,5 @@
 ---
-description: 
-globs: *.tsx
+description: Any time we are going to write react components and / or layouts
 alwaysApply: false
 ---
 
@@ -28,10 +27,77 @@ Design System & Component Guidelines
 
 ## Layout & Spacing
 
+- **Flexbox-First**: ALWAYS prefer flexbox with `gap` over hardcoded margins (`mt-`, `mb-`, `ml-`, `mr-`)
+- **Use Gaps, Not Margins**: Use `gap-2`, `gap-4`, `space-y-4` for spacing between elements
 - **Consistent Spacing**: Use standard Tailwind spacing scale (`space-y-4`, `gap-6`, etc.)
 - **Card-Based Layouts**: Prefer Card components for content organization
 - **Minimal Padding**: Use conservative padding - `p-3`, `p-4` rather than larger values
 - **Clean Separators**: Use subtle borders (`border-t`, `border-muted`) instead of heavy dividers
+- **NEVER Hardcode Margins**: Avoid `mt-4`, `mb-2`, `ml-3` unless absolutely necessary for exceptions
+
+## Color & Visual Elements
+
+- **Status Colors**:
+  - Green for completed/success states
+  - Blue for in-progress/info states
+  - Yellow for warnings
+  - Red for errors/destructive actions
+- **Subtle Indicators**: Use small colored dots (`w-2 h-2 rounded-full`) instead of large icons for status
+- **Minimal Shadows**: Prefer `hover:shadow-sm` over heavy shadow effects
+- **Progress Bars**: Keep thin (`h-1`, `h-2`) for minimal visual weight
+
+## Interactive Elements
+
+- **Subtle Hover States**: Use gentle transitions (`transition-shadow`, `hover:shadow-sm`)
+- **Consistent Button Sizing**: Prefer `size="sm"` for most buttons, `size="icon"` for icon-only
+- **Badge Usage**: Keep badges minimal with essential info only (percentages, short status)
+
+## Data Display
+
+- **Shared Design Language**: Ensure related components (cards, overviews, details) use consistent patterns
+- **Minimal Stats**: Present data cleanly without excessive decoration
+- **Contextual Icons**: Use small, relevant icons (`h-3 w-3`, `h-4 w-4`) sparingly for context
+
+## Anti-Patterns to Avoid
+
+- Large text sizes (`text-2xl+` except for main headings)
+- Heavy shadows or borders
+- Excessive use of colored backgrounds
+- Redundant badges or status indicators
+- Complex custom styling overrides
+- Non-semantic color usage (hardcoded hex values)
+- Cluttered layouts with too many visual elements
+  Rule Name: design-system
+  Description:
+  Design System & Component Guidelines
+
+## Design Philosophy
+
+- **B2B, Modern, Flat, Minimal, Elegant**: All UI should follow a clean, professional aesthetic suitable for business applications
+- **Sleek & Minimal**: Avoid visual clutter, use whitespace effectively, keep interfaces clean
+- **Dark Mode First**: Always ensure components work seamlessly in both light and dark modes
+
+## Component Usage
+
+- **Adhere to Base Components**: Minimize custom overrides and stick to shadcn/ui base components whenever possible
+- **Semantic Color Classes**: Use semantic classes like `text-muted-foreground`, `bg-muted/50` instead of hardcoded colors
+- **Dark Mode Support**: Always use dark mode variants like `bg-green-50 dark:bg-green-950/20`, `text-green-600 dark:text-green-400`
+
+## Typography & Sizing
+
+- **Moderate Text Sizes**: Avoid overly large text - prefer `text-base`, `text-sm`, `text-xs` over `text-xl+`
+- **Consistent Hierarchy**: Use `font-medium`, `font-semibold` sparingly, prefer `font-normal` with size differentiation
+- **Tabular Numbers**: Use `tabular-nums` class for numeric data to ensure proper alignment
+
+## Layout & Spacing
+
+- **Flexbox-First**: ALWAYS prefer flexbox with `gap` over hardcoded margins (`mt-`, `mb-`, `ml-`, `mr-`)
+- **Use Gaps, Not Margins**: Use `gap-2`, `gap-4`, `space-y-4` for spacing between elements
+- **Consistent Spacing**: Use standard Tailwind spacing scale (`space-y-4`, `gap-6`, etc.)
+- **Card-Based Layouts**: Prefer Card components for content organization
+- **Minimal Padding**: Use conservative padding - `p-3`, `p-4` rather than larger values
+- **Clean Separators**: Use subtle borders (`border-t`, `border-muted`) instead of heavy dividers
+- **NEVER Hardcode Margins**: Avoid `mt-4`, `mb-2`, `ml-3` unless absolutely necessary for exceptions
 
 ## Color & Visual Elements
 

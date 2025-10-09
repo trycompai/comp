@@ -49,20 +49,16 @@ export class TasksService {
           id: taskId,
           organizationId,
         },
+        include: {
+          assignee: true,
+        },
       });
 
       if (!task) {
         throw new BadRequestException('Task not found or access denied');
       }
 
-      return {
-        id: task.id,
-        title: task.title,
-        description: task.description,
-        status: task.status,
-        createdAt: task.createdAt,
-        updatedAt: task.updatedAt,
-      };
+      return task;
     } catch (error) {
       console.error('Error fetching task:', error);
       if (error instanceof BadRequestException) {
@@ -89,5 +85,31 @@ export class TasksService {
     if (!task) {
       throw new BadRequestException('Task not found or access denied');
     }
+  }
+
+  /**
+   * Get all automation runs for a task
+   */
+  async getTaskAutomationRuns(organizationId: string, taskId: string) {
+    // Verify task access
+    await this.verifyTaskAccess(organizationId, taskId);
+
+    const runs = await db.evidenceAutomationRun.findMany({
+      where: {
+        taskId,
+      },
+      include: {
+        evidenceAutomation: {
+          select: {
+            name: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return runs;
   }
 }

@@ -17,7 +17,6 @@ import { TasksModule } from './tasks/tasks.module';
 import { VendorsModule } from './vendors/vendors.module';
 import { ContextModule } from './context/context.module';
 
-
 @Module({
   imports: [
     ConfigModule.forRoot({
