@@ -58,7 +58,7 @@ export const TaskAutomations = ({ automations }: { automations: AutomationWithLa
           </div>
         ) : (
           <div className="flex flex-col gap-2">
-            {automations.slice(0, 3).map((automation) => {
+            {automations.map((automation) => {
               const latestRun = automation.runs[0];
               const runStatus = latestRun?.status;
               const lastRan = latestRun?.createdAt

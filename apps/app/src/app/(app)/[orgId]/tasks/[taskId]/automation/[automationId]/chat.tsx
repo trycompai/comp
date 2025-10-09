@@ -43,7 +43,7 @@ interface Props {
 
 export function Chat({ className, orgId, taskId, taskName, automationId }: Props) {
   const [input, setInput] = useState('');
-  const { chat } = useSharedChatContext();
+  const { chat, updateAutomationId } = useSharedChatContext();
   const { messages, sendMessage, status } = useChat<ChatUIMessage>({
     chat,
   });
@@ -66,6 +66,7 @@ export function Chat({ className, orgId, taskId, taskName, automationId }: Props
     taskId,
     automationId,
     isEphemeral,
+    updateAutomationId,
   });
 
   const handleExampleClick = useCallback(

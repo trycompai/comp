@@ -2,6 +2,7 @@ import { api } from '@/lib/api-client';
 import { useRouter } from 'next/navigation';
 import { useCallback } from 'react';
 import { toast } from 'sonner';
+import { mutate } from 'swr';
 
 interface UseChatHandlersProps {
   sendMessage: (message: { text: string }, options?: any) => void;
@@ -10,6 +11,7 @@ interface UseChatHandlersProps {
   taskId: string;
   automationId: string;
   isEphemeral: boolean;
+  updateAutomationId: (newId: string) => void;
 }
 
 export function useChatHandlers({
@@ -19,6 +21,7 @@ export function useChatHandlers({
   taskId,
   automationId,
   isEphemeral,
+  updateAutomationId,
 }: UseChatHandlersProps) {
   const router = useRouter();
 
@@ -44,6 +47,12 @@ export function useChatHandlers({
           }
 
           realAutomationId = response.data.automation.id;
+
+          // Update the automation ID in ChatProvider immediately
+          updateAutomationId(realAutomationId);
+
+          // Invalidate automations list cache so task page updates
+          mutate([`task-automations-${taskId}`, orgId, taskId]);
 
           // Silently replace the URL without navigation/reload
           window.history.replaceState(
@@ -73,7 +82,7 @@ export function useChatHandlers({
 
       setInput('');
     },
-    [sendMessage, setInput, orgId, taskId, automationId, isEphemeral],
+    [sendMessage, setInput, orgId, taskId, automationId, isEphemeral, updateAutomationId],
   );
 
   const handleSecretAdded = useCallback(

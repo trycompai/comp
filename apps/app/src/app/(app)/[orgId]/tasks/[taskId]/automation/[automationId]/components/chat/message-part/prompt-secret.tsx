@@ -38,7 +38,8 @@ export const PromptSecret = memo(function PromptSecret({
   const [value, setValue] = useState('');
   const [description, setDescription] = useState(() => secretData?.description || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isComplete, setIsComplete] = useState(false);
+  // If state is 'output-available', the secret was already added (historical message)
+  const [isComplete, setIsComplete] = useState(state === 'output-available');
 
   // Use the provided secret name or the user-entered one
   const finalSecretName = secretData?.secretName || name;
@@ -59,8 +60,6 @@ export const PromptSecret = memo(function PromptSecret({
         category: secretData?.category || 'automation',
         organizationId: orgId,
       };
-
-      console.log('Creating secret with payload:', { ...payload, value: '[REDACTED]' });
 
       const response = await fetch('/api/secrets', {
         method: 'POST',

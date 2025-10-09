@@ -3,7 +3,7 @@
 import { Chat } from '@ai-sdk/react';
 import { DataUIPart, DefaultChatTransport } from 'ai';
 import { useParams } from 'next/navigation';
-import { createContext, useContext, useRef, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useRef, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import { mutate } from 'swr';
 import { saveChatHistory } from '../actions/task-automation-actions';
@@ -13,6 +13,7 @@ import { DataPart } from './types/data-parts';
 
 interface ChatContextValue {
   chat: Chat<ChatUIMessage>;
+  updateAutomationId: (newId: string) => void;
 }
 
 const ChatContext = createContext<ChatContextValue | undefined>(undefined);
@@ -32,9 +33,25 @@ export function ChatProvider({
   const url = `${baseUrl}/api/tasks-automations/chat`;
 
   const { automationId } = useParams<{ automationId: string }>();
-  const isEphemeral = automationId === 'new';
 
-  // Create Chat instance once with initial messages from server
+  // Use ref to track the latest automation ID (important for ephemeral → real transition)
+  // Initialize once, don't overwrite on every render
+  const automationIdRef = useRef(automationId);
+  const hasBeenManuallyUpdated = useRef(false);
+
+  // Only update from params if it hasn't been manually set
+  if (!hasBeenManuallyUpdated.current) {
+    automationIdRef.current = automationId;
+  }
+
+  // Function to update automation ID (called when ephemeral becomes real)
+  const updateAutomationId = useCallback((newId: string) => {
+    console.log('[ChatProvider] Updating automation ID to:', newId);
+    automationIdRef.current = newId;
+    hasBeenManuallyUpdated.current = true;
+  }, []);
+
+  // Create Chat instance once with initial messages
   const chatRef = useRef<Chat<ChatUIMessage> | null>(null);
   if (!chatRef.current) {
     chatRef.current = new Chat<ChatUIMessage>({
@@ -50,18 +67,30 @@ export function ChatProvider({
       },
       onFinish: async (event) => {
         console.log('[Chat] onFinish triggered, saving to Redis...');
-        if (isEphemeral) return;
+
+        // Get the current automation ID from ref (handles URL updates via replaceState)
+        const currentAutomationId = automationIdRef.current;
+        console.log('[Chat] currentAutomationId:', currentAutomationId);
+
+        if (currentAutomationId === 'new') {
+          console.log('[Chat] Skipping save - ephemeral automation');
+          return;
+        }
 
         const messagesToSave = event.messages;
-        console.log('[Chat] Saving', messagesToSave?.length || 0, 'messages');
+        console.log('[Chat] Saving to automation:', currentAutomationId);
 
-        const result = await saveChatHistory(automationId, messagesToSave || []);
+        const result = await saveChatHistory(currentAutomationId, messagesToSave || []);
         console.log('[Chat] Save result:', result);
       },
     });
   }
 
-  return <ChatContext.Provider value={{ chat: chatRef.current }}>{children}</ChatContext.Provider>;
+  return (
+    <ChatContext.Provider value={{ chat: chatRef.current, updateAutomationId }}>
+      {children}
+    </ChatContext.Provider>
+  );
 }
 
 export function useSharedChatContext() {

@@ -38,7 +38,8 @@ export const PromptInfo = memo(function PromptInfo({
     : null;
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isComplete, setIsComplete] = useState(false);
+  // If state is 'output-available', the info was already provided (historical message)
+  const [isComplete, setIsComplete] = useState(state === 'output-available');
 
   // Initialize values from props only once on mount
   const [values, setValues] = useState<Record<string, string>>(() => {
