@@ -10,6 +10,14 @@ export class AutomationsService {
       where: {
         taskId: taskId,
       },
+      include: {
+        runs: {
+          orderBy: {
+            createdAt: 'desc',
+          },
+          take: 1,
+        },
+      },
       orderBy: {
         createdAt: 'asc',
       },

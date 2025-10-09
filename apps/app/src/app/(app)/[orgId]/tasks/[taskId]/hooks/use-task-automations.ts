@@ -1,10 +1,14 @@
 import { api } from '@/lib/api-client';
-import { EvidenceAutomation } from '@db';
+import { EvidenceAutomation, EvidenceAutomationRun } from '@db';
 import { useParams } from 'next/navigation';
 import useSWR from 'swr';
 
+type AutomationWithRuns = EvidenceAutomation & {
+  runs: EvidenceAutomationRun[];
+};
+
 interface UseTaskAutomationsReturn {
-  automations: EvidenceAutomation[] | undefined;
+  automations: AutomationWithRuns[] | undefined;
   isLoading: boolean;
   isError: boolean;
   error: Error | undefined;
@@ -12,7 +16,7 @@ interface UseTaskAutomationsReturn {
 }
 
 interface UseTaskAutomationsOptions {
-  initialData?: EvidenceAutomation[];
+  initialData?: AutomationWithRuns[];
 }
 
 export function useTaskAutomations({
@@ -28,7 +32,7 @@ export function useTaskAutomations({
     async () => {
       const response = await api.get<{
         success: boolean;
-        automations: EvidenceAutomation[];
+        automations: AutomationWithRuns[];
       }>(`/v1/tasks/${taskId}/automations`, orgId);
 
       if (response.error) {

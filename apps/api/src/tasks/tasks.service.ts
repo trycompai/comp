@@ -98,6 +98,13 @@ export class TasksService {
       where: {
         taskId,
       },
+      include: {
+        evidenceAutomation: {
+          select: {
+            name: true,
+          },
+        },
+      },
       orderBy: {
         createdAt: 'desc',
       },

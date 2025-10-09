@@ -14,6 +14,7 @@ import {
 import {
   CommentEntityType,
   EvidenceAutomation,
+  EvidenceAutomationRun,
   type Control,
   type Member,
   type Task,
@@ -27,18 +28,20 @@ import { toast } from 'sonner';
 import { Comments } from '../../../../../../components/comments/Comments';
 import { updateTask } from '../../actions/updateTask';
 import { useTask } from '../hooks/use-task';
-import { useTaskAutomationRuns } from '../hooks/use-task-automation-runs';
 import { useTaskAutomations } from '../hooks/use-task-automations';
-import { AutomationRunsCard } from './AutomationRunsCard';
 import { TaskAutomations } from './TaskAutomations';
 import { TaskDeleteDialog } from './TaskDeleteDialog';
 import { TaskMainContent } from './TaskMainContent';
 import { TaskPropertiesSidebar } from './TaskPropertiesSidebar';
 
+type AutomationWithRuns = EvidenceAutomation & {
+  runs: EvidenceAutomationRun[];
+};
+
 interface SingleTaskProps {
   initialTask: Task & { fileUrls?: string[]; controls?: Control[] };
   initialMembers?: (Member & { user: User })[];
-  initialAutomations: EvidenceAutomation[];
+  initialAutomations: AutomationWithRuns[];
 }
 
 export function SingleTask({ initialTask, initialAutomations }: SingleTaskProps) {
@@ -53,7 +56,6 @@ export function SingleTask({ initialTask, initialAutomations }: SingleTaskProps)
   const { automations } = useTaskAutomations({
     initialData: initialAutomations,
   });
-  const { runs } = useTaskAutomationRuns();
   const isTaskAutomationEnabled = useFeatureFlagEnabled('is-task-automation-enabled');
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -123,31 +125,22 @@ export function SingleTask({ initialTask, initialAutomations }: SingleTaskProps)
           </div>
 
           {/* Main Content Area */}
-          <div className="space-y-6">
+          <div className="space-y-4">
             <TaskMainContent task={task} showComments={false} />
 
-            {/* Automation Runs Section */}
-            {runs && runs.length > 0 && (
-              <div className="pt-6">
-                <AutomationRunsCard runs={runs} />
-              </div>
-            )}
-
             {/* Comments Section - integrated */}
-            <div className="pt-6">
-              <Comments
-                entityId={task.id}
-                entityType={CommentEntityType.task}
-                variant="inline"
-                title=""
-              />
-            </div>
+            <Comments
+              entityId={task.id}
+              entityType={CommentEntityType.task}
+              variant="inline"
+              title=""
+            />
           </div>
         </div>
 
         {/* Right Column - Properties (starts at top) */}
         <div className="lg:col-span-1 space-y-4">
-          <Card className="border border-border bg-card shadow-sm sticky top-4 overflow-hidden">
+          <Card className="border border-border bg-card shadow-sm overflow-hidden">
             <div className="relative">
               <div className="absolute top-4 right-4 flex items-center gap-1 z-10">
                 <Button
@@ -176,7 +169,7 @@ export function SingleTask({ initialTask, initialAutomations }: SingleTaskProps)
           </Card>
           {/* Automations section */}
           {isTaskAutomationEnabled && (
-            <Card className="border border-border bg-card shadow-sm sticky top-4 overflow-hidden">
+            <Card className="border border-border bg-card shadow-sm overflow-hidden">
               <TaskAutomations automations={automations || []} />
             </Card>
           )}

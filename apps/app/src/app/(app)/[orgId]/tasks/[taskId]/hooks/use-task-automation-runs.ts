@@ -3,8 +3,14 @@ import { EvidenceAutomationRun } from '@db';
 import { useParams } from 'next/navigation';
 import useSWR from 'swr';
 
+type AutomationRunWithName = EvidenceAutomationRun & {
+  evidenceAutomation: {
+    name: string;
+  };
+};
+
 interface UseTaskAutomationRunsReturn {
-  runs: EvidenceAutomationRun[] | undefined;
+  runs: AutomationRunWithName[] | undefined;
   isLoading: boolean;
   isError: boolean;
   error: Error | undefined;
@@ -12,7 +18,7 @@ interface UseTaskAutomationRunsReturn {
 }
 
 interface UseTaskAutomationRunsOptions {
-  initialData?: EvidenceAutomationRun[];
+  initialData?: AutomationRunWithName[];
 }
 
 export function useTaskAutomationRuns({
@@ -26,7 +32,7 @@ export function useTaskAutomationRuns({
   const { data, error, isLoading, mutate } = useSWR(
     [`task-automation-runs-${taskId}`, orgId, taskId],
     async () => {
-      const response = await api.get<EvidenceAutomationRun[]>(
+      const response = await api.get<AutomationRunWithName[]>(
         `/v1/tasks/${taskId}/automation-runs`,
         orgId,
       );
