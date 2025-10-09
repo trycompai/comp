@@ -164,13 +164,13 @@ export function InviteMembersModal({
             if (hasEmployeeRoleAndNoAdmin) {
               await addEmployeeWithoutInvite({
                 organizationId,
-                email: invite.email,
+                email: invite.email.toLowerCase(),
                 roles: invite.roles,
               });
             } else {
               // Use authClient to send the invitation
               await authClient.organization.inviteMember({
-                email: invite.email,
+                email: invite.email.toLowerCase(),
                 role: invite.roles.length === 1 ? invite.roles[0] : invite.roles,
               });
             }
@@ -325,12 +325,12 @@ export function InviteMembersModal({
               if (hasEmployeeRoleAndNoAdmin) {
                 await addEmployeeWithoutInvite({
                   organizationId,
-                  email,
+                  email: email.toLowerCase(),
                   roles: validRoles,
                 });
               } else {
                 await authClient.organization.inviteMember({
-                  email,
+                  email: email.toLowerCase(),
                   role: validRoles,
                 });
               }
