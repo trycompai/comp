@@ -5,8 +5,9 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@comp/ui/c
 import { Dialog } from '@comp/ui/dialog';
 import { ScrollArea } from '@comp/ui/scroll-area';
 import type { FrameworkEditorFramework } from '@db';
-import { PlusIcon } from 'lucide-react';
+import { ArrowRight, PlusIcon } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useState } from 'react';
 import type { FrameworkInstanceWithControls } from '../types';
 import { AddFrameworkModal } from './AddFrameworkModal';
@@ -17,6 +18,7 @@ export interface FrameworksOverviewProps {
   allFrameworks: FrameworkEditorFramework[];
   frameworksWithCompliance?: FrameworkInstanceWithComplianceScore[];
   organizationId?: string;
+  advancedModeEnabled?: boolean;
 }
 
 export function mapFrameworkToBadge(framework: FrameworkInstanceWithControls) {
@@ -56,6 +58,7 @@ export function FrameworksOverview({
   frameworksWithCompliance,
   allFrameworks,
   organizationId,
+  advancedModeEnabled = false,
 }: FrameworksOverviewProps) {
   const [isAddFrameworkModalOpen, setIsAddFrameworkModalOpen] = useState(false);
 
@@ -98,10 +101,15 @@ export function FrameworksOverview({
             <div className="space-y-0 pr-4">
               {frameworksWithControls.map((framework, index) => {
                 const complianceScore = complianceMap.get(framework.id) ?? 0;
+                const detailHref = advancedModeEnabled && organizationId
+                  ? `/${organizationId}/frameworks/${framework.id}`
+                  : null;
 
                 return (
                   <div key={framework.id}>
-                    <div className="flex items-start justify-between py-4 px-1">
+                    <div
+                      className={`flex items-start justify-between gap-3 py-4 px-1${detailHref ? ' hover:bg-muted/40 rounded-md transition-colors' : ''}`}
+                    >
                       <div className="flex items-start gap-3 flex-1 min-w-0">
                         <div className="flex-shrink-0 mt-1">
                           <Image
@@ -135,6 +143,14 @@ export function FrameworksOverview({
                           </div>
                         </div>
                       </div>
+                      {detailHref && (
+                        <Button asChild variant="ghost" size="sm" className="mt-1 whitespace-nowrap">
+                          <Link href={detailHref}>
+                            View details
+                            <ArrowRight className="ml-1 h-3 w-3" />
+                          </Link>
+                        </Button>
+                      )}
                     </div>
                     {index < frameworksWithControls.length - 1 && (
                       <div className="border-t border-muted/30" />

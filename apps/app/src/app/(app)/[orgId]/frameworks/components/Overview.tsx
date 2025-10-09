@@ -46,6 +46,7 @@ export interface OverviewProps {
   publishedPoliciesScore: PublishedPoliciesScore;
   doneTasksScore: DoneTasksScore;
   currentMember: { id: string; role: string } | null;
+  advancedModeEnabled: boolean;
 }
 
 export const Overview = ({
@@ -56,6 +57,7 @@ export const Overview = ({
   publishedPoliciesScore,
   doneTasksScore,
   currentMember,
+  advancedModeEnabled,
 }: OverviewProps) => {
   return (
     <DraggableCards>
@@ -71,6 +73,7 @@ export const Overview = ({
         frameworksWithCompliance={frameworksWithCompliance}
         allFrameworks={allFrameworks}
         organizationId={organizationId}
+        advancedModeEnabled={advancedModeEnabled}
       />
       <ToDoOverview
         totalPolicies={publishedPoliciesScore.totalPolicies}
