@@ -217,6 +217,7 @@ Start and initialize the PostgreSQL database using Docker:
 1. Start the database:
 
    ```sh
+   cd packages/db
    bun docker:up
    ```
 
