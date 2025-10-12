@@ -16,17 +16,6 @@
           {
             "group": "Get Started",
             "pages": ["introduction", "quickstart", "development", "device-agent"]
-          },
-          {
-            "group": "Essentials",
-            "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/settings",
-              "essentials/navigation",
-              "essentials/reusable-snippets"
-            ]
           }
         ]
       },
