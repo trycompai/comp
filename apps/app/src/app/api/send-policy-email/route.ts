@@ -26,16 +26,30 @@ export async function POST(request: NextRequest) {
   const novu = new Novu({ secretKey: novuApiKey });
 
   try {
-    const result = await novu.triggerBulk({
-      events: events.map((event: any) => ({
-        workflowId: "new-policy-email",
-        to: {
-          subscriberId: event.subscriberId,
-          email: event.email,
-        },
-        payload: event,
-      })),
-    });
+    // Throttle calls: process in batches of 2 events per second to avoid rate limit
+    const batchSize = 2;
+    const results: unknown[] = [];
+    for (let i = 0; i < events.length; i += batchSize) {
+      const batch = events.slice(i, i + batchSize);
+      const batchResults = await Promise.all(
+        batch.map((event: any) =>
+          novu.trigger({
+            workflowId: "new-policy-email",
+            to: {
+              subscriberId: event.subscriberId,
+              email: event.email,
+            },
+            payload: event,
+          })
+        )
+      );
+      results.push(...batchResults);
+      // If there are more batches to process, wait 1 second
+      if (i + batchSize < events.length) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+    }
+    const result = { triggered: results.length, details: results };
 
     return NextResponse.json({ success: true, result });
   } catch (error) {
