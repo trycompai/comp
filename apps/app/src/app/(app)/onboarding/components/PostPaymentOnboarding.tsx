@@ -88,7 +88,7 @@ export function PostPaymentOnboarding({
               <div className="text-muted-foreground text-sm">
                 Step {stepIndex + 1} of {totalSteps}
               </div>
-              <CardTitle className="flex min-h-[56px] items-center justify-center text-center">
+              <CardTitle className="flex min-h-[56px] items-center justify-center text-center leading-6">
                 {step?.question || ''}
               </CardTitle>
             </div>
