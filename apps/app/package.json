@@ -33,7 +33,7 @@
     "@novu/nextjs": "^3.10.1",
     "@number-flow/react": "^0.5.9",
     "@prisma/client": "^6.13.0",
-    "@prisma/instrumentation": "6.6.0",
+    "@prisma/instrumentation": "6.17.1",
     "@prisma/nextjs-monorepo-workaround-plugin": "^6.13.0",
     "@radix-ui/react-slot": "^1.2.3",
     "@react-email/components": "^0.0.41",
