@@ -134,6 +134,7 @@ export function usePostPaymentOnboarding({
       infrastructure: allAnswers.infrastructure || '',
       dataTypes: allAnswers.dataTypes || '',
       geo: allAnswers.geo || '',
+      shipping: allAnswers.shipping || {},
     });
   };
 
@@ -153,7 +154,7 @@ export function usePostPaymentOnboarding({
 
     // Handle multi-select fields with "Other" option
     for (const key of Object.keys(newAnswers)) {
-      if (step.options && step.key === key && key !== 'frameworkIds') {
+      if (step.options && step.key === key && key !== 'frameworkIds' && key !== 'shipping') {
         const customValue = newAnswers[`${key}Other`] || '';
         const values = (newAnswers[key] || '').split(',').filter(Boolean);
 

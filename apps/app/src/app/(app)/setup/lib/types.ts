@@ -12,6 +12,12 @@ export type CompanyDetails = {
   dataTypes: string;
   software: string;
   geo: string;
+  shipping?: {
+    fullName?: string;
+    address?: string;
+    phone?: string;
+    email?: string;
+  };
 };
 
 export type ChatBubble = {

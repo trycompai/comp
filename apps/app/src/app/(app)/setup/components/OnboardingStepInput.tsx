@@ -1,3 +1,4 @@
+import { FormLabel } from '@comp/ui/form';
 import { Input } from '@comp/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { SelectPills } from '@comp/ui/select-pills';
@@ -34,6 +35,50 @@ export function OnboardingStepInput({
           value={form.getValues(currentStep.key) || []}
           onChange={(value) => form.setValue(currentStep.key, value)}
           onLoadingChange={onLoadingChange}
+        />
+      </div>
+    );
+  }
+
+  if (currentStep.key === 'shipping') {
+    return (
+      <div className="space-y-4" data-testid={`onboarding-input-${currentStep.key}`}>
+        <FormLabel>
+          Full Name <span className="text-muted-foreground">(optional)</span>
+        </FormLabel>
+        <Input
+          {...form.register('shipping.fullName')}
+          placeholder="John Doe"
+          autoFocus
+          data-testid={`onboarding-input-${currentStep.key}-fullName`}
+        />
+        <FormLabel>
+          Address <span className="text-muted-foreground">(optional)</span>
+        </FormLabel>
+        <Textarea
+          {...form.register('shipping.address')}
+          placeholder="123 Main St, Apt 4B, City, State, ZIP"
+          rows={2}
+          maxLength={300}
+          data-testid={`onboarding-input-${currentStep.key}-address`}
+        />
+        <FormLabel>
+          Phone <span className="text-muted-foreground">(optional)</span>
+        </FormLabel>
+        <Input
+          {...form.register('shipping.phone')}
+          placeholder="+1 (555) 123-4567"
+          autoFocus
+          data-testid={`onboarding-input-${currentStep.key}-phone`}
+        />
+        <FormLabel>
+          Email <span className="text-muted-foreground">(optional)</span>
+        </FormLabel>
+        <Input
+          {...form.register('shipping.email')}
+          placeholder="john@example.com"
+          autoFocus
+          data-testid={`onboarding-input-${currentStep.key}-email`}
         />
       </div>
     );

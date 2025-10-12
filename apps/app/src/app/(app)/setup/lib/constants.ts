@@ -20,6 +20,14 @@ export const companyDetailsSchema = z.object({
   authentication: z.string().min(1, 'Please select authentication methods'),
   workLocation: z.string().min(1, 'Please select work arrangement'),
   geo: z.string().min(1, 'Please select where your data is located'),
+  shipping: z
+    .object({
+      fullName: z.string().optional(),
+      address: z.string().optional(),
+      phone: z.string().optional(),
+      email: z.string().optional(),
+    })
+    .optional(),
 });
 
 export const steps: Step[] = [
@@ -136,6 +144,12 @@ export const steps: Step[] = [
       'Middle East',
       'Australia/New Zealand',
     ],
+  },
+  {
+    key: 'shipping',
+    question:
+      "We'd love to send you a little gift when you get compliant! If you'd like to receive it, just share your mailing address.",
+    placeholder: '',
   },
 ];
 

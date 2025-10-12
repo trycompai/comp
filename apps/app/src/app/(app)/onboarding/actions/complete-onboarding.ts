@@ -23,6 +23,14 @@ const onboardingCompletionSchema = z.object({
   infrastructure: z.string().min(1),
   dataTypes: z.string().min(1),
   geo: z.string().min(1),
+  shipping: z
+    .object({
+      fullName: z.string().optional(),
+      address: z.string().optional(),
+      phone: z.string().optional(),
+      email: z.string().optional(),
+    })
+    .optional(),
 });
 
 export const completeOnboarding = authActionClient
@@ -63,16 +71,18 @@ export const completeOnboarding = authActionClient
 
       // Save the remaining steps to context
       const postPaymentSteps = steps.slice(3); // Steps 4-12
-      await db.context.createMany({
-        data: postPaymentSteps
-          .filter((step) => step.key in parsedInput)
-          .map((step) => ({
-            question: step.question,
-            answer: parsedInput[step.key as keyof typeof parsedInput] as string,
-            tags: ['onboarding'],
-            organizationId: parsedInput.organizationId,
-          })),
-      });
+      const contextData = postPaymentSteps
+        .filter((step) => step.key in parsedInput)
+        .map((step) => ({
+          question: step.question,
+          answer:
+            typeof parsedInput[step.key as keyof typeof parsedInput] === 'object'
+              ? JSON.stringify(parsedInput[step.key as keyof typeof parsedInput])
+              : (parsedInput[step.key as keyof typeof parsedInput] as string),
+          tags: ['onboarding'],
+          organizationId: parsedInput.organizationId,
+        }));
+      await db.context.createMany({ data: contextData });
 
       // Update organization to mark onboarding as complete
       await db.organization.update({
