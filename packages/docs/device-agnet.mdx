@@ -23,9 +23,15 @@ If you have questions, contact your IT administrator.
 
 **Storage:** 200MB available disk space
 
+<Note>
+  For OS not currently support by the Comp AI device agent, manual evidence will be required of the device's settings. 
+</Note>
+
 ### Installation Guide
 
 On your org's [portal](http://portal.trycomp.ai), click the "Download and Install Comp AI Device Agent" dropdown
+
+### Mac OS additional action
 
 For Mac OS, users must enable MDM to complete the installation process:
 
@@ -103,4 +109,74 @@ For Mac OS, users must enable MDM to complete the installation process:
     title="Enrollment Complete Pn"
     style={{ width:"60%" }}
   />
+</Accordion>
+
+<Accordion title="Windows Manual Evidence" description="Evidence to gather manually for unsupported windows devices" icon="sparkles">
+  ### **Windows 10 & 11**
+
+  1. **Enable BitLocker**
+     1. Press **Start** → type **Manage BitLocker** → open it.\
+        👉 **Take a screenshot of the BitLocker Drive Encryption window showing “On” for the C: drive.**
+     2. Select the drive (usually C:) → click **Turn on BitLocker**.
+     3. Save the recovery key to Microsoft Account / USB / secure location.
+     4. Restart if prompted.
+  2. **Screen Lock after 5 Minutes**
+     1. Press **Start** → **Settings** → **Personalization** → **Lock screen**.
+     2. Scroll down → click **Screen timeout settings**.\
+        👉 **Take a screenshot showing the screen timeout set to 5 minutes.**
+     3. Set **Screen turns off** = 5 minutes.
+     4. In **Settings** → **Accounts** → **Sign-in options** → ensure **Require sign-in** is set to _“When PC wakes up from sleep”_.\
+        👉 **Take a screenshot of the Sign-in Options page showing this setting**
+  3. **Minimum Password Length (Local Policy)**
+     1. Press Win + R, type secpol.msc, press Enter.
+     2. Go to **Account Policies** → **Password Policy**.
+     3. Set **Minimum password length** = 8+.\
+        👉 **Take a screenshot of the Password Policy window with “Minimum password length” = 8 or more.**\
+        _(If using Microsoft/AD/Azure, enforce via policy centrally and screenshot the policy compliance in the admin portal.)_
+  4. **Automatic Security Updates**
+     1. **Settings** → **Update & Security** → **Windows Update**.
+     2. Select **Advanced options** → make sure Automatic updates are enabled.\
+        👉 **Take a screenshot of the Windows Update settings page showing automatic updates turned on.**
+  5. **Antivirus (Windows Defender)**
+     1. **Settings** → **Update & Security** → **Windows Security**.
+     2. Open **Virus & threat protection** → ensure **Real-time protection** is on.\
+        👉 **Take a screenshot of the Windows Security window showing Real-time protection is ON.**
+
+  <Note>
+    Evidence gathered manually will be uploaded as a comment + attachment to the "Secure Devices" & "Device List" tasks with the users email of the device the evidence is for.
+  </Note>
+</Accordion>
+
+<Accordion title="Mac Manual Evidence" description="Evidence to gather manually for unsupported mac devices" icon="sparkles">
+  ### **macOS (Monterey, Ventura, Sonoma)**
+
+  1. **Enable FileVault**
+     1. Open **System Settings** (or **System Preferences** in older versions).
+     2. Go to **Privacy & Security** → **FileVault**.
+     3. Click **Turn On FileVault** → enter password.
+     4. Record recovery key.\
+        👉 **Take a screenshot of the FileVault settings page showing “FileVault is enabled for the disk.”**
+  2. **Screen Auto-lock (5 min)**
+     1. **System Settings** → **Lock Screen**.
+     2. Set **Start screen saver when inactive** = 5 minutes.\
+        👉 **Take a screenshot showing the setting at 5 minutes.**
+     3. Set **Require password after sleep or screen saver begins** = _Immediately_.\
+        👉 **Take a screenshot showing “Require password immediately” is selected.**
+  3. **Minimum Password Length (Mac Lock Screen PW)**
+     1. Native macOS UI doesn’t enforce; requires **Terminal** or **MDM**.
+     2. `pwpolicy -setglobalpolicy "minChars=8"` 
+     3. 👉 **If set via Terminal, take a screenshot of the command output confirming the policy.**
+     4. If enforced by MDM (Jamf, Intune, etc.), **screenshot the compliance screen from the MDM portal.**
+  4. **Automatic Security Updates**
+     1. **System Settings** → **General** → **Software Update**.
+     2. Click **Automatic Updates** → enable all options (Install Security Responses & System files, etc.).\
+        👉 **Take a screenshot of the Automatic Updates options screen with all toggles enabled.**
+  5. **Antivirus (XProtect built-in)**
+     1. macOS automatically runs **XProtect** in the background.
+     2. Simply ensure macOS is **fully updated**.\
+        👉 **Take a screenshot of the Software Update page showing the Mac is up to date.**
+
+  <Note>
+    Evidence gathered manually will be uploaded as a comment + attachment to the "Secure Devices" & "Device List" tasks with the users email of the device the evidence is for.
+  </Note>
 </Accordion>
