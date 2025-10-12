@@ -4,12 +4,13 @@ import { logger, schedules } from '@trigger.dev/sdk';
 
 export const taskSchedule = schedules.task({
   id: 'task-schedule',
+  machine: 'large-1x',
   cron: '0 */12 * * *', // Every 12 hours
   maxDuration: 1000 * 60 * 10, // 10 minutes
   run: async () => {
     const now = new Date();
-    const novu = new Novu({ 
-      secretKey: process.env.NOVU_API_KEY
+    const novu = new Novu({
+      secretKey: process.env.NOVU_API_KEY,
     });
 
     // Find all Done tasks that have a review date and frequency set
@@ -30,7 +31,7 @@ export const taskSchedule = schedules.task({
             name: true,
             members: {
               where: {
-                role: { contains: 'owner' }
+                role: { contains: 'owner' },
               },
               select: {
                 user: {
@@ -129,15 +130,18 @@ export const taskSchedule = schedules.task({
         },
       });
 
-      const recipientsMap = new Map<string, {
-        email: string;
-        userId: string;
-        name: string;
-        task: typeof overdueTasks[number];
-      }>();
+      const recipientsMap = new Map<
+        string,
+        {
+          email: string;
+          userId: string;
+          name: string;
+          task: (typeof overdueTasks)[number];
+        }
+      >();
       const addRecipients = (
         users: Array<{ user: { id: string; email: string; name?: string } }>,
-        task: typeof overdueTasks[number],
+        task: (typeof overdueTasks)[number],
       ) => {
         for (const entry of users) {
           const user = entry.user;
@@ -159,7 +163,7 @@ export const taskSchedule = schedules.task({
       for (const task of overdueTasks) {
         // Org owners
         if (task.organization && Array.isArray(task.organization.members)) {
-            addRecipients(task.organization.members, task);
+          addRecipients(task.organization.members, task);
         }
         // Policy assignee
         if (task.assignee) {
@@ -185,7 +189,7 @@ export const taskSchedule = schedules.task({
             organizationId: recipient.task.organizationId,
             taskId: recipient.task.id,
             taskUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.trycomp.ai'}/${recipient.task.organizationId}/tasks/${recipient.task.id}`,
-          }
+          },
         })),
       });
 
@@ -218,5 +222,3 @@ export const taskSchedule = schedules.task({
     }
   },
 });
-
-
