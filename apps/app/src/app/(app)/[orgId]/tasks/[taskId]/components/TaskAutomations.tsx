@@ -59,11 +59,14 @@ export const TaskAutomations = ({ automations }: { automations: AutomationWithLa
         ) : (
           <div className="flex flex-col gap-2">
             {automations.map((automation) => {
-              const latestRun = automation.runs[0];
-              const runStatus = latestRun?.status;
-              const lastRan = latestRun?.createdAt
-                ? formatDistanceToNow(new Date(latestRun.createdAt), { addSuffix: true })
+              // Show only the latest version run (ignore draft runs)
+              const latestVersionRun = automation.runs.find((run) => run.version !== null);
+
+              const runStatus = latestVersionRun?.status;
+              const lastRan = latestVersionRun?.createdAt
+                ? formatDistanceToNow(new Date(latestVersionRun.createdAt), { addSuffix: true })
                 : null;
+              const runVersion = latestVersionRun?.version;
 
               return (
                 <Link
@@ -79,7 +82,7 @@ export const TaskAutomations = ({ automations }: { automations: AutomationWithLa
                     <div className="flex items-center gap-2">
                       <div
                         className={`h-2 w-2 rounded-full flex-shrink-0 ${
-                          !latestRun
+                          !latestVersionRun
                             ? 'bg-muted-foreground/30'
                             : runStatus === 'completed'
                               ? 'bg-chart-positive'
@@ -92,9 +95,15 @@ export const TaskAutomations = ({ automations }: { automations: AutomationWithLa
                       />
                       <p className="font-medium text-foreground text-xs">{automation.name}</p>
                     </div>
-                    <p className="text-[10px] text-muted-foreground mt-0.5 ml-4">
-                      {lastRan ? `Last ran ${lastRan}` : 'No runs yet'}
-                    </p>
+                    {latestVersionRun && lastRan ? (
+                      <p className="text-[10px] text-muted-foreground mt-0.5 ml-4">
+                        Last ran {lastRan} (v{runVersion})
+                      </p>
+                    ) : (
+                      <p className="text-[10px] text-muted-foreground mt-0.5 ml-4">
+                        No published runs yet
+                      </p>
+                    )}
                   </div>
                   <ArrowRight className="w-4 h-4 flex-shrink-0" />
                 </Link>

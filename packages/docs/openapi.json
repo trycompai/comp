@@ -6453,6 +6453,96 @@
         ]
       }
     },
+    "/v1/tasks/{taskId}/automations/{automationId}/versions": {
+      "get": {
+        "description": "Retrieve all published versions of an automation script",
+        "operationId": "AutomationsController_getAutomationVersions_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Task ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "automationId",
+            "required": true,
+            "in": "path",
+            "description": "Automation ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Versions retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "versions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "version": {
+                            "type": "number"
+                          },
+                          "scriptKey": {
+                            "type": "string"
+                          },
+                          "changelog": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "publishedBy": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get all versions for an automation",
+        "tags": [
+          "Task Automations"
+        ]
+      }
+    },
     "/v1/comments": {
       "get": {
         "description": "Retrieve all comments for a specific entity (task, policy, vendor, etc.)",

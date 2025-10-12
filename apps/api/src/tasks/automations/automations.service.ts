@@ -135,4 +135,20 @@ export class AutomationsService {
       message: 'Automation deleted successfully',
     };
   }
+
+  async listVersions(automationId: string) {
+    const versions = await db.evidenceAutomationVersion.findMany({
+      where: {
+        evidenceAutomationId: automationId,
+      },
+      orderBy: {
+        version: 'desc',
+      },
+    });
+
+    return {
+      success: true,
+      versions,
+    };
+  }
 }

@@ -175,4 +175,50 @@ export class AutomationsController {
 
     return this.automationsService.delete(automationId);
   }
+
+  @Get(':automationId/versions')
+  @ApiOperation({
+    summary: 'Get all versions for an automation',
+    description: 'Retrieve all published versions of an automation script',
+  })
+  @ApiParam({
+    name: 'taskId',
+    description: 'Task ID',
+  })
+  @ApiParam({
+    name: 'automationId',
+    description: 'Automation ID',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Versions retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        versions: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              version: { type: 'number' },
+              scriptKey: { type: 'string' },
+              changelog: { type: 'string', nullable: true },
+              publishedBy: { type: 'string', nullable: true },
+              createdAt: { type: 'string', format: 'date-time' },
+            },
+          },
+        },
+      },
+    },
+  })
+  async getAutomationVersions(
+    @OrganizationId() organizationId: string,
+    @Param('taskId') taskId: string,
+    @Param('automationId') automationId: string,
+  ) {
+    await this.tasksService.verifyTaskAccess(organizationId, taskId);
+    return this.automationsService.listVersions(automationId);
+  }
 }

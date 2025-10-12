@@ -10,7 +10,8 @@ model EvidenceAutomation {
     task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
     // Relations
-    runs EvidenceAutomationRun[]
+    runs     EvidenceAutomationRun[]
+    versions EvidenceAutomationVersion[]
 
     @@index([taskId])
 }

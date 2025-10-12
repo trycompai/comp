@@ -1,5 +1,6 @@
 'use client';
 
+import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { EvidenceAutomationRun, EvidenceAutomationRunStatus } from '@db';
@@ -126,9 +127,20 @@ export function AutomationRunsCard({ runs }: AutomationRunsCardProps) {
                   {/* Content */}
                   <div className="flex-1 min-w-0 space-y-1">
                     <div className="flex items-center justify-between gap-3">
-                      <p className="text-sm text-foreground font-medium truncate">
-                        {run.evidenceAutomation.name}
-                      </p>
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <p className="text-sm text-foreground font-medium truncate">
+                          {run.evidenceAutomation.name}
+                        </p>
+                        {run.version ? (
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                            v{run.version}
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                            draft
+                          </Badge>
+                        )}
+                      </div>
                       {hasDetails && (
                         <ChevronDown
                           className={`h-4 w-4 text-muted-foreground transition-transform duration-700 ease-in-out ${

@@ -1,5 +1,6 @@
 'use server';
 
+import { db } from '@db';
 /**
  * Server actions for task automation
  * These actions securely call the enterprise API with server-side license key
@@ -59,6 +60,8 @@ async function callEnterpriseApi<T>(
       url.searchParams.append(key, value);
     });
   }
+
+  console.log('url', url.toString());
 
   const method = options.method || 'GET';
 
@@ -316,6 +319,96 @@ export async function saveChatHistory(automationId: string, messages: any[]) {
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to save chat history',
+    };
+  }
+}
+
+/**
+ * Publish current draft as a new version
+ */
+export async function publishAutomation(
+  orgId: string,
+  taskId: string,
+  automationId: string,
+  changelog?: string,
+) {
+  try {
+    // Call enterprise API to copy draft → versioned S3 key
+    const response = await callEnterpriseApi<{
+      success: boolean;
+      version: number;
+      scriptKey: string;
+    }>('/api/tasks-automations/publish', {
+      method: 'POST',
+      body: {
+        orgId,
+        taskId,
+        automationId,
+      },
+    });
+
+    if (!response.success) {
+      throw new Error('Enterprise API failed to publish');
+    }
+
+    // Save version record to database
+    const version = await db.evidenceAutomationVersion.create({
+      data: {
+        evidenceAutomationId: automationId,
+        version: response.version,
+        scriptKey: response.scriptKey,
+        changelog,
+      },
+    });
+
+    return {
+      success: true,
+      version,
+    };
+  } catch (error) {
+    console.error('[publishAutomation] Failed:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to publish automation',
+    };
+  }
+}
+
+/**
+ * Restore a version to draft
+ */
+export async function restoreVersion(
+  orgId: string,
+  taskId: string,
+  automationId: string,
+  version: number,
+) {
+  try {
+    const response = await callEnterpriseApi<{ success: boolean }>(
+      '/api/tasks-automations/restore-version',
+      {
+        method: 'POST',
+        body: {
+          orgId,
+          taskId,
+          automationId,
+          version,
+        },
+      },
+    );
+
+    if (!response.success) {
+      throw new Error('Enterprise API failed to restore version');
+    }
+
+    return {
+      success: true,
+    };
+  } catch (error) {
+    console.error('[restoreVersion] Failed:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to restore version',
     };
   }
 }

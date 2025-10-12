@@ -3,18 +3,39 @@
 import { cn } from '@/lib/utils';
 import { useChat } from '@ai-sdk/react';
 import { Button } from '@comp/ui/button';
-import { Code, Play, Zap } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@comp/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@comp/ui/dropdown-menu';
+import { EvidenceAutomationVersion } from '@db';
+import { Code, Loader2, RotateCcw, Upload, Zap } from 'lucide-react';
 import { useParams } from 'next/navigation';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
+import { restoreVersion } from '../../actions/task-automation-actions';
 import {
   useTaskAutomationAnalyze,
   useTaskAutomationExecution,
   useTaskAutomationScript,
 } from '../../hooks';
+import { useAutomationVersions } from '../../hooks/use-automation-versions';
 import { useSharedChatContext } from '../../lib/chat-context';
 import { useTaskAutomationStore } from '../../lib/task-automation-store';
 import type { ChatUIMessage } from '../chat/types';
 import { Panel, PanelHeader } from '../panels/panels';
+import { PublishDialog } from '../PublishDialog';
 import {
   CodeViewer,
   EmptyState,
@@ -38,6 +59,10 @@ export function WorkflowVisualizerSimple({ className }: Props) {
   }>();
   const { chat } = useSharedChatContext();
   const { sendMessage } = useChat<ChatUIMessage>({ chat });
+  const [publishDialogOpen, setPublishDialogOpen] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
+  const [confirmRestore, setConfirmRestore] = useState<EvidenceAutomationVersion | null>(null);
+  const { versions } = useAutomationVersions();
 
   const {
     script,
@@ -49,6 +74,28 @@ export function WorkflowVisualizerSimple({ className }: Props) {
     automationId: automationId,
     enabled: !!orgId && !!taskId && !!automationId,
   });
+
+  const handleRestoreVersion = async (version: EvidenceAutomationVersion) => {
+    setIsRestoring(true);
+
+    try {
+      const result = await restoreVersion(orgId, taskId, automationId, version.version);
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to restore version');
+      }
+
+      toast.success(`Draft overwritten with version ${version.version}`);
+      setConfirmRestore(null);
+
+      // Refresh the script to show the restored content
+      await refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to restore version');
+    } finally {
+      setIsRestoring(false);
+    }
+  };
 
   useEffect(() => {
     const handleScriptSaved = () => refresh();
@@ -189,15 +236,46 @@ Please fix the automation script to resolve this error.`;
           <div className="flex items-center gap-2">
             <ViewModeSwitch value={viewMode} onChange={setViewMode} />
             {script && !showEmptyState && (
-              <Button
-                size="sm"
-                onClick={handleTest}
-                disabled={isExecuting || !script}
-                variant="outline"
-              >
-                <Play className={cn('w-4 h-4', isExecuting && 'animate-pulse')} />
-                {isExecuting ? `Testing...` : `Test`}
-              </Button>
+              <>
+                {versions && versions.length > 0 && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        disabled={isRestoring}
+                        title="Rollback to version"
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuLabel>Overwrite draft with version</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      {versions.map((version) => (
+                        <DropdownMenuItem
+                          key={version.id}
+                          onClick={() => setConfirmRestore(version)}
+                          className="cursor-pointer"
+                        >
+                          <div className="flex flex-col gap-1">
+                            <span className="text-sm font-medium">Version {version.version}</span>
+                            {version.changelog && (
+                              <span className="text-xs text-muted-foreground line-clamp-1">
+                                {version.changelog}
+                              </span>
+                            )}
+                          </div>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+                <Button size="sm" onClick={() => setPublishDialogOpen(true)}>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Publish
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -245,6 +323,34 @@ Please fix the automation script to resolve this error.`;
           </div>
         )}
       </div>
+
+      <PublishDialog open={publishDialogOpen} onOpenChange={setPublishDialogOpen} />
+
+      <Dialog open={!!confirmRestore} onOpenChange={(open) => !open && setConfirmRestore(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Overwrite Draft with Version {confirmRestore?.version}?</DialogTitle>
+            <DialogDescription>
+              This will replace your current draft with the script from version{' '}
+              {confirmRestore?.version}. This action is irreversible - your current draft will be
+              permanently lost.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmRestore(null)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => confirmRestore && handleRestoreVersion(confirmRestore)}
+              variant="destructive"
+              disabled={isRestoring}
+            >
+              {isRestoring && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {isRestoring ? 'Overwriting...' : 'Overwrite Draft'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Panel>
   );
 }

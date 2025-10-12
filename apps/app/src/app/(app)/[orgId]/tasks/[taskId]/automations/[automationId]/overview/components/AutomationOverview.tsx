@@ -19,6 +19,7 @@ import {
   EditNameDialog,
 } from '../../../../automation/[automationId]/components/AutomationSettingsDialogs';
 import { AutomationRunsCard } from '../../../../components/AutomationRunsCard';
+import { VersionsCard } from './VersionsCard';
 
 type RunWithAutomationName = EvidenceAutomationRun & {
   evidenceAutomation: {
@@ -130,6 +131,9 @@ export function AutomationOverview({ task, automation, initialRuns }: Automation
             )}
           </CardContent>
         </Card>
+
+        {/* Published Versions */}
+        <VersionsCard />
 
         {/* Execution History */}
         <AutomationRunsCard runs={runsWithName} />
