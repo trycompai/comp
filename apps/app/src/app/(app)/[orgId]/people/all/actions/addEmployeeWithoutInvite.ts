@@ -36,9 +36,12 @@ export const addEmployeeWithoutInvite = async ({
     }
 
     let userId = '';
-    const existingUser = await db.user.findUnique({
+    const existingUser = await db.user.findFirst({
       where: {
-        email,
+        email: {
+          equals: email,
+          mode: 'insensitive',
+        },
       },
     });
 
