@@ -15,7 +15,7 @@
         "groups": [
           {
             "group": "Get Started",
-            "pages": ["introduction", "quickstart", "development"]
+            "pages": ["introduction", "quickstart", "development", "device-agent"]
           },
           {
             "group": "Essentials",
