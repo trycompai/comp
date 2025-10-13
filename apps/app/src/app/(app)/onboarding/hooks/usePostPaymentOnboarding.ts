@@ -134,7 +134,11 @@ export function usePostPaymentOnboarding({
       infrastructure: allAnswers.infrastructure || '',
       dataTypes: allAnswers.dataTypes || '',
       geo: allAnswers.geo || '',
-      shipping: allAnswers.shipping || {},
+      shipping: allAnswers.shipping || {
+        fullName: '',
+        address: '',
+        phone: '',
+      },
     });
   };
 
