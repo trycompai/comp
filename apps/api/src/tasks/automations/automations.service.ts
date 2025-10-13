@@ -136,7 +136,7 @@ export class AutomationsService {
     };
   }
 
-  async listVersions(automationId: string) {
+  async listVersions(automationId: string, limit?: number, offset?: number) {
     const versions = await db.evidenceAutomationVersion.findMany({
       where: {
         evidenceAutomationId: automationId,
@@ -144,6 +144,8 @@ export class AutomationsService {
       orderBy: {
         version: 'desc',
       },
+      ...(limit && { take: limit }),
+      ...(offset && { skip: offset }),
     });
 
     return {

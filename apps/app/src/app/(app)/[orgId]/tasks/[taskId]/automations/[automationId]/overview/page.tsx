@@ -20,8 +20,16 @@ export default async function AutomationOverviewPage({
   }
 
   const runs = await getAutomationRuns(automationId);
+  const versions = await getAutomationVersions(automationId);
 
-  return <AutomationOverview task={task} automation={automation} initialRuns={runs} />;
+  return (
+    <AutomationOverview
+      task={task}
+      automation={automation}
+      initialRuns={runs}
+      initialVersions={versions}
+    />
+  );
 }
 
 const getTask = async (taskId: string) => {
@@ -59,10 +67,31 @@ const getAutomationRuns = async (automationId: string) => {
     where: {
       evidenceAutomationId: automationId,
     },
+    include: {
+      evidenceAutomation: {
+        select: {
+          name: true,
+        },
+      },
+    },
     orderBy: {
       createdAt: 'desc',
     },
   });
 
   return runs;
+};
+
+const getAutomationVersions = async (automationId: string) => {
+  const versions = await db.evidenceAutomationVersion.findMany({
+    where: {
+      evidenceAutomationId: automationId,
+    },
+    orderBy: {
+      version: 'desc',
+    },
+    take: 10,
+  });
+
+  return versions;
 };

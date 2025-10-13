@@ -1,25 +1,26 @@
 'use client';
 
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator,
+} from '@comp/ui/breadcrumb';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@comp/ui/dropdown-menu';
-import { EvidenceAutomation, EvidenceAutomationRun, Task } from '@db';
-import { ArrowLeft, Cog, Edit, Settings, Trash2 } from 'lucide-react';
+import { EvidenceAutomation, EvidenceAutomationRun, EvidenceAutomationVersion, Task } from '@db';
+import { ChevronRight, Edit, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   DeleteAutomationDialog,
   EditDescriptionDialog,
   EditNameDialog,
 } from '../../../../automation/[automationId]/components/AutomationSettingsDialogs';
 import { AutomationRunsCard } from '../../../../components/AutomationRunsCard';
-import { VersionsCard } from './VersionsCard';
+import { MetricsSection } from './MetricsSection';
 
 type RunWithAutomationName = EvidenceAutomationRun & {
   evidenceAutomation: {
@@ -31,9 +32,15 @@ interface AutomationOverviewProps {
   task: Task;
   automation: EvidenceAutomation;
   initialRuns: RunWithAutomationName[];
+  initialVersions: EvidenceAutomationVersion[];
 }
 
-export function AutomationOverview({ task, automation, initialRuns }: AutomationOverviewProps) {
+export function AutomationOverview({
+  task,
+  automation,
+  initialRuns,
+  initialVersions,
+}: AutomationOverviewProps) {
   const { orgId, taskId, automationId } = useParams<{
     orgId: string;
     taskId: string;
@@ -45,98 +52,130 @@ export function AutomationOverview({ task, automation, initialRuns }: Automation
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // Transform runs to include automation name
-  const runsWithName = initialRuns.map((run) => ({
-    ...run,
-    evidenceAutomation: {
-      name: automation.name,
-    },
-  }));
+  const runsWithName = useMemo(
+    () =>
+      initialRuns.map((run) => ({
+        ...run,
+        evidenceAutomation: {
+          name: automation.name,
+        },
+      })),
+    [initialRuns, automation.name],
+  );
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <Link
-          href={`/${orgId}/tasks/${taskId}`}
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to task
-        </Link>
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-semibold tracking-tight mb-2">{automation.name}</h1>
-            {automation.description && (
-              <p className="text-muted-foreground">{automation.description}</p>
-            )}
-          </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon">
-                <Cog className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={() => setEditNameOpen(true)}>
-                <Edit className="w-4 h-4 mr-2" />
-                Edit Name
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setEditDescriptionOpen(true)}>
-                <Edit className="w-4 h-4 mr-2" />
-                Edit Description
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onClick={() => setDeleteDialogOpen(true)}
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete Automation
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+    <div>
+      {/* Breadcrumb */}
+      <div className="px-8 py-4">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link
+                  href={`/${orgId}/tasks`}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  Tasks
+                </Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator>
+              <ChevronRight className="h-4 w-4" />
+            </BreadcrumbSeparator>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link
+                  href={`/${orgId}/tasks/${taskId}`}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  {task.title}
+                </Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator>
+              <ChevronRight className="h-4 w-4" />
+            </BreadcrumbSeparator>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <span className="text-foreground font-medium">{automation.name}</span>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
       </div>
 
-      <div className="space-y-6">
-        {/* Automation Details */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-medium flex items-center gap-2">
-                <Settings className="h-4 w-4 text-primary" />
-                Details
-              </CardTitle>
-              <Link href={`/${orgId}/tasks/${taskId}/automation/${automationId}`}>
-                <Button size="sm">
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit Automation
-                </Button>
-              </Link>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <p className="text-xs font-medium text-muted-foreground mb-1">Task</p>
-              <p className="text-sm">{task.title}</p>
-            </div>
-            <div>
-              <p className="text-xs font-medium text-muted-foreground mb-1">Automation Name</p>
-              <p className="text-sm">{automation.name}</p>
-            </div>
-            {automation.description && (
-              <div>
-                <p className="text-xs font-medium text-muted-foreground mb-1">Description</p>
-                <p className="text-sm text-muted-foreground">{automation.description}</p>
+      <MetricsSection
+        automationName={automation.name}
+        initialVersions={initialVersions}
+        initialRuns={initialRuns}
+      />
+
+      {/* Main Content - 2 Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-8 py-12">
+        {/* Left Column - History */}
+        <div className="lg:col-span-2">
+          <AutomationRunsCard runs={runsWithName} />
+        </div>
+
+        {/* Right Column - Details & Versions */}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-medium">Details</CardTitle>
+                <div className="flex items-center gap-2">
+                  <Link href={`/${orgId}/tasks/${taskId}/automation/${automationId}`}>
+                    <Button size="sm">
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit
+                    </Button>
+                  </Link>
+                  <Button variant="outline" size="sm" onClick={() => setDeleteDialogOpen(true)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1">
+                  <p className="text-xs font-medium text-muted-foreground">Created</p>
+                  <p className="text-sm">
+                    {new Date(automation.createdAt).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}{' '}
+                    at{' '}
+                    {new Date(automation.createdAt).toLocaleTimeString('en-US', {
+                      hour: 'numeric',
+                      minute: '2-digit',
+                      hour12: true,
+                    })}
+                  </p>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <p className="text-xs font-medium text-muted-foreground">Last Published</p>
+                  <p className="text-sm">
+                    {new Date(runsWithName[0].createdAt).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}{' '}
+                    at{' '}
+                    {new Date(runsWithName[0].createdAt).toLocaleTimeString('en-US', {
+                      hour: 'numeric',
+                      minute: '2-digit',
+                      hour12: true,
+                    })}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Published Versions */}
-        <VersionsCard />
-
-        {/* Execution History */}
-        <AutomationRunsCard runs={runsWithName} />
+          {/* <VersionsCard /> */}
+        </div>
       </div>
 
       {/* Settings Dialogs */}

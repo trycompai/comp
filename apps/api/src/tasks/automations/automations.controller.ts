@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -217,8 +218,16 @@ export class AutomationsController {
     @OrganizationId() organizationId: string,
     @Param('taskId') taskId: string,
     @Param('automationId') automationId: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
   ) {
     await this.tasksService.verifyTaskAccess(organizationId, taskId);
-    return this.automationsService.listVersions(automationId);
+    const parsedLimit = limit ? parseInt(limit) : undefined;
+    const parsedOffset = offset ? parseInt(offset) : undefined;
+    return this.automationsService.listVersions(
+      automationId,
+      parsedLimit,
+      parsedOffset,
+    );
   }
 }
