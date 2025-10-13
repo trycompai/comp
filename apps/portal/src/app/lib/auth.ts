@@ -56,6 +56,8 @@ export const auth = betterAuth({
     emailOTP({
       otpLength: 6,
       expiresIn: 10 * 60,
+      // Prevent automatic user creation on OTP sign-in
+      disableSignUp: true,
       async sendVerificationOTP({ email, otp }) {
         await sendEmail({
           to: email,
