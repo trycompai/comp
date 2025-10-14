@@ -21,25 +21,32 @@ import { useTaskAutomation } from '../hooks/use-task-automation';
 interface EditNameDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
 }
 
 interface EditDescriptionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
 }
 
 interface DeleteDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
 }
 
-export function EditNameDialog({ open, onOpenChange }: EditNameDialogProps) {
-  const { automation, mutate } = useTaskAutomation();
+export function EditNameDialog({ open, onOpenChange, onSuccess }: EditNameDialogProps) {
+  const { automation, mutate: mutateLocal } = useTaskAutomation();
   const { orgId, taskId, automationId } = useParams<{
     orgId: string;
     taskId: string;
     automationId: string;
   }>();
+
+  // Use real automation ID when available
+  const realAutomationId = automation?.id || automationId;
+
   const [name, setName] = useState(automation?.name || '');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -57,7 +64,7 @@ export function EditNameDialog({ open, onOpenChange }: EditNameDialogProps) {
     setIsSaving(true);
     try {
       const response = await api.patch(
-        `/v1/tasks/${taskId}/automations/${automationId}`,
+        `/v1/tasks/${taskId}/automations/${realAutomationId}`,
         { name: name.trim() },
         orgId,
       );
@@ -66,7 +73,8 @@ export function EditNameDialog({ open, onOpenChange }: EditNameDialogProps) {
         throw new Error(response.error);
       }
 
-      await mutate(); // Refresh automation data
+      await mutateLocal(); // Refresh automation data in hook
+      await onSuccess?.(); // Notify parent to refresh (e.g., overview page)
       onOpenChange(false);
       toast.success('Automation name updated');
     } catch (error) {
@@ -111,8 +119,12 @@ export function EditNameDialog({ open, onOpenChange }: EditNameDialogProps) {
   );
 }
 
-export function EditDescriptionDialog({ open, onOpenChange }: EditDescriptionDialogProps) {
-  const { automation, mutate } = useTaskAutomation();
+export function EditDescriptionDialog({
+  open,
+  onOpenChange,
+  onSuccess,
+}: EditDescriptionDialogProps) {
+  const { automation, mutate: mutateLocal } = useTaskAutomation();
   const { orgId, taskId, automationId } = useParams<{
     orgId: string;
     taskId: string;
@@ -139,7 +151,8 @@ export function EditDescriptionDialog({ open, onOpenChange }: EditDescriptionDia
         throw new Error(response.error);
       }
 
-      await mutate(); // Refresh automation data
+      await mutateLocal(); // Refresh automation data in hook
+      await onSuccess?.(); // Notify parent to refresh (e.g., overview page)
       onOpenChange(false);
       toast.success('Automation description updated');
     } catch (error) {
@@ -185,7 +198,7 @@ export function EditDescriptionDialog({ open, onOpenChange }: EditDescriptionDia
   );
 }
 
-export function DeleteAutomationDialog({ open, onOpenChange }: DeleteDialogProps) {
+export function DeleteAutomationDialog({ open, onOpenChange, onSuccess }: DeleteDialogProps) {
   const { automation } = useTaskAutomation();
   const { orgId, taskId, automationId } = useParams<{
     orgId: string;
