@@ -143,6 +143,7 @@ export function UnifiedWorkflowCard({ steps, title, onTest, integrationsUsed }: 
           </div>
         ) : (
           <button
+            type="button"
             onClick={onTest}
             className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors animate-in fade-in duration-500"
           >

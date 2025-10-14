@@ -54,6 +54,9 @@ export function useChatHandlers({
           // Invalidate automations list cache so task page updates
           mutate([`task-automations-${taskId}`, orgId, taskId]);
 
+          // Invalidate the automation cache so breadcrumb updates
+          mutate([`automation-${realAutomationId}`, orgId, taskId, realAutomationId]);
+
           // Silently replace the URL without navigation/reload
           window.history.replaceState(
             null,

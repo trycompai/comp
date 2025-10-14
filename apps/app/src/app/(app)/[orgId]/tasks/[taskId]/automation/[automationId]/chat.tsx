@@ -40,7 +40,8 @@ export function Chat({ className, orgId, taskId, taskName, automationId }: Props
   const { automation } = useTaskAutomation();
 
   // Ephemeral mode - automation not created yet
-  const isEphemeral = automationId === 'new';
+  // Use automation existence to determine ephemeral state, not just URL
+  const isEphemeral = automationId === 'new' && !automation;
 
   const { validateAndSubmitMessage, handleSecretAdded, handleInfoProvided } = useChatHandlers({
     sendMessage,

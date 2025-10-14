@@ -26,6 +26,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { restoreVersion } from '../../actions/task-automation-actions';
 import {
+  useTaskAutomation,
   useTaskAutomationAnalyze,
   useTaskAutomationExecution,
   useTaskAutomationScript,
@@ -62,7 +63,11 @@ export function WorkflowVisualizerSimple({ className }: Props) {
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [confirmRestore, setConfirmRestore] = useState<EvidenceAutomationVersion | null>(null);
+  const { automation } = useTaskAutomation();
   const { versions } = useAutomationVersions();
+
+  // Use real automation ID when available, fallback to param
+  const realAutomationId = automation?.id || automationId;
 
   const {
     script,
@@ -71,8 +76,8 @@ export function WorkflowVisualizerSimple({ className }: Props) {
   } = useTaskAutomationScript({
     orgId: orgId,
     taskId: taskId,
-    automationId: automationId,
-    enabled: !!orgId && !!taskId && !!automationId,
+    automationId: realAutomationId,
+    enabled: !!orgId && !!taskId && realAutomationId !== 'new',
   });
 
   const handleRestoreVersion = async (version: EvidenceAutomationVersion) => {
@@ -155,7 +160,10 @@ export function WorkflowVisualizerSimple({ className }: Props) {
   }, [executionResult, executionError]);
 
   const handleTest = async () => {
-    if (!orgId || !taskId) return;
+    if (!orgId || !taskId || automationId === 'new') {
+      console.warn('Cannot test ephemeral automation');
+      return;
+    }
     await execute();
   };
 
