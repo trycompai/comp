@@ -5,22 +5,18 @@ import {
   Controller,
   Delete,
   Get,
-  HttpCode,
-  HttpStatus,
   Param,
-  Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
 import {
+  ApiExtraModels,
   ApiHeader,
   ApiOperation,
   ApiParam,
   ApiResponse,
-  ApiNoContentResponse,
   ApiSecurity,
   ApiTags,
-  ApiExtraModels,
 } from '@nestjs/swagger';
 import { AttachmentsService } from '../attachments/attachments.service';
 import { UploadAttachmentDto } from '../attachments/upload-attachment.dto';
@@ -496,67 +492,5 @@ export class TasksController {
       deletedAttachmentId: attachmentId,
       message: 'Attachment deleted successfully',
     };
-  }
-
-  // ==================== AUTOMATION RUNS ====================
-
-  @Get(':taskId/automation-runs')
-  @ApiOperation({
-    summary: 'Get all automation runs for a task',
-    description: 'Retrieve all evidence automation runs for a specific task',
-  })
-  @ApiParam({
-    name: 'taskId',
-    description: 'Task ID',
-    example: 'tsk_abc123def456',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Automation runs retrieved successfully',
-    content: {
-      'application/json': {
-        schema: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'string', example: 'ear_abc123def456' },
-              status: {
-                type: 'string',
-                enum: ['PENDING', 'RUNNING', 'COMPLETED', 'FAILED'],
-              },
-              trigger: {
-                type: 'string',
-                enum: ['MANUAL', 'SCHEDULED', 'EVENT'],
-              },
-              createdAt: { type: 'string', format: 'date-time' },
-              completedAt: {
-                type: 'string',
-                format: 'date-time',
-                nullable: true,
-              },
-              error: { type: 'object', nullable: true },
-            },
-          },
-        },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Task not found',
-  })
-  async getTaskAutomationRuns(
-    @OrganizationId() organizationId: string,
-    @Param('taskId') taskId: string,
-  ) {
-    return await this.tasksService.getTaskAutomationRuns(
-      organizationId,
-      taskId,
-    );
   }
 }

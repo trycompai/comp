@@ -5959,99 +5959,6 @@
         ]
       }
     },
-    "/v1/tasks/{taskId}/automation-runs": {
-      "get": {
-        "description": "Retrieve all evidence automation runs for a specific task",
-        "operationId": "TasksController_getTaskAutomationRuns_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "taskId",
-            "required": true,
-            "in": "path",
-            "description": "Task ID",
-            "schema": {
-              "example": "tsk_abc123def456",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Automation runs retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "id": {
-                        "type": "string",
-                        "example": "ear_abc123def456"
-                      },
-                      "status": {
-                        "type": "string",
-                        "enum": [
-                          "PENDING",
-                          "RUNNING",
-                          "COMPLETED",
-                          "FAILED"
-                        ]
-                      },
-                      "trigger": {
-                        "type": "string",
-                        "enum": [
-                          "MANUAL",
-                          "SCHEDULED",
-                          "EVENT"
-                        ]
-                      },
-                      "createdAt": {
-                        "type": "string",
-                        "format": "date-time"
-                      },
-                      "completedAt": {
-                        "type": "string",
-                        "format": "date-time",
-                        "nullable": true
-                      },
-                      "error": {
-                        "type": "object",
-                        "nullable": true
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "404": {
-            "description": "Task not found"
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "summary": "Get all automation runs for a task",
-        "tags": [
-          "Tasks"
-        ]
-      }
-    },
     "/v1/tasks/{taskId}/automations": {
       "get": {
         "description": "Retrieve all automations for a specific task",
@@ -6554,6 +6461,93 @@
           }
         ],
         "summary": "Get all versions for an automation",
+        "tags": [
+          "Task Automations"
+        ]
+      }
+    },
+    "/v1/tasks/{taskId}/automations/runs": {
+      "get": {
+        "description": "Retrieve all evidence automation runs across automations for a specific task",
+        "operationId": "AutomationsController_getTaskAutomationRuns_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Task ID",
+            "schema": {
+              "example": "tsk_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Automation runs retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "example": "ear_abc123def456"
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "PENDING",
+                          "RUNNING",
+                          "COMPLETED",
+                          "FAILED"
+                        ]
+                      },
+                      "trigger": {
+                        "type": "string",
+                        "enum": [
+                          "MANUAL",
+                          "SCHEDULED",
+                          "EVENT"
+                        ]
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "completedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                      },
+                      "error": {
+                        "type": "object",
+                        "nullable": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get all automation runs for a task",
         "tags": [
           "Task Automations"
         ]

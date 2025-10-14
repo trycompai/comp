@@ -33,7 +33,7 @@ export function useTaskAutomationRuns({
     [`task-automation-runs-${taskId}`, orgId, taskId],
     async () => {
       const response = await api.get<AutomationRunWithName[]>(
-        `/v1/tasks/${taskId}/automation-runs`,
+        `/v1/tasks/${taskId}/automations/runs`,
         orgId,
       );
 
