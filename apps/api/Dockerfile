@@ -18,7 +18,8 @@ RUN curl -fsSL https://bun.sh/install | bash \
 COPY . .
 
 # Generate Prisma client inside the image (ensures runtime client matches installed deps)
-RUN export PATH="/root/.bun/bin:$PATH" \
+RUN export BUN_INSTALL="/root/.bun" \
+  && export PATH="$BUN_INSTALL/bin:$PATH" \
   && bunx prisma generate
 
 # Set environment variables
