@@ -71,6 +71,9 @@ phases:
       # Copy Dockerfile
       - echo "Copying Dockerfile..."
       - cp Dockerfile ../docker-build/
+      - echo "Copying package manifests for image install..."
+      - cp package.json ../docker-build/
+      - cp ../../bun.lock ../docker-build/ || true
 
       # Build Docker image
       - echo "Building Docker image..."
