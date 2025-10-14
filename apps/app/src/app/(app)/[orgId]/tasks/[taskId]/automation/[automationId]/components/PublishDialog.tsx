@@ -17,6 +17,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { publishAutomation } from '../actions/task-automation-actions';
 import { useAutomationVersions } from '../hooks/use-automation-versions';
+import { useSharedChatContext } from '../lib/chat-context';
 
 interface PublishDialogProps {
   open: boolean;
@@ -24,11 +25,12 @@ interface PublishDialogProps {
 }
 
 export function PublishDialog({ open, onOpenChange }: PublishDialogProps) {
-  const { orgId, taskId, automationId } = useParams<{
+  const { orgId, taskId } = useParams<{
     orgId: string;
     taskId: string;
     automationId: string;
   }>();
+  const { automationIdRef } = useSharedChatContext();
   const [changelog, setChangelog] = useState('');
   const [isPublishing, setIsPublishing] = useState(false);
   const { mutate } = useAutomationVersions();
@@ -37,7 +39,12 @@ export function PublishDialog({ open, onOpenChange }: PublishDialogProps) {
     setIsPublishing(true);
 
     try {
-      const result = await publishAutomation(orgId, taskId, automationId, changelog || undefined);
+      const result = await publishAutomation(
+        orgId,
+        taskId,
+        automationIdRef.current,
+        changelog || undefined,
+      );
 
       if (!result.success) {
         throw new Error(result.error || 'Failed to publish');
