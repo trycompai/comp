@@ -29,7 +29,7 @@ phases:
 
       # Install only API workspace dependencies
       - echo "Installing API dependencies only..."
-      - bun install --filter=@comp/api --frozen-lockfile || bun install --filter=@comp/api --frozen-lockfile --ignore-scripts
+      - bun install --filter=@comp/api --frozen-lockfile || bun install --filter=@comp/api --ignore-scripts || bun install --ignore-scripts
 
       # Build NestJS application (prebuild automatically handles Prisma)
       - echo "Building NestJS application..."
