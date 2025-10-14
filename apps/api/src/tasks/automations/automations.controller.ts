@@ -230,4 +230,61 @@ export class AutomationsController {
       parsedOffset,
     );
   }
+
+  // ==================== AUTOMATION RUNS (per task) ====================
+
+  @Get('runs')
+  @ApiOperation({
+    summary: 'Get all automation runs for a task',
+    description:
+      'Retrieve all evidence automation runs across automations for a specific task',
+  })
+  @ApiParam({
+    name: 'taskId',
+    description: 'Task ID',
+    example: 'tsk_abc123def456',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Automation runs retrieved successfully',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', example: 'ear_abc123def456' },
+              status: {
+                type: 'string',
+                enum: ['PENDING', 'RUNNING', 'COMPLETED', 'FAILED'],
+              },
+              trigger: {
+                type: 'string',
+                enum: ['MANUAL', 'SCHEDULED', 'EVENT'],
+              },
+              createdAt: { type: 'string', format: 'date-time' },
+              completedAt: {
+                type: 'string',
+                format: 'date-time',
+                nullable: true,
+              },
+              error: { type: 'object', nullable: true },
+            },
+          },
+        },
+      },
+    },
+  })
+  async getTaskAutomationRuns(
+    @OrganizationId() organizationId: string,
+    @Param('taskId') taskId: string,
+  ) {
+    // Verify task access first
+    await this.tasksService.verifyTaskAccess(organizationId, taskId);
+    return await this.tasksService.getTaskAutomationRuns(
+      organizationId,
+      taskId,
+    );
+  }
 }
