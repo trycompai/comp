@@ -66,8 +66,7 @@ phases:
       - '[ -f "../docker-build/src/main.js" ] || { echo "❌ main.js not found in docker-build/src"; exit 1; }'
 
       # Copy entire node_modules for runtime (includes @trycompai/db from npm)
-      - echo "Bundling all runtime dependencies..."
-      - cp -r ../../node_modules ../docker-build/
+      - echo "Skipping host node_modules copy; Dockerfile installs prod deps inside image"
 
       # Copy Dockerfile
       - echo "Copying Dockerfile..."
