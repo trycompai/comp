@@ -20,7 +20,7 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <div className="flex-1 min-h-0 overflow-y-auto h-full z-20">
-      <div className="w-full h-full flex flex-col items-center py-48">
+      <div className="w-full h-full flex flex-col items-center py-48 px-4">
         <div className="w-full max-w-3xl text-center space-y-8 mb-16">
           <p className="text-2xl font-medium text-primary tracking-wide z-20">
             What evidence do you want to collect?
@@ -28,7 +28,7 @@ export function EmptyState({
           <Input
             ref={inputRef}
             placeholder="Check if GitHub dependabot is enabled and tell me the result"
-            className="w-full max-w-3xl transition-all duration-200 hover:shadow-md hover:shadow-primary/5 hover:scale-[1.01] focus:shadow-lg focus:shadow-primary/10 focus:scale-[1.02] focus:ring-2 focus:ring-primary/30"
+            className="w-full max-w-3xl transition-all duration-200 hover:shadow-md hover:shadow-primary/5 focus:shadow-lg focus:shadow-primary/10 focus:ring-2 focus:ring-primary/30"
             value={input}
             onChange={(e) => onInputChange(e.target.value)}
             disabled={status === 'streaming' || status === 'submitted'}

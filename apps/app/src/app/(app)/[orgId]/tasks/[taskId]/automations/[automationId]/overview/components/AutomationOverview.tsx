@@ -47,8 +47,6 @@ export function AutomationOverview({
     automationId: string;
   }>();
 
-  console.log('[AUTOMATION OVERVIEW] automation', automation);
-
   const [editNameOpen, setEditNameOpen] = useState(false);
   const [editDescriptionOpen, setEditDescriptionOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
