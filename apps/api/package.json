@@ -4,6 +4,8 @@
   "version": "0.0.1",
   "author": "",
   "dependencies": {
+    "@prisma/client": "^6.13.0",
+    "prisma": "^6.13.0",
     "@aws-sdk/client-s3": "^3.859.0",
     "@aws-sdk/s3-request-presigner": "^3.859.0",
     "@nestjs/common": "^11.0.1",
