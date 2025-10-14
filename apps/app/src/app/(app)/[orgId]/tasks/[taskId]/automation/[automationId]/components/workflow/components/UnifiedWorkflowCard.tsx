@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { Loader2, Play, Zap } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
-import { TaskAutomationWorkflow } from '../../../lib';
 
 interface WorkflowStep {
   id: string;
@@ -27,7 +26,9 @@ interface Props {
   steps: WorkflowStep[];
   title: string;
   onTest?: () => void;
-  integrationsUsed: TaskAutomationWorkflow['integrationsUsed'];
+  integrationsUsed: {
+    link: string;
+  }[];
 }
 
 export function UnifiedWorkflowCard({ steps, title, onTest, integrationsUsed }: Props) {
