@@ -71,8 +71,8 @@
   "private": true,
   "scripts": {
     "build": "nest build",
-    "build:docker": "prisma generate && nest build",
-    "db:generate": "bun run db:getschema && prisma generate",
+    "build:docker": "bunx prisma generate && nest build",
+    "db:generate": "bun run db:getschema && bunx prisma generate",
     "db:getschema": "node ../../packages/db/scripts/combine-schemas.js && cp ../../packages/db/dist/schema.prisma prisma/schema.prisma",
     "db:migrate": "cd ../../packages/db && bunx prisma migrate dev && cd ../../apps/api",
     "dev": "nest start --watch",
