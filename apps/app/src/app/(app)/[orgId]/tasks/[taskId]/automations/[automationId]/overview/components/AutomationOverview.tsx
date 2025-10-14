@@ -47,6 +47,8 @@ export function AutomationOverview({
     automationId: string;
   }>();
 
+  console.log('[AUTOMATION OVERVIEW] automation', automation);
+
   const [editNameOpen, setEditNameOpen] = useState(false);
   const [editDescriptionOpen, setEditDescriptionOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -157,17 +159,23 @@ export function AutomationOverview({
                 <div className="flex flex-col gap-1">
                   <p className="text-xs font-medium text-muted-foreground">Last Published</p>
                   <p className="text-sm">
-                    {new Date(runsWithName[0].createdAt).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}{' '}
-                    at{' '}
-                    {new Date(runsWithName[0].createdAt).toLocaleTimeString('en-US', {
-                      hour: 'numeric',
-                      minute: '2-digit',
-                      hour12: true,
-                    })}
+                    {runsWithName[0]?.createdAt ? (
+                      <>
+                        {new Date(runsWithName[0].createdAt).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}{' '}
+                        at{' '}
+                        {new Date(runsWithName[0].createdAt).toLocaleTimeString('en-US', {
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          hour12: true,
+                        })}
+                      </>
+                    ) : (
+                      'Never'
+                    )}
                   </p>
                 </div>
               </div>
