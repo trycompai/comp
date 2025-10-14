@@ -178,8 +178,10 @@ export function AutomationOverview({
                 </div>
                 <div className="flex flex-col gap-1">
                   <p className="text-xs font-medium text-muted-foreground">Description</p>
-                  <p className="text-sm text-muted-foreground">
-                    {automation.description || 'No description'}
+                  <p className="text-sm">
+                    {automation.description || (
+                      <span className="text-muted-foreground">No description</span>
+                    )}
                   </p>
                 </div>
                 <div className="flex flex-col gap-1">

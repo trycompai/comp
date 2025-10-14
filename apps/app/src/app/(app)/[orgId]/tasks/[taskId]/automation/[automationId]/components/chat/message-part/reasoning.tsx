@@ -61,7 +61,11 @@ export function Reasoning({ part, partIndex }: { part: ReasoningUIPart; partInde
         className="text-left w-full flex items-center gap-2.5 transition-all duration-200 group/btn"
         onClick={handleClick}
       >
-        <span className="text-xs text-muted-foreground truncate block">{getReasoningLabel()}</span>
+        <span
+          className={`text-xs truncate block ${isStreaming ? 'thinking-text' : 'text-muted-foreground'}`}
+        >
+          {getReasoningLabel()}
+        </span>
       </button>
     </div>
   );

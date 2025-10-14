@@ -31,7 +31,7 @@ interface Props {
 
 export function Chat({ className, orgId, taskId, taskName, automationId }: Props) {
   const [input, setInput] = useState('');
-  const { chat, updateAutomationId } = useSharedChatContext();
+  const { chat, updateAutomationId, automationIdRef } = useSharedChatContext();
   const { messages, sendMessage, status } = useChat<ChatUIMessage>({
     chat,
   });
@@ -39,16 +39,21 @@ export function Chat({ className, orgId, taskId, taskName, automationId }: Props
   const inputRef = useRef<HTMLInputElement | null>(null);
   const { automation } = useTaskAutomation();
 
+  // Update shared ref when automation is loaded from hook
+  if (automation?.id && automationIdRef.current === 'new') {
+    automationIdRef.current = automation.id;
+  }
+
   // Ephemeral mode - automation not created yet
-  // Use automation existence to determine ephemeral state, not just URL
-  const isEphemeral = automationId === 'new' && !automation;
+  // Check the shared ref, not the URL param
+  const isEphemeral = automationIdRef.current === 'new';
 
   const { validateAndSubmitMessage, handleSecretAdded, handleInfoProvided } = useChatHandlers({
     sendMessage,
     setInput,
     orgId,
     taskId,
-    automationId,
+    automationId: automationIdRef.current,
     isEphemeral,
     updateAutomationId,
   });
@@ -86,7 +91,7 @@ export function Chat({ className, orgId, taskId, taskName, automationId }: Props
             orgId={orgId}
             taskId={taskId}
             taskName={taskName}
-            automationId={automationId}
+            automationId={automationIdRef.current}
             automationName={automation?.name}
             isEphemeral={isEphemeral}
           />

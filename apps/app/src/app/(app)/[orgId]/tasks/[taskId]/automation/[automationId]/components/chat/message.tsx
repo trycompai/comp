@@ -113,7 +113,7 @@ export const Message = memo(function Message({
         if (thisSessionIsThinking) {
           result.push(
             <div key={`thinking-${sessionId}-active`} className="flex items-center gap-2 py-1">
-              <span className="text-xs text-muted-foreground">Thinking...</span>
+              <span className="text-xs thinking-text">Thinking...</span>
             </div>,
           );
         } else {
@@ -191,7 +191,7 @@ export const Message = memo(function Message({
       if (finalThinkingIsActive) {
         result.push(
           <div key={`thinking-${sessionId}-active`} className="flex items-center gap-2 py-1">
-            <span className="text-xs text-muted-foreground">Thinking...</span>
+            <span className="text-xs thinking-text">Thinking...</span>
           </div>,
         );
       } else {

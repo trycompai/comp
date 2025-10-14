@@ -58,7 +58,7 @@ export function WorkflowVisualizerSimple({ className }: Props) {
     taskId: string;
     automationId: string;
   }>();
-  const { chat } = useSharedChatContext();
+  const { chat, automationIdRef } = useSharedChatContext();
   const { sendMessage } = useChat<ChatUIMessage>({ chat });
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
@@ -66,8 +66,10 @@ export function WorkflowVisualizerSimple({ className }: Props) {
   const { automation } = useTaskAutomation();
   const { versions } = useAutomationVersions();
 
-  // Use real automation ID when available, fallback to param
-  const realAutomationId = automation?.id || automationId;
+  // Update shared ref when automation is loaded from hook
+  if (automation?.id && automationIdRef.current === 'new') {
+    automationIdRef.current = automation.id;
+  }
 
   const {
     script,
@@ -76,15 +78,15 @@ export function WorkflowVisualizerSimple({ className }: Props) {
   } = useTaskAutomationScript({
     orgId: orgId,
     taskId: taskId,
-    automationId: realAutomationId,
-    enabled: !!orgId && !!taskId && realAutomationId !== 'new',
+    automationId: automationIdRef.current,
+    enabled: !!orgId && !!taskId && automationIdRef.current !== 'new',
   });
 
   const handleRestoreVersion = async (version: EvidenceAutomationVersion) => {
     setIsRestoring(true);
 
     try {
-      const result = await restoreVersion(orgId, taskId, automationId, version.version);
+      const result = await restoreVersion(orgId, taskId, automationIdRef.current, version.version);
 
       if (!result.success) {
         throw new Error(result.error || 'Failed to restore version');
@@ -160,7 +162,7 @@ export function WorkflowVisualizerSimple({ className }: Props) {
   }, [executionResult, executionError]);
 
   const handleTest = async () => {
-    if (!orgId || !taskId || automationId === 'new') {
+    if (!orgId || !taskId || automationIdRef.current === 'new') {
       console.warn('Cannot test ephemeral automation');
       return;
     }

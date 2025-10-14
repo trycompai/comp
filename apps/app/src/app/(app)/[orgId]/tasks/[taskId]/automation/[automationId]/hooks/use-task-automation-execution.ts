@@ -20,6 +20,7 @@
 
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useSharedChatContext } from '../lib/chat-context';
 import { taskAutomationApi } from '../lib/task-automation-api';
 import type {
   TaskAutomationExecutionResult,
@@ -30,7 +31,7 @@ export function useTaskAutomationExecution({
   onSuccess,
   onError,
 }: UseTaskAutomationExecutionOptions = {}) {
-  const { orgId, taskId, automationId } = useParams<{
+  const { orgId, taskId } = useParams<{
     orgId: string;
     taskId: string;
     automationId: string;
@@ -40,6 +41,9 @@ export function useTaskAutomationExecution({
   const [result, setResult] = useState<TaskAutomationExecutionResult | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Import shared automation ID ref from context
+  const { automationIdRef } = useSharedChatContext();
 
   // Poll for run status
   useEffect(() => {
@@ -64,9 +68,6 @@ export function useTaskAutomationExecution({
             summary: data.output.summary,
             taskId: data.id,
           };
-
-          // Log the execution result on the client side
-          console.log('[Automation Execution] Client received result:', executionResult);
 
           setResult(executionResult);
           setIsExecuting(false);
@@ -112,7 +113,7 @@ export function useTaskAutomationExecution({
       const response = await taskAutomationApi.execution.executeScript({
         orgId,
         taskId,
-        automationId,
+        automationId: automationIdRef.current,
       });
 
       // The API now returns a run ID that we can monitor
