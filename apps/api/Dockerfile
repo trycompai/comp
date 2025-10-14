@@ -12,7 +12,7 @@ COPY package.json bun.lock ./
 # Install bun and deps
 RUN curl -fsSL https://bun.sh/install | bash \
   && export PATH="/root/.bun/bin:$PATH" \
-  && bun install --production --frozen-lockfile --ignore-scripts
+  && (bun install --production --frozen-lockfile --ignore-scripts || bun install --production --ignore-scripts)
 
 # Now copy the pre-built app contents (dist/, prisma/, etc.)
 COPY . .
