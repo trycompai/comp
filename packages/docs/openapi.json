@@ -5959,6 +5959,606 @@
         ]
       }
     },
+    "/v1/tasks/{taskId}/automation-runs": {
+      "get": {
+        "description": "Retrieve all evidence automation runs for a specific task",
+        "operationId": "TasksController_getTaskAutomationRuns_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Task ID",
+            "schema": {
+              "example": "tsk_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Automation runs retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "example": "ear_abc123def456"
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "PENDING",
+                          "RUNNING",
+                          "COMPLETED",
+                          "FAILED"
+                        ]
+                      },
+                      "trigger": {
+                        "type": "string",
+                        "enum": [
+                          "MANUAL",
+                          "SCHEDULED",
+                          "EVENT"
+                        ]
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "completedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                      },
+                      "error": {
+                        "type": "object",
+                        "nullable": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Task not found"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get all automation runs for a task",
+        "tags": [
+          "Tasks"
+        ]
+      }
+    },
+    "/v1/tasks/{taskId}/automations": {
+      "get": {
+        "description": "Retrieve all automations for a specific task",
+        "operationId": "AutomationsController_getTaskAutomations_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Unique task identifier",
+            "schema": {
+              "example": "tsk_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Automations retrieved successfully"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get all automations for a task",
+        "tags": [
+          "Task Automations"
+        ]
+      },
+      "post": {
+        "description": "Create an automation for collecting evidence for a specific task",
+        "operationId": "AutomationsController_createAutomation_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Unique task identifier",
+            "schema": {
+              "example": "tsk_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAutomationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Automation created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "automation": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "example": "auto_abc123def456"
+                        },
+                        "name": {
+                          "type": "string",
+                          "example": "Task Name - Evidence Collection"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Invalid task ID or organization ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Invalid task ID or organization ID"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid authentication",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Unauthorized"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Task not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Task not found"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Create a new evidence automation",
+        "tags": [
+          "Task Automations"
+        ]
+      }
+    },
+    "/v1/tasks/{taskId}/automations/{automationId}": {
+      "get": {
+        "description": "Retrieve details for a specific automation",
+        "operationId": "AutomationsController_getAutomation_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Unique task identifier",
+            "schema": {
+              "example": "tsk_abc123def456",
+              "type": "string"
+            }
+          },
+          {
+            "name": "automationId",
+            "required": true,
+            "in": "path",
+            "description": "Unique automation identifier",
+            "schema": {
+              "example": "auto_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Automation details retrieved successfully"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get automation details",
+        "tags": [
+          "Task Automations"
+        ]
+      },
+      "patch": {
+        "description": "Update the name or description of an existing automation",
+        "operationId": "AutomationsController_updateAutomation_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Unique task identifier",
+            "schema": {
+              "example": "tsk_abc123def456",
+              "type": "string"
+            }
+          },
+          {
+            "name": "automationId",
+            "required": true,
+            "in": "path",
+            "description": "Unique automation identifier",
+            "schema": {
+              "example": "auto_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAutomationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Automation updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "automation": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "example": "auto_abc123def456"
+                        },
+                        "name": {
+                          "type": "string",
+                          "example": "Updated Automation Name"
+                        },
+                        "description": {
+                          "type": "string",
+                          "example": "Updated description"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Invalid automation ID or data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Invalid automation data"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid authentication",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Unauthorized"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Automation not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Automation not found"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Update an existing automation",
+        "tags": [
+          "Task Automations"
+        ]
+      },
+      "delete": {
+        "description": "Delete a specific automation and all its associated data",
+        "operationId": "AutomationsController_deleteAutomation_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Unique task identifier",
+            "schema": {
+              "example": "tsk_abc123def456",
+              "type": "string"
+            }
+          },
+          {
+            "name": "automationId",
+            "required": true,
+            "in": "path",
+            "description": "Unique automation identifier",
+            "schema": {
+              "example": "auto_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Automation deleted successfully"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Delete an automation",
+        "tags": [
+          "Task Automations"
+        ]
+      }
+    },
+    "/v1/tasks/{taskId}/automations/{automationId}/versions": {
+      "get": {
+        "description": "Retrieve all published versions of an automation script",
+        "operationId": "AutomationsController_getAutomationVersions_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Task ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "automationId",
+            "required": true,
+            "in": "path",
+            "description": "Automation ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Versions retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "versions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "version": {
+                            "type": "number"
+                          },
+                          "scriptKey": {
+                            "type": "string"
+                          },
+                          "changelog": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "publishedBy": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get all versions for an automation",
+        "tags": [
+          "Task Automations"
+        ]
+      }
+    },
     "/v1/comments": {
       "get": {
         "description": "Retrieve all comments for a specific entity (task, policy, vendor, etc.)",
@@ -8263,6 +8863,34 @@
           "fileType",
           "fileData"
         ]
+      },
+      "CreateAutomationDto": {
+        "type": "object",
+        "properties": {
+          "taskId": {
+            "type": "string",
+            "description": "Task ID",
+            "example": "tsk_abc123def456"
+          }
+        },
+        "required": [
+          "taskId"
+        ]
+      },
+      "UpdateAutomationDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Automation name",
+            "example": "GitHub Security Check - Evidence Collection"
+          },
+          "description": {
+            "type": "string",
+            "description": "Automation description",
+            "example": "Collects evidence about GitHub repository security settings"
+          }
+        }
       },
       "AuthorResponseDto": {
         "type": "object",
