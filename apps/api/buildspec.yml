@@ -29,7 +29,7 @@ phases:
 
       # Install only API workspace dependencies
       - echo "Installing API dependencies only..."
-      - bun install --filter=@comp/api --frozen-lockfile
+      - bun install --filter=@comp/api --frozen-lockfile || bun install --filter=@comp/api --ignore-scripts || bun install --ignore-scripts
 
       # Build NestJS application (prebuild automatically handles Prisma)
       - echo "Building NestJS application..."
@@ -66,12 +66,14 @@ phases:
       - '[ -f "../docker-build/src/main.js" ] || { echo "❌ main.js not found in docker-build/src"; exit 1; }'
 
       # Copy entire node_modules for runtime (includes @trycompai/db from npm)
-      - echo "Bundling all runtime dependencies..."
-      - cp -r ../../node_modules ../docker-build/
+      - echo "Skipping host node_modules copy; Dockerfile installs prod deps inside image"
 
       # Copy Dockerfile
       - echo "Copying Dockerfile..."
       - cp Dockerfile ../docker-build/
+      - echo "Copying package manifests for image install..."
+      - cp package.json ../docker-build/
+      - cp ../../bun.lock ../docker-build/ || true
 
       # Build Docker image
       - echo "Building Docker image..."

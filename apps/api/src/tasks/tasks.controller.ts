@@ -5,21 +5,18 @@ import {
   Controller,
   Delete,
   Get,
-  HttpCode,
-  HttpStatus,
   Param,
   Post,
   UseGuards,
 } from '@nestjs/common';
 import {
+  ApiExtraModels,
   ApiHeader,
   ApiOperation,
   ApiParam,
   ApiResponse,
-  ApiNoContentResponse,
   ApiSecurity,
   ApiTags,
-  ApiExtraModels,
 } from '@nestjs/swagger';
 import { AttachmentsService } from '../attachments/attachments.service';
 import { UploadAttachmentDto } from '../attachments/upload-attachment.dto';
