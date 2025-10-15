@@ -30,7 +30,15 @@ export default async function Page({
   if (automationId !== 'new') {
     const historyResult = await loadChatHistory(automationId);
     if (historyResult.success && historyResult.data?.messages) {
-      initialMessages = historyResult.data.messages;
+      // Deduplicate messages by ID (in case of concurrent save/load race conditions)
+      const seen = new Set();
+      initialMessages = historyResult.data.messages.filter((msg: any) => {
+        if (seen.has(msg.id)) {
+          return false;
+        }
+        seen.add(msg.id);
+        return true;
+      });
     }
   }
 

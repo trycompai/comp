@@ -193,7 +193,7 @@ export async function executeAutomationScript(data: {
       body: data,
     });
 
-    await revalidateCurrentPath();
+    // Don't revalidate - causes page refresh. Test results are handled via polling/state.
     return { success: true, data: result };
   } catch (error) {
     const typedError = error as EnterpriseApiError;

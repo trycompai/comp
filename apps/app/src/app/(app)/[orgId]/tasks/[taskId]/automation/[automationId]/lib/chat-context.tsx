@@ -14,6 +14,7 @@ import { DataPart } from './types/data-parts';
 interface ChatContextValue {
   chat: Chat<ChatUIMessage>;
   updateAutomationId: (newId: string) => void;
+  automationIdRef: React.MutableRefObject<string>;
 }
 
 const ChatContext = createContext<ChatContextValue | undefined>(undefined);
@@ -38,6 +39,7 @@ export function ChatProvider({
   // Initialize once, don't overwrite on every render
   const automationIdRef = useRef(automationId);
   const hasBeenManuallyUpdated = useRef(false);
+  const isSavingRef = useRef(false);
 
   // Only update from params if it hasn't been manually set
   if (!hasBeenManuallyUpdated.current) {
@@ -66,28 +68,31 @@ export function ChatProvider({
         console.error('Error sending message:', error);
       },
       onFinish: async (event) => {
-        console.log('[Chat] onFinish triggered, saving to Redis...');
-
-        // Get the current automation ID from ref (handles URL updates via replaceState)
-        const currentAutomationId = automationIdRef.current;
-        console.log('[Chat] currentAutomationId:', currentAutomationId);
-
-        if (currentAutomationId === 'new') {
-          console.log('[Chat] Skipping save - ephemeral automation');
+        // Guard against concurrent saves
+        if (isSavingRef.current) {
           return;
         }
 
-        const messagesToSave = event.messages;
-        console.log('[Chat] Saving to automation:', currentAutomationId);
+        // Get the current automation ID from ref (handles URL updates via replaceState)
+        const currentAutomationId = automationIdRef.current;
 
-        const result = await saveChatHistory(currentAutomationId, messagesToSave || []);
-        console.log('[Chat] Save result:', result);
+        if (currentAutomationId === 'new') {
+          return;
+        }
+
+        isSavingRef.current = true;
+        try {
+          const messagesToSave = event.messages;
+          await saveChatHistory(currentAutomationId, messagesToSave || []);
+        } finally {
+          isSavingRef.current = false;
+        }
       },
     });
   }
 
   return (
-    <ChatContext.Provider value={{ chat: chatRef.current, updateAutomationId }}>
+    <ChatContext.Provider value={{ chat: chatRef.current, updateAutomationId, automationIdRef }}>
       {children}
     </ChatContext.Provider>
   );
