@@ -1,0 +1,46 @@
+model EvidenceAutomationRun {
+    id        String   @id @default(dbgenerated("generate_prefixed_cuid('ear'::text)"))
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    // Relations
+    evidenceAutomationId String
+    evidenceAutomation   EvidenceAutomation @relation(fields: [evidenceAutomationId], references: [id], onDelete: Cascade)
+
+    // Run details
+    status      EvidenceAutomationRunStatus @default(pending)
+    startedAt   DateTime?
+    completedAt DateTime?
+
+    // Results
+    success Boolean?
+    error   String?
+    logs    Json?
+    output  Json?
+
+    // Metadata
+    triggeredBy EvidenceAutomationTrigger @default(scheduled)
+    runDuration Int? // in milliseconds
+    version     Int? // Version number that was executed (null = draft)
+    Task        Task?                     @relation(fields: [taskId], references: [id])
+    taskId      String?
+
+    @@index([evidenceAutomationId])
+    @@index([status])
+    @@index([createdAt])
+    @@index([version])
+}
+
+enum EvidenceAutomationRunStatus {
+    pending
+    running
+    completed
+    failed
+    cancelled
+}
+
+enum EvidenceAutomationTrigger {
+    manual
+    scheduled
+    api
+}

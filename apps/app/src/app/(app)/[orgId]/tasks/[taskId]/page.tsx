@@ -1,10 +1,6 @@
-import { auth } from '@/utils/auth';
 import { db } from '@db';
-import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { SingleTask } from './components/SingleTask';
-
-type Session = Awaited<ReturnType<typeof auth.api.getSession>>;
 
 export default async function TaskPage({
   params,
@@ -12,23 +8,19 @@ export default async function TaskPage({
   params: Promise<{ taskId: string; orgId: string; locale: string }>;
 }) {
   const { taskId, orgId } = await params;
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  const [task, members] = await Promise.all([getTask(taskId, session), getMembers(orgId, session)]);
+  const task = await getTask(taskId);
 
   if (!task) {
     redirect(`/${orgId}/tasks`);
   }
 
-  return <SingleTask task={task} members={members} />;
+  const automations = await getAutomations(taskId);
+
+  return <SingleTask initialTask={task} initialAutomations={automations} />;
 }
 
-const getTask = async (taskId: string, session: Session) => {
-  const activeOrgId = session?.session.activeOrganizationId;
-
-  if (!activeOrgId) {
+const getTask = async (taskId: string) => {
+  if (!taskId) {
     console.warn('Could not determine active organization ID in getTask');
     return null;
   }
@@ -37,7 +29,6 @@ const getTask = async (taskId: string, session: Session) => {
     const task = await db.task.findUnique({
       where: {
         id: taskId,
-        organizationId: activeOrgId,
       },
       include: {
         controls: true,
@@ -51,21 +42,28 @@ const getTask = async (taskId: string, session: Session) => {
   }
 };
 
-const getMembers = async (orgId: string, session: Session) => {
-  const activeOrgId = orgId ?? session?.session.activeOrganizationId;
-  if (!activeOrgId) {
-    console.warn('Could not determine active organization ID in getMembers');
+const getAutomations = async (taskId: string) => {
+  if (!taskId) {
+    console.warn('Could not determine task ID in getAutomations');
     return [];
   }
 
-  const members = await db.member.findMany({
+  const automations = await db.evidenceAutomation.findMany({
     where: {
-      organizationId: activeOrgId,
-      role: {
-        notIn: ['employee'],
+      taskId: taskId,
+    },
+    include: {
+      runs: {
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: 1,
       },
     },
-    include: { user: true },
+    orderBy: {
+      createdAt: 'asc',
+    },
   });
-  return members;
+
+  return automations;
 };
