@@ -16,7 +16,10 @@ export interface DomainStatusResponse {
 }
 
 export function useDomain(domain: string) {
-  const endpoint = `/v1/trust-portal/domain/status?domain=${domain}`;
+  const endpoint =
+    domain && domain.trim() !== ''
+      ? `/v1/trust-portal/domain/status?domain=${domain}`
+      : null;
 
   return useApiSWR<DomainStatusResponse>(endpoint);
 }
