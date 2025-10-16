@@ -94,8 +94,6 @@ export const acceptRequestedPolicyChangesAction = authActionClient
         return roles.includes('employee');
       });
 
-      // Call /api/send-policy-email to send emails to employees
-
       // Prepare the events array for the API
       const events = employeeMembers
         .filter((employee) => employee.user.email)
