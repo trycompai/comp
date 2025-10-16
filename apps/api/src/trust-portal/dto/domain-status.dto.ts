@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsString, Matches } from 'class-validator';
 
 export class GetDomainStatusDto {
   @ApiProperty({
@@ -7,7 +7,10 @@ export class GetDomainStatusDto {
     example: 'portal.example.com',
   })
   @IsString()
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'domain cannot be empty' })
+  @Matches(/^(?!-)[A-Za-z0-9-]+([-\.]{1}[a-z0-9]+)*\.[A-Za-z]{2,6}$/, {
+    message: 'domain must be a valid domain format',
+  })
   domain: string;
 }
 
