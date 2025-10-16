@@ -1,5 +1,6 @@
 'use client';
 
+import { useDomain } from '@/hooks/use-domain';
 import { Button } from '@comp/ui/button';
 import {
   Card,
@@ -15,13 +16,12 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertCircle, CheckCircle, ClipboardCopy, ExternalLink, Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { checkDnsRecordAction } from '../actions/check-dns-record';
 import { customDomainAction } from '../actions/custom-domain';
-import { domainStatusAction } from '../actions/domain-status';
 
 const trustPortalDomainSchema = z.object({
   domain: z
@@ -51,12 +51,17 @@ export function TrustPortalDomain({
   const [isCnameVerified, setIsCnameVerified] = useState(false);
   const [isTxtVerified, setIsTxtVerified] = useState(false);
   const [isVercelTxtVerified, setIsVercelTxtVerified] = useState(false);
-  const [verificationInfo, setVerificationInfo] = useState<{
-    type: string;
-    domain: string;
-    value: string;
-    reason: string;
-  } | null>(null);
+
+  const { data: domainStatus } = useDomain(initialDomain);
+
+  const verificationInfo = useMemo(() => {
+    const data = domainStatus?.data;
+    if (data && !data.verified && data.verification && data.verification.length > 0) {
+      return data.verification[0];
+    }
+
+    return null;
+  }, [domainStatus]);
 
   useEffect(() => {
     const isCnameVerified = localStorage.getItem(`${initialDomain}-isCnameVerified`);
@@ -65,26 +70,7 @@ export function TrustPortalDomain({
     setIsCnameVerified(isCnameVerified === 'true');
     setIsTxtVerified(isTxtVerified === 'true');
     setIsVercelTxtVerified(isVercelTxtVerified === 'true');
-
-    // Get the domain status.
-    if (initialDomain) {
-      getDomainStatus.execute({ domain: initialDomain });
-    }
   }, [initialDomain]);
-
-  const getDomainStatus = useAction(domainStatusAction, {
-    onSuccess: ({ data }) => {
-      // Store verification info if domain is not verified
-      if (data && !data.verified && data.verification && data.verification.length > 0) {
-        setVerificationInfo(data.verification[0]);
-      } else {
-        setVerificationInfo(null);
-      }
-    },
-    onError: (error) => {
-      console.error('Failed to get domain status:', error);
-    },
-  });
 
   const updateCustomDomain = useAction(customDomainAction, {
     onSuccess: (data) => {

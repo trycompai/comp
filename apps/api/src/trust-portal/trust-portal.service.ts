@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -60,6 +61,10 @@ export class TrustPortalService {
       throw new InternalServerErrorException(
         'VERCEL_TEAM_ID is not configured',
       );
+    }
+
+    if (!domain) {
+      throw new BadRequestException('Domain is required');
     }
 
     try {
