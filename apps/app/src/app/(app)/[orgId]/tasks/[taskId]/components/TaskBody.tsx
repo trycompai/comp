@@ -228,7 +228,7 @@ export function TaskBody({
                 return (
                   <div
                     key={attachment.id}
-                    className={`inline-flex items-center gap-2 px-2.5 py-1.5 border rounded-md transition-all group ${getFileTypeStyles()}`}
+                    className={`inline-flex items-center gap-2 px-2.5 py-1.5 border rounded-md transition-all group ${getFileTypeStyles()} `}
                   >
                     {isPDF ? (
                       <FileText className={`h-3.5 w-3.5 ${getFileIconColor()}`} />
@@ -283,7 +283,7 @@ export function TaskBody({
             <button
               onClick={triggerFileInput}
               disabled={isUploading || !!busyAttachmentId}
-              className="w-full rounded-lg border border-dashed border-border/40 bg-transparent px-4 py-8 text-center hover:border-border/60 hover:bg-muted/5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full rounded-lg border border-dashed border-border/40 bg-secondary px-4 py-8 text-center hover:border-border/60 hover:bg-muted/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <div className="flex flex-col items-center gap-2">
                 {isUploading ? (
