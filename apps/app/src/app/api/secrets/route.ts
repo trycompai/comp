@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       headers: request.headers,
     });
 
-    if (!session.user.id) {
+    if (!session?.user.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

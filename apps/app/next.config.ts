@@ -39,7 +39,7 @@ const config: NextConfig = {
     process.env.NODE_ENV === 'production' && process.env.STATIC_ASSETS_URL
       ? `${process.env.STATIC_ASSETS_URL}/app`
       : '',
-  reactStrictMode: true,
+  reactStrictMode: false,
   transpilePackages: ['@trycompai/db', '@prisma/client'],
   images: {
     remotePatterns: [
