@@ -1,3 +1,4 @@
+import { FormLabel } from '@comp/ui/form';
 import { Input } from '@comp/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { SelectPills } from '@comp/ui/select-pills';
@@ -35,6 +36,55 @@ export function OnboardingStepInput({
           onChange={(value) => form.setValue(currentStep.key, value)}
           onLoadingChange={onLoadingChange}
         />
+      </div>
+    );
+  }
+
+  if (currentStep.key === 'shipping') {
+    return (
+      <div className="space-y-4" data-testid={`onboarding-input-${currentStep.key}`}>
+        <div className="flex flex-col gap-4 sm:flex-row">
+          <div className="flex-1">
+            <FormLabel>Full Name</FormLabel>
+            <Input
+              {...form.register('shipping.fullName')}
+              placeholder="John Doe"
+              autoFocus
+              data-testid={`onboarding-input-${currentStep.key}-fullName`}
+            />
+            <p className="text-destructive text-[0.8rem] font-medium">
+              {form.formState.errors.shipping?.fullName?.message}
+            </p>
+          </div>
+          <div className="flex-1">
+            <FormLabel>Phone</FormLabel>
+            <Input
+              {...form.register('shipping.phone')}
+              placeholder="+1 (555) 123-4567"
+              autoFocus
+              data-testid={`onboarding-input-${currentStep.key}-phone`}
+            />
+            <p className="text-destructive text-[0.8rem] font-medium">
+              {form.formState.errors.shipping?.phone?.message}
+            </p>
+          </div>
+        </div>
+        <div>
+          <FormLabel>Address</FormLabel>
+          <Textarea
+            {...form.register('shipping.address')}
+            placeholder="123 Main St, Apt 4B, Springfield, IL, USA"
+            rows={2}
+            maxLength={300}
+            data-testid={`onboarding-input-${currentStep.key}-address`}
+          />
+          <p className="text-destructive text-[0.8rem] font-medium">
+            {form.formState.errors.shipping?.address?.message}
+          </p>
+        </div>
+        <p className="text-xs text-center sm:text-left text-muted-foreground">
+          * We won't use your shipping details for any marketing.
+        </p>
       </div>
     );
   }

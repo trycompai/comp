@@ -1,5 +1,6 @@
 import { deleteContextEntryAction } from '@/actions/context-hub/delete-context-entry-action';
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
+import { isJSON } from '@/lib/utils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -78,7 +79,24 @@ export const columns = (): ColumnDef<Context>[] => [
     id: 'answer',
     accessorKey: 'answer',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Answer" />,
-    cell: ({ row }) => <span>{row.original.answer}</span>,
+    cell: ({ row }) => {
+      if (isJSON(row.original.answer)) {
+        return (
+          <span>
+            {Object.entries(JSON.parse(row.original.answer))
+              .filter(([key, value]) => !!value)
+              .map(([key, value]) => (
+                <div key={key}>
+                  <span className="font-medium capitalize">{key}:</span>
+                  <span>{value as string}</span>
+                </div>
+              ))}
+          </span>
+        );
+      }
+
+      return <span>{row.original.answer}</span>;
+    },
     meta: { label: 'Answer' },
     enableColumnFilter: true,
     enableSorting: false,
