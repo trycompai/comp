@@ -38,6 +38,7 @@ enum RiskTreatmentType {
 
 enum RiskCategory {
   customer
+  fraud
   governance
   operations
   other

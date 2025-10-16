@@ -45,9 +45,11 @@ export function OtpSignIn({ className }: Props) {
     if (error) {
       setLoading(false);
       toast.error(error.message);
+      setSent(false);
+    } else {
+      setSent(true);
     }
 
-    setSent(true);
     setLoading(false);
   }
 

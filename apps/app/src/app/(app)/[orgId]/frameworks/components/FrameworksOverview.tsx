@@ -46,6 +46,10 @@ export function mapFrameworkToBadge(framework: FrameworkInstanceWithControls) {
     return '/badges/pci-dss.svg';
   }
 
+  if (framework.framework.name === 'NEN 7510') {
+    return '/badges/nen7510.svg';
+  }
+
   return null;
 }
 

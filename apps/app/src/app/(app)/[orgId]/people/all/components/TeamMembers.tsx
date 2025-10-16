@@ -21,11 +21,15 @@ export async function TeamMembers() {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
-  const organizationId = session?.session.activeOrganizationId;
+  const organizationId = session?.session?.activeOrganizationId;
+
+  if (!organizationId) {
+    return null;
+  }
 
   const currentUserMember = await db.member.findFirst({
     where: {
-      organizationId: session?.session.activeOrganizationId,
+      organizationId: organizationId,
       userId: session?.user.id,
     },
   });

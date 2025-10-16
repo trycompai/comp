@@ -24,19 +24,17 @@ export default async function EmployeeDetailsPage({
     headers: await headers(),
   });
 
-  const organizationId = session?.session.activeOrganizationId;
-
   const currentUserMember = await db.member.findFirst({
     where: {
-      organizationId,
-      userId: session?.user.id,
+      organizationId: orgId,
+      userId: session?.user?.id,
     },
   });
 
   const canEditMembers =
     currentUserMember?.role.includes('owner') || currentUserMember?.role.includes('admin') || false;
 
-  if (!organizationId) {
+  if (!orgId) {
     redirect('/');
   }
 

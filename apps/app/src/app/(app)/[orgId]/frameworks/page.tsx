@@ -22,6 +22,10 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
     headers: await headers(),
   });
 
+  if (!session) {
+    redirect('/login');
+  }
+
   const org = await db.organization.findUnique({
     where: { id: organizationId },
     select: { onboardingCompleted: true, advancedModeEnabled: true },

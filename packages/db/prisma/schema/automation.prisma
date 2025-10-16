@@ -1,0 +1,17 @@
+model EvidenceAutomation {
+    id          String   @id @default(dbgenerated("generate_prefixed_cuid('aut'::text)"))
+    name        String
+    description String?
+    createdAt   DateTime @default(now())
+
+    chatHistory String?
+
+    taskId String
+    task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+    // Relations
+    runs     EvidenceAutomationRun[]
+    versions EvidenceAutomationVersion[]
+
+    @@index([taskId])
+}

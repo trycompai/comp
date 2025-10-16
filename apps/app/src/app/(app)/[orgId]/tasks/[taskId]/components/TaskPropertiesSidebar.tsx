@@ -1,39 +1,36 @@
+'use client';
+
+import { useOrganizationMembers } from '@/hooks/use-organization-members';
 import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
 import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
-import type { Control, Departments, Member, Task, TaskFrequency, TaskStatus, User } from '@db';
+import type { Departments, Member, Task, TaskFrequency, TaskStatus, User } from '@db';
 import { format } from 'date-fns';
-import { Sparkles } from 'lucide-react';
 import Link from 'next/link';
-import { useFeatureFlagEnabled } from 'posthog-js/react';
-import { useState } from 'react';
+import { useParams } from 'next/navigation';
 import { TaskStatusIndicator } from '../../components/TaskStatusIndicator';
+import { useTask } from '../hooks/use-task';
 import { PropertySelector } from './PropertySelector';
 import { DEPARTMENT_COLORS, taskDepartments, taskFrequencies, taskStatuses } from './constants';
 
 interface TaskPropertiesSidebarProps {
-  task: Task & { controls?: Control[] };
-  members?: (Member & { user: User })[];
-  assignedMember: (Member & { user: User }) | null | undefined; // Allow undefined
   handleUpdateTask: (
     data: Partial<Pick<Task, 'status' | 'assigneeId' | 'frequency' | 'department' | 'reviewDate'>>,
   ) => void;
-  onDeleteClick?: () => void;
-  onRegenerateClick?: () => void;
-  orgId: string;
 }
 
-export function TaskPropertiesSidebar({
-  task,
-  members,
-  assignedMember,
-  handleUpdateTask,
-  onDeleteClick,
-  onRegenerateClick,
-  orgId,
-}: TaskPropertiesSidebarProps) {
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const isTaskAutomationEnabled = useFeatureFlagEnabled('is-task-automation-enabled');
+export function TaskPropertiesSidebar({ handleUpdateTask }: TaskPropertiesSidebarProps) {
+  const { orgId } = useParams<{ orgId: string }>();
+  const { task, isLoading } = useTask();
+  const { members } = useOrganizationMembers();
+
+  console.log('members', members);
+
+  const assignedMember =
+    !task?.assigneeId || !members ? null : members.find((m) => m.id === task.assigneeId);
+
+  if (isLoading) return <div>Loading...</div>;
+  if (!task) return null;
 
   return (
     <div className="space-y-4">
@@ -257,26 +254,11 @@ export function TaskPropertiesSidebar({
                 {format(new Date(task.reviewDate), 'M/d/yyyy')}
               </span>
             ) : (
-              <span className="text-sm px-1 font-medium">None</span>
+              <span className="text-sm px-2 font-medium">None</span>
             )}
           </div>
         </div>
       </div>
-
-      {/* Automation Button */}
-      {isTaskAutomationEnabled && (
-        <div className="mt-6">
-          <Link href={`/${orgId}/tasks/${task.id}/automation`} className="block">
-            <Button
-              className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-              size="sm"
-            >
-              <Sparkles className="mr-2 h-4 w-4" />
-              AI Automation
-            </Button>
-          </Link>
-        </div>
-      )}
     </div>
   );
 }

@@ -17,7 +17,7 @@ import { z } from 'zod';
 import { isFriendlyAvailable } from '../actions/is-friendly-available';
 import { trustPortalSwitchAction } from '../actions/trust-portal-switch';
 import { updateTrustPortalFrameworks } from '../actions/update-trust-portal-frameworks';
-import { GDPR, HIPAA, ISO27001, SOC2Type1, SOC2Type2, PCIDSS, ISO42001 } from './logos';
+import { GDPR, HIPAA, ISO27001, SOC2Type1, SOC2Type2, PCIDSS, ISO42001, NEN7510 } from './logos';
 
 const trustPortalSwitchSchema = z.object({
   enabled: z.boolean(),
@@ -30,6 +30,7 @@ const trustPortalSwitchSchema = z.object({
   gdpr: z.boolean(),
   hipaa: z.boolean(),
   pcidss: z.boolean(),
+  nen7510: z.boolean(),
   soc2type1Status: z.enum(['started', 'in_progress', 'compliant']),
   soc2type2Status: z.enum(['started', 'in_progress', 'compliant']),
   iso27001Status: z.enum(['started', 'in_progress', 'compliant']),
@@ -37,6 +38,7 @@ const trustPortalSwitchSchema = z.object({
   gdprStatus: z.enum(['started', 'in_progress', 'compliant']),
   hipaaStatus: z.enum(['started', 'in_progress', 'compliant']),
   pcidssStatus: z.enum(['started', 'in_progress', 'compliant']),
+  nen7510Status: z.enum(['started', 'in_progress', 'compliant']),
 });
 
 export function TrustPortalSwitch({
@@ -60,6 +62,8 @@ export function TrustPortalSwitch({
   gdprStatus,
   hipaaStatus,
   pcidssStatus,
+  nen7510,
+  nen7510Status,
   friendlyUrl,
 }: {
   enabled: boolean;
@@ -75,6 +79,7 @@ export function TrustPortalSwitch({
   gdpr: boolean;
   hipaa: boolean;
   pcidss: boolean;
+  nen7510: boolean;
   soc2type1Status: 'started' | 'in_progress' | 'compliant';
   soc2type2Status: 'started' | 'in_progress' | 'compliant';
   iso27001Status: 'started' | 'in_progress' | 'compliant';
@@ -82,6 +87,7 @@ export function TrustPortalSwitch({
   gdprStatus: 'started' | 'in_progress' | 'compliant';
   hipaaStatus: 'started' | 'in_progress' | 'compliant';
   pcidssStatus: 'started' | 'in_progress' | 'compliant';
+  nen7510Status: 'started' | 'in_progress' | 'compliant';
   friendlyUrl: string | null;
 }) {
   const trustPortalSwitch = useAction(trustPortalSwitchAction, {
@@ -107,6 +113,7 @@ export function TrustPortalSwitch({
       gdpr: gdpr ?? false,
       hipaa: hipaa ?? false,
       pcidss: pcidss ?? false,
+      nen7510: nen7510 ?? false,
       soc2type1Status: soc2type1Status ?? 'started',
       soc2type2Status: soc2type2Status ?? 'started',
       iso27001Status: iso27001Status ?? 'started',
@@ -114,6 +121,7 @@ export function TrustPortalSwitch({
       gdprStatus: gdprStatus ?? 'started',
       hipaaStatus: hipaaStatus ?? 'started',
       pcidssStatus: pcidssStatus ?? 'started',
+      nen7510Status: nen7510Status ?? 'started',
       friendlyUrl: friendlyUrl ?? undefined,
     },
   });
@@ -541,6 +549,35 @@ export function TrustPortalSwitch({
                         }
                       }}
                     />
+                    {/* NEN 7510 */}
+                    <ComplianceFramework
+                      title="NEN 7510"
+                      description="A Dutch standard for managing information security systems."
+                      isEnabled={nen7510}
+                      status={nen7510Status}
+                      onStatusChange={async (value) => {
+                        try {
+                          await updateTrustPortalFrameworks({
+                            orgId,
+                            nen7510Status: value as 'started' | 'in_progress' | 'compliant',
+                          });
+                          toast.success('NEN 7510 status updated');
+                        } catch (error) {
+                          toast.error('Failed to update NEN 7510 status');
+                        }
+                      }}
+                      onToggle={async (checked) => {
+                        try {
+                          await updateTrustPortalFrameworks({
+                            orgId,
+                            nen7510: checked,
+                          });
+                          toast.success('NEN 7510 status updated');
+                        } catch (error) {
+                          toast.error('Failed to update NEN 7510 status');
+                        }
+                      }}
+                    />
                   </div>
                 </div>
               </div>
@@ -594,9 +631,13 @@ function ComplianceFramework({
         <SOC2Type2 className="max-h-full max-w-full" />
       </div>
     ) : title === 'PCI DSS' ? (
-        <div className="h-16 w-16 flex items-center justify-center">
-          <PCIDSS className="max-h-full max-w-full" />
-        </div>
+      <div className="h-16 w-16 flex items-center justify-center">
+        <PCIDSS className="max-h-full max-w-full" />
+      </div>
+    ) : title === 'NEN 7510' ? (
+      <div className="h-16 w-16 flex items-center justify-center">
+        <NEN7510 className="max-h-full max-w-full" />
+      </div>
     ) : null;
 
   return (

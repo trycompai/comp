@@ -1,6 +1,8 @@
 'use server';
 
+import { sendNewPolicyEmail } from '@/jobs/tasks/email/new-policy-email';
 import { db, PolicyStatus } from '@db';
+import { tasks } from '@trigger.dev/sdk';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { authActionClient } from '../safe-action';
@@ -71,6 +73,7 @@ export const acceptRequestedPolicyChangesAction = authActionClient
           approverId: null,
           signedBy: [], // Clear the signedBy field
           lastPublishedAt: new Date(), // Update last published date
+          reviewDate: new Date(), // Update reviewDate to current date
         },
       });
 
@@ -91,36 +94,36 @@ export const acceptRequestedPolicyChangesAction = authActionClient
         return roles.includes('employee');
       });
 
-      // Call /api/send-policy-email to send emails to employees
-
       // Prepare the events array for the API
       const events = employeeMembers
         .filter((employee) => employee.user.email)
-        .map((employee) => ({
-          subscriberId: `${employee.user.id}-${session.activeOrganizationId}`,
-          email: employee.user.email,
-          userName: employee.user.name || employee.user.email || 'Employee',
-          policyName: policy.name,
-          organizationName: policy.organization.name,
-          url: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.trycomp.ai'}/${session.activeOrganizationId}/policies/${policy.id}`,
-          description: `The "${policy.name}" policy has been ${isNewPolicy ? 'created' : 'updated'}.`,
-        }));
+        .map((employee) => {
+          let notificationType: 'new' | 're-acceptance' | 'updated';
+          const wasAlreadySigned = policy.signedBy.includes(employee.id);
+          if (isNewPolicy) {
+            notificationType = 'new';
+          } else if (wasAlreadySigned) {
+            notificationType = 're-acceptance';
+          } else {
+            notificationType = 'updated';
+          }
+
+          return {
+            email: employee.user.email,
+            userName: employee.user.name || employee.user.email || 'Employee',
+            policyName: policy.name,
+            organizationId: session.activeOrganizationId || '',
+            organizationName: policy.organization.name,
+            notificationType,
+          };
+        });
 
       // Call the API route to send the emails
-      try {
-        console.log('***** process.env.BETTER_AUTH_URL ', process.env.BETTER_AUTH_URL);
-        await fetch(`${process.env.BETTER_AUTH_URL ?? ''}/api/send-policy-email`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(events),
-        });
-      } catch (error) {
-        console.error('Failed to call /api/send-policy-email:', error);
-        console.log('***** process.env.BETTER_AUTH_URL error ', process.env.BETTER_AUTH_URL);
-        // Don't throw, just log
-      }
+      await Promise.all(
+        events.map((event) =>
+          tasks.trigger<typeof sendNewPolicyEmail>('send-new-policy-email', event),
+        ),
+      );
 
       // If a comment was provided, create a comment
       if (comment && comment.trim() !== '') {

@@ -25,8 +25,13 @@ export async function completeEmployeeCreation(params: {
   console.log(`Starting employee creation for ${email}`);
 
   // Check if the user already exists
-  const existingUser = await db.user.findUnique({
-    where: { email },
+  const existingUser = await db.user.findFirst({
+    where: {
+      email: {
+        equals: email,
+        mode: 'insensitive',
+      },
+    },
   });
 
   let employee: Member;

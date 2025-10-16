@@ -1,19 +1,17 @@
-import { env } from '@/env.mjs';
 import { db } from '@db';
-import { Novu } from '@novu/api'; 
+import { Novu } from '@novu/api';
 import { logger, schedules } from '@trigger.dev/sdk';
 
 export const policySchedule = schedules.task({
   id: 'policy-schedule',
+  machine: 'large-1x',
   cron: '0 */12 * * *', // Every 12 hours
   maxDuration: 1000 * 60 * 10, // 10 minutes
   run: async () => {
     const now = new Date();
 
-    logger.info(`env.NOVU_API_KEY: ${env.NOVU_API_KEY}`);
-    logger.info(`process.env.NOVU_API_KEY: ${process.env.NOVU_API_KEY}`);
-    const novu = new Novu({ 
-      secretKey: env.NOVU_API_KEY
+    const novu = new Novu({
+      secretKey: process.env.NOVU_API_KEY,
     });
 
     // Find all published policies that have a review date and frequency set
@@ -34,7 +32,7 @@ export const policySchedule = schedules.task({
             name: true,
             members: {
               where: {
-                role: { contains: 'owner' }
+                role: { contains: 'owner' },
               },
               select: {
                 user: {
@@ -125,15 +123,18 @@ export const policySchedule = schedules.task({
       });
 
       // Build array of recipients (org owner(s) and policy assignee(s)) for each overdue policy
-      const recipientsMap = new Map<string, {
-        email: string;
-        userId: string;
-        name: string;
-        policy: typeof overduePolicies[number];
-      }>();
+      const recipientsMap = new Map<
+        string,
+        {
+          email: string;
+          userId: string;
+          name: string;
+          policy: (typeof overduePolicies)[number];
+        }
+      >();
       const addRecipients = (
         users: Array<{ user: { id: string; email: string; name?: string } }>,
-        policy: typeof overduePolicies[number],
+        policy: (typeof overduePolicies)[number],
       ) => {
         for (const entry of users) {
           const user = entry.user;
@@ -146,9 +147,6 @@ export const policySchedule = schedules.task({
                 name: user.name ?? '',
                 policy,
               });
-              logger.info(
-                `New recipient "${user.email}" (${user.id}) for policy "${policy.name}" (${policy.id}) from org "${policy.organization.name}" - frequency ${policy.frequency} - last reviewed ${policy.reviewDate?.toISOString()}`,
-              );
             }
           }
         }
@@ -183,7 +181,7 @@ export const policySchedule = schedules.task({
             organizationId: recipient.policy.organizationId,
             policyId: recipient.policy.id,
             policyUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.trycomp.ai'}/${recipient.policy.organizationId}/policies/${recipient.policy.id}`,
-          }
+          },
         })),
       });
 
