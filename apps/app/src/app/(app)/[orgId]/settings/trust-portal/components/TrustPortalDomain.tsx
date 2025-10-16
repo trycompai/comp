@@ -1,5 +1,6 @@
 'use client';
 
+import { useDomain } from '@/hooks/use-domain';
 import { Button } from '@comp/ui/button';
 import {
   Card,
@@ -13,9 +14,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@comp/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { AlertCircle, CheckCircle, ClipboardCopy, Loader2 } from 'lucide-react';
+import { AlertCircle, CheckCircle, ClipboardCopy, ExternalLink, Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -50,6 +51,17 @@ export function TrustPortalDomain({
   const [isCnameVerified, setIsCnameVerified] = useState(false);
   const [isTxtVerified, setIsTxtVerified] = useState(false);
   const [isVercelTxtVerified, setIsVercelTxtVerified] = useState(false);
+
+  const { data: domainStatus } = useDomain(initialDomain);
+
+  const verificationInfo = useMemo(() => {
+    const data = domainStatus?.data;
+    if (data && !data.verified && data.verification && data.verification.length > 0) {
+      return data.verification[0];
+    }
+
+    return null;
+  }, [domainStatus]);
 
   useEffect(() => {
     const isCnameVerified = localStorage.getItem(`${initialDomain}-isCnameVerified`);
@@ -215,6 +227,28 @@ export function TrustPortalDomain({
                 initialDomain !== '' &&
                 !domainVerified && (
                   <div className="space-y-2 pt-2">
+                    {verificationInfo && (
+                      <div className="rounded-md border border-amber-200 bg-amber-100 p-4 dark:border-amber-900 dark:bg-amber-950">
+                        <div className="flex gap-3">
+                          <AlertCircle className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+                          <p className="text-amber-100 text-sm dark:text-amber-200">
+                            This domain is linked to another Vercel account. To use it with this
+                            project, add a {verificationInfo.type} record at{' '}
+                            {verificationInfo.domain} to verify ownership. You can remove the record
+                            after verification is complete.
+                            <a
+                              href="https://vercel.com/docs/domains/troubleshooting#misconfigured-domain-issues"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-white underline dark:text-white ml-2"
+                            >
+                              Learn more
+                              <ExternalLink className="ml-1 mb-0.5 inline-block h-4 w-4 font-bold text-white dark:text-white stroke-2" />
+                            </a>
+                          </p>
+                        </div>
+                      </div>
+                    )}
                     <div className="rounded-md border">
                       <div className="text-sm">
                         <table className="hidden w-full lg:table">
