@@ -19,21 +19,21 @@ export const getEmployeeDevices: () => Promise<Host[] | null> = async () => {
     return null;
   }
 
-  const organization = await db.organization.findUnique({
+  // Find all members belonging to the organization.
+  const employees = await db.member.findMany({
     where: {
-      id: organizationId,
+      organizationId,
     },
   });
 
-  if (!organization) {
-    return null;
-  }
-
-  const labelId = organization.fleetDmLabelId;
-
-  // Get all hosts to get their ids.
-  const employeeDevices = await fleet.get(`/labels/${labelId}/hosts`);
-  const allIds = employeeDevices.data.hosts.map((host: { id: number }) => host.id);
+  const labelIdsResponses = await Promise.all(
+    employees
+      .filter((employee) => employee.fleetDmLabelId)
+      .map((employee) => fleet.get(`/labels/${employee.fleetDmLabelId}/hosts`)),
+  );
+  const allIds = labelIdsResponses.flatMap((response) =>
+    response.data.hosts.map((host: { id: number }) => host.id),
+  );
 
   // Get all devices by id. in parallel
   const devices = await Promise.all(allIds.map((id: number) => fleet.get(`/hosts/${id}`)));
