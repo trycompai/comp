@@ -6023,16 +6023,6 @@
             }
           }
         ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateAutomationDto"
-              }
-            }
-          }
-        },
         "responses": {
           "201": {
             "description": "Automation created successfully",
@@ -8910,19 +8900,6 @@
           "fileName",
           "fileType",
           "fileData"
-        ]
-      },
-      "CreateAutomationDto": {
-        "type": "object",
-        "properties": {
-          "taskId": {
-            "type": "string",
-            "description": "Task ID",
-            "example": "tsk_abc123def456"
-          }
-        },
-        "required": [
-          "taskId"
         ]
       },
       "UpdateAutomationDto": {

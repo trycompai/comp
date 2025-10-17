@@ -21,7 +21,6 @@ import { OrganizationId } from '../../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { TasksService } from '../tasks.service';
 import { AutomationsService } from './automations.service';
-import { CreateAutomationDto } from './dto/create-automation.dto';
 import { UpdateAutomationDto } from './dto/update-automation.dto';
 import { AUTOMATION_OPERATIONS } from './schemas/automation-operations';
 import { CREATE_AUTOMATION_RESPONSES } from './schemas/create-automation.responses';
@@ -111,12 +110,11 @@ export class AutomationsController {
   async createAutomation(
     @OrganizationId() organizationId: string,
     @Param('taskId') taskId: string,
-    @Body() createAutomationDto: CreateAutomationDto,
   ) {
     // Verify task access first
     await this.tasksService.verifyTaskAccess(organizationId, taskId);
 
-    return this.automationsService.create(organizationId, { taskId });
+    return this.automationsService.create(organizationId, taskId);
   }
 
   @Patch(':automationId')
