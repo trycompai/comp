@@ -6855,6 +6855,60 @@
           "Health"
         ]
       }
+    },
+    "/v1/trust-portal/domain/status": {
+      "get": {
+        "description": "Retrieve the verification status and DNS records for a custom domain configured in the Vercel trust portal project",
+        "operationId": "TrustPortalController_getDomainStatus_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "domain",
+            "required": true,
+            "in": "query",
+            "description": "The domain name to check status for",
+            "schema": {
+              "example": "portal.example.com",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Domain status retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainStatusResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing authentication"
+          },
+          "500": {
+            "description": "Failed to retrieve domain status from Vercel"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get domain verification status",
+        "tags": [
+          "Trust Portal"
+        ]
+      }
     }
   },
   "info": {
@@ -9044,6 +9098,56 @@
         },
         "required": [
           "content"
+        ]
+      },
+      "DomainVerificationDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Verification type (e.g., TXT, CNAME)"
+          },
+          "domain": {
+            "type": "string",
+            "description": "Domain for verification"
+          },
+          "value": {
+            "type": "string",
+            "description": "Verification value"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Reason for verification status"
+          }
+        },
+        "required": [
+          "type",
+          "domain",
+          "value"
+        ]
+      },
+      "DomainStatusResponseDto": {
+        "type": "object",
+        "properties": {
+          "domain": {
+            "type": "string",
+            "description": "The domain name"
+          },
+          "verified": {
+            "type": "boolean",
+            "description": "Whether the domain is verified"
+          },
+          "verification": {
+            "description": "Verification records for the domain",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DomainVerificationDto"
+            }
+          }
+        },
+        "required": [
+          "domain",
+          "verified"
         ]
       }
     }

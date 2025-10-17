@@ -1,10 +1,12 @@
 import { env } from '@/env.mjs';
+import { auth } from '@/app/lib/auth';
 import { initializeServer } from '@comp/analytics/server';
 import { cn } from '@comp/ui/cn';
 import '@comp/ui/globals.css';
 import { GeistMono } from 'geist/font/mono';
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
+import { headers } from 'next/headers';
 import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import { Suspense } from 'react';
 import { Toaster } from 'sonner';
@@ -81,6 +83,10 @@ if (env.NEXT_PUBLIC_POSTHOG_KEY && env.NEXT_PUBLIC_POSTHOG_HOST) {
 export default async function Layout(props: { children: React.ReactNode }) {
   const { children } = props;
 
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body
@@ -91,7 +97,7 @@ export default async function Layout(props: { children: React.ReactNode }) {
       >
         <Suspense>
           <NuqsAdapter>
-            <Providers>
+            <Providers session={session}>
               <main>{children}</main>
             </Providers>
           </NuqsAdapter>
