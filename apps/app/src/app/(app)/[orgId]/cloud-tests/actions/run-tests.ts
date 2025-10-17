@@ -32,9 +32,8 @@ export const runTests = async () => {
     });
 
     const headersList = await headers();
-    let path =
-      headersList.get("x-pathname") || headersList.get("referer") || "";
-    path = path.replace(/\/[a-z]{2}\//, "/");
+    let path = headersList.get('x-pathname') || headersList.get('referer') || '';
+    path = path.replace(/\/[a-z]{2}\//, '/');
 
     revalidatePath(path);
 
@@ -42,10 +41,11 @@ export const runTests = async () => {
       success: true,
       errors: null,
       taskId: handle.id,
+      publicAccessToken: handle.publicAccessToken,
     };
   } catch (error) {
     console.error('Error triggering integration tests:', error);
-    
+
     return {
       success: false,
       errors: [error instanceof Error ? error.message : 'Failed to trigger integration tests'],
