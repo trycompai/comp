@@ -9,7 +9,7 @@ export class FrameworkEditorTaskTemplateService {
   async findAll() {
     try {
       const taskTemplates = await db.frameworkEditorTaskTemplate.findMany({
-        orderBy: { createdAt: 'desc' },
+        orderBy: { name: 'asc' },
       });
 
       this.logger.log(`Retrieved ${taskTemplates.length} framework editor task templates`);

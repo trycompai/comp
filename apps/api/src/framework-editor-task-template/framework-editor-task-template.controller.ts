@@ -49,22 +49,8 @@ export class FrameworkEditorTaskTemplateController {
   @ApiResponse(GET_ALL_TASK_TEMPLATES_RESPONSES[200])
   @ApiResponse(GET_ALL_TASK_TEMPLATES_RESPONSES[401])
   @ApiResponse(GET_ALL_TASK_TEMPLATES_RESPONSES[500])
-  async getAllTaskTemplates(
-    @AuthContext() authContext: AuthContextType,
-  ) {
-    const taskTemplates = await this.taskTemplateService.findAll();
-
-    return {
-      data: taskTemplates,
-      count: taskTemplates.length,
-      authType: authContext.authType,
-      ...(authContext.userId && authContext.userEmail && {
-        authenticatedUser: {
-          id: authContext.userId,
-          email: authContext.userEmail,
-        },
-      }),
-    };
+  async getAllTaskTemplates() {
+    return await this.taskTemplateService.findAll();
   }
 
   @Get(':id')
