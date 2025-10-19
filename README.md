@@ -117,6 +117,7 @@ Create the following `.env` files and fill them out with your credentials:
 
 - `comp/apps/app/.env`
 - `comp/apps/portal/.env`
+- `comp/apps/api/.env`
 - `comp/packages/db/.env`
 
 You can copy from the `.env.example` files:
@@ -153,6 +154,14 @@ DATABASE_URL="postgresql://user:password@host:port/database"
 RESEND_API_KEY="" # Resend (https://resend.com/api-keys) - Resend Dashboard -> API Keys
 NEXT_PUBLIC_PORTAL_URL="http://localhost:3002"
 REVALIDATION_SECRET=""         # Use `openssl rand -base64 32` to generate
+```
+
+API environment variables required:
+
+```
+API_AWS_ACCESS_KEY_ID=
+API_AWS_SECRET_ACCESS_KEY=
+API_AWS_BUCKET_NAME=
 ```
 
 > ✅ Make sure you have all of these variables in your `.env` file.
