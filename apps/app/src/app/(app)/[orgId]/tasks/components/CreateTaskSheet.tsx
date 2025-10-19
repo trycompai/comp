@@ -2,6 +2,7 @@
 
 import { createTaskAction } from '@/actions/tasks/create-task-action';
 import { SelectAssignee } from '@/components/SelectAssignee';
+import { useTaskTemplates } from '@/hooks/use-task-template-api';
 import { Button } from '@comp/ui/button';
 import { Drawer, DrawerContent, DrawerTitle } from '@comp/ui/drawer';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
@@ -16,7 +17,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRightIcon, X } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useQueryState } from 'nuqs';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -33,6 +34,7 @@ const createTaskSchema = z.object({
   frequency: z.nativeEnum(TaskFrequency).nullable().optional(),
   department: z.nativeEnum(Departments).nullable().optional(),
   controlIds: z.array(z.string()).optional(),
+  taskTemplateId: z.string().nullable().optional(),
 });
 
 export function CreateTaskSheet({
@@ -45,6 +47,8 @@ export function CreateTaskSheet({
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const [createTaskOpen, setCreateTaskOpen] = useQueryState('create-task');
   const isOpen = Boolean(createTaskOpen);
+
+  const { data: taskTemplates } = useTaskTemplates();
 
   const handleOpenChange = (open: boolean) => {
     setCreateTaskOpen(open ? 'true' : null);
@@ -70,6 +74,7 @@ export function CreateTaskSheet({
       frequency: null,
       department: null,
       controlIds: [],
+      taskTemplateId: null,
     },
   });
 
@@ -89,6 +94,27 @@ export function CreateTaskSheet({
       })),
     [controls],
   );
+
+  const frameworkEditorTaskTemplates = useMemo(() => taskTemplates?.data || [], [taskTemplates]);
+
+  // Watch for task template selection
+  const selectedTaskTemplateId = form.watch('taskTemplateId');
+  const selectedTaskTemplate = useMemo(
+    () => frameworkEditorTaskTemplates.find((template) => template.id === selectedTaskTemplateId),
+    [selectedTaskTemplateId, frameworkEditorTaskTemplates],
+  );
+
+  // Auto-fill form when task template is selected
+  useEffect(() => {
+    if (selectedTaskTemplate) {
+      form.setValue('title', selectedTaskTemplate.name);
+      form.setValue('description', selectedTaskTemplate.description);
+      form.setValue('frequency', selectedTaskTemplate.frequency as TaskFrequency);
+      form.setValue('department', selectedTaskTemplate.department as Departments);
+    }
+  }, [selectedTaskTemplate, form]);
+
+  const isTemplateSelected = Boolean(selectedTaskTemplate);
 
   // Memoize filter function to prevent re-renders
   const filterFunction = useCallback(
@@ -116,9 +142,54 @@ export function CreateTaskSheet({
     onChange(options.map((option) => option.value));
   }, []);
 
+  const handleTaskTemplateChange = useCallback(
+    (value: string, onChange: (value: any) => void) => {
+      if (value === 'none') {
+        onChange(null);
+        // Clear the fields when "none" is selected
+        form.setValue('title', '');
+        form.setValue('description', '');
+        form.setValue('frequency', null);
+        form.setValue('department', null);
+      } else {
+        onChange(value);
+      }
+    },
+    [form],
+  );
+
   const taskForm = (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 w-full max-w-none">
+        <FormField
+          control={form.control}
+          name="taskTemplateId"
+          render={({ field }) => (
+            <FormItem className="w-full">
+              <FormLabel>Task Template (Optional)</FormLabel>
+              <Select
+                value={field.value || 'none'}
+                onValueChange={(value) => handleTaskTemplateChange(value, field.onChange)}
+              >
+                <FormControl>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select Template" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {frameworkEditorTaskTemplates.map((template) => (
+                    <SelectItem key={template.id} value={template.id}>
+                      <span className="capitalize">{template.name}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
         <FormField
           control={form.control}
           name="title"
@@ -131,6 +202,8 @@ export function CreateTaskSheet({
                   placeholder="A short, descriptive title for the task"
                   autoCorrect="off"
                   className="w-full"
+                  readOnly={isTemplateSelected}
+                  disabled={isTemplateSelected}
                 />
               </FormControl>
               <FormMessage />
@@ -149,6 +222,8 @@ export function CreateTaskSheet({
                   {...field}
                   className="min-h-[80px] w-full resize-none"
                   placeholder="Provide a detailed description of what needs to be done"
+                  readOnly={isTemplateSelected}
+                  disabled={isTemplateSelected}
                 />
               </FormControl>
               <FormMessage />
@@ -183,7 +258,11 @@ export function CreateTaskSheet({
           render={({ field }) => (
             <FormItem className="w-full">
               <FormLabel>Frequency (Optional)</FormLabel>
-              <Select onValueChange={(value) => handleFrequencyChange(value, field.onChange)}>
+              <Select
+                value={field.value || 'none'}
+                onValueChange={(value) => handleFrequencyChange(value, field.onChange)}
+                disabled={isTemplateSelected}
+              >
                 <FormControl>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select frequency" />
@@ -209,7 +288,11 @@ export function CreateTaskSheet({
           render={({ field }) => (
             <FormItem className="w-full">
               <FormLabel>Department (Optional)</FormLabel>
-              <Select onValueChange={(value) => handleDepartmentChange(value, field.onChange)}>
+              <Select
+                value={field.value || 'none'}
+                onValueChange={(value) => handleDepartmentChange(value, field.onChange)}
+                disabled={isTemplateSelected}
+              >
                 <FormControl>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select department" />
