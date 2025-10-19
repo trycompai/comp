@@ -25,12 +25,12 @@ export class AttachmentsService {
   constructor() {
     // AWS configuration is validated at startup via ConfigModule
     // Safe to access environment variables directly since they're validated
-    this.bucketName = process.env.APP_AWS_BUCKET_NAME!;
+    this.bucketName = process.env.API_AWS_BUCKET_NAME!;
     this.s3Client = new S3Client({
-      region: process.env.APP_AWS_REGION || 'us-east-1',
+      region: process.env.API_AWS_REGION || 'us-east-1',
       credentials: {
-        accessKeyId: process.env.APP_AWS_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.APP_AWS_SECRET_ACCESS_KEY!,
+        accessKeyId: process.env.API_AWS_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.API_AWS_SECRET_ACCESS_KEY!,
       },
     });
   }
