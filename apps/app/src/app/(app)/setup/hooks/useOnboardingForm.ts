@@ -155,7 +155,7 @@ export function useOnboardingForm({
     const newAnswers: OnboardingFormFields = { ...savedAnswers, ...data };
 
     for (const key of Object.keys(newAnswers)) {
-      if (step.options && step.key === key && key !== 'frameworkIds') {
+      if (step.options && step.key === key && key !== 'frameworkIds' && key !== 'shipping') {
         const customValue = newAnswers[`${key}Other`] || '';
         const values = (newAnswers[key] || '').split(',').filter(Boolean);
 

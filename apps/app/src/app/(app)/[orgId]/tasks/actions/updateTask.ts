@@ -30,6 +30,7 @@ export const updateTask = async (input: Partial<Task>) => {
     const orgId = session.session.activeOrganizationId;
 
     revalidatePath(`/${orgId}/tasks`);
+    revalidatePath(`/${orgId}/tasks/${id}`);
 
     return {
       success: true,

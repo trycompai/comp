@@ -208,41 +208,6 @@ async function handleLogin(request: NextRequest) {
 
     // Try alternative approach - create session directly
     console.log('[TEST-LOGIN] Attempting direct session creation...');
-
-    try {
-      const sessionResponse = await auth.api.createSession({
-        body: {
-          userId: user.id,
-        },
-        headers: request.headers,
-        asResponse: true,
-      });
-
-      if (sessionResponse.ok) {
-        const sessionData = await sessionResponse.json();
-        console.log('[TEST-LOGIN] Direct session creation successful');
-        // Continue with the original flow using the session data
-        responseData = { user, session: sessionData.session };
-      } else {
-        let sessionErrorData;
-        try {
-          sessionErrorData = await sessionResponse.json();
-        } catch (err) {
-          sessionErrorData = { parseError: String(err) };
-        }
-        console.error('[TEST-LOGIN] Direct session creation also failed:', sessionErrorData);
-        return NextResponse.json(
-          { error: 'Failed to create session', details: errorData },
-          { status: 400 },
-        );
-      }
-    } catch (sessionError) {
-      console.error('[TEST-LOGIN] Direct session creation error:', sessionError);
-      return NextResponse.json(
-        { error: 'Failed to create session', details: errorData },
-        { status: 400 },
-      );
-    }
   } else {
     // Get the response data from successful sign-in
     try {

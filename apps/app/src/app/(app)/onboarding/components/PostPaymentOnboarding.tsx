@@ -88,7 +88,7 @@ export function PostPaymentOnboarding({
               <div className="text-muted-foreground text-sm">
                 Step {stepIndex + 1} of {totalSteps}
               </div>
-              <CardTitle className="flex min-h-[56px] items-center justify-center text-center">
+              <CardTitle className="flex min-h-[56px] items-center justify-center text-center leading-6">
                 {step?.question || ''}
               </CardTitle>
             </div>
@@ -103,10 +103,7 @@ export function PostPaymentOnboarding({
                   autoComplete="off"
                 >
                   {steps.map((s, idx) => (
-                    <div
-                      key={s.key}
-                      style={{ display: idx === stepIndex ? 'block' : 'none' }}
-                    >
+                    <div key={s.key} style={{ display: idx === stepIndex ? 'block' : 'none' }}>
                       <FormField
                         name={s.key}
                         render={({ field }) => (
@@ -118,9 +115,11 @@ export function PostPaymentOnboarding({
                                 savedAnswers={savedAnswers}
                               />
                             </FormControl>
-                            <div className="min-h-[20px]">
-                              <FormMessage />
-                            </div>
+                            {s.key !== 'shipping' && (
+                              <div className="min-h-[20px]">
+                                <FormMessage />
+                              </div>
+                            )}
                           </FormItem>
                         )}
                       />
