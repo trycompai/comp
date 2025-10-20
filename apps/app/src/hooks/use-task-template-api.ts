@@ -13,5 +13,5 @@ export interface TaskTemplate {
 }
 
 export function useTaskTemplates(options: UseApiSWROptions<TaskTemplate[]> = {}) {
-  return useApiSWR<TaskTemplate[]>('/v1/framework-editor-task-templates', options);
+  return useApiSWR<TaskTemplate[]>('/v1/framework-editor/task-template', options);
 }
