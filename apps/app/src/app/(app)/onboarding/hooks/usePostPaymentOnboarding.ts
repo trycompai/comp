@@ -20,8 +20,15 @@ interface UsePostPaymentOnboardingProps {
   initialData?: Record<string, any>;
 }
 
+// Hide shipping step on staging and production (only show on localhost)
+const isLocalhost =
+  typeof window !== 'undefined' &&
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
 // Use steps 4-12 (post-payment steps)
-const postPaymentSteps = steps.slice(3);
+const postPaymentSteps = isLocalhost
+  ? steps.slice(3)
+  : steps.slice(3).filter((step) => step.key !== 'shipping');
 
 export function usePostPaymentOnboarding({
   organizationId,
