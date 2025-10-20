@@ -114,8 +114,6 @@ export function CreateTaskSheet({
     }
   }, [selectedTaskTemplate, form]);
 
-  const isTemplateSelected = Boolean(selectedTaskTemplate);
-
   // Memoize filter function to prevent re-renders
   const filterFunction = useCallback(
     (value: string, search: string) => {
@@ -202,8 +200,6 @@ export function CreateTaskSheet({
                   placeholder="A short, descriptive title for the task"
                   autoCorrect="off"
                   className="w-full"
-                  readOnly={isTemplateSelected}
-                  disabled={isTemplateSelected}
                 />
               </FormControl>
               <FormMessage />
@@ -222,8 +218,6 @@ export function CreateTaskSheet({
                   {...field}
                   className="min-h-[80px] w-full resize-none"
                   placeholder="Provide a detailed description of what needs to be done"
-                  readOnly={isTemplateSelected}
-                  disabled={isTemplateSelected}
                 />
               </FormControl>
               <FormMessage />
@@ -261,7 +255,6 @@ export function CreateTaskSheet({
               <Select
                 value={field.value || 'none'}
                 onValueChange={(value) => handleFrequencyChange(value, field.onChange)}
-                disabled={isTemplateSelected}
               >
                 <FormControl>
                   <SelectTrigger className="w-full">
@@ -291,7 +284,6 @@ export function CreateTaskSheet({
               <Select
                 value={field.value || 'none'}
                 onValueChange={(value) => handleDepartmentChange(value, field.onChange)}
-                disabled={isTemplateSelected}
               >
                 <FormControl>
                   <SelectTrigger className="w-full">
