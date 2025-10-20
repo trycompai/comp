@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Frequency, Departments } from '@trycompai/db';
 
-export class FrameworkEditorTaskTemplateResponseDto {
+export class TaskTemplateResponseDto {
   @ApiProperty({
     description: 'Task template ID',
     example: 'frk_tt_abc123def456',

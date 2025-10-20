@@ -1,10 +1,10 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { db } from '@trycompai/db';
-import { UpdateFrameworkEditorTaskTemplateDto } from './dto/update-framework-editor-task-template.dto';
+import { UpdateTaskTemplateDto } from './dto/update-task-template.dto';
 
 @Injectable()
-export class FrameworkEditorTaskTemplateService {
-  private readonly logger = new Logger(FrameworkEditorTaskTemplateService.name);
+export class TaskTemplateService {
+  private readonly logger = new Logger(TaskTemplateService.name);
 
   async findAll() {
     try {
@@ -41,7 +41,7 @@ export class FrameworkEditorTaskTemplateService {
     }
   }
 
-  async updateById(id: string, updateDto: UpdateFrameworkEditorTaskTemplateDto) {
+  async updateById(id: string, updateDto: UpdateTaskTemplateDto) {
     try {
       // First check if the task template exists
       await this.findById(id);

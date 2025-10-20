@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsNotEmpty, IsEnum } from 'class-validator';
 import { Frequency, Departments } from '@trycompai/db';
 
-export class CreateFrameworkEditorTaskTemplateDto {
+export class CreateTaskTemplateDto {
   @ApiProperty({
     description: 'Task template name',
     example: 'Monthly Security Review',

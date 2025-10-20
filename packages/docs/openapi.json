@@ -6903,7 +6903,7 @@
     "/v1/framework-editor/task-template": {
       "get": {
         "description": "Retrieve all framework editor task templates",
-        "operationId": "FrameworkEditorTaskTemplateController_getAllTaskTemplates_v1",
+        "operationId": "TaskTemplateController_getAllTaskTemplates_v1",
         "parameters": [
           {
             "name": "X-Organization-Id",
@@ -6985,7 +6985,7 @@
     "/v1/framework-editor/task-template/{id}": {
       "get": {
         "description": "Retrieve a specific framework editor task template by its ID",
-        "operationId": "FrameworkEditorTaskTemplateController_getTaskTemplateById_v1",
+        "operationId": "TaskTemplateController_getTaskTemplateById_v1",
         "parameters": [
           {
             "name": "X-Organization-Id",
@@ -7083,7 +7083,7 @@
       },
       "patch": {
         "description": "Update a framework editor task template by ID",
-        "operationId": "FrameworkEditorTaskTemplateController_updateTaskTemplate_v1",
+        "operationId": "TaskTemplateController_updateTaskTemplate_v1",
         "parameters": [
           {
             "name": "X-Organization-Id",
@@ -7111,7 +7111,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateFrameworkEditorTaskTemplateDto"
+                "$ref": "#/components/schemas/UpdateTaskTemplateDto"
               }
             }
           }
@@ -7205,7 +7205,7 @@
       },
       "delete": {
         "description": "Delete a framework editor task template by ID",
-        "operationId": "FrameworkEditorTaskTemplateController_deleteTaskTemplate_v1",
+        "operationId": "TaskTemplateController_deleteTaskTemplate_v1",
         "parameters": [
           {
             "name": "X-Organization-Id",
@@ -9527,7 +9527,7 @@
           "verified"
         ]
       },
-      "UpdateFrameworkEditorTaskTemplateDto": {
+      "UpdateTaskTemplateDto": {
         "type": "object",
         "properties": {
           "name": {

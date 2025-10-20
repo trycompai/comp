@@ -17,7 +17,7 @@ import { TasksModule } from './tasks/tasks.module';
 import { VendorsModule } from './vendors/vendors.module';
 import { ContextModule } from './context/context.module';
 import { TrustPortalModule } from './trust-portal/trust-portal.module';
-import { FrameworkEditorTaskTemplateModule } from './framework-editor-task-template/framework-editor-task-template.module';
+import { TaskTemplateModule } from './framework-editor/task-template/task-template.module';
 
 @Module({
   imports: [
@@ -44,7 +44,7 @@ import { FrameworkEditorTaskTemplateModule } from './framework-editor-task-templ
     CommentsModule,
     HealthModule,
     TrustPortalModule,
-    FrameworkEditorTaskTemplateModule,
+    TaskTemplateModule,
   ],
   controllers: [AppController],
   providers: [AppService],

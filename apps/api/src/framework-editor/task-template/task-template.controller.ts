@@ -20,11 +20,11 @@ import {
 } from '@nestjs/swagger';
 import {
   AuthContext,
-} from '../auth/auth-context.decorator';
-import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
-import type { AuthContext as AuthContextType } from '../auth/types';
-import { UpdateFrameworkEditorTaskTemplateDto } from './dto/update-framework-editor-task-template.dto';
-import { FrameworkEditorTaskTemplateService } from './framework-editor-task-template.service';
+} from '../../auth/auth-context.decorator';
+import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
+import type { AuthContext as AuthContextType } from '../../auth/types';
+import { UpdateTaskTemplateDto } from './dto/update-task-template.dto';
+import { TaskTemplateService } from './task-template.service';
 import { ValidateIdPipe } from './pipes/validate-id.pipe';
 import { TASK_TEMPLATE_OPERATIONS } from './schemas/task-template-operations';
 import { TASK_TEMPLATE_PARAMS } from './schemas/task-template-params';
@@ -44,8 +44,8 @@ import { DELETE_TASK_TEMPLATE_RESPONSES } from './schemas/delete-task-template.r
     'Organization ID (required for session auth, optional for API key auth)',
   required: false,
 })
-export class FrameworkEditorTaskTemplateController {
-  constructor(private readonly taskTemplateService: FrameworkEditorTaskTemplateService) {}
+export class TaskTemplateController {
+  constructor(private readonly taskTemplateService: TaskTemplateService) {}
 
   @Get()
   @ApiOperation(TASK_TEMPLATE_OPERATIONS.getAllTaskTemplates)
@@ -93,7 +93,7 @@ export class FrameworkEditorTaskTemplateController {
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }))
   async updateTaskTemplate(
     @Param('id', ValidateIdPipe) taskTemplateId: string,
-    @Body() updateTaskTemplateDto: UpdateFrameworkEditorTaskTemplateDto,
+    @Body() updateTaskTemplateDto: UpdateTaskTemplateDto,
     @AuthContext() authContext: AuthContextType,
   ) {
     const updatedTaskTemplate = await this.taskTemplateService.updateById(
