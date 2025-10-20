@@ -6900,7 +6900,7 @@
         ]
       }
     },
-    "/v1/framework-editor-task-templates": {
+    "/v1/framework-editor/task-template": {
       "get": {
         "description": "Retrieve all framework editor task templates",
         "operationId": "FrameworkEditorTaskTemplateController_getAllTaskTemplates_v1",
@@ -6982,7 +6982,7 @@
         ]
       }
     },
-    "/v1/framework-editor-task-templates/{id}": {
+    "/v1/framework-editor/task-template/{id}": {
       "get": {
         "description": "Retrieve a specific framework editor task template by its ID",
         "operationId": "FrameworkEditorTaskTemplateController_getTaskTemplateById_v1",

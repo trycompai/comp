@@ -35,7 +35,7 @@ import { UPDATE_TASK_TEMPLATE_RESPONSES } from './schemas/update-task-template.r
 import { DELETE_TASK_TEMPLATE_RESPONSES } from './schemas/delete-task-template.responses';
 
 @ApiTags('Framework Editor Task Templates')
-@Controller({ path: 'framework-editor-task-templates', version: '1' })
+@Controller({ path: 'framework-editor/task-template', version: '1' })
 @UseGuards(HybridAuthGuard)
 @ApiSecurity('apikey')
 @ApiHeader({
