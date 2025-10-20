@@ -24,9 +24,10 @@ interface UsePostPaymentOnboardingProps {
 const isLocalhost =
   typeof window !== 'undefined' &&
   (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+const showShippingStep = process.env.NODE_ENV == 'production' || isLocalhost;
 
 // Use steps 4-12 (post-payment steps)
-const postPaymentSteps = isLocalhost
+const postPaymentSteps = showShippingStep
   ? steps.slice(3)
   : steps.slice(3).filter((step) => step.key !== 'shipping');
 
