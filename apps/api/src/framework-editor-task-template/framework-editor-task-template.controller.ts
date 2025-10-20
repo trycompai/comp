@@ -5,7 +5,9 @@ import {
   Delete,
   Body,
   Param,
-  UseGuards 
+  UseGuards,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import {
   ApiBody,
@@ -23,6 +25,7 @@ import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import { UpdateFrameworkEditorTaskTemplateDto } from './dto/update-framework-editor-task-template.dto';
 import { FrameworkEditorTaskTemplateService } from './framework-editor-task-template.service';
+import { ValidateIdPipe } from './pipes/validate-id.pipe';
 import { TASK_TEMPLATE_OPERATIONS } from './schemas/task-template-operations';
 import { TASK_TEMPLATE_PARAMS } from './schemas/task-template-params';
 import { TASK_TEMPLATE_BODIES } from './schemas/task-template-bodies';
@@ -61,7 +64,7 @@ export class FrameworkEditorTaskTemplateController {
   @ApiResponse(GET_TASK_TEMPLATE_BY_ID_RESPONSES[404])
   @ApiResponse(GET_TASK_TEMPLATE_BY_ID_RESPONSES[500])
   async getTaskTemplateById(
-    @Param('id') taskTemplateId: string,
+    @Param('id', ValidateIdPipe) taskTemplateId: string,
     @AuthContext() authContext: AuthContextType,
   ) {
     const taskTemplate = await this.taskTemplateService.findById(taskTemplateId);
@@ -87,8 +90,9 @@ export class FrameworkEditorTaskTemplateController {
   @ApiResponse(UPDATE_TASK_TEMPLATE_RESPONSES[401])
   @ApiResponse(UPDATE_TASK_TEMPLATE_RESPONSES[404])
   @ApiResponse(UPDATE_TASK_TEMPLATE_RESPONSES[500])
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }))
   async updateTaskTemplate(
-    @Param('id') taskTemplateId: string,
+    @Param('id', ValidateIdPipe) taskTemplateId: string,
     @Body() updateTaskTemplateDto: UpdateFrameworkEditorTaskTemplateDto,
     @AuthContext() authContext: AuthContextType,
   ) {
@@ -117,7 +121,7 @@ export class FrameworkEditorTaskTemplateController {
   @ApiResponse(DELETE_TASK_TEMPLATE_RESPONSES[404])
   @ApiResponse(DELETE_TASK_TEMPLATE_RESPONSES[500])
   async deleteTaskTemplate(
-    @Param('id') taskTemplateId: string,
+    @Param('id', ValidateIdPipe) taskTemplateId: string,
     @AuthContext() authContext: AuthContextType,
   ) {
     const result = await this.taskTemplateService.deleteById(taskTemplateId);
