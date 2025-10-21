@@ -20,8 +20,11 @@ interface UsePostPaymentOnboardingProps {
   initialData?: Record<string, any>;
 }
 
+const showShippingStep = process.env.NEXT_PUBLIC_APP_ENV !== 'staging';
 // Use steps 4-12 (post-payment steps)
-const postPaymentSteps = steps.slice(3);
+const postPaymentSteps = showShippingStep
+  ? steps.slice(3)
+  : steps.slice(3).filter((step) => step.key !== 'shipping');
 
 export function usePostPaymentOnboarding({
   organizationId,
