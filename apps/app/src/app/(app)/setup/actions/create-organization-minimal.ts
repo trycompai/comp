@@ -45,7 +45,7 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
           website: parsedInput.website,
           onboardingCompleted: false, // Explicitly set to false
           // Local-only: default access for faster local development
-          ...(process.env.NODE_ENV !== 'production' && { hasAccess: true }),
+          ...(process.env.NEXT_PUBLIC_APP_ENV !== 'production' && { hasAccess: true }),
           members: {
             create: {
               userId: session.user.id,
