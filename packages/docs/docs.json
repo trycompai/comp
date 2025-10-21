@@ -15,7 +15,7 @@
         "groups": [
           {
             "group": "Get Started",
-            "pages": ["introduction", "quickstart", "development", "device-agent"]
+            "pages": ["introduction", "automated-evidence", "device-agent"]
           }
         ]
       },
