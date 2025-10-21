@@ -17,6 +17,7 @@ const createTaskSchema = z.object({
   frequency: z.nativeEnum(TaskFrequency).nullable().optional(),
   department: z.nativeEnum(Departments).nullable().optional(),
   controlIds: z.array(z.string()).optional(),
+  taskTemplateId: z.string().nullable().optional(),
 });
 
 export const createTaskAction = authActionClient
@@ -29,7 +30,8 @@ export const createTaskAction = authActionClient
     },
   })
   .action(async ({ parsedInput, ctx }) => {
-    const { title, description, assigneeId, frequency, department, controlIds } = parsedInput;
+    const { title, description, assigneeId, frequency, department, controlIds, taskTemplateId } =
+      parsedInput;
     const {
       session: { activeOrganizationId },
       user,
@@ -50,6 +52,7 @@ export const createTaskAction = authActionClient
           order: 0,
           frequency: frequency || null,
           department: department || null,
+          taskTemplateId: taskTemplateId || null,
           ...(controlIds &&
             controlIds.length > 0 && {
               controls: {
