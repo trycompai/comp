@@ -1,3 +1,10 @@
+## [1.56.2](https://github.com/trycompai/comp/compare/v1.56.1...v1.56.2) (2025-10-21)
+
+
+### Bug Fixes
+
+* **app:** auto-approve the org creation on staging ([#1676](https://github.com/trycompai/comp/issues/1676)) ([dbb149e](https://github.com/trycompai/comp/commit/dbb149ea2eecc32b9d470112fd293f72b91e6eaa))
+
 ## [1.56.1](https://github.com/trycompai/comp/compare/v1.56.0...v1.56.1) (2025-10-17)
 
 
