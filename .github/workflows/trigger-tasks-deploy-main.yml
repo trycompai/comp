@@ -21,6 +21,9 @@ jobs:
       - name: Install DB package dependencies
         working-directory: ./packages/db
         run: bun install --frozen-lockfile --ignore-scripts
+      - name: Install Email package dependencies
+        working-directory: ./packages/email
+        run: bun install --frozen-lockfile --ignore-scripts
       - name: Generate Prisma client
         working-directory: ./packages/db
         run: bunx prisma generate

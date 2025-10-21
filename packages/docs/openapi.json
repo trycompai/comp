@@ -6023,16 +6023,6 @@
             }
           }
         ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateAutomationDto"
-              }
-            }
-          }
-        },
         "responses": {
           "201": {
             "description": "Automation created successfully",
@@ -6853,6 +6843,460 @@
         "summary": "Health check",
         "tags": [
           "Health"
+        ]
+      }
+    },
+    "/v1/trust-portal/domain/status": {
+      "get": {
+        "description": "Retrieve the verification status and DNS records for a custom domain configured in the Vercel trust portal project",
+        "operationId": "TrustPortalController_getDomainStatus_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "domain",
+            "required": true,
+            "in": "query",
+            "description": "The domain name to check status for",
+            "schema": {
+              "example": "portal.example.com",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Domain status retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainStatusResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing authentication"
+          },
+          "500": {
+            "description": "Failed to retrieve domain status from Vercel"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get domain verification status",
+        "tags": [
+          "Trust Portal"
+        ]
+      }
+    },
+    "/v1/framework-editor/task-template": {
+      "get": {
+        "description": "Retrieve all framework editor task templates",
+        "operationId": "TaskTemplateController_getAllTaskTemplates_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved all framework editor task templates",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "data": [
+                      {
+                        "id": "frk_tt_abc123def456",
+                        "name": "Monthly Security Review",
+                        "description": "Review and update security policies on a monthly basis",
+                        "frequency": "monthly",
+                        "department": "it",
+                        "createdAt": "2025-01-01T00:00:00.000Z",
+                        "updatedAt": "2025-01-01T00:00:00.000Z"
+                      }
+                    ],
+                    "count": 1,
+                    "authType": "session",
+                    "authenticatedUser": {
+                      "id": "user_123",
+                      "email": "user@example.com"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing authentication",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "statusCode": 401,
+                    "message": "Unauthorized"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "statusCode": 500,
+                    "message": "Internal server error"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get all framework editor task templates",
+        "tags": [
+          "Framework Editor Task Templates"
+        ]
+      }
+    },
+    "/v1/framework-editor/task-template/{id}": {
+      "get": {
+        "description": "Retrieve a specific framework editor task template by its ID",
+        "operationId": "TaskTemplateController_getTaskTemplateById_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Framework editor task template ID",
+            "schema": {
+              "example": "frk_tt_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved framework editor task template",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "id": "frk_tt_abc123def456",
+                    "name": "Monthly Security Review",
+                    "description": "Review and update security policies on a monthly basis",
+                    "frequency": "monthly",
+                    "department": "it",
+                    "createdAt": "2025-01-01T00:00:00.000Z",
+                    "updatedAt": "2025-01-01T00:00:00.000Z",
+                    "authType": "session",
+                    "authenticatedUser": {
+                      "id": "user_123",
+                      "email": "user@example.com"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing authentication",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "statusCode": 401,
+                    "message": "Unauthorized"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Framework editor task template not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "statusCode": 404,
+                    "message": "Framework editor task template with ID frk_tt_abc123def456 not found"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "statusCode": 500,
+                    "message": "Internal server error"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get framework editor task template by ID",
+        "tags": [
+          "Framework Editor Task Templates"
+        ]
+      },
+      "patch": {
+        "description": "Update a framework editor task template by ID",
+        "operationId": "TaskTemplateController_updateTaskTemplate_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Framework editor task template ID",
+            "schema": {
+              "example": "frk_tt_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Update framework editor task template data",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTaskTemplateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully updated framework editor task template",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "id": "frk_tt_abc123def456",
+                    "name": "Monthly Security Review (Updated)",
+                    "description": "Review and update security policies on a monthly basis",
+                    "frequency": "monthly",
+                    "department": "it",
+                    "createdAt": "2025-01-01T00:00:00.000Z",
+                    "updatedAt": "2025-01-02T00:00:00.000Z",
+                    "authType": "session",
+                    "authenticatedUser": {
+                      "id": "user_123",
+                      "email": "user@example.com"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Invalid data provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "statusCode": 400,
+                    "message": "Validation failed"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing authentication",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "statusCode": 401,
+                    "message": "Unauthorized"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Framework editor task template not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "statusCode": 404,
+                    "message": "Framework editor task template with ID frk_tt_abc123def456 not found"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "statusCode": 500,
+                    "message": "Internal server error"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Update framework editor task template",
+        "tags": [
+          "Framework Editor Task Templates"
+        ]
+      },
+      "delete": {
+        "description": "Delete a framework editor task template by ID",
+        "operationId": "TaskTemplateController_deleteTaskTemplate_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Framework editor task template ID",
+            "schema": {
+              "example": "frk_tt_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully deleted framework editor task template",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "message": "Framework editor task template deleted successfully",
+                    "deletedTaskTemplate": {
+                      "id": "frk_tt_abc123def456",
+                      "name": "Monthly Security Review"
+                    },
+                    "authType": "session",
+                    "authenticatedUser": {
+                      "id": "user_123",
+                      "email": "user@example.com"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing authentication",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "statusCode": 401,
+                    "message": "Unauthorized"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Framework editor task template not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "statusCode": 404,
+                    "message": "Framework editor task template with ID frk_tt_abc123def456 not found"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "statusCode": 500,
+                    "message": "Internal server error"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Delete framework editor task template",
+        "tags": [
+          "Framework Editor Task Templates"
         ]
       }
     }
@@ -8858,19 +9302,6 @@
           "fileData"
         ]
       },
-      "CreateAutomationDto": {
-        "type": "object",
-        "properties": {
-          "taskId": {
-            "type": "string",
-            "description": "Task ID",
-            "example": "tsk_abc123def456"
-          }
-        },
-        "required": [
-          "taskId"
-        ]
-      },
       "UpdateAutomationDto": {
         "type": "object",
         "properties": {
@@ -9045,6 +9476,95 @@
         "required": [
           "content"
         ]
+      },
+      "DomainVerificationDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Verification type (e.g., TXT, CNAME)"
+          },
+          "domain": {
+            "type": "string",
+            "description": "Domain for verification"
+          },
+          "value": {
+            "type": "string",
+            "description": "Verification value"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Reason for verification status"
+          }
+        },
+        "required": [
+          "type",
+          "domain",
+          "value"
+        ]
+      },
+      "DomainStatusResponseDto": {
+        "type": "object",
+        "properties": {
+          "domain": {
+            "type": "string",
+            "description": "The domain name"
+          },
+          "verified": {
+            "type": "boolean",
+            "description": "Whether the domain is verified"
+          },
+          "verification": {
+            "description": "Verification records for the domain",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DomainVerificationDto"
+            }
+          }
+        },
+        "required": [
+          "domain",
+          "verified"
+        ]
+      },
+      "UpdateTaskTemplateDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Task template name",
+            "example": "Monthly Security Review"
+          },
+          "description": {
+            "type": "string",
+            "description": "Detailed description of the task template",
+            "example": "Review and update security policies on a monthly basis"
+          },
+          "frequency": {
+            "type": "string",
+            "description": "Frequency of the task",
+            "enum": [
+              "monthly",
+              "quarterly",
+              "yearly"
+            ],
+            "example": "monthly"
+          },
+          "department": {
+            "type": "string",
+            "description": "Department responsible for the task",
+            "enum": [
+              "none",
+              "admin",
+              "gov",
+              "hr",
+              "it",
+              "itsm",
+              "qms"
+            ],
+            "example": "it"
+          }
+        }
       }
     }
   }

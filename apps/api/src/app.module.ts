@@ -16,6 +16,8 @@ import { RisksModule } from './risks/risks.module';
 import { TasksModule } from './tasks/tasks.module';
 import { VendorsModule } from './vendors/vendors.module';
 import { ContextModule } from './context/context.module';
+import { TrustPortalModule } from './trust-portal/trust-portal.module';
+import { TaskTemplateModule } from './framework-editor/task-template/task-template.module';
 
 @Module({
   imports: [
@@ -41,6 +43,8 @@ import { ContextModule } from './context/context.module';
     TasksModule,
     CommentsModule,
     HealthModule,
+    TrustPortalModule,
+    TaskTemplateModule,
   ],
   controllers: [AppController],
   providers: [AppService],

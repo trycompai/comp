@@ -1,6 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { db } from '@trycompai/db';
-import { CreateAutomationDto } from './dto/create-automation.dto';
 import { UpdateAutomationDto } from './dto/update-automation.dto';
 
 @Injectable()
@@ -46,12 +45,7 @@ export class AutomationsService {
     };
   }
 
-  async create(
-    organizationId: string,
-    createAutomationDto: CreateAutomationDto,
-  ) {
-    const { taskId } = createAutomationDto;
-
+  async create(organizationId: string, taskId: string) {
     // Verify task exists and belongs to organization
     const task = await db.task.findFirst({
       where: {
