@@ -11,6 +11,8 @@ interface TaskAutomationData {
   status: string;
   createdAt: string;
   updatedAt: string;
+  evaluationCriteria?: string;
+  isEnabled: boolean;
 }
 
 interface UseTaskAutomationReturn {
