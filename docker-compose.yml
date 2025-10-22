@@ -38,11 +38,20 @@ services:
       dockerfile: Dockerfile
       target: portal
       args:
-        NEXT_PUBLIC_BETTER_AUTH_URL: ${BETTER_AUTH_URL_PORTAL}
+        NEXT_PUBLIC_BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3002}
     ports:
       - '3002:3000'
     env_file:
-      - apps/portal/.env
+      - .env
+    environment:
+      APP_ENVIRONMENT: ${APP_ENVIRONMENT:-local}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3002}
+      NEXT_PUBLIC_BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3002}
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
+      seeder:
+        condition: service_completed_successfully
     healthcheck:
       test: ['CMD-SHELL', 'curl -f http://localhost:3002/ || exit 1']
       interval: 30s

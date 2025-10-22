@@ -1,6 +1,7 @@
 'use client';
 
 import { regeneratePolicyAction } from '@/app/(app)/[orgId]/policies/[policyId]/actions/regenerate-policy';
+import { remapPolicyControlsAction } from '@/app/(app)/[orgId]/policies/[policyId]/actions/remap-policy-controls';
 import { generatePolicyPDF } from '@/lib/pdf-generator';
 import { Button } from '@comp/ui/button';
 import {
@@ -38,6 +39,10 @@ export function PolicyHeaderActions({
   const regenerate = useAction(regeneratePolicyAction, {
     onSuccess: () => toast.success('Regeneration triggered. This may take a moment.'),
     onError: () => toast.error('Failed to trigger policy regeneration'),
+  });
+  const remapControls = useAction(remapPolicyControlsAction, {
+    onSuccess: () => toast.success('Control mapping queued. Refresh in a few moments.'),
+    onError: () => toast.error('Failed to trigger control remapping'),
   });
 
   const handleDownloadPDF = () => {
@@ -81,6 +86,15 @@ export function PolicyHeaderActions({
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={() => setRegenerateConfirmOpen(true)} disabled={isPendingApproval}>
             <Icons.AI className="mr-2 h-4 w-4" /> Regenerate policy
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() =>
+              remapControls.execute({ policyId: policy.id })
+            }
+            disabled={isPendingApproval || remapControls.status === 'executing'}
+          >
+            <Icons.Match className="mr-2 h-4 w-4" />
+            {remapControls.status === 'executing' ? 'Remapping controls…' : 'Remap controls'}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => {
