@@ -28,6 +28,11 @@ export function OnboardingStepInput({
   savedAnswers,
   onLoadingChange,
 }: OnboardingStepInputProps) {
+  // Hooks must be called at the top level
+  const [customValue, setCustomValue] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
   if (currentStep.key === 'frameworkIds') {
     return (
       <AnimatedWrapper delay={100} animationKey={`framework-${currentStep.key}`}>
@@ -162,9 +167,6 @@ export function OnboardingStepInput({
 
     // Multi-select fields with custom value support
     const selectedValues = (form.watch(currentStep.key) || '').split(',').filter(Boolean);
-    const [customValue, setCustomValue] = useState('');
-    const inputRef = useRef<HTMLInputElement>(null);
-    const containerRef = useRef<HTMLDivElement>(null);
 
     const handlePillToggle = (option: string) => {
       const isSelected = selectedValues.includes(option);
