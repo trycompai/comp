@@ -65,7 +65,7 @@ export function IntegrationsGrid() {
   return (
     <div className="space-y-4">
       {/* Search and Filters */}
-      <div className="space-y-4">
+      <div className="flex items-center gap-2">
         {/* Search Bar */}
         <SearchInput
           value={searchQuery}
