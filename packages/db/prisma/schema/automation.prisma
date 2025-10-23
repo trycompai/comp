@@ -3,8 +3,10 @@ model EvidenceAutomation {
     name        String
     description String?
     createdAt   DateTime @default(now())
+    isEnabled   Boolean  @default(false)
 
-    chatHistory String?
+    chatHistory        String?
+    evaluationCriteria String?
 
     taskId String
     task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)

@@ -412,3 +412,51 @@ export async function restoreVersion(
     };
   }
 }
+
+/**
+ * Update evaluation criteria for an automation
+ */
+export async function updateEvaluationCriteria(automationId: string, evaluationCriteria: string) {
+  try {
+    await db.evidenceAutomation.update({
+      where: { id: automationId },
+      data: { evaluationCriteria },
+    });
+
+    await revalidateCurrentPath();
+
+    return {
+      success: true,
+    };
+  } catch (error) {
+    console.error('[updateEvaluationCriteria] Failed:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to update evaluation criteria',
+    };
+  }
+}
+
+/**
+ * Toggle automation enabled state
+ */
+export async function toggleAutomationEnabled(automationId: string, isEnabled: boolean) {
+  try {
+    await db.evidenceAutomation.update({
+      where: { id: automationId },
+      data: { isEnabled },
+    });
+
+    await revalidateCurrentPath();
+
+    return {
+      success: true,
+    };
+  } catch (error) {
+    console.error('[toggleAutomationEnabled] Failed:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to toggle automation',
+    };
+  }
+}

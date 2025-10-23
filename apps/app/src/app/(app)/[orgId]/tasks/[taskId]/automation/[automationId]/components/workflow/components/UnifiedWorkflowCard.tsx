@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { Loader2, Play, Zap } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
+import { EvaluationCriteriaCard } from '../../evaluation/EvaluationCriteriaCard';
 
 interface WorkflowStep {
   id: string;
@@ -29,9 +30,18 @@ interface Props {
   integrationsUsed: {
     link: string;
   }[];
+  evaluationCriteria?: string;
+  automationId?: string;
 }
 
-export function UnifiedWorkflowCard({ steps, title, onTest, integrationsUsed }: Props) {
+export function UnifiedWorkflowCard({
+  steps,
+  title,
+  onTest,
+  integrationsUsed,
+  evaluationCriteria,
+  automationId,
+}: Props) {
   const [isAnimationComplete, setIsAnimationComplete] = useState(false);
 
   useEffect(() => {
@@ -129,6 +139,20 @@ export function UnifiedWorkflowCard({ steps, title, onTest, integrationsUsed }: 
           </CardContent>
         </Card>
       </CardContent>
+
+      {/* Evaluation Criteria Section */}
+      {evaluationCriteria !== undefined && automationId && isAnimationComplete && (
+        <div className="px-4 pb-4 pt-2">
+          <div className="max-w-[650px] mx-auto">
+            <EvaluationCriteriaCard
+              automationId={automationId}
+              initialCriteria={evaluationCriteria}
+              isAiGenerated={!!evaluationCriteria}
+            />
+          </div>
+        </div>
+      )}
+
       <div
         className={`rounded-b-xl p-4 w-full border-0 border-t border-border transition-colors duration-500 ${
           !isAnimationComplete ? 'bg-blue-100' : 'bg-secondary'

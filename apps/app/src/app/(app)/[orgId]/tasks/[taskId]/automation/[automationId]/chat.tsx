@@ -14,7 +14,7 @@ import { EmptyState } from './components/chat/EmptyState';
 import { Message } from './components/chat/message';
 import type { ChatUIMessage } from './components/chat/types';
 import { PanelHeader } from './components/panels/panels';
-import { Input } from './components/ui/input';
+import { Textarea } from './components/ui/textarea';
 import { useChatHandlers } from './hooks/use-chat-handlers';
 import { useTaskAutomation } from './hooks/use-task-automation';
 import { useSharedChatContext } from './lib/chat-context';
@@ -36,8 +36,20 @@ export function Chat({ className, orgId, taskId, taskName, automationId }: Props
     chat,
   });
   const { setChatStatus, scriptUrl } = useTaskAutomationStore();
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const { automation } = useTaskAutomation();
+
+  // Auto-resize textarea
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setInput(e.target.value);
+      // Reset height to auto to get the correct scrollHeight
+      e.target.style.height = 'auto';
+      // Set height to scrollHeight (content height)
+      e.target.style.height = `${e.target.scrollHeight}px`;
+    },
+    [setInput],
+  );
 
   // Update shared ref when automation is loaded from hook
   if (automation?.id && automationIdRef.current === 'new') {
@@ -109,10 +121,11 @@ export function Chat({ className, orgId, taskId, taskName, automationId }: Props
         >
           <EmptyState
             input={input}
-            onInputChange={setInput}
+            onInputChange={handleInputChange}
             onExampleClick={handleExampleClick}
             status={status}
             inputRef={inputRef}
+            onSubmit={() => validateAndSubmitMessage(input)}
           />
         </form>
       ) : (
@@ -139,11 +152,24 @@ export function Chat({ className, orgId, taskId, taskName, automationId }: Props
               validateAndSubmitMessage(input);
             }}
           >
-            <Input
+            <Textarea
               disabled={status === 'streaming' || status === 'submitted'}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={handleInputChange}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  validateAndSubmitMessage(input);
+                  // Reset height after submit
+                  if (e.currentTarget) {
+                    e.currentTarget.style.height = 'auto';
+                  }
+                }
+              }}
               placeholder="Ask me to create an automation..."
               value={input}
+              rows={1}
+              className="min-h-[36px] max-h-[200px] resize-none overflow-y-auto"
+              style={{ height: 'auto' }}
             />
           </form>
         </div>

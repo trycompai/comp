@@ -36,6 +36,8 @@ export interface TaskAutomationExecutionResult {
   taskId?: string;
   modelName?: string;
   summary?: string;
+  evaluationStatus?: 'pass' | 'fail';
+  evaluationReason?: string;
 }
 
 export interface TaskAutomationTestResult {

@@ -5,10 +5,11 @@ import { Button } from '@comp/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@comp/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import { format } from 'date-fns';
-import { Copy, Eye, EyeOff, Loader2, Trash2 } from 'lucide-react';
+import { Copy, Edit, Eye, EyeOff, Loader2, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { AddSecretDialog } from '../AddSecretDialog';
+import { EditSecretDialog } from '../EditSecretDialog';
 
 interface Secret {
   id: string;
@@ -27,6 +28,7 @@ interface SecretsTableProps {
 export function SecretsTable({ secrets }: SecretsTableProps) {
   const [revealedSecrets, setRevealedSecrets] = useState<Record<string, string>>({});
   const [loadingSecrets, setLoadingSecrets] = useState<Record<string, boolean>>({});
+  const [editingSecret, setEditingSecret] = useState<Secret | null>(null);
 
   const handleRevealSecret = async (secretId: string) => {
     if (revealedSecrets[secretId]) {
@@ -254,23 +256,42 @@ export function SecretsTable({ secrets }: SecretsTableProps) {
                     </span>
                   </TableCell>
                   <TableCell className="text-right pr-6">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-all"
-                            onClick={() => handleDeleteSecret(secret.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Delete secret</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    <div className="flex items-center justify-end gap-1">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground/50 hover:text-primary hover:bg-primary/10 transition-all"
+                              onClick={() => setEditingSecret(secret)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Edit secret</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-all"
+                              onClick={() => handleDeleteSecret(secret.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Delete secret</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
@@ -278,6 +299,16 @@ export function SecretsTable({ secrets }: SecretsTableProps) {
           </TableBody>
         </Table>
       </div>
+
+      {/* Edit Secret Dialog */}
+      {editingSecret && (
+        <EditSecretDialog
+          secret={editingSecret}
+          open={!!editingSecret}
+          onOpenChange={(open) => !open && setEditingSecret(null)}
+          onSecretUpdated={() => window.location.reload()}
+        />
+      )}
     </div>
   );
 }

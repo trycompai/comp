@@ -182,6 +182,19 @@ export function AutomationRunsCard({ runs }: AutomationRunsCardProps) {
                               <span className={`font-medium ${styles.text}`}>
                                 {run.status.charAt(0).toUpperCase() + run.status.slice(1)}
                               </span>
+                              {run.evaluationStatus && (
+                                <>
+                                  <span className="text-[10px]">•</span>
+                                  <Badge
+                                    variant={
+                                      run.evaluationStatus === 'pass' ? 'default' : 'destructive'
+                                    }
+                                    className="text-[10px] px-1.5 py-0"
+                                  >
+                                    {run.evaluationStatus === 'pass' ? '✓ Pass' : '✗ Fail'}
+                                  </Badge>
+                                </>
+                              )}
                               <span className="text-[10px]">•</span>
                               <span>{timeAgo}</span>
                               {run.triggeredBy && (
@@ -203,6 +216,18 @@ export function AutomationRunsCard({ runs }: AutomationRunsCardProps) {
                       >
                         <div className="overflow-hidden">
                           <div className="px-4 pb-3 pt-3 space-y-3 border-t border-border/50">
+                            {/* Evaluation Reason */}
+                            {run.evaluationReason && (
+                              <div className="space-y-1.5">
+                                <div className="flex items-center">
+                                  <p className="text-xs font-medium">Evaluation</p>
+                                </div>
+                                <p className="text-xs text-foreground leading-relaxed">
+                                  {run.evaluationReason}
+                                </p>
+                              </div>
+                            )}
+
                             {/* Logs */}
                             {run.logs && (
                               <div className="space-y-1">
