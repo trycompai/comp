@@ -8,10 +8,13 @@
  * - Easy to add new integrations category-by-category
  */
 
-import { identityIntegrations } from './categories/identity';
-import { hrIntegrations } from './categories/hr';
 import { cloudIntegrations } from './categories/cloud';
+import { communicationIntegrations } from './categories/communication';
 import { developmentIntegrations } from './categories/development';
+import { hrIntegrations } from './categories/hr';
+import { identityIntegrations } from './categories/identity';
+import { infrastructureIntegrations } from './categories/infrastructure';
+import { monitoringIntegrations } from './categories/monitoring';
 
 export interface Integration {
   id: string;
@@ -42,7 +45,9 @@ export const INTEGRATIONS: Integration[] = [
   ...hrIntegrations,
   ...cloudIntegrations,
   ...developmentIntegrations,
-  // More categories will be added: communication, monitoring, compliance, infrastructure
+  ...communicationIntegrations,
+  ...monitoringIntegrations,
+  ...infrastructureIntegrations,
 ];
 
 export const CATEGORIES: IntegrationCategory[] = [
