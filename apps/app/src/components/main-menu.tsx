@@ -13,6 +13,7 @@ import {
   ShieldEllipsis,
   Store,
   Users,
+  Zap,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -109,6 +110,14 @@ export function MainMenu({
       name: 'Vendors',
       disabled: false,
       icon: Store,
+      protected: false,
+    },
+    {
+      id: 'integrations',
+      path: '/:organizationId/integrations',
+      name: 'Integrations',
+      disabled: false,
+      icon: Zap,
       protected: false,
     },
     {
