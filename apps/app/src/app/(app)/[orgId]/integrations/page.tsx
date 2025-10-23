@@ -5,7 +5,7 @@ export default function IntegrationsPage() {
     <div className="container mx-auto p-8">
       <div className="max-w-7xl mx-auto space-y-10">
         {/* Header */}
-        <div className="space-y-4">
+        <div className="space-y-2">
           <div className="flex items-baseline gap-3">
             <h1 className="text-3xl font-bold tracking-tight">Integrations</h1>
             <span className="text-2xl text-muted-foreground/40 font-light">∞</span>
