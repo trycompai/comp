@@ -324,19 +324,55 @@ export function TestResultsPanel({
               <div className="flex gap-2 justify-center">
                 <button
                   onClick={() => setShowOutput(true)}
-                  className="group flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all bg-primary/5 hover:bg-primary/10 border border-primary/20 hover:border-primary/30"
+                  className={`group flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all ${
+                    testState.type === 'pass'
+                      ? 'bg-green-500/5 hover:bg-green-500/10 border border-green-500/20 hover:border-green-500/30'
+                      : 'bg-destructive/5 hover:bg-destructive/10 border border-destructive/20 hover:border-destructive/30'
+                  }`}
                 >
-                  <Terminal className="w-4 h-4 text-primary/70 group-hover:text-primary transition-colors" />
-                  <span className="text-sm font-medium text-primary">View Output</span>
+                  <Terminal
+                    className={`w-4 h-4 transition-colors ${
+                      testState.type === 'pass'
+                        ? 'text-green-600/70 dark:text-green-500/70 group-hover:text-green-600 dark:group-hover:text-green-500'
+                        : 'text-destructive/70 group-hover:text-destructive'
+                    }`}
+                  />
+                  <span
+                    className={`text-sm font-medium ${
+                      testState.type === 'pass'
+                        ? 'text-green-600 dark:text-green-500'
+                        : 'text-destructive'
+                    }`}
+                  >
+                    View Output
+                  </span>
                 </button>
 
                 {result.logs && result.logs.length > 0 && (
                   <button
                     onClick={() => setShowLogs(true)}
-                    className="group flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all bg-primary/5 hover:bg-primary/10 border border-primary/20 hover:border-primary/30"
+                    className={`group flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all ${
+                      testState.type === 'pass'
+                        ? 'bg-green-500/5 hover:bg-green-500/10 border border-green-500/20 hover:border-green-500/30'
+                        : 'bg-destructive/5 hover:bg-destructive/10 border border-destructive/20 hover:border-destructive/30'
+                    }`}
                   >
-                    <Bug className="w-4 h-4 text-primary/70 group-hover:text-primary transition-colors" />
-                    <span className="text-sm font-medium text-primary">View Logs</span>
+                    <Bug
+                      className={`w-4 h-4 transition-colors ${
+                        testState.type === 'pass'
+                          ? 'text-green-600/70 dark:text-green-500/70 group-hover:text-green-600 dark:group-hover:text-green-500'
+                          : 'text-destructive/70 group-hover:text-destructive'
+                      }`}
+                    />
+                    <span
+                      className={`text-sm font-medium ${
+                        testState.type === 'pass'
+                          ? 'text-green-600 dark:text-green-500'
+                          : 'text-destructive'
+                      }`}
+                    >
+                      View Logs
+                    </span>
                   </button>
                 )}
               </div>
