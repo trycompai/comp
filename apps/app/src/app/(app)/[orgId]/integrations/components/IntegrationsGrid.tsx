@@ -10,8 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@comp/ui/dialog';
-import { Input } from '@comp/ui/input';
-import { ArrowRight, Search, Sparkles, X } from 'lucide-react';
+import { ArrowRight, Sparkles } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -23,6 +22,7 @@ import {
   type Integration,
   type IntegrationCategory,
 } from '../data/integrations';
+import { SearchInput } from './SearchInput';
 
 const LOGO_TOKEN = 'pk_AZatYxV5QDSfWpRDaBxzRQ';
 
@@ -63,27 +63,16 @@ export function IntegrationsGrid() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       {/* Search and Filters */}
-      <div className="space-y-4">
+      <div className="flex items-center gap-2">
         {/* Search Bar */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Search integrations..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2"
-            >
-              <X className="w-4 h-4 text-muted-foreground hover:text-foreground" />
-            </button>
-          )}
-        </div>
+        <SearchInput
+          value={searchQuery}
+          onChange={setSearchQuery}
+          placeholder="Search integrations..."
+          className="w-80 flex-shrink-0"
+        />
 
         {/* Category Filters */}
         <div className="flex gap-2 flex-wrap">
@@ -107,59 +96,60 @@ export function IntegrationsGrid() {
         </div>
       </div>
 
-      {/* Results info - only show when filtering */}
-      {(searchQuery || selectedCategory !== 'All') && filteredIntegrations.length > 0 && (
-        <div className="text-sm text-muted-foreground">
-          Showing {filteredIntegrations.length}{' '}
-          {filteredIntegrations.length === 1 ? 'match' : 'matches'}
-        </div>
-      )}
-
-      {/* Integration Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredIntegrations.map((integration) => (
-          <Card
-            key={integration.id}
-            className="group relative overflow-hidden hover:shadow-md transition-all hover:border-primary/30 cursor-pointer"
-            onClick={() => setSelectedIntegration(integration)}
-          >
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-background border border-border flex items-center justify-center overflow-hidden">
-                    <Image
-                      src={`https://img.logo.dev/${integration.domain}?token=${LOGO_TOKEN}`}
-                      alt={`${integration.name} logo`}
-                      width={32}
-                      height={32}
-                      unoptimized
-                      className="object-contain rounded-md"
-                    />
-                  </div>
-                  <div>
-                    <CardTitle className="text-base font-semibold flex items-center gap-2">
-                      {integration.name}
-                      {integration.popular && (
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                          Popular
-                        </Badge>
-                      )}
-                    </CardTitle>
-                    <p className="text-xs text-muted-foreground mt-0.5">{integration.category}</p>
+      <div className="space-y-2">
+        {/* Integration Cards */}
+        {(searchQuery || selectedCategory !== 'All') && filteredIntegrations.length > 0 && (
+          <div className="text-sm text-muted-foreground">
+            Showing {filteredIntegrations.length}{' '}
+            {filteredIntegrations.length === 1 ? 'match' : 'matches'}
+          </div>
+        )}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Results info - only show when filtering */}
+          {filteredIntegrations.map((integration) => (
+            <Card
+              key={integration.id}
+              className="group relative overflow-hidden hover:shadow-md transition-all hover:border-primary/30 cursor-pointer"
+              onClick={() => setSelectedIntegration(integration)}
+            >
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-background border border-border flex items-center justify-center overflow-hidden">
+                      <Image
+                        src={`https://img.logo.dev/${integration.domain}?token=${LOGO_TOKEN}`}
+                        alt={`${integration.name} logo`}
+                        width={32}
+                        height={32}
+                        unoptimized
+                        className="object-contain rounded-md"
+                      />
+                    </div>
+                    <div>
+                      <CardTitle className="text-base font-semibold flex items-center gap-2">
+                        {integration.name}
+                        {integration.popular && (
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                            Popular
+                          </Badge>
+                        )}
+                      </CardTitle>
+                      <p className="text-xs text-muted-foreground mt-0.5">{integration.category}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <CardDescription className="text-sm leading-relaxed line-clamp-2">
-                {integration.description}
-              </CardDescription>
-            </CardContent>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-sm leading-relaxed line-clamp-2">
+                  {integration.description}
+                </CardDescription>
+              </CardContent>
 
-            {/* Hover overlay */}
-            <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-          </Card>
-        ))}
+              {/* Hover overlay */}
+              <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+            </Card>
+          ))}
+        </div>
       </div>
 
       {/* Empty state - opportunity, not limitation */}
