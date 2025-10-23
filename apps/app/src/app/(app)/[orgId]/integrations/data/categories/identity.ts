@@ -1,0 +1,112 @@
+import { Integration } from '../integrations';
+
+export const identityIntegrations: Integration[] = [
+  {
+    id: 'okta',
+    name: 'Okta',
+    domain: 'okta.com',
+    description: 'Identity and access management, SSO, MFA enforcement',
+    category: 'Identity & Access',
+    popular: true,
+    examplePrompts: [
+      'Check if MFA is enforced for all users in Okta',
+      'List all Okta users without MFA enabled',
+      'Verify SSO is configured for our applications',
+    ],
+    setupHint: 'Requires Okta API token with read permissions',
+  },
+  {
+    id: 'azure-ad',
+    name: 'Azure AD',
+    domain: 'microsoft.com',
+    description: 'Microsoft identity platform and conditional access',
+    category: 'Identity & Access',
+    popular: true,
+    examplePrompts: [
+      'Check conditional access policies in Azure AD',
+      'List all guest users in our Azure tenant',
+      'Verify all users have MFA registered',
+    ],
+    setupHint: 'Requires Azure AD app with Directory.Read.All',
+  },
+  {
+    id: 'google-workspace',
+    name: 'Google Workspace',
+    domain: 'workspace.google.com',
+    description: 'Google Workspace admin and security settings',
+    category: 'Identity & Access',
+    popular: true,
+    examplePrompts: [
+      'Check 2FA enforcement in Google Workspace',
+      'List all external users with Drive access',
+      'Verify admin users and permissions',
+    ],
+    setupHint: 'Requires service account with Admin SDK access',
+  },
+  {
+    id: 'auth0',
+    name: 'Auth0',
+    domain: 'auth0.com',
+    description: 'Authentication and authorization platform',
+    category: 'Identity & Access',
+    examplePrompts: [
+      'Check Auth0 MFA policies',
+      'List all applications and their authentication rules',
+      'Verify password policies meet requirements',
+    ],
+    setupHint: 'Requires Auth0 Management API token',
+  },
+  {
+    id: 'onelogin',
+    name: 'OneLogin',
+    domain: 'onelogin.com',
+    description: 'Cloud-based identity and access management',
+    category: 'Identity & Access',
+    examplePrompts: [
+      'Check OneLogin SSO configuration',
+      'List users without MFA',
+      'Verify role assignments',
+    ],
+    setupHint: 'Requires OneLogin API credentials',
+  },
+  {
+    id: 'jumpcloud',
+    name: 'JumpCloud',
+    domain: 'jumpcloud.com',
+    description: 'Directory-as-a-service and device management',
+    category: 'Identity & Access',
+    examplePrompts: [
+      'Check JumpCloud user directory',
+      'Verify device compliance policies',
+      'List admin users and permissions',
+    ],
+    setupHint: 'Requires JumpCloud API key',
+  },
+  {
+    id: 'duo',
+    name: 'Duo Security',
+    domain: 'duo.com',
+    description: 'Two-factor authentication and access security',
+    category: 'Identity & Access',
+    examplePrompts: [
+      'Check Duo MFA enrollment status',
+      'List users without Duo registration',
+      'Verify Duo authentication logs',
+    ],
+    setupHint: 'Requires Duo Admin API credentials',
+  },
+  {
+    id: 'ping-identity',
+    name: 'Ping Identity',
+    domain: 'pingidentity.com',
+    description: 'Enterprise identity and access management',
+    category: 'Identity & Access',
+    examplePrompts: [
+      'Check Ping Identity SSO configuration',
+      'List all federated applications',
+      'Verify access policies',
+    ],
+    setupHint: 'Requires PingOne API credentials',
+  },
+];
+
