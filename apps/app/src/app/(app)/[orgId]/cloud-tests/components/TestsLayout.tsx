@@ -167,7 +167,7 @@ export function TestsLayout({ initialFindings, initialProviders }: TestsLayoutPr
         </div>
 
         {/* Split-screen layout: Results (70%) + Chat placeholder (30%) */}
-        <div className="grid gap-6 lg:grid-cols-[1fr_400px]">
+        <div className="gap-6">
           <div>
             <ResultsView
               findings={providerFindings}
@@ -184,9 +184,9 @@ export function TestsLayout({ initialFindings, initialProviders }: TestsLayoutPr
               }
             />
           </div>
-          <div className="hidden lg:block">
+          {/* <div className="hidden lg:block">
             <ChatPlaceholder />
-          </div>
+          </div> */}
         </div>
 
         {/* Settings Modal */}
