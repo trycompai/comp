@@ -1,4 +1,3 @@
-import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
 import { headers } from 'next/headers';
@@ -27,5 +26,5 @@ export default async function SetupLayout({ children }: { children: React.ReactN
     }
   }
 
-  return <OnboardingLayout variant="setup">{children}</OnboardingLayout>;
+  return <>{children}</>;
 }

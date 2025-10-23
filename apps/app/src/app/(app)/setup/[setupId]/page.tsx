@@ -1,9 +1,9 @@
-import { getOrganizations } from '@/data/getOrganizations';
+import { MinimalHeader } from '@/components/layout/MinimalHeader';
 import { auth } from '@/utils/auth';
-import type { Organization } from '@db';
 import { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { OnboardingSidebar } from '../components/OnboardingSidebar';
 import { OrganizationSetupForm } from '../components/OrganizationSetupForm';
 import { getSetupSession } from '../lib/setup-session';
 
@@ -41,23 +41,23 @@ export default async function SetupWithIdPage({ params, searchParams }: SetupPag
     return redirect(`/invite/${inviteCode}`);
   }
 
-  // Fetch existing organizations
-  let organizations: Organization[] = [];
-
-  try {
-    const result = await getOrganizations();
-    organizations = result.organizations;
-  } catch (error) {
-    // If user has no organizations, continue with empty array
-    console.error('Failed to fetch organizations:', error);
-  }
-
   return (
-    <OrganizationSetupForm
-      existingOrganizations={organizations}
-      setupId={setupId}
-      initialData={setupSession.formData}
-      currentStep={setupSession.currentStep}
-    />
+    <div className="flex flex-1 min-h-0">
+      {/* Form Section - Left Side */}
+      <div className="flex-1 flex flex-col">
+        <MinimalHeader user={user} organizations={[]} currentOrganization={null} />
+
+        <OrganizationSetupForm
+          setupId={setupId}
+          initialData={setupSession.formData}
+          currentStep={setupSession.currentStep}
+        />
+      </div>
+
+      {/* Sidebar Section - Right Side, Hidden on Mobile */}
+      <div className="hidden md:flex md:w-1/2 min-h-screen bg-[#FAFAFA] items-end justify-center py-16 px-8">
+        <OnboardingSidebar className="w-full max-w-xl mx-auto h-1/2 mt-auto" />
+      </div>
+    </div>
   );
 }
