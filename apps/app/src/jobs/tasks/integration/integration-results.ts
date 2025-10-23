@@ -104,6 +104,12 @@ export const sendIntegrationResults = schemaTask({
         });
       }
 
+      // Update the integration's lastRunAt timestamp
+      await db.integration.update({
+        where: { id: integration.id },
+        data: { lastRunAt: new Date() },
+      });
+
       logger.info(`Integration run completed for ${integration.name}`);
       return { success: true, totalResults: results.length, results };
     } catch (error) {
