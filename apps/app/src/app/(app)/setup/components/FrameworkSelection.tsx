@@ -1,6 +1,6 @@
 'use client';
 
-import { FrameworkCard } from '@/components/framework-card';
+import { FrameworkPill } from '@/components/framework-pill';
 import type { FrameworkEditorFramework } from '@db';
 import { useEffect, useRef, useState } from 'react';
 
@@ -58,11 +58,11 @@ export function FrameworkSelection({ value, onChange, onLoadingChange }: Framewo
   }
 
   return (
-    <div className="max-h-80 space-y-3 overflow-y-auto pr-1">
+    <div className="flex flex-wrap gap-3 overflow-y-auto pr-1">
       {frameworks
         .filter((framework) => framework.visible)
         .map((framework) => (
-          <FrameworkCard
+          <FrameworkPill
             key={framework.id}
             framework={framework}
             isSelected={value.includes(framework.id)}
