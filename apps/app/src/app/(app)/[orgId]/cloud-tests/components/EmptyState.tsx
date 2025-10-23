@@ -336,17 +336,27 @@ export function EmptyState({ onBack, connectedProviders = [] }: EmptyStateProps 
             </Button>
           </div>
         )}
-        <div className="flex flex-col items-center gap-4 text-center">
-          <div className="bg-primary/10 rounded-full p-6">
-            <Cloud className="text-primary h-12 w-12" />
+        <div className="flex flex-col items-center gap-6 text-center max-w-2xl mx-auto">
+          <div className="relative">
+            <div className="absolute inset-0 rounded-full" />
+            <div className="relative rounded-2xl p-4">
+              <Cloud className="text-primary h-16 w-16" />
+            </div>
           </div>
-          <div className="space-y-2">
-            <h1 className="text-3xl font-bold tracking-tight">
-              {onBack ? 'Add Another Cloud' : 'Connect Your Cloud'}
+          <div className="space-y-4">
+            <h1 className="text-4xl font-bold tracking-tight">
+              {onBack ? 'Add Another Cloud' : 'Continuous Cloud Scanning'}
             </h1>
-            <p className="text-muted-foreground max-w-lg text-lg">
-              Choose your cloud provider to start scanning for security vulnerabilities
-            </p>
+            <div className="space-y-3">
+              <p className="text-muted-foreground text-lg leading-relaxed max-w-lg mx-auto">
+                Automatically monitor your cloud infrastructure for security vulnerabilities and
+                compliance issues.
+              </p>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
+                <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                <span className="text-xs font-medium text-primary">Always-on monitoring</span>
+              </div>
+            </div>
           </div>
         </div>
 
