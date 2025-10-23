@@ -135,4 +135,3 @@ export const cloudIntegrations: Integration[] = [
     setupHint: 'Requires Pulumi access token',
   },
 ];
-
