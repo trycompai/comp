@@ -28,7 +28,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
 
   const org = await db.organization.findUnique({
     where: { id: organizationId },
-    select: { onboardingCompleted: true },
+    select: { onboardingCompleted: true, advancedModeEnabled: true },
   });
 
   if (org && org.onboardingCompleted === false) {
@@ -70,6 +70,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
       publishedPoliciesScore={publishedPoliciesScore}
       doneTasksScore={doneTasksScore}
       currentMember={member}
+      advancedModeEnabled={org?.advancedModeEnabled ?? false}
     />
   );
 }

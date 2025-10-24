@@ -40,9 +40,13 @@ const createTaskSchema = z.object({
 export function CreateTaskSheet({
   members,
   controls,
+  prefillTask,
+  prefillControls,
 }: {
   members: (Member & { user: User })[];
   controls: { id: string; name: string }[];
+  prefillTask?: { title?: string; description?: string };
+  prefillControls?: string[];
 }) {
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const [createTaskOpen, setCreateTaskOpen] = useQueryState('create-task');
@@ -77,6 +81,28 @@ export function CreateTaskSheet({
       taskTemplateId: null,
     },
   });
+
+  useEffect(() => {
+    if (!isOpen || !prefillTask) {
+      return;
+    }
+
+    if (prefillTask.title) {
+      form.setValue('title', prefillTask.title, { shouldDirty: true });
+    }
+
+    if (prefillTask.description) {
+      form.setValue('description', prefillTask.description, { shouldDirty: true });
+    }
+  }, [form, isOpen, prefillTask]);
+
+  useEffect(() => {
+    if (!isOpen || !prefillControls || prefillControls.length === 0) {
+      return;
+    }
+
+    form.setValue('controlIds', prefillControls, { shouldDirty: true });
+  }, [form, isOpen, prefillControls]);
 
   const onSubmit = useCallback(
     (data: z.infer<typeof createTaskSchema>) => {
