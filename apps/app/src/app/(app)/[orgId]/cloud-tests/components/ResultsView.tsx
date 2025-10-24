@@ -130,8 +130,8 @@ export function ResultsView({
       )}
 
       {/* Filters and Run Scan Button */}
-      {findings.length > 0 && (
-        <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between">
+        {findings.length > 0 ? (
           <div className="flex flex-wrap items-center gap-2">
             <Select value={selectedSeverity} onValueChange={setSelectedSeverity}>
               <SelectTrigger className="h-9 w-[160px] rounded-lg border-dashed">
@@ -167,13 +167,15 @@ export function ResultsView({
               </p>
             )}
           </div>
+        ) : (
+          <div />
+        )}
 
-          <Button onClick={onRunScan} disabled={isScanning} className="gap-2 rounded-lg">
-            <RefreshCw className="h-4 w-4" />
-            Run Scan
-          </Button>
-        </div>
-      )}
+        <Button onClick={onRunScan} disabled={isScanning} className="gap-2 rounded-lg">
+          <RefreshCw className="h-4 w-4" />
+          Run Scan
+        </Button>
+      </div>
 
       {/* Results Table */}
       {sortedFindings.length > 0 ? (
