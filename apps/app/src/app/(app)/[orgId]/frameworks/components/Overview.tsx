@@ -1,6 +1,6 @@
 'use client';
 
-import { FrameworkEditorFramework } from '@db';
+import { FrameworkEditorFramework, Policy, Task } from '@db';
 import { FrameworkInstanceWithControls } from '../types';
 import { ComplianceOverview } from './ComplianceOverview';
 import { DraggableCards } from './DraggableCards';
@@ -11,31 +11,15 @@ import { FrameworkInstanceWithComplianceScore } from './types';
 export interface PublishedPoliciesScore {
   totalPolicies: number;
   publishedPolicies: number;
-  draftPolicies: {
-    id: string;
-    status: 'draft' | 'published' | 'needs_review';
-    name: string;
-  }[];
-  policiesInReview: {
-    id: string;
-    status: 'draft' | 'published' | 'needs_review';
-    name: string;
-  }[];
-  unpublishedPolicies: {
-    id: string;
-    status: 'draft' | 'published' | 'needs_review';
-    name: string;
-  }[];
+  draftPolicies: Policy[];
+  policiesInReview: Policy[];
+  unpublishedPolicies: Policy[];
 }
 
 export interface DoneTasksScore {
   totalTasks: number;
   doneTasks: number;
-  incompleteTasks: {
-    id: string;
-    title: string;
-    status: 'todo' | 'in_progress' | 'done' | 'not_relevant';
-  }[];
+  incompleteTasks: Task[];
 }
 
 export interface OverviewProps {

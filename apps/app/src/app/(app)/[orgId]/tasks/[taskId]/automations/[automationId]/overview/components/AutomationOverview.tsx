@@ -1,5 +1,6 @@
 'use client';
 
+import { api } from '@/lib/api-client';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -15,16 +16,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
+import { Textarea } from '@comp/ui/textarea';
 import { EvidenceAutomation, EvidenceAutomationRun, EvidenceAutomationVersion, Task } from '@db';
-import { ChevronRight, Edit, FileText, MoreVertical, Trash2, Type } from 'lucide-react';
+import { ChevronRight, MoreVertical, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useMemo, useState } from 'react';
-import {
-  DeleteAutomationDialog,
-  EditDescriptionDialog,
-  EditNameDialog,
-} from '../../../../automation/[automationId]/components/AutomationSettingsDialogs';
+import { useMemo, useRef, useState } from 'react';
+import { toast } from 'sonner';
+import { toggleAutomationEnabled } from '../../../../automation/[automationId]/actions/task-automation-actions';
+import { DeleteAutomationDialog } from '../../../../automation/[automationId]/components/AutomationSettingsDialogs';
 import { useTaskAutomation } from '../../../../automation/[automationId]/hooks/use-task-automation';
 import { AutomationRunsCard } from '../../../../components/AutomationRunsCard';
 import { MetricsSection } from './MetricsSection';
@@ -54,15 +54,71 @@ export function AutomationOverview({
     automationId: string;
   }>();
 
-  const [editNameOpen, setEditNameOpen] = useState(false);
-  const [editDescriptionOpen, setEditDescriptionOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isTogglingEnabled, setIsTogglingEnabled] = useState(false);
+  const [editingDescription, setEditingDescription] = useState(false);
+  const [descriptionValue, setDescriptionValue] = useState('');
+  const descriptionInputRef = useRef<HTMLTextAreaElement>(null);
 
   // Use the automation hook to get live data and mutate function
   const { automation: liveAutomation, mutate: mutateAutomation } = useTaskAutomation();
 
   // Use live data from hook if available, fallback to initial data
   const automation = liveAutomation || initialAutomation;
+
+  const handleToggleEnabled = async (enabled: boolean) => {
+    if (!automation?.id) return;
+
+    setIsTogglingEnabled(true);
+    try {
+      const result = await toggleAutomationEnabled(automation.id, enabled);
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to toggle automation');
+      }
+
+      toast.success(enabled ? 'Automation enabled' : 'Automation disabled');
+      await mutateAutomation();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to toggle automation');
+      console.error('Error toggling automation:', error);
+    } finally {
+      setIsTogglingEnabled(false);
+    }
+  };
+
+  const handleDescriptionEdit = () => {
+    setDescriptionValue(automation.description || '');
+    setEditingDescription(true);
+    setTimeout(() => descriptionInputRef.current?.focus(), 0);
+  };
+
+  const saveDescriptionEdit = async () => {
+    if (descriptionValue === (automation.description || '')) {
+      setEditingDescription(false);
+      return;
+    }
+
+    try {
+      const response = await api.patch(
+        `/v1/tasks/${taskId}/automations/${automationId}`,
+        { description: descriptionValue.trim() || null },
+        orgId,
+      );
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      await mutateAutomation();
+      toast.success('Description updated');
+      setEditingDescription(false);
+    } catch (error) {
+      toast.error('Failed to update description');
+      setDescriptionValue(automation.description || '');
+      setEditingDescription(false);
+    }
+  };
 
   // Transform runs to include automation name
   const runsWithName = useMemo(
@@ -121,6 +177,10 @@ export function AutomationOverview({
         automationName={automation.name}
         initialVersions={initialVersions}
         initialRuns={initialRuns}
+        isEnabled={automation.isEnabled}
+        onToggleEnabled={handleToggleEnabled}
+        isTogglingEnabled={isTogglingEnabled}
+        editScriptUrl={`/${orgId}/tasks/${taskId}/automation/${automationId}`}
       />
 
       {/* Main Content - 2 Column Layout */}
@@ -136,53 +196,54 @@ export function AutomationOverview({
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base font-medium">Details</CardTitle>
-                <div className="flex items-center gap-2">
-                  <Link href={`/${orgId}/tasks/${taskId}/automation/${automationId}`}>
-                    <Button size="sm">
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <MoreVertical className="h-4 w-4" />
                     </Button>
-                  </Link>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => setEditNameOpen(true)}>
-                        <Type className="h-4 w-4 mr-2" />
-                        Edit Name
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setEditDescriptionOpen(true)}>
-                        <FileText className="h-4 w-4 mr-2" />
-                        Edit Description
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => setDeleteDialogOpen(true)}
-                        className="text-destructive focus:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onClick={() => setDeleteDialogOpen(true)}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete Automation
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </CardHeader>
             <CardContent>
               <div className="flex flex-col gap-4">
-                <div className="flex flex-col gap-1">
-                  <p className="text-xs font-medium text-muted-foreground">Name</p>
-                  <p className="text-sm font-medium">{automation.name}</p>
-                </div>
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-1 group">
                   <p className="text-xs font-medium text-muted-foreground">Description</p>
-                  <p className="text-sm">
-                    {automation.description || (
-                      <span className="text-muted-foreground">No description</span>
-                    )}
-                  </p>
+                  {editingDescription ? (
+                    <Textarea
+                      ref={descriptionInputRef}
+                      value={descriptionValue}
+                      onChange={(e) => setDescriptionValue(e.target.value)}
+                      onBlur={saveDescriptionEdit}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') {
+                          setEditingDescription(false);
+                        }
+                      }}
+                      className="text-sm min-h-[60px]"
+                      rows={3}
+                    />
+                  ) : (
+                    <p
+                      onClick={handleDescriptionEdit}
+                      className="text-sm cursor-pointer rounded-md px-2 py-1 -mx-2 -my-1 hover:bg-muted/50 transition-colors min-h-[24px]"
+                    >
+                      {automation.description || (
+                        <span className="text-muted-foreground italic">
+                          Click to add description
+                        </span>
+                      )}
+                    </p>
+                  )}
                 </div>
                 <div className="flex flex-col gap-1">
                   <p className="text-xs font-medium text-muted-foreground">Created</p>
@@ -225,22 +286,9 @@ export function AutomationOverview({
               </div>
             </CardContent>
           </Card>
-
-          {/* <VersionsCard /> */}
         </div>
       </div>
 
-      {/* Settings Dialogs */}
-      <EditNameDialog
-        open={editNameOpen}
-        onOpenChange={setEditNameOpen}
-        onSuccess={mutateAutomation}
-      />
-      <EditDescriptionDialog
-        open={editDescriptionOpen}
-        onOpenChange={setEditDescriptionOpen}
-        onSuccess={mutateAutomation}
-      />
       <DeleteAutomationDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}

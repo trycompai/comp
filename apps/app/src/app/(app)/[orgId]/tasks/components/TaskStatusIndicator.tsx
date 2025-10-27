@@ -1,7 +1,7 @@
 import { STATUS_COLORS } from '@/components/status-indicator';
 import { cn } from '@comp/ui/cn';
 import type { TaskStatus } from '@db';
-import { Check, Circle, CircleX, Loader2 } from 'lucide-react';
+import { Check, Circle, CircleX, Loader2, X } from 'lucide-react';
 
 interface TaskStatusIndicatorProps {
   status: TaskStatus;
@@ -27,6 +27,8 @@ function getStatusColorClasses(status: TaskStatus): string {
       return 'border-[#ffc107] bg-[#ffc107]/10'; // Yellowish
     case 'done':
       return 'border-[#fff] bg-[#fff]/10'; // Greenish
+    case 'failed':
+      return 'border-[#ff0000] bg-[#ff0000]/10'; // Redish
     default:
       return 'border-[#6b7280] bg-[#6b7280]/10'; // Default Grayish
   }
@@ -41,6 +43,7 @@ export function TaskStatusIndicator({ status, className }: TaskStatusIndicatorPr
       {status === 'in_progress' && <Loader2 className="size-4 text-[#ffc107]" strokeWidth={1.5} />}
       {status === 'done' && <Check className="size-4" strokeWidth={1.5} />}
       {status === 'not_relevant' && <CircleX className="size-4 text-[#ff0000]" strokeWidth={1.5} />}
+      {status === 'failed' && <X className="size-4 text-destructive" strokeWidth={1.5} />}
     </div>
   );
 }

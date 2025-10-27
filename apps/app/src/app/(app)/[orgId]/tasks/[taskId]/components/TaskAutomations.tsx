@@ -68,6 +68,16 @@ export const TaskAutomations = ({ automations }: { automations: AutomationWithLa
                 : null;
               const runVersion = latestVersionRun?.version;
 
+              // Determine dot color: red if failed, primary if enabled, gray if disabled
+              const hasFailed =
+                latestVersionRun &&
+                (runStatus === 'failed' || latestVersionRun.evaluationStatus === 'fail');
+              const dotColor = hasFailed
+                ? 'bg-destructive'
+                : automation.isEnabled
+                  ? 'bg-green-500'
+                  : 'bg-gray-400';
+
               return (
                 <Link
                   href={`/${orgId}/tasks/${taskId}/automations/${automation.id}/overview`}
@@ -80,19 +90,7 @@ export const TaskAutomations = ({ automations }: { automations: AutomationWithLa
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <div
-                        className={`h-2 w-2 rounded-full flex-shrink-0 ${
-                          !latestVersionRun
-                            ? 'bg-muted-foreground/30'
-                            : runStatus === 'completed'
-                              ? 'bg-chart-positive'
-                              : runStatus === 'failed'
-                                ? 'bg-chart-destructive'
-                                : runStatus === 'running'
-                                  ? 'bg-chart-other animate-pulse'
-                                  : 'bg-chart-neutral'
-                        }`}
-                      />
+                      <div className={`h-2 w-2 rounded-full flex-shrink-0 ${dotColor}`} />
                       <p className="font-medium text-foreground text-xs">{automation.name}</p>
                     </div>
                     {latestVersionRun && lastRan ? (
