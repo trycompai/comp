@@ -1,43 +1,24 @@
-import { IntegrationsHeader } from '@/components/integrations/integrations-header';
-import { IntegrationsServer } from '@/components/integrations/integrations.server';
-import { auth } from '@/utils/auth';
-import { db } from '@db';
-import type { Metadata } from 'next';
-import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { IntegrationsGrid } from './components/IntegrationsGrid';
 
-export default async function IntegrationsPage() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session?.session.activeOrganizationId) {
-    return redirect('/');
-  }
-
-  const [organization] = await Promise.all([
-    db.organization.findUnique({
-      where: {
-        id: session?.session.activeOrganizationId ?? '',
-      },
-    }),
-  ]);
-
-  if (!organization) {
-    return redirect('/');
-  }
-
+export default function IntegrationsPage() {
   return (
-    <div className="m-auto flex max-w-[1200px] flex-col gap-4">
-      <IntegrationsHeader />
+    <div className="container mx-auto p-8">
+      <div className="max-w-7xl mx-auto space-y-10">
+        {/* Header */}
+        <div className="space-y-2">
+          <div className="flex items-baseline gap-3">
+            <h1 className="text-3xl font-bold tracking-tight">Integrations</h1>
+            <span className="text-2xl text-muted-foreground/40 font-light">∞</span>
+          </div>
+          <p className="text-muted-foreground text-base leading-relaxed">
+            Connect to any system through the AI agent. This directory shows common patterns—the
+            agent can integrate with anything that has an API or web interface.
+          </p>
+        </div>
 
-      <IntegrationsServer />
+        {/* Integrations Grid */}
+        <IntegrationsGrid />
+      </div>
     </div>
   );
-}
-
-export async function generateMetadata(): Promise<Metadata> {
-  return {
-    title: 'Integrations',
-  };
 }

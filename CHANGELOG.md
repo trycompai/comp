@@ -1,3 +1,10 @@
+## [1.56.3](https://github.com/trycompai/comp/compare/v1.56.2...v1.56.3) (2025-10-23)
+
+
+### Bug Fixes
+
+* **api:** allow uploading excel documents for task ([#1677](https://github.com/trycompai/comp/issues/1677)) ([8c7f955](https://github.com/trycompai/comp/commit/8c7f9550755090d8aa780fc8fbcd2ebadf1e7fb8))
+
 ## [1.56.2](https://github.com/trycompai/comp/compare/v1.56.1...v1.56.2) (2025-10-21)
 
 

@@ -77,7 +77,7 @@ export default async function OnboardingPage({ params }: OnboardingPageProps) {
     Object.assign(initialData, {
       describe:
         initialData.describe ||
-        'comp ai is a grc platform saas that gets companies compliant with soc2 iso and hipaa in days',
+        'Bubba AI, Inc. is the company behind Comp AI - the fastest way to get SOC 2 compliant.',
       industry: initialData.industry || 'SaaS',
       teamSize: initialData.teamSize || '1-10',
       devices: initialData.devices || 'Personal laptops',

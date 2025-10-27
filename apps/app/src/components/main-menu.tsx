@@ -6,7 +6,6 @@ import { cn } from '@comp/ui/cn';
 import { Icons } from '@comp/ui/icons';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import {
-  Blocks,
   FlaskConical,
   Gauge,
   ListCheck,
@@ -14,6 +13,7 @@ import {
   ShieldEllipsis,
   Store,
   Users,
+  Zap,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -113,24 +113,20 @@ export function MainMenu({
       protected: false,
     },
     {
-      id: 'tests',
-      path: '/:organizationId/tests',
-      name: 'Cloud Tests',
-      disabled: false,
-      icon: FlaskConical,
-      protected: false,
-    },
-    {
       id: 'integrations',
       path: '/:organizationId/integrations',
       name: 'Integrations',
       disabled: false,
-      icon: Blocks,
-      protected: true,
-      badge: {
-        text: 'Beta',
-        variant: 'secondary',
-      },
+      icon: Zap,
+      protected: false,
+    },
+    {
+      id: 'tests',
+      path: '/:organizationId/cloud-tests',
+      name: 'Cloud Tests',
+      disabled: false,
+      icon: FlaskConical,
+      protected: false,
     },
     {
       id: 'settings',

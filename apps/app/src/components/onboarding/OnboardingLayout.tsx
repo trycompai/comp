@@ -1,7 +1,5 @@
 'use server';
 
-import { AnimatedGradientBackgroundWrapper } from '@/app/(app)/setup/components/AnimatedGradientBackgroundWrapper';
-import { MinimalHeader } from '@/components/layout/MinimalHeader';
 import { getOrganizations } from '@/data/getOrganizations';
 import { auth } from '@/utils/auth';
 import type { Organization } from '@db';
@@ -32,14 +30,7 @@ export async function OnboardingLayout({
 
   return (
     <main className="flex min-h-dvh flex-col">
-      <AnimatedGradientBackgroundWrapper />
-      <MinimalHeader
-        user={session.user}
-        organizations={organizations}
-        currentOrganization={currentOrganization}
-        variant={variant}
-      />
-      <div className="flex flex-1 items-center justify-center px-4">{children}</div>
+      <div className="flex flex-1">{children}</div>
     </main>
   );
 }
