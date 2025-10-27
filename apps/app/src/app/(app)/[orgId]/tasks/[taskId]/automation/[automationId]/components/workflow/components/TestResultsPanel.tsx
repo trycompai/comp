@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { Button } from '@comp/ui/button';
-import { AlertCircle, CheckCircle2, Loader2, Sparkles, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, CircleX, Loader2, Sparkles, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -165,6 +165,8 @@ export function TestResultsPanel({
                     <AlertCircle className="w-10 h-10 text-destructive" />
                   ) : testState.type === 'pass' ? (
                     <CheckCircle2 className="w-10 h-10 text-green-600 dark:text-green-500" />
+                  ) : testState.type === 'fail' ? (
+                    <CircleX className="w-10 h-10 text-destructive" />
                   ) : (
                     <CheckCircle2 className="w-10 h-10 text-primary" />
                   )}
@@ -175,7 +177,9 @@ export function TestResultsPanel({
                       ? 'Everything looks good'
                       : testState.type === 'execution-error'
                         ? 'Something went wrong'
-                        : 'Test completed'}
+                        : testState.type === 'fail'
+                          ? 'Criteria not met'
+                          : 'Test completed'}
                   </h3>
                   <p className="text-sm text-muted-foreground mt-2">
                     {testState.type === 'execution-error'
