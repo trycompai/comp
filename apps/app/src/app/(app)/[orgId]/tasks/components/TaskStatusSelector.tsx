@@ -31,11 +31,11 @@ export function TaskStatusSelector({ task }: TaskStatusSelectorProps) {
 
   const isUpdating = status === 'executing';
 
-  const handleStatusSelect = (selectedStatus: string | null) => {
+  const handleStatusSelect = (selectedStatus: TaskStatus | null) => {
     if (selectedStatus && selectedStatus !== task.status) {
       execute({
         id: task.id,
-        status: selectedStatus as TaskStatus,
+        status: selectedStatus,
       });
     }
   };
@@ -51,7 +51,9 @@ export function TaskStatusSelector({ task }: TaskStatusSelectorProps) {
           <span className="capitalize">{status.replace('_', ' ')}</span>
         </div>
       )}
-      onSelect={handleStatusSelect}
+      onSelect={(selectedValue) => {
+        handleStatusSelect(selectedValue as TaskStatus);
+      }}
       trigger={
         <Button
           variant="ghost"
