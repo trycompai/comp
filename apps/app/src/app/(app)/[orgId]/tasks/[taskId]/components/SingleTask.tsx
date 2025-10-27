@@ -22,7 +22,6 @@ import {
 } from '@db';
 import { RefreshCw, Trash2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { useFeatureFlagEnabled } from 'posthog-js/react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Comments } from '../../../../../../components/comments/Comments';
@@ -56,7 +55,6 @@ export function SingleTask({ initialTask, initialAutomations }: SingleTaskProps)
   const { automations } = useTaskAutomations({
     initialData: initialAutomations,
   });
-  const isTaskAutomationEnabled = useFeatureFlagEnabled('is-task-automation-enabled');
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isRegenerateConfirmOpen, setRegenerateConfirmOpen] = useState(false);
@@ -168,11 +166,9 @@ export function SingleTask({ initialTask, initialAutomations }: SingleTaskProps)
             </div>
           </Card>
           {/* Automations section */}
-          {isTaskAutomationEnabled && (
-            <Card className="border border-border bg-card shadow-sm overflow-hidden">
-              <TaskAutomations automations={automations || []} />
-            </Card>
-          )}
+          <Card className="border border-border bg-card shadow-sm overflow-hidden">
+            <TaskAutomations automations={automations || []} />
+          </Card>
         </div>
       </div>
 
