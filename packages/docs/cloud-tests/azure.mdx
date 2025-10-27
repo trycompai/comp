@@ -1,11 +1,11 @@
 ---
-title: 'Azure Integration'
-description: 'Connect Azure to Comp AI for cloud security testing'
+title: "Azure Cloud Tests"
+description: "Connect Azure to Comp AI for cloud security testing"
 ---
 
-# Azure Integration
+# Azure Cloud Test
 
-The Azure integration enables you to connect your Microsoft Azure cloud environment to Comp AI for comprehensive security testing, compliance monitoring, and risk assessment using Microsoft Defender for Cloud
+The Azure Cloud Test enables you to connect your Microsoft Azure cloud environment to Comp AI for comprehensive security testing, compliance monitoring, and risk assessment using Microsoft Defender for Cloud
 
 ## Setup Process
 
@@ -20,46 +20,40 @@ Before setting up the integration, ensure you have:
 ### Configuration Steps
 
 1. **Log into your Azure Portal**
-   - Visit [https://portal.azure.com](https://portal.azure.com)
-
+   - Visit https://portal.azure.com
 2. **Enable Microsoft Defender for Cloud**
    - In the left-hand menu, search for and select **Microsoft Defender for Cloud**
    - Click **Getting started**
    - Select the subscription(s) you want to onboard
    - Enable **Microsoft Defender plans** (especially for relevant services like Compute, Storage, SQL, etc.)
    - Wait for the provisioning to complete (this may take a few minutes)
-
 3. **Register an Application in Azure AD**
-   - Navigate to **Azure Active Directory > App registrations**
-   - Click **+ New registration**
+   - Navigate to **Azure Active Directory \> App registrations**
+   - Click **\+ New registration**
    - Name the app (e.g., `CompAIIntegrationApp`)
    - Choose **Accounts in this organizational directory only**
    - Click **Register**
-
 4. **Get the Client ID and Tenant ID**
    - After registration, go to the app's **Overview** page
    - Copy the **Application (client) ID**
    - Copy the **Directory (tenant) ID**
-
 5. **Create a Client Secret**
    - In the app menu, go to **Certificates & secrets**
-   - Under **Client secrets**, click **+ New client secret**
+   - Under **Client secrets**, click **\+ New client secret**
    - Add a description and set an expiration
    - Click **Add**
    - Copy the **Client secret value** — you won’t be able to see it again!
-
 6. **Assign the Application Access to a Subscription**
    - Go to **Subscriptions** in the Azure portal
    - Select the subscription you want to integrate
    - Copy the **Subscription ID**
    - Click **Access control (IAM)**
-   - Click **+ Add > Add role assignment**
+   - Click **\+ Add \> Add role assignment**
    - Select role: **Reader** (or **Security Reader** for enhanced visibility)
    - Assign access to: **User, group, or service principal**
    - Select your registered application
-
 7. **Connect Azure to Comp AI**
-   - Go to **Settings > Integrations** in your Comp AI dashboard
+   - Go to **Settings \> Integrations** in your Comp AI dashboard
    - Click **Connect** next to the Azure integration card
    - Paste the following values:
      - **Client ID**
@@ -72,7 +66,7 @@ Before setting up the integration, ensure you have:
 
 ### Security Tests
 
-The Azure integration performs the following security assessments:
+The Azure Cloud Test performs the following security assessments:
 
 | Test Category     | Description                                                               |
 | ----------------- | ------------------------------------------------------------------------- |
@@ -86,7 +80,7 @@ The Azure integration performs the following security assessments:
 
 ### Compliance Frameworks
 
-The integration checks compliance against:
+The Cloud Test checks compliance against:
 
 - Microsoft Cloud Security Benchmark
 - SOC 2
@@ -119,15 +113,15 @@ The integration does NOT have permissions to:
 
 ### Common Issues
 
-**Issue**: Failed to connect Azure subscription  
+**Issue**: Failed to connect Azure subscription\
 **Solution**: Verify service principal credentials and role assignments
 
-**Issue**: Authentication errors  
+**Issue**: Authentication errors\
 **Solution**: Ensure the service principal hasn't expired and secret is valid
 
 ### Support
 
-For additional assistance with your Azure integration:
+For additional assistance with your Azure Cloud Tests:
 
 1. Check our [Knowledge Base](https://help.trycomp.ai/azure-integration)
 2. Contact support at [support@trycomp.ai](mailto:support@trycomp.ai)

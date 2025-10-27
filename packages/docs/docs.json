@@ -20,15 +20,15 @@
         ]
       },
       {
-        "tab": "Integrations",
+        "tab": "Cloud Tests",
         "groups": [
           {
-            "group": "Integrations Guides",
+            "group": "Cloud Test Guides",
             "pages": [
-              "integrations/index",
-              "integrations/aws",
-              "integrations/azure",
-              "integrations/gcp"
+              "cloud-tests/index",
+              "cloud-tests/aws",
+              "cloud-tests/azure",
+              "cloud-tests/gcp"
             ]
           }
         ]
