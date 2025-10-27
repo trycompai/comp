@@ -1,6 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
+import { Button } from '@comp/ui/button';
 import { AlertCircle, CheckCircle2, Loader2, Sparkles, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -146,18 +147,17 @@ export function TestResultsPanel({
               }`}
             />
 
-            {/* Close test button */}
-            <button
-              onClick={onBack}
-              className="absolute top-6 right-6 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-background/80 border border-border hover:border-border/80 hover:bg-background transition-colors text-sm text-muted-foreground hover:text-foreground"
-            >
-              <X className="w-3.5 h-3.5" />
-              Close
-            </button>
-
             <div className="relative space-y-8">
+              {/* Close button at top */}
+              <div className="flex justify-end -mt-2 mb-4">
+                <Button onClick={onBack} variant="outline" size="sm">
+                  <X className="w-4 h-4 mr-1" />
+                  Close
+                </Button>
+              </div>
+
               {/* Hero Result */}
-              <div className="text-center space-y-4">
+              <div className="text-center">
                 <div
                   className={cn('inline-flex items-center justify-center w-20 h-20 rounded-2xl')}
                 >
@@ -197,9 +197,6 @@ export function TestResultsPanel({
                 </div>
               )}
 
-              {/* Divider */}
-              <div className="w-full h-px bg-border mt-6 mb-4" />
-
               {/* Sub-nav */}
               <div className="flex items-center justify-center gap-3 text-xs mb-4">
                 {result.evaluationReason && evaluationCriteria && (
@@ -234,82 +231,78 @@ export function TestResultsPanel({
                 )}
               </div>
 
-              {/* Section Cards */}
-              {activeSection === 'output' && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h5 className="text-sm font-semibold text-foreground">Execution Output</h5>
-                  </div>
-                  <div className="rounded-xl overflow-y-auto max-h-80">
-                    <SyntaxHighlighter
-                      language="json"
-                      style={oneDark}
-                      customStyle={{
-                        margin: 0,
-                        padding: '16px',
-                        fontSize: '12px',
-                        lineHeight: '1.6',
-                      }}
-                      showLineNumbers
-                    >
-                      {result.data !== undefined && result.data !== null
-                        ? JSON.stringify(result.data, null, 2)
-                        : result.status === 'success'
-                          ? '// No output returned'
-                          : '// Execution failed'}
-                    </SyntaxHighlighter>
-                  </div>
-                </div>
-              )}
-
-              {activeSection === 'logs' && result.logs && result.logs.length > 0 && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h5 className="text-sm font-semibold text-foreground">System Logs</h5>
-                    <button
-                      onClick={() => navigator.clipboard.writeText(result.logs?.join('\n') || '')}
-                      className="text-xs text-muted-foreground hover:text-foreground"
-                    >
-                      Copy
-                    </button>
-                  </div>
-                  <div className="rounded-xl overflow-y-auto max-h-80 border border-border">
-                    <SyntaxHighlighter
-                      language="bash"
-                      style={oneDark}
-                      customStyle={{
-                        margin: 0,
-                        padding: '16px',
-                        fontSize: '12px',
-                        lineHeight: '1.6',
-                      }}
-                      showLineNumbers
-                    >
-                      {result.logs.join('\n')}
-                    </SyntaxHighlighter>
-                  </div>
-                </div>
-              )}
-
-              {activeSection === 'reasoning' && result.evaluationReason && evaluationCriteria && (
-                <div className="space-y-3">
-                  <h5 className="text-sm font-semibold text-foreground">Reasoning</h5>
-                  <div className="space-y-3 text-left">
-                    <div>
-                      <p className="text-xs font-semibold text-muted-foreground mb-1">Criteria</p>
-                      <p className="text-xs leading-relaxed text-foreground">
-                        {evaluationCriteria}
-                      </p>
+              {/* Section Content - Grid for smooth height transitions */}
+              <div
+                className="grid transition-all duration-1000 ease-in-out"
+                style={{
+                  gridTemplateRows: activeSection ? '1fr' : '0fr',
+                }}
+              >
+                <div className="overflow-hidden">
+                  {activeSection === 'output' && (
+                    <div className="rounded-xl overflow-y-auto max-h-80 animate-in fade-in duration-300">
+                      <SyntaxHighlighter
+                        language="json"
+                        style={oneDark}
+                        customStyle={{
+                          margin: 0,
+                          padding: '16px',
+                          fontSize: '12px',
+                          lineHeight: '1.6',
+                        }}
+                        showLineNumbers
+                      >
+                        {result.data !== undefined && result.data !== null
+                          ? JSON.stringify(result.data, null, 2)
+                          : result.status === 'success'
+                            ? '// No output returned'
+                            : '// Execution failed'}
+                      </SyntaxHighlighter>
                     </div>
-                    <div>
-                      <p className="text-xs font-semibold text-muted-foreground mb-1">Reasoning</p>
-                      <p className="text-xs leading-relaxed text-foreground">
-                        {result.evaluationReason}
-                      </p>
+                  )}
+
+                  {activeSection === 'logs' && result.logs && result.logs.length > 0 && (
+                    <div className="rounded-xl overflow-y-auto max-h-80 border border-border animate-in fade-in duration-300">
+                      <SyntaxHighlighter
+                        language="bash"
+                        style={oneDark}
+                        customStyle={{
+                          margin: 0,
+                          padding: '16px',
+                          fontSize: '12px',
+                          lineHeight: '1.6',
+                        }}
+                        showLineNumbers
+                      >
+                        {result.logs.join('\n')}
+                      </SyntaxHighlighter>
                     </div>
-                  </div>
+                  )}
+
+                  {activeSection === 'reasoning' &&
+                    result.evaluationReason &&
+                    evaluationCriteria && (
+                      <div className="space-y-3 text-left animate-in fade-in duration-300">
+                        <div>
+                          <p className="text-xs font-semibold text-muted-foreground mb-1">
+                            Criteria
+                          </p>
+                          <p className="text-xs leading-relaxed text-foreground">
+                            {evaluationCriteria}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-muted-foreground mb-1">
+                            Reasoning
+                          </p>
+                          <p className="text-xs leading-relaxed text-foreground">
+                            {result.evaluationReason}
+                          </p>
+                        </div>
+                      </div>
+                    )}
                 </div>
-              )}
+              </div>
 
               {/* AI Fix Button */}
               {testState.type === 'execution-error' && !activeSection && (
