@@ -5,6 +5,7 @@ import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { ScrollArea } from '@comp/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
+import { Policy, Task } from '@db';
 import {
   ArrowRight,
   CheckCircle2,
@@ -19,18 +20,6 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { ConfirmActionDialog } from './ConfirmActionDialog';
-
-interface Policy {
-  id: string;
-  name: string;
-  status: 'draft' | 'published' | 'needs_review';
-}
-
-interface Task {
-  id: string;
-  title: string;
-  status: 'todo' | 'in_progress' | 'done' | 'not_relevant';
-}
 
 export function ToDoOverview({
   totalPolicies,

@@ -6,11 +6,6 @@ export const getDoneTasks = cache(async (organizationId: string) => {
     where: {
       organizationId,
     },
-    select: {
-      id: true,
-      title: true,
-      status: true,
-    },
   });
 
   const doneTasks = tasks.filter((t) => t.status === 'done');

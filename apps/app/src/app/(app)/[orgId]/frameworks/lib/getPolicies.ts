@@ -5,11 +5,6 @@ export async function getPublishedPoliciesScore(organizationId: string) {
     where: {
       organizationId,
     },
-    select: {
-      id: true,
-      name: true,
-      status: true,
-    },
   });
 
   const publishedPolicies = allPolicies.filter((p) => p.status === 'published');

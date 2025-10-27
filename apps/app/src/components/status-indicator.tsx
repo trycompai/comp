@@ -24,6 +24,7 @@ export const STATUS_TYPES = [
   'todo',
   'done',
   'not_relevant',
+  'failed',
 ] as const;
 
 export type StatusType = (typeof STATUS_TYPES)[number];
@@ -52,6 +53,9 @@ export const STATUS_COLORS: Record<StatusType, string> = {
   needs_review: 'bg-red-600 dark:bg-red-400',
   not_started: 'bg-red-600 dark:bg-red-400',
   not_relevant: 'bg-red-600 dark:bg-red-400',
+
+  // Failed - Red
+  failed: 'bg-red-600 dark:bg-red-400',
 } as const;
 
 // Updated status translation mapping
