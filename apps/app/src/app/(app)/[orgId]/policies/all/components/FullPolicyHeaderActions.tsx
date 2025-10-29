@@ -48,7 +48,7 @@ export function FullPolicyHeaderActions() {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={() => setRegenerateConfirmOpen(true)}>
-            <Icons.AI className="mr-2 h-4 w-4" /> Regenerate full policies
+            <Icons.AI className="mr-2 h-4 w-4" /> Regenerate all policies
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -57,7 +57,7 @@ export function FullPolicyHeaderActions() {
       <Dialog open={isRegenerateConfirmOpen} onOpenChange={setRegenerateConfirmOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Regenerate Full Policies</DialogTitle>
+            <DialogTitle>Regenerate All Policies</DialogTitle>
             <DialogDescription>
               This will generate new policy content for all policies using your org context and
               frameworks and mark it for review. Continue?
