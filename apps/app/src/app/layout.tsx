@@ -6,6 +6,7 @@ import { env } from '@/env.mjs';
 import { auth } from '@/utils/auth';
 import { cn } from '@comp/ui/cn';
 import { Analytics as DubAnalytics } from '@dub/analytics/react';
+import { Analytics as VercelAnalytics } from '@vercel/analytics/next';
 import { GeistMono } from 'geist/font/mono';
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
@@ -112,6 +113,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
           </Providers>
         </NuqsAdapter>
         <Toaster richColors />
+        <VercelAnalytics />
       </body>
     </html>
   );

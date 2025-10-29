@@ -58,6 +58,7 @@
     "@types/three": "^0.180.0",
     "@uploadthing/react": "^7.3.0",
     "@upstash/ratelimit": "^2.0.5",
+    "@vercel/analytics": "^1.5.0",
     "@vercel/sandbox": "^0.0.21",
     "@vercel/sdk": "^1.7.1",
     "ai": "^5.0.60",
