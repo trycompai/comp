@@ -1,3 +1,10 @@
+## [1.56.4](https://github.com/trycompai/comp/compare/v1.56.3...v1.56.4) (2025-10-29)
+
+
+### Bug Fixes
+
+* **cloud-tests:** display integration scan errors in UI ([#1698](https://github.com/trycompai/comp/issues/1698)) ([a27b3ba](https://github.com/trycompai/comp/commit/a27b3bab8cb4d01c3516db583f9963955cb57164)), closes [#1695](https://github.com/trycompai/comp/issues/1695)
+
 ## [1.56.3](https://github.com/trycompai/comp/compare/v1.56.2...v1.56.3) (2025-10-23)
 
 
