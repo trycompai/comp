@@ -135,10 +135,7 @@ export const sendIntegrationResults = schemaTask({
         logger.error(`Failed to create error record: ${createError}`);
       }
 
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-      };
+      throw error;
     }
   },
 });
