@@ -3,7 +3,7 @@
 import { Button } from '@comp/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
-import { CheckCircle2, Loader2, RefreshCw, X } from 'lucide-react';
+import { CheckCircle2, Info, Loader2, RefreshCw, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { FindingsTable } from './FindingsTable';
 
@@ -27,6 +27,23 @@ interface ResultsViewProps {
 
 const severityOrder = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
 
+// Helper function to extract clean error messages from cloud provider errors
+function extractCleanErrorMessage(errorMessage: string): string {
+  try {
+    // Try to parse as JSON (GCP returns JSON blob)
+    const parsed = JSON.parse(errorMessage);
+
+    // GCP error structure: { error: { message: "actual message" } }
+    if (parsed.error?.message) {
+      return parsed.error.message;
+    }
+  } catch {
+    // Not JSON, return original
+  }
+
+  return errorMessage;
+}
+
 export function ResultsView({
   findings,
   scanTaskId,
@@ -46,6 +63,7 @@ export function ResultsView({
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedSeverity, setSelectedSeverity] = useState<string>('all');
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
+  const [showErrorBanner, setShowErrorBanner] = useState(false);
 
   // Show success banner when scan completes, auto-hide after 5 seconds
   useEffect(() => {
@@ -57,6 +75,17 @@ export function ResultsView({
       return () => clearTimeout(timer);
     }
   }, [scanCompleted]);
+
+  // Auto-dismiss error banner after 30 seconds
+  useEffect(() => {
+    if (scanFailed) {
+      setShowErrorBanner(true);
+      const timer = setTimeout(() => {
+        setShowErrorBanner(false);
+      }, 30000);
+      return () => clearTimeout(timer);
+    }
+  }, [scanFailed]);
 
   // Get unique statuses and severities
   const uniqueStatuses = Array.from(
@@ -117,15 +146,36 @@ export function ResultsView({
         </div>
       )}
 
-      {scanFailed && !isScanning && (
+      {/* Propagation delay info banner - only when scan succeeds but returns empty output */}
+      {scanCompleted && findings.length === 0 && !isScanning && !scanFailed && (
+        <div className="bg-blue-50 dark:bg-blue-950/20 flex items-center gap-3 rounded-lg border border-blue-200 dark:border-blue-900 p-4">
+          <Info className="text-blue-600 dark:text-blue-400 h-5 w-5 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="text-blue-900 dark:text-blue-100 text-sm font-medium">Initial scan complete</p>
+            <p className="text-muted-foreground text-xs">
+              Security findings may take 12-24 hours to appear after enabling cloud security services. Check back later or run another scan.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {showErrorBanner && scanFailed && !isScanning && (
         <div className="bg-destructive/10 flex items-center gap-3 rounded-lg border border-destructive/20 p-4">
           <X className="text-destructive h-5 w-5 flex-shrink-0" />
           <div className="flex-1">
             <p className="text-destructive text-sm font-medium">Scan failed</p>
             <p className="text-muted-foreground text-xs">
-              {run?.error?.message || 'An error occurred during the scan. Please try again.'}
+              {extractCleanErrorMessage(run?.error?.message || 'An error occurred during the scan. Please try again.')}
             </p>
           </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowErrorBanner(false)}
+            className="text-muted-foreground hover:text-foreground h-auto p-1"
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </div>
       )}
 
