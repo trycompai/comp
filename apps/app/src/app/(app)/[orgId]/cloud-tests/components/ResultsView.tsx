@@ -153,7 +153,7 @@ export function ResultsView({
           <div className="flex-1">
             <p className="text-blue-900 dark:text-blue-100 text-sm font-medium">Initial scan complete</p>
             <p className="text-muted-foreground text-xs">
-              Security findings may take 12-24 hours to appear after enabling cloud security services. Check back later or run another scan.
+              Security findings may take 24-48 hours to appear after enabling cloud security services. Check back later.
             </p>
           </div>
         </div>
