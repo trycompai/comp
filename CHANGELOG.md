@@ -1,3 +1,10 @@
+## [1.56.5](https://github.com/trycompai/comp/compare/v1.56.4...v1.56.5) (2025-10-30)
+
+
+### Bug Fixes
+
+* **cloud-tests:** improve error messages and user feedback ([#1703](https://github.com/trycompai/comp/issues/1703)) ([9abfc4a](https://github.com/trycompai/comp/commit/9abfc4a2bd0b320d1e804f9b3cf4a714f52d1002))
+
 ## [1.56.4](https://github.com/trycompai/comp/compare/v1.56.3...v1.56.4) (2025-10-29)
 
 
