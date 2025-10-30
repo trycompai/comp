@@ -231,7 +231,7 @@ export function PolicyOverview({
               toast.info('Regeneration started');
             }}
             title="Regenerate Policy"
-            description="This will regenerate the policy content and mark it for review. Continue?"
+            description="This will regenerate the policy content. Continue?"
             confirmText="Regenerate"
             confirmIcon={<Icons.AI className="h-4 w-4" />}
           />
