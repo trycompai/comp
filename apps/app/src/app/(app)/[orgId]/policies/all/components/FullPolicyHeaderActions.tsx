@@ -60,7 +60,7 @@ export function FullPolicyHeaderActions() {
             <DialogTitle>Regenerate All Policies</DialogTitle>
             <DialogDescription>
               This will generate new policy content for all policies using your org context and
-              frameworks and mark it for review. Continue?
+              frameworks. Continue?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
