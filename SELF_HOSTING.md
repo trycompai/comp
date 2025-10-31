@@ -8,6 +8,23 @@ This guide walks you through running the Comp app and portal with Docker.
 - You must bring your own externally hosted PostgreSQL database. The stack does not run a local DB in production mode.
 - You must provide email (Resend) and Trigger.dev credentials for email login and automated workflows.
 
+### Important: Multiple .env Files Required
+
+This Docker setup requires **FOUR separate .env files** in different locations:
+
+| File Location | Purpose | Key Variables |
+|--------------|---------|---------------|
+| `packages/db/.env` | Database migrations | `DATABASE_URL` |
+| `apps/app/.env` | App runtime config | All app env vars |
+| `apps/portal/.env` | Portal runtime config | All portal env vars |
+| Root `.env` (optional) | Build-time args | `NEXT_PUBLIC_*` vars |
+
+**Build-time vs Runtime:**
+- **Build args** (NEXT_PUBLIC_*): Must be available during `docker compose build`
+- **Runtime vars**: Loaded when containers start from service-specific .env files
+
+See [Quick Setup Guide](#quick-setup-guide) below for step-by-step instructions.
+
 ### Prerequisites
 
 - Docker Desktop (or Docker Engine) installed
@@ -15,151 +32,298 @@ This guide walks you through running the Comp app and portal with Docker.
 - Resend account and API key for transactional email (magic links, OTP)
 - Trigger.dev account and project for automated workflows
 
-### Required environment variables
+### Required Environment Variables
 
-Set these in `docker-compose.yml` under each service as shown below.
+#### Build-Time Variables (Required Before `docker compose build`)
 
-App (`apps/app`):
+These **must** be available during build. Set them in your shell or create a root `.env` file:
 
-- `DATABASE_URL` (required): External Postgres URL. Example: `postgresql://user:pass@host:5432/db?sslmode=require`
-- `AUTH_SECRET` (required): 32-byte base64. Generate with `openssl rand -base64 32`
-- `RESEND_API_KEY` (required): From Resend dashboard
-- `REVALIDATION_SECRET` (required): Any random string
-- `BETTER_AUTH_URL` (required): Base URL of the app server (e.g., `http://localhost:3000`)
-- `NEXT_PUBLIC_BETTER_AUTH_URL` (required): Same as above for client code
-- `NEXT_PUBLIC_PORTAL_URL` (required): Base URL of the portal server (e.g., `http://localhost:3002`)
-- `TRIGGER_SECRET_KEY` (required for workflows): From Trigger.dev project settings
-- Optional (infrastructure): `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
+**App Build Args:**
+- `BETTER_AUTH_URL` - App base URL (e.g., `http://localhost:3000`)
+- `NEXT_PUBLIC_BETTER_AUTH_URL` - Same as above (client-side)
+- `NEXT_PUBLIC_PORTAL_URL` - Portal URL (e.g., `http://localhost:3002`)
+- `NEXT_PUBLIC_POSTHOG_KEY` - PostHog analytics key (or empty string)
+- `NEXT_PUBLIC_POSTHOG_HOST` - PostHog host (or `/ingest`)
+- `NEXT_PUBLIC_GTM_ID` - Google Tag Manager ID (or empty string)
+- `NEXT_PUBLIC_IS_DUB_ENABLED` - Enable Dub.co features (`true`/`false`)
+- `NEXT_PUBLIC_LINKEDIN_PARTNER_ID` - LinkedIn partner ID (or empty string)
+- `NEXT_PUBLIC_LINKEDIN_CONVERSION_ID` - LinkedIn conversion ID (or empty string)
+- `NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL` - Google Ads label (or empty string)
+- `NEXT_PUBLIC_API_URL` - API base URL (optional, defaults to same origin)
 
-Portal (`apps/portal`):
+**Portal Build Args:**
+- `BETTER_AUTH_URL_PORTAL` - Portal base URL (e.g., `http://localhost:3002`)
+- `NEXT_PUBLIC_BETTER_AUTH_URL` - Same as above (client-side)
 
-- `DATABASE_URL` (required): Same external Postgres URL
-- `BETTER_AUTH_SECRET` (required): A secret used by portal auth (distinct from app `AUTH_SECRET`)
-- `BETTER_AUTH_URL` (required): Base URL of the portal (e.g., `http://localhost:3002`)
-- `NEXT_PUBLIC_BETTER_AUTH_URL` (required): Same as portal base URL for client code
-- `RESEND_API_KEY` (required): Same Resend key
+#### Runtime Variables (Set in Service .env Files)
 
-### Optional environment variables
+**`packages/db/.env` (for migrator/seeder):**
+```bash
+DATABASE_URL=postgresql://user:pass@host:5432/db?sslmode=require
+```
 
-App (`apps/app`):
+**`apps/app/.env` (for app service):**
 
-- **OPENAI_API_KEY**: Enables AI features that call OpenAI models.
-- **UPSTASH_REDIS_REST_URL**, **UPSTASH_REDIS_REST_TOKEN**: Optional Redis (Upstash) used for rate limiting/queues/caching.
-- **NEXT_PUBLIC_POSTHOG_KEY**, **NEXT_PUBLIC_POSTHOG_HOST**: Client analytics via PostHog; leave unset to disable.
-- **NEXT_PUBLIC_GTM_ID**: Google Tag Manager container ID for client tracking.
-- **NEXT_PUBLIC_LINKEDIN_PARTNER_ID**, **NEXT_PUBLIC_LINKEDIN_CONVERSION_ID**: LinkedIn insights/conversion tracking.
-- **NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL**: Google Ads conversion tracking label.
-- **DUB_API_KEY**, **DUB_REFER_URL**: Dub.co link shortener/referral features.
-- **FIRECRAWL_API_KEY**: Optional LLM/crawling providers for research features.
-- **SLACK_SALES_WEBHOOK**: Slack webhook for sales/lead notifications.
-- **GA4_API_SECRET**, **GA4_MEASUREMENT_ID**: Google Analytics 4 server/client tracking.
-- **NEXT_PUBLIC_API_URL**: Override client API base URL (defaults to same origin).
+**Authentication & Security (REQUIRED):**
+```bash
+DATABASE_URL=postgresql://user:pass@host:5432/db?sslmode=require
+AUTH_SECRET=                    # Generate with: openssl rand -base64 32
+SECRET_KEY=                     # Generate with: openssl rand -base64 32 (for data encryption)
+BETTER_AUTH_URL=http://localhost:3000
+NEXT_PUBLIC_BETTER_AUTH_URL=http://localhost:3000
+REVALIDATION_SECRET=            # Generate with: openssl rand -base64 32
+```
 
-Portal (`apps/portal`):
+**Email (REQUIRED):**
+```bash
+RESEND_API_KEY=                 # From https://resend.com/api-keys
+```
 
-- **NEXT_PUBLIC_POSTHOG_KEY**, **NEXT_PUBLIC_POSTHOG_HOST**: Client analytics via PostHog for portal.
-- **UPSTASH_REDIS_REST_URL**, **UPSTASH_REDIS_REST_TOKEN**: Optional Redis if you enable portal-side rate limiting/queues.
+**Background Jobs (REQUIRED):**
+```bash
+TRIGGER_SECRET_KEY=             # From https://cloud.trigger.dev project settings
+```
 
-### docker-compose.yml uses `.env` (no direct edits needed)
+**File Storage - AWS S3 (REQUIRED for attachments):**
+```bash
+APP_AWS_ACCESS_KEY_ID=
+APP_AWS_SECRET_ACCESS_KEY=
+APP_AWS_REGION=us-east-1
+APP_AWS_BUCKET_NAME=comp-attachments
+```
 
-We keep `docker-compose.yml` generic and read values from `.env`:
+**OAuth Login (REQUIRED if using Google/GitHub login):**
+```bash
+AUTH_GOOGLE_ID=                 # From Google Cloud Console
+AUTH_GOOGLE_SECRET=
+AUTH_GITHUB_ID=                 # From GitHub OAuth Apps
+AUTH_GITHUB_SECRET=
+```
+
+**AI Features (REQUIRED for AI chat/automation):**
+```bash
+OPENAI_API_KEY=                 # From https://platform.openai.com/api-keys
+GROQ_API_KEY=                   # For dashboard AI chat
+ANTHROPIC_API_KEY=              # Optional, for Claude models
+```
+
+**Portal URL (REQUIRED):**
+```bash
+NEXT_PUBLIC_PORTAL_URL=http://localhost:3002
+```
+
+**`apps/portal/.env` (for portal service):**
+```bash
+DATABASE_URL=postgresql://user:pass@host:5432/db?sslmode=require
+BETTER_AUTH_SECRET=             # Generate with: openssl rand -base64 32
+BETTER_AUTH_URL=http://localhost:3002
+NEXT_PUBLIC_BETTER_AUTH_URL=http://localhost:3002
+RESEND_API_KEY=                 # Same as app
+```
+
+### Optional Environment Variables
+
+**`apps/app/.env`:**
+
+**Rate Limiting & Caching:**
+```bash
+UPSTASH_REDIS_REST_URL=         # Upstash Redis for rate limiting
+UPSTASH_REDIS_REST_TOKEN=
+```
+
+**Analytics & Tracking:**
+```bash
+NEXT_PUBLIC_POSTHOG_KEY=        # PostHog analytics
+NEXT_PUBLIC_POSTHOG_HOST=/ingest
+NEXT_PUBLIC_GTM_ID=             # Google Tag Manager
+GA4_API_SECRET=                 # Google Analytics 4 server-side
+GA4_MEASUREMENT_ID=             # Google Analytics 4 measurement ID
+NEXT_PUBLIC_LINKEDIN_PARTNER_ID=
+NEXT_PUBLIC_LINKEDIN_CONVERSION_ID=
+LINKEDIN_CONVERSIONS_ACCESS_TOKEN=
+NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL=
+```
+
+**Link Shortening:**
+```bash
+DUB_API_KEY=                    # Dub.co link shortener
+DUB_REFER_URL=
+NEXT_PUBLIC_IS_DUB_ENABLED=false
+```
+
+**Vendor Research:**
+```bash
+FIRECRAWL_API_KEY=              # For automated vendor research
+```
+
+**MDM Integration:**
+```bash
+FLEET_URL=                      # Fleet MDM integration
+FLEET_TOKEN=
+```
+
+**Sales Notifications:**
+```bash
+SLACK_SALES_WEBHOOK=            # Slack webhook for sales notifications
+```
+
+**Vercel Integration (for custom domains):**
+```bash
+VERCEL_ACCESS_TOKEN=
+VERCEL_TEAM_ID=
+VERCEL_PROJECT_ID=
+TRUST_PORTAL_PROJECT_ID=
+NEXT_PUBLIC_VERCEL_URL=
+```
+
+**Self-Hosted Trigger.dev (if not using cloud.trigger.dev):**
+```bash
+TRIGGER_API_KEY=                # For self-hosted Trigger.dev
+TRIGGER_API_URL=                # For self-hosted Trigger.dev
+```
+
+**`apps/portal/.env`:**
+```bash
+UPSTASH_REDIS_REST_URL=         # Optional Redis for portal
+UPSTASH_REDIS_REST_TOKEN=
+NEXT_PUBLIC_POSTHOG_KEY=        # Portal analytics
+NEXT_PUBLIC_POSTHOG_HOST=/ingest
+```
+
+### Quick Setup Guide
+
+#### Step 1: Create Environment Files
+
+**Create `packages/db/.env`:**
+```bash
+cp packages/db/.env.example packages/db/.env
+# Edit and set DATABASE_URL only
+```
+
+**Create `apps/app/.env`:**
+```bash
+cp apps/app/.env.example apps/app/.env
+# Edit and set all REQUIRED variables listed above
+```
+
+**Create `apps/portal/.env`:**
+```bash
+cp apps/portal/.env.example apps/portal/.env
+# Edit and set all REQUIRED variables listed above
+```
+
+**Create root `.env` (for build args):**
+```bash
+# Create this file at repository root
+cat > .env << 'EOF'
+# Build-time variables (loaded during docker compose build)
+BETTER_AUTH_URL=http://localhost:3000
+BETTER_AUTH_URL_PORTAL=http://localhost:3002
+NEXT_PUBLIC_BETTER_AUTH_URL=http://localhost:3000
+NEXT_PUBLIC_PORTAL_URL=http://localhost:3002
+
+# Optional build-time analytics (set to empty string if not used)
+NEXT_PUBLIC_POSTHOG_KEY=
+NEXT_PUBLIC_POSTHOG_HOST=/ingest
+NEXT_PUBLIC_GTM_ID=
+NEXT_PUBLIC_IS_DUB_ENABLED=false
+NEXT_PUBLIC_LINKEDIN_PARTNER_ID=
+NEXT_PUBLIC_LINKEDIN_CONVERSION_ID=
+NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL=
+NEXT_PUBLIC_API_URL=
+EOF
+```
+
+#### Step 2: Generate Secrets
+
+```bash
+# Generate AUTH_SECRET
+openssl rand -base64 32
+
+# Generate SECRET_KEY
+openssl rand -base64 32
+
+# Generate REVALIDATION_SECRET
+openssl rand -base64 32
+
+# Generate BETTER_AUTH_SECRET (for portal)
+openssl rand -base64 32
+```
+
+Add these to the appropriate .env files.
+
+#### Step 3: Setup External Services
+
+**Resend (Email):**
+1. Sign up at https://resend.com
+2. Create API key: https://resend.com/api-keys
+3. Set `RESEND_API_KEY` in both `apps/app/.env` and `apps/portal/.env`
+
+**Trigger.dev (Background Jobs):**
+1. Sign up at https://cloud.trigger.dev
+2. Create a project
+3. Copy `TRIGGER_SECRET_KEY` from project settings
+4. Set in `apps/app/.env`
+
+**AWS S3 (File Storage):**
+1. Create AWS account or use existing
+2. Create S3 bucket (e.g., `comp-attachments`)
+3. Create IAM user with S3 permissions
+4. Generate access key/secret
+5. Set `APP_AWS_*` variables in `apps/app/.env`
+
+**Google OAuth (Optional):**
+1. Create project at https://console.cloud.google.com
+2. Configure OAuth consent screen
+3. Create OAuth 2.0 credentials
+4. Set authorized redirect URIs: `http://localhost:3000/api/auth/callback/google`
+5. Set `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` in `apps/app/.env`
+
+**GitHub OAuth (Optional):**
+1. Create OAuth App at https://github.com/settings/developers
+2. Set callback URL: `http://localhost:3000/api/auth/callback/github`
+3. Set `AUTH_GITHUB_ID` and `AUTH_GITHUB_SECRET` in `apps/app/.env`
+
+**OpenAI (AI Features):**
+1. Create API key at https://platform.openai.com/api-keys
+2. Set `OPENAI_API_KEY` in `apps/app/.env`
+
+### Environment File Locations
+
+**IMPORTANT:** Each service reads from a different .env file location:
+
+- **migrator/seeder**: `packages/db/.env` (only needs DATABASE_URL)
+- **app**: `apps/app/.env` (needs all app-specific variables)
+- **portal**: `apps/portal/.env` (needs all portal-specific variables)
+
+The docker-compose.yml configuration:
 
 ```yaml
 services:
   migrator:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: migrator
     env_file:
-      - .env
-
-  seeder:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: migrator
-    env_file:
-      - .env
-    command: sh -lc "bunx prisma generate --schema=node_modules/@trycompai/db/dist/schema.prisma && bun packages/db/prisma/seed/seed.js"
+      - packages/db/.env
 
   app:
     build:
-      context: .
-      dockerfile: Dockerfile
-      target: app
       args:
         NEXT_PUBLIC_BETTER_AUTH_URL: ${BETTER_AUTH_URL}
-    ports: ['3000:3000']
-    env_file: [.env]
-    restart: unless-stopped
-    healthcheck:
-      test: ['CMD-SHELL', 'curl -f http://localhost:3000/api/health || exit 1']
-      interval: 30s
-      timeout: 10s
-      retries: 3
+        # Note: Build args must be set from shell environment or root .env
+    env_file:
+      - apps/app/.env
 
   portal:
     build:
-      context: .
-      dockerfile: Dockerfile
-      target: portal
       args:
         NEXT_PUBLIC_BETTER_AUTH_URL: ${BETTER_AUTH_URL_PORTAL}
-    ports: ['3002:3000']
-    env_file: [.env]
-    restart: unless-stopped
-    healthcheck:
-      test: ['CMD-SHELL', 'curl -f http://localhost:3002/ || exit 1']
-      interval: 30s
-      timeout: 10s
-      retries: 3
+    env_file:
+      - apps/portal/.env
 ```
 
-#### `.env` example
+**Build-time vs Runtime Variables:**
 
-Create a `.env` file at the repo root with your values (never commit real secrets):
-
-```bash
-# External PostgreSQL (required)
-DATABASE_URL=postgresql://user:pass@host:5432/db?sslmode=require
-
-# App auth + URLs (required)
-AUTH_SECRET=
-BETTER_AUTH_URL=http://localhost:3000
-NEXT_PUBLIC_BETTER_AUTH_URL=http://localhost:3000
-NEXT_PUBLIC_PORTAL_URL=http://localhost:3002
-REVALIDATION_SECRET=
-
-# Email (required)
-RESEND_API_KEY=
-
-# Workflows (Trigger.dev hosted)
-TRIGGER_SECRET_KEY=
-
-# Portal auth + URLs (required)
-BETTER_AUTH_SECRET=
-BETTER_AUTH_URL_PORTAL=http://localhost:3002
-NEXT_PUBLIC_BETTER_AUTH_URL_PORTAL=http://localhost:3002
-
-# Optional
-# OPENAI_API_KEY=
-# UPSTASH_REDIS_REST_URL=
-# UPSTASH_REDIS_REST_TOKEN=
-# NEXT_PUBLIC_POSTHOG_KEY=
-# NEXT_PUBLIC_POSTHOG_HOST=
-# NEXT_PUBLIC_GTM_ID=
-# NEXT_PUBLIC_LINKEDIN_PARTNER_ID=
-# NEXT_PUBLIC_LINKEDIN_CONVERSION_ID=
-# NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL=
-# DUB_API_KEY=
-# DUB_REFER_URL=
-# FIRECRAWL_API_KEY=
-# SLACK_SALES_WEBHOOK=
-# GA4_API_SECRET=
-# GA4_MEASUREMENT_ID=
-# NEXT_PUBLIC_API_URL=
-```
+- **Build args** (NEXT_PUBLIC_*): Must be available during `docker compose build` - set these in your shell environment or root `.env` before building
+- **Runtime variables**: Read from service-specific .env files when containers start
 
 #### What the `migrator` and `seeder` services do
 
@@ -176,13 +340,18 @@ Notes:
 - The stack migrates with `@trycompai/db` combined Prisma schema and then seeds. Seeding is idempotent: records are upserted by id and relations are connected; nothing is deleted.
 - Ensure your DB user has privileges to create/alter tables in the target database.
 
-### Trigger.dev (hosted runner)
+### Trigger.dev (Background Jobs) - REQUIRED
 
-Trigger.dev powers AI automations and background workflows.
+Trigger.dev powers AI automations and background workflows including:
+- Automated vendor research
+- Policy generation
+- Risk assessment automation
+- Scheduled compliance checks
+- Evidence collection tasks
 
-Steps:
+**Setup:**
 
-1. Create an account at `https://cloud.trigger.dev`
+1. Create an account at https://cloud.trigger.dev
 2. Create a project and copy `TRIGGER_SECRET_KEY`
 3. From your workstation (not inside Docker):
    ```bash
@@ -190,23 +359,124 @@ Steps:
    bunx trigger.dev@latest login
    bunx trigger.dev@latest deploy
    ```
-4. Set `TRIGGER_SECRET_KEY` in the `app` service environment.
+4. Set `TRIGGER_SECRET_KEY` in `apps/app/.env`
 
-### Resend (email)
+**Important Notes:**
+- Set `TRIGGER_SECRET_KEY` in `apps/app/.env` (NOT root .env)
+- Without Trigger.dev, background jobs and automations will not work
+- You must deploy tasks before they can run (use `bunx trigger.dev@latest deploy` from `apps/app/`)
+- For self-hosting Trigger.dev (advanced), set `TRIGGER_API_KEY` and `TRIGGER_API_URL` instead
 
-- Create a Resend account and get `RESEND_API_KEY`
-- Add a domain if you plan to send emails from a custom domain
-- Set `RESEND_API_KEY` in both `app` and `portal` services
+### Resend (Email) - REQUIRED
+
+**Email is required for:**
+- Magic link authentication
+- OTP codes
+- Task notifications
+- Audit reports
+- User invitations
+
+**Setup:**
+1. Create a Resend account at https://resend.com
+2. Create API key at https://resend.com/api-keys
+3. (Optional) Add custom domain for production email sending
+4. Set `RESEND_API_KEY` in **both** `apps/app/.env` and `apps/portal/.env`
+
+**Without Resend:** Authentication will fail and users cannot log in.
+
+### AWS S3 (File Storage) - REQUIRED
+
+**File attachments are required for:**
+- Task evidence uploads
+- Policy document uploads
+- Vendor security questionnaires
+- Audit evidence collection
+
+**Setup:**
+
+1. Create AWS account or use existing
+
+2. Create S3 bucket:
+   ```bash
+   aws s3 mb s3://comp-attachments --region us-east-1
+   ```
+
+3. Configure bucket CORS (to allow uploads from your domain):
+   ```json
+   [
+     {
+       "AllowedOrigins": ["http://localhost:3000"],
+       "AllowedMethods": ["GET", "PUT", "POST", "DELETE"],
+       "AllowedHeaders": ["*"],
+       "ExposeHeaders": ["ETag"]
+     }
+   ]
+   ```
+
+4. Create IAM user with S3 policy:
+   ```json
+   {
+     "Version": "2012-10-17",
+     "Statement": [
+       {
+         "Effect": "Allow",
+         "Action": [
+           "s3:PutObject",
+           "s3:GetObject",
+           "s3:DeleteObject"
+         ],
+         "Resource": "arn:aws:s3:::comp-attachments/*"
+       }
+     ]
+   }
+   ```
+
+5. Generate access key/secret for IAM user
+
+6. Set in `apps/app/.env`:
+   ```bash
+   APP_AWS_ACCESS_KEY_ID=<your-access-key>
+   APP_AWS_SECRET_ACCESS_KEY=<your-secret-key>
+   APP_AWS_REGION=us-east-1
+   APP_AWS_BUCKET_NAME=comp-attachments
+   ```
+
+**Without S3:** File uploads will fail and evidence collection features will not work.
 
 ### Build & run
 
-#### Prepare environment
+#### Prepare Environment
 
-Copy the example and fill real values (kept out of git):
+**You must create 4 separate .env files:**
 
 ```bash
-cp .env.example .env
-# edit .env with your production secrets and URLs
+# 1. Database migrations
+cp packages/db/.env.example packages/db/.env
+# Edit packages/db/.env and set DATABASE_URL
+
+# 2. App runtime
+cp apps/app/.env.example apps/app/.env
+# Edit apps/app/.env and set all REQUIRED variables (see above)
+
+# 3. Portal runtime
+cp apps/portal/.env.example apps/portal/.env
+# Edit apps/portal/.env and set all REQUIRED variables (see above)
+
+# 4. Build-time variables (at repository root)
+# Create root .env with build args (see Quick Setup Guide above)
+```
+
+**Verify all required secrets are set:**
+```bash
+# Should be set in appropriate .env files:
+# - AUTH_SECRET (apps/app/.env)
+# - SECRET_KEY (apps/app/.env)
+# - REVALIDATION_SECRET (apps/app/.env)
+# - BETTER_AUTH_SECRET (apps/portal/.env)
+# - RESEND_API_KEY (both app and portal)
+# - TRIGGER_SECRET_KEY (apps/app/.env)
+# - DATABASE_URL (all three .env files)
+# - AWS S3 credentials (apps/app/.env)
 ```
 
 #### Fresh install (optional clean):
@@ -247,3 +517,13 @@ curl -s http://localhost:3000/api/health
 - Update `BETTER_AUTH_URL`, `NEXT_PUBLIC_BETTER_AUTH_URL`, and portal equivalents to the public domains
 - Use strong secrets and rotate them periodically
 - Ensure the hosted Postgres requires SSL and restricts network access (VPC, IP allowlist, or private networking)
+- Ensure all build args are set in your CI/CD environment before `docker compose build`
+- Use separate S3 buckets for production/staging
+- Enable S3 bucket versioning for audit compliance
+- Use AWS IAM roles instead of access keys when deploying to EC2/ECS
+- Consider using AWS Secrets Manager for sensitive environment variables
+- Monitor Trigger.dev task execution and set up alerts for failures
+- Set up database backups with point-in-time recovery
+- Use a CDN (CloudFront, Cloudflare) in front of your app for better performance
+- Update CORS configuration in S3 to allow your production domain
+- Regularly update dependencies and Docker images for security patches

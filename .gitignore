@@ -84,3 +84,7 @@ packages/*/dist
 
 # Release script
 scripts/sync-release-branch.sh
+
+# Local documentation drafts
+DOCS_SELF_HOSTING_SIMPLIFIED.md
+CLAUDE.md
