@@ -1,6 +1,7 @@
 'use server';
 
-import { db, PolicyStatus } from '@db';
+import { sendPublishAllPoliciesEmail } from '@/jobs/tasks/email/publish-all-policies-email';
+import { db, PolicyStatus, Role } from '@db';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { authActionClient } from '../safe-action';
@@ -90,6 +91,51 @@ export const publishAllPoliciesAction = authActionClient
             organizationId: parsedInput.organizationId,
           });
           throw policyError; // Re-throw to be caught by outer catch block
+        }
+      }
+
+      // Get organization info and all members to send emails
+      const organization = await db.organization.findUnique({
+        where: { id: parsedInput.organizationId },
+        select: { name: true },
+      });
+
+      const members = await db.member.findMany({
+        where: {
+          organizationId: parsedInput.organizationId,
+          isActive: true,
+          role: {
+            contains: Role.employee,
+          },
+        },
+        include: {
+          user: {
+            select: {
+              email: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+      // Trigger email tasks for all employees using batchTrigger
+      const emailPayloads = members
+        .filter((orgMember) => orgMember.user.email)
+        .map((orgMember) => ({
+          payload: {
+            email: orgMember.user.email,
+            userName: orgMember.user.name || 'there',
+            organizationName: organization?.name || 'Your organization',
+            organizationId: parsedInput.organizationId,
+          },
+        }));
+
+      if (emailPayloads.length > 0) {
+        try {
+          await sendPublishAllPoliciesEmail.batchTrigger(emailPayloads);
+        } catch (emailError) {
+          console.error('[publish-all-policies] Failed to trigger bulk emails:', emailError);
+          // Don't throw - the policies are published successfully
         }
       }
 
