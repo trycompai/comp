@@ -11,6 +11,7 @@ import {
   getReadmeContent,
   getScriptFilename,
 } from './scripts';
+import type { SupportedOS } from './types';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -39,7 +40,7 @@ export async function GET(req: NextRequest) {
     orgId: string;
     employeeId: string;
     userId: string;
-    os: 'macos' | 'windows';
+    os: SupportedOS;
   };
 
   // Hardcoded device marker paths used by the setup scripts
@@ -52,10 +53,10 @@ export async function GET(req: NextRequest) {
   }
 
   // For macOS, serve the DMG directly. For Windows, create a zip with script and installer.
-  if (os === 'macos') {
+  if (os === 'macos' || os === 'macos-intel') {
     try {
       // Direct DMG download for macOS
-      const macosPackageFilename = 'Comp AI Agent-1.0.0-arm64.dmg';
+      const macosPackageFilename = os === 'macos' ? 'Comp AI Agent-1.0.0-arm64.dmg' : 'Comp AI Agent-1.0.0.dmg';
       const packageKey = `macos/${macosPackageFilename}`;
 
       const getObjectCommand = new GetObjectCommand({
