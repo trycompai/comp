@@ -42,10 +42,8 @@ export async function GET(req: NextRequest) {
     userId: string;
     os: SupportedOS;
   };
-  console.log('**************************************************');
-  console.log('******************** detected os: ', os);
-  console.log('**************************************************');
-
+  console.log(os);
+  
   // Hardcoded device marker paths used by the setup scripts
   const fleetDevicePathMac = '/Users/Shared/.fleet';
   const fleetDevicePathWindows = 'C:\\ProgramData\\CompAI\\Fleet';
