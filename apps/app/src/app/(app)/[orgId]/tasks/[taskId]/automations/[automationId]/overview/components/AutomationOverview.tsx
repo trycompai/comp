@@ -16,9 +16,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Textarea } from '@comp/ui/textarea';
 import { EvidenceAutomation, EvidenceAutomationRun, EvidenceAutomationVersion, Task } from '@db';
-import { ChevronRight, MoreVertical, Trash2 } from 'lucide-react';
+import { ChevronRight, Loader2, MoreVertical, Play, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useMemo, useRef, useState } from 'react';
@@ -58,6 +59,8 @@ export function AutomationOverview({
   const [isTogglingEnabled, setIsTogglingEnabled] = useState(false);
   const [editingDescription, setEditingDescription] = useState(false);
   const [descriptionValue, setDescriptionValue] = useState('');
+  const [selectedVersion, setSelectedVersion] = useState<number | null>(null);
+  const [isTestingVersion, setIsTestingVersion] = useState(false);
   const descriptionInputRef = useRef<HTMLTextAreaElement>(null);
 
   // Use the automation hook to get live data and mutate function
@@ -65,6 +68,12 @@ export function AutomationOverview({
 
   // Use live data from hook if available, fallback to initial data
   const automation = liveAutomation || initialAutomation;
+
+  // Set initial selected version to latest
+  const latestVersion = initialVersions.length > 0 ? initialVersions[0].version : null;
+  if (selectedVersion === null && latestVersion !== null) {
+    setSelectedVersion(latestVersion);
+  }
 
   const handleToggleEnabled = async (enabled: boolean) => {
     if (!automation?.id) return;
@@ -91,6 +100,21 @@ export function AutomationOverview({
     setDescriptionValue(automation.description || '');
     setEditingDescription(true);
     setTimeout(() => descriptionInputRef.current?.focus(), 0);
+  };
+
+  const handleTestVersion = async () => {
+    if (!selectedVersion) return;
+
+    setIsTestingVersion(true);
+    try {
+      // TODO: Call API to execute specific version
+      toast.success(`Testing version ${selectedVersion}...`);
+      // The actual test execution would happen here
+    } catch (error) {
+      toast.error('Failed to start test');
+    } finally {
+      setIsTestingVersion(false);
+    }
   };
 
   const saveDescriptionEdit = async () => {
@@ -245,6 +269,45 @@ export function AutomationOverview({
                     </p>
                   )}
                 </div>
+
+                {/* Version Selector */}
+                {initialVersions.length > 0 && (
+                  <div className="flex flex-col gap-2">
+                    <p className="text-xs font-medium text-muted-foreground">Test Version</p>
+                    <div className="flex items-center gap-2">
+                      <Select
+                        value={selectedVersion?.toString() || ''}
+                        onValueChange={(value) => setSelectedVersion(parseInt(value))}
+                      >
+                        <SelectTrigger className="h-9 text-sm flex-1">
+                          <SelectValue placeholder="Select version" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {initialVersions.map((v) => (
+                            <SelectItem key={v.version} value={v.version.toString()}>
+                              v{v.version}
+                              {v.changelog &&
+                                ` - ${v.changelog.substring(0, 30)}${v.changelog.length > 30 ? '...' : ''}`}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleTestVersion}
+                        disabled={!selectedVersion || isTestingVersion}
+                      >
+                        {isTestingVersion ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Play className="w-3.5 h-3.5" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex flex-col gap-1">
                   <p className="text-xs font-medium text-muted-foreground">Created</p>
                   <p className="text-sm">
