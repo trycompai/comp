@@ -154,6 +154,7 @@ export class CommentsService {
         where: {
           userId,
           organizationId,
+          deactivated: false,
         },
         include: {
           user: true,
