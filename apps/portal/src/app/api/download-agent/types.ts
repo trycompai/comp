@@ -1,4 +1,4 @@
-export type SupportedOS = 'macos' | 'windows';
+export type SupportedOS = 'macos' | 'windows' | 'macos-intel';
 
 export interface ScriptConfig {
   orgId: string;
