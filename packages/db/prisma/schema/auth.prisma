@@ -93,6 +93,7 @@ model Member {
 
     department                      Departments                       @default(none)
     isActive                        Boolean                           @default(true)
+    deactivated                     Boolean                           @default(false)
     employeeTrainingVideoCompletion EmployeeTrainingVideoCompletion[]
     fleetDmLabelId                  Int?
 
