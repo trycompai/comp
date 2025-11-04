@@ -28,6 +28,7 @@ export const changeOrganizationAction = authActionClient
       where: {
         userId: user.id,
         organizationId,
+        deactivated: false,
       },
     });
 

@@ -137,6 +137,7 @@ export const getAssignees = async () => {
       role: {
         notIn: ['employee'],
       },
+      deactivated: false,
     },
     include: {
       user: true,

@@ -25,6 +25,7 @@ export const addEmployeeWithoutInvite = async ({
       where: {
         organizationId: organizationId,
         userId: currentUserId,
+        deactivated: false,
       },
     });
 

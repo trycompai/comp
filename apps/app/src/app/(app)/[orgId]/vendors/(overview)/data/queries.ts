@@ -59,6 +59,7 @@ export const getAssignees = cache(async (orgId: string): Promise<GetAssigneesRes
       role: {
         notIn: ['employee'],
       },
+      deactivated: false,
     },
     include: {
       user: true,

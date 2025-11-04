@@ -15,6 +15,7 @@ export const backfillTrainingVideosForOrg = task({
       const members = await db.member.findMany({
         where: {
           organizationId: payload.organizationId,
+          deactivated: false,
         },
         select: {
           id: true,
