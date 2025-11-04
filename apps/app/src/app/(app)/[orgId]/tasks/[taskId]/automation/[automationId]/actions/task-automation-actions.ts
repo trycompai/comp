@@ -361,6 +361,14 @@ export async function publishAutomation(
       },
     });
 
+    // Enable automation if not already enabled
+    await db.evidenceAutomation.update({
+      where: { id: automationId },
+      data: { isEnabled: true },
+    });
+
+    await revalidateCurrentPath();
+
     return {
       success: true,
       version,
