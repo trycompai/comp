@@ -36,6 +36,7 @@ export const removeMember = authActionClient
         where: {
           organizationId: ctx.session.activeOrganizationId,
           userId: ctx.user.id,
+          deactivated: false,
         },
       });
 
@@ -80,10 +81,14 @@ export const removeMember = authActionClient
         };
       }
 
-      // Remove the member
-      await db.member.delete({
+      // Mark the member as deactivated instead of deleting
+      await db.member.update({
         where: {
           id: memberId,
+        },
+        data: {
+          deactivated: true,
+          isActive: false,
         },
       });
 
