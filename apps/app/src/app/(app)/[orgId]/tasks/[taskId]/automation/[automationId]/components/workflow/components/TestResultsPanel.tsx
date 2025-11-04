@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { useTaskAutomation } from '../../../hooks';
+import { useSharedChatContext } from '../../../lib';
 import type { TestResult } from '../types';
 import { ConfettiEffect } from './ConfettiEffect';
 
@@ -31,7 +32,8 @@ export function TestResultsPanel({
   const [animateSuccess, setAnimateSuccess] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const { automation } = useTaskAutomation();
+  const { automationIdRef } = useSharedChatContext();
+  const { automation } = useTaskAutomation(automationIdRef.current);
 
   const actualEvaluationCriteria = automation?.evaluationCriteria || evaluationCriteria;
 
