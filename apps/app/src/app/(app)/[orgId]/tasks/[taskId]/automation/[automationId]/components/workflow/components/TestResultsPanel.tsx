@@ -6,6 +6,7 @@ import { AlertCircle, CheckCircle2, CircleX, Loader2, Sparkles, X } from 'lucide
 import { useEffect, useRef, useState } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { useTaskAutomation } from '../../../hooks';
 import type { TestResult } from '../types';
 import { ConfettiEffect } from './ConfettiEffect';
 
@@ -29,6 +30,10 @@ export function TestResultsPanel({
   const [activeSection, setActiveSection] = useState<ActiveSection>('reasoning');
   const [animateSuccess, setAnimateSuccess] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const { automation } = useTaskAutomation();
+
+  const actualEvaluationCriteria = automation?.evaluationCriteria || evaluationCriteria;
 
   // Determine overall test state
   const getTestState = () => {
@@ -203,7 +208,7 @@ export function TestResultsPanel({
 
               {/* Sub-nav */}
               <div className="flex items-center justify-center gap-3 text-xs mb-4">
-                {result.evaluationReason && evaluationCriteria && (
+                {result.evaluationReason && actualEvaluationCriteria && (
                   <button
                     onClick={() =>
                       setActiveSection(activeSection === 'reasoning' ? null : 'reasoning')
@@ -213,7 +218,7 @@ export function TestResultsPanel({
                     Reasoning
                   </button>
                 )}
-                {result.evaluationReason && evaluationCriteria && (
+                {result.evaluationReason && actualEvaluationCriteria && (
                   <span className="text-border">|</span>
                 )}
                 <button
@@ -285,14 +290,14 @@ export function TestResultsPanel({
 
                   {activeSection === 'reasoning' &&
                     result.evaluationReason &&
-                    evaluationCriteria && (
+                    actualEvaluationCriteria && (
                       <div className="space-y-3 text-left animate-in fade-in duration-300">
                         <div>
                           <p className="text-xs font-semibold text-muted-foreground mb-1">
                             Criteria
                           </p>
                           <p className="text-xs leading-relaxed text-foreground">
-                            {evaluationCriteria}
+                            {actualEvaluationCriteria}
                           </p>
                         </div>
                         <div>
