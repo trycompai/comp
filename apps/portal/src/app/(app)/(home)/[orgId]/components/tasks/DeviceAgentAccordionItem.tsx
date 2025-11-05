@@ -1,23 +1,17 @@
 'use client';
 
+import { detectOSFromUserAgent, SupportedOS } from '@/utils/os';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { cn } from '@comp/ui/cn';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@comp/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import type { Member } from '@db';
 import { CheckCircle2, Circle, Download, Loader2, XCircle } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import type { FleetPolicy, Host } from '../../types';
-import { detectOSFromUserAgent, SupportedOS } from '@/utils/os';
 
 interface DeviceAgentAccordionItemProps {
   member: Member;
@@ -33,7 +27,10 @@ export function DeviceAgentAccordionItem({
   const [isDownloading, setIsDownloading] = useState(false);
   const [detectedOS, setDetectedOS] = useState<SupportedOS | null>(null);
 
-  const isMacOS = useMemo(() => detectedOS === 'macos' || detectedOS === 'macos-intel', [detectedOS]);
+  const isMacOS = useMemo(
+    () => detectedOS === 'macos' || detectedOS === 'macos-intel',
+    [detectedOS],
+  );
 
   const hasInstalledAgent = host !== null;
   const allPoliciesPass =
@@ -68,16 +65,17 @@ export function DeviceAgentAccordionItem({
       // Method 1: Using a temporary link (most reliable)
       const a = document.createElement('a');
       a.href = downloadUrl;
-      
+
       // Set filename based on OS and architecture
       if (isMacOS) {
-        a.download = detectedOS === 'macos' 
-          ? 'Comp AI Agent-1.0.0-arm64.dmg' 
-          : 'Comp AI Agent-1.0.0-intel.dmg';
+        a.download =
+          detectedOS === 'macos'
+            ? 'Comp AI Agent-1.0.0-arm64.dmg'
+            : 'Comp AI Agent-1.0.0-intel.dmg';
       } else {
         a.download = 'compai-device-agent.zip';
       }
-      
+
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

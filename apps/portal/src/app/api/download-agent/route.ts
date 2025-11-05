@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
     employeeId: string;
     userId: string;
   };
-  
+
   // Hardcoded device marker paths used by the setup scripts
   const fleetDevicePathMac = '/Users/Shared/.fleet';
   const fleetDevicePathWindows = 'C:\\ProgramData\\CompAI\\Fleet';
@@ -60,7 +60,8 @@ export async function GET(req: NextRequest) {
   if (os === 'macos' || os === 'macos-intel') {
     try {
       // Direct DMG download for macOS
-      const macosPackageFilename = os === 'macos' ? 'Comp AI Agent-1.0.0-arm64.dmg' : 'Comp AI Agent-1.0.0.dmg';
+      const macosPackageFilename =
+        os === 'macos' ? 'Comp AI Agent-1.0.0-arm64.dmg' : 'Comp AI Agent-1.0.0.dmg';
       const packageKey = `macos/${macosPackageFilename}`;
 
       const getObjectCommand = new GetObjectCommand({

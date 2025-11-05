@@ -5,7 +5,9 @@ export function getScriptFilename(os: SupportedOS): string {
 }
 
 export function getPackageFilename(os: SupportedOS): string {
-  return os === 'macos' || os === 'macos-intel' ? 'compai-device-agent.pkg' : 'compai-device-agent.msi';
+  return os === 'macos' || os === 'macos-intel'
+    ? 'compai-device-agent.pkg'
+    : 'compai-device-agent.msi';
 }
 
 export function getReadmeContent(os: SupportedOS): string {
