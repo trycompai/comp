@@ -232,8 +232,61 @@ export function AutomationOverview({
           <AutomationRunsCard runs={runsWithName} />
         </div>
 
-        {/* Right Column - Details & Versions */}
+        {/* Right Column - Versions & Details */}
         <div className="space-y-6">
+          {/* Versions Card */}
+          {initialVersions.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base font-medium">Versions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Select
+                      value={selectedVersion?.toString() || ''}
+                      onValueChange={(value) => setSelectedVersion(parseInt(value))}
+                    >
+                      <SelectTrigger className="h-9 text-sm flex-1">
+                        <SelectValue placeholder="Select version" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {initialVersions.map((v) => (
+                          <SelectItem key={v.version} value={v.version.toString()}>
+                            v{v.version}
+                            {v.changelog &&
+                              ` - ${v.changelog.substring(0, 30)}${v.changelog.length > 30 ? '...' : ''}`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleTestVersion}
+                      disabled={!selectedVersion || isTestingVersion}
+                    >
+                      {isTestingVersion ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                          Testing
+                        </>
+                      ) : (
+                        <>
+                          <Play className="w-3.5 h-3.5 mr-1.5" />
+                          Test
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Select a version and test it to verify functionality
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -329,59 +382,6 @@ export function AutomationOverview({
               </div>
             </CardContent>
           </Card>
-
-          {/* Versions Card */}
-          {initialVersions.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base font-medium">Versions</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Select
-                      value={selectedVersion?.toString() || ''}
-                      onValueChange={(value) => setSelectedVersion(parseInt(value))}
-                    >
-                      <SelectTrigger className="h-9 text-sm flex-1">
-                        <SelectValue placeholder="Select version" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {initialVersions.map((v) => (
-                          <SelectItem key={v.version} value={v.version.toString()}>
-                            v{v.version}
-                            {v.changelog &&
-                              ` - ${v.changelog.substring(0, 30)}${v.changelog.length > 30 ? '...' : ''}`}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleTestVersion}
-                      disabled={!selectedVersion || isTestingVersion}
-                    >
-                      {isTestingVersion ? (
-                        <>
-                          <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                          Testing
-                        </>
-                      ) : (
-                        <>
-                          <Play className="w-3.5 h-3.5 mr-1.5" />
-                          Test
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Select a version and test it to verify functionality
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </div>
       </div>
 
