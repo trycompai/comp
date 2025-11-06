@@ -3,6 +3,7 @@ import { memo } from 'react';
 import { DataPart } from '../../../lib/types/data-parts';
 import { Metadata } from '../../../lib/types/metadata';
 import { TaskAutomationToolSet } from '../../../tools/task-automation-tools';
+import { FileWritingActivity } from './file-writing-activity';
 import { PromptInfo } from './prompt-info';
 import { PromptSecret } from './prompt-secret';
 import { Reasoning } from './reasoning';
@@ -56,6 +57,15 @@ export const MessagePart = memo(function MessagePart({
     return (
       <ResearchActivity
         toolName={part.type === 'tool-exaSearch' ? 'exaSearch' : 'firecrawl'}
+        input={part.input}
+        state={part.state}
+        output={part.output}
+        isAnimating={partIndex === 0}
+      />
+    );
+  } else if (part.type === 'tool-storeToS3') {
+    return (
+      <FileWritingActivity
         input={part.input}
         state={part.state}
         output={part.output}

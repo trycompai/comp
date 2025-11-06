@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { Loader2, Play, Zap } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
+import { useTaskAutomation } from '../../../hooks/use-task-automation';
+import { useSharedChatContext } from '../../../lib/chat-context';
 import { EvaluationCriteriaCard } from '../../evaluation/EvaluationCriteriaCard';
 
 interface WorkflowStep {
@@ -42,7 +44,18 @@ export function UnifiedWorkflowCard({
   evaluationCriteria,
   automationId,
 }: Props) {
+  const { automationIdRef } = useSharedChatContext();
   const [isAnimationComplete, setIsAnimationComplete] = useState(false);
+
+  // Use the real automation ID from ref (not "new")
+  const realAutomationId =
+    automationIdRef.current !== 'new' ? automationIdRef.current : automationId;
+
+  // Fetch automation data with the correct ID
+  const { automation } = useTaskAutomation(realAutomationId);
+
+  // Use live automation data for criteria, fallback to prop
+  const liveCriteria = automation?.evaluationCriteria || evaluationCriteria;
 
   useEffect(() => {
     // Calculate total animation time: card (1s) + expansion (1s) + all steps
@@ -140,14 +153,14 @@ export function UnifiedWorkflowCard({
         </Card>
       </CardContent>
 
-      {/* Evaluation Criteria Section */}
-      {evaluationCriteria !== undefined && automationId && isAnimationComplete && (
-        <div className="px-4 pb-4 pt-2">
+      {/* Evaluation Criteria Section - Show after animation */}
+      {realAutomationId && realAutomationId !== 'new' && isAnimationComplete && (
+        <div className="px-4 pb-4 pt-2 animate-in fade-in duration-500">
           <div className="max-w-[650px] mx-auto">
             <EvaluationCriteriaCard
-              automationId={automationId}
-              initialCriteria={evaluationCriteria}
-              isAiGenerated={!!evaluationCriteria}
+              automationId={realAutomationId}
+              initialCriteria={liveCriteria}
+              isAiGenerated={!!liveCriteria}
             />
           </div>
         </div>

@@ -63,7 +63,11 @@ export function WorkflowVisualizerSimple({ className }: Props) {
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [confirmRestore, setConfirmRestore] = useState<EvidenceAutomationVersion | null>(null);
-  const { automation, mutate: mutateAutomation } = useTaskAutomation();
+  const {
+    automation,
+    mutate: mutateAutomation,
+    isLoading: isLoadingAutomation,
+  } = useTaskAutomation();
   const { versions } = useAutomationVersions();
 
   // Update shared ref when automation is loaded from hook
@@ -110,8 +114,15 @@ export function WorkflowVisualizerSimple({ className }: Props) {
       // Also refresh automation data to get updated evaluationCriteria
       mutateAutomation();
     };
+    const handleCriteriaUpdated = () => {
+      mutateAutomation();
+    };
     window.addEventListener('task-automation:script-saved', handleScriptSaved);
-    return () => window.removeEventListener('task-automation:script-saved', handleScriptSaved);
+    window.addEventListener('task-automation:criteria-updated', handleCriteriaUpdated);
+    return () => {
+      window.removeEventListener('task-automation:script-saved', handleScriptSaved);
+      window.removeEventListener('task-automation:criteria-updated', handleCriteriaUpdated);
+    };
   }, [refresh, mutateAutomation]);
 
   useEffect(() => {
@@ -327,6 +338,7 @@ Please fix the automation script to resolve this error.`;
                     <WorkflowSkeleton />
                   ) : steps.length > 0 ? (
                     <UnifiedWorkflowCard
+                      key={`workflow-${automation?.id}-${automation?.evaluationCriteria ? 'with-criteria' : 'no-criteria'}`}
                       steps={steps}
                       title={title || 'Automation Workflow'}
                       onTest={handleTest}
