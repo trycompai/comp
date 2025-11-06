@@ -27,15 +27,6 @@
     "visible": false
   },
   {
-    "id": "frk_681ef4bb8eeb2b60d2d9d187",
-    "name": "PCI DSS",
-    "description": "PCI DSS",
-    "version": "4.0.1",
-    "createdAt": "2025-05-14 19:20:44.920",
-    "updatedAt": "2025-05-14 19:20:44.920",
-    "visible": false
-  },
-  {
     "id": "frk_683f3102f9ae801df35d47b4",
     "name": "Test",
     "description": "Test",
@@ -96,6 +87,51 @@
     "version": "1.0.0",
     "createdAt": "2025-05-14 19:20:44.920",
     "updatedAt": "2025-09-01 16:51:38.334",
+    "visible": true
+  },
+  {
+    "id": "frk_681ef4bb8eeb2b60d2d9d187",
+    "name": "PCI v0",
+    "description": "PCI DSS",
+    "version": "4.0.1",
+    "createdAt": "2025-05-14 19:20:44.920",
+    "updatedAt": "2025-09-18 20:17:28.309",
+    "visible": false
+  },
+  {
+    "id": "frk_68c1ead24950f84849db81bb",
+    "name": "PCI DSS",
+    "description": "PCI DSS",
+    "version": "1.0.0",
+    "createdAt": "2025-09-10 21:17:05.591",
+    "updatedAt": "2025-09-18 20:17:36.981",
+    "visible": true
+  },
+  {
+    "id": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "ISO 42001",
+    "description": "Global standard for AI management, guiding organizations to use AI safely, ethically, and effectively.",
+    "version": "1.0.0",
+    "createdAt": "2025-09-18 13:50:34.016",
+    "updatedAt": "2025-09-18 21:09:24.202",
+    "visible": true
+  },
+  {
+    "id": "frk_68d12ec2791043b5a1555950",
+    "name": "Example PCI",
+    "description": "Example PCI Framework",
+    "version": "1.0.0",
+    "createdAt": "2025-09-22 11:10:57.835",
+    "updatedAt": "2025-09-22 11:10:57.835",
+    "visible": false
+  },
+  {
+    "id": "frk_68e135d0212b3b6cd39ceb94",
+    "name": "NEN 7510",
+    "description": "Dutch information security standard for the healthcare",
+    "version": "1.0.0",
+    "createdAt": "2025-10-04 14:57:19.666",
+    "updatedAt": "2025-10-07 20:22:47.176",
     "visible": true
   }
 ]
