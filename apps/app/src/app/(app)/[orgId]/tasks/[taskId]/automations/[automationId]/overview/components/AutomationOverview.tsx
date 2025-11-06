@@ -22,12 +22,16 @@ import { EvidenceAutomation, EvidenceAutomationRun, EvidenceAutomationVersion, T
 import { ChevronRight, Loader2, MoreVertical, Play, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useMemo, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { toggleAutomationEnabled } from '../../../../automation/[automationId]/actions/task-automation-actions';
+import {
+  executeAutomationScript,
+  toggleAutomationEnabled,
+} from '../../../../automation/[automationId]/actions/task-automation-actions';
 import { DeleteAutomationDialog } from '../../../../automation/[automationId]/components/AutomationSettingsDialogs';
 import { useTaskAutomation } from '../../../../automation/[automationId]/hooks/use-task-automation';
 import { AutomationRunsCard } from '../../../../components/AutomationRunsCard';
+import { useAutomationRuns } from '../hooks/use-automation-runs';
 import { MetricsSection } from './MetricsSection';
 
 type RunWithAutomationName = EvidenceAutomationRun & {
@@ -66,8 +70,12 @@ export function AutomationOverview({
   // Use the automation hook to get live data and mutate function
   const { automation: liveAutomation, mutate: mutateAutomation } = useTaskAutomation();
 
+  // Use live runs data with auto-refresh
+  const { runs: liveRuns, mutate: mutateRuns } = useAutomationRuns();
+
   // Use live data from hook if available, fallback to initial data
   const automation = liveAutomation || initialAutomation;
+  const runs = liveRuns || initialRuns;
 
   // Set initial selected version to latest
   const latestVersion = initialVersions.length > 0 ? initialVersions[0].version : null;
@@ -107,9 +115,23 @@ export function AutomationOverview({
 
     setIsTestingVersion(true);
     try {
-      // TODO: Call API to execute specific version
-      toast.success(`Testing version ${selectedVersion}...`);
-      // The actual test execution would happen here
+      const result = await executeAutomationScript({
+        orgId,
+        taskId,
+        automationId: automation.id,
+        version: selectedVersion,
+      });
+
+      if (result.success) {
+        toast.success(`Testing version ${selectedVersion}`, {
+          description: 'Test started - check run history below',
+        });
+
+        // Refresh runs to show the new test
+        await mutateRuns();
+      } else {
+        toast.error(result.error || 'Failed to start test');
+      }
     } catch (error) {
       toast.error('Failed to start test');
     } finally {
@@ -145,16 +167,12 @@ export function AutomationOverview({
   };
 
   // Transform runs to include automation name
-  const runsWithName = useMemo(
-    () =>
-      initialRuns.map((run) => ({
-        ...run,
-        evidenceAutomation: {
-          name: automation.name,
-        },
-      })),
-    [initialRuns, automation.name],
-  );
+  const runsWithName = runs.map((run) => ({
+    ...run,
+    evidenceAutomation: {
+      name: automation.name,
+    },
+  }));
 
   return (
     <div>
@@ -200,7 +218,7 @@ export function AutomationOverview({
       <MetricsSection
         automationName={automation.name}
         initialVersions={initialVersions}
-        initialRuns={initialRuns}
+        initialRuns={runs}
         isEnabled={automation.isEnabled}
         onToggleEnabled={handleToggleEnabled}
         isTogglingEnabled={isTogglingEnabled}
@@ -270,44 +288,6 @@ export function AutomationOverview({
                   )}
                 </div>
 
-                {/* Version Selector */}
-                {initialVersions.length > 0 && (
-                  <div className="flex flex-col gap-2">
-                    <p className="text-xs font-medium text-muted-foreground">Test Version</p>
-                    <div className="flex items-center gap-2">
-                      <Select
-                        value={selectedVersion?.toString() || ''}
-                        onValueChange={(value) => setSelectedVersion(parseInt(value))}
-                      >
-                        <SelectTrigger className="h-9 text-sm flex-1">
-                          <SelectValue placeholder="Select version" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {initialVersions.map((v) => (
-                            <SelectItem key={v.version} value={v.version.toString()}>
-                              v{v.version}
-                              {v.changelog &&
-                                ` - ${v.changelog.substring(0, 30)}${v.changelog.length > 30 ? '...' : ''}`}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={handleTestVersion}
-                        disabled={!selectedVersion || isTestingVersion}
-                      >
-                        {isTestingVersion ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                          <Play className="w-3.5 h-3.5" />
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
                 <div className="flex flex-col gap-1">
                   <p className="text-xs font-medium text-muted-foreground">Created</p>
                   <p className="text-sm">
@@ -349,6 +329,59 @@ export function AutomationOverview({
               </div>
             </CardContent>
           </Card>
+
+          {/* Versions Card */}
+          {initialVersions.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base font-medium">Versions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Select
+                      value={selectedVersion?.toString() || ''}
+                      onValueChange={(value) => setSelectedVersion(parseInt(value))}
+                    >
+                      <SelectTrigger className="h-9 text-sm flex-1">
+                        <SelectValue placeholder="Select version" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {initialVersions.map((v) => (
+                          <SelectItem key={v.version} value={v.version.toString()}>
+                            v{v.version}
+                            {v.changelog &&
+                              ` - ${v.changelog.substring(0, 30)}${v.changelog.length > 30 ? '...' : ''}`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleTestVersion}
+                      disabled={!selectedVersion || isTestingVersion}
+                    >
+                      {isTestingVersion ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                          Testing
+                        </>
+                      ) : (
+                        <>
+                          <Play className="w-3.5 h-3.5 mr-1.5" />
+                          Test
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Select a version and test it to verify functionality
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 

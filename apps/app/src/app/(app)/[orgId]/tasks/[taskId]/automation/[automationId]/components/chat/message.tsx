@@ -76,8 +76,10 @@ export const Message = memo(function Message({
     const result = [];
     let thinkingSessionCount = 0;
     let researchSessionCount = 0;
+    let fileWritingSessionCount = 0;
     let currentThinkingParts = [];
     let currentResearchParts = [];
+    let currentFileWritingParts = [];
 
     // Render parts in their ORIGINAL order, creating new sessions when needed
     for (let i = 0; i < message.parts.length; i++) {
@@ -92,6 +94,12 @@ export const Message = memo(function Message({
       // Collect research parts for current session
       if (part.type === 'tool-exaSearch' || part.type === 'tool-firecrawl') {
         currentResearchParts.push(part);
+        continue;
+      }
+
+      // Collect file writing parts for current session
+      if (part.type === 'tool-storeToS3') {
+        currentFileWritingParts.push(part);
         continue;
       }
 
@@ -160,6 +168,34 @@ export const Message = memo(function Message({
           );
         }
         currentResearchParts = [];
+      }
+
+      // Flush file writing session
+      if (currentFileWritingParts.length > 0) {
+        const sessionId = fileWritingSessionCount++;
+
+        // Check if THIS session has streaming file writing
+        const thisSessionIsWriting = currentFileWritingParts.some(
+          (part) =>
+            (part as any)?.state === 'input-streaming' ||
+            (part as any)?.state === 'input-available',
+        );
+
+        if (thisSessionIsWriting) {
+          result.push(
+            <div key={`filewriting-${sessionId}-active`} className="flex items-center gap-2 py-1">
+              <span className="text-xs text-muted-foreground">Creating automation...</span>
+            </div>,
+          );
+        } else {
+          // When complete, show the saved message
+          result.push(
+            <div key={`filewriting-${sessionId}-done`} className="flex items-center gap-2 py-1">
+              <span className="text-xs text-muted-foreground">Saved</span>
+            </div>,
+          );
+        }
+        currentFileWritingParts = [];
       }
 
       // Render all other parts (text, tools, etc.)
@@ -231,6 +267,30 @@ export const Message = memo(function Message({
             <span className="text-xs text-muted-foreground">
               Researched for {Math.max(1, sessionTime)}s
             </span>
+          </div>,
+        );
+      }
+    }
+
+    if (currentFileWritingParts.length > 0) {
+      const sessionId = fileWritingSessionCount++;
+
+      // Check if THIS final session has streaming file writing
+      const finalSessionIsWriting = currentFileWritingParts.some(
+        (part) =>
+          (part as any)?.state === 'input-streaming' || (part as any)?.state === 'input-available',
+      );
+
+      if (finalSessionIsWriting) {
+        result.push(
+          <div key={`filewriting-${sessionId}-active`} className="flex items-center gap-2 py-1">
+            <span className="text-xs text-muted-foreground">Creating automation...</span>
+          </div>,
+        );
+      } else {
+        result.push(
+          <div key={`filewriting-${sessionId}-done`} className="flex items-center gap-2 py-1">
+            <span className="text-xs text-muted-foreground">Saved</span>
           </div>,
         );
       }
