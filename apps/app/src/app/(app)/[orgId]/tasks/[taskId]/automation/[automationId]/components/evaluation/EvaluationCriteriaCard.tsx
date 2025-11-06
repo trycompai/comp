@@ -3,9 +3,10 @@
 import { Button } from '@comp/ui/button';
 import { Textarea } from '@comp/ui/textarea';
 import { Save } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { updateEvaluationCriteria } from '../../actions/task-automation-actions';
+import { useTaskAutomation } from '../../hooks/use-task-automation';
 
 interface EvaluationCriteriaCardProps {
   automationId: string;
@@ -17,9 +18,17 @@ export function EvaluationCriteriaCard({
   automationId,
   initialCriteria,
 }: EvaluationCriteriaCardProps) {
+  const { automation } = useTaskAutomation();
   const [isEditing, setIsEditing] = useState(false);
   const [criteria, setCriteria] = useState(initialCriteria || '');
   const [isSaving, setIsSaving] = useState(false);
+
+  // Update local state when automation data changes
+  useEffect(() => {
+    if (automation?.evaluationCriteria) {
+      setCriteria(automation.evaluationCriteria);
+    }
+  }, [automation?.evaluationCriteria]);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -28,6 +37,8 @@ export function EvaluationCriteriaCard({
       if (result.success) {
         toast.success('Success criteria updated');
         setIsEditing(false);
+        // Emit event to trigger refresh across the app
+        window.dispatchEvent(new CustomEvent('task-automation:criteria-updated'));
       } else {
         toast.error(result.error || 'Failed to update criteria');
       }
