@@ -1,122 +1,5 @@
 [
   {
-    "id": "frk_tt_68406b4f40c87c12ae0479ce",
-    "name": "Incident Response",
-    "description": "Keep a record of all security incidents and how they were resolved. If there haven't been any, add a comment which says \"no incidents\".",
-    "frequency": "yearly",
-    "department": "itsm",
-    "createdAt": "2025-06-04 15:50:38.678",
-    "updatedAt": "2025-06-08 18:32:02.985"
-  },
-  {
-    "id": "frk_tt_68406903839203801ac8041a",
-    "name": "Device List",
-    "description": "Keep and maintain a list of your devices (laptops/servers). If you install the Comp AI agent on your devices, these will be automatically tracked in-app and you can mark this task as not-relevant.\n\nFor HIPAA: Know which devices hold your patient data is going and create a maintain a system to track it",
-    "frequency": "yearly",
-    "department": "admin",
-    "createdAt": "2025-06-04 15:40:51.392",
-    "updatedAt": "2025-06-09 02:42:32.291"
-  },
-  {
-    "id": "frk_tt_68406af04a4acb93083413b9",
-    "name": "Monitoring & Alerting",
-    "description": "Ensure you have logging enabled in cloud environments (e.g. Google Cloud or Vercel) and review it periodically.\n\nUpload a screenshot of an alert you received (e.g. deployment failures) recently. If you don't have any, add a comment to say no alerts received.\n\nHIPAA: Enable Audit logs wherever there is patient data to show that the data has not been secretly changed or corrupted. ",
-    "frequency": "yearly",
-    "department": "itsm",
-    "createdAt": "2025-06-04 15:49:03.955",
-    "updatedAt": "2025-06-09 03:33:42.294"
-  },
-  {
-    "id": "frk_tt_68406a514e90bb6e32e0b107",
-    "name": "Contact Information",
-    "description": "You need to show what services/software you offer and provide clear instructions on how your customers can contact you about problems, issues or complaints on your website, then ensure you are logging these requests.",
-    "frequency": "yearly",
-    "department": "it",
-    "createdAt": "2025-06-04 15:46:24.989",
-    "updatedAt": "2025-06-09 15:28:58.716"
-  },
-  {
-    "id": "frk_tt_68406951bd282273ebe286cc",
-    "name": "Employee Verification",
-    "description": "Maintain a list of reference checks you made for every new hire. Verify the identity of every new hire.\n\nFor ISO 27001: Ensure you are also storing the NDA, candidate evaluation form and access creation request with its approval evidence\n",
-    "frequency": "yearly",
-    "department": "hr",
-    "createdAt": "2025-06-04 15:42:08.603",
-    "updatedAt": "2025-07-07 05:05:26.845"
-  },
-  {
-    "id": "frk_tt_684069a3a0dd8322b2ac3f03",
-    "name": "Employee Descriptions",
-    "description": "We need to make sure every employee has a clear job description. Once a year, you'll meet with each team member to confirm their job description is still accurate and that they fully understand what's expected of them.\n\nKeep a brief note from this meeting or a screenshot of the meeting invite from your calendar, showing the date and time.",
-    "frequency": "yearly",
-    "department": "hr",
-    "createdAt": "2025-06-04 15:43:30.893",
-    "updatedAt": "2025-06-08 17:17:37.405"
-  },
-  {
-    "id": "frk_tt_68406d64f09f13271c14dd01",
-    "name": "Code Changes",
-    "description": "Enable branch protection on your main branch to prevent direct pushes and enforce pull requests. Ensure regression testing is done.\n\nUpload a screenshot of these settings, demonstrating the disallowed direct push and required pull request.\n\nFor ISO 27001: Show change approval with peer review, change testing evidence, rollback plan and impact assessment.",
-    "frequency": "yearly",
-    "department": "gov",
-    "createdAt": "2025-06-04 15:59:31.795",
-    "updatedAt": "2025-07-07 05:12:29.403"
-  },
-  {
-    "id": "frk_tt_68406f411fe27e47a0d6d5f3",
-    "name": "TLS / HTTPS",
-    "description": "Ensure TLS / HTTPS is enabled. If you're working towards. \n\nFor HIPAA and ISO 27001 compliance, your database needs to be fully encrypted.\n\nUpload a screenshot from SSL Labs to show this is enabled.",
-    "frequency": "yearly",
-    "department": "itsm",
-    "createdAt": "2025-06-04 16:07:28.979",
-    "updatedAt": "2025-07-07 05:12:30.137"
-  },
-  {
-    "id": "frk_tt_68406d2e86acc048d1774ea6",
-    "name": "App Availability",
-    "description": "Make sure your website or app doesn't slow down or crash because too many people are using it, or if there's a problem. \n\nUpload a screenshot showing you have DDoS protection enabled / auto-scale turned on.\n\nFor ISO 27001: Show evidence of firewall configuration\n",
-    "frequency": "yearly",
-    "department": "it",
-    "createdAt": "2025-06-04 15:58:37.662",
-    "updatedAt": "2025-07-07 05:12:30.312"
-  },
-  {
-    "id": "frk_tt_68406cd9dde2d8cd4c463fe0",
-    "name": "2FA",
-    "description": "Always enable 2FA/MFA (Two-Factor Authentication/Multi-Factor Authentication) on Google Workspace, the apps you use, and wherever else it's an option.\n\nFor HIPAA: Ensure you have a break glass account for obtaining necessary electronic protected health information during an emergency",
-    "frequency": "yearly",
-    "department": "itsm",
-    "createdAt": "2025-06-04 15:57:13.287",
-    "updatedAt": "2025-07-07 05:31:41.581"
-  },
-  {
-    "id": "frk_tt_68406eedf0f0ddd220ea19c2",
-    "name": "Sanitized Inputs",
-    "description": "Implement input validation / sanitization via libraries like Zod, Pydantic or their equivalent or enable CodeQL.\n\nUpload a screenshot of this in use/being enforced. ",
-    "frequency": "yearly",
-    "department": "it",
-    "createdAt": "2025-06-04 16:06:05.042",
-    "updatedAt": "2025-06-08 22:32:30.176"
-  },
-  {
-    "id": "frk_tt_68406e353df3bc002994acef",
-    "name": "Secure Code",
-    "description": "Ensure dependabot or it's equivalent is enabled to automatically identify insecure or patched dependencies.",
-    "frequency": "yearly",
-    "department": "itsm",
-    "createdAt": "2025-06-04 16:03:00.858",
-    "updatedAt": "2025-06-08 22:32:18.166"
-  },
-  {
-    "id": "frk_tt_68406ca292d9fffb264991b9",
-    "name": "Employee Access",
-    "description": "Ensure you are using an identity provider like Google Workspace and upload a screenshot of a list of your users and review their access on an annual basis\n\nMake sure that employees don't have access to software and devices or data that they don't need for their job. \n\nFor example, a sales person shouldn't have access to your production database. Upload a screenshot of what your employees have access to and their job titles.\n\nFor ISO 27001: For one sample leaver, provide an exit checklist and IT Access revocation evidence. \n\nMake sure to also have a list of privileged users in the list of roles assigned\n\n",
-    "frequency": "yearly",
-    "department": "it",
-    "createdAt": "2025-06-04 15:56:18.236",
-    "updatedAt": "2025-07-07 05:12:29.877"
-  },
-  {
     "id": "frk_tt_68407ae5274a64092c305104",
     "name": "Secure Secrets",
     "description": "Use your cloud providers default secret manager for storing secrets. Don't commit secrets to Git and don't store secrets in code.\n\nUpload a screenshot of the secrets manager being used (don't include your actual secrets!).",
@@ -124,51 +7,6 @@
     "department": "itsm",
     "createdAt": "2025-06-04 16:57:08.693",
     "updatedAt": "2025-06-08 23:07:56.390"
-  },
-  {
-    "id": "frk_tt_6840796f77d8a0dff53f947a",
-    "name": "Secure Devices",
-    "description": "Ensure all devices have BitLocker/FileVault enabled, screen lock enabled after 5 minutes of inactivity, a minimum password length of 8+ characters, security updates are automatically installed and Anti-virus enabled (Windows Defender or MacOS XProtect). \n\nUpload screenshots of each device or install the Comp AI agent on devices.",
-    "frequency": "yearly",
-    "department": "itsm",
-    "createdAt": "2025-06-04 16:50:54.671",
-    "updatedAt": "2025-06-09 15:14:41.745"
-  },
-  {
-    "id": "frk_tt_684076a02261faf3d331289d",
-    "name": "Review Policies",
-    "description": "Make sure all of the policies in Comp AI have been approved and all employees have signed/agreed to them.",
-    "frequency": "yearly",
-    "department": "gov",
-    "createdAt": "2025-06-04 16:38:56.293",
-    "updatedAt": "2025-06-08 22:42:13.707"
-  },
-  {
-    "id": "frk_tt_6840791cac0a7b780dbaf932",
-    "name": "Public Policies",
-    "description": "Add a comment with links to your privacy policy / terms of service. Ensure Privacy policy has  a form for data deletion requests and make sure you are tracking and logging those requests",
-    "frequency": "yearly",
-    "department": "it",
-    "createdAt": "2025-06-04 16:49:31.599",
-    "updatedAt": "2025-06-09 15:28:58.942"
-  },
-  {
-    "id": "frk_tt_68406e7abae2a9b16c2cc197",
-    "name": "Planning",
-    "description": "Make sure you have point in time recovery / backups enabled and that you test this works on an annual basis.\n\nCreate a step by step document of what you did to test the backup worked and upload this as evidence.",
-    "frequency": "yearly",
-    "department": "gov",
-    "createdAt": "2025-06-04 16:04:09.896",
-    "updatedAt": "2025-06-08 22:32:18.249"
-  },
-  {
-    "id": "frk_tt_6849aad98c50d734dd904d98",
-    "name": "Diagramming",
-    "description": "Architecture Diagram: Draw a single‑page diagram (Figma, Draw.io, Lucidchart—whatever is fastest)\n\nFor ISO 27001 and HIPAA :\n\nData Flow Diagram: Show exactly how user and sensitive data travels through your system—so you can spot risks (and impress due‑diligence teams)\n\n*If there is no sensitive data, then the data flow diagram is not needed for ISO 27001\n",
-    "frequency": "yearly",
-    "department": "it",
-    "createdAt": "2025-06-11 16:12:08.468",
-    "updatedAt": "2025-06-11 16:33:40.237"
   },
   {
     "id": "frk_tt_6849c1a1038c3f18cfff47bf",
@@ -180,103 +18,130 @@
     "updatedAt": "2025-06-11 17:49:21.226"
   },
   {
+    "id": "frk_tt_68406951bd282273ebe286cc",
+    "name": "Employee Verification",
+    "description": "Maintain a list of reference checks you made for every new hire. Verify the identity of every new hire.\n\nFor ISO 27001: Ensure you are also storing the NDA, candidate evaluation form and access creation request with its approval evidence\n\nFor PCI: For employees with potential access to the CDE, document background verification checks (e.g., reference check, prior employment) before granting access to CHD systems.\n",
+    "frequency": "yearly",
+    "department": "hr",
+    "createdAt": "2025-06-04 15:42:08.603",
+    "updatedAt": "2025-09-10 21:06:07.350"
+  },
+  {
+    "id": "frk_tt_68406e7abae2a9b16c2cc197",
+    "name": "Planning",
+    "description": "Make sure you have point in time recovery / backups enabled and that you test this works on an annual basis.\n\nCreate a step by step document of what you did to test the backup worked and upload this as evidence.\n\nFor ISO 42001: Include AI system recovery considerations as part of business continuity.",
+    "frequency": "yearly",
+    "department": "gov",
+    "createdAt": "2025-06-04 16:04:09.896",
+    "updatedAt": "2025-09-18 16:05:16.212"
+  },
+  {
+    "id": "frk_tt_68406a514e90bb6e32e0b107",
+    "name": "Contact Information",
+    "description": "You need to show what services/software you offer and provide clear instructions on how your customers can contact you about problems, issues or complaints on your website, then ensure you are logging these requests.\n\nAdd the direct link to a \"Contact Us\" page, or screenshot of a contact email visible on your site for customers to contact you. ",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2025-06-04 15:46:24.989",
+    "updatedAt": "2025-10-13 23:16:39.485"
+  },
+  {
+    "id": "frk_tt_68406f411fe27e47a0d6d5f3",
+    "name": "TLS / HTTPS",
+    "description": "Ensure TLS / HTTPS is enabled.\n\nUpload a screenshot from SSL Labs to show this is enabled.",
+    "frequency": "yearly",
+    "department": "itsm",
+    "createdAt": "2025-06-04 16:07:28.979",
+    "updatedAt": "2025-10-14 19:26:05.415"
+  },
+  {
+    "id": "frk_tt_68406e353df3bc002994acef",
+    "name": "Secure Code",
+    "description": "Ensure dependabot or it's equivalent is enabled to automatically identify insecure or patched dependencies. Ensure high dependency vulnerabilities are remediated.\n\nUpload a screenshot of the security dashboard showing no open Critical/High dependency vulnerabilities after remediation.",
+    "frequency": "yearly",
+    "department": "itsm",
+    "createdAt": "2025-06-04 16:03:00.858",
+    "updatedAt": "2025-09-07 09:24:20.453"
+  },
+  {
+    "id": "frk_tt_68406af04a4acb93083413b9",
+    "name": "Monitoring & Alerting",
+    "description": "Ensure you have logging enabled in cloud environments (e.g. Google Cloud or Vercel) and review it periodically.\n\nUpload a screenshot of an alert you received (e.g. deployment failures) recently. If you don't have any, add a comment to say no alerts received.\n\nHIPAA: Enable Audit logs wherever there is patient data to show that the data has not been secretly changed or corrupted. \n\nPCI: Enable logging for all in-scope CDE systems (firewalls, servers, applications, DBs). Configure alerting for anomalies (e.g., failed logins, access to sensitive data, config changes). Retain logs for at least 1 year, with 3 months immediately available for analysis.\n\nISO 42001: Extend monitoring activities to explicitly include AI-related risks/opportunities (e.g., AI system performance degradation, data drift, unintended bias triggers). Document actions to reduce undesired AI effects.",
+    "frequency": "yearly",
+    "department": "itsm",
+    "createdAt": "2025-06-04 15:49:03.955",
+    "updatedAt": "2025-09-18 16:03:55.086"
+  },
+  {
     "id": "frk_tt_686b51339d7e9f8ef2081a70",
     "name": "Data Masking",
-    "description": "Hide Sensitive fields",
+    "description": "Hide Sensitive fields\n\nPCI: Mask PAN when displayed outside the secure CDE, ensuring only truncated PAN is visible (first 6 / last 4). Full PAN must never be displayed",
     "frequency": "yearly",
     "department": "it",
     "createdAt": "2025-07-07 04:46:43.319",
-    "updatedAt": "2025-07-07 04:46:43.319"
+    "updatedAt": "2025-09-10 21:12:35.061"
+  },
+  {
+    "id": "frk_tt_68406d64f09f13271c14dd01",
+    "name": "Code Changes",
+    "description": "Enable branch protection on your main branch to prevent direct pushes and enforce pull requests. Ensure regression testing is done.\n\nUpload a screenshot of these settings, demonstrating the disallowed direct push and required pull request.\n\nFor ISO 27001: Show change approval with peer review, change testing evidence, rollback plan and impact assessment.\n\nFor ISO 42001: Extend change management to include AI-specific changes to models, training data, and algorithms. Document review/approval for impacts on risk, ethics, and compliance.\n\nFor PCI: Demonstrate documented change control for CHD application or infrastructure code changes, including approval, testing, rollback plan, and segregation of duties.",
+    "frequency": "yearly",
+    "department": "gov",
+    "createdAt": "2025-06-04 15:59:31.795",
+    "updatedAt": "2025-09-18 16:14:21.813"
+  },
+  {
+    "id": "frk_tt_684076a02261faf3d331289d",
+    "name": "Publish Policies",
+    "description": "Make sure all of the policies in Comp AI have been published and all employees have signed/agreed to them by visiting portal.trycomp.ai .",
+    "frequency": "yearly",
+    "department": "gov",
+    "createdAt": "2025-06-04 16:38:56.293",
+    "updatedAt": "2025-11-01 21:31:34.464"
+  },
+  {
+    "id": "frk_tt_68406903839203801ac8041a",
+    "name": "Device List",
+    "description": "Keep and maintain a list of your devices (laptops/servers). If you install the Comp AI agent on your devices, these will be automatically tracked in-app and you can mark this task as not-relevant.\n\nFor HIPAA: Know which devices hold your patient data is going and create a maintain a system to track it\n\nComp AI device agent is located at: portal.trycomp.ai",
+    "frequency": "yearly",
+    "department": "admin",
+    "createdAt": "2025-06-04 15:40:51.392",
+    "updatedAt": "2025-10-02 21:19:41.259"
   },
   {
     "id": "frk_tt_68b59e7a29bec89c57014868",
     "name": "Statement of Applicability",
-    "description": "Statement of Applicability",
+    "description": "The Statement of Applicability identifies relevant ISO 27001 Annex A controls, explains their inclusion or exclusion, and shows their implementation status within the ISMS.\n\nThe Comp AI team will generate this document on behalf of the requesting team, ensuring alignment with the organization’s ISMS scope and risk assessment results.",
     "frequency": "yearly",
     "department": "admin",
     "createdAt": "2025-09-01 13:24:09.841",
-    "updatedAt": "2025-09-01 13:24:09.841"
+    "updatedAt": "2025-10-06 20:43:03.384"
   },
   {
-    "id": "frk_tt_68b59fd5e41ed4c1d69161d6",
-    "name": "Records of Processing Activities",
-    "description": "In compliance with GDPR Article 30, ensure that controllers (and processors, where applicable) maintain up-to-date records of processing activities. These records must include:\n\n\n- The purposes of processing\n- Categories of data subjects and personal data\n- Categories of recipients (including third parties and international transfers)\n- Applicable retention periods\n- A description of security measures in place\nThis record should be documented in a structured format (e.g., register, inventory, or compliance tool) and kept readily available as evidence of compliance.",
-    "frequency": "yearly",
-    "department": "admin",
-    "createdAt": "2025-09-01 13:29:57.324",
-    "updatedAt": "2025-09-01 16:41:42.592"
-  },
-  {
-    "id": "frk_tt_68b5cd3678e4245e4867f07c",
-    "name": "Conduct Data Protection Impact Assessments",
-    "description": "For any processing activity that is likely to result in high risk to individuals (e.g., large-scale profiling, sensitive data processing, or new technologies), conduct a documented Data Protection Impact Assessment (DPIA). The DPIA must identify risks, assess their severity, and define mitigation measures.",
+    "id": "frk_tt_68406d2e86acc048d1774ea6",
+    "name": "App Availability",
+    "description": "Make sure your website or app doesn't slow down or crash because too many people are using it, or if there's a problem. \n\nUpload a screenshot showing you have DDoS protection enabled / auto-scale turned on.\n\nShow evidence of firewall configuration on production databases\n",
     "frequency": "yearly",
     "department": "it",
-    "createdAt": "2025-09-01 16:43:34.345",
-    "updatedAt": "2025-09-01 16:43:34.345"
+    "createdAt": "2025-06-04 15:58:37.662",
+    "updatedAt": "2025-10-06 20:24:37.179"
   },
   {
-    "id": "frk_tt_68b5ce9b5393ae083c3beadf",
-    "name": "Appoint or Review Data Protection Officer",
-    "description": "Assess whether your organization is required to appoint a Data Protection Officer (DPO) under GDPR (e.g., large-scale monitoring or sensitive data processing). If required, formally appoint a qualified DPO and document their role, responsibilities, and reporting line. Review the necessity of the DPO role if your processing scope or risk profile changes.",
-    "frequency": "yearly",
-    "department": "admin",
-    "createdAt": "2025-09-01 16:49:31.380",
-    "updatedAt": "2025-09-01 16:49:31.380"
-  },
-  {
-    "id": "frk_tt_68b5ce9c64f9e3b7410008d7",
-    "name": "Update Privacy Notices & Policies",
-    "description": "Maintain clear, transparent, and GDPR-compliant privacy notices and policies. Ensure they include lawful bases for processing, data subject rights, categories of data collected, and how data is used, shared, and retained. Update notices promptly when practices change.",
-    "frequency": "yearly",
-    "department": "admin",
-    "createdAt": "2025-09-01 16:49:31.632",
-    "updatedAt": "2025-09-01 16:49:31.632"
-  },
-  {
-    "id": "frk_tt_68b5ce9c5029f2a7ec6f4145",
-    "name": "Perform Security Reviews & Audits",
-    "description": "Conduct regular reviews of technical and organizational security measures to ensure they remain effective and aligned with GDPR’s accountability principle. Document findings, remediation actions, and audit results",
+    "id": "frk_tt_68406eedf0f0ddd220ea19c2",
+    "name": "Sanitized Inputs",
+    "description": "Implement input validation and sanitization using libraries such as Zod, Pydantic, or equivalent. \n\nEnable a static code analysis tool such as CodeQL (or its equivalent) to automatically detect security vulnerabilities and insecure coding patterns.\n\nUpload a screenshot showing both measures in use or being enforced.",
     "frequency": "yearly",
     "department": "it",
-    "createdAt": "2025-09-01 16:49:31.916",
-    "updatedAt": "2025-09-01 16:49:31.916"
+    "createdAt": "2025-06-04 16:06:05.042",
+    "updatedAt": "2025-10-14 19:27:06.034"
   },
   {
-    "id": "frk_tt_68b5ce9c979a280311c11af1",
-    "name": "Map and Review Data Flow & Inventory",
-    "description": "Maintain an up-to-date data inventory and data flow map that identifies what personal data is collected, how it is processed, where it is stored, retention periods, and its lifecycle. Update records when systems, vendors, or processing activities change.",
+    "id": "frk_tt_6840796f77d8a0dff53f947a",
+    "name": "Secure Devices",
+    "description": "Ensure all devices have BitLocker/FileVault enabled, screen lock enabled after 5 minutes (for mac) or 15 minutes (for windows) of inactivity, a minimum password length of 8+ characters, security updates are automatically installed and Anti-virus enabled (Windows Defender or MacOS XProtect). \n\nUpload screenshots of each device or install the Comp AI agent on devices.\n\nComp AI device agent is located at: portal.trycomp.ai",
     "frequency": "yearly",
-    "department": "admin",
-    "createdAt": "2025-09-01 16:49:32.093",
-    "updatedAt": "2025-09-01 16:49:32.093"
-  },
-  {
-    "id": "frk_tt_68b5ce9c6c1bdb171870f623",
-    "name": "Manage Third-party and EU Representative Relationships",
-    "description": "Ensure all third-party processors have GDPR-compliant Data Processing Agreements (DPAs) in place. If your organization is outside the EU but processes EU personal data, appoint an EU Representative and document the arrangement. Review contracts and representative status regularly.",
-    "frequency": "yearly",
-    "department": "admin",
-    "createdAt": "2025-09-01 16:49:32.236",
-    "updatedAt": "2025-09-01 16:49:32.236"
-  },
-  {
-    "id": "frk_tt_68b5ce9cba8271d8feaf0805",
-    "name": "Handle Data Subject Rights Requests",
-    "description": "Implement and document procedures to handle data subject rights requests (e.g., access, rectification, erasure, objection, portability). Maintain logs of requests, response times, and outcomes to demonstrate compliance.",
-    "frequency": "quarterly",
-    "department": "admin",
-    "createdAt": "2025-09-01 16:49:32.365",
-    "updatedAt": "2025-09-01 16:49:32.365"
-  },
-  {
-    "id": "frk_tt_68b5ce9c0a99e71cfa722917",
-    "name": "Maintain a Breach Response Plan & Train Staff",
-    "description": "Maintain a documented data breach response plan that includes detection, escalation, notification (within 72 hours), and remediation procedures. Train staff regularly on breach awareness and reporting obligations.",
-    "frequency": "yearly",
-    "department": "admin",
-    "createdAt": "2025-09-01 16:49:32.494",
-    "updatedAt": "2025-09-01 16:49:32.494"
+    "department": "itsm",
+    "createdAt": "2025-06-04 16:50:54.671",
+    "updatedAt": "2025-10-20 14:18:25.301"
   },
   {
     "id": "frk_tt_68b5ce9dd597ac7d650e4915",
@@ -288,12 +153,426 @@
     "updatedAt": "2025-09-01 16:49:32.603"
   },
   {
+    "id": "frk_tt_68b5ce9b5393ae083c3beadf",
+    "name": "Appoint or Review Data Protection Officer",
+    "description": "Assess whether your organization is required to appoint a Data Protection Officer (DPO) under GDPR (e.g., large-scale monitoring or sensitive data processing). If required, formally appoint a qualified DPO and document their role, responsibilities, and reporting line. Review the necessity of the DPO role if your processing scope or risk profile changes.\n\nIf not required, mark this task as \"Not Relevant\"",
+    "frequency": "yearly",
+    "department": "admin",
+    "createdAt": "2025-09-01 16:49:31.380",
+    "updatedAt": "2025-09-04 20:31:09.037"
+  },
+  {
+    "id": "frk_tt_68e52b2618cb9d9722c6edfd",
+    "name": "Internal Security Audit",
+    "description": "Upload evidence of a recent internal information security audit - e.g., audit plan/scope, auditor independence, completed checklists/workpapers, final report with findings and risk ratings, and documented corrective actions. \nOptional Template link:\nhttps://docs.google.com/spreadsheets/d/12wrY9EqVhBSlHvwEeSt8YTD8drPPr2zb/edit?usp=drive_link&ouid=105483817633840137498&rtpof=true&sd=true",
+    "frequency": "yearly",
+    "department": "itsm",
+    "createdAt": "2025-10-07 15:00:54.106",
+    "updatedAt": "2025-10-23 13:15:15.286"
+  },
+  {
+    "id": "frk_tt_68cc327ff5d3130a1b42420b",
+    "name": "AI MS Communication Plan",
+    "description": "Document and maintain a plan outlining internal and external communication relevant to the AI MS: what is communicated, when, to whom, and how. Retain evidence of communication execution.",
+    "frequency": "yearly",
+    "department": "hr",
+    "createdAt": "2025-09-18 16:25:34.676",
+    "updatedAt": "2025-09-18 16:25:34.676"
+  },
+  {
+    "id": "frk_tt_68c3248edf65e750909dfd07",
+    "name": "Attestation of Compliance",
+    "description": "Download and complete the AoC form. Once complete, upload the file here. \n\nFor Merchants - https://docs-prv.pcisecuritystandards.org/PCI%20DSS/Reporting%20Template%20or%20Form/PCI-DSS-v4-0-1-ROC-AOC-Merchants.pdf\n\nFor Service Providers - https://docs-prv.pcisecuritystandards.org/PCI%20DSS/Reporting%20Template%20or%20Form/PCI-DSS-v4-0-1-ROC-AOC-Service-Providers.pdf ",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2025-09-11 19:35:42.019",
+    "updatedAt": "2025-09-11 19:35:42.019"
+  },
+  {
+    "id": "frk_tt_68c332c3bc6d696bb61e7351",
+    "name": "Self-Assessment Questionnaires",
+    "description": "- SAQ A: For merchants fully outsourcing all card data functions to PCI-validated 3rd parties (you redirect customers to them; you don’t touch card data).\n\n- SAQ A-EP: For ecommerce merchants that don’t store card data but have their own payment pages/components (so they can impact security of card data).\n\n- SAQ B / B-IP: For merchants who use only stand-alone, dial-out terminals (B) or IP-connected payment devices (B-IP).\n\n- SAQ C / C-VT: For merchants with payment application systems (C) or those using web-based virtual terminals (C-VT).\n\n- SAQ D (Merchant/Service Provider): Catch-all for anyone who stores, processes, or transmits cardholder data electronically in ways not covered above. This is the most comprehensive.\n\nDownload the appropriate SAQ from: https://www.pcisecuritystandards.org/document_library/",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2025-09-11 20:36:18.491",
+    "updatedAt": "2025-09-11 20:36:18.491"
+  },
+  {
     "id": "frk_tt_68b5ce9d508cacf8e4517b56",
     "name": "Review International Data Transfers",
-    "description": "Review and document all international data transfers to ensure compliance with GDPR Chapter V. Confirm adequacy decisions, Standard Contractual Clauses (SCCs), or other safeguards are in place. Update documentation when new transfers are added or existing ones change.",
+    "description": "Review and document all international data transfers to ensure compliance with GDPR Chapter V. Confirm adequacy decisions, Standard Contractual Clauses (SCCs), or other safeguards are in place. Update documentation when new transfers are added or existing ones change.\n\nTemplate:\nhttps://docs.google.com/spreadsheets/d/1SQ1deyO92SkQ3djMLr_NLux4gDfkFihU/edit?usp=sharing&ouid=109990330435667333191&rtpof=true&sd=true\n\n*If no data sent into or out of the EU, mark this task as not relevant",
     "frequency": "yearly",
     "department": "admin",
     "createdAt": "2025-09-01 16:49:32.719",
-    "updatedAt": "2025-09-01 16:49:32.719"
+    "updatedAt": "2025-10-22 19:18:18.470"
+  },
+  {
+    "id": "frk_tt_68cc25658bacb2ccff56adf9",
+    "name": "AI Context Register",
+    "description": "Maintain a register of internal and external issues relevant to AI systems, including organizational roles and intended purposes, as evidence of contextual awareness under Clause 4.1.",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2025-09-18 15:29:40.748",
+    "updatedAt": "2025-09-18 15:29:40.748"
+  },
+  {
+    "id": "frk_tt_6840791cac0a7b780dbaf932",
+    "name": "Public Policies",
+    "description": "Add a comment with links to your privacy policy / terms of service. Ensure Privacy policy has  a form for data deletion requests and make sure you are tracking and logging those requests\n\nFor GDPR:\n\nMaintain clear, transparent, and GDPR-compliant privacy notices and policies. Ensure they include lawful bases for processing, data subject rights, categories of data collected, and how data is used, shared, and retained. Update notices promptly when practices change.\n\nFor ISO 42001:\n\nEnsure policies explicitly identify how stakeholder rights and obligations (customers, regulators, society) are addressed.",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2025-06-04 16:49:31.599",
+    "updatedAt": "2025-09-18 15:36:20.889"
+  },
+  {
+    "id": "frk_tt_68cc27431d1266e3c77d7c0f",
+    "name": "Stakeholder Register / Interested Parties Log",
+    "description": "Document a register of interested parties (e.g., regulators, customers, employees, partners, societal groups), their requirements, and how the AI MS addresses them.",
+    "frequency": "yearly",
+    "department": "admin",
+    "createdAt": "2025-09-18 15:37:38.612",
+    "updatedAt": "2025-09-18 15:37:38.612"
+  },
+  {
+    "id": "frk_tt_68e52b26bf0e656af9e4e9c3",
+    "name": "Encryption at Rest",
+    "description": "Upload evidence that all data stores are encrypted at rest -cloud console screenshots showing encryption enabled on volumes/buckets/DBs and KMS/Key Vault key details (key IDs, rotation enabled).",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2025-10-07 15:00:53.986",
+    "updatedAt": "2025-10-07 15:00:53.986"
+  },
+  {
+    "id": "frk_tt_68b5ce9c6c1bdb171870f623",
+    "name": "Manage Third-party and EU Representative Relationships",
+    "description": "Ensure all third-party processors have GDPR-compliant Data Processing Agreements (DPAs) in place. If your organization is outside the EU but processes EU personal data, appoint an EU Representative and document the arrangement. Review contracts and representative status regularly.\n\nFor NEN 7510 - Create a spreadsheet, listing all vendors and links to their DPAs\n\nTemplate: \n\nhttps://docs.google.com/spreadsheets/d/1p_enOqnAy6B1X5slr1NLNMXUGvci0SL3/edit?usp=sharing&ouid=109990330435667333191&rtpof=true&sd=true",
+    "frequency": "yearly",
+    "department": "admin",
+    "createdAt": "2025-09-01 16:49:32.236",
+    "updatedAt": "2025-10-22 19:17:48.653"
+  },
+  {
+    "id": "frk_tt_68e52a484cad0014de7a628f",
+    "name": "Separation of Environments",
+    "description": "Upload proof that dev/test/staging and production are segregated - e.g., a cloud console screenshot showing separate accounts/VPCs or distinct RDS clusters/DBs, with restricted access between environments.",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2025-10-07 14:57:11.853",
+    "updatedAt": "2025-10-23 13:15:15.440"
+  },
+  {
+    "id": "frk_tt_68406b4f40c87c12ae0479ce",
+    "name": "Incident Response",
+    "description": "Keep a record of all security incidents and how they were resolved. If there haven't been any, add a comment which says \"no incidents\".\n\nFor GDPR:\n\nMaintain a documented data breach response plan that includes detection, escalation, notification (within 72 hours), and remediation procedures. Train staff regularly on breach awareness and reporting obligations.\n\nFor PCI: \n\nMaintain and annually test the incident response plan specifically covering cardholder data incidents. Include escalation procedures, communication with payment brands/acquirers, forensic evidence handling, and responsibilities of the incident response team.",
+    "frequency": "yearly",
+    "department": "itsm",
+    "createdAt": "2025-06-04 15:50:38.678",
+    "updatedAt": "2025-10-23 13:29:45.032"
+  },
+  {
+    "id": "frk_tt_68c8309516fdbc514404988d",
+    "name": "Board Meetings & Independence",
+    "description": "Submit the most recent board (or management) meeting agenda and minutes covering security topics. Include evidence (CVs/LinkedIn screenshots) demonstrating that board members include independent directors.\n\nFor ISO 42001:\n\nEnsure board/management reviews discuss internal and external issues relevant to the AI MS and their potential impacts. Document leadership actions (meeting records, signed commitment statements, executive communications) demonstrating that top management ensures AI policy/objectives alignment, provides resources, and promotes continual improvement.",
+    "frequency": "yearly",
+    "department": "admin",
+    "createdAt": "2025-09-15 15:28:21.064",
+    "updatedAt": "2025-09-18 15:53:51.802"
+  },
+  {
+    "id": "frk_tt_68cc2ce9cb0d2a4774975ace",
+    "name": "AI MS Roles & Responsibilities Assignment",
+    "description": "Define and communicate responsibilities for the AI MS, including who ensures compliance with 42001 requirements and who reports AI MS performance to top management. Evidence: updated org chart, RACI matrix, role descriptions.Task Description",
+    "frequency": "yearly",
+    "department": "hr",
+    "createdAt": "2025-09-18 16:01:44.966",
+    "updatedAt": "2025-09-18 16:01:44.966"
+  },
+  {
+    "id": "frk_tt_6849aad98c50d734dd904d98",
+    "name": "Diagramming",
+    "description": "Architecture Diagram: Draw a single‑page diagram (Figma, Draw.io, Lucidchart—whatever is fastest)\n\nFor ISO 27001 and HIPAA :\n\nData Flow Diagram: Show exactly how user and sensitive data travels through your system—so you can spot risks (and impress due‑diligence teams)\n\n*If there is no sensitive data, then the data flow diagram is not needed for ISO 27001\n\nFor ISO 42001:\n\nDocument how internal and external issues, including the intended purpose and scope of AI systems, are reflected in the architecture and data flow diagrams. Link diagrams to AI system impact analysis, showing foreseeable AI misuse and potential effects on individuals/society.\n\nFor GDPR:\n\nMaintain an up-to-date data inventory and data flow map that identifies what personal data is collected, how it is processed, where it is stored, retention periods, and its lifecycle. Update records when systems, vendors, or processing activities change.\n\nFor PCI:\n\nMaintain current CDE network diagram and CHD data flow diagram illustrating where cardholder data enters, traverses, and is stored. Include connected systems and segmentation controls.\n",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2025-06-11 16:12:08.468",
+    "updatedAt": "2025-09-18 16:10:28.067"
+  },
+  {
+    "id": "frk_tt_68cc2f30b51920e5515465e6",
+    "name": "AI System Impact Assessment Procedure",
+    "description": "Define a process to identify/assess potential consequences of AI system deployment, intended use, and foreseeable misuse on individuals and society. Document results and link them into the risk assessment process.Task Description",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2025-09-18 16:11:27.951",
+    "updatedAt": "2025-09-18 16:11:27.951"
+  },
+  {
+    "id": "frk_tt_68cc2fa423533e602e4dee25",
+    "name": "AI Objectives Register",
+    "description": "Define measurable AI objectives (aligned to AI Policy and compliance requirements), assign resources/responsibility, track timelines, and record evaluation results. Ensure objectives are updated and communicated periodically.",
+    "frequency": "yearly",
+    "department": "admin",
+    "createdAt": "2025-09-18 16:13:23.758",
+    "updatedAt": "2025-09-18 16:13:23.758"
+  },
+  {
+    "id": "frk_tt_68cc301a8fd914534ab95b11",
+    "name": "AI System Change Log",
+    "description": "Maintain a documented log of changes to the AI management system, including model retraining, policy/process updates, and governance modifications. Ensure planned manner, risk evaluation, and approvals are recorded.",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2025-09-18 16:15:22.389",
+    "updatedAt": "2025-09-18 16:15:22.389"
+  },
+  {
+    "id": "frk_tt_68cc30fbbeabb8a4c2f56082",
+    "name": "AI MS Resource Allocation Record",
+    "description": "Maintain documented evidence of resources allocated for the AI MS, including skills, tools, infrastructure, and support mechanisms.",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2025-09-18 16:19:07.327",
+    "updatedAt": "2025-09-18 16:19:07.327"
+  },
+  {
+    "id": "frk_tt_68cc395b90e179fe3209b795",
+    "name": "AI MS Operational Control Procedure",
+    "description": "Document and implement an AI Operational Controls procedure defining process criteria, monitoring effectiveness, handling planned/unplanned changes, and control of externally-provided AI processes/services.",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2025-09-18 16:54:50.964",
+    "updatedAt": "2025-09-18 16:54:50.964"
+  },
+  {
+    "id": "frk_tt_68cc3f427e309607f1ad5ba4",
+    "name": "AI Risk Treatment Implementation Record",
+    "description": "Maintain documented evidence of risk treatment implementation corresponding to the treatment plan. Record treatment effectiveness checks and revalidation if measures fail.Task Description",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2025-09-18 17:20:02.111",
+    "updatedAt": "2025-09-18 17:20:02.111"
+  },
+  {
+    "id": "frk_tt_68cc3ffab3fb703917f51e19",
+    "name": "AI Impact Assessment Log",
+    "description": "Conduct AI system impact assessments at planned intervals or when significant changes occur. Document results showing impacts on individuals and societies, and integrate with AI risk assessments.",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2025-09-18 17:23:05.611",
+    "updatedAt": "2025-09-18 17:23:05.611"
+  },
+  {
+    "id": "frk_tt_68cc4190caf0b458effcee6e",
+    "name": "AI MS Internal Audit Program",
+    "description": "Establish and maintain an internal audit program for the AI MS. Define frequency, methods, auditor roles, reporting structure, and independence. Record results as evidence.",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2025-09-18 17:29:51.770",
+    "updatedAt": "2025-09-18 17:29:51.770"
+  },
+  {
+    "id": "frk_tt_68cc41ad7cbd2839c0bc7104",
+    "name": "AI Internal Audit Reports",
+    "description": "Conduct AI MS audits at planned intervals. Maintain documented evidence of objectives, criteria, scope, audit reports, findings, and follow-ups.",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2025-09-18 17:30:21.049",
+    "updatedAt": "2025-09-18 17:30:21.049"
+  },
+  {
+    "id": "frk_tt_68cc459ed57b70a4cb631e72",
+    "name": "AI MS Continual Improvement Log",
+    "description": "Maintain a documented continual improvement log for the AI MS. Capture decisions, actions, and implemented changes to improve suitability, adequacy, and effectiveness. Evidence includes versioned records of updates and lessons learned.",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2025-09-18 17:47:10.138",
+    "updatedAt": "2025-09-18 17:47:13.649"
+  },
+  {
+    "id": "frk_tt_68d28f68f117d45c0adcba33",
+    "name": "Legal Proof of Company Registration",
+    "description": "Upload official proof of legal entity registration—e.g., a certificate of incorporation or government registry extractTask Description",
+    "frequency": "yearly",
+    "department": "admin",
+    "createdAt": "2025-09-23 12:15:35.711",
+    "updatedAt": "2025-09-23 12:15:35.711"
+  },
+  {
+    "id": "frk_tt_68cc39efd7916e240451cae5",
+    "name": "AI Risk Assessment Execution (Log)",
+    "description": "Add AI related Risks to the risk register.",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2025-09-18 16:57:19.130",
+    "updatedAt": "2025-09-24 20:04:29.461"
+  },
+  {
+    "id": "frk_tt_68dc1a3a9b92bb4ffb89e334",
+    "name": "Systems Description",
+    "description": "Provide a short paragraph giving a description of your app & any architecture around it.\n\n",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2025-09-30 17:58:17.967",
+    "updatedAt": "2025-09-30 17:58:17.967"
+  },
+  {
+    "id": "frk_tt_68e1d5667f2b14a9b0c2daf8",
+    "name": "NEN 7510 Risk Assessments",
+    "description": "Create and assess risks, in the risk register tab, that identifies and evaluates information‑security risks around health data. Risk examples would be:\n\n- Electronic Health Record (EHR) system - Unauthorized access via weak credentials\n\n- Patient portal data exchange - API misconfiguration causing data leakage\n\n- Third‑party telehealth vendor - Incomplete DPA and unclear responsibilities",
+    "frequency": "yearly",
+    "department": "hr",
+    "createdAt": "2025-10-05 02:18:14.360",
+    "updatedAt": "2025-10-05 02:19:43.948"
+  },
+  {
+    "id": "frk_tt_68e1d619944625cc1876540c",
+    "name": "Management Review Minutes",
+    "description": "Prove that top management reviews the performance of the ISMS - including incidents, risks, audits, supplier issues, and improvements - at planned intervals (typically annually or quarterly).",
+    "frequency": "quarterly",
+    "department": "admin",
+    "createdAt": "2025-10-05 02:21:12.929",
+    "updatedAt": "2025-10-23 13:15:15.583"
+  },
+  {
+    "id": "frk_tt_68e52b274a7c38c62db08e80",
+    "name": "Organisation Chart",
+    "description": "Upload a hierarchical organization chart showing reporting lines, with each box including the person’s full name and job title (PDF/image or export from your HR system).\n",
+    "frequency": "yearly",
+    "department": "hr",
+    "createdAt": "2025-10-07 15:00:54.563",
+    "updatedAt": "2025-10-07 15:00:54.563"
+  },
+  {
+    "id": "frk_tt_684069a3a0dd8322b2ac3f03",
+    "name": "Employee Descriptions",
+    "description": "We need to make sure every employee has a clear job description. Once a year, you'll meet with each team member to confirm their job description is still accurate and to conduct a performance review.\n\nKeep a brief note evidencing this review, showing the date and time (e.g., an example completed review document or HR system screenshot showing date, reviewer, and employee acknowledgement). \n\nFor PCI: explicitly notate which employees in the org have access to CHD systems, ensure this access aligns with their role.  ",
+    "frequency": "yearly",
+    "department": "hr",
+    "createdAt": "2025-06-04 15:43:30.893",
+    "updatedAt": "2025-10-09 19:38:34.471"
+  },
+  {
+    "id": "frk_tt_68406cd9dde2d8cd4c463fe0",
+    "name": "2FA",
+    "description": "Always enable 2FA/MFA (Two-Factor Authentication/Multi-Factor Authentication) on Google Workspace, the apps you use, and wherever else it's an option. \n\nUpload a screenshot showing this setting enabled at the org/admin level, in addition to a screenshot of an end user being prompted for 2FA\n\nFor HIPAA: Ensure you have a break glass account for obtaining necessary electronic protected health information during an emergency\n\nFor PCI: Enable MFA for all administrative access into CDE systems, and all remote access (internal or external). Collect evidence of configurations showing MFA enforcement.",
+    "frequency": "yearly",
+    "department": "itsm",
+    "createdAt": "2025-06-04 15:57:13.287",
+    "updatedAt": "2025-10-13 23:15:34.934"
+  },
+  {
+    "id": "frk_tt_68e80544d9734e0402cfa807",
+    "name": "Role-based Access Controls",
+    "description": "Upload proof that access is managed by roles- RBAC matrix and role definitions or use our template:\nhttps://docs.google.com/spreadsheets/d/1rN2-d0432aBn-F8x-b9YAJecmMiWenaB/edit?usp=drive_link&ouid=105483817633840137498&rtpof=true&sd=true\n",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2025-10-09 18:56:04.361",
+    "updatedAt": "2025-10-23 13:15:14.621"
+  },
+  {
+    "id": "frk_tt_68e52b27c4bdbf1b24051b8b",
+    "name": "Employee Performance Evaluations",
+    "description": "Employee Performance Evaluations\nUpload one recent employee performance evaluation (anonymized) - either a brief completed review or use our template:\nhttps://docs.google.com/document/d/1dzHOTXlqBORuU9ZVYcsdMJbD0QvLRYxQ/edit?usp=drive_link&ouid=105483817633840137498&rtpof=true&sd=true",
+    "frequency": "yearly",
+    "department": "hr",
+    "createdAt": "2025-10-07 15:00:54.648",
+    "updatedAt": "2025-10-23 13:15:14.778"
+  },
+  {
+    "id": "frk_tt_68406ca292d9fffb264991b9",
+    "name": "Employee Access",
+    "description": "Ensure you are using an identity provider like Google Workspace and upload a screenshot of a list of your users and review their access on an annual basis\n\nFor ISO 27001: For one sample leaver, provide an exit checklist and IT Access revocation evidence. \n\nMake sure to also have a list of privileged users in the list of roles assigned\n\nFor ISO 42001: Update job descriptions and organizational charts to explicitly reference responsibilities and authorities for AI MS compliance and performance.\n\nFor PCI: Use an identity provider to manage user access to CDE. Ensure least privilege access; review annually and document removal for terminated staff. Maintain a list of privileged users within the CDE.",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2025-06-04 15:56:18.236",
+    "updatedAt": "2025-10-16 22:03:59.409"
+  },
+  {
+    "id": "frk_tt_68e80545a8b432bc59eb8037",
+    "name": "Incident Response Tabletop Exercise",
+    "description": "Upload evidence of a recent incident response tabletop exercise - agenda/scenario, attendee list and roles, notes or short recording, and an after-action report with findings, owners, and due dates.\nTemplate available here:\nhttps://docs.google.com/document/d/1HwJPsGEO9rX3H0w-Nzy5AbYWh68kCsjg/edit?usp=drive_link&ouid=105483817633840137498&rtpof=true&sd=true\n",
+    "frequency": "yearly",
+    "department": "itsm",
+    "createdAt": "2025-10-09 18:56:04.980",
+    "updatedAt": "2025-10-23 13:15:13.774"
+  },
+  {
+    "id": "frk_tt_68e805457c2dcc784e72e3cc",
+    "name": "Access Review Log",
+    "description": "Upload an access review log for key systems -showing review dates, reviewers/owners, users/roles reviewed, actions taken (removals/changes), issues found, and management sign-off. Template available here:\nhttps://docs.google.com/spreadsheets/d/1_iPQD7-tED6WpEYh2AJqL_eN1SUcfrcH/edit?usp=drive_link&ouid=105483817633840137498&rtpof=true&sd=true\n",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2025-10-09 18:56:04.778",
+    "updatedAt": "2025-10-23 13:15:14.157"
+  },
+  {
+    "id": "frk_tt_68e52b269db179c434734766",
+    "name": "Backup Restoration Test",
+    "description": "Provide evidence of a recent backup restoration test - either share a link to a short screen recording showing end-to-end restore and data verification, or complete this template and upload it\nTemplate link: https://docs.google.com/document/d/1uY8OmlNrUu-tXqlEg0Qi3CrNCV2ubvkP/edit?usp=drive_link&ouid=105483817633840137498&rtpof=true&sd=true\n",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2025-10-07 15:00:54.468",
+    "updatedAt": "2025-10-23 13:15:14.927"
+  },
+  {
+    "id": "frk_tt_68e52b26b166e2c0a0d11956",
+    "name": "Backup logs",
+    "description": "Upload backup job logs covering the last 10 consecutive days (all critical systems) - e.g., exported logs or console screenshots showing timestamps, success/failure status, destinations, retention, and any alerts/errors.Task Description",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2025-10-07 15:00:54.281",
+    "updatedAt": "2025-10-23 13:15:15.120"
+  },
+  {
+    "id": "frk_tt_6901e040a21d5e8fdc9736e8",
+    "name": "Building / Workplace Rules",
+    "description": "Email or note from your building contact (landlord, building manager, or coworking operator) that includes:\nOpening hours, how people enter (e.g, key, badge, code, staffed reception),visitor process (e.g., sign in at desk, escorted),emergency info (e.g., fire exits, alarms).\nFor a serviced office with staffed reception only -  a short email from the operator confirming hours, entry, visitor process, and emergency info is enough.",
+    "frequency": "yearly",
+    "department": "admin",
+    "createdAt": "2025-10-29 09:37:04.181",
+    "updatedAt": "2025-10-29 09:37:04.181"
+  },
+  {
+    "id": "frk_tt_6901e041bb02b41fa3b7dca9",
+    "name": "Office Access & Door Monitoring",
+    "description": "If you use a smart lock/alarm system:\n- Access list (export or simple table): name, role, code/badge ID, date issued.\n- Revocation proof for a leaver (screenshot showing code disabled and time).\nMonthly door report+ a one-line review note (“No issues” or “1 denied at 22:14, ticket #123”)\n\nIf you use physical keys only:\n- Key register > key ID, holder, date issued/returned.\n- Revocation proof a leaver (key return form/photo; if missing, note and rekey receipt).\n- Monthly open/close log (who opened, who locked, any issues).\n\nCoworking with staffed reception:\nYour internal access list (who has the room key/code).\n- Revocation proof for leavers.\n- Monthly check: short note like “Reception manages front door; our room key activity had no issues in Sept.\"",
+    "frequency": "yearly",
+    "department": "admin",
+    "createdAt": "2025-10-29 09:37:04.804",
+    "updatedAt": "2025-10-29 09:37:04.804"
+  },
+  {
+    "id": "frk_tt_6901e0aa49fb834934748c93",
+    "name": "Visitor Control",
+    "description": "Upload a Visitor log sample for a recent week (paper scan or form export).\nPhoto of visitor badge/sticker and door/reception sign (“Visitors must be escorted”).\n\nOR if no visitors - comment below ‘No visitors’",
+    "frequency": "yearly",
+    "department": "admin",
+    "createdAt": "2025-10-29 09:38:49.525",
+    "updatedAt": "2025-10-29 09:38:49.525"
+  },
+  {
+    "id": "frk_tt_6901e0aa6d3f2bbab1ea5b84",
+    "name": "Secure Storage",
+    "description": "Physical storage (cabinet/media):\n- Photo of locked cabinet\n- Key-holder list (names/roles)\n- Shredding proof (certificate or disposal log) - only if you store/dispose items\n",
+    "frequency": "yearly",
+    "department": "admin",
+    "createdAt": "2025-10-29 09:38:49.804",
+    "updatedAt": "2025-10-30 10:14:09.540"
+  },
+  {
+    "id": "frk_tt_69033a6bfeb4759be36257bc",
+    "name": "Infrastructure Inventory",
+    "description": "Upload an up-to-date inventory of infrastructure assets—cloud accounts/resources (compute, DBs, storage), environments, networks, and owners - export or screenshots from AWS/GCP/Azure/CMDB showing names, tags, and last-updated date.\n\nTemplate here: https://docs.google.com/spreadsheets/d/170csMBWNcmKIkyC6TE0H3lqwv3C1e5dc/edit?usp=drive_link&ouid=105483817633840137498&rtpof=true&sd=true",
+    "frequency": "yearly",
+    "department": "itsm",
+    "createdAt": "2025-10-30 10:14:03.155",
+    "updatedAt": "2025-10-30 10:16:11.279"
+  },
+  {
+    "id": "frk_tt_68fa2a852e70f757188f0c39",
+    "name": "Production Firewall & No-Public-Access Controls",
+    "description": "Upload proof that production hosts enforce a deny-by-default firewall and that production databases and SSH are not reachable from the public internet - e.g., AWS Security Group screenshots (showing default-deny/least-privilege), firewall/VPC or subnet rules blocking public access, and (optional) SSH access logs showing restricted, internal-only connections.",
+    "frequency": "yearly",
+    "department": "itsm",
+    "createdAt": "2025-10-23 13:15:49.296",
+    "updatedAt": "2025-10-30 10:14:28.363"
   }
 ]
