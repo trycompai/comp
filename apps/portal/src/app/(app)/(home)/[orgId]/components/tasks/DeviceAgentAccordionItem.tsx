@@ -1,13 +1,15 @@
 'use client';
 
+import { detectOSFromUserAgent, SupportedOS } from '@/utils/os';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { cn } from '@comp/ui/cn';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import type { Member } from '@db';
 import { CheckCircle2, Circle, Download, Loader2, XCircle } from 'lucide-react';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import type { FleetPolicy, Host } from '../../types';
 
@@ -23,9 +25,12 @@ export function DeviceAgentAccordionItem({
   fleetPolicies = [],
 }: DeviceAgentAccordionItemProps) {
   const [isDownloading, setIsDownloading] = useState(false);
+  const [detectedOS, setDetectedOS] = useState<SupportedOS | null>(null);
 
-  // Detect OS from user agent
-  const isMacOS = typeof window !== 'undefined' && navigator.userAgent.includes('Mac');
+  const isMacOS = useMemo(
+    () => detectedOS === 'macos' || detectedOS === 'macos-intel',
+    [detectedOS],
+  );
 
   const hasInstalledAgent = host !== null;
   const allPoliciesPass =
@@ -55,12 +60,22 @@ export function DeviceAgentAccordionItem({
 
       // Now trigger the actual download using the browser's native download mechanism
       // This will show in the browser's download UI immediately
-      const downloadUrl = `/api/download-agent?token=${encodeURIComponent(token)}`;
+      const downloadUrl = `/api/download-agent?token=${encodeURIComponent(token)}&os=${detectedOS}`;
 
       // Method 1: Using a temporary link (most reliable)
       const a = document.createElement('a');
       a.href = downloadUrl;
-      a.download = isMacOS ? 'Comp AI Agent-1.0.0-arm64.dmg' : 'compai-device-agent.zip';
+
+      // Set filename based on OS and architecture
+      if (isMacOS) {
+        a.download =
+          detectedOS === 'macos'
+            ? 'Comp AI Agent-1.0.0-arm64.dmg'
+            : 'Comp AI Agent-1.0.0-intel.dmg';
+      } else {
+        a.download = 'compai-device-agent.zip';
+      }
+
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -94,6 +109,14 @@ export function DeviceAgentAccordionItem({
       );
     }
   };
+
+  useEffect(() => {
+    const detectOS = async () => {
+      const os = await detectOSFromUserAgent();
+      setDetectedOS(os);
+    };
+    detectOS();
+  }, []);
 
   return (
     <AccordionItem value="device-agent" className="border rounded-xs">
@@ -129,15 +152,31 @@ export function DeviceAgentAccordionItem({
                   <p className="mt-1">
                     Click the download button below to get the Device Agent installer.
                   </p>
-                  <Button
-                    size="sm"
-                    variant="default"
-                    onClick={handleDownload}
-                    disabled={isDownloading || hasInstalledAgent}
-                    className="gap-2 mt-2"
-                  >
-                    {getButtonContent()}
-                  </Button>
+                  <div className="flex items-center gap-2 mt-2">
+                    {isMacOS && !hasInstalledAgent && (
+                      <Select
+                        value={detectedOS || 'macos'}
+                        onValueChange={(value: 'macos' | 'macos-intel') => setDetectedOS(value)}
+                      >
+                        <SelectTrigger className="w-[136px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="macos">Apple Silicon</SelectItem>
+                          <SelectItem value="macos-intel">Intel</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="default"
+                      onClick={handleDownload}
+                      disabled={isDownloading || hasInstalledAgent}
+                      className="gap-2"
+                    >
+                      {getButtonContent()}
+                    </Button>
+                  </div>
                 </li>
                 {!isMacOS && (
                   <li>
