@@ -1,3 +1,4 @@
+import { EvidenceAutomationRun } from '@db';
 import { useParams } from 'next/navigation';
 import useSWR from 'swr';
 
@@ -8,7 +9,7 @@ export function useAutomationRuns() {
     automationId: string;
   }>();
 
-  const { data, error, isLoading, mutate } = useSWR(
+  const { data, error, isLoading, mutate } = useSWR<{ runs: EvidenceAutomationRun[] }>(
     `/api/automations/${automationId}/runs`,
     fetcher,
     {
