@@ -1,3 +1,11 @@
+## [1.56.7](https://github.com/trycompai/comp/compare/v1.56.6...v1.56.7) (2025-11-07)
+
+
+### Bug Fixes
+
+* **portal:** remove Ubuntu support help ([#1715](https://github.com/trycompai/comp/issues/1715)) ([b604b18](https://github.com/trycompai/comp/commit/b604b18a5c16db2f9b58be64f2262d70fca66d34))
+* **portal:** update macOS version requirements ([#1716](https://github.com/trycompai/comp/issues/1716)) ([21c259b](https://github.com/trycompai/comp/commit/21c259bb5c20fd3798df9c2bca3ef0883863b901))
+
 ## [1.56.6](https://github.com/trycompai/comp/compare/v1.56.5...v1.56.6) (2025-10-31)
 
 
