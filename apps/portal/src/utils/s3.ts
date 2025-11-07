@@ -1,3 +1,4 @@
+import { SupportedOS } from '@/app/api/download-agent/types';
 import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
@@ -113,7 +114,7 @@ export function extractS3KeyFromUrl(url: string): string {
   return key;
 }
 
-export async function getFleetAgent({ os }: { os: 'macos' | 'windows' }) {
+export async function getFleetAgent({ os }: { os: SupportedOS }) {
   const fleetBucketName = process.env.FLEET_AGENT_BUCKET_NAME;
 
   if (!fleetBucketName) {

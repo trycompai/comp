@@ -11,6 +11,7 @@ import {
   getReadmeContent,
   getScriptFilename,
 } from './scripts';
+import type { SupportedOS } from './types';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -20,6 +21,11 @@ export const maxDuration = 60;
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
   const token = searchParams.get('token');
+  const os = searchParams.get('os');
+
+  if (!os) {
+    return new NextResponse('Missing OS', { status: 400 });
+  }
 
   if (!token) {
     return new NextResponse('Missing download token', { status: 400 });
@@ -35,11 +41,10 @@ export async function GET(req: NextRequest) {
   // Delete token after retrieval (one-time use)
   await kv.del(`download:${token}`);
 
-  const { orgId, employeeId, os } = downloadInfo as {
+  const { orgId, employeeId } = downloadInfo as {
     orgId: string;
     employeeId: string;
     userId: string;
-    os: 'macos' | 'windows';
   };
 
   // Hardcoded device marker paths used by the setup scripts
@@ -52,10 +57,11 @@ export async function GET(req: NextRequest) {
   }
 
   // For macOS, serve the DMG directly. For Windows, create a zip with script and installer.
-  if (os === 'macos') {
+  if (os === 'macos' || os === 'macos-intel') {
     try {
       // Direct DMG download for macOS
-      const macosPackageFilename = 'Comp AI Agent-1.0.0-arm64.dmg';
+      const macosPackageFilename =
+        os === 'macos' ? 'Comp AI Agent-1.0.0-arm64.dmg' : 'Comp AI Agent-1.0.0.dmg';
       const packageKey = `macos/${macosPackageFilename}`;
 
       const getObjectCommand = new GetObjectCommand({
@@ -116,15 +122,15 @@ export async function GET(req: NextRequest) {
     });
 
     // Add script file
-    const scriptFilename = getScriptFilename(os);
+    const scriptFilename = getScriptFilename(os as SupportedOS);
     archive.append(script, { name: scriptFilename, mode: 0o755 });
 
     // Add README
-    const readmeContent = getReadmeContent(os);
+    const readmeContent = getReadmeContent(os as SupportedOS);
     archive.append(readmeContent, { name: 'README.txt' });
 
     // Get package from S3 and stream it
-    const packageFilename = getPackageFilename(os);
+    const packageFilename = getPackageFilename(os as SupportedOS);
     const windowsPackageFilename = 'fleet-osquery.msi';
     const packageKey = `windows/${windowsPackageFilename}`;
 
