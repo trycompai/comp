@@ -1,0 +1,93 @@
+---
+title: "AWS Cloud Tests"
+description: "AWS Cloud Tests allows you to connect your AWS infrastructure to Comp AI for automated security testing using Security Hub, compliance monitoring, and risk assessment."
+---
+
+# Setup Process
+
+### Prerequisites
+
+Before setting up the integration, ensure you have:
+
+1. An AWS account with administrator access
+2. Admin access to your Comp AI workspace
+3. IAM permissions to create and manage roles, policies, and trust relationships
+
+### Configuration Steps
+
+1. **Log into your AWS Management Console**
+2. **Enable Security Hub**
+   - Navigate to **Security Hub** in the AWS Console
+   - Click **Get Started**
+   - Enable Security Hub in your **desired regions**
+   - Optionally, enable **default security standards** (like CIS AWS Foundations)
+3. **Choose a Region Code**
+   - Decide which AWS region you want Comp AI to use (e.g., `us-east-1`, `us-west-2`)
+   - Copy this region code — you’ll need it in the Comp AI UI
+4. **Create an IAM User for Comp AI**
+   - Go to **IAM \> Users**, then click **Add user**
+   - Enter a name like `CompAIIntegrationUser`
+   - Choose **Programmatic access** (this generates the Access Key ID & Secret)
+5. **Set Permissions**
+   - On the permissions screen, click **Attach policies directly**
+   - Attach the following AWS managed policies:
+     - `SecurityAudit`
+     - `AmazonEC2ReadOnlyAccess & AWSSecurityHubReadOnlyAccess`
+
+       _(Or use a custom least-privilege policy — see example below)_
+6. **Create the User**
+   - Click **Next**, then **Create user**
+   - Copy and securely store the **Access Key ID** and **Secret Access Key**
+   - You will only see the secret once!
+7. **Connect AWS to Comp AI**
+   - Go to **Settings \> Integrations** in your Comp AI dashboard
+   - Click **Connect** next to the AWS integration card
+   - Paste the **Access Key ID**, **Secret Access Key**, and **Region Code**
+   - Click **Save and Connect**
+
+## Capabilities
+
+### Security Tests
+
+The AWS integration performs the following security assessments:
+
+| Test Category | Description | IAM Misconfigurations | Detects overly permissive roles, users, or policies | S3 Bucket Security | Checks for public access, encryption, and versioning | EC2 Instance | Analysis Reviews security group rules, instance metadata access | Security Hub | Findings Integrates AWS Security Hub findings for real-time insights | CloudTrail | Configuration Verifies CloudTrail logging and monitoring | Config & Compliance Checks | Audits AWS Config rules and compliance state
+
+### Compliance Frameworks
+
+- The integration checks compliance against:
+- CIS AWS Foundations Benchmark
+- SOC 2
+- HIPAA (where applicable)
+- PCI DSS
+- GDPR
+- ISO 27001
+
+## Managing Access
+
+### Access Control
+
+Comp AI uses a cross-account IAM role with read-only permissions and a required external ID to ensure secure, scoped access. This approach follows AWS best practices for secure third-party integrations.
+
+### Permissions
+
+The IAM role created for integration has permissions to:
+
+- Describe resources (EC2, S3, IAM, etc.)
+- Read configuration and audit logs
+- Access Security Hub and CloudTrail
+- List AWS Config and resource statuses
+- The integration does NOT have permissions to:
+
+Modify any resources
+
+- Create or delete resources
+- Write to S3 or other services
+
+### Support
+
+For additional assistance with your Azure integration:
+
+1. Check our [Knowledge Base](https://help.trycomp.ai/azure-integration)
+2. Contact support at [support@trycomp.ai](mailto:support@trycomp.ai)
+3. Join our [Discord community](https://discord.gg/compai) for peer support

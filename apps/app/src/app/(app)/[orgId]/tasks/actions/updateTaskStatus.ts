@@ -1,13 +1,13 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
-import { db } from '@db';
+import { db, TaskStatus } from '@db';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
 const updateTaskStatusSchema = z.object({
   id: z.string(),
-  status: z.enum(['todo', 'in_progress', 'done', 'not_relevant']),
+  status: z.nativeEnum(TaskStatus),
 });
 
 export const updateTaskStatusAction = authActionClient

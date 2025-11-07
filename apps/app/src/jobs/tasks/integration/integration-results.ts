@@ -104,6 +104,12 @@ export const sendIntegrationResults = schemaTask({
         });
       }
 
+      // Update the integration's lastRunAt timestamp
+      await db.integration.update({
+        where: { id: integration.id },
+        data: { lastRunAt: new Date() },
+      });
+
       logger.info(`Integration run completed for ${integration.name}`);
       return { success: true, totalResults: results.length, results };
     } catch (error) {
@@ -129,10 +135,7 @@ export const sendIntegrationResults = schemaTask({
         logger.error(`Failed to create error record: ${createError}`);
       }
 
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-      };
+      throw error;
     }
   },
 });

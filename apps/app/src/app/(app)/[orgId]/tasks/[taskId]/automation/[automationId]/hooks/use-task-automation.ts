@@ -11,6 +11,8 @@ interface TaskAutomationData {
   status: string;
   createdAt: string;
   updatedAt: string;
+  evaluationCriteria?: string;
+  isEnabled: boolean;
 }
 
 interface UseTaskAutomationReturn {
@@ -21,15 +23,25 @@ interface UseTaskAutomationReturn {
   mutate: () => Promise<any>;
 }
 
-export function useTaskAutomation(): UseTaskAutomationReturn {
-  const { orgId, taskId, automationId } = useParams<{
+export function useTaskAutomation(overrideAutomationId?: string): UseTaskAutomationReturn {
+  const {
+    orgId,
+    taskId,
+    automationId: paramsAutomationId,
+  } = useParams<{
     orgId: string;
     taskId: string;
     automationId: string;
   }>();
 
+  // Use override ID if provided, otherwise use params
+  const automationId = overrideAutomationId || paramsAutomationId;
+
+  // Skip fetching if automationId is "new"
+  const shouldFetch = automationId && automationId !== 'new';
+
   const { data, error, isLoading, mutate } = useSWR(
-    [`automation-${automationId}`, orgId, taskId, automationId],
+    shouldFetch ? [`automation-${automationId}`, orgId, taskId, automationId] : null,
     async () => {
       const response = await api.get<{
         success: boolean;
@@ -37,18 +49,24 @@ export function useTaskAutomation(): UseTaskAutomationReturn {
       }>(`/v1/tasks/${taskId}/automations/${automationId}`, orgId);
 
       if (response.error) {
+        console.log('failed to fetch automation', response.error);
         throw new Error(response.error);
       }
 
       if (!response.data?.success) {
+        console.log('failed to fetch automation', response.data);
         throw new Error('Failed to fetch automation');
       }
+
+      console.log('response.data.automation', response.data.automation);
 
       return response.data.automation;
     },
     {
-      revalidateOnFocus: false,
+      revalidateOnFocus: true,
       revalidateOnReconnect: true,
+      revalidateIfStale: true,
+      dedupingInterval: 2000,
       shouldRetryOnError: (error) => {
         // Don't retry on 404s
         return !error?.message?.includes('404');

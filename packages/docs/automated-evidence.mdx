@@ -1,0 +1,29 @@
+---
+title: "Automated Evidence"
+description: "Comp AI Automated Evidence allows you to streamline evidence collection for recurring compliance tasks. "
+---
+
+### Automated Evidence Demo
+
+<iframe src="https://www.loom.com/embed/6e80c92e12c4478ab009bc86f7b21f4a" title="Loom video player" frameborder="0" className="w-full aspect-video rounded-xl" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen />
+
+### Create Automations
+
+To create automations for evidence collection, simply click into any task on the app, and click on the "Create Automation" button.
+
+This will take you to the chat agent, here, you will enter a prompt based on the task and evidence required for that task.
+
+### Example Prompt
+
+In this example, we will use the project ‘Secure Code’ for this task. We need to show that Dependabot (or a similar tool) is enabled and scanning the dependencies in our codebase. For this prompt, we would say:\
+“Check if Dependabot is enabled in my GitHub repository and return the results.”
+
+### Testing & Publishing Automations
+
+Once prompted, the agent will run through the process of creating an automation to check for and return any Dependabot alerts, requesting any relevant keys or tokens required by that specific vendor to complete the automation.
+
+Once the automation is complete, click ‘Test’. This will display the first output for that automation. If the output is sufficient, click ‘Publish’. This will publish the automation to the task, which will then run automatically—updating the evidence for that task according to the frequency set.
+
+<Note>
+  You can create multiple automations per task. Each piece of evidence will show in the "Automated Evidence" card on the task page.
+</Note>

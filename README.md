@@ -81,39 +81,68 @@ Here is what you need to be able to run Comp AI.
 
 ## Development
 
-To get the project working locally with all integrations, follow these extended development steps.
+To get the project working locally with all integrations, follow these extended development steps
 
 ### Setup
 
-1. Clone the repo:
-
-   ```sh
-   git clone https://github.com/trycompai/comp.git
-   ```
-
-2. Navigate to the project directory:
-
-   ```sh
-   cd comp
-   ```
-
-3. Install dependencies using Bun:
+## Add environment variables and fill them out with your credentials
 
 ```sh
-   bun install
+cp apps/app/.env.example apps/app/.env
+cp apps/portal/.env.example apps/portal/.env
+cp packages/db/.env.example packages/db/.env
 ```
 
-4. Install `concurrently` as a dev dependency:
+## Get code running locally
+
+1. Clone the repo
 
 ```sh
-   bun add -d concurrently
+git clone https://github.com/trycompai/comp.git
+```
+
+2. Navigate to the project directory
+
+```sh
+cd comp
+```
+
+3. Install dependencies using Bun
+
+```sh
+bun install
+```
+
+4. Get Database Running
+
+```sh
+cd packages/db
+bun run docker:up # Spin up docker container
+bun run db:migrate # Run migrations
+```
+
+5. Generate Prisma Types for each app
+
+```sh
+cd apps/app
+bun run db:generate
+cd ../portal
+bun run db:generate
+cd ../api
+bun run db:generate
+```
+
+6. Run all apps in parallel from the root directory
+
+```sh
+bun run dev
 ```
 
 ---
 
 ### Environment Setup
 
-Create the following `.env` files and fill them out with your credentials:
+Create the following `.env` files and fill them out with your credentials
 
 - `comp/apps/app/.env`
 - `comp/apps/portal/.env`

@@ -63,7 +63,11 @@ export function WorkflowVisualizerSimple({ className }: Props) {
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [confirmRestore, setConfirmRestore] = useState<EvidenceAutomationVersion | null>(null);
-  const { automation } = useTaskAutomation();
+  const {
+    automation,
+    mutate: mutateAutomation,
+    isLoading: isLoadingAutomation,
+  } = useTaskAutomation();
   const { versions } = useAutomationVersions();
 
   // Update shared ref when automation is loaded from hook
@@ -105,10 +109,21 @@ export function WorkflowVisualizerSimple({ className }: Props) {
   };
 
   useEffect(() => {
-    const handleScriptSaved = () => refresh();
+    const handleScriptSaved = () => {
+      refresh();
+      // Also refresh automation data to get updated evaluationCriteria
+      mutateAutomation();
+    };
+    const handleCriteriaUpdated = () => {
+      mutateAutomation();
+    };
     window.addEventListener('task-automation:script-saved', handleScriptSaved);
-    return () => window.removeEventListener('task-automation:script-saved', handleScriptSaved);
-  }, [refresh]);
+    window.addEventListener('task-automation:criteria-updated', handleCriteriaUpdated);
+    return () => {
+      window.removeEventListener('task-automation:script-saved', handleScriptSaved);
+      window.removeEventListener('task-automation:criteria-updated', handleCriteriaUpdated);
+    };
+  }, [refresh, mutateAutomation]);
 
   useEffect(() => {
     if (script && !scriptGenerated) {
@@ -156,6 +171,8 @@ export function WorkflowVisualizerSimple({ className }: Props) {
         logs: executionResult.logs,
         error: executionResult.error || (hasErrorInData ? executionResult.data.error : undefined),
         summary: (executionResult as any).summary,
+        evaluationStatus: executionResult.evaluationStatus,
+        evaluationReason: executionResult.evaluationReason,
       };
     }
     return null;
@@ -299,6 +316,7 @@ Please fix the automation script to resolve this error.`;
             result={testResult}
             onLetAIFix={handleLetAIFix}
             onBack={() => resetExecution()}
+            evaluationCriteria={automation?.evaluationCriteria}
           />
         ) : (
           /* Regular Content - Only show when NOT testing */
@@ -308,21 +326,30 @@ Please fix the automation script to resolve this error.`;
               viewMode === 'visual' && 'p-8 flex justify-center items-center',
             )}
           >
-            <div className={cn(viewMode === 'visual' && 'max-w-3xl mx-auto')}>
+            <div
+              className={cn(
+                viewMode === 'visual' && 'max-w-3xl mx-auto w-full flex flex-col gap-6',
+              )}
+            >
               {viewMode === 'visual' ? (
                 // Visual Mode
-                showLoading ? (
-                  <WorkflowSkeleton />
-                ) : steps.length > 0 ? (
-                  <UnifiedWorkflowCard
-                    steps={steps}
-                    title={title || 'Automation Workflow'}
-                    onTest={handleTest}
-                    integrationsUsed={integrationsUsed || []}
-                  />
-                ) : (
-                  <EmptyState type="workflow" />
-                )
+                <>
+                  {showLoading ? (
+                    <WorkflowSkeleton />
+                  ) : steps.length > 0 ? (
+                    <UnifiedWorkflowCard
+                      key={`workflow-${automation?.id}-${automation?.evaluationCriteria ? 'with-criteria' : 'no-criteria'}`}
+                      steps={steps}
+                      title={title || 'Automation Workflow'}
+                      onTest={handleTest}
+                      integrationsUsed={integrationsUsed || []}
+                      evaluationCriteria={automation?.evaluationCriteria}
+                      automationId={automation?.id}
+                    />
+                  ) : (
+                    <EmptyState type="workflow" />
+                  )}
+                </>
               ) : (
                 // Code Mode
                 <div className="h-full">

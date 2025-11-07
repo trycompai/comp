@@ -5,4 +5,6 @@ export type TestResult = {
   logs?: string[];
   error?: string;
   summary?: string;
+  evaluationStatus?: 'pass' | 'fail';
+  evaluationReason?: string;
 };

@@ -18,6 +18,10 @@ model EvidenceAutomationRun {
     logs    Json?
     output  Json?
 
+    // Evaluation
+    evaluationStatus EvidenceAutomationEvaluationStatus?
+    evaluationReason String?
+
     // Metadata
     triggeredBy EvidenceAutomationTrigger @default(scheduled)
     runDuration Int? // in milliseconds
@@ -43,4 +47,9 @@ enum EvidenceAutomationTrigger {
     manual
     scheduled
     api
+}
+
+enum EvidenceAutomationEvaluationStatus {
+    pass
+    fail
 }

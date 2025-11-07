@@ -1,0 +1,128 @@
+---
+title: "Azure Cloud Tests"
+description: "Connect Azure to Comp AI for cloud security testing"
+---
+
+# Azure Cloud Test
+
+The Azure Cloud Test enables you to connect your Microsoft Azure cloud environment to Comp AI for comprehensive security testing, compliance monitoring, and risk assessment using Microsoft Defender for Cloud
+
+## Setup Process
+
+### Prerequisites
+
+Before setting up the integration, ensure you have:
+
+1. Azure subscription with Owner or Contributor access
+2. Admin access to your Comp AI workspace
+3. Permissions to register applications in Azure AD
+
+### Configuration Steps
+
+1. **Log into your Azure Portal**
+   - Visit https://portal.azure.com
+2. **Enable Microsoft Defender for Cloud**
+   - In the left-hand menu, search for and select **Microsoft Defender for Cloud**
+   - Click **Getting started**
+   - Select the subscription(s) you want to onboard
+   - Enable **Microsoft Defender plans** (especially for relevant services like Compute, Storage, SQL, etc.)
+   - Wait for the provisioning to complete (this may take a few minutes)
+3. **Register an Application in Azure AD**
+   - Navigate to **Azure Active Directory \> App registrations**
+   - Click **\+ New registration**
+   - Name the app (e.g., `CompAIIntegrationApp`)
+   - Choose **Accounts in this organizational directory only**
+   - Click **Register**
+4. **Get the Client ID and Tenant ID**
+   - After registration, go to the app's **Overview** page
+   - Copy the **Application (client) ID**
+   - Copy the **Directory (tenant) ID**
+5. **Create a Client Secret**
+   - In the app menu, go to **Certificates & secrets**
+   - Under **Client secrets**, click **\+ New client secret**
+   - Add a description and set an expiration
+   - Click **Add**
+   - Copy the **Client secret value** — you won’t be able to see it again!
+6. **Assign the Application Access to a Subscription**
+   - Go to **Subscriptions** in the Azure portal
+   - Select the subscription you want to integrate
+   - Copy the **Subscription ID**
+   - Click **Access control (IAM)**
+   - Click **\+ Add \> Add role assignment**
+   - Select role: **Reader** (or **Security Reader** for enhanced visibility)
+   - Assign access to: **User, group, or service principal**
+   - Select your registered application
+7. **Connect Azure to Comp AI**
+   - Go to **Settings \> Integrations** in your Comp AI dashboard
+   - Click **Connect** next to the Azure integration card
+   - Paste the following values:
+     - **Client ID**
+     - **Client Secret**
+     - **Tenant ID**
+     - **Subscription ID**
+   - Click **Save and Connect**
+
+## Capabilities
+
+### Security Tests
+
+The Azure Cloud Test performs the following security assessments:
+
+| Test Category     | Description                                                               |
+| ----------------- | ------------------------------------------------------------------------- |
+| IAM Analysis      | Review Azure AD roles and custom RBAC assignments                         |
+| Storage Security  | Identify improperly configured storage account permissions and encryption |
+| VM Security       | Analyze NSGs, VM configurations, and patch status                         |
+| Database Security | Check Azure SQL, Cosmos DB, and other database security settings          |
+| Activity Logs     | Verify proper logging and monitoring configuration                        |
+| Key Vault         | Validate secret management and key rotation policies                      |
+| Network           | Assess VNet configurations, NSGs, and service endpoints                   |
+
+### Compliance Frameworks
+
+The Cloud Test checks compliance against:
+
+- Microsoft Cloud Security Benchmark
+- SOC 2
+- HIPAA (where applicable)
+- PCI DSS
+- GDPR
+- ISO 27001
+
+## Managing Access
+
+### Access Control
+
+Comp AI requires read-only access to your Azure environment. The integration uses Azure's built-in Reader role or custom roles with specific permissions that follow the principle of least privilege.
+
+### Permissions
+
+The Azure application/service principal has permissions for:
+
+- Reading resource configurations
+- Listing resources and their attributes
+- Viewing diagnostic settings
+
+The integration does NOT have permissions to:
+
+- Modify any resources
+- Create new resources
+- Delete existing resources
+
+## Troubleshooting
+
+### Common Issues
+
+**Issue**: Failed to connect Azure subscription\
+**Solution**: Verify service principal credentials and role assignments
+
+**Issue**: Authentication errors\
+**Solution**: Ensure the service principal hasn't expired and secret is valid
+
+### Support
+
+For additional assistance with your Azure Cloud Tests:
+
+1. Check our [Knowledge Base](https://help.trycomp.ai/azure-integration)
+2. Contact support at [support@trycomp.ai](mailto:support@trycomp.ai)
+3. Join our [Discord community](https://discord.gg/compai) for peer support

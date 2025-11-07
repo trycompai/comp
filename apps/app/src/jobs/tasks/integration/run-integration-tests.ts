@@ -57,9 +57,24 @@ export const runIntegrationTests = task({
 
     try {
       const batchHandle = await sendIntegrationResults.batchTriggerAndWait(batchItems);
-      
+
+      // Check if any child runs failed
+      const failedRuns = batchHandle.runs.filter((run) => !run.ok);
+
+      if (failedRuns.length > 0) {
+        const errorMessages = failedRuns
+          .map((run) => {
+            const errorMsg = run.error instanceof Error ? run.error.message : String(run.error);
+            return errorMsg;
+          })
+          .join('; ');
+
+        logger.error(`Integration tests failed for organization ${organizationId}: ${errorMessages}`);
+        throw new Error(errorMessages);
+      }
+
       logger.info(`Successfully completed batch integration tests for organization: ${organizationId}`);
-      
+
       return {
         success: true,
         organizationId,
@@ -68,13 +83,7 @@ export const runIntegrationTests = task({
       };
     } catch (error) {
       logger.error(`Failed to run integration tests for organization ${organizationId}: ${error}`);
-      
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-        organizationId,
-        integrationsCount: integrations.length,
-      };
+      throw error;
     }
   },
 });

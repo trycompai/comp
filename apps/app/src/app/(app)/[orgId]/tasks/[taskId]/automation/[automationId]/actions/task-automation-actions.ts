@@ -186,6 +186,7 @@ export async function executeAutomationScript(data: {
   orgId: string;
   taskId: string;
   automationId: string;
+  version?: number; // Optional: test specific version
 }) {
   try {
     const result = await callEnterpriseApi('/api/tasks-automations/trigger/execute', {
@@ -361,6 +362,12 @@ export async function publishAutomation(
       },
     });
 
+    // Enable automation if not already enabled
+    await db.evidenceAutomation.update({
+      where: { id: automationId },
+      data: { isEnabled: true },
+    });
+
     return {
       success: true,
       version,
@@ -409,6 +416,54 @@ export async function restoreVersion(
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to restore version',
+    };
+  }
+}
+
+/**
+ * Update evaluation criteria for an automation
+ */
+export async function updateEvaluationCriteria(automationId: string, evaluationCriteria: string) {
+  try {
+    await db.evidenceAutomation.update({
+      where: { id: automationId },
+      data: { evaluationCriteria },
+    });
+
+    await revalidateCurrentPath();
+
+    return {
+      success: true,
+    };
+  } catch (error) {
+    console.error('[updateEvaluationCriteria] Failed:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to update evaluation criteria',
+    };
+  }
+}
+
+/**
+ * Toggle automation enabled state
+ */
+export async function toggleAutomationEnabled(automationId: string, isEnabled: boolean) {
+  try {
+    await db.evidenceAutomation.update({
+      where: { id: automationId },
+      data: { isEnabled },
+    });
+
+    await revalidateCurrentPath();
+
+    return {
+      success: true,
+    };
+  } catch (error) {
+    console.error('[toggleAutomationEnabled] Failed:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to toggle automation',
     };
   }
 }

@@ -1,3 +1,54 @@
+## [1.56.7](https://github.com/trycompai/comp/compare/v1.56.6...v1.56.7) (2025-11-07)
+
+
+### Bug Fixes
+
+* **portal:** remove Ubuntu support help ([#1715](https://github.com/trycompai/comp/issues/1715)) ([b604b18](https://github.com/trycompai/comp/commit/b604b18a5c16db2f9b58be64f2262d70fca66d34))
+* **portal:** update macOS version requirements ([#1716](https://github.com/trycompai/comp/issues/1716)) ([21c259b](https://github.com/trycompai/comp/commit/21c259bb5c20fd3798df9c2bca3ef0883863b901))
+
+## [1.56.6](https://github.com/trycompai/comp/compare/v1.56.5...v1.56.6) (2025-10-31)
+
+
+### Bug Fixes
+
+* **app:** send emails to employees when all policies are published ([#1707](https://github.com/trycompai/comp/issues/1707)) ([df7a461](https://github.com/trycompai/comp/commit/df7a4617e008174624c02bc89905af389f7c478d))
+
+## [1.56.5](https://github.com/trycompai/comp/compare/v1.56.4...v1.56.5) (2025-10-30)
+
+
+### Bug Fixes
+
+* **cloud-tests:** improve error messages and user feedback ([#1703](https://github.com/trycompai/comp/issues/1703)) ([9abfc4a](https://github.com/trycompai/comp/commit/9abfc4a2bd0b320d1e804f9b3cf4a714f52d1002))
+
+## [1.56.4](https://github.com/trycompai/comp/compare/v1.56.3...v1.56.4) (2025-10-29)
+
+
+### Bug Fixes
+
+* **cloud-tests:** display integration scan errors in UI ([#1698](https://github.com/trycompai/comp/issues/1698)) ([a27b3ba](https://github.com/trycompai/comp/commit/a27b3bab8cb4d01c3516db583f9963955cb57164)), closes [#1695](https://github.com/trycompai/comp/issues/1695)
+
+## [1.56.3](https://github.com/trycompai/comp/compare/v1.56.2...v1.56.3) (2025-10-23)
+
+
+### Bug Fixes
+
+* **api:** allow uploading excel documents for task ([#1677](https://github.com/trycompai/comp/issues/1677)) ([8c7f955](https://github.com/trycompai/comp/commit/8c7f9550755090d8aa780fc8fbcd2ebadf1e7fb8))
+
+## [1.56.2](https://github.com/trycompai/comp/compare/v1.56.1...v1.56.2) (2025-10-21)
+
+
+### Bug Fixes
+
+* **app:** auto-approve the org creation on staging ([#1676](https://github.com/trycompai/comp/issues/1676)) ([dbb149e](https://github.com/trycompai/comp/commit/dbb149ea2eecc32b9d470112fd293f72b91e6eaa))
+
+## [1.56.1](https://github.com/trycompai/comp/compare/v1.56.0...v1.56.1) (2025-10-17)
+
+
+### Bug Fixes
+
+* **app:** show device list of only employees ([#1646](https://github.com/trycompai/comp/issues/1646)) ([f5fc56e](https://github.com/trycompai/comp/commit/f5fc56e696968110bfe66e5c533cbc7f3790f847))
+* **portal:** fixed the issue that the Posthog didn't identify people on the portal ([#1668](https://github.com/trycompai/comp/issues/1668)) ([5614d62](https://github.com/trycompai/comp/commit/5614d620135e86fa2c40862d439a67ebd856d747))
+
 # [1.56.0](https://github.com/trycompai/comp/compare/v1.55.2...v1.56.0) (2025-10-08)
 
 
