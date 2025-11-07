@@ -63,7 +63,7 @@
     "check:env": "node scripts/check-unused-env.js",
     "clean": "git clean -xdf node_modules",
     "clean:workspaces": "turbo clean",
-    "deploy:trigger-prod": "npx trigger.dev@4.0.0 deploy",
+    "deploy:trigger-prod": "npx trigger.dev@4.0.6 deploy",
     "deps:check": "syncpack list-mismatches",
     "deps:dedupe": "syncpack fix-mismatches && bun install",
     "deps:fix": "syncpack fix-mismatches",
