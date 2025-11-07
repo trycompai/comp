@@ -1,6 +1,6 @@
 import { db } from '@db';
 import { logger, schedules } from '@trigger.dev/sdk';
-import { sendWeeklyTaskDigestEmail } from '@trycompai/email/lib/weekly-task-digest';
+import { sendWeeklyTaskDigestEmailTask } from '../email/weekly-task-digest-email';
 
 export const weeklyTaskReminder = schedules.task({
   id: 'weekly-task-reminder',
@@ -34,11 +34,9 @@ export const weeklyTaskReminder = schedules.task({
 
     logger.info(`Found ${organizations.length} organizations to process`);
 
-    let totalEmailsSent = 0;
-    let totalAdminsProcessed = 0;
-    const errors: string[] = [];
+    // Build email payloads for all admins/owners with TODO tasks
+    const emailPayloads = [];
 
-    // Process each organization
     for (const org of organizations) {
       logger.info(`Processing organization: ${org.name} (${org.id})`);
 
@@ -65,46 +63,62 @@ export const weeklyTaskReminder = schedules.task({
 
       logger.info(`Found ${todoTasks.length} TODO tasks for organization ${org.name}`);
 
-      // Send one email per admin/owner
+      // Build payload for each admin/owner
       for (const member of org.members) {
         if (!member.user.email || !member.user.name) {
           logger.warn(`Skipping member ${member.id} - missing email or name`);
           continue;
         }
 
-        try {
-          const result = await sendWeeklyTaskDigestEmail({
+        emailPayloads.push({
+          payload: {
             email: member.user.email,
             userName: member.user.name,
             organizationName: org.name,
             organizationId: org.id,
             tasks: todoTasks,
-          });
+          },
+        });
+      }
+    }
 
-          if (result.success) {
-            totalEmailsSent++;
-            logger.info(`Sent weekly task digest to ${member.user.email} (${org.name})`);
-          } else {
-            errors.push(`Failed to send email to ${member.user.email} (${org.name})`);
-            logger.error(`Failed to send email to ${member.user.email}`);
-          }
+    // Batch trigger all emails with concurrency control
+    // Trigger.dev has a limit of 500 items per batchTrigger
+    if (emailPayloads.length > 0) {
+      const BATCH_SIZE = 500;
+      const batches = [];
 
-          totalAdminsProcessed++;
-        } catch (error) {
-          const errorMsg = `Error sending email to ${member.user.email} (${org.name}): ${error instanceof Error ? error.message : String(error)}`;
-          errors.push(errorMsg);
-          logger.error(errorMsg);
+      for (let i = 0; i < emailPayloads.length; i += BATCH_SIZE) {
+        batches.push(emailPayloads.slice(i, i + BATCH_SIZE));
+      }
+
+      logger.info(`Triggering ${emailPayloads.length} emails in ${batches.length} batch(es)`);
+
+      try {
+        for (const batch of batches) {
+          await sendWeeklyTaskDigestEmailTask.batchTrigger(batch);
+          logger.info(`Triggered batch of ${batch.length} emails`);
         }
+
+        logger.info(`Successfully triggered all ${emailPayloads.length} weekly task digest emails`);
+      } catch (error) {
+        logger.error(`Failed to trigger batch email sends: ${error}`);
+
+        return {
+          success: false,
+          timestamp: new Date().toISOString(),
+          organizationsProcessed: organizations.length,
+          totalAdminsProcessed: emailPayloads.length,
+          emailsTriggered: 0,
+          error: error instanceof Error ? error.message : String(error),
+        };
       }
     }
 
     const summary = {
-      success: errors.length === 0,
       timestamp: new Date().toISOString(),
       organizationsProcessed: organizations.length,
-      totalAdminsProcessed,
-      emailsSent: totalEmailsSent,
-      errors: errors.length > 0 ? errors : undefined,
+      emailsTriggered: emailPayloads.length,
     };
 
     logger.info('Weekly task reminder job completed', summary);
