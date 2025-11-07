@@ -22,7 +22,7 @@ const CLOUD_PROVIDERS = [
     description: 'Scan AWS Security Hub for vulnerabilities and compliance issues',
     color: 'from-orange-500 to-yellow-600',
     logoUrl: 'https://img.logo.dev/aws.amazon.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ',
-    guideUrl: 'https://trycomp.ai/docs/integrations/aws',
+    guideUrl: 'https://trycomp.ai/docs/cloud-tests/aws',
   },
   {
     id: 'gcp' as const,
@@ -31,7 +31,7 @@ const CLOUD_PROVIDERS = [
     description: 'Monitor GCP Security Command Center for security findings',
     color: 'from-blue-500 to-cyan-600',
     logoUrl: 'https://img.logo.dev/cloud.google.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ',
-    guideUrl: 'https://trycomp.ai/docs/integrations/gcp',
+    guideUrl: 'https://trycomp.ai/docs/cloud-tests/gcp',
   },
   {
     id: 'azure' as const,
@@ -40,7 +40,7 @@ const CLOUD_PROVIDERS = [
     description: 'Check Azure Security Center for compliance data',
     color: 'from-blue-600 to-indigo-700',
     logoUrl: 'https://img.logo.dev/azure.microsoft.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ',
-    guideUrl: 'https://trycomp.ai/docs/integrations/azure',
+    guideUrl: 'https://trycomp.ai/docs/cloud-tests/azure',
   },
 ];
 

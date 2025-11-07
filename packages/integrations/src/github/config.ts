@@ -32,7 +32,7 @@ const config: {
   active: true,
   logo: Logo,
   short_description: 'Store GitHub credentials for use in automations.',
-  guide_url: 'https://trycomp.ai/docs/integrations/github',
+  guide_url: 'https://trycomp.ai/docs/cloud-tests/github',
   description:
     'This allows AI automations to check repository settings like Dependabot status, branch protection rules, and pull request configurations.',
   images: [],
