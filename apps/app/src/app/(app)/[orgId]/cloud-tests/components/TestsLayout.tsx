@@ -7,6 +7,7 @@ import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { Plus, Settings } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import type { Fetcher } from 'swr';
 import useSWR from 'swr';
 import { runTests } from '../actions/run-tests';
 import type { IntegrationRunOutput } from '../types';
@@ -33,7 +34,24 @@ interface TestsLayoutProps {
   initialProviders: Integration[];
 }
 
-const SCANNING_STATUSES = new Set([
+type SupportedProviderId = 'aws' | 'gcp' | 'azure';
+type SupportedIntegration = Integration & { integrationId: SupportedProviderId };
+type TriggerInfo = {
+  taskId?: string;
+  publicAccessToken?: string;
+};
+type ActiveScanStatus =
+  | 'QUEUED'
+  | 'EXECUTING'
+  | 'WAITING_FOR_DEPLOY'
+  | 'REATTEMPTING'
+  | 'WAITING_FOR_CLAIM'
+  | 'WAITING_FOR_START'
+  | 'PENDING';
+
+const SUPPORTED_PROVIDER_IDS: readonly SupportedProviderId[] = ['aws', 'gcp', 'azure'];
+const SUPPORTED_PROVIDER_ID_SET: ReadonlySet<SupportedProviderId> = new Set(SUPPORTED_PROVIDER_IDS);
+const ACTIVE_SCAN_STATUSES: ReadonlySet<ActiveScanStatus> = new Set<ActiveScanStatus>([
   'QUEUED',
   'EXECUTING',
   'WAITING_FOR_DEPLOY',
@@ -43,10 +61,11 @@ const SCANNING_STATUSES = new Set([
   'PENDING',
 ]);
 
-type TriggerInfo = {
-  taskId?: string;
-  publicAccessToken?: string;
-};
+const isSupportedProviderId = (integrationId: string): integrationId is SupportedProviderId =>
+  SUPPORTED_PROVIDER_ID_SET.has(integrationId as SupportedProviderId);
+
+const isActiveScanStatus = (status: string | null | undefined): status is ActiveScanStatus =>
+  Boolean(status) && ACTIVE_SCAN_STATUSES.has(status as ActiveScanStatus);
 
 const isIntegrationRunOutput = (value: unknown): value is IntegrationRunOutput => {
   if (typeof value !== 'object' || value === null) {
@@ -92,11 +111,14 @@ const isIntegrationRunOutput = (value: unknown): value is IntegrationRunOutput =
   return true;
 };
 
-const fetcher = async (url: string) => {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('Failed to fetch');
-  return res.json();
-};
+async function fetchJson<T>(url: string): Promise<T> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error('Failed to fetch');
+  }
+
+  return (await response.json()) as T;
+}
 
 export function TestsLayout({ initialFindings, initialProviders }: TestsLayoutProps) {
   const [scanTaskId, setScanTaskId] = useState<string | null>(null);
@@ -107,9 +129,12 @@ export function TestsLayout({ initialFindings, initialProviders }: TestsLayoutPr
   const [lastRunOutput, setLastRunOutput] = useState<IntegrationRunOutput | null>(null);
 
   // Use SWR for real-time updates
+  const findingsFetcher: Fetcher<Finding[], string> = (url) => fetchJson<Finding[]>(url);
+  const providersFetcher: Fetcher<Integration[], string> = (url) => fetchJson<Integration[]>(url);
+
   const { data: findings = initialFindings, mutate: mutateFindings } = useSWR<Finding[]>(
     '/api/cloud-tests/findings',
-    fetcher,
+    findingsFetcher,
     {
       fallbackData: initialFindings,
       refreshInterval: 5000, // Refresh every 5 seconds when scanning
@@ -119,15 +144,15 @@ export function TestsLayout({ initialFindings, initialProviders }: TestsLayoutPr
 
   const { data: providers = initialProviders, mutate: mutateProviders } = useSWR<Integration[]>(
     '/api/cloud-tests/providers',
-    fetcher,
+    providersFetcher,
     {
       fallbackData: initialProviders,
       revalidateOnFocus: true,
     },
   );
 
-  const connectedProviders = (providers || []).filter((p) =>
-    ['aws', 'gcp', 'azure'].includes(p.integrationId),
+  const connectedProviders = providers.filter((provider): provider is SupportedIntegration =>
+    isSupportedProviderId(provider.integrationId),
   );
 
   // Track scan run status with access token
@@ -137,10 +162,8 @@ export function TestsLayout({ initialFindings, initialProviders }: TestsLayoutPr
   });
 
   const isScanActive =
-    !!scanTaskId &&
-    (!!isScanManuallyPending ||
-      !scanRun ||
-      (scanRun.status ? SCANNING_STATUSES.has(scanRun.status) : false));
+    Boolean(scanTaskId) &&
+    (isScanManuallyPending || !scanRun || isActiveScanStatus(scanRun.status));
 
   // Auto-refresh findings when scan completes
   useEffect(() => {
@@ -170,7 +193,7 @@ export function TestsLayout({ initialFindings, initialProviders }: TestsLayoutPr
       setLastRunOutput(null);
       toast.error('Scan failed. Please try again.');
     }
-    if (scanRun.status && !SCANNING_STATUSES.has(scanRun.status)) {
+    if (scanRun.status && !isActiveScanStatus(scanRun.status)) {
       pendingTimeout = setTimeout(() => {
         setIsScanManuallyPending(false);
       }, 300);
@@ -235,22 +258,18 @@ export function TestsLayout({ initialFindings, initialProviders }: TestsLayoutPr
   }
 
   // Group findings by cloud provider
-  const findingsByProvider = (findings || []).reduce(
-    (acc, finding) => {
-      const provider = finding.integration.integrationId;
-      if (!acc[provider]) {
-        acc[provider] = [];
-      }
-      acc[provider].push(finding);
-      return acc;
-    },
-    {} as Record<string, Finding[]>,
-  );
+  const findingsByProvider = findings.reduce<Record<string, Finding[]>>((acc, finding) => {
+    const providerId = finding.integration.integrationId;
+    const bucket = acc[providerId] ?? [];
+    bucket.push(finding);
+    acc[providerId] = bucket;
+    return acc;
+  }, {});
 
   // Single cloud user (primary use case)
   if (connectedProviders.length === 1) {
     const provider = connectedProviders[0];
-    const providerFindings = findingsByProvider[provider.integrationId] || [];
+    const providerFindings = findingsByProvider[provider.integrationId] ?? [];
 
     return (
       <div className="container mx-auto flex w-full flex-col gap-6 p-4 md:p-6 lg:p-8">
@@ -269,7 +288,7 @@ export function TestsLayout({ initialFindings, initialProviders }: TestsLayoutPr
             )}
           </div>
           <div className="flex items-center gap-3">
-            {connectedProviders.length < 3 && (
+            {connectedProviders.length < SUPPORTED_PROVIDER_IDS.length && (
               <Button variant="outline" size="sm" onClick={() => setViewingResults(false)}>
                 <Plus className="mr-2 h-4 w-4" />
                 Add Cloud
@@ -303,7 +322,7 @@ export function TestsLayout({ initialFindings, initialProviders }: TestsLayoutPr
           open={showSettings}
           onOpenChange={setShowSettings}
           connectedProviders={connectedProviders.map((p) => ({
-            id: p.integrationId as 'aws' | 'gcp' | 'azure',
+            id: p.integrationId,
             name: p.name,
             fields: getProviderFields(p.integrationId),
           }))}
@@ -314,7 +333,7 @@ export function TestsLayout({ initialFindings, initialProviders }: TestsLayoutPr
   }
 
   // Multi-cloud user (<5%)
-  const defaultTab = connectedProviders[0]?.integrationId || 'aws';
+  const defaultTab = connectedProviders[0]?.integrationId ?? SUPPORTED_PROVIDER_IDS[0];
 
   return (
     <div className="container mx-auto flex w-full flex-col gap-6 p-4 md:p-6 lg:p-8">
@@ -332,7 +351,7 @@ export function TestsLayout({ initialFindings, initialProviders }: TestsLayoutPr
           )}
         </div>
         <div className="flex items-center gap-3">
-          {connectedProviders.length < 3 && (
+          {connectedProviders.length < SUPPORTED_PROVIDER_IDS.length && (
             <Button variant="outline" size="sm" onClick={() => setViewingResults(false)}>
               <Plus className="mr-2 h-4 w-4" />
               Add Cloud
@@ -389,7 +408,7 @@ export function TestsLayout({ initialFindings, initialProviders }: TestsLayoutPr
         open={showSettings}
         onOpenChange={setShowSettings}
         connectedProviders={connectedProviders.map((p) => ({
-          id: p.integrationId as 'aws' | 'gcp' | 'azure',
+          id: p.integrationId,
           name: p.name,
           fields: getProviderFields(p.integrationId),
         }))}
@@ -400,7 +419,9 @@ export function TestsLayout({ initialFindings, initialProviders }: TestsLayoutPr
 }
 
 // Helper function to get provider fields for settings modal
-function getProviderFields(providerId: string) {
+type ProviderField = { id: string; label: string };
+
+function getProviderFields(providerId: SupportedProviderId): ProviderField[] {
   switch (providerId) {
     case 'aws':
       return [
@@ -420,7 +441,5 @@ function getProviderFields(providerId: string) {
         { id: 'AZURE_CLIENT_SECRET', label: 'Client Secret' },
         { id: 'AZURE_SUBSCRIPTION_ID', label: 'Subscription ID' },
       ];
-    default:
-      return [];
   }
 }
