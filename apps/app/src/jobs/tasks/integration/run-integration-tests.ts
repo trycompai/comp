@@ -4,8 +4,8 @@ import { sendIntegrationResults } from './integration-results';
 
 export const runIntegrationTests = task({
   id: 'run-integration-tests',
-  run: async (payload: { organizationId: string }) => {
-    const { organizationId } = payload;
+  run: async (payload: { organizationId: string; forceFailure?: boolean }) => {
+    const { organizationId, forceFailure = false } = payload;
 
     logger.info(`Running integration tests for organization: ${organizationId}`);
 
@@ -43,6 +43,32 @@ export const runIntegrationTests = task({
     logger.info(
       `Found ${integrations.length} integrations to test for organization: ${organizationId}`,
     );
+
+    if (forceFailure) {
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+
+      const forcedFailureMessage =
+        'Test failure: intentionally failing integration job for UI verification';
+
+      const forcedFailedIntegrations = integrations.map((integration) => ({
+        id: integration.id,
+        integrationId: integration.integrationId,
+        name: integration.name,
+        error: forcedFailureMessage,
+      }));
+
+      logger.warn(
+        `Force-failing integration tests for organization ${organizationId}: ${forcedFailureMessage}`,
+      );
+
+      return {
+        success: false,
+        organizationId,
+        integrationsCount: integrations.length,
+        errors: [forcedFailureMessage],
+        failedIntegrations: forcedFailedIntegrations,
+      };
+    }
 
     const batchItems = integrations.map((integration) => ({
       payload: {
