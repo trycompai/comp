@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import useSWR from 'swr';
 import { runTests } from '../actions/run-tests';
+import type { IntegrationRunOutput } from '../types';
 import { ChatPlaceholder } from './ChatPlaceholder';
 import { CloudSettingsModal } from './CloudSettingsModal';
 import { EmptyState } from './EmptyState';
@@ -32,6 +33,65 @@ interface TestsLayoutProps {
   initialProviders: Integration[];
 }
 
+const SCANNING_STATUSES = new Set([
+  'QUEUED',
+  'EXECUTING',
+  'WAITING_FOR_DEPLOY',
+  'REATTEMPTING',
+  'WAITING_FOR_CLAIM',
+  'WAITING_FOR_START',
+  'PENDING',
+]);
+
+type TriggerInfo = {
+  taskId?: string;
+  publicAccessToken?: string;
+};
+
+const isIntegrationRunOutput = (value: unknown): value is IntegrationRunOutput => {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+
+  const candidate = value as {
+    success?: unknown;
+    errors?: unknown;
+    failedIntegrations?: unknown;
+  };
+
+  if (typeof candidate.success !== 'boolean') {
+    return false;
+  }
+
+  if (
+    candidate.errors !== undefined &&
+    (!Array.isArray(candidate.errors) || candidate.errors.some((item) => typeof item !== 'string'))
+  ) {
+    return false;
+  }
+
+  if (candidate.failedIntegrations !== undefined) {
+    if (!Array.isArray(candidate.failedIntegrations)) {
+      return false;
+    }
+
+    for (const item of candidate.failedIntegrations) {
+      if (
+        typeof item !== 'object' ||
+        item === null ||
+        typeof (item as { id?: unknown }).id !== 'string' ||
+        typeof (item as { integrationId?: unknown }).integrationId !== 'string' ||
+        typeof (item as { name?: unknown }).name !== 'string' ||
+        typeof (item as { error?: unknown }).error !== 'string'
+      ) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+};
+
 const fetcher = async (url: string) => {
   const res = await fetch(url);
   if (!res.ok) throw new Error('Failed to fetch');
@@ -43,6 +103,8 @@ export function TestsLayout({ initialFindings, initialProviders }: TestsLayoutPr
   const [scanAccessToken, setScanAccessToken] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [viewingResults, setViewingResults] = useState(true);
+  const [isScanManuallyPending, setIsScanManuallyPending] = useState(false);
+  const [lastRunOutput, setLastRunOutput] = useState<IntegrationRunOutput | null>(null);
 
   // Use SWR for real-time updates
   const { data: findings = initialFindings, mutate: mutateFindings } = useSWR<Finding[]>(
@@ -74,22 +136,60 @@ export function TestsLayout({ initialFindings, initialProviders }: TestsLayoutPr
     accessToken: scanAccessToken || undefined,
   });
 
+  const isScanActive =
+    !!scanTaskId &&
+    (!!isScanManuallyPending ||
+      !scanRun ||
+      (scanRun.status ? SCANNING_STATUSES.has(scanRun.status) : false));
+
   // Auto-refresh findings when scan completes
   useEffect(() => {
-    if (scanRun?.status === 'COMPLETED') {
+    if (!scanRun) {
+      return;
+    }
+
+    let pendingTimeout: ReturnType<typeof setTimeout> | undefined;
+
+    if (scanRun.status === 'COMPLETED') {
+      const runOutput = isIntegrationRunOutput(scanRun.output) ? scanRun.output : undefined;
+
       mutateFindings();
-      toast.success('Scan completed! Results updated.');
-    } else if (scanRun?.status === 'FAILED' || scanRun?.status === 'CRASHED') {
+      setLastRunOutput(runOutput ?? null);
+
+      if (runOutput && !runOutput.success) {
+        const errorMessage =
+          runOutput.errors?.[0] ??
+          runOutput.failedIntegrations?.[0]?.error ??
+          'Scan completed with errors';
+
+        toast.error(errorMessage);
+      } else {
+        toast.success('Scan completed! Results updated.');
+      }
+    } else if (scanRun.status === 'FAILED' || scanRun.status === 'CRASHED') {
+      setLastRunOutput(null);
       toast.error('Scan failed. Please try again.');
     }
-  }, [scanRun?.status, mutateFindings]);
+    if (scanRun.status && !SCANNING_STATUSES.has(scanRun.status)) {
+      pendingTimeout = setTimeout(() => {
+        setIsScanManuallyPending(false);
+      }, 300);
+    }
+    return () => {
+      if (pendingTimeout) {
+        clearTimeout(pendingTimeout);
+      }
+    };
+  }, [scanRun, mutateFindings]);
 
   const handleRunScan = async (): Promise<string | null> => {
     try {
+      setLastRunOutput(null);
       const result = await runTests();
       if (result.success && result.taskId && result.publicAccessToken) {
         setScanTaskId(result.taskId);
         setScanAccessToken(result.publicAccessToken);
+        setIsScanManuallyPending(true);
         toast.success('Scan started! Checking your cloud infrastructure...');
         return result.taskId;
       } else {
@@ -109,12 +209,27 @@ export function TestsLayout({ initialFindings, initialProviders }: TestsLayoutPr
     setViewingResults(true);
   };
 
+  const handleCloudConnected = (trigger?: TriggerInfo) => {
+    mutateProviders();
+    mutateFindings();
+    setLastRunOutput(null);
+
+    if (trigger?.taskId && trigger?.publicAccessToken) {
+      setScanTaskId(trigger.taskId);
+      setScanAccessToken(trigger.publicAccessToken);
+      setIsScanManuallyPending(true);
+    }
+
+    setViewingResults(true);
+  };
+
   // First-time user: No clouds connected OR user wants to add a cloud
   if (connectedProviders.length === 0 || !viewingResults) {
     return (
       <EmptyState
         onBack={connectedProviders.length > 0 ? () => setViewingResults(true) : undefined}
         connectedProviders={connectedProviders.map((p) => p.integrationId)}
+        onConnected={handleCloudConnected}
       />
     );
   }
@@ -174,14 +289,8 @@ export function TestsLayout({ initialFindings, initialProviders }: TestsLayoutPr
               scanTaskId={scanTaskId}
               scanAccessToken={scanAccessToken}
               onRunScan={handleRunScan}
-              isScanning={
-                !!(
-                  scanRun &&
-                  ['QUEUED', 'EXECUTING', 'WAITING_FOR_DEPLOY', 'REATTEMPTING'].includes(
-                    scanRun.status,
-                  )
-                )
-              }
+              isScanning={isScanActive}
+              runOutput={lastRunOutput}
             />
           </div>
           {/* <div className="hidden lg:block">
@@ -262,14 +371,8 @@ export function TestsLayout({ initialFindings, initialProviders }: TestsLayoutPr
                     scanTaskId={scanTaskId}
                     scanAccessToken={scanAccessToken}
                     onRunScan={handleRunScan}
-                    isScanning={
-                      !!(
-                        scanRun &&
-                        ['QUEUED', 'EXECUTING', 'WAITING_FOR_DEPLOY', 'REATTEMPTING'].includes(
-                          scanRun.status,
-                        )
-                      )
-                    }
+                    isScanning={isScanActive}
+                    runOutput={lastRunOutput}
                   />
                 </div>
                 <div className="hidden lg:block">

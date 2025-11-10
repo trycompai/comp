@@ -4,7 +4,7 @@ import { encrypt } from '@/lib/encryption';
 import { getIntegrationHandler } from '@comp/integrations';
 import { db } from '@db';
 import { revalidatePath } from 'next/cache';
-import { headers } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { z } from 'zod';
 import { authActionClient } from '../../../../../actions/safe-action';
 import { runTests } from './run-tests';
@@ -100,7 +100,11 @@ export const connectCloudAction = authActionClient
       }
 
       // Trigger immediate scan
-      await runTests();
+      const runResult = await runTests();
+
+      if (runResult.success && runResult.publicAccessToken) {
+        (await cookies()).set('publicAccessToken', runResult.publicAccessToken);
+      }
 
       // Revalidate the path
       const headersList = await headers();
@@ -110,6 +114,13 @@ export const connectCloudAction = authActionClient
 
       return {
         success: true,
+        trigger: runResult.success
+          ? {
+              taskId: runResult.taskId ?? undefined,
+              publicAccessToken: runResult.publicAccessToken ?? undefined,
+            }
+          : undefined,
+        runErrors: runResult.success ? undefined : (runResult.errors ?? undefined),
       };
     } catch (error) {
       console.error('Failed to connect cloud provider:', error);

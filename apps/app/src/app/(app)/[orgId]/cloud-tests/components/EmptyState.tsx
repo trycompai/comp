@@ -117,12 +117,18 @@ const PROVIDER_FIELDS: Record<'aws' | 'gcp' | 'azure', ProviderFieldWithOptions[
   ],
 };
 
+type TriggerInfo = {
+  taskId?: string;
+  publicAccessToken?: string;
+};
+
 interface EmptyStateProps {
   onBack?: () => void;
   connectedProviders?: string[];
+  onConnected?: (trigger?: TriggerInfo) => void;
 }
 
-export function EmptyState({ onBack, connectedProviders = [] }: EmptyStateProps = {}) {
+export function EmptyState({ onBack, connectedProviders = [], onConnected }: EmptyStateProps = {}) {
   const [step, setStep] = useState<Step>('choose');
   const [selectedProvider, setSelectedProvider] = useState<CloudProvider>(null);
   const [credentials, setCredentials] = useState<Record<string, string>>({});
@@ -224,6 +230,12 @@ export function EmptyState({ onBack, connectedProviders = [] }: EmptyStateProps 
 
       if (result?.data?.success) {
         setStep('success');
+        if (result.data?.trigger) {
+          onConnected?.(result.data.trigger);
+        }
+        if (result.data?.runErrors && result.data.runErrors.length > 0) {
+          toast.error(result.data.runErrors[0] || 'Initial scan reported an issue');
+        }
         // If user already has clouds, automatically return to results after 2 seconds
         if (onBack) {
           setTimeout(() => {
