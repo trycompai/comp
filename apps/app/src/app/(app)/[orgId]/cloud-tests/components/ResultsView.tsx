@@ -3,8 +3,9 @@
 import { Button } from '@comp/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
-import { CheckCircle2, Info, Loader2, RefreshCw, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Info, Loader2, RefreshCw, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import type { IntegrationRunOutput } from '../types';
 import { FindingsTable } from './FindingsTable';
 
 interface Finding {
@@ -23,6 +24,7 @@ interface ResultsViewProps {
   scanAccessToken: string | null;
   onRunScan: () => Promise<string | null>;
   isScanning: boolean;
+  runOutput: IntegrationRunOutput | null;
 }
 
 const severityOrder = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
@@ -50,6 +52,7 @@ export function ResultsView({
   scanAccessToken,
   onRunScan,
   isScanning,
+  runOutput,
 }: ResultsViewProps) {
   // Track scan status with Trigger.dev hooks
   const { run } = useRealtimeRun(scanTaskId || '', {
@@ -64,17 +67,28 @@ export function ResultsView({
   const [selectedSeverity, setSelectedSeverity] = useState<string>('all');
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
   const [showErrorBanner, setShowErrorBanner] = useState(false);
+  const [showOutputErrorBanner, setShowOutputErrorBanner] = useState(false);
 
-  // Show success banner when scan completes, auto-hide after 5 seconds
+  const runOutputError = runOutput && !runOutput.success ? runOutput : null;
+  const scanSucceeded = scanCompleted && !runOutputError;
+  const outputErrorMessages =
+    runOutputError?.errors && runOutputError.errors.length > 0
+      ? runOutputError.errors
+      : runOutputError?.failedIntegrations?.map(
+          (integration) => `${integration.name}: ${integration.error}`,
+        ) ?? [];
+
+  // Show success banner when scan completes successfully, auto-hide after 5 seconds
   useEffect(() => {
-    if (scanCompleted) {
+    if (scanSucceeded) {
       setShowSuccessBanner(true);
       const timer = setTimeout(() => {
         setShowSuccessBanner(false);
       }, 5000);
       return () => clearTimeout(timer);
     }
-  }, [scanCompleted]);
+    setShowSuccessBanner(false);
+  }, [scanSucceeded]);
 
   // Auto-dismiss error banner after 30 seconds
   useEffect(() => {
@@ -86,6 +100,16 @@ export function ResultsView({
       return () => clearTimeout(timer);
     }
   }, [scanFailed]);
+
+  // Show output error banner when run completes with errors
+  useEffect(() => {
+    if (runOutputError) {
+      setShowOutputErrorBanner(true);
+      setShowSuccessBanner(false);
+    } else {
+      setShowOutputErrorBanner(false);
+    }
+  }, [runOutputError]);
 
   // Get unique statuses and severities
   const uniqueStatuses = Array.from(
@@ -146,8 +170,40 @@ export function ResultsView({
         </div>
       )}
 
+      {/* Output error banner when run reports errors but job didn't crash */}
+      {showOutputErrorBanner && runOutputError && !isScanning && (
+        <div className="bg-destructive/10 flex items-start gap-3 rounded-lg border border-destructive/20 p-4">
+          <AlertTriangle className="text-destructive h-5 w-5 flex-shrink-0" />
+          <div className="flex-1 space-y-1">
+            <p className="text-destructive text-sm font-medium">Scan completed with errors</p>
+            <ul className="text-muted-foreground text-xs leading-relaxed">
+              {outputErrorMessages.slice(0, 5).map((message, index) => (
+                <li key={`${message}-${index}`}>• {message}</li>
+              ))}
+              {outputErrorMessages.length === 0 && (
+                <li>Encountered an unknown error while processing integration results.</li>
+              )}
+            </ul>
+            {runOutputError.failedIntegrations && runOutputError.failedIntegrations.length > 0 && (
+              <p className="text-muted-foreground text-xs">
+                {runOutputError.failedIntegrations.length} integration
+                {runOutputError.failedIntegrations.length === 1 ? '' : 's'} returned errors.
+              </p>
+            )}
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowOutputErrorBanner(false)}
+            className="text-muted-foreground hover:text-foreground h-auto p-1"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+
       {/* Propagation delay info banner - only when scan succeeds but returns empty output */}
-      {scanCompleted && findings.length === 0 && !isScanning && !scanFailed && (
+      {scanCompleted && findings.length === 0 && !isScanning && !scanFailed && !runOutputError && (
         <div className="bg-blue-50 dark:bg-blue-950/20 flex items-center gap-3 rounded-lg border border-blue-200 dark:border-blue-900 p-4">
           <Info className="text-blue-600 dark:text-blue-400 h-5 w-5 flex-shrink-0" />
           <div className="flex-1">
