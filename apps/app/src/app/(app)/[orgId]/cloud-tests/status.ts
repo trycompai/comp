@@ -1,66 +1,59 @@
-import type { TaskRunStatus } from '@trigger.dev/core';
+import type { AnyRealtimeRun } from '@trigger.dev/sdk';
 
-const TASK_RUN_STATUS_VALUES = [
-  'DELAYED',
-  'PENDING',
+export type RunStatus = AnyRealtimeRun['status'];
+
+const RUN_STATUS_VALUES_INTERNAL = [
   'PENDING_VERSION',
-  'WAITING_FOR_DEPLOY',
+  'QUEUED',
   'DEQUEUED',
   'EXECUTING',
-  'WAITING_TO_RESUME',
-  'RETRYING_AFTER_FAILURE',
-  'PAUSED',
+  'WAITING',
+  'COMPLETED',
   'CANCELED',
-  'INTERRUPTED',
-  'COMPLETED_SUCCESSFULLY',
-  'COMPLETED_WITH_ERRORS',
-  'SYSTEM_FAILURE',
+  'FAILED',
   'CRASHED',
+  'SYSTEM_FAILURE',
+  'DELAYED',
   'EXPIRED',
   'TIMED_OUT',
-] as const satisfies readonly TaskRunStatus[];
+] as const satisfies readonly RunStatus[];
 
-const KNOWN_STATUS_SET: ReadonlySet<TaskRunStatus> = new Set<TaskRunStatus>(TASK_RUN_STATUS_VALUES);
+export const RUN_STATUS_VALUES = RUN_STATUS_VALUES_INTERNAL;
 
-const TERMINAL_STATUS_SET: ReadonlySet<TaskRunStatus> = new Set<TaskRunStatus>([
-  'COMPLETED_SUCCESSFULLY',
-  'COMPLETED_WITH_ERRORS',
+const KNOWN_STATUS_SET: ReadonlySet<RunStatus> = new Set<RunStatus>(RUN_STATUS_VALUES_INTERNAL);
+
+const TERMINAL_STATUS_SET: ReadonlySet<RunStatus> = new Set<RunStatus>([
+  'COMPLETED',
   'CANCELED',
-  'INTERRUPTED',
-  'SYSTEM_FAILURE',
+  'FAILED',
   'CRASHED',
+  'SYSTEM_FAILURE',
+  'DELAYED',
   'EXPIRED',
   'TIMED_OUT',
-  'PAUSED',
 ]);
 
-const SUCCESS_STATUS_SET: ReadonlySet<TaskRunStatus> = new Set<TaskRunStatus>([
-  'COMPLETED_SUCCESSFULLY',
-]);
+const SUCCESS_STATUS_SET: ReadonlySet<RunStatus> = new Set<RunStatus>(['COMPLETED']);
 
-const FAILURE_STATUS_SET: ReadonlySet<TaskRunStatus> = new Set<TaskRunStatus>([
-  'COMPLETED_WITH_ERRORS',
-  'SYSTEM_FAILURE',
+const FAILURE_STATUS_SET: ReadonlySet<RunStatus> = new Set<RunStatus>([
+  'FAILED',
   'CRASHED',
+  'SYSTEM_FAILURE',
   'TIMED_OUT',
   'EXPIRED',
-  'INTERRUPTED',
-  'CANCELED',
 ]);
 
-export const isTaskRunStatus = (status: unknown): status is TaskRunStatus =>
-  typeof status === 'string' && KNOWN_STATUS_SET.has(status as TaskRunStatus);
+export const isRunStatus = (status: unknown): status is RunStatus =>
+  typeof status === 'string' && KNOWN_STATUS_SET.has(status as RunStatus);
 
-export const isTerminalRunStatus = (status: unknown): status is TaskRunStatus =>
-  isTaskRunStatus(status) && TERMINAL_STATUS_SET.has(status);
+export const isTerminalRunStatus = (status: unknown): status is RunStatus =>
+  isRunStatus(status) && TERMINAL_STATUS_SET.has(status);
 
-export const isActiveRunStatus = (status: unknown): status is TaskRunStatus =>
-  isTaskRunStatus(status) && !TERMINAL_STATUS_SET.has(status);
+export const isActiveRunStatus = (status: unknown): status is RunStatus =>
+  isRunStatus(status) && !TERMINAL_STATUS_SET.has(status);
 
-export const isSuccessfulRunStatus = (status: unknown): status is TaskRunStatus =>
-  isTaskRunStatus(status) && SUCCESS_STATUS_SET.has(status);
+export const isSuccessfulRunStatus = (status: unknown): status is RunStatus =>
+  isRunStatus(status) && SUCCESS_STATUS_SET.has(status);
 
-export const isFailureRunStatus = (status: unknown): status is TaskRunStatus =>
-  isTaskRunStatus(status) && FAILURE_STATUS_SET.has(status);
-
-
+export const isFailureRunStatus = (status: unknown): status is RunStatus =>
+  isRunStatus(status) && FAILURE_STATUS_SET.has(status);

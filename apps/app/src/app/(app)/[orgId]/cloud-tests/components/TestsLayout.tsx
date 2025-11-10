@@ -13,8 +13,8 @@ import { runTests } from '../actions/run-tests';
 import {
   isActiveRunStatus,
   isFailureRunStatus,
+  isRunStatus,
   isSuccessfulRunStatus,
-  isTaskRunStatus,
   isTerminalRunStatus,
 } from '../status';
 import type { IntegrationRunOutput } from '../types';
@@ -163,7 +163,7 @@ export function TestsLayout({ initialFindings, initialProviders }: TestsLayoutPr
 
     const status = scanRun.status;
 
-    if (!isTaskRunStatus(status)) {
+    if (!isRunStatus(status)) {
       return;
     }
 
