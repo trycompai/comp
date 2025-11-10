@@ -43,8 +43,8 @@ export function DeviceAgentAccordionItem({
 
   const hasInstalledAgent = host !== null;
   const failedPoliciesCount = useMemo(() => {
-    return fleetPolicies.filter((policy) => policy.response !== 'pass').length + (mdmEnabledStatus.response === 'fail' ? 1 : 0);
-  }, [fleetPolicies, mdmEnabledStatus]);
+    return fleetPolicies.filter((policy) => policy.response !== 'pass').length + (!isMacOS || mdmEnabledStatus.response === 'pass' ? 0 : 1);
+  }, [fleetPolicies, mdmEnabledStatus, isMacOS]);
 
   const isCompleted = hasInstalledAgent && failedPoliciesCount === 0;
 
@@ -279,55 +279,57 @@ export function DeviceAgentAccordionItem({
                         )}
                       </div>
                     ))}
-                    <div
-                      className={cn(
-                        'hover:bg-muted/50 flex items-center justify-between rounded-md border border-l-4 p-3 shadow-sm transition-colors',
-                        mdmEnabledStatus.response === 'pass' ? 'border-l-green-500' : 'border-l-red-500',
-                      )}
-                    >
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium">{mdmEnabledStatus.name}</p>
-                        {mdmEnabledStatus.response === 'fail' && host?.id && (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <button
-                                  type="button"
-                                  className="text-muted-foreground hover:text-foreground transition-colors"
-                                >
-                                  <HelpCircle size={14} />
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent className="max-w-xs">
-                                <p>
-                                  To enable MDM, please check{' '}
-                                  <a
-                                    href="https://trycomp.ai/docs/device-agent#mdm-user-guide"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-blue-600 dark:text-blue-400 hover:underline"
+                    {isMacOS && (
+                      <div
+                        className={cn(
+                          'hover:bg-muted/50 flex items-center justify-between rounded-md border border-l-4 p-3 shadow-sm transition-colors',
+                          mdmEnabledStatus.response === 'pass' ? 'border-l-green-500' : 'border-l-red-500',
+                        )}
+                      >
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium">{mdmEnabledStatus.name}</p>
+                          {mdmEnabledStatus.response === 'fail' && host?.id && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button
+                                    type="button"
+                                    className="text-muted-foreground hover:text-foreground transition-colors"
                                   >
-                                    this documentation
-                                  </a>
-                                  .
-                                </p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
+                                    <HelpCircle size={14} />
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <p>
+                                    To enable MDM, please check{' '}
+                                    <a
+                                      href="https://trycomp.ai/docs/device-agent#mdm-user-guide"
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-600 dark:text-blue-400 hover:underline"
+                                    >
+                                      this documentation
+                                    </a>
+                                    .
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                        </div>
+                        {mdmEnabledStatus.response === 'pass' ? (
+                          <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                            <CheckCircle2 size={16} />
+                            <span className="text-sm">Pass</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 text-red-600 dark:text-red-400">
+                            <XCircle size={16} />
+                            <span className="text-sm">Fail</span>
+                          </div>
                         )}
                       </div>
-                      {mdmEnabledStatus.response === 'pass' ? (
-                        <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
-                          <CheckCircle2 size={16} />
-                          <span className="text-sm">Pass</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1 text-red-600 dark:text-red-400">
-                          <XCircle size={16} />
-                          <span className="text-sm">Fail</span>
-                        </div>
-                      )}
-                    </div>
+                    )}
                   </>
                 ) : (
                   <p className="text-muted-foreground text-sm">
