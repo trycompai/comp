@@ -6,8 +6,9 @@ import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { cn } from '@comp/ui/cn';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import type { Member } from '@db';
-import { CheckCircle2, Circle, Download, Loader2, XCircle } from 'lucide-react';
+import { CheckCircle2, Circle, Download, HelpCircle, Loader2, XCircle } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -32,10 +33,20 @@ export function DeviceAgentAccordionItem({
     [detectedOS],
   );
 
+  const mdmEnabledStatus = useMemo(() => {
+    return {
+      id: 'mdm',
+      response: host?.mdm.enrollment_status === 'On' ? 'pass' : 'fail',
+      name: 'MDM Enabled',
+    };
+  }, [host]);
+
   const hasInstalledAgent = host !== null;
-  const allPoliciesPass =
-    fleetPolicies.length === 0 || fleetPolicies.every((policy) => policy.response === 'pass');
-  const isCompleted = hasInstalledAgent && allPoliciesPass;
+  const failedPoliciesCount = useMemo(() => {
+    return fleetPolicies.filter((policy) => policy.response !== 'pass').length + (mdmEnabledStatus.response === 'fail' ? 1 : 0);
+  }, [fleetPolicies, mdmEnabledStatus]);
+
+  const isCompleted = hasInstalledAgent && failedPoliciesCount === 0;
 
   const handleDownload = async () => {
     setIsDownloading(true);
@@ -130,9 +141,9 @@ export function DeviceAgentAccordionItem({
           <span className={cn('text-base', isCompleted && 'text-muted-foreground line-through')}>
             Download and install Comp AI Device Agent
           </span>
-          {hasInstalledAgent && !allPoliciesPass && (
+          {hasInstalledAgent && failedPoliciesCount > 0 && (
             <span className="text-amber-600 dark:text-amber-400 text-xs ml-auto">
-              {fleetPolicies.filter((p) => p.response !== 'pass').length} policies failing
+              {failedPoliciesCount} policies failing
             </span>
           )}
         </div>
@@ -245,16 +256,67 @@ export function DeviceAgentAccordionItem({
               </CardHeader>
               <CardContent className="space-y-3">
                 {fleetPolicies.length > 0 ? (
-                  fleetPolicies.map((policy) => (
+                  <>
+                    {fleetPolicies.map((policy) => (
+                      <div
+                        key={policy.id}
+                        className={cn(
+                          'hover:bg-muted/50 flex items-center justify-between rounded-md border border-l-4 p-3 shadow-sm transition-colors',
+                          policy.response === 'pass' ? 'border-l-green-500' : 'border-l-red-500',
+                        )}
+                      >
+                        <p className="text-sm font-medium">{policy.name}</p>
+                        {policy.response === 'pass' ? (
+                          <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                            <CheckCircle2 size={16} />
+                            <span className="text-sm">Pass</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 text-red-600 dark:text-red-400">
+                            <XCircle size={16} />
+                            <span className="text-sm">Fail</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
                     <div
-                      key={policy.id}
                       className={cn(
                         'hover:bg-muted/50 flex items-center justify-between rounded-md border border-l-4 p-3 shadow-sm transition-colors',
-                        policy.response === 'pass' ? 'border-l-green-500' : 'border-l-red-500',
+                        mdmEnabledStatus.response === 'pass' ? 'border-l-green-500' : 'border-l-red-500',
                       )}
                     >
-                      <p className="text-sm font-medium">{policy.name}</p>
-                      {policy.response === 'pass' ? (
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium">{mdmEnabledStatus.name}</p>
+                        {mdmEnabledStatus.response === 'fail' && host?.id && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  type="button"
+                                  className="text-muted-foreground hover:text-foreground transition-colors"
+                                >
+                                  <HelpCircle size={14} />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <p>
+                                  To enable MDM, please check{' '}
+                                  <a
+                                    href="https://trycomp.ai/docs/device-agent#mdm-user-guide"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 dark:text-blue-400 hover:underline"
+                                  >
+                                    this documentation
+                                  </a>
+                                  .
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+                      </div>
+                      {mdmEnabledStatus.response === 'pass' ? (
                         <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
                           <CheckCircle2 size={16} />
                           <span className="text-sm">Pass</span>
@@ -266,7 +328,7 @@ export function DeviceAgentAccordionItem({
                         </div>
                       )}
                     </div>
-                  ))
+                  </>
                 ) : (
                   <p className="text-muted-foreground text-sm">
                     No policies configured for this device.

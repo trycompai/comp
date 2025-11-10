@@ -66,7 +66,7 @@ export interface Host {
   gigs_total_disk_space: number;
   disk_encryption_enabled: boolean;
   issues: object;
-  mdm: object;
+  mdm: MDM;
   refetch_critical_queries_until: string | null;
   last_restarted_at: string;
   policies: FleetPolicy[];
@@ -80,3 +80,12 @@ export interface Host {
   display_text: string;
   display_name: string;
 }
+
+export type MDM = {
+  connected_to_fleet: boolean;
+  dep_profile_error: boolean;
+  encryption_key_available: boolean;
+  enrollment_status: "Off" | "On";
+  name?: string;
+  server_url?: string;
+};
