@@ -301,7 +301,7 @@ export function DeviceAgentAccordionItem({
                                 </TooltipTrigger>
                                 <TooltipContent className="max-w-xs">
                                   <p>
-                                    To enable MDM, please check{' '}
+                                    There are additional steps required to enable MDM. Please check{' '}
                                     <a
                                       href="https://trycomp.ai/docs/device-agent#mdm-user-guide"
                                       target="_blank"
