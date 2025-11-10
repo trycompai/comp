@@ -5,11 +5,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
 import { Integration } from '@db';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { Plus, Settings } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import type { Fetcher } from 'swr';
 import useSWR from 'swr';
 import { runTests } from '../actions/run-tests';
+import {
+  isActiveRunStatus,
+  isFailureRunStatus,
+  isSuccessfulRunStatus,
+  isTaskRunStatus,
+  isTerminalRunStatus,
+} from '../status';
 import type { IntegrationRunOutput } from '../types';
 import { ChatPlaceholder } from './ChatPlaceholder';
 import { CloudSettingsModal } from './CloudSettingsModal';
@@ -40,32 +47,12 @@ type TriggerInfo = {
   taskId?: string;
   publicAccessToken?: string;
 };
-type ActiveScanStatus =
-  | 'QUEUED'
-  | 'EXECUTING'
-  | 'WAITING_FOR_DEPLOY'
-  | 'REATTEMPTING'
-  | 'WAITING_FOR_CLAIM'
-  | 'WAITING_FOR_START'
-  | 'PENDING';
 
 const SUPPORTED_PROVIDER_IDS: readonly SupportedProviderId[] = ['aws', 'gcp', 'azure'];
 const SUPPORTED_PROVIDER_ID_SET: ReadonlySet<SupportedProviderId> = new Set(SUPPORTED_PROVIDER_IDS);
-const ACTIVE_SCAN_STATUSES: ReadonlySet<ActiveScanStatus> = new Set<ActiveScanStatus>([
-  'QUEUED',
-  'EXECUTING',
-  'WAITING_FOR_DEPLOY',
-  'REATTEMPTING',
-  'WAITING_FOR_CLAIM',
-  'WAITING_FOR_START',
-  'PENDING',
-]);
 
 const isSupportedProviderId = (integrationId: string): integrationId is SupportedProviderId =>
   SUPPORTED_PROVIDER_ID_SET.has(integrationId as SupportedProviderId);
-
-const isActiveScanStatus = (status: string | null | undefined): status is ActiveScanStatus =>
-  Boolean(status) && ACTIVE_SCAN_STATUSES.has(status as ActiveScanStatus);
 
 const isIntegrationRunOutput = (value: unknown): value is IntegrationRunOutput => {
   if (typeof value !== 'object' || value === null) {
@@ -125,8 +112,10 @@ export function TestsLayout({ initialFindings, initialProviders }: TestsLayoutPr
   const [scanAccessToken, setScanAccessToken] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [viewingResults, setViewingResults] = useState(true);
-  const [isScanManuallyPending, setIsScanManuallyPending] = useState(false);
+  const [isAwaitingRunStart, setIsAwaitingRunStart] = useState(false);
   const [lastRunOutput, setLastRunOutput] = useState<IntegrationRunOutput | null>(null);
+  const lastHandledRunIdRef = useRef<string | null>(null);
+  const lastHandledStatusRef = useRef<string | null>(null);
 
   // Use SWR for real-time updates
   const findingsFetcher: Fetcher<Finding[], string> = (url) => fetchJson<Finding[]>(url);
@@ -162,48 +151,79 @@ export function TestsLayout({ initialFindings, initialProviders }: TestsLayoutPr
   });
 
   const isScanActive =
-    Boolean(scanTaskId) &&
-    (isScanManuallyPending || !scanRun || isActiveScanStatus(scanRun.status));
+    Boolean(scanTaskId) && (isAwaitingRunStart || isActiveRunStatus(scanRun?.status));
 
-  // Auto-refresh findings when scan completes
+  // Sync job completion state with realtime run events
   useEffect(() => {
     if (!scanRun) {
       return;
     }
 
-    let pendingTimeout: ReturnType<typeof setTimeout> | undefined;
+    setIsAwaitingRunStart(false);
 
-    if (scanRun.status === 'COMPLETED') {
-      const runOutput = isIntegrationRunOutput(scanRun.output) ? scanRun.output : undefined;
+    const status = scanRun.status;
 
-      mutateFindings();
-      setLastRunOutput(runOutput ?? null);
-
-      if (runOutput && !runOutput.success) {
-        const errorMessage =
-          runOutput.errors?.[0] ??
-          runOutput.failedIntegrations?.[0]?.error ??
-          'Scan completed with errors';
-
-        toast.error(errorMessage);
-      } else {
-        toast.success('Scan completed! Results updated.');
-      }
-    } else if (scanRun.status === 'FAILED' || scanRun.status === 'CRASHED') {
-      setLastRunOutput(null);
-      toast.error('Scan failed. Please try again.');
+    if (!isTaskRunStatus(status)) {
+      return;
     }
-    if (scanRun.status && !isActiveScanStatus(scanRun.status)) {
-      pendingTimeout = setTimeout(() => {
-        setIsScanManuallyPending(false);
-      }, 300);
+
+    if (scanRun.id !== lastHandledRunIdRef.current) {
+      lastHandledRunIdRef.current = scanRun.id;
+      lastHandledStatusRef.current = null;
     }
-    return () => {
-      if (pendingTimeout) {
-        clearTimeout(pendingTimeout);
-      }
-    };
+
+    if (!isTerminalRunStatus(status)) {
+      lastHandledStatusRef.current = status;
+      return;
+    }
+
+    if (lastHandledStatusRef.current === status) {
+      return;
+    }
+
+    lastHandledStatusRef.current = status;
+
+    const runOutput = isIntegrationRunOutput(scanRun.output) ? scanRun.output : null;
+    setLastRunOutput(runOutput);
+    void mutateFindings();
+
+    if (runOutput && runOutput.success === false) {
+      const errorMessage =
+        runOutput.errors?.[0] ??
+        runOutput.failedIntegrations?.[0]?.error ??
+        'Scan completed with errors';
+      toast.error(errorMessage);
+      return;
+    }
+
+    if (isFailureRunStatus(status) || scanRun.error) {
+      const errorMessage =
+        (typeof scanRun.error === 'string' && scanRun.error) ||
+        (scanRun.error &&
+        typeof scanRun.error === 'object' &&
+        'message' in scanRun.error &&
+        scanRun.error.message
+          ? String((scanRun.error as { message?: unknown }).message)
+          : undefined) ||
+        'Scan failed. Please try again.';
+      toast.error(errorMessage);
+      return;
+    }
+
+    if (isSuccessfulRunStatus(status)) {
+      toast.success('Scan completed! Results updated.');
+    } else {
+      toast.message('Scan completed.');
+    }
   }, [scanRun, mutateFindings]);
+
+  useEffect(() => {
+    if (!scanTaskId) {
+      setIsAwaitingRunStart(false);
+      lastHandledRunIdRef.current = null;
+      lastHandledStatusRef.current = null;
+    }
+  }, [scanTaskId]);
 
   const handleRunScan = async (): Promise<string | null> => {
     try {
@@ -212,8 +232,10 @@ export function TestsLayout({ initialFindings, initialProviders }: TestsLayoutPr
       if (result.success && result.taskId && result.publicAccessToken) {
         setScanTaskId(result.taskId);
         setScanAccessToken(result.publicAccessToken);
-        setIsScanManuallyPending(true);
-        toast.success('Scan started! Checking your cloud infrastructure...');
+        setIsAwaitingRunStart(true);
+        lastHandledRunIdRef.current = null;
+        lastHandledStatusRef.current = null;
+        toast.message('Scan started. Checking your cloud infrastructure...');
         return result.taskId;
       } else {
         toast.error(result.errors?.[0] || 'Failed to start scan');
@@ -240,7 +262,9 @@ export function TestsLayout({ initialFindings, initialProviders }: TestsLayoutPr
     if (trigger?.taskId && trigger?.publicAccessToken) {
       setScanTaskId(trigger.taskId);
       setScanAccessToken(trigger.publicAccessToken);
-      setIsScanManuallyPending(true);
+      setIsAwaitingRunStart(true);
+      lastHandledRunIdRef.current = null;
+      lastHandledStatusRef.current = null;
     }
 
     setViewingResults(true);

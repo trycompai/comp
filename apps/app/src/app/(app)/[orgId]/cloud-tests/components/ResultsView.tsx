@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { AlertTriangle, CheckCircle2, Info, Loader2, RefreshCw, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { isFailureRunStatus, isSuccessfulRunStatus, isTerminalRunStatus } from '../status';
 import type { IntegrationRunOutput } from '../types';
 import { FindingsTable } from './FindingsTable';
 
@@ -60,9 +61,7 @@ export function ResultsView({
     accessToken: scanAccessToken || undefined,
   });
 
-  const scanCompleted = run?.status === 'COMPLETED';
-  const scanFailed =
-    run?.status === 'FAILED' || run?.status === 'CRASHED' || run?.status === 'SYSTEM_FAILURE';
+  const runStatus = run?.status;
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedSeverity, setSelectedSeverity] = useState<string>('all');
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
@@ -70,13 +69,15 @@ export function ResultsView({
   const [showOutputErrorBanner, setShowOutputErrorBanner] = useState(false);
 
   const runOutputError = runOutput && !runOutput.success ? runOutput : null;
-  const scanSucceeded = scanCompleted && !runOutputError;
+  const isRunTerminal = isTerminalRunStatus(runStatus);
+  const scanSucceeded = isRunTerminal && !runOutputError && isSuccessfulRunStatus(runStatus);
+  const runHasHardFailure = isRunTerminal && (isFailureRunStatus(runStatus) || Boolean(run?.error));
   const outputErrorMessages =
     runOutputError?.errors && runOutputError.errors.length > 0
       ? runOutputError.errors
-      : runOutputError?.failedIntegrations?.map(
+      : (runOutputError?.failedIntegrations?.map(
           (integration) => `${integration.name}: ${integration.error}`,
-        ) ?? [];
+        ) ?? []);
 
   // Show success banner when scan completes successfully, auto-hide after 5 seconds
   useEffect(() => {
@@ -92,14 +93,15 @@ export function ResultsView({
 
   // Auto-dismiss error banner after 30 seconds
   useEffect(() => {
-    if (scanFailed) {
+    if (runHasHardFailure) {
       setShowErrorBanner(true);
       const timer = setTimeout(() => {
         setShowErrorBanner(false);
       }, 30000);
       return () => clearTimeout(timer);
     }
-  }, [scanFailed]);
+    setShowErrorBanner(false);
+  }, [runHasHardFailure]);
 
   // Show output error banner when run completes with errors
   useEffect(() => {
@@ -152,7 +154,7 @@ export function ResultsView({
         </div>
       )}
 
-      {showSuccessBanner && scanCompleted && !isScanning && (
+      {showSuccessBanner && scanSucceeded && !isScanning && (
         <div className="bg-primary/10 flex items-center gap-3 rounded-lg border border-primary/20 p-4">
           <CheckCircle2 className="text-primary h-5 w-5 flex-shrink-0" />
           <div className="flex-1">
@@ -203,25 +205,34 @@ export function ResultsView({
       )}
 
       {/* Propagation delay info banner - only when scan succeeds but returns empty output */}
-      {scanCompleted && findings.length === 0 && !isScanning && !scanFailed && !runOutputError && (
+      {scanSucceeded && findings.length === 0 && !isScanning && !runOutputError && (
         <div className="bg-blue-50 dark:bg-blue-950/20 flex items-center gap-3 rounded-lg border border-blue-200 dark:border-blue-900 p-4">
           <Info className="text-blue-600 dark:text-blue-400 h-5 w-5 flex-shrink-0" />
           <div className="flex-1">
-            <p className="text-blue-900 dark:text-blue-100 text-sm font-medium">Initial scan complete</p>
+            <p className="text-blue-900 dark:text-blue-100 text-sm font-medium">
+              Initial scan complete
+            </p>
             <p className="text-muted-foreground text-xs">
-              Security findings may take 24-48 hours to appear after enabling cloud security services. Check back later.
+              Security findings may take 24-48 hours to appear after enabling cloud security
+              services. Check back later.
             </p>
           </div>
         </div>
       )}
 
-      {showErrorBanner && scanFailed && !isScanning && (
+      {showErrorBanner && runHasHardFailure && !isScanning && (
         <div className="bg-destructive/10 flex items-center gap-3 rounded-lg border border-destructive/20 p-4">
           <X className="text-destructive h-5 w-5 flex-shrink-0" />
           <div className="flex-1">
             <p className="text-destructive text-sm font-medium">Scan failed</p>
             <p className="text-muted-foreground text-xs">
-              {extractCleanErrorMessage(run?.error?.message || 'An error occurred during the scan. Please try again.')}
+              {extractCleanErrorMessage(
+                (typeof run?.error === 'string' && run.error) ||
+                  (run?.error && typeof run.error === 'object' && 'message' in run.error
+                    ? String((run.error as { message?: unknown }).message)
+                    : undefined) ||
+                  'An error occurred during the scan. Please try again.',
+              )}
             </p>
           </div>
           <Button
