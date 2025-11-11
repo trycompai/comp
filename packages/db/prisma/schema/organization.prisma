@@ -28,9 +28,10 @@ model Organization {
   tasks              Task[]
   comments           Comment[]
   attachments        Attachment[]
-  trust              Trust[]
-  context            Context[]
-  secrets            Secret[]
+  trust                 Trust[]
+  context               Context[]
+  secrets               Secret[]
+  trustAccessRequests   TrustAccessRequest[]
 
   @@index([slug])
 }

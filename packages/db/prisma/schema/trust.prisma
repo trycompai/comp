@@ -47,3 +47,79 @@ enum FrameworkStatus {
     in_progress
     compliant
 }
+
+model TrustAccessRequest {
+    id                     String   @id @default(dbgenerated("generate_prefixed_cuid('tar'::text)"))
+    organizationId         String
+    organization           Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+    
+    name                   String
+    email                  String
+    company                String?
+    jobTitle               String?
+    purpose                String?
+    requestedDurationDays  Int?
+    requestedScopes        String[]
+    
+    status                 TrustAccessRequestStatus @default(under_review)
+    reviewerMemberId       String?
+    reviewer               Member? @relation("TrustAccessRequestReviewer", fields: [reviewerMemberId], references: [id], onDelete: SetNull)
+    reviewedAt             DateTime?
+    decisionReason         String?
+    
+    ipAddress              String?
+    userAgent              String?
+    
+    createdAt              DateTime @default(now())
+    updatedAt              DateTime @updatedAt
+    
+    grant                  TrustAccessGrant? @relation("RequestGrant")
+    
+    @@index([organizationId])
+    @@index([email])
+    @@index([status])
+    @@index([organizationId, status])
+}
+
+model TrustAccessGrant {
+    id                  String   @id @default(dbgenerated("generate_prefixed_cuid('tag'::text)"))
+    
+    accessRequestId     String   @unique
+    accessRequest       TrustAccessRequest @relation("RequestGrant", fields: [accessRequestId], references: [id], onDelete: Cascade)
+    
+    subjectEmail        String
+    scopes              String[]
+    
+    status              TrustAccessGrantStatus @default(active)
+    expiresAt           DateTime
+    
+    issuedByMemberId    String?
+    issuedBy            Member? @relation("IssuedGrants", fields: [issuedByMemberId], references: [id], onDelete: SetNull)
+    
+    revokedAt           DateTime?
+    revokedByMemberId   String?
+    revokedBy           Member? @relation("RevokedGrants", fields: [revokedByMemberId], references: [id], onDelete: SetNull)
+    revokeReason        String?
+    
+    createdAt           DateTime @default(now())
+    updatedAt           DateTime @updatedAt
+    
+    @@index([accessRequestId])
+    @@index([subjectEmail])
+    @@index([status])
+    @@index([expiresAt])
+    @@index([status, expiresAt])
+}
+
+enum TrustAccessRequestStatus {
+    under_review
+    approved
+    denied
+    canceled
+}
+
+enum TrustAccessGrantStatus {
+    active
+    expired
+    revoked
+}

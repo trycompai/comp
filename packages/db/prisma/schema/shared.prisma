@@ -48,6 +48,7 @@ enum AuditLogEntityType {
     vendor
     tests
     integration
+    trust
 }
 
 model GlobalVendors {
