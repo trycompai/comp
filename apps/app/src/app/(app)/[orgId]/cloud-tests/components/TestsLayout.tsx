@@ -96,13 +96,6 @@ export function TestsLayout({
     },
   );
 
-  console.log('🔍 Trigger token:', triggerToken);
-  console.log('🔍 Run:', run);
-  console.log('🔍 Run status:', run?.status);
-  console.log('🔍 Run ID:', run?.id);
-  console.log('🔍 isLoading:', isLoading);
-  console.log('🔍 error:', error);
-
   const isCompleted = run?.status === 'COMPLETED';
   const isFailed =
     run?.status === 'FAILED' ||
@@ -114,9 +107,6 @@ export function TestsLayout({
 
   const isTerminal = isCompleted || isFailed;
   const isScanning = Boolean(run && !isTerminal) || isLoading;
-
-  console.log('🔍 isTerminal:', isTerminal);
-  console.log('🔍 isScanning:', isScanning);
 
   const runOutput = isCompleted && isIntegrationRunOutput(run?.output) ? run.output : null;
 
@@ -153,17 +143,13 @@ export function TestsLayout({
   }, [run, isTerminal, isFailed, isCompleted, runOutput, mutateFindings]);
 
   const handleRunScan = async (): Promise<string | null> => {
-    console.log('🚀 handleRunScan called, orgId:', orgId);
-
     if (!orgId) {
       toast.error('No active organization');
       return null;
     }
 
     try {
-      console.log('🚀 Calling submit with payload:', { organizationId: orgId });
       await submit({ organizationId: orgId });
-      console.log('🚀 Submit completed');
       toast.message('Scan started. Checking your cloud infrastructure...');
       return run?.id || null;
     } catch (error) {
