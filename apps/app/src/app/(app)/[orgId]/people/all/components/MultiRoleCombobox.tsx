@@ -29,6 +29,11 @@ const selectableRoles: {
     descriptionKey: 'people.roles.employee_description',
   },
   {
+    value: 'contractor',
+    labelKey: 'people.roles.contractor',
+    descriptionKey: 'people.roles.contractor_description',
+  },
+  {
     value: 'auditor',
     labelKey: 'people.roles.auditor',
     descriptionKey: 'people.roles.auditor_description',
@@ -95,6 +100,8 @@ export function MultiRoleCombobox({
         return 'Auditor';
       case 'employee':
         return 'Employee';
+      case 'contractor':
+        return 'Contractor';
       default:
         return roleValue;
     }
@@ -112,6 +119,8 @@ export function MultiRoleCombobox({
           return 'Auditor';
         case 'employee':
           return 'Employee';
+        case 'contractor':
+          return 'Contractor';
         case 'owner':
           return 'Owner';
         default:

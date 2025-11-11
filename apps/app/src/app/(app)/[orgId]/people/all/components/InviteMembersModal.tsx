@@ -35,7 +35,7 @@ import { addEmployeeWithoutInvite } from '../actions/addEmployeeWithoutInvite';
 import { MultiRoleCombobox } from './MultiRoleCombobox';
 
 // --- Constants for Roles ---
-const selectableRoles = ['admin', 'auditor', 'employee'] as const satisfies Readonly<
+const selectableRoles = ['admin', 'auditor', 'employee', 'contractor'] as const satisfies Readonly<
   [Role, ...Role[]]
 >;
 type InviteRole = (typeof selectableRoles)[number];
@@ -43,7 +43,7 @@ const DEFAULT_ROLES: InviteRole[] = [];
 
 // Type guard to check if a string is a valid InviteRole
 const isInviteRole = (role: string): role is InviteRole => {
-  return role === 'admin' || role === 'auditor' || role === 'employee';
+  return role === 'admin' || role === 'auditor' || role === 'employee' || role === 'contractor';
 };
 
 // --- Schemas ---
@@ -159,7 +159,8 @@ export function InviteMembersModal({
         // Process each invitation sequentially
         for (const invite of values.manualInvites) {
           const hasEmployeeRoleAndNoAdmin =
-            !invite.roles.includes('admin') && invite.roles.includes('employee');
+            !invite.roles.includes('admin') &&
+            (invite.roles.includes('employee') || invite.roles.includes('contractor'));
           try {
             if (hasEmployeeRoleAndNoAdmin) {
               await addEmployeeWithoutInvite({
@@ -320,7 +321,8 @@ export function InviteMembersModal({
 
             // Attempt to invite
             const hasEmployeeRoleAndNoAdmin =
-              validRoles.includes('employee') && !validRoles.includes('admin');
+              (validRoles.includes('employee') || validRoles.includes('contractor')) &&
+              !validRoles.includes('admin');
             try {
               if (hasEmployeeRoleAndNoAdmin) {
                 await addEmployeeWithoutInvite({

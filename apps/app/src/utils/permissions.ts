@@ -50,4 +50,12 @@ export const employee = ac.newRole({
   portal: ['read', 'update'],
 });
 
-export const allRoles = { owner, admin, auditor, employee } as const;
+/**
+ * Contractor role with same permissions as employee
+ * Can manage portal for compliance purposes
+ */
+export const contractor = ac.newRole({
+  portal: ['read', 'update'],
+});
+
+export const allRoles = { owner, admin, auditor, employee, contractor } as const;
