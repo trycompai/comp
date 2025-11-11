@@ -49,13 +49,16 @@ export async function EmployeesOverview() {
 
     employees = fetchedMembers.filter((member) => {
       const roles = member.role.includes(',') ? member.role.split(',') : [member.role];
-      return roles.includes('employee');
+      return roles.includes('employee') || roles.includes('contractor');
     });
 
-    // Fetch required policies
+    // Fetch required policies that are published and not archived
     policies = await db.policy.findMany({
       where: {
         organizationId: organizationId,
+        isRequiredToSign: true,
+        status: 'published',
+        isArchived: false,
       },
     });
 
