@@ -149,6 +149,19 @@ export class TrustAccessService {
 
     const scopes = dto.scopes || request.requestedScopes;
 
+    let userId: string | undefined;
+    if (memberId) {
+      const member = await db.member.findUnique({
+        where: { id: memberId },
+        select: { userId: true },
+      });
+      userId = member?.userId;
+    }
+
+    if (!userId) {
+      throw new BadRequestException('Invalid member ID');
+    }
+
     const result = await db.$transaction(async (tx) => {
       const grant = await tx.trustAccessGrant.create({
         data: {
@@ -172,7 +185,7 @@ export class TrustAccessService {
       await db.auditLog.create({
         data: {
           organizationId,
-          userId: memberId || 'system',
+          userId: userId ?? '',
           memberId,
           entityType: 'trust',
           entityId: requestId,
@@ -215,6 +228,19 @@ export class TrustAccessService {
       );
     }
 
+    let userId: string | undefined;
+    if (memberId) {
+      const member = await db.member.findUnique({
+        where: { id: memberId },
+        select: { userId: true },
+      });
+      userId = member?.userId;
+    }
+
+    if (!userId) {
+      throw new BadRequestException('Invalid member ID');
+    }
+
     const updatedRequest = await db.trustAccessRequest.update({
       where: { id: requestId },
       data: {
@@ -228,7 +254,7 @@ export class TrustAccessService {
     await db.auditLog.create({
       data: {
         organizationId,
-        userId: memberId || 'system',
+        userId,
         memberId,
         entityType: 'trust',
         entityId: requestId,
@@ -306,6 +332,19 @@ export class TrustAccessService {
       throw new BadRequestException(`Grant is already ${grant.status}`);
     }
 
+    let userId: string | undefined;
+    if (memberId) {
+      const member = await db.member.findUnique({
+        where: { id: memberId },
+        select: { userId: true },
+      });
+      userId = member?.userId;
+    }
+
+    if (!userId) {
+      throw new BadRequestException('Invalid member ID');
+    }
+
     const updatedGrant = await db.trustAccessGrant.update({
       where: { id: grantId },
       data: {
@@ -319,7 +358,7 @@ export class TrustAccessService {
     await db.auditLog.create({
       data: {
         organizationId: grant.accessRequest.organizationId,
-        userId: memberId || 'system',
+        userId,
         memberId,
         entityType: 'trust',
         entityId: grantId,
