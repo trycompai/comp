@@ -59,21 +59,6 @@ export class TrustAccessService {
       },
     });
 
-    await db.auditLog.create({
-      data: {
-        organizationId: trust.organizationId,
-        userId: 'system',
-        entityType: 'trust',
-        entityId: request.id,
-        description: `Access request submitted by ${dto.email}`,
-        data: {
-          requestId: request.id,
-          email: dto.email,
-          requestedScopes: dto.requestedScopes,
-        },
-      },
-    });
-
     return {
       id: request.id,
       status: request.status,
