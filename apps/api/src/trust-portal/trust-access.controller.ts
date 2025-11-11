@@ -20,7 +20,7 @@ import {
 import type { Request } from 'express';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { OrganizationId } from '../auth/auth-context.decorator';
-import type {
+import {
   ApproveAccessRequestDto,
   CreateAccessRequestDto,
   DenyAccessRequestDto,
@@ -34,13 +34,12 @@ import { TrustAccessService } from './trust-access.service';
 export class TrustAccessController {
   constructor(private readonly trustAccessService: TrustAccessService) {}
 
-  // Public endpoint (no auth required)
-
   @Post(':friendlyUrl/requests')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Submit data access request',
-    description: 'External users submit request for data access from trust site',
+    description:
+      'External users submit request for data access from trust site',
   })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -61,8 +60,6 @@ export class TrustAccessController {
       userAgent,
     );
   }
-
-  // Admin endpoints (require auth)
 
   @Get('admin/requests')
   @UseGuards(HybridAuthGuard)
@@ -101,7 +98,10 @@ export class TrustAccessController {
     summary: 'Get access request details',
     description: 'Get detailed information about a specific access request',
   })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Request details returned' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Request details returned',
+  })
   async getAccessRequest(
     @OrganizationId() organizationId: string,
     @Param('id') requestId: string,

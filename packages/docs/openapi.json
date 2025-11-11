@@ -6919,7 +6919,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Function"
+                "$ref": "#/components/schemas/CreateAccessRequestDto"
               }
             }
           }
@@ -6940,6 +6940,20 @@
         "description": "Get all access requests for organization",
         "operationId": "TrustAccessController_listAccessRequests_v1",
         "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "under_review",
+                "approved",
+                "denied",
+                "canceled"
+              ]
+            }
+          },
           {
             "name": "X-Organization-Id",
             "in": "header",
@@ -7033,7 +7047,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Function"
+                "$ref": "#/components/schemas/ApproveAccessRequestDto"
               }
             }
           }
@@ -7082,7 +7096,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Function"
+                "$ref": "#/components/schemas/DenyAccessRequestDto"
               }
             }
           }
@@ -7162,7 +7176,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Function"
+                "$ref": "#/components/schemas/RevokeGrantDto"
               }
             }
           }
@@ -9812,9 +9826,77 @@
           "verified"
         ]
       },
-      "Function": {
+      "CreateAccessRequestDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "company": {
+            "type": "string"
+          },
+          "jobTitle": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string"
+          },
+          "requestedDurationDays": {
+            "type": "number",
+            "minimum": 1
+          },
+          "requestedScopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "email",
+          "requestedScopes"
+        ]
+      },
+      "ApproveAccessRequestDto": {
+        "type": "object",
+        "properties": {
+          "durationDays": {
+            "type": "number",
+            "minimum": 1
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "DenyAccessRequestDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
+      "RevokeGrantDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ]
       },
       "UpdateTaskTemplateDto": {
         "type": "object",

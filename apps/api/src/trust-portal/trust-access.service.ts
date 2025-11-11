@@ -29,7 +29,6 @@ export class TrustAccessService {
       throw new NotFoundException('Trust site not found or not published');
     }
 
-    // Check for existing pending request from same email
     const existingRequest = await db.trustAccessRequest.findFirst({
       where: {
         organizationId: trust.organizationId,
@@ -60,8 +59,6 @@ export class TrustAccessService {
       },
     });
 
-    // TODO: Send notification to org admins
-
     await db.auditLog.create({
       data: {
         organizationId: trust.organizationId,
@@ -85,11 +82,10 @@ export class TrustAccessService {
   }
 
   async listAccessRequests(organizationId: string, dto: ListAccessRequestsDto) {
-    const where: any = { organizationId };
-
-    if (dto.status) {
-      where.status = dto.status;
-    }
+    const where = {
+      organizationId,
+      ...(dto.status && { status: dto.status }),
+    };
 
     const requests = await db.trustAccessRequest.findMany({
       where,
@@ -208,8 +204,6 @@ export class TrustAccessService {
       return { request: updatedRequest, grant };
     });
 
-    // TODO: Send email to requester with access token/link
-
     return result;
   }
 
@@ -260,8 +254,6 @@ export class TrustAccessService {
         },
       },
     });
-
-    // TODO: Send email notification to requester
 
     return updatedRequest;
   }

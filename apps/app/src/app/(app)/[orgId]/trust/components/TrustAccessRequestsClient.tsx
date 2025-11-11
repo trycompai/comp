@@ -87,37 +87,11 @@ export function TrustAccessRequestsClient() {
             </TableHeader>
             <TableBody>
               {isPending ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell>
-                      <div className="h-4 w-32 bg-muted animate-pulse rounded" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-4 w-40 bg-muted animate-pulse rounded" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-4 w-28 bg-muted animate-pulse rounded" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <div className="h-5 w-16 bg-muted animate-pulse rounded" />
-                        <div className="h-5 w-20 bg-muted animate-pulse rounded" />
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-5 w-24 bg-muted animate-pulse rounded" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-4 w-20 bg-muted animate-pulse rounded" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <div className="h-8 w-20 bg-muted animate-pulse rounded" />
-                        <div className="h-8 w-16 bg-muted animate-pulse rounded" />
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center">
+                    Loading...
+                  </TableCell>
+                </TableRow>
               ) : requests?.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center">
