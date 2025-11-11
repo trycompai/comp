@@ -1,24 +1,15 @@
 'use client';
 
+import type { runIntegrationTests } from '@/jobs/tasks/integration/run-integration-tests';
 import { Button } from '@comp/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
 import { Integration } from '@db';
-import { useRealtimeRun } from '@trigger.dev/react-hooks';
+import { useRealtimeTaskTrigger } from '@trigger.dev/react-hooks';
 import { Plus, Settings } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import type { Fetcher } from 'swr';
 import useSWR from 'swr';
-import { runTests } from '../actions/run-tests';
-import {
-  isActiveRunStatus,
-  isFailureRunStatus,
-  isRunStatus,
-  isSuccessfulRunStatus,
-  isTerminalRunStatus,
-} from '../status';
 import type { IntegrationRunOutput } from '../types';
-import { ChatPlaceholder } from './ChatPlaceholder';
 import { CloudSettingsModal } from './CloudSettingsModal';
 import { EmptyState } from './EmptyState';
 import { ResultsView } from './ResultsView';
@@ -39,155 +30,104 @@ interface Finding {
 interface TestsLayoutProps {
   initialFindings: Finding[];
   initialProviders: Integration[];
+  triggerToken: string;
+  orgId: string;
 }
 
 type SupportedProviderId = 'aws' | 'gcp' | 'azure';
 type SupportedIntegration = Integration & { integrationId: SupportedProviderId };
-type TriggerInfo = {
-  taskId?: string;
-  publicAccessToken?: string;
-};
 
 const SUPPORTED_PROVIDER_IDS: readonly SupportedProviderId[] = ['aws', 'gcp', 'azure'];
-const SUPPORTED_PROVIDER_ID_SET: ReadonlySet<SupportedProviderId> = new Set(SUPPORTED_PROVIDER_IDS);
 
-const isSupportedProviderId = (integrationId: string): integrationId is SupportedProviderId =>
-  SUPPORTED_PROVIDER_ID_SET.has(integrationId as SupportedProviderId);
+const isSupportedProviderId = (id: string): id is SupportedProviderId =>
+  SUPPORTED_PROVIDER_IDS.includes(id as SupportedProviderId);
 
 const isIntegrationRunOutput = (value: unknown): value is IntegrationRunOutput => {
   if (typeof value !== 'object' || value === null) {
     return false;
   }
-
-  const candidate = value as {
-    success?: unknown;
-    errors?: unknown;
-    failedIntegrations?: unknown;
-  };
-
-  if (typeof candidate.success !== 'boolean') {
-    return false;
-  }
-
-  if (
-    candidate.errors !== undefined &&
-    (!Array.isArray(candidate.errors) || candidate.errors.some((item) => typeof item !== 'string'))
-  ) {
-    return false;
-  }
-
-  if (candidate.failedIntegrations !== undefined) {
-    if (!Array.isArray(candidate.failedIntegrations)) {
-      return false;
-    }
-
-    for (const item of candidate.failedIntegrations) {
-      if (
-        typeof item !== 'object' ||
-        item === null ||
-        typeof (item as { id?: unknown }).id !== 'string' ||
-        typeof (item as { integrationId?: unknown }).integrationId !== 'string' ||
-        typeof (item as { name?: unknown }).name !== 'string' ||
-        typeof (item as { error?: unknown }).error !== 'string'
-      ) {
-        return false;
-      }
-    }
-  }
-
-  return true;
+  return typeof (value as { success?: unknown }).success === 'boolean';
 };
 
-async function fetchJson<T>(url: string): Promise<T> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error('Failed to fetch');
-  }
-
-  return (await response.json()) as T;
-}
-
-export function TestsLayout({ initialFindings, initialProviders }: TestsLayoutProps) {
-  const [scanTaskId, setScanTaskId] = useState<string | null>(null);
-  const [scanAccessToken, setScanAccessToken] = useState<string | null>(null);
+export function TestsLayout({
+  initialFindings,
+  initialProviders,
+  triggerToken,
+  orgId,
+}: TestsLayoutProps) {
   const [showSettings, setShowSettings] = useState(false);
   const [viewingResults, setViewingResults] = useState(true);
-  const [isAwaitingRunStart, setIsAwaitingRunStart] = useState(false);
-  const [lastRunOutput, setLastRunOutput] = useState<IntegrationRunOutput | null>(null);
-  const lastHandledRunIdRef = useRef<string | null>(null);
-  const lastHandledStatusRef = useRef<string | null>(null);
-
-  // Use SWR for real-time updates
-  const findingsFetcher: Fetcher<Finding[], string> = (url) => fetchJson<Finding[]>(url);
-  const providersFetcher: Fetcher<Integration[], string> = (url) => fetchJson<Integration[]>(url);
 
   const { data: findings = initialFindings, mutate: mutateFindings } = useSWR<Finding[]>(
     '/api/cloud-tests/findings',
-    findingsFetcher,
+    async (url) => {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Failed to fetch');
+      return res.json();
+    },
     {
       fallbackData: initialFindings,
-      refreshInterval: 5000, // Refresh every 5 seconds when scanning
+      refreshInterval: 5000,
       revalidateOnFocus: true,
     },
   );
 
   const { data: providers = initialProviders, mutate: mutateProviders } = useSWR<Integration[]>(
     '/api/cloud-tests/providers',
-    providersFetcher,
+    async (url) => {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Failed to fetch');
+      return res.json();
+    },
     {
       fallbackData: initialProviders,
       revalidateOnFocus: true,
     },
   );
 
-  const connectedProviders = providers.filter((provider): provider is SupportedIntegration =>
-    isSupportedProviderId(provider.integrationId),
+  const connectedProviders = providers.filter((p): p is SupportedIntegration =>
+    isSupportedProviderId(p.integrationId),
   );
 
-  // Track scan run status with access token
-  const { run: scanRun } = useRealtimeRun(scanTaskId || '', {
-    enabled: !!scanTaskId && !!scanAccessToken,
-    accessToken: scanAccessToken || undefined,
-  });
+  const { submit, run, error, isLoading } = useRealtimeTaskTrigger<typeof runIntegrationTests>(
+    'run-integration-tests',
+    {
+      accessToken: triggerToken,
+    },
+  );
 
-  const isScanActive =
-    Boolean(scanTaskId) && (isAwaitingRunStart || isActiveRunStatus(scanRun?.status));
+  console.log('🔍 Trigger token:', triggerToken);
+  console.log('🔍 Run:', run);
+  console.log('🔍 Run status:', run?.status);
+  console.log('🔍 Run ID:', run?.id);
+  console.log('🔍 isLoading:', isLoading);
+  console.log('🔍 error:', error);
 
-  // Sync job completion state with realtime run events
+  const isCompleted = run?.status === 'COMPLETED';
+  const isFailed =
+    run?.status === 'FAILED' ||
+    run?.status === 'CRASHED' ||
+    run?.status === 'SYSTEM_FAILURE' ||
+    run?.status === 'TIMED_OUT' ||
+    run?.status === 'CANCELED' ||
+    run?.status === 'EXPIRED';
+
+  const isTerminal = isCompleted || isFailed;
+  const isScanning = Boolean(run && !isTerminal) || isLoading;
+
+  console.log('🔍 isTerminal:', isTerminal);
+  console.log('🔍 isScanning:', isScanning);
+
+  const runOutput = isCompleted && isIntegrationRunOutput(run?.output) ? run.output : null;
+
   useEffect(() => {
-    if (!scanRun) {
+    if (!run || !isTerminal) {
       return;
     }
 
-    setIsAwaitingRunStart(false);
-
-    const status = scanRun.status;
-
-    if (!isRunStatus(status)) {
-      return;
-    }
-
-    if (scanRun.id !== lastHandledRunIdRef.current) {
-      lastHandledRunIdRef.current = scanRun.id;
-      lastHandledStatusRef.current = null;
-    }
-
-    if (!isTerminalRunStatus(status)) {
-      lastHandledStatusRef.current = status;
-      return;
-    }
-
-    if (lastHandledStatusRef.current === status) {
-      return;
-    }
-
-    lastHandledStatusRef.current = status;
-
-    const runOutput = isIntegrationRunOutput(scanRun.output) ? scanRun.output : null;
-    setLastRunOutput(runOutput);
     void mutateFindings();
 
-    if (runOutput && runOutput.success === false) {
+    if (runOutput && !runOutput.success) {
       const errorMessage =
         runOutput.errors?.[0] ??
         runOutput.failedIntegrations?.[0]?.error ??
@@ -196,53 +136,38 @@ export function TestsLayout({ initialFindings, initialProviders }: TestsLayoutPr
       return;
     }
 
-    if (isFailureRunStatus(status) || scanRun.error) {
+    if (isFailed || run.error) {
       const errorMessage =
-        (typeof scanRun.error === 'string' && scanRun.error) ||
-        (scanRun.error &&
-        typeof scanRun.error === 'object' &&
-        'message' in scanRun.error &&
-        scanRun.error.message
-          ? String((scanRun.error as { message?: unknown }).message)
-          : undefined) ||
-        'Scan failed. Please try again.';
+        typeof run.error === 'object' && run.error && 'message' in run.error
+          ? String(run.error.message)
+          : typeof run.error === 'string'
+            ? run.error
+            : 'Scan failed. Please try again.';
       toast.error(errorMessage);
       return;
     }
 
-    if (isSuccessfulRunStatus(status)) {
+    if (isCompleted) {
       toast.success('Scan completed! Results updated.');
-    } else {
-      toast.message('Scan completed.');
     }
-  }, [scanRun, mutateFindings]);
-
-  useEffect(() => {
-    if (!scanTaskId) {
-      setIsAwaitingRunStart(false);
-      lastHandledRunIdRef.current = null;
-      lastHandledStatusRef.current = null;
-    }
-  }, [scanTaskId]);
+  }, [run, isTerminal, isFailed, isCompleted, runOutput, mutateFindings]);
 
   const handleRunScan = async (): Promise<string | null> => {
+    console.log('🚀 handleRunScan called, orgId:', orgId);
+
+    if (!orgId) {
+      toast.error('No active organization');
+      return null;
+    }
+
     try {
-      setLastRunOutput(null);
-      const result = await runTests();
-      if (result.success && result.taskId && result.publicAccessToken) {
-        setScanTaskId(result.taskId);
-        setScanAccessToken(result.publicAccessToken);
-        setIsAwaitingRunStart(true);
-        lastHandledRunIdRef.current = null;
-        lastHandledStatusRef.current = null;
-        toast.message('Scan started. Checking your cloud infrastructure...');
-        return result.taskId;
-      } else {
-        toast.error(result.errors?.[0] || 'Failed to start scan');
-        return null;
-      }
+      console.log('🚀 Calling submit with payload:', { organizationId: orgId });
+      await submit({ organizationId: orgId });
+      console.log('🚀 Submit completed');
+      toast.message('Scan started. Checking your cloud infrastructure...');
+      return run?.id || null;
     } catch (error) {
-      console.error(error);
+      console.error('🚀 Submit error:', error);
       toast.error('Failed to start scan. Please try again.');
       return null;
     }
@@ -254,23 +179,18 @@ export function TestsLayout({ initialFindings, initialProviders }: TestsLayoutPr
     setViewingResults(true);
   };
 
-  const handleCloudConnected = (trigger?: TriggerInfo) => {
+  const handleCloudConnected = async () => {
     mutateProviders();
     mutateFindings();
-    setLastRunOutput(null);
 
-    if (trigger?.taskId && trigger?.publicAccessToken) {
-      setScanTaskId(trigger.taskId);
-      setScanAccessToken(trigger.publicAccessToken);
-      setIsAwaitingRunStart(true);
-      lastHandledRunIdRef.current = null;
-      lastHandledStatusRef.current = null;
+    if (orgId) {
+      await submit({ organizationId: orgId });
+      toast.message('Scan started. Checking your cloud infrastructure...');
     }
 
     setViewingResults(true);
   };
 
-  // First-time user: No clouds connected OR user wants to add a cloud
   if (connectedProviders.length === 0 || !viewingResults) {
     return (
       <EmptyState
@@ -281,23 +201,19 @@ export function TestsLayout({ initialFindings, initialProviders }: TestsLayoutPr
     );
   }
 
-  // Group findings by cloud provider
   const findingsByProvider = findings.reduce<Record<string, Finding[]>>((acc, finding) => {
-    const providerId = finding.integration.integrationId;
-    const bucket = acc[providerId] ?? [];
+    const bucket = acc[finding.integration.integrationId] ?? [];
     bucket.push(finding);
-    acc[providerId] = bucket;
+    acc[finding.integration.integrationId] = bucket;
     return acc;
   }, {});
 
-  // Single cloud user (primary use case)
   if (connectedProviders.length === 1) {
     const provider = connectedProviders[0];
     const providerFindings = findingsByProvider[provider.integrationId] ?? [];
 
     return (
       <div className="container mx-auto flex w-full flex-col gap-6 p-4 md:p-6 lg:p-8">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div className="space-y-1">
             <h1 className="text-2xl font-semibold tracking-tight">Cloud Security Tests</h1>
@@ -324,24 +240,13 @@ export function TestsLayout({ initialFindings, initialProviders }: TestsLayoutPr
           </div>
         </div>
 
-        {/* Split-screen layout: Results (70%) + Chat placeholder (30%) */}
-        <div className="gap-6">
-          <div>
-            <ResultsView
-              findings={providerFindings}
-              scanTaskId={scanTaskId}
-              scanAccessToken={scanAccessToken}
-              onRunScan={handleRunScan}
-              isScanning={isScanActive}
-              runOutput={lastRunOutput}
-            />
-          </div>
-          {/* <div className="hidden lg:block">
-            <ChatPlaceholder />
-          </div> */}
-        </div>
+        <ResultsView
+          findings={providerFindings}
+          onRunScan={handleRunScan}
+          isScanning={isScanning}
+          run={run}
+        />
 
-        {/* Settings Modal */}
         <CloudSettingsModal
           open={showSettings}
           onOpenChange={setShowSettings}
@@ -356,12 +261,10 @@ export function TestsLayout({ initialFindings, initialProviders }: TestsLayoutPr
     );
   }
 
-  // Multi-cloud user (<5%)
-  const defaultTab = connectedProviders[0]?.integrationId ?? SUPPORTED_PROVIDER_IDS[0];
+  const defaultTab = connectedProviders[0]?.integrationId ?? 'aws';
 
   return (
     <div className="container mx-auto flex w-full flex-col gap-6 p-4 md:p-6 lg:p-8">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight">Cloud Security Tests</h1>
@@ -387,7 +290,6 @@ export function TestsLayout({ initialFindings, initialProviders }: TestsLayoutPr
         </div>
       </div>
 
-      {/* Tabs for multiple clouds */}
       <Tabs defaultValue={defaultTab}>
         <TabsList>
           {connectedProviders.map((provider) => (
@@ -398,7 +300,7 @@ export function TestsLayout({ initialFindings, initialProviders }: TestsLayoutPr
         </TabsList>
 
         {connectedProviders.map((provider) => {
-          const providerFindings = findingsByProvider[provider.integrationId] || [];
+          const providerFindings = findingsByProvider[provider.integrationId] ?? [];
 
           return (
             <TabsContent
@@ -406,28 +308,17 @@ export function TestsLayout({ initialFindings, initialProviders }: TestsLayoutPr
               value={provider.integrationId}
               className="mt-6"
             >
-              {/* Split-screen layout */}
-              <div className="grid gap-6 lg:grid-cols-[1fr_400px]">
-                <div>
-                  <ResultsView
-                    findings={providerFindings}
-                    scanTaskId={scanTaskId}
-                    scanAccessToken={scanAccessToken}
-                    onRunScan={handleRunScan}
-                    isScanning={isScanActive}
-                    runOutput={lastRunOutput}
-                  />
-                </div>
-                <div className="hidden lg:block">
-                  <ChatPlaceholder />
-                </div>
-              </div>
+              <ResultsView
+                findings={providerFindings}
+                onRunScan={handleRunScan}
+                isScanning={isScanning}
+                run={run}
+              />
             </TabsContent>
           );
         })}
       </Tabs>
 
-      {/* Settings Modal */}
       <CloudSettingsModal
         open={showSettings}
         onOpenChange={setShowSettings}
@@ -442,10 +333,7 @@ export function TestsLayout({ initialFindings, initialProviders }: TestsLayoutPr
   );
 }
 
-// Helper function to get provider fields for settings modal
-type ProviderField = { id: string; label: string };
-
-function getProviderFields(providerId: SupportedProviderId): ProviderField[] {
+function getProviderFields(providerId: SupportedProviderId) {
   switch (providerId) {
     case 'aws':
       return [
