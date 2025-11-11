@@ -142,14 +142,6 @@ export function TestsLayout({
     }
   }, [run, isTerminal, isFailed, isCompleted, runOutput, mutateFindings]);
 
-  useEffect(() => {
-    if (!scanTaskId) {
-      setIsAwaitingRunStart(false);
-      lastHandledRunIdRef.current = null;
-      lastHandledStatusRef.current = null;
-    }
-  }, [scanTaskId]);
-
   const handleRunScan = async (): Promise<string | null> => {
     if (!orgId) {
       toast.error('No active organization');
