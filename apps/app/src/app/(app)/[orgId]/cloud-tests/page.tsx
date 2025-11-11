@@ -1,4 +1,5 @@
-import { auth } from '@/utils/auth';
+import { auth as betterAuth } from '@/utils/auth';
+import { auth } from '@trigger.dev/sdk';
 import { db } from '@db';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -6,7 +7,7 @@ import { TestsLayout } from './components/TestsLayout';
 
 export default async function CloudTestsPage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
-  const session = await auth.api.getSession({
+  const session = await betterAuth.api.getSession({
     headers: await headers(),
   });
 
@@ -59,5 +60,17 @@ export default async function CloudTestsPage({ params }: { params: Promise<{ org
       },
     })) || [];
 
-  return <TestsLayout initialFindings={findings} initialProviders={providers} />;
+  const triggerToken = await auth.createTriggerPublicToken('run-integration-tests', {
+    multipleUse: true,
+    expirationTime: '1hr',
+  });
+
+  return (
+    <TestsLayout
+      initialFindings={findings}
+      initialProviders={providers}
+      triggerToken={triggerToken}
+      orgId={orgId}
+    />
+  );
 }

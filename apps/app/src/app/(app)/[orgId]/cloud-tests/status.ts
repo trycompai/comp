@@ -1,22 +1,35 @@
-import type { AnyRealtimeRun } from '@trigger.dev/sdk';
+export type RunStatus =
+  | 'WAITING_FOR_DEPLOY'
+  | 'QUEUED'
+  | 'EXECUTING'
+  | 'REATTEMPTING'
+  | 'FROZEN'
+  | 'COMPLETED'
+  | 'CANCELED'
+  | 'FAILED'
+  | 'CRASHED'
+  | 'INTERRUPTED'
+  | 'SYSTEM_FAILURE'
+  | 'DELAYED'
+  | 'EXPIRED'
+  | 'TIMED_OUT';
 
-export type RunStatus = AnyRealtimeRun['status'];
-
-const RUN_STATUS_VALUES_INTERNAL = [
-  'PENDING_VERSION',
+const RUN_STATUS_VALUES_INTERNAL: readonly RunStatus[] = [
+  'WAITING_FOR_DEPLOY',
   'QUEUED',
-  'DEQUEUED',
   'EXECUTING',
-  'WAITING',
+  'REATTEMPTING',
+  'FROZEN',
   'COMPLETED',
   'CANCELED',
   'FAILED',
   'CRASHED',
+  'INTERRUPTED',
   'SYSTEM_FAILURE',
   'DELAYED',
   'EXPIRED',
   'TIMED_OUT',
-] as const satisfies readonly RunStatus[];
+];
 
 export const RUN_STATUS_VALUES = RUN_STATUS_VALUES_INTERNAL;
 
@@ -28,7 +41,7 @@ const TERMINAL_STATUS_SET: ReadonlySet<RunStatus> = new Set<RunStatus>([
   'FAILED',
   'CRASHED',
   'SYSTEM_FAILURE',
-  'DELAYED',
+  'INTERRUPTED',
   'EXPIRED',
   'TIMED_OUT',
 ]);
@@ -41,6 +54,8 @@ const FAILURE_STATUS_SET: ReadonlySet<RunStatus> = new Set<RunStatus>([
   'SYSTEM_FAILURE',
   'TIMED_OUT',
   'EXPIRED',
+  'INTERRUPTED',
+  'CANCELED',
 ]);
 
 export const isRunStatus = (status: unknown): status is RunStatus =>
