@@ -168,6 +168,8 @@ export function MemberRow({ member, onRemove, onUpdateRole, canEdit }: MemberRow
                       return 'Auditor';
                     case 'employee':
                       return 'Employee';
+                    case 'contractor':
+                      return 'Contractor';
                     default:
                       return '???';
                   }

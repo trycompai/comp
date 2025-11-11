@@ -113,6 +113,8 @@ const getPoliciesTasks = async (employeeId: string) => {
     where: {
       organizationId: organizationId,
       status: 'published',
+      isRequiredToSign: true,
+      isArchived: false,
     },
     orderBy: {
       name: 'asc',
