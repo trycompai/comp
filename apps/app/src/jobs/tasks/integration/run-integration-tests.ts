@@ -4,8 +4,8 @@ import { sendIntegrationResults } from './integration-results';
 
 export const runIntegrationTests = task({
   id: 'run-integration-tests',
-  run: async (payload: { organizationId: string }) => {
-    const { organizationId } = payload;
+  run: async (payload: { organizationId: string; forceFailure?: boolean }) => {
+    const { organizationId, forceFailure = false } = payload;
 
     logger.info(`Running integration tests for organization: ${organizationId}`);
 
@@ -40,7 +40,35 @@ export const runIntegrationTests = task({
       };
     }
 
-    logger.info(`Found ${integrations.length} integrations to test for organization: ${organizationId}`);
+    logger.info(
+      `Found ${integrations.length} integrations to test for organization: ${organizationId}`,
+    );
+
+    if (forceFailure) {
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+
+      const forcedFailureMessage =
+        'Test failure: intentionally failing integration job for UI verification';
+
+      const forcedFailedIntegrations = integrations.map((integration) => ({
+        id: integration.id,
+        integrationId: integration.integrationId,
+        name: integration.name,
+        error: forcedFailureMessage,
+      }));
+
+      logger.warn(
+        `Force-failing integration tests for organization ${organizationId}: ${forcedFailureMessage}`,
+      );
+
+      return {
+        success: false,
+        organizationId,
+        integrationsCount: integrations.length,
+        errors: [forcedFailureMessage],
+        failedIntegrations: forcedFailedIntegrations,
+      };
+    }
 
     const batchItems = integrations.map((integration) => ({
       payload: {
@@ -58,22 +86,51 @@ export const runIntegrationTests = task({
     try {
       const batchHandle = await sendIntegrationResults.batchTriggerAndWait(batchItems);
 
-      // Check if any child runs failed
-      const failedRuns = batchHandle.runs.filter((run) => !run.ok);
+      const failedIntegrations: Array<{
+        id: string;
+        integrationId: string;
+        name: string;
+        error: string;
+      }> = [];
 
-      if (failedRuns.length > 0) {
-        const errorMessages = failedRuns
-          .map((run) => {
-            const errorMsg = run.error instanceof Error ? run.error.message : String(run.error);
-            return errorMsg;
-          })
-          .join('; ');
+      batchHandle.runs.forEach((run, index) => {
+        if (run.ok) {
+          return;
+        }
 
-        logger.error(`Integration tests failed for organization ${organizationId}: ${errorMessages}`);
-        throw new Error(errorMessages);
+        const integration = integrations[index];
+        const errorValue = run.error;
+        const errorMessage =
+          errorValue instanceof Error ? errorValue.message : String(errorValue ?? 'Unknown error');
+
+        failedIntegrations.push({
+          id: integration.id,
+          integrationId: integration.integrationId,
+          name: integration.name,
+          error: errorMessage,
+        });
+      });
+
+      if (failedIntegrations.length > 0) {
+        const errorMessages = failedIntegrations.map(({ error }) => error).join('; ');
+
+        logger.warn(
+          `Integration tests completed with errors for organization ${organizationId}: ${errorMessages}`,
+        );
+
+        return {
+          success: false,
+          organizationId,
+          integrationsCount: integrations.length,
+          batchHandleId: batchHandle.id,
+          errors: failedIntegrations.map(({ error }) => error),
+          failedIntegrations,
+        };
       }
 
-      logger.info(`Successfully completed batch integration tests for organization: ${organizationId}`);
+      logger.info(
+        `Successfully completed batch integration tests for organization: ${organizationId}`,
+      );
 
       return {
         success: true,
@@ -82,8 +139,18 @@ export const runIntegrationTests = task({
         batchHandleId: batchHandle.id,
       };
     } catch (error) {
-      logger.error(`Failed to run integration tests for organization ${organizationId}: ${error}`);
-      throw error;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      logger.error(
+        `Failed to run integration tests for organization ${organizationId}: ${errorMessage}`,
+      );
+
+      return {
+        success: false,
+        organizationId,
+        integrationsCount: integrations.length,
+        errors: [errorMessage],
+      };
     }
   },
 });
