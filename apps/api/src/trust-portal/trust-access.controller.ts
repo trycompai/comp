@@ -132,7 +132,11 @@ export class TrustAccessController {
     @Body() dto: ApproveAccessRequestDto,
     @Req() req: Request,
   ) {
-    const memberId = (req as any).user?.memberId;
+    const userId = (req as any).userId;
+    const memberId = await this.trustAccessService.getMemberIdFromUserId(
+      userId,
+      organizationId,
+    );
     return this.trustAccessService.approveRequest(
       organizationId,
       requestId,
@@ -161,7 +165,11 @@ export class TrustAccessController {
     @Body() dto: DenyAccessRequestDto,
     @Req() req: Request,
   ) {
-    const memberId = (req as any).user?.memberId;
+    const userId = (req as any).userId;
+    const memberId = await this.trustAccessService.getMemberIdFromUserId(
+      userId,
+      organizationId,
+    );
     return this.trustAccessService.denyRequest(
       organizationId,
       requestId,

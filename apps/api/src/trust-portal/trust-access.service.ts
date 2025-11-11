@@ -14,6 +14,22 @@ import {
 
 @Injectable()
 export class TrustAccessService {
+  async getMemberIdFromUserId(
+    userId: string,
+    organizationId: string,
+  ): Promise<string | undefined> {
+    const member = await db.member.findFirst({
+      where: {
+        userId,
+        organizationId,
+      },
+      select: {
+        id: true,
+      },
+    });
+    return member?.id;
+  }
+
   async createAccessRequest(
     friendlyUrl: string,
     dto: CreateAccessRequestDto,
@@ -27,6 +43,35 @@ export class TrustAccessService {
 
     if (!trust || trust.status !== 'published') {
       throw new NotFoundException('Trust site not found or not published');
+    }
+
+    // Check if the email already has an active grant
+    const existingGrant = await db.trustAccessGrant.findFirst({
+      where: {
+        subjectEmail: dto.email,
+        status: 'active',
+        expiresAt: {
+          gt: new Date(),
+        },
+        accessRequest: {
+          organizationId: trust.organizationId,
+        },
+      },
+      include: {
+        accessRequest: true,
+      },
+    });
+
+    if (existingGrant) {
+      return {
+        id: existingGrant.id,
+        status: 'already_approved',
+        message: 'You already have active access',
+        grant: {
+          scopes: existingGrant.scopes,
+          expiresAt: existingGrant.expiresAt,
+        },
+      };
     }
 
     const existingRequest = await db.trustAccessRequest.findFirst({
@@ -149,16 +194,14 @@ export class TrustAccessService {
 
     const scopes = dto.scopes || request.requestedScopes;
 
-    let userId: string | undefined;
-    if (memberId) {
-      const member = await db.member.findUnique({
-        where: { id: memberId },
-        select: { userId: true },
-      });
-      userId = member?.userId;
-    }
+    const member = memberId
+      ? await db.member.findFirst({
+          where: { id: memberId, organizationId },
+          select: { id: true, userId: true },
+        })
+      : null;
 
-    if (!userId) {
+    if (!member) {
       throw new BadRequestException('Invalid member ID');
     }
 
@@ -169,24 +212,24 @@ export class TrustAccessService {
           subjectEmail: request.email,
           scopes,
           expiresAt,
-          issuedByMemberId: memberId,
+          issuedByMemberId: member.id,
         },
       });
 
-      const updatedRequest = await db.trustAccessRequest.update({
+      const updatedRequest = await tx.trustAccessRequest.update({
         where: { id: requestId },
         data: {
           status: 'approved',
-          reviewerMemberId: memberId,
+          reviewerMemberId: member.id,
           reviewedAt: new Date(),
         },
       });
 
-      await db.auditLog.create({
+      await tx.auditLog.create({
         data: {
           organizationId,
-          userId: userId ?? '',
-          memberId,
+          userId: member.userId,
+          memberId: member.id,
           entityType: 'trust',
           entityId: requestId,
           description: `Access request approved for ${request.email}`,
@@ -228,16 +271,14 @@ export class TrustAccessService {
       );
     }
 
-    let userId: string | undefined;
-    if (memberId) {
-      const member = await db.member.findUnique({
-        where: { id: memberId },
-        select: { userId: true },
-      });
-      userId = member?.userId;
-    }
+    const member = memberId
+      ? await db.member.findFirst({
+          where: { id: memberId, organizationId },
+          select: { id: true, userId: true },
+        })
+      : null;
 
-    if (!userId) {
+    if (!member) {
       throw new BadRequestException('Invalid member ID');
     }
 
@@ -245,7 +286,7 @@ export class TrustAccessService {
       where: { id: requestId },
       data: {
         status: 'denied',
-        reviewerMemberId: memberId,
+        reviewerMemberId: member.id,
         reviewedAt: new Date(),
         decisionReason: dto.reason,
       },
@@ -254,8 +295,8 @@ export class TrustAccessService {
     await db.auditLog.create({
       data: {
         organizationId,
-        userId,
-        memberId,
+        userId: member.userId,
+        memberId: member.id,
         entityType: 'trust',
         entityId: requestId,
         description: `Access request denied for ${request.email}`,
@@ -332,16 +373,14 @@ export class TrustAccessService {
       throw new BadRequestException(`Grant is already ${grant.status}`);
     }
 
-    let userId: string | undefined;
-    if (memberId) {
-      const member = await db.member.findUnique({
-        where: { id: memberId },
-        select: { userId: true },
-      });
-      userId = member?.userId;
-    }
+    const member = memberId
+      ? await db.member.findFirst({
+          where: { id: memberId, organizationId },
+          select: { id: true, userId: true },
+        })
+      : null;
 
-    if (!userId) {
+    if (!member) {
       throw new BadRequestException('Invalid member ID');
     }
 
@@ -350,7 +389,7 @@ export class TrustAccessService {
       data: {
         status: 'revoked',
         revokedAt: new Date(),
-        revokedByMemberId: memberId,
+        revokedByMemberId: member.id,
         revokeReason: dto.reason,
       },
     });
@@ -358,8 +397,8 @@ export class TrustAccessService {
     await db.auditLog.create({
       data: {
         organizationId: grant.accessRequest.organizationId,
-        userId,
-        memberId,
+        userId: member.userId,
+        memberId: member.id,
         entityType: 'trust',
         entityId: grantId,
         description: `Access grant revoked for ${grant.subjectEmail}`,

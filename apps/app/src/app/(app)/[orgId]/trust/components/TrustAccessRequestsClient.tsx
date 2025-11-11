@@ -9,13 +9,9 @@ import { Badge } from '@trycompai/ui/badge';
 import { Button } from '@trycompai/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@trycompai/ui/table';
-import { useParams } from 'next/navigation';
 import { toast } from 'sonner';
 
-export function TrustAccessRequestsClient() {
-  const params = useParams();
-  const orgId = params.orgId as string;
-
+export function TrustAccessRequestsClient({ orgId }: { orgId: string }) {
   const { data: requests, isPending, error } = useAccessRequests(orgId);
 
   const { mutate: approve, isPending: isApproving } = useApproveAccessRequest(orgId);
