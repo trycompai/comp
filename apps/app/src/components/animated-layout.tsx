@@ -12,7 +12,7 @@ export function AnimatedLayout({ children, sidebar, isCollapsed, blurred }: Anim
     <div className="flex h-dvh w-full overflow-hidden">
       <div
         className={cn(
-          'bg-background hidden h-full shrink-0 overflow-y-auto border-r duration-300 ease-in-out md:block',
+          'bg-background hidden h-full shrink-0 overflow-y-hidden border-r duration-300 ease-in-out md:block',
           isCollapsed ? 'w-[80px]' : 'w-[240px]',
           blurred ? 'pointer-events-none blur-xs select-none' : '',
         )}

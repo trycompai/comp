@@ -1,5 +1,4 @@
 import { getOrganizations } from '@/data/getOrganizations';
-import { cn } from '@comp/ui/cn';
 import type { Organization } from '@db';
 import { cookies } from 'next/headers';
 import { MainMenu } from './main-menu';
@@ -19,25 +18,23 @@ export async function Sidebar({
   const { organizations } = await getOrganizations();
 
   return (
-    <div className="bg-card flex h-full flex-col gap-0 overflow-x-clip">
-      <div className="flex flex-col gap-2 p-4">
-        <div className={cn('flex items-center justify-start', isCollapsed && 'justify-center')}>
+    <div className="h-full px-3 py-3 translate-x-0">
+      <div className="flex h-full w-full flex-col gap-4">
+        <div className="flex items-center justify-start gap-1.5">
           <SidebarLogo isCollapsed={isCollapsed} />
-        </div>
-        <div className="mt-2 flex flex-col gap-2">
           <OrganizationSwitcher
             organizations={organizations}
             organization={organization}
             isCollapsed={isCollapsed}
           />
-          <MainMenu
-            organizationId={organization?.id ?? ''}
-            organization={organization}
-            isCollapsed={isCollapsed}
-          />
         </div>
+
+        <MainMenu
+          organizationId={organization?.id ?? ''}
+          organization={organization}
+          isCollapsed={isCollapsed}
+        />
       </div>
-      <div className="flex-1" />
 
       <div className="flex justify-center py-2">
         <SidebarCollapseButton isCollapsed={isCollapsed} />

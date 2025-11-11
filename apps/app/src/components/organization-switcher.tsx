@@ -12,14 +12,12 @@ import {
   CommandList,
   CommandSeparator,
 } from '@comp/ui/command';
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@comp/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@comp/ui/dropdown-menu';
 import type { Organization } from '@db';
 import { Check, ChevronsUpDown, Loader2, Plus, Search } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
-import { useQueryState } from 'nuqs';
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 interface OrganizationSwitcherProps {
   organizations: Organization[];
@@ -29,7 +27,7 @@ interface OrganizationSwitcherProps {
 
 interface OrganizationInitialsAvatarProps {
   name: string | null | undefined;
-  size?: 'sm' | 'default';
+  size?: 'xs' | 'sm' | 'default';
   className?: string;
 }
 
@@ -70,8 +68,8 @@ function OrganizationInitialsAvatar({
   return (
     <div
       className={cn(
-        'flex items-center justify-center rounded-sm font-medium',
-        size === 'sm' ? 'h-6 w-6 text-xs' : 'h-8 w-8 text-sm',
+        'flex items-center justify-center rounded-xs font-medium',
+        size === 'xs' ? 'size-5.5 text-xs' : size === 'sm' ? 'size-6 text-xs' : 'size-8 text-sm',
         selectedColorClass,
         className,
       )}
@@ -87,37 +85,12 @@ export function OrganizationSwitcher({
   isCollapsed = false,
 }: OrganizationSwitcherProps) {
   const router = useRouter();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [pendingOrgId, setPendingOrgId] = useState<string | null>(null);
-  const [sortOrder, setSortOrder] = useState('alphabetical');
+  const [open, setOpen] = useState(false);
 
-  useEffect(() => {
-    const savedSortOrder = localStorage.getItem('org-sort-order');
-    if (savedSortOrder) {
-      setSortOrder(savedSortOrder);
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('org-sort-order', sortOrder);
-  }, [sortOrder]);
-
-  const sortedOrganizations = [...organizations].sort((a, b) => {
-    if (sortOrder === 'alphabetical') {
-      return (a.name).localeCompare(b.name);
-    } else if (sortOrder === 'recent') {
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    }
-    return 0;
-  });
-
-  const [showOrganizationSwitcher, setShowOrganizationSwitcher] = useQueryState(
-    'showOrganizationSwitcher',
-    {
-      history: 'push',
-      parse: (value) => value === 'true',
-      serialize: (value) => value.toString(),
-    },
+  const sortedOrganizations = useMemo(
+    () => [...organizations].sort((a, b) => (a.name || '').localeCompare(b.name || '')),
+    [organizations],
   );
 
   const { execute, status } = useAction(changeOrganizationAction, {
@@ -126,7 +99,7 @@ export function OrganizationSwitcher({
       if (orgId) {
         router.push(`/${orgId}/`);
       }
-      setIsDialogOpen(false);
+      setOpen(false);
       setPendingOrgId(null);
     },
     onExecute: (args) => {
@@ -161,54 +134,48 @@ export function OrganizationSwitcher({
     execute({ organizationId: org.id });
   };
 
-  const handleOpenChange = (open: boolean) => {
-    setShowOrganizationSwitcher(open);
-    setIsDialogOpen(open);
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
   };
 
   return (
     <div className="w-full">
-      <Dialog open={showOrganizationSwitcher ?? isDialogOpen} onOpenChange={handleOpenChange}>
-        <DialogTrigger asChild>
+      <DropdownMenu open={open} onOpenChange={handleOpenChange}>
+        <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
             size={isCollapsed ? 'icon' : 'default'}
             className={cn(
-              'w-full',
-              isCollapsed ? 'justify-center' : 'h-10 justify-start p-1 pr-2',
+              'w-full rounded-xs',
+              isCollapsed ? 'justify-center h-8 p-0' : 'h-8 justify-start gap-1.5 px-1.5 pr-2',
+
               status === 'executing' && 'cursor-not-allowed opacity-50',
             )}
             disabled={status === 'executing'}
           >
-            <OrganizationInitialsAvatar name={currentOrganization?.name} />
+            <OrganizationInitialsAvatar name={currentOrganization?.name} size="xs" />
             {!isCollapsed && (
               <>
-                <span className="ml-2 flex-1 truncate text-left">{currentOrganization?.name}</span>
-                <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
+                <span className="ml-1.5 flex-1 truncate text-left">
+                  {currentOrganization?.name}
+                </span>
+                <ChevronsUpDown className="ml-auto h-3.5 w-3.5 shrink-0 opacity-50" />
               </>
             )}
           </Button>
-        </DialogTrigger>
-        <DialogContent className="p-0 sm:max-w-[400px]">
-          <DialogTitle className="sr-only">Select Organization</DialogTitle>
-          <Command>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="start"
+          sideOffset={6}
+          className="p-0 w-(--radix-popper-anchor-width)"
+        >
+          <Command className="border-0">
             <div className="flex items-center border-b px-3">
               <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
               <CommandInput
                 placeholder="Search organization..."
-                className="placeholder:text-muted-foreground flex h-11 w-full rounded-md border-0 bg-transparent py-3 text-sm outline-hidden focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
+                className="placeholder:text-muted-foreground flex h-10 w-full rounded-xs border-0 bg-transparent py-2.5 text-xs outline-hidden focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
               />
-            </div>
-            <div className="p-2">
-              <Select value={sortOrder} onValueChange={setSortOrder}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Sort by..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="alphabetical">Alphabetical</SelectItem>
-                  <SelectItem value="recent">Recently Created</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
             <CommandList>
               <CommandEmpty>No results found</CommandEmpty>
@@ -216,7 +183,6 @@ export function OrganizationSwitcher({
                 {sortedOrganizations.map((org) => (
                   <CommandItem
                     key={org.id}
-                    // Search by id and name
                     value={`${org.id} ${org.name || ''}`}
                     onSelect={() => {
                       if (org.id !== currentOrganization?.id) {
@@ -235,7 +201,7 @@ export function OrganizationSwitcher({
                     ) : (
                       <div className="h-4 w-4" />
                     )}
-                    <OrganizationInitialsAvatar name={org.name} size="sm" />
+                    <OrganizationInitialsAvatar name={org.name} size="xs" />
                     <span className="truncate">{getDisplayName(org)}</span>
                   </CommandItem>
                 ))}
@@ -245,10 +211,10 @@ export function OrganizationSwitcher({
                 <CommandItem
                   onSelect={() => {
                     router.push('/setup?intent=create-additional');
-                    setIsDialogOpen(false);
+                    setOpen(false);
                   }}
                   disabled={status === 'executing'}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 text-xs"
                 >
                   <Plus className="h-4 w-4" />
                   Create Organization
@@ -256,8 +222,8 @@ export function OrganizationSwitcher({
               </CommandGroup>
             </CommandList>
           </Command>
-        </DialogContent>
-      </Dialog>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }

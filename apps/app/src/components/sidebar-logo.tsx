@@ -6,7 +6,7 @@ export function SidebarLogo({ isCollapsed }: { isCollapsed: boolean }) {
   return (
     <div className={cn('flex items-center transition-all duration-300')}>
       <Link href="/" suppressHydrationWarning>
-        <Icons.Logo width={40} height={40} className={cn('transition-transform duration-300')} />
+        <Icons.Logo width={28} height={28} className={cn('transition-transform duration-300')} />
       </Link>
     </div>
   );

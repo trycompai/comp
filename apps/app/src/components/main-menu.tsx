@@ -203,10 +203,10 @@ export function MainMenu({
   }, [activeIndex]);
 
   return (
-    <nav className="relative space-y-1">
+    <nav className="relative flex flex-col gap-1">
       {/* Active Indicator */}
       <div
-        className="bg-primary absolute -right-4 w-0.5 rounded-l-xs transition-all duration-300 ease-out"
+        className="bg-primary absolute -right-3 w-0.5 rounded-l-xs transition-all duration-300 ease-out"
         style={activeStyle}
       />
 
@@ -254,8 +254,8 @@ const Item = ({
                 variant="default"
                 size={isCollapsed ? 'icon' : 'default'}
                 className={cn(
-                  'w-full cursor-not-allowed opacity-50',
-                  isCollapsed ? 'justify-center' : 'justify-start',
+                  'w-full rounded-xs h-7.5 cursor-not-allowed opacity-50',
+                  isCollapsed ? 'w-7.5 p-0 justify-center' : 'px-2.5 gap-2.5 justify-start',
                 )}
                 disabled
               >
@@ -278,7 +278,12 @@ const Item = ({
             <Button
               variant={isActive ? 'secondary' : 'ghost'}
               size={isCollapsed ? 'icon' : 'default'}
-              className={cn('w-full', isCollapsed ? 'justify-center' : 'justify-start')}
+              className={cn(
+                'w-full rounded-xs h-7.5',
+                isCollapsed ? 'w-7.5 p-0 justify-center' : 'px-2.5 gap-2.5 justify-start',
+                'group animate-colors duration-150',
+                'focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent',
+              )}
               asChild
             >
               <Link href={itemPath} onClick={onItemClick}>
