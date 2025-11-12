@@ -32,7 +32,7 @@ export function SidebarCollapseButton({ isCollapsed }: SidebarCollapseButtonProp
     <Button
       variant="ghost"
       size="icon"
-      className={cn('h-8 w-8 rounded-xs', !isCollapsed && 'mr-4 ml-auto')}
+      className={cn('h-8 w-8 rounded-xs px-0 ml-auto')}
       onClick={handleToggle}
     >
       <ArrowLeftFromLine

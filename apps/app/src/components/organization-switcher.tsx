@@ -69,7 +69,7 @@ function OrganizationInitialsAvatar({
     <div
       className={cn(
         'flex items-center justify-center rounded-xs font-medium',
-        size === 'xs' ? 'size-5.5 text-xs' : size === 'sm' ? 'size-6 text-xs' : 'size-8 text-sm',
+        size === 'xs' ? 'size-4 text-[10px]' : size === 'sm' ? 'size-6 text-xs' : 'size-8 text-sm',
         selectedColorClass,
         className,
       )}
@@ -146,9 +146,8 @@ export function OrganizationSwitcher({
             variant="ghost"
             size={isCollapsed ? 'icon' : 'default'}
             className={cn(
-              'w-full rounded-xs',
-              isCollapsed ? 'justify-center h-8 p-0' : 'h-8 justify-start gap-1.5 px-1.5 pr-2',
-
+              'w-full rounded-xs h-7.5 hover:bg-transparent',
+              isCollapsed ? 'w-7.5 p-0 justify-center' : 'px-2.5 gap-2.5 justify-start',
               status === 'executing' && 'cursor-not-allowed opacity-50',
             )}
             disabled={status === 'executing'}
@@ -156,9 +155,7 @@ export function OrganizationSwitcher({
             <OrganizationInitialsAvatar name={currentOrganization?.name} size="xs" />
             {!isCollapsed && (
               <>
-                <span className="ml-1.5 flex-1 truncate text-left">
-                  {currentOrganization?.name}
-                </span>
+                <span className="ml-2 flex-1 truncate text-left">{currentOrganization?.name}</span>
                 <ChevronsUpDown className="ml-auto h-3.5 w-3.5 shrink-0 opacity-50" />
               </>
             )}
@@ -192,7 +189,7 @@ export function OrganizationSwitcher({
                       }
                     }}
                     disabled={status === 'executing'}
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-1.5"
                   >
                     {status === 'executing' && pendingOrgId === org.id ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -201,6 +198,7 @@ export function OrganizationSwitcher({
                     ) : (
                       <div className="h-4 w-4" />
                     )}
+
                     <OrganizationInitialsAvatar name={org.name} size="xs" />
                     <span className="truncate">{getDisplayName(org)}</span>
                   </CommandItem>

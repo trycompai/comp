@@ -18,25 +18,23 @@ export async function Sidebar({
   const { organizations } = await getOrganizations();
 
   return (
-    <div className="h-full px-3 py-3 translate-x-0">
-      <div className="flex h-full w-full flex-col gap-4">
-        <div className="flex items-center justify-start gap-1.5">
-          <SidebarLogo isCollapsed={isCollapsed} />
-          <OrganizationSwitcher
-            organizations={organizations}
-            organization={organization}
-            isCollapsed={isCollapsed}
-          />
-        </div>
-
-        <MainMenu
-          organizationId={organization?.id ?? ''}
+    <div className="flex h-full flex-col px-3 py-3 translate-x-0">
+      <div className="flex flex-col gap-1">
+        <SidebarLogo isCollapsed={isCollapsed} organizationId={organization?.id} />
+        <OrganizationSwitcher
+          organizations={organizations}
           organization={organization}
           isCollapsed={isCollapsed}
         />
       </div>
 
-      <div className="flex justify-center py-2">
+      <MainMenu
+        organizationId={organization?.id ?? ''}
+        organization={organization}
+        isCollapsed={isCollapsed}
+      />
+
+      <div className="mt-auto flex justify-center">
         <SidebarCollapseButton isCollapsed={isCollapsed} />
       </div>
     </div>
