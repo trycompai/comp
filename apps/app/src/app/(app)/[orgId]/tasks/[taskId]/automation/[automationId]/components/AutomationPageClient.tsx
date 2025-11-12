@@ -1,6 +1,8 @@
 'use client';
 
 import { useChat } from '@ai-sdk/react';
+import { useEffect, useState } from 'react';
+import { generateAutomationSuggestions } from '../actions/generate-suggestions';
 import { Chat } from '../chat';
 import { useSharedChatContext } from '../lib';
 import { useTaskAutomationStore } from '../lib/task-automation-store';
@@ -13,12 +15,39 @@ interface Props {
   taskId: string;
   automationId: string;
   taskName: string;
+  taskDescription?: string;
 }
 
-export function AutomationPageClient({ orgId, taskId, automationId, taskName }: Props) {
+export function AutomationPageClient({
+  orgId,
+  taskId,
+  automationId,
+  taskName,
+  taskDescription,
+}: Props) {
   const { scriptUrl } = useTaskAutomationStore();
   const { chat } = useSharedChatContext();
   const { messages } = useChat<ChatUIMessage>({ chat });
+  const [suggestions, setSuggestions] = useState<
+    {
+      title: string;
+      prompt: string;
+      vendorName?: string;
+      vendorWebsite?: string;
+    }[]
+  >([]);
+
+  // Load suggestions asynchronously (non-blocking - page renders immediately)
+  useEffect(() => {
+    if (automationId === 'new' && taskDescription) {
+      generateAutomationSuggestions(taskDescription, orgId)
+        .then(setSuggestions)
+        .catch((error) => {
+          console.error('Failed to generate suggestions:', error);
+          // Keep empty array, will use static suggestions
+        });
+    }
+  }, [automationId, taskDescription, orgId]);
 
   const hasMessages = messages.length > 0;
 
@@ -38,6 +67,7 @@ export function AutomationPageClient({ orgId, taskId, automationId, taskName }: 
             taskId={taskId}
             automationId={automationId}
             taskName={taskName}
+            suggestions={suggestions}
           />
         </TabContent>
         <TabContent tabId="workflow" className="flex-1">
@@ -58,6 +88,7 @@ export function AutomationPageClient({ orgId, taskId, automationId, taskName }: 
             taskId={taskId}
             automationId={automationId}
             taskName={taskName}
+            suggestions={suggestions}
           />
         </div>
 
