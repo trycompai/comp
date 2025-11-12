@@ -24,7 +24,7 @@ export async function generateAutomationSuggestions(
   taskDescription: string,
   organizationId: string,
 ): Promise<{ title: string; prompt: string; vendorName?: string; vendorWebsite?: string }[]> {
-  // Get vendors from the Vendor table (reduced limit for faster processing)
+  // Get vendors from the Vendor table
   const vendors = await db.vendor.findMany({
     where: {
       organizationId,
@@ -34,10 +34,9 @@ export async function generateAutomationSuggestions(
       website: true,
       description: true,
     },
-    take: 10, // Reduced from 20 to speed up processing
   });
 
-  // Get vendors from context table as well (reduced limit for faster processing)
+  // Get vendors from context table as well
   const contextEntries = await db.context.findMany({
     where: {
       organizationId,
@@ -46,7 +45,6 @@ export async function generateAutomationSuggestions(
       question: true,
       answer: true,
     },
-    take: 20, // Reduced from 50 to speed up processing
   });
 
   const vendorList =
@@ -58,7 +56,6 @@ export async function generateAutomationSuggestions(
     contextEntries.length > 0
       ? contextEntries
           .map((c) => `Q: ${c.question}\nA: ${c.answer}`)
-          .slice(0, 5) // Reduced from 10 to speed up processing
           .join('\n\n')
       : 'No additional context available';
 
