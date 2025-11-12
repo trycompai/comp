@@ -29,6 +29,11 @@ const selectableRoles: {
     descriptionKey: 'people.roles.employee_description',
   },
   {
+    value: 'contractor',
+    labelKey: 'people.roles.contractor',
+    descriptionKey: 'people.roles.contractor_description',
+  },
+  {
     value: 'auditor',
     labelKey: 'people.roles.auditor',
     descriptionKey: 'people.roles.auditor_description',
@@ -95,6 +100,8 @@ export function MultiRoleCombobox({
         return 'Auditor';
       case 'employee':
         return 'Employee';
+      case 'contractor':
+        return 'Contractor';
       default:
         return roleValue;
     }
@@ -104,20 +111,7 @@ export function MultiRoleCombobox({
     selectedRoles.length > 0 ? `${selectedRoles.length} selected` : placeholder || 'Select role(s)';
 
   const filteredRoles = availableRoles.filter((role) => {
-    const label = (() => {
-      switch (role.value) {
-        case 'admin':
-          return 'Admin';
-        case 'auditor':
-          return 'Auditor';
-        case 'employee':
-          return 'Employee';
-        case 'owner':
-          return 'Owner';
-        default:
-          return role.value;
-      }
-    })();
+    const label = getRoleLabel(role.value);
     return label.toLowerCase().includes(searchTerm.toLowerCase());
   });
 

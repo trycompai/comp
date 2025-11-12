@@ -49,7 +49,7 @@ export async function EmployeesOverview() {
 
     employees = fetchedMembers.filter((member) => {
       const roles = member.role.includes(',') ? member.role.split(',') : [member.role];
-      return roles.includes('employee');
+      return roles.includes('employee') || roles.includes('contractor');
     });
 
     // Fetch required policies

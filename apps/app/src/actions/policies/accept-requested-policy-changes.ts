@@ -91,7 +91,7 @@ export const acceptRequestedPolicyChangesAction = authActionClient
       // Filter to get only employees
       const employeeMembers = employees.filter((member) => {
         const roles = member.role.includes(',') ? member.role.split(',') : [member.role];
-        return roles.includes('employee');
+        return roles.includes('employee') || roles.includes('contractor');
       });
 
       // Prepare the events array for the API

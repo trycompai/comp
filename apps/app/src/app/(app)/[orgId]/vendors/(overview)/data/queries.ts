@@ -57,7 +57,7 @@ export const getAssignees = cache(async (orgId: string): Promise<GetAssigneesRes
     where: {
       organizationId: orgId,
       role: {
-        notIn: ['employee'],
+        notIn: ['employee', 'contractor'],
       },
     },
     include: {
