@@ -1,4 +1,5 @@
 import { Card, CardDescription, CardHeader } from '@comp/ui/card';
+import { Skeleton } from '@comp/ui/skeleton';
 import { useState } from 'react';
 import { Textarea } from '../../components/ui/textarea';
 import { AUTOMATION_EXAMPLES, AutomationExample } from '../../constants/automation-examples';
@@ -11,6 +12,7 @@ interface EmptyStateProps {
   inputRef: React.RefObject<HTMLTextAreaElement | null>;
   onSubmit: () => void;
   suggestions?: { title: string; prompt: string; vendorName?: string; vendorWebsite?: string }[];
+  isLoadingSuggestions?: boolean;
 }
 
 function getVendorLogoUrl(vendorName?: string, vendorWebsite?: string): string {
@@ -89,10 +91,23 @@ function VendorCard({
             />
           </div>
           <CardDescription className="flex-1">
-            <p className="text-sm font-normal text-foreground leading-relaxed">
-              {example.title}
-            </p>
+            <p className="text-sm font-normal text-foreground leading-relaxed">{example.title}</p>
           </CardDescription>
+        </div>
+      </CardHeader>
+    </Card>
+  );
+}
+
+function SuggestionCardSkeleton() {
+  return (
+    <Card className="transition-all duration-200">
+      <CardHeader className="p-4">
+        <div className="flex items-start gap-3">
+          <Skeleton className="h-6 w-6 rounded-sm flex-shrink-0" />
+          <div className="flex-1">
+            <Skeleton className="h-4 w-full" />
+          </div>
         </div>
       </CardHeader>
     </Card>
@@ -107,6 +122,7 @@ export function EmptyState({
   inputRef,
   onSubmit,
   suggestions,
+  isLoadingSuggestions = false,
 }: EmptyStateProps) {
   // Use dynamic suggestions if provided, otherwise fall back to static examples
   const examplesToShow: AutomationExample[] = suggestions
@@ -116,6 +132,10 @@ export function EmptyState({
         url: getVendorLogoUrl(s.vendorName, s.vendorWebsite),
       }))
     : AUTOMATION_EXAMPLES;
+
+  // Show skeleton loaders when loading suggestions for new automations
+  const showSkeletons = isLoadingSuggestions && suggestions?.length === 0;
+
   return (
     <div className="flex-1 min-h-0 overflow-y-auto h-full z-20">
       <div className="w-full h-full flex flex-col items-center py-48 px-4">
@@ -154,13 +174,19 @@ export function EmptyState({
           <h3 className="text-lg font-normal text-center">Get started with examples</h3>
 
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-w-3xl mx-auto">
-            {examplesToShow.map((example: AutomationExample, index: number) => (
-              <VendorCard
-                key={`${example.title}-${index}`}
-                example={example}
-                onExampleClick={onExampleClick}
-              />
-            ))}
+            {showSkeletons
+              ? // Show 6 skeleton cards while loading
+                Array.from({ length: 6 }).map((_, index) => (
+                  <SuggestionCardSkeleton key={`skeleton-${index}`} />
+                ))
+              : // Show actual suggestion cards
+                examplesToShow.map((example: AutomationExample, index: number) => (
+                  <VendorCard
+                    key={`${example.title}-${index}`}
+                    example={example}
+                    onExampleClick={onExampleClick}
+                  />
+                ))}
           </div>
         </div>
       </div>

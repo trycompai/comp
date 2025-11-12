@@ -36,14 +36,20 @@ export function AutomationPageClient({
       vendorWebsite?: string;
     }[]
   >([]);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
 
   // Load suggestions asynchronously (non-blocking - page renders immediately)
   useEffect(() => {
     if (automationId === 'new' && taskDescription) {
+      setIsLoadingSuggestions(true);
       generateAutomationSuggestions(taskDescription, orgId)
-        .then(setSuggestions)
+        .then((result) => {
+          setSuggestions(result);
+          setIsLoadingSuggestions(false);
+        })
         .catch((error) => {
           console.error('Failed to generate suggestions:', error);
+          setIsLoadingSuggestions(false);
           // Keep empty array, will use static suggestions
         });
     }
@@ -68,6 +74,7 @@ export function AutomationPageClient({
             automationId={automationId}
             taskName={taskName}
             suggestions={suggestions}
+            isLoadingSuggestions={isLoadingSuggestions}
           />
         </TabContent>
         <TabContent tabId="workflow" className="flex-1">
@@ -89,6 +96,7 @@ export function AutomationPageClient({
             automationId={automationId}
             taskName={taskName}
             suggestions={suggestions}
+            isLoadingSuggestions={isLoadingSuggestions}
           />
         </div>
 
