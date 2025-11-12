@@ -1,9 +1,9 @@
 'use client';
 
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
 import { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/ui/tabs';
-import { RequestsTab } from './RequestsTab';
 import { GrantsTab } from './GrantsTab';
+import { RequestsTab } from './RequestsTab';
 
 export function TrustAccessRequestsClient({ orgId }: { orgId: string }) {
   const [tab, setTab] = useState<'requests' | 'grants'>('requests');

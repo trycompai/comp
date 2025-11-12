@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@trycompai/ui/table';
-import { Button } from '@trycompai/ui/button';
-import { Badge } from '@trycompai/ui/badge';
 import { useAccessGrants } from '@/hooks/use-access-requests';
+import { Badge } from '@comp/ui/badge';
+import { Button } from '@comp/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@comp/ui/table';
+import { useState } from 'react';
 import { RevokeDialog } from './RevokeDialog';
 
 export function GrantsTab({ orgId }: { orgId: string }) {
@@ -76,7 +76,9 @@ export function GrantsTab({ orgId }: { orgId: string }) {
           ))}
         </TableBody>
       </Table>
-      {revokeId && <RevokeDialog orgId={orgId} grantId={revokeId} onClose={() => setRevokeId(null)} />}
+      {revokeId && (
+        <RevokeDialog orgId={orgId} grantId={revokeId} onClose={() => setRevokeId(null)} />
+      )}
     </div>
   );
 }

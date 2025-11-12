@@ -1,4 +1,5 @@
 import { useRevokeAccessGrant } from '@/hooks/use-access-requests';
+import { Button } from '@comp/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -9,7 +10,6 @@ import {
 } from '@comp/ui/dialog';
 import { Textarea } from '@comp/ui/textarea';
 import { useForm } from '@tanstack/react-form';
-import { Button } from '@trycompai/ui/button';
 import { toast } from 'sonner';
 import * as z from 'zod';
 
