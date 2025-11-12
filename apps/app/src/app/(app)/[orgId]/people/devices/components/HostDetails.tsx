@@ -13,7 +13,7 @@ export const HostDetails = ({ host, onClose }: { host: Host; onClose: () => void
   const mdmEnabledStatus = useMemo(() => {
     return {
       id: 'mdm',
-      response: host?.mdm.enrollment_status === 'On' ? 'pass' : 'fail',
+      response: host?.mdm.connected_to_fleet ? 'pass' : 'fail',
       name: 'MDM Enabled',
     };
   }, [host]);
