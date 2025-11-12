@@ -28,8 +28,13 @@ export class ApiClient {
   /**
    * Make an authenticated API call
    * Uses Bearer token authentication + explicit org context
+   * Automatically handles token refresh on 401 errors
    */
-  async call<T = unknown>(endpoint: string, options: ApiCallOptions = {}): Promise<ApiResponse<T>> {
+  async call<T = unknown>(
+    endpoint: string,
+    options: ApiCallOptions = {},
+    retryOnAuthError = true,
+  ): Promise<ApiResponse<T>> {
     const { organizationId, headers: customHeaders, ...fetchOptions } = options;
 
     // Build headers
@@ -63,6 +68,69 @@ export class ApiClient {
         ...fetchOptions,
         headers,
       });
+
+      // Handle 401 Unauthorized - token might be invalid, try refreshing
+      if (response.status === 401 && retryOnAuthError && typeof window !== 'undefined') {
+        console.log('🔄 Received 401, refreshing token and retrying request...');
+
+        // Force refresh token (clear cache and get fresh one)
+        const newToken = await jwtManager.forceRefresh();
+
+        if (newToken) {
+          // Retry the request with the new token (only once)
+          const retryHeaders = {
+            ...headers,
+            Authorization: `Bearer ${newToken}`,
+          };
+
+          const retryResponse = await fetch(`${this.baseUrl}${endpoint}`, {
+            credentials: 'include',
+            ...fetchOptions,
+            headers: retryHeaders,
+          });
+
+          let retryData = null;
+
+          // Handle different response types based on status and content
+          if (retryResponse.status === 204) {
+            retryData = null;
+          } else {
+            const text = await retryResponse.text();
+            if (text) {
+              try {
+                retryData = JSON.parse(text);
+              } catch (parseError) {
+                retryData = { message: text };
+              }
+            }
+          }
+
+          return {
+            data: retryResponse.ok ? retryData : undefined,
+            error: !retryResponse.ok
+              ? retryData?.message || `HTTP ${retryResponse.status}: ${retryResponse.statusText}`
+              : undefined,
+            status: retryResponse.status,
+          };
+        } else {
+          // Failed to refresh token, read original response and return error
+          console.error('❌ Failed to refresh token after 401 error');
+          const text = await response.text();
+          let errorData = null;
+          if (text) {
+            try {
+              errorData = JSON.parse(text);
+            } catch {
+              errorData = { message: text };
+            }
+          }
+          return {
+            data: undefined,
+            error: errorData?.message || `HTTP ${response.status}: ${response.statusText}`,
+            status: response.status,
+          };
+        }
+      }
 
       let data = null;
 
