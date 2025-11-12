@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { db } from '@trycompai/db';
-import { nanoid } from 'nanoid';
+import { randomBytes } from 'crypto';
 import {
   ApproveAccessRequestDto,
   CreateAccessRequestDto,
@@ -18,11 +18,29 @@ import { AttachmentsService } from '../attachments/attachments.service';
 
 @Injectable()
 export class TrustAccessService {
+  private readonly TRUST_APP_URL =
+    process.env.TRUST_APP_URL ||
+    process.env.BASE_URL ||
+    'http://localhost:3008';
+
+  private generateToken(length: number): string {
+    return randomBytes(length).toString('base64url').slice(0, length);
+  }
+
   constructor(
     private readonly ndaPdfService: NdaPdfService,
     private readonly emailService: TrustEmailService,
     private readonly attachmentsService: AttachmentsService,
-  ) {}
+  ) {
+    if (
+      !process.env.TRUST_APP_URL &&
+      !process.env.BASE_URL &&
+      process.env.NODE_ENV === 'production'
+    ) {
+      throw new Error('TRUST_APP_URL or BASE_URL must be set in production');
+    }
+  }
+
   async getMemberIdFromUserId(
     userId: string,
     organizationId: string,
@@ -214,7 +232,7 @@ export class TrustAccessService {
       throw new BadRequestException('Invalid member ID');
     }
 
-    const signToken = nanoid(32);
+    const signToken = this.generateToken(32);
     const signTokenExpiresAt = new Date();
     signTokenExpiresAt.setDate(signTokenExpiresAt.getDate() + 7);
 
@@ -258,7 +276,7 @@ export class TrustAccessService {
       return { request: updatedRequest, ndaAgreement, scopes, durationDays };
     });
 
-    const ndaSigningLink = `${process.env.TRUST_APP_URL}/nda/${result.ndaAgreement.signToken}`;
+    const ndaSigningLink = `${this.TRUST_APP_URL}/nda/${result.ndaAgreement.signToken}`;
 
     await this.emailService.sendNdaSigningEmail({
       toEmail: request.email,
@@ -488,6 +506,7 @@ export class TrustAccessService {
             organization: true,
           },
         },
+        grant: true,
       },
     });
 
@@ -497,6 +516,42 @@ export class TrustAccessService {
 
     if (nda.signTokenExpiresAt < new Date()) {
       throw new BadRequestException('NDA signing link has expired');
+    }
+
+    if (nda.status === 'signed' && nda.grant) {
+      const pdfUrl = nda.pdfSignedKey
+        ? await this.ndaPdfService.getSignedUrl(nda.pdfSignedKey)
+        : null;
+
+      const accessToken = nda.grant.accessToken || this.generateToken(32);
+      const accessTokenExpiresAt =
+        nda.grant.accessTokenExpiresAt ||
+        new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+      if (!nda.grant.accessToken) {
+        await db.trustAccessGrant.update({
+          where: { id: nda.grant.id },
+          data: { accessToken, accessTokenExpiresAt },
+        });
+      }
+
+      const trust = await db.trust.findUnique({
+        where: { organizationId: nda.organizationId },
+        select: { friendlyUrl: true },
+      });
+
+      const portalUrl = trust?.friendlyUrl
+        ? `${this.TRUST_APP_URL}/${trust.friendlyUrl}/access/${accessToken}`
+        : null;
+
+      return {
+        message: 'NDA already signed',
+        grant: nda.grant,
+        pdfDownloadUrl: pdfUrl,
+        portalUrl,
+        scopes: nda.grant.scopes,
+        expiresAt: nda.grant.expiresAt,
+      };
     }
 
     if (nda.status !== 'pending') {
@@ -521,6 +576,10 @@ export class TrustAccessService {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + durationDays);
 
+    const accessToken = this.generateToken(32);
+    const accessTokenExpiresAt = new Date();
+    accessTokenExpiresAt.setHours(accessTokenExpiresAt.getHours() + 24);
+
     const result = await db.$transaction(async (tx) => {
       const grant = await tx.trustAccessGrant.create({
         data: {
@@ -528,6 +587,8 @@ export class TrustAccessService {
           subjectEmail: signerEmail,
           scopes: nda.accessRequest.requestedScopes,
           expiresAt,
+          accessToken,
+          accessTokenExpiresAt,
         },
       });
 
@@ -548,13 +609,22 @@ export class TrustAccessService {
       return { grant, updatedNda };
     });
 
-    // Send confirmation email
+    const trust = await db.trust.findUnique({
+      where: { organizationId: nda.organizationId },
+      select: { friendlyUrl: true },
+    });
+
+    const portalUrl = trust?.friendlyUrl
+      ? `${this.TRUST_APP_URL}/${trust.friendlyUrl}/access/${accessToken}`
+      : null;
+
     await this.emailService.sendAccessGrantedEmail({
       toEmail: signerEmail,
       toName: signerName,
       organizationName: nda.accessRequest.organization.name,
       scopes: result.grant.scopes,
       expiresAt: result.grant.expiresAt,
+      portalUrl,
     });
 
     const pdfUrl = await this.ndaPdfService.getSignedUrl(pdfKey);
@@ -563,6 +633,9 @@ export class TrustAccessService {
       message: 'NDA signed successfully',
       grant: result.grant,
       pdfDownloadUrl: pdfUrl,
+      portalUrl,
+      scopes: result.grant.scopes,
+      expiresAt: result.grant.expiresAt,
     };
   }
 
@@ -603,7 +676,7 @@ export class TrustAccessService {
       data: { signTokenExpiresAt: newExpiresAt },
     });
 
-    const ndaSigningLink = `${process.env.TRUST_APP_URL}/nda/${pendingNda.signToken}`;
+    const ndaSigningLink = `${this.TRUST_APP_URL}/nda/${pendingNda.signToken}`;
 
     await this.emailService.sendNdaSigningEmail({
       toEmail: request.email,
@@ -633,7 +706,7 @@ export class TrustAccessService {
       throw new NotFoundException('Access request not found');
     }
 
-    const previewId = nanoid(16);
+    const previewId = this.generateToken(16);
     const pdfBuffer = await this.ndaPdfService.generateNdaPdf({
       organizationName: request.organization.name,
       scopes: request.requestedScopes,
@@ -648,6 +721,55 @@ export class TrustAccessService {
       fileName,
       'application/pdf',
       organizationId,
+      'trust_nda',
+      `preview-${previewId}`,
+    );
+
+    const pdfUrl = await this.ndaPdfService.getSignedUrl(s3Key);
+
+    return {
+      message: 'Preview NDA generated',
+      previewId,
+      s3Key,
+      pdfDownloadUrl: pdfUrl,
+    };
+  }
+
+  async previewNdaByToken(token: string) {
+    const nda = await db.trustNDAAgreement.findUnique({
+      where: { signToken: token },
+      include: {
+        accessRequest: {
+          include: {
+            organization: true,
+          },
+        },
+      },
+    });
+
+    if (!nda) {
+      throw new NotFoundException('NDA not found or token expired');
+    }
+
+    if (nda.signTokenExpiresAt < new Date()) {
+      throw new BadRequestException('NDA signing link has expired');
+    }
+
+    const previewId = this.generateToken(16);
+    const pdfBuffer = await this.ndaPdfService.generateNdaPdf({
+      organizationName: nda.accessRequest.organization.name,
+      scopes: nda.accessRequest.requestedScopes,
+      signerName: nda.accessRequest.name,
+      signerEmail: nda.accessRequest.email,
+      agreementId: `preview-${previewId}`,
+    });
+
+    const fileName = `preview-nda-${nda.id}-${Date.now()}.pdf`;
+    const s3Key = await this.attachmentsService.uploadToS3(
+      pdfBuffer,
+      fileName,
+      'application/pdf',
+      nda.organizationId,
       'trust_nda',
       `preview-${previewId}`,
     );
@@ -702,8 +824,12 @@ export class TrustAccessService {
     let accessToken = grant.accessToken;
     let accessTokenExpiresAt = grant.accessTokenExpiresAt;
 
-    if (!accessToken || !accessTokenExpiresAt || accessTokenExpiresAt < new Date()) {
-      accessToken = nanoid(32);
+    if (
+      !accessToken ||
+      !accessTokenExpiresAt ||
+      accessTokenExpiresAt < new Date()
+    ) {
+      accessToken = this.generateToken(32);
       accessTokenExpiresAt = new Date();
       accessTokenExpiresAt.setHours(accessTokenExpiresAt.getHours() + 24);
 
@@ -716,7 +842,7 @@ export class TrustAccessService {
       });
     }
 
-    const accessLink = `${process.env.TRUST_APP_URL}/${friendlyUrl}/access/${accessToken}`;
+    const accessLink = `${this.TRUST_APP_URL}/${friendlyUrl}/access/${accessToken}`;
 
     await this.emailService.sendAccessReclaimEmail({
       toEmail: email,
@@ -758,7 +884,10 @@ export class TrustAccessService {
       throw new BadRequestException('Access grant has expired');
     }
 
-    if (!grant.accessTokenExpiresAt || grant.accessTokenExpiresAt < new Date()) {
+    if (
+      !grant.accessTokenExpiresAt ||
+      grant.accessTokenExpiresAt < new Date()
+    ) {
       throw new BadRequestException('Access token has expired');
     }
 
@@ -772,6 +901,113 @@ export class TrustAccessService {
       expiresAt: grant.expiresAt,
       subjectEmail: grant.subjectEmail,
       ndaPdfUrl,
+    };
+  }
+
+  async getDocumentsByAccessToken(token: string) {
+    const grant = await db.trustAccessGrant.findUnique({
+      where: { accessToken: token },
+      include: {
+        accessRequest: {
+          include: {
+            organization: true,
+          },
+        },
+      },
+    });
+
+    if (!grant) {
+      throw new NotFoundException('Invalid access token');
+    }
+
+    if (grant.status !== 'active') {
+      throw new BadRequestException('Access grant is not active');
+    }
+
+    if (grant.expiresAt < new Date()) {
+      throw new BadRequestException('Access grant has expired');
+    }
+
+    if (
+      !grant.accessTokenExpiresAt ||
+      grant.accessTokenExpiresAt < new Date()
+    ) {
+      throw new BadRequestException('Access token has expired');
+    }
+
+    const documents = await db.trustDocument.findMany({
+      where: {
+        organizationId: grant.accessRequest.organizationId,
+        isActive: true,
+        scopes: {
+          hasSome: grant.scopes,
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        s3Key: true,
+        scopes: true,
+      },
+    });
+
+    return documents;
+  }
+
+  async downloadDocumentByAccessToken(token: string, documentId: string) {
+    const grant = await db.trustAccessGrant.findUnique({
+      where: { accessToken: token },
+      include: {
+        accessRequest: {
+          include: {
+            organization: true,
+          },
+        },
+      },
+    });
+
+    if (!grant) {
+      throw new NotFoundException('Invalid access token');
+    }
+
+    if (grant.status !== 'active') {
+      throw new BadRequestException('Access grant is not active');
+    }
+
+    if (grant.expiresAt < new Date()) {
+      throw new BadRequestException('Access grant has expired');
+    }
+
+    if (
+      !grant.accessTokenExpiresAt ||
+      grant.accessTokenExpiresAt < new Date()
+    ) {
+      throw new BadRequestException('Access token has expired');
+    }
+
+    const document = await db.trustDocument.findFirst({
+      where: {
+        id: documentId,
+        organizationId: grant.accessRequest.organizationId,
+        isActive: true,
+        scopes: {
+          hasSome: grant.scopes,
+        },
+      },
+    });
+
+    if (!document) {
+      throw new NotFoundException('Document not found or access denied');
+    }
+
+    const downloadUrl = await this.attachmentsService.getPresignedDownloadUrl(
+      document.s3Key,
+    );
+
+    return {
+      name: document.name,
+      downloadUrl,
     };
   }
 }

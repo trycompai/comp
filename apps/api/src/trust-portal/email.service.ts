@@ -41,8 +41,9 @@ export class TrustEmailService {
     organizationName: string;
     scopes: string[];
     expiresAt: Date;
+    portalUrl?: string | null;
   }): Promise<void> {
-    const { toEmail, toName, organizationName, scopes, expiresAt } = params;
+    const { toEmail, toName, organizationName, scopes, expiresAt, portalUrl } = params;
 
     const { id } = await sendEmail({
       to: toEmail,
@@ -52,6 +53,7 @@ export class TrustEmailService {
         organizationName,
         scopes,
         expiresAt,
+        portalUrl,
       }),
       system: true,
     });

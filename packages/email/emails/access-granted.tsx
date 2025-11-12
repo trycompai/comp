@@ -1,5 +1,6 @@
 import {
   Body,
+  Button,
   Container,
   Font,
   Heading,
@@ -17,6 +18,7 @@ interface Props {
   organizationName: string;
   scopes: string[];
   expiresAt: Date;
+  portalUrl?: string | null;
 }
 
 export const AccessGrantedEmail = ({
@@ -24,6 +26,7 @@ export const AccessGrantedEmail = ({
   organizationName,
   scopes,
   expiresAt,
+  portalUrl,
 }: Props) => {
   return (
     <Html>
@@ -84,9 +87,20 @@ export const AccessGrantedEmail = ({
               </strong>
             </Text>
 
+            {portalUrl && (
+              <Section className="mt-[32px] mb-[32px] text-center">
+                <Button
+                  className="rounded-[3px] bg-[#121212] px-[20px] py-[12px] text-center text-[14px] font-semibold text-white no-underline"
+                  href={portalUrl}
+                >
+                  View Documents
+                </Button>
+              </Section>
+            )}
+
             <Text className="text-[14px] leading-[24px] text-[#121212]">
-              You can download your signed NDA for your records from the link provided on the
-              confirmation page.
+              You can download your signed NDA for your records from the confirmation page or by
+              accessing the portal above.
             </Text>
 
             <Section
@@ -94,10 +108,10 @@ export const AccessGrantedEmail = ({
               style={{ backgroundColor: '#f8f9fa', borderColor: '#121212' }}
             >
               <Text className="m-0 text-[14px] leading-[24px] text-[#121212]">
-                <strong>Need to access your data again?</strong>
+                <strong>Lost your access link?</strong>
                 <br />
                 Visit the trust portal and click "Already have access?" to receive a new access
-                link.
+                link via email.
               </Text>
             </Section>
 

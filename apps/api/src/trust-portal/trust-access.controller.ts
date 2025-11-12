@@ -259,6 +259,20 @@ export class TrustAccessController {
     return this.trustAccessService.getNdaByToken(token);
   }
 
+  @Post('nda/:token/preview-nda')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Preview NDA by token',
+    description: 'Generate preview NDA PDF for external user before signing',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Preview NDA generated',
+  })
+  async previewNdaByToken(@Param('token') token: string) {
+    return this.trustAccessService.previewNdaByToken(token);
+  }
+
   @Post('nda/:token/sign')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -275,11 +289,6 @@ export class TrustAccessController {
     @Body() dto: SignNdaDto,
     @Req() req: Request,
   ) {
-    const userId = (req as any).userId;
-    if (!userId) {
-      throw new UnauthorizedException('User ID is required');
-    }
-
     if (!dto.accept) {
       throw new Error('You must accept the NDA to proceed');
     }
@@ -379,5 +388,39 @@ export class TrustAccessController {
   })
   async getGrantByAccessToken(@Param('token') token: string) {
     return this.trustAccessService.getGrantByAccessToken(token);
+  }
+
+  @Get('access/:token/documents')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'List documents by access token',
+    description: 'Get list of documents available to grant',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Documents list returned',
+  })
+  async getDocumentsByAccessToken(@Param('token') token: string) {
+    return this.trustAccessService.getDocumentsByAccessToken(token);
+  }
+
+  @Get('access/:token/documents/:documentId/download')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Download document by access token',
+    description: 'Get presigned URL for document download',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Download URL returned',
+  })
+  async downloadDocument(
+    @Param('token') token: string,
+    @Param('documentId') documentId: string,
+  ) {
+    return this.trustAccessService.downloadDocumentByAccessToken(
+      token,
+      documentId,
+    );
   }
 }

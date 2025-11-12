@@ -33,6 +33,7 @@ model Organization {
   secrets             Secret[]
   trustAccessRequests TrustAccessRequest[]
   trustNdaAgreements  TrustNDAAgreement[]
+  trustDocuments      TrustDocument[]
 
   @@index([slug])
 }

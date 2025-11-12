@@ -7222,6 +7222,31 @@
         ]
       }
     },
+    "/v1/trust-access/nda/{token}/preview-nda": {
+      "post": {
+        "description": "Generate preview NDA PDF for external user before signing",
+        "operationId": "TrustAccessController_previewNdaByToken_v1",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Preview NDA generated"
+          }
+        },
+        "summary": "Preview NDA by token",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
     "/v1/trust-access/nda/{token}/sign": {
       "post": {
         "description": "Sign NDA agreement, generate watermarked PDF, and create access grant",

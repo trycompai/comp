@@ -61,13 +61,12 @@ export const NdaSigningEmail = ({
             </Text>
 
             <Text className="text-[14px] leading-[24px] text-[#121212]">
-              Your request for access to <strong>{organizationName}</strong>'s compliance
-              documentation has been approved.
+              Your request to <strong>{organizationName}</strong>'s trust portal has been approved.
             </Text>
 
             <Text className="text-[14px] leading-[24px] text-[#121212]">
               <strong>
-                Before you can access the documents, you must review and sign a Non-Disclosure
+                Before you can access the trust portal documentation, you must review and sign a Non-Disclosure
                 Agreement (NDA).
               </strong>
             </Text>
