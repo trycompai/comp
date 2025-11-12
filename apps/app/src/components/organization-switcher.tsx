@@ -1,5 +1,6 @@
 'use client';
 
+import { useSidebar } from '@/components/ui/sidebar';
 import { changeOrganizationAction } from '@/actions/change-organization';
 import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
@@ -24,7 +25,6 @@ import { useEffect, useState } from 'react';
 interface OrganizationSwitcherProps {
   organizations: Organization[];
   organization: Organization | null;
-  isCollapsed?: boolean;
 }
 
 interface OrganizationInitialsAvatarProps {
@@ -84,8 +84,9 @@ function OrganizationInitialsAvatar({
 export function OrganizationSwitcher({
   organizations,
   organization,
-  isCollapsed = false,
 }: OrganizationSwitcherProps) {
+  const { state, isMobile } = useSidebar();
+  const isCollapsed = !isMobile && state === 'collapsed';
   const router = useRouter();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [pendingOrgId, setPendingOrgId] = useState<string | null>(null);

@@ -1,10 +1,9 @@
-import { AnimatedLayout } from '@/components/animated-layout';
+import { AppSidebar } from '@/components/app-sidebar';
 import { CheckoutCompleteDialog } from '@/components/dialogs/checkout-complete-dialog';
 import { Header } from '@/components/header';
 import { AssistantSheet } from '@/components/sheets/assistant-sheet';
-import { Sidebar } from '@/components/sidebar';
 import { TriggerTokenProvider } from '@/components/trigger-token-provider';
-import { SidebarProvider } from '@/context/sidebar-context';
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
 import dynamic from 'next/dynamic';
@@ -28,7 +27,7 @@ export default async function Layout({
   const { orgId: requestedOrgId } = await params;
 
   const cookieStore = await cookies();
-  const isCollapsed = cookieStore.get('sidebar-collapsed')?.value === 'true';
+  const defaultOpen = cookieStore.get('sidebar_state')?.value !== 'false';
   let publicAccessToken = cookieStore.get('publicAccessToken')?.value || undefined;
 
   // Check if user has access to this organization
@@ -88,8 +87,9 @@ export default async function Layout({
       triggerJobId={onboarding?.triggerJobId || undefined}
       initialToken={publicAccessToken || undefined}
     >
-      <SidebarProvider initialIsCollapsed={isCollapsed}>
-        <AnimatedLayout sidebar={<Sidebar organization={organization} />} isCollapsed={isCollapsed}>
+      <SidebarProvider defaultOpen={defaultOpen}>
+        <AppSidebar organization={organization} />
+        <SidebarInset>
           {onboarding?.triggerJobId && <ConditionalOnboardingTracker onboarding={onboarding} />}
           <Header organizationId={organization.id} />
           <DynamicMinHeight>{children}</DynamicMinHeight>
@@ -97,7 +97,7 @@ export default async function Layout({
           <Suspense fallback={null}>
             <CheckoutCompleteDialog orgId={organization.id} />
           </Suspense>
-        </AnimatedLayout>
+        </SidebarInset>
         <HotKeys />
       </SidebarProvider>
     </TriggerTokenProvider>
