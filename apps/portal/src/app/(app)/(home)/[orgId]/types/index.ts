@@ -85,7 +85,7 @@ export type MDM = {
   connected_to_fleet: boolean;
   dep_profile_error: boolean;
   encryption_key_available: boolean;
-  enrollment_status: "Off" | "On";
+  enrollment_status: string;
   name?: string;
   server_url?: string;
 };

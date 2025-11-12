@@ -111,22 +111,7 @@ export function MultiRoleCombobox({
     selectedRoles.length > 0 ? `${selectedRoles.length} selected` : placeholder || 'Select role(s)';
 
   const filteredRoles = availableRoles.filter((role) => {
-    const label = (() => {
-      switch (role.value) {
-        case 'admin':
-          return 'Admin';
-        case 'auditor':
-          return 'Auditor';
-        case 'employee':
-          return 'Employee';
-        case 'contractor':
-          return 'Contractor';
-        case 'owner':
-          return 'Owner';
-        default:
-          return role.value;
-      }
-    })();
+    const label = getRoleLabel(role.value);
     return label.toLowerCase().includes(searchTerm.toLowerCase());
   });
 

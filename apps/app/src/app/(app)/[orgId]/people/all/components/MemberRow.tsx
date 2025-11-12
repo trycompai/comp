@@ -93,6 +93,7 @@ export function MemberRow({ member, onRemove, onUpdateRole, canEdit }: MemberRow
   const canRemove = !isOwner;
 
   const isEmployee = currentRoles.includes('employee');
+  const isContractor = currentRoles.includes('contractor');
 
   const handleDialogItemSelect = () => {
     focusRef.current = dropdownTriggerRef.current;
@@ -142,7 +143,7 @@ export function MemberRow({ member, onRemove, onUpdateRole, canEdit }: MemberRow
           <div className="min-w-0 flex-1 gap-2">
             <div className="flex items-center flex-wrap gap-1.5">
               <span className="truncate text-sm font-medium">{memberName}</span>
-              {isEmployee && (
+              {(isEmployee || isContractor) && (
                 <Link
                   href={`/${orgId}/people/${memberId}`}
                   className="text-xs text-blue-600 hover:underline flex-shrink-0"
