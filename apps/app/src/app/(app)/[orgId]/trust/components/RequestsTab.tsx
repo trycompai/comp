@@ -1,11 +1,11 @@
+import { useAccessRequests, usePreviewNda, useResendNda } from '@/hooks/use-access-requests';
+import { Badge } from '@comp/ui/badge';
+import { Button } from '@comp/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@comp/ui/table';
 import { useState } from 'react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@trycompai/ui/table';
-import { Button } from '@trycompai/ui/button';
-import { Badge } from '@trycompai/ui/badge';
-import { useAccessRequests, useResendNda, usePreviewNda } from '@/hooks/use-access-requests';
+import { toast } from 'sonner';
 import { ApproveDialog } from './ApproveDialog';
 import { DenyDialog } from './DenyDialog';
-import { toast } from 'sonner';
 
 export function RequestsTab({ orgId }: { orgId: string }) {
   const { data, isLoading } = useAccessRequests(orgId);
@@ -126,7 +126,11 @@ export function RequestsTab({ orgId }: { orgId: string }) {
                       Deny
                     </Button>
                     {ndaPending && (
-                      <Button size="sm" variant="secondary" onClick={() => handleResendNda(request.id)}>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => handleResendNda(request.id)}
+                      >
                         Resend NDA
                       </Button>
                     )}
@@ -140,7 +144,9 @@ export function RequestsTab({ orgId }: { orgId: string }) {
           })}
         </TableBody>
       </Table>
-      {approveId && <ApproveDialog orgId={orgId} requestId={approveId} onClose={() => setApproveId(null)} />}
+      {approveId && (
+        <ApproveDialog orgId={orgId} requestId={approveId} onClose={() => setApproveId(null)} />
+      )}
       {denyId && <DenyDialog orgId={orgId} requestId={denyId} onClose={() => setDenyId(null)} />}
     </div>
   );
