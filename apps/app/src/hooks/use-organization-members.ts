@@ -27,8 +27,12 @@ export function useOrganizationMembers({
   }>();
 
   const { data, error, isLoading, mutate } = useSWR(
-    [`organization-members-${orgId}`, orgId],
+    orgId ? [`organization-members-${orgId}`, orgId] : null,
     async () => {
+      if (!orgId) {
+        throw new Error('Organization ID is required');
+      }
+
       const { data } = await api.get<{
         data: MemberData[];
         error: string;
@@ -37,7 +41,7 @@ export function useOrganizationMembers({
 
       if (!data?.data) {
         console.error('[useOrganizationMembers] Failed to fetch organization members', data?.error);
-        throw new Error(data?.error);
+        throw new Error(data?.error || 'Failed to fetch organization members');
       }
 
       return data?.data || [];
