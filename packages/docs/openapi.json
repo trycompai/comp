@@ -7420,6 +7420,64 @@
         ]
       }
     },
+    "/v1/trust-access/access/{token}/documents": {
+      "get": {
+        "description": "Get list of documents available to grant",
+        "operationId": "TrustAccessController_getDocumentsByAccessToken_v1",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Documents list returned"
+          }
+        },
+        "summary": "List documents by access token",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
+    "/v1/trust-access/access/{token}/documents/{documentId}/download": {
+      "get": {
+        "description": "Get presigned URL for document download",
+        "operationId": "TrustAccessController_downloadDocument_v1",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Download URL returned"
+          }
+        },
+        "summary": "Download document by access token",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
     "/v1/framework-editor/task-template": {
       "get": {
         "description": "Retrieve all framework editor task templates",

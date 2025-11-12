@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useDenyAccessRequest } from '@/hooks/use-access-requests';
+import { Button } from '@comp/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -6,11 +7,15 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
-import { Button } from '@trycompai/ui/button';
-import { Textarea } from '@trycompai/ui/textarea';
-import { useDenyAccessRequest } from '@/hooks/use-access-requests';
+} from '@comp/ui/dialog';
+import { Textarea } from '@comp/ui/textarea';
+import { useForm } from '@tanstack/react-form';
 import { toast } from 'sonner';
+import * as z from 'zod';
+
+const denySchema = z.object({
+  reason: z.string().min(1, { message: 'Reason is required' }),
+});
 
 export function DenyDialog({
   orgId,
@@ -22,42 +27,70 @@ export function DenyDialog({
   onClose: () => void;
 }) {
   const { mutateAsync: denyRequest } = useDenyAccessRequest(orgId);
-  const [reason, setReason] = useState('');
 
-  const handleDeny = () => {
-    toast.promise(denyRequest({ requestId, reason }), {
-      loading: 'Denying...',
-      success: () => {
-        onClose();
-        return 'Request denied';
-      },
-      error: 'Failed to deny request',
-    });
-  };
+  const form = useForm({
+    defaultValues: {
+      reason: '',
+    },
+    validators: {
+      onChange: denySchema,
+    },
+    onSubmit: async ({ value }) => {
+      toast.promise(denyRequest({ requestId, reason: value.reason }), {
+        loading: 'Denying...',
+        success: () => {
+          onClose();
+          return 'Request denied';
+        },
+        error: 'Failed to deny request',
+      });
+    },
+  });
 
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Deny Access Request</DialogTitle>
-          <DialogDescription>
-            Please provide a reason for denying this request
-          </DialogDescription>
-        </DialogHeader>
-        <Textarea
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          placeholder="Reason for denial..."
-          rows={4}
-        />
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button variant="destructive" onClick={handleDeny}>
-            Deny Request
-          </Button>
-        </DialogFooter>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            form.handleSubmit();
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle>Deny Access Request</DialogTitle>
+            <DialogDescription>Please provide a reason for denying this request</DialogDescription>
+          </DialogHeader>
+          <form.Field name="reason">
+            {(field) => (
+              <div>
+                <Textarea
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                  placeholder="Reason for denial..."
+                  rows={4}
+                />
+                {field.state.meta.errors.map((error, i) => (
+                  <p key={i} className="text-sm text-destructive mt-1">
+                    {String(error)}
+                  </p>
+                ))}
+              </div>
+            )}
+          </form.Field>
+          <DialogFooter>
+            <Button variant="outline" type="button" onClick={onClose}>
+              Cancel
+            </Button>
+            <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
+              {([canSubmit, isSubmitting]) => (
+                <Button variant="destructive" type="submit" disabled={!canSubmit || isSubmitting}>
+                  {isSubmitting ? 'Denying...' : 'Deny Request'}
+                </Button>
+              )}
+            </form.Subscribe>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

@@ -1,5 +1,13 @@
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@trycompai/ui/select';
-import { Input } from '@trycompai/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
+
+const DURATION_OPTIONS = [
+  { value: 7, label: '7 days' },
+  { value: 30, label: '30 days' },
+  { value: 60, label: '60 days' },
+  { value: 90, label: '90 days' },
+  { value: 180, label: '6 months' },
+  { value: 365, label: '1 year' },
+] as const;
 
 export function DurationPicker({
   value,
@@ -8,38 +16,18 @@ export function DurationPicker({
   value: number;
   onChange: (n: number) => void;
 }) {
-  const presets = [7, 30, 90, 180];
-  const isPreset = presets.includes(value);
-
   return (
-    <div className="flex items-center gap-2">
-      <Select
-        value={isPreset ? String(value) : 'custom'}
-        onValueChange={(v) => {
-          if (v !== 'custom') onChange(Number(v));
-        }}
-      >
-        <SelectTrigger className="w-[140px]">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="custom">Custom</SelectItem>
-          {presets.map((p) => (
-            <SelectItem key={p} value={String(p)}>
-              {p} days
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      {!isPreset && (
-        <Input
-          type="number"
-          min={1}
-          value={value}
-          onChange={(e) => onChange(Number(e.target.value))}
-          className="w-24"
-        />
-      )}
-    </div>
+    <Select value={String(value)} onValueChange={(v) => onChange(Number(v))}>
+      <SelectTrigger className="w-full">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {DURATION_OPTIONS.map((option) => (
+          <SelectItem key={option.value} value={String(option.value)}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }

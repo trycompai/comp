@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRevokeAccessGrant } from '@/hooks/use-access-requests';
 import {
   Dialog,
   DialogContent,
@@ -6,11 +6,16 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
+} from '@comp/ui/dialog';
+import { Textarea } from '@comp/ui/textarea';
+import { useForm } from '@tanstack/react-form';
 import { Button } from '@trycompai/ui/button';
-import { Textarea } from '@trycompai/ui/textarea';
-import { useRevokeAccessGrant } from '@/hooks/use-access-requests';
 import { toast } from 'sonner';
+import * as z from 'zod';
+
+const revokeSchema = z.object({
+  reason: z.string().min(1, { message: 'Reason is required' }),
+});
 
 export function RevokeDialog({
   orgId,
@@ -22,42 +27,70 @@ export function RevokeDialog({
   onClose: () => void;
 }) {
   const { mutateAsync: revokeGrant } = useRevokeAccessGrant(orgId);
-  const [reason, setReason] = useState('');
 
-  const handleRevoke = () => {
-    toast.promise(revokeGrant({ grantId, reason }), {
-      loading: 'Revoking...',
-      success: () => {
-        onClose();
-        return 'Grant revoked';
-      },
-      error: 'Failed to revoke grant',
-    });
-  };
+  const form = useForm({
+    defaultValues: {
+      reason: '',
+    },
+    validators: {
+      onChange: revokeSchema,
+    },
+    onSubmit: async ({ value }) => {
+      await toast.promise(revokeGrant({ grantId, reason: value.reason }), {
+        loading: 'Revoking...',
+        success: () => {
+          onClose();
+          return 'Grant revoked';
+        },
+        error: 'Failed to revoke grant',
+      });
+    },
+  });
 
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Revoke Access Grant</DialogTitle>
-          <DialogDescription>
-            Please provide a reason for revoking this grant
-          </DialogDescription>
-        </DialogHeader>
-        <Textarea
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          placeholder="Reason for revocation..."
-          rows={4}
-        />
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button variant="destructive" onClick={handleRevoke}>
-            Revoke Grant
-          </Button>
-        </DialogFooter>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            form.handleSubmit();
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle>Revoke Access Grant</DialogTitle>
+            <DialogDescription>Please provide a reason for revoking this grant</DialogDescription>
+          </DialogHeader>
+          <form.Field name="reason">
+            {(field) => (
+              <div>
+                <Textarea
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                  placeholder="Reason for revocation..."
+                  rows={4}
+                />
+                {field.state.meta.errors.map((error, i) => (
+                  <p key={i} className="text-sm text-destructive mt-1">
+                    {String(error)}
+                  </p>
+                ))}
+              </div>
+            )}
+          </form.Field>
+          <DialogFooter>
+            <Button variant="outline" onClick={onClose} type="button">
+              Cancel
+            </Button>
+            <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
+              {([canSubmit, isSubmitting]) => (
+                <Button variant="destructive" type="submit" disabled={!canSubmit || isSubmitting}>
+                  {isSubmitting ? 'Revoking...' : 'Revoke Grant'}
+                </Button>
+              )}
+            </form.Subscribe>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

@@ -64,10 +64,10 @@ export function useApproveAccessRequest(orgId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (requestId: string) => {
+    mutationFn: async ({ requestId, scopes, durationDays }: { requestId: string; scopes: string[]; durationDays: number }) => {
       const response = await api.post(
         `/v1/trust-access/admin/requests/${requestId}/approve`,
-        {},
+        { scopes, durationDays },
         orgId,
       );
 
