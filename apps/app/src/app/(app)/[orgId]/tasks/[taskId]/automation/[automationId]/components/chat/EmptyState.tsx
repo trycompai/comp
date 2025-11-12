@@ -145,7 +145,7 @@ export function EmptyState({
           </p>
           <Textarea
             ref={inputRef}
-            placeholder="Check if GitHub dependabot is enabled and tell me the result"
+            placeholder="Describe what evidence you want to collect..."
             className="w-full max-w-3xl transition-all duration-200 hover:shadow-md hover:shadow-primary/5 focus:shadow-lg focus:shadow-primary/10 focus:ring-2 focus:ring-primary/30 min-h-[44px] max-h-[200px] resize-none overflow-y-auto"
             value={input}
             onChange={(e) => {

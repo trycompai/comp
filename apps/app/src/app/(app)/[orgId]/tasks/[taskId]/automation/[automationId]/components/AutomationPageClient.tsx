@@ -2,6 +2,7 @@
 
 import { useChat } from '@ai-sdk/react';
 import { useEffect, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { generateAutomationSuggestions } from '../actions/generate-suggestions';
 import { Chat } from '../chat';
 import { useSharedChatContext } from '../lib';
@@ -36,22 +37,40 @@ export function AutomationPageClient({
       vendorWebsite?: string;
     }[]
   >([]);
-  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  // Initialize loading state to true for new automations to show skeletons immediately
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(
+    automationId === 'new' && !!taskDescription,
+  );
 
   // Load suggestions asynchronously (non-blocking - page renders immediately)
   useEffect(() => {
     if (automationId === 'new' && taskDescription) {
       setIsLoadingSuggestions(true);
+      const clientStartTime = performance.now();
       generateAutomationSuggestions(taskDescription, orgId)
         .then((result) => {
-          setSuggestions(result);
-          setIsLoadingSuggestions(false);
+          const clientReceiveTime = performance.now();
+          console.log(
+            `[AutomationPageClient] Received suggestions in ${(clientReceiveTime - clientStartTime).toFixed(2)}ms`,
+          );
+          // Use flushSync to force immediate re-render
+          flushSync(() => {
+            setSuggestions(result);
+            setIsLoadingSuggestions(false);
+          });
+          const clientUpdateTime = performance.now();
+          console.log(
+            `[AutomationPageClient] State updated and flushed in ${(clientUpdateTime - clientReceiveTime).toFixed(2)}ms`,
+          );
         })
         .catch((error) => {
           console.error('Failed to generate suggestions:', error);
           setIsLoadingSuggestions(false);
           // Keep empty array, will use static suggestions
         });
+    } else {
+      // Not a new automation, no need to load suggestions
+      setIsLoadingSuggestions(false);
     }
   }, [automationId, taskDescription, orgId]);
 

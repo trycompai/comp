@@ -19,9 +19,10 @@ CRITICAL REQUIREMENTS:
    - Example: If task is about secure code practices, do NOT suggest network security configurations
 4. Do NOT generate generic suggestions - they must relate to the SPECIFIC topic in the task description
 5. Only suggest automations for vendors in the "Configured Vendors" list above
-6. Use plain, simple English and keep prompts short and conversational
-7. **NEVER suggest screenshots or manual evidence collection** - all suggestions must be API integrations that programmatically pull data
-8. All suggestions must involve connecting to a vendor's API/integration to fetch data automatically
+6. **VENDOR DIVERSITY**: Avoid suggesting multiple examples from the same vendor. Only include multiple suggestions from the same vendor if there are very few vendors available (3 or fewer). Otherwise, prioritize diversity across different vendors.
+7. Use plain, simple English and keep prompts short and conversational
+8. **NEVER suggest screenshots or manual evidence collection** - all suggestions must be API integrations that programmatically pull data
+9. All suggestions must involve connecting to a vendor's API/integration to fetch data automatically
 
 The suggestions should help collect evidence that directly relates to verifying compliance with the SPECIFIC topic and requirements mentioned in the task description. Each suggestion must be an API integration that pulls data programmatically and must match the exact topic domain.`;
 }
@@ -44,10 +45,11 @@ CRITICAL RULES - READ CAREFULLY:
 4. Analyze the task description carefully and generate suggestions that help verify compliance with the SPECIFIC topic and requirements mentioned in that task.
 5. ONLY suggest automations for vendors that are in the "Configured Vendors" list provided
 6. Do NOT suggest generic vendors or vendors not in the list
-7. **NEVER suggest screenshots, manual evidence collection, or UI-based checks** - all suggestions must be API integrations that programmatically pull data
-8. All suggestions must involve connecting to a vendor's API/integration to fetch data automatically
-9. Use plain, simple English - avoid technical jargon or overwhelming details
-10. Keep prompts short and conversational
+7. **VENDOR DIVERSITY**: Avoid suggesting multiple examples from the same vendor. Only include multiple suggestions from the same vendor if there are very few vendors available (3 or fewer). Otherwise, prioritize diversity across different vendors to give users a variety of options.
+8. **NEVER suggest screenshots, manual evidence collection, or UI-based checks** - all suggestions must be API integrations that programmatically pull data
+9. All suggestions must involve connecting to a vendor's API/integration to fetch data automatically
+10. Use plain, simple English - avoid technical jargon or overwhelming details
+11. Keep prompts short and conversational
 
 Examples showing topic-specific relevance: 
 - Task: "Ensure secure code practices are followed"
@@ -73,8 +75,9 @@ Generate 5-6 automation suggestions that:
 2. Are DIRECTLY relevant to the specific task description (not generic)
 3. Help collect evidence that verifies compliance with the task's specific topic and requirements
 4. ONLY use vendors from the configured vendors list
-5. Are tailored to what the task is actually asking about (the specific topic domain)
-6. **Involve API integrations that programmatically pull data** (NO screenshots, NO manual checks)
+5. **Prioritize vendor diversity** - avoid multiple suggestions from the same vendor unless there are very few vendors (3 or fewer)
+6. Are tailored to what the task is actually asking about (the specific topic domain)
+7. **Involve API integrations that programmatically pull data** (NO screenshots, NO manual checks)
 
 Each suggestion should:
 - **Match the EXACT topic domain** mentioned in the task (e.g., if task is TLS/HTTPS, only suggest TLS/HTTPS-related checks)
