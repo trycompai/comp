@@ -10,7 +10,6 @@ import { OrganizationSwitcher } from './organization-switcher';
 
 interface MobileMenuProps {
   organizations: Organization[];
-  isCollapsed?: boolean;
   organizationId?: string;
 }
 
@@ -40,11 +39,7 @@ export function MobileMenu({ organizationId, organizations }: MobileMenuProps) {
           <Icons.Logo />
         </div>
         <div className="flex flex-col gap-2">
-          <OrganizationSwitcher
-            organizations={organizations}
-            organization={currentOrganization}
-            isCollapsed={false}
-          />
+          <OrganizationSwitcher organizations={organizations} organization={currentOrganization} />
           <MainMenu
             organizationId={organizationId}
             organization={currentOrganization}
