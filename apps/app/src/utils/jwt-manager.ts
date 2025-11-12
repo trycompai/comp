@@ -9,7 +9,10 @@ interface TokenInfo {
 
 class JWTManager {
   private refreshTimer: NodeJS.Timeout | null = null;
+  private refreshPromise: Promise<string | null> | null = null; // Prevent concurrent refreshes
+  private lastRefreshAttempt: number = 0; // Track last refresh attempt time
   private readonly REFRESH_THRESHOLD = 5 * 60 * 1000; // Refresh 5 minutes before expiry
+  private readonly REFRESH_COOLDOWN = 2000; // 2 seconds cooldown between refresh attempts
   private readonly STORAGE_KEY = 'bearer_token';
   private readonly EXPIRY_KEY = 'bearer_token_expiry';
 
@@ -36,8 +39,50 @@ class JWTManager {
 
   /**
    * Get a fresh JWT token from Better Auth
+   * Prevents concurrent refresh attempts and enforces cooldown period
    */
   async refreshToken(): Promise<string | null> {
+    // If a refresh is already in progress, wait for it instead of starting a new one
+    if (this.refreshPromise) {
+      console.log('🔄 Token refresh already in progress, waiting...');
+      return await this.refreshPromise;
+    }
+
+    // Enforce cooldown period to prevent rapid refresh attempts
+    const now = Date.now();
+    const timeSinceLastAttempt = now - this.lastRefreshAttempt;
+    if (timeSinceLastAttempt < this.REFRESH_COOLDOWN) {
+      console.log(
+        `⏳ Refresh cooldown active, waiting ${Math.ceil((this.REFRESH_COOLDOWN - timeSinceLastAttempt) / 1000)}s...`,
+      );
+      // Return existing token if available, otherwise wait for cooldown
+      const stored = this.getStoredToken();
+      if (stored && !this.isTokenExpiringSoon(stored.expiresAt)) {
+        return stored.token;
+      }
+      // Wait for cooldown
+      await new Promise((resolve) =>
+        setTimeout(resolve, this.REFRESH_COOLDOWN - timeSinceLastAttempt),
+      );
+    }
+
+    // Start refresh and store promise to prevent concurrent attempts
+    this.lastRefreshAttempt = Date.now();
+    this.refreshPromise = this._doRefreshToken();
+
+    try {
+      const result = await this.refreshPromise;
+      return result;
+    } finally {
+      // Clear promise after refresh completes (success or failure)
+      this.refreshPromise = null;
+    }
+  }
+
+  /**
+   * Internal method to actually perform the token refresh
+   */
+  private async _doRefreshToken(): Promise<string | null> {
     try {
       console.log('🔄 Refreshing JWT token...');
 
@@ -202,9 +247,16 @@ class JWTManager {
 
   /**
    * Force refresh token (useful for testing or manual refresh)
+   * Clears stored token first to ensure a fresh fetch
+   * Respects cooldown and concurrent refresh protection
    */
   async forceRefresh(): Promise<string | null> {
     console.log('🔄 Force refreshing JWT token...');
+    // Clear stored token to force a fresh fetch
+    localStorage.removeItem(this.STORAGE_KEY);
+    localStorage.removeItem(this.EXPIRY_KEY);
+    // Reset last refresh attempt to allow immediate refresh (but still respect concurrent protection)
+    this.lastRefreshAttempt = 0;
     return await this.refreshToken();
   }
 }

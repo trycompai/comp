@@ -27,9 +27,19 @@ interface Props {
   taskId: string;
   taskName?: string;
   automationId: string;
+  suggestions?: { title: string; prompt: string; vendorName?: string; vendorWebsite?: string }[];
+  isLoadingSuggestions?: boolean;
 }
 
-export function Chat({ className, orgId, taskId, taskName, automationId }: Props) {
+export function Chat({
+  className,
+  orgId,
+  taskId,
+  taskName,
+  automationId,
+  suggestions,
+  isLoadingSuggestions = false,
+}: Props) {
   const [input, setInput] = useState('');
   const { chat, updateAutomationId, automationIdRef } = useSharedChatContext();
   const { messages, sendMessage, status } = useChat<ChatUIMessage>({
@@ -126,6 +136,8 @@ export function Chat({ className, orgId, taskId, taskName, automationId }: Props
             status={status}
             inputRef={inputRef}
             onSubmit={() => validateAndSubmitMessage(input)}
+            suggestions={suggestions}
+            isLoadingSuggestions={isLoadingSuggestions}
           />
         </form>
       ) : (
