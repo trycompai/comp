@@ -2,9 +2,9 @@
 
 import { Button } from '@comp/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import { useRealtimeRun } from '@trigger.dev/react-hooks';
-import { CheckCircle2, Info, Loader2, RefreshCw, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import type { AnyRealtimeRun } from '@trigger.dev/sdk';
+import { AlertTriangle, CheckCircle2, Info, Loader2, RefreshCw, X } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { FindingsTable } from './FindingsTable';
 
 interface Finding {
@@ -19,75 +19,39 @@ interface Finding {
 
 interface ResultsViewProps {
   findings: Finding[];
-  scanTaskId: string | null;
-  scanAccessToken: string | null;
   onRunScan: () => Promise<string | null>;
   isScanning: boolean;
+  run: AnyRealtimeRun | undefined;
 }
 
 const severityOrder = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
 
-// Helper function to extract clean error messages from cloud provider errors
-function extractCleanErrorMessage(errorMessage: string): string {
-  try {
-    // Try to parse as JSON (GCP returns JSON blob)
-    const parsed = JSON.parse(errorMessage);
-
-    // GCP error structure: { error: { message: "actual message" } }
-    if (parsed.error?.message) {
-      return parsed.error.message;
-    }
-  } catch {
-    // Not JSON, return original
-  }
-
-  return errorMessage;
-}
-
-export function ResultsView({
-  findings,
-  scanTaskId,
-  scanAccessToken,
-  onRunScan,
-  isScanning,
-}: ResultsViewProps) {
-  // Track scan status with Trigger.dev hooks
-  const { run } = useRealtimeRun(scanTaskId || '', {
-    enabled: !!scanTaskId && !!scanAccessToken,
-    accessToken: scanAccessToken || undefined,
-  });
-
-  const scanCompleted = run?.status === 'COMPLETED';
-  const scanFailed =
-    run?.status === 'FAILED' || run?.status === 'CRASHED' || run?.status === 'SYSTEM_FAILURE';
+export function ResultsView({ findings, onRunScan, isScanning, run }: ResultsViewProps) {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedSeverity, setSelectedSeverity] = useState<string>('all');
-  const [showSuccessBanner, setShowSuccessBanner] = useState(false);
-  const [showErrorBanner, setShowErrorBanner] = useState(false);
 
-  // Show success banner when scan completes, auto-hide after 5 seconds
-  useEffect(() => {
-    if (scanCompleted) {
-      setShowSuccessBanner(true);
-      const timer = setTimeout(() => {
-        setShowSuccessBanner(false);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [scanCompleted]);
+  const isCompleted = run?.status === 'COMPLETED';
+  const isFailed =
+    run?.status === 'FAILED' ||
+    run?.status === 'CRASHED' ||
+    run?.status === 'SYSTEM_FAILURE' ||
+    run?.status === 'TIMED_OUT' ||
+    run?.status === 'CANCELED';
 
-  // Auto-dismiss error banner after 30 seconds
-  useEffect(() => {
-    if (scanFailed) {
-      setShowErrorBanner(true);
-      const timer = setTimeout(() => {
-        setShowErrorBanner(false);
-      }, 30000);
-      return () => clearTimeout(timer);
-    }
-  }, [scanFailed]);
+  const runOutput =
+    run?.output && typeof run.output === 'object' && 'success' in run.output
+      ? (run.output as {
+          success: boolean;
+          errors?: string[];
+          failedIntegrations?: Array<{ name: string; error: string }>;
+        })
+      : null;
 
-  // Get unique statuses and severities
+  const hasOutputErrors = runOutput && !runOutput.success;
+  const outputErrorMessages = hasOutputErrors
+    ? (runOutput.errors ?? runOutput.failedIntegrations?.map((i) => `${i.name}: ${i.error}`) ?? [])
+    : [];
+
   const uniqueStatuses = Array.from(
     new Set(findings.map((f) => f.status).filter(Boolean) as string[]),
   );
@@ -95,27 +59,28 @@ export function ResultsView({
     new Set(findings.map((f) => f.severity).filter(Boolean) as string[]),
   );
 
-  // Filter findings
   const filteredFindings = findings.filter((finding) => {
     const matchesStatus = selectedStatus === 'all' || finding.status === selectedStatus;
     const matchesSeverity = selectedSeverity === 'all' || finding.severity === selectedSeverity;
     return matchesStatus && matchesSeverity;
   });
 
-  // Sort findings by severity (always)
-  const sortedFindings = [...filteredFindings].sort((a, b) => {
-    const severityA = a.severity
-      ? (severityOrder[a.severity.toLowerCase() as keyof typeof severityOrder] ?? 999)
-      : 999;
-    const severityB = b.severity
-      ? (severityOrder[b.severity.toLowerCase() as keyof typeof severityOrder] ?? 999)
-      : 999;
-    return severityA - severityB;
-  });
+  const sortedFindings = useMemo(
+    () =>
+      [...filteredFindings].sort((a, b) => {
+        const severityA = a.severity
+          ? (severityOrder[a.severity.toLowerCase() as keyof typeof severityOrder] ?? 999)
+          : 999;
+        const severityB = b.severity
+          ? (severityOrder[b.severity.toLowerCase() as keyof typeof severityOrder] ?? 999)
+          : 999;
+        return severityA - severityB;
+      }),
+    [filteredFindings],
+  );
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Scan Status Banner */}
       {isScanning && (
         <div className="bg-primary/10 flex items-center gap-3 rounded-lg border border-primary/20 p-4">
           <Loader2 className="text-primary h-5 w-5 animate-spin flex-shrink-0" />
@@ -128,58 +93,62 @@ export function ResultsView({
         </div>
       )}
 
-      {showSuccessBanner && scanCompleted && !isScanning && (
+      {isCompleted && !isScanning && !hasOutputErrors && (
         <div className="bg-primary/10 flex items-center gap-3 rounded-lg border border-primary/20 p-4">
           <CheckCircle2 className="text-primary h-5 w-5 flex-shrink-0" />
           <div className="flex-1">
             <p className="text-primary text-sm font-medium">Scan completed</p>
             <p className="text-muted-foreground text-xs">Results updated successfully</p>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowSuccessBanner(false)}
-            className="text-muted-foreground hover:text-foreground h-auto p-1"
-          >
-            <X className="h-4 w-4" />
-          </Button>
         </div>
       )}
 
-      {/* Propagation delay info banner - only when scan succeeds but returns empty output */}
-      {scanCompleted && findings.length === 0 && !isScanning && !scanFailed && (
-        <div className="bg-blue-50 dark:bg-blue-950/20 flex items-center gap-3 rounded-lg border border-blue-200 dark:border-blue-900 p-4">
-          <Info className="text-blue-600 dark:text-blue-400 h-5 w-5 flex-shrink-0" />
-          <div className="flex-1">
-            <p className="text-blue-900 dark:text-blue-100 text-sm font-medium">Initial scan complete</p>
-            <p className="text-muted-foreground text-xs">
-              Security findings may take 24-48 hours to appear after enabling cloud security services. Check back later.
-            </p>
+      {hasOutputErrors && !isScanning && (
+        <div className="bg-destructive/10 flex items-start gap-3 rounded-lg border border-destructive/20 p-4">
+          <AlertTriangle className="text-destructive h-5 w-5 flex-shrink-0" />
+          <div className="flex-1 space-y-1">
+            <p className="text-destructive text-sm font-medium">Scan completed with errors</p>
+            <ul className="text-muted-foreground text-xs leading-relaxed">
+              {outputErrorMessages.slice(0, 5).map((message, index) => (
+                <li key={index}>• {message}</li>
+              ))}
+              {outputErrorMessages.length === 0 && (
+                <li>Encountered an unknown error while processing integration results.</li>
+              )}
+            </ul>
           </div>
         </div>
       )}
 
-      {showErrorBanner && scanFailed && !isScanning && (
+      {isFailed && !isScanning && (
         <div className="bg-destructive/10 flex items-center gap-3 rounded-lg border border-destructive/20 p-4">
           <X className="text-destructive h-5 w-5 flex-shrink-0" />
           <div className="flex-1">
             <p className="text-destructive text-sm font-medium">Scan failed</p>
             <p className="text-muted-foreground text-xs">
-              {extractCleanErrorMessage(run?.error?.message || 'An error occurred during the scan. Please try again.')}
+              {typeof run?.error === 'object' && run.error && 'message' in run.error
+                ? String(run.error.message)
+                : 'An error occurred during the scan. Please try again.'}
             </p>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowErrorBanner(false)}
-            className="text-muted-foreground hover:text-foreground h-auto p-1"
-          >
-            <X className="h-4 w-4" />
-          </Button>
         </div>
       )}
 
-      {/* Filters and Run Scan Button */}
+      {isCompleted && findings.length === 0 && !isScanning && !hasOutputErrors && (
+        <div className="bg-blue-50 dark:bg-blue-950/20 flex items-center gap-3 rounded-lg border border-blue-200 dark:border-blue-900 p-4">
+          <Info className="text-blue-600 dark:text-blue-400 h-5 w-5 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="text-blue-900 dark:text-blue-100 text-sm font-medium">
+              Initial scan complete
+            </p>
+            <p className="text-muted-foreground text-xs">
+              Security findings may take 24-48 hours to appear after enabling cloud security
+              services. Check back later.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         {findings.length > 0 ? (
           <div className="flex flex-wrap items-center gap-2">
@@ -227,7 +196,6 @@ export function ResultsView({
         </Button>
       </div>
 
-      {/* Results Table */}
       {sortedFindings.length > 0 ? (
         <FindingsTable findings={sortedFindings} />
       ) : findings.length > 0 ? (
