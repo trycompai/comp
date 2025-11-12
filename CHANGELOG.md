@@ -1,3 +1,10 @@
+# [1.57.0](https://github.com/trycompai/comp/compare/v1.56.7...v1.57.0) (2025-11-11)
+
+
+### Features
+
+* add contractor role ([#1735](https://github.com/trycompai/comp/issues/1735)) ([2d87914](https://github.com/trycompai/comp/commit/2d87914a25ef5edad2cee3f033e9583dc30b04d2))
+
 ## [1.56.7](https://github.com/trycompai/comp/compare/v1.56.6...v1.56.7) (2025-11-07)
 
 

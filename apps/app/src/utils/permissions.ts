@@ -51,8 +51,8 @@ export const employee = ac.newRole({
 });
 
 /**
- * Contractor role with standard operational permissions
- * Can manage portal, read/update organization info, manage members and invitations, and work with apps
+ * Contractor role with same permissions as employee
+ * Can manage portal for compliance purposes
  */
 export const contractor = ac.newRole({
   portal: ['read', 'update'],

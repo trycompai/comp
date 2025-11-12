@@ -159,7 +159,8 @@ export function InviteMembersModal({
         // Process each invitation sequentially
         for (const invite of values.manualInvites) {
           const hasEmployeeRoleAndNoAdmin =
-            !invite.roles.includes('admin') && (invite.roles.includes('employee') || invite.roles.includes('contractor'));
+            !invite.roles.includes('admin') &&
+            (invite.roles.includes('employee') || invite.roles.includes('contractor'));
           try {
             if (hasEmployeeRoleAndNoAdmin) {
               await addEmployeeWithoutInvite({
@@ -320,7 +321,8 @@ export function InviteMembersModal({
 
             // Attempt to invite
             const hasEmployeeRoleAndNoAdmin =
-              (validRoles.includes('employee') || validRoles.includes('contractor')) && !validRoles.includes('admin');
+              (validRoles.includes('employee') || validRoles.includes('contractor')) &&
+              !validRoles.includes('admin');
             try {
               if (hasEmployeeRoleAndNoAdmin) {
                 await addEmployeeWithoutInvite({

@@ -67,18 +67,18 @@ export const removeEmployeeRoleOrMember = authActionClient
           };
         }
 
-        // 3. Check if target has 'employee' role
+        // 3. Check if target has 'employee' or 'contractor' role
         const roles = targetMember.role.split(',').filter(Boolean); // Handle empty strings/commas
-        if (!roles.includes('employee')) {
+        if (!roles.includes('employee') && !roles.includes('contractor')) {
           return {
             success: false,
-            error: 'Target member does not have the employee role.',
+            error: 'Target member does not have the employee or contractor role.',
           };
         }
 
         // 4. Logic: Remove role or delete member
-        if (roles.length === 1 && roles[0] === 'employee') {
-          // Only has employee role - delete member fully
+        if (roles.length === 1 && (roles[0] === 'employee' || roles[0] === 'contractor')) {
+          // Only has employee or contractor role - delete member fully
 
           // Cannot remove owner (shouldn't happen if only role is employee, but safety check)
           if (targetMember.role === 'owner') {

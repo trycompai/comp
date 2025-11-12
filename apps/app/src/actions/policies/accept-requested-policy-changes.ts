@@ -88,7 +88,7 @@ export const acceptRequestedPolicyChangesAction = authActionClient
         },
       });
 
-      // Filter to get only employees
+      // Filter to get only employees and contractors
       const employeeMembers = employees.filter((member) => {
         const roles = member.role.includes(',') ? member.role.split(',') : [member.role];
         return roles.includes('employee') || roles.includes('contractor');

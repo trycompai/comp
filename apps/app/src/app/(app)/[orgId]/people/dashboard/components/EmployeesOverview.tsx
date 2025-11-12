@@ -52,10 +52,13 @@ export async function EmployeesOverview() {
       return roles.includes('employee') || roles.includes('contractor');
     });
 
-    // Fetch required policies
+    // Fetch required policies that are published and not archived
     policies = await db.policy.findMany({
       where: {
         organizationId: organizationId,
+        isRequiredToSign: true,
+        status: 'published',
+        isArchived: false,
       },
     });
 

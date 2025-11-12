@@ -4,8 +4,8 @@ import { sendIntegrationResults } from './integration-results';
 
 export const runIntegrationTests = task({
   id: 'run-integration-tests',
-  run: async (payload: { organizationId: string; forceFailure?: boolean }) => {
-    const { organizationId, forceFailure = false } = payload;
+  run: async (payload: { organizationId: string }) => {
+    const { organizationId } = payload;
 
     logger.info(`Running integration tests for organization: ${organizationId}`);
 
@@ -44,32 +44,6 @@ export const runIntegrationTests = task({
       `Found ${integrations.length} integrations to test for organization: ${organizationId}`,
     );
 
-    if (forceFailure) {
-      await new Promise((resolve) => setTimeout(resolve, 5000));
-
-      const forcedFailureMessage =
-        'Test failure: intentionally failing integration job for UI verification';
-
-      const forcedFailedIntegrations = integrations.map((integration) => ({
-        id: integration.id,
-        integrationId: integration.integrationId,
-        name: integration.name,
-        error: forcedFailureMessage,
-      }));
-
-      logger.warn(
-        `Force-failing integration tests for organization ${organizationId}: ${forcedFailureMessage}`,
-      );
-
-      return {
-        success: false,
-        organizationId,
-        integrationsCount: integrations.length,
-        errors: [forcedFailureMessage],
-        failedIntegrations: forcedFailedIntegrations,
-      };
-    }
-
     const batchItems = integrations.map((integration) => ({
       payload: {
         integration: {
@@ -94,21 +68,32 @@ export const runIntegrationTests = task({
       }> = [];
 
       batchHandle.runs.forEach((run, index) => {
-        if (run.ok) {
-          return;
-        }
-
         const integration = integrations[index];
-        const errorValue = run.error;
-        const errorMessage =
-          errorValue instanceof Error ? errorValue.message : String(errorValue ?? 'Unknown error');
 
-        failedIntegrations.push({
-          id: integration.id,
-          integrationId: integration.integrationId,
-          name: integration.name,
-          error: errorMessage,
-        });
+        if (run.ok) {
+          // Check if the task completed but returned success: false
+          const runOutput = run.output as { success?: boolean; error?: string } | undefined;
+
+          if (runOutput && runOutput.success === false) {
+            failedIntegrations.push({
+              id: integration.id,
+              integrationId: integration.integrationId,
+              name: integration.name,
+              error: runOutput.error || 'Integration failed',
+            });
+          }
+        } else {
+          // Task crashed or threw an error
+          const errorMessage =
+            run.error instanceof Error ? run.error.message : String(run.error ?? 'Unknown error');
+
+          failedIntegrations.push({
+            id: integration.id,
+            integrationId: integration.integrationId,
+            name: integration.name,
+            error: errorMessage,
+          });
+        }
       });
 
       if (failedIntegrations.length > 0) {
