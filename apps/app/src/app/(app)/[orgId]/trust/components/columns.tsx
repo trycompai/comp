@@ -1,11 +1,11 @@
 'use client';
 
-import type { ColumnDef } from '@tanstack/react-table';
 import type {
   AccessRequest,
   useApproveAccessRequest,
   useDenyAccessRequest,
 } from '@/hooks/use-access-requests';
+import type { ColumnDef } from '@tanstack/react-table';
 import { Badge } from '@trycompai/ui/badge';
 import { Button } from '@trycompai/ui/button';
 
@@ -70,7 +70,16 @@ export function columns({
         if (row.original.status === 'under_review') {
           return (
             <div className="flex gap-2">
-              <Button size="sm" onClick={() => approve.mutate(row.original.id)}>
+              <Button
+                size="sm"
+                onClick={() =>
+                  approve.mutate({
+                    requestId: row.original.id,
+                    scopes: row.original.requestedScopes,
+                    durationDays: row.original.requestedDurationDays ?? 30,
+                  })
+                }
+              >
                 Approve
               </Button>
               <Button
@@ -100,5 +109,3 @@ export function columns({
     },
   ];
 }
-
-
