@@ -83,7 +83,7 @@ const getMembersWithMetadata = async () => {
     where: {
       organizationId: orgId,
       role: {
-        notIn: [Role.employee, Role.auditor],
+        notIn: [Role.employee, Role.auditor, Role.contractor],
       },
     },
     include: {
