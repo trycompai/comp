@@ -196,3 +196,28 @@ export function useResendNda(orgId: string) {
     },
   });
 }
+
+export function usePreviewNda(orgId: string) {
+  const api = useApi();
+
+  return useMutation({
+    mutationFn: async (requestId: string) => {
+      const response = await api.post<{
+        message: string;
+        previewId: string;
+        s3Key: string;
+        pdfDownloadUrl: string;
+      }>(
+        `/v1/trust-access/admin/requests/${requestId}/preview-nda`,
+        {},
+        orgId,
+      );
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      return response.data!;
+    },
+  });
+}

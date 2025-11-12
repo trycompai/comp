@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@trycompai/ui/table';
 import { Button } from '@trycompai/ui/button';
 import { Badge } from '@trycompai/ui/badge';
-import { useAccessRequests, useResendNda } from '@/hooks/use-access-requests';
+import { useAccessRequests, useResendNda, usePreviewNda } from '@/hooks/use-access-requests';
 import { ApproveDialog } from './ApproveDialog';
 import { DenyDialog } from './DenyDialog';
 import { toast } from 'sonner';
@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 export function RequestsTab({ orgId }: { orgId: string }) {
   const { data, isLoading } = useAccessRequests(orgId);
   const { mutateAsync: resendNda } = useResendNda(orgId);
+  const { mutateAsync: previewNda } = usePreviewNda(orgId);
   const [approveId, setApproveId] = useState<string | null>(null);
   const [denyId, setDenyId] = useState<string | null>(null);
 
@@ -19,6 +20,20 @@ export function RequestsTab({ orgId }: { orgId: string }) {
       success: 'NDA email resent',
       error: 'Failed to resend NDA',
     });
+  };
+
+  const handlePreviewNda = async (requestId: string) => {
+    toast.promise(
+      previewNda(requestId).then((result) => {
+        window.open(result.pdfDownloadUrl, '_blank');
+        return result;
+      }),
+      {
+        loading: 'Generating preview...',
+        success: 'Preview NDA generated',
+        error: 'Failed to generate preview',
+      },
+    );
   };
 
   if (isLoading) {
@@ -115,6 +130,9 @@ export function RequestsTab({ orgId }: { orgId: string }) {
                         Resend NDA
                       </Button>
                     )}
+                    <Button size="sm" variant="ghost" onClick={() => handlePreviewNda(request.id)}>
+                      Preview
+                    </Button>
                   </div>
                 </TableCell>
               </TableRow>

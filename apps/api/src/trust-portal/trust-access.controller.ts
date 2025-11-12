@@ -322,4 +322,29 @@ export class TrustAccessController {
   ) {
     return this.trustAccessService.resendNda(organizationId, requestId);
   }
+
+  @Post('admin/requests/:id/preview-nda')
+  @UseGuards(HybridAuthGuard)
+  @ApiSecurity('apikey')
+  @ApiHeader({
+    name: 'X-Organization-Id',
+    description: 'Organization ID',
+    required: true,
+  })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Preview NDA PDF',
+    description:
+      'Generate preview NDA with watermark and save to S3 with preview-* prefix',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Preview NDA generated',
+  })
+  async previewNda(
+    @OrganizationId() organizationId: string,
+    @Param('id') requestId: string,
+  ) {
+    return this.trustAccessService.previewNda(organizationId, requestId);
+  }
 }

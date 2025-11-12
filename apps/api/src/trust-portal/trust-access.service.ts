@@ -14,12 +14,14 @@ import {
 } from './dto/trust-access.dto';
 import { TrustEmailService } from './email.service';
 import { NdaPdfService } from './nda-pdf.service';
+import { AttachmentsService } from '../attachments/attachments.service';
 
 @Injectable()
 export class TrustAccessService {
   constructor(
     private readonly ndaPdfService: NdaPdfService,
     private readonly emailService: TrustEmailService,
+    private readonly attachmentsService: AttachmentsService,
   ) {}
   async getMemberIdFromUserId(
     userId: string,
@@ -613,6 +615,50 @@ export class TrustAccessService {
 
     return {
       message: 'NDA signing email resent',
+    };
+  }
+
+  async previewNda(organizationId: string, requestId: string) {
+    const request = await db.trustAccessRequest.findFirst({
+      where: {
+        id: requestId,
+        organizationId,
+      },
+      include: {
+        organization: true,
+      },
+    });
+
+    if (!request) {
+      throw new NotFoundException('Access request not found');
+    }
+
+    const previewId = nanoid(16);
+    const pdfBuffer = await this.ndaPdfService.generateNdaPdf({
+      organizationName: request.organization.name,
+      scopes: request.requestedScopes,
+      signerName: request.name,
+      signerEmail: request.email,
+      agreementId: `preview-${previewId}`,
+    });
+
+    const fileName = `preview-nda-${requestId}-${Date.now()}.pdf`;
+    const s3Key = await this.attachmentsService.uploadToS3(
+      pdfBuffer,
+      fileName,
+      'application/pdf',
+      organizationId,
+      'trust_nda',
+      `preview-${previewId}`,
+    );
+
+    const pdfUrl = await this.ndaPdfService.getSignedUrl(s3Key);
+
+    return {
+      message: 'Preview NDA generated',
+      previewId,
+      s3Key,
+      pdfDownloadUrl: pdfUrl,
     };
   }
 }

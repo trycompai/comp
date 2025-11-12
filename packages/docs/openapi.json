@@ -7296,6 +7296,45 @@
         ]
       }
     },
+    "/v1/trust-access/admin/requests/{id}/preview-nda": {
+      "post": {
+        "description": "Generate preview NDA with watermark and save to S3 with preview-* prefix",
+        "operationId": "TrustAccessController_previewNda_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Preview NDA generated"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Preview NDA PDF",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
     "/v1/framework-editor/task-template": {
       "get": {
         "description": "Retrieve all framework editor task templates",
