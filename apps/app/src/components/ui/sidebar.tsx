@@ -1,7 +1,6 @@
 'use client';
 
 import { Slot } from '@radix-ui/react-slot';
-import { cva, type VariantProps } from 'class-variance-authority';
 import { PanelLeftIcon } from 'lucide-react';
 import * as React from 'react';
 
@@ -435,9 +434,9 @@ function SidebarMenu({ className, ...props }: React.ComponentProps<'ul'>) {
   );
 }
 
-function SidebarMenuItem({ className, ...props }: React.ComponentProps<'li'>) {
+function SidebarMenuItem({ className, ...props }: React.ComponentProps<'div'>) {
   return (
-    <li
+    <div
       data-slot="sidebar-menu-item"
       data-sidebar="menu-item"
       className={cn('group/menu-item relative', className)}

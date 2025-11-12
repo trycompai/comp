@@ -1,13 +1,13 @@
 'use client';
 
-import { Badge } from '@comp/ui/badge';
-import { Icons } from '@comp/ui/icons';
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar';
+import { Badge } from '@comp/ui/badge';
+import { Icons } from '@comp/ui/icons';
 import {
   FlaskConical,
   Gauge,
@@ -203,7 +203,7 @@ export function MainMenu({ organizationId, organization, onItemClick }: Props) {
     <div className="relative">
       <div
         aria-hidden
-        className="pointer-events-none bg-primary absolute -right-2 z-20 w-0.5 rounded-l-xs transition-all duration-300 ease-out group-data-[collapsible=icon]:hidden"
+        className="pointer-events-none bg-primary absolute -right-4 z-20 w-0.5 rounded-l-xs transition-all duration-300 ease-out group-data-[collapsible=icon]:hidden"
         style={activeStyle}
       />
       <SidebarMenu>
@@ -228,14 +228,7 @@ export function MainMenu({ organizationId, organization, onItemClick }: Props) {
   );
 }
 
-const Item = ({
-  organizationId,
-  item,
-  isActive,
-  disabled,
-  onItemClick,
-  itemRef,
-}: ItemProps) => {
+const Item = ({ organizationId, item, isActive, disabled, onItemClick, itemRef }: ItemProps) => {
   const Icon = item.icon;
   const linkDisabled = disabled || item.disabled;
   const itemPath = item.path.replace(':organizationId', organizationId ?? '');

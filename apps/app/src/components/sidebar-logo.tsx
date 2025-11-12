@@ -3,10 +3,8 @@ import Link from 'next/link';
 
 export function SidebarLogo() {
   return (
-    <div className="flex items-center">
-      <Link href="/" suppressHydrationWarning>
-        <Icons.Logo width={40} height={40} />
-      </Link>
-    </div>
+    <Link href="/" suppressHydrationWarning className="flex items-center">
+      <Icons.Logo width={40} height={40} />
+    </Link>
   );
 }
