@@ -1,6 +1,5 @@
 import { useAccessRequest, useApproveAccessRequest } from '@/hooks/use-access-requests';
-import { useForm } from '@tanstack/react-form';
-import { Button } from '@trycompai/ui/button';
+import { Button } from '@comp/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -8,16 +7,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
+} from '@comp/ui/dialog';
+import { useForm } from '@tanstack/react-form';
 import { toast } from 'sonner';
-import * as z from 'zod';
 import { DurationPicker } from './DurationPicker';
 import { ScopesSelect } from './ScopesSelect';
-
-const approveSchema = z.object({
-  scopes: z.array(z.string()).min(1, { message: 'Select at least 1 scope' }),
-  durationDays: z.number().int().min(7).max(365),
-});
 
 export function ApproveDialog({
   orgId,
@@ -31,15 +25,10 @@ export function ApproveDialog({
   const { data } = useAccessRequest(orgId, requestId);
   const { mutateAsync: approveRequest } = useApproveAccessRequest(orgId);
 
-  if (!data) return null;
-
   const form = useForm({
     defaultValues: {
-      scopes: data.requestedScopes || [],
-      durationDays: data.requestedDurationDays ?? 30,
-    },
-    validators: {
-      onChange: approveSchema,
+      scopes: data?.requestedScopes || [],
+      durationDays: data?.requestedDurationDays ?? 30,
     },
     onSubmit: async ({ value }) => {
       await toast.promise(
@@ -59,6 +48,8 @@ export function ApproveDialog({
       );
     },
   });
+
+  if (!data) return null;
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -99,29 +90,46 @@ export function ApproveDialog({
               </div>
             </div>
             <div className="space-y-4">
-              <form.Field name="scopes">
+              <form.Field
+                name="scopes"
+                validators={{
+                  onChange: ({ value }) =>
+                    value.length === 0 ? 'Select at least 1 scope' : undefined,
+                }}
+              >
                 {(field) => (
                   <div>
                     <div className="text-sm font-medium mb-2">Access Scopes</div>
-                    <ScopesSelect value={field.state.value} onChange={field.handleChange} />
-                    {field.state.meta.errors.map((error, i) => (
-                      <p key={i} className="text-sm text-destructive mt-1">
-                        {String(error)}
-                      </p>
-                    ))}
+                    <ScopesSelect
+                      value={field.state.value}
+                      onChange={(v) => {
+                        field.handleChange(v);
+                        field.validate('change');
+                      }}
+                    />
+                    {field.state.meta.errors.length > 0 && (
+                      <p className="text-sm text-destructive mt-1">{field.state.meta.errors[0]}</p>
+                    )}
                   </div>
                 )}
               </form.Field>
-              <form.Field name="durationDays">
+              <form.Field
+                name="durationDays"
+                validators={{
+                  onChange: ({ value }) => {
+                    if (value < 7) return 'Minimum 7 days';
+                    if (value > 365) return 'Maximum 365 days';
+                    return undefined;
+                  },
+                }}
+              >
                 {(field) => (
                   <div>
                     <div className="text-sm font-medium mb-2">Duration</div>
                     <DurationPicker value={field.state.value} onChange={field.handleChange} />
-                    {field.state.meta.errors.map((error, i) => (
-                      <p key={i} className="text-sm text-destructive mt-1">
-                        {String(error)}
-                      </p>
-                    ))}
+                    {field.state.meta.errors.length > 0 && (
+                      <p className="text-sm text-destructive mt-1">{field.state.meta.errors[0]}</p>
+                    )}
                   </div>
                 )}
               </form.Field>

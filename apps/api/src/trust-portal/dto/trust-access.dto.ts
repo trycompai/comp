@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  ArrayNotEmpty,
   IsArray,
   IsEmail,
   IsEnum,
@@ -44,6 +45,7 @@ export class CreateAccessRequestDto {
 
   @ApiProperty({ type: [String] })
   @IsArray()
+  @ArrayNotEmpty()
   @IsString({ each: true })
   requestedScopes: string[];
 }
@@ -56,6 +58,9 @@ export class ApproveAccessRequestDto {
   durationDays?: number;
 
   @ApiPropertyOptional({ type: [String] })
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsString({ each: true })
   @IsOptional()
   scopes?: string[];
 }

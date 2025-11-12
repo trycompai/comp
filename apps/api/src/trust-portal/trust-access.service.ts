@@ -219,7 +219,11 @@ export class TrustAccessService {
 
     const durationDays =
       dto.durationDays || request.requestedDurationDays || 30;
-    const scopes = dto.scopes || request.requestedScopes;
+    const scopes = (dto.scopes?.length ? dto.scopes : request.requestedScopes) ?? [];
+
+    if (!scopes.length) {
+      throw new BadRequestException('At least one scope must be selected');
+    }
 
     const member = memberId
       ? await db.member.findFirst({
@@ -253,6 +257,7 @@ export class TrustAccessService {
           status: 'approved',
           reviewerMemberId: member.id,
           reviewedAt: new Date(),
+          requestedScopes: scopes,
         },
       });
 
@@ -439,6 +444,12 @@ export class TrustAccessService {
       },
     });
 
+    // Void the associated NDA agreement if it exists
+    await db.trustNDAAgreement.updateMany({
+      where: { grantId },
+      data: { status: 'void' },
+    });
+
     await db.auditLog.create({
       data: {
         organizationId: grant.accessRequest.organizationId,
@@ -475,6 +486,10 @@ export class TrustAccessService {
 
     if (nda.signTokenExpiresAt < new Date()) {
       throw new BadRequestException('NDA signing link has expired');
+    }
+
+    if (nda.status === 'void') {
+      throw new BadRequestException('This NDA has been revoked and is no longer valid');
     }
 
     if (nda.status !== 'pending') {
@@ -518,6 +533,10 @@ export class TrustAccessService {
       throw new BadRequestException('NDA signing link has expired');
     }
 
+    if (nda.status === 'void') {
+      throw new BadRequestException('This NDA has been revoked and is no longer valid');
+    }
+
     if (nda.status === 'signed' && nda.grant) {
       const pdfUrl = nda.pdfSignedKey
         ? await this.ndaPdfService.getSignedUrl(nda.pdfSignedKey)
@@ -556,6 +575,11 @@ export class TrustAccessService {
 
     if (nda.status !== 'pending') {
       throw new BadRequestException('NDA has already been signed');
+    }
+
+    const scopes = nda.accessRequest.requestedScopes;
+    if (!scopes?.length) {
+      throw new BadRequestException('Cannot sign NDA: request has no scopes');
     }
 
     const pdfBuffer = await this.ndaPdfService.generateNdaPdf({
