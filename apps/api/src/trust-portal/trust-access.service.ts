@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { db } from '@trycompai/db';
+import { nanoid } from 'nanoid';
 import {
   ApproveAccessRequestDto,
   CreateAccessRequestDto,
@@ -11,9 +12,15 @@ import {
   ListAccessRequestsDto,
   RevokeGrantDto,
 } from './dto/trust-access.dto';
+import { TrustEmailService } from './email.service';
+import { NdaPdfService } from './nda-pdf.service';
 
 @Injectable()
 export class TrustAccessService {
+  constructor(
+    private readonly ndaPdfService: NdaPdfService,
+    private readonly emailService: TrustEmailService,
+  ) {}
   async getMemberIdFromUserId(
     userId: string,
     organizationId: string,
@@ -33,8 +40,8 @@ export class TrustAccessService {
   async createAccessRequest(
     friendlyUrl: string,
     dto: CreateAccessRequestDto,
-    ipAddress?: string,
-    userAgent?: string,
+    ipAddress: string | undefined,
+    userAgent: string | undefined,
   ) {
     const trust = await db.trust.findUnique({
       where: { friendlyUrl },
@@ -175,6 +182,9 @@ export class TrustAccessService {
         id: requestId,
         organizationId,
       },
+      include: {
+        organization: true,
+      },
     });
 
     if (!request) {
@@ -189,9 +199,6 @@ export class TrustAccessService {
 
     const durationDays =
       dto.durationDays || request.requestedDurationDays || 30;
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + durationDays);
-
     const scopes = dto.scopes || request.requestedScopes;
 
     const member = memberId
@@ -205,14 +212,18 @@ export class TrustAccessService {
       throw new BadRequestException('Invalid member ID');
     }
 
+    const signToken = nanoid(32);
+    const signTokenExpiresAt = new Date();
+    signTokenExpiresAt.setDate(signTokenExpiresAt.getDate() + 7);
+
     const result = await db.$transaction(async (tx) => {
-      const grant = await tx.trustAccessGrant.create({
+      const ndaAgreement = await tx.trustNDAAgreement.create({
         data: {
+          organizationId,
           accessRequestId: requestId,
-          subjectEmail: request.email,
-          scopes,
-          expiresAt,
-          issuedByMemberId: member.id,
+          signToken,
+          signTokenExpiresAt,
+          status: 'pending',
         },
       });
 
@@ -232,20 +243,34 @@ export class TrustAccessService {
           memberId: member.id,
           entityType: 'trust',
           entityId: requestId,
-          description: `Access request approved for ${request.email}`,
+          description: `Access request approved for ${request.email}, NDA signature required`,
           data: {
             requestId,
-            grantId: grant.id,
-            expiresAt: grant.expiresAt,
+            ndaAgreementId: ndaAgreement.id,
             scopes,
+            durationDays,
           },
         },
       });
 
-      return { request: updatedRequest, grant };
+      return { request: updatedRequest, ndaAgreement, scopes, durationDays };
     });
 
-    return result;
+    const ndaSigningLink = `${process.env.TRUST_APP_URL}/nda/${result.ndaAgreement.signToken}`;
+
+    await this.emailService.sendNdaSigningEmail({
+      toEmail: request.email,
+      toName: request.name,
+      organizationName: request.organization.name,
+      ndaSigningLink,
+      scopes: result.scopes,
+    });
+
+    return {
+      request: result.request,
+      ndaAgreement: result.ndaAgreement,
+      message: 'NDA signing email sent',
+    };
   }
 
   async denyRequest(
@@ -410,5 +435,184 @@ export class TrustAccessService {
     });
 
     return updatedGrant;
+  }
+
+  async getNdaByToken(token: string) {
+    const nda = await db.trustNDAAgreement.findUnique({
+      where: { signToken: token },
+      include: {
+        accessRequest: {
+          include: {
+            organization: true,
+          },
+        },
+      },
+    });
+
+    if (!nda) {
+      throw new NotFoundException('NDA agreement not found');
+    }
+
+    if (nda.signTokenExpiresAt < new Date()) {
+      throw new BadRequestException('NDA signing link has expired');
+    }
+
+    if (nda.status !== 'pending') {
+      throw new BadRequestException('NDA has already been signed');
+    }
+
+    return {
+      id: nda.id,
+      organizationName: nda.accessRequest.organization.name,
+      requesterName: nda.accessRequest.name,
+      requesterEmail: nda.accessRequest.email,
+      scopes: nda.accessRequest.requestedScopes,
+      expiresAt: nda.signTokenExpiresAt,
+    };
+  }
+
+  async signNda(
+    token: string,
+    signerName: string,
+    signerEmail: string,
+    ipAddress: string | undefined,
+    userAgent: string | undefined,
+  ) {
+    const nda = await db.trustNDAAgreement.findUnique({
+      where: { signToken: token },
+      include: {
+        accessRequest: {
+          include: {
+            organization: true,
+          },
+        },
+      },
+    });
+
+    if (!nda) {
+      throw new NotFoundException('NDA agreement not found');
+    }
+
+    if (nda.signTokenExpiresAt < new Date()) {
+      throw new BadRequestException('NDA signing link has expired');
+    }
+
+    if (nda.status !== 'pending') {
+      throw new BadRequestException('NDA has already been signed');
+    }
+
+    const pdfBuffer = await this.ndaPdfService.generateNdaPdf({
+      organizationName: nda.accessRequest.organization.name,
+      scopes: nda.accessRequest.requestedScopes,
+      signerName,
+      signerEmail,
+      agreementId: nda.id,
+    });
+
+    const pdfKey = await this.ndaPdfService.uploadNdaPdf(
+      nda.organizationId,
+      nda.id,
+      pdfBuffer,
+    );
+
+    const durationDays = nda.accessRequest.requestedDurationDays || 30;
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + durationDays);
+
+    const result = await db.$transaction(async (tx) => {
+      const grant = await tx.trustAccessGrant.create({
+        data: {
+          accessRequestId: nda.accessRequestId,
+          subjectEmail: signerEmail,
+          scopes: nda.accessRequest.requestedScopes,
+          expiresAt,
+        },
+      });
+
+      const updatedNda = await tx.trustNDAAgreement.update({
+        where: { id: nda.id },
+        data: {
+          status: 'signed',
+          signerName,
+          signerEmail,
+          signedAt: new Date(),
+          pdfSignedKey: pdfKey,
+          grantId: grant.id,
+          ipAddress,
+          userAgent,
+        },
+      });
+
+      return { grant, updatedNda };
+    });
+
+    // Send confirmation email
+    await this.emailService.sendAccessGrantedEmail({
+      toEmail: signerEmail,
+      toName: signerName,
+      organizationName: nda.accessRequest.organization.name,
+      scopes: result.grant.scopes,
+      expiresAt: result.grant.expiresAt,
+    });
+
+    const pdfUrl = await this.ndaPdfService.getSignedUrl(pdfKey);
+
+    return {
+      message: 'NDA signed successfully',
+      grant: result.grant,
+      pdfDownloadUrl: pdfUrl,
+    };
+  }
+
+  async resendNda(organizationId: string, requestId: string) {
+    const request = await db.trustAccessRequest.findFirst({
+      where: {
+        id: requestId,
+        organizationId,
+      },
+      include: {
+        organization: true,
+        ndaAgreements: {
+          where: { status: 'pending' },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
+    });
+
+    if (!request) {
+      throw new NotFoundException('Access request not found');
+    }
+
+    if (request.status !== 'approved') {
+      throw new BadRequestException('Request must be approved first');
+    }
+
+    const pendingNda = request.ndaAgreements[0];
+    if (!pendingNda) {
+      throw new BadRequestException('No pending NDA agreement found');
+    }
+
+    const newExpiresAt = new Date();
+    newExpiresAt.setDate(newExpiresAt.getDate() + 7);
+
+    await db.trustNDAAgreement.update({
+      where: { id: pendingNda.id },
+      data: { signTokenExpiresAt: newExpiresAt },
+    });
+
+    const ndaSigningLink = `${process.env.TRUST_APP_URL}/nda/${pendingNda.signToken}`;
+
+    await this.emailService.sendNdaSigningEmail({
+      toEmail: request.email,
+      toName: request.name,
+      organizationName: request.organization.name,
+      ndaSigningLink,
+      scopes: request.requestedScopes,
+    });
+
+    return {
+      message: 'NDA signing email resent',
+    };
   }
 }

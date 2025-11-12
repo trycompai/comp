@@ -7197,6 +7197,105 @@
         ]
       }
     },
+    "/v1/trust-access/nda/{token}": {
+      "get": {
+        "description": "Fetch NDA agreement details for signing",
+        "operationId": "TrustAccessController_getNda_v1",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "NDA details returned"
+          }
+        },
+        "summary": "Get NDA details by token",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
+    "/v1/trust-access/nda/{token}/sign": {
+      "post": {
+        "description": "Sign NDA agreement, generate watermarked PDF, and create access grant",
+        "operationId": "TrustAccessController_signNda_v1",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignNdaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "NDA signed successfully"
+          }
+        },
+        "summary": "Sign NDA",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
+    "/v1/trust-access/admin/requests/{id}/resend-nda": {
+      "post": {
+        "description": "Resend NDA signing email to requester",
+        "operationId": "TrustAccessController_resendNda_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "NDA email resent"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Resend NDA email",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
     "/v1/framework-editor/task-template": {
       "get": {
         "description": "Retrieve all framework editor task templates",
@@ -9896,6 +9995,25 @@
         },
         "required": [
           "reason"
+        ]
+      },
+      "SignNdaDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "accept": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "email",
+          "accept"
         ]
       },
       "UpdateTaskTemplateDto": {

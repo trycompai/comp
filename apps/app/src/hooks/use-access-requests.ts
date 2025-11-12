@@ -27,6 +27,18 @@ export type AccessRequest = {
   } | null;
 };
 
+export type AccessGrant = {
+  id: string;
+  subjectEmail: string;
+  scopes: string[];
+  status: 'active' | 'expired' | 'revoked';
+  expiresAt: string;
+  accessRequestId: string;
+  revokedAt?: string | null;
+  revokeReason?: string | null;
+  createdAt: string;
+};
+
 export function useAccessRequests(orgId: string) {
   const api = useApi();
 
@@ -95,6 +107,92 @@ export function useDenyAccessRequest(orgId: string) {
       queryClient.invalidateQueries({
         queryKey: ['trust-access-requests', orgId],
       });
+    },
+  });
+}
+
+export function useAccessRequest(orgId: string, requestId: string) {
+  const api = useApi();
+
+  return useQuery({
+    queryKey: ['trust-access-request', orgId, requestId],
+    queryFn: async () => {
+      const response = await api.get<AccessRequest>(
+        `/v1/trust-access/admin/requests/${requestId}`,
+        orgId,
+      );
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      return response.data!;
+    },
+  });
+}
+
+export function useAccessGrants(orgId: string) {
+  const api = useApi();
+
+  return useQuery({
+    queryKey: ['trust-access-grants', orgId],
+    queryFn: async () => {
+      const response = await api.get<AccessGrant[]>(
+        '/v1/trust-access/admin/grants',
+        orgId,
+      );
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      return response.data!;
+    },
+  });
+}
+
+export function useRevokeAccessGrant(orgId: string) {
+  const api = useApi();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ grantId, reason }: { grantId: string; reason: string }) => {
+      const response = await api.post(
+        `/v1/trust-access/admin/grants/${grantId}/revoke`,
+        { reason },
+        orgId,
+      );
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['trust-access-grants', orgId],
+      });
+    },
+  });
+}
+
+export function useResendNda(orgId: string) {
+  const api = useApi();
+
+  return useMutation({
+    mutationFn: async (requestId: string) => {
+      const response = await api.post(
+        `/v1/trust-access/admin/requests/${requestId}/resend-nda`,
+        {},
+        orgId,
+      );
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      return response.data;
     },
   });
 }

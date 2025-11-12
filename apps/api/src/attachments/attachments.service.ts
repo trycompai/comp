@@ -267,9 +267,40 @@ export class AttachmentsService {
     });
   }
 
-  /**
-   * Sanitize filename for S3 storage
-   */
+  async uploadToS3(
+    fileBuffer: Buffer,
+    fileName: string,
+    contentType: string,
+    organizationId: string,
+    entityType: string,
+    entityId: string,
+  ): Promise<string> {
+    const fileId = randomBytes(16).toString('hex');
+    const sanitizedFileName = this.sanitizeFileName(fileName);
+    const timestamp = Date.now();
+    const s3Key = `${organizationId}/attachments/${entityType}/${entityId}/${timestamp}-${fileId}-${sanitizedFileName}`;
+
+    const putCommand = new PutObjectCommand({
+      Bucket: this.bucketName,
+      Key: s3Key,
+      Body: fileBuffer,
+      ContentType: contentType,
+      Metadata: {
+        originalFileName: this.sanitizeHeaderValue(fileName),
+        organizationId,
+        entityId,
+        entityType,
+      },
+    });
+
+    await this.s3Client.send(putCommand);
+    return s3Key;
+  }
+
+  async getPresignedDownloadUrl(s3Key: string): Promise<string> {
+    return this.generateSignedUrl(s3Key);
+  }
+
   private sanitizeFileName(fileName: string): string {
     return fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
   }
@@ -281,6 +312,7 @@ export class AttachmentsService {
    * - Trim whitespace
    */
   private sanitizeHeaderValue(value: string): string {
+    // eslint-disable-next-line no-control-regex
     const withoutControls = value.replace(/[\x00-\x1F\x7F]/g, '');
     const asciiOnly = withoutControls.replace(/[^\x20-\x7E]/g, '_');
     return asciiOnly.trim();

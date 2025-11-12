@@ -1,125 +1,171 @@
 model Trust {
-    organizationId     String
-    organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-    friendlyUrl        String?      @unique
-    domain             String?
-    domainVerified     Boolean      @default(false)
-    isVercelDomain     Boolean      @default(false)
-    vercelVerification String?
-    status             TrustStatus  @default(draft)
-    contactEmail       String?
+  organizationId     String
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  friendlyUrl        String?      @unique
+  domain             String?
+  domainVerified     Boolean      @default(false)
+  isVercelDomain     Boolean      @default(false)
+  vercelVerification String?
+  status             TrustStatus  @default(draft)
+  contactEmail       String?
 
-    email         String?
-    privacyPolicy String?
-    soc2          Boolean @default(false)
-    soc2type1     Boolean @default(false)
-    soc2type2     Boolean @default(false)
-    iso27001      Boolean @default(false)
-    iso42001      Boolean @default(false)
-    nen7510       Boolean @default(false)
-    gdpr          Boolean @default(false)
-    hipaa         Boolean @default(false)
-    pci_dss       Boolean @default(false)
+  email         String?
+  privacyPolicy String?
+  soc2          Boolean @default(false)
+  soc2type1     Boolean @default(false)
+  soc2type2     Boolean @default(false)
+  iso27001      Boolean @default(false)
+  iso42001      Boolean @default(false)
+  nen7510       Boolean @default(false)
+  gdpr          Boolean @default(false)
+  hipaa         Boolean @default(false)
+  pci_dss       Boolean @default(false)
 
-    soc2_status        FrameworkStatus @default(started)
-    soc2type1_status   FrameworkStatus @default(started)
-    soc2type2_status   FrameworkStatus @default(started)
-    iso27001_status    FrameworkStatus @default(started)
-    iso42001_status    FrameworkStatus @default(started)
-    nen7510_status     FrameworkStatus @default(started)
-    gdpr_status        FrameworkStatus @default(started)
-    hipaa_status       FrameworkStatus @default(started)
-    pci_dss_status     FrameworkStatus @default(started)
+  soc2_status      FrameworkStatus @default(started)
+  soc2type1_status FrameworkStatus @default(started)
+  soc2type2_status FrameworkStatus @default(started)
+  iso27001_status  FrameworkStatus @default(started)
+  iso42001_status  FrameworkStatus @default(started)
+  nen7510_status   FrameworkStatus @default(started)
+  gdpr_status      FrameworkStatus @default(started)
+  hipaa_status     FrameworkStatus @default(started)
+  pci_dss_status   FrameworkStatus @default(started)
 
-    @@id([status, organizationId])
-    @@unique([organizationId])
-    @@index([organizationId])
-    @@index([friendlyUrl])
+  @@id([status, organizationId])
+  @@unique([organizationId])
+  @@index([organizationId])
+  @@index([friendlyUrl])
 }
 
 enum TrustStatus {
-    draft
-    published
+  draft
+  published
 }
 
 enum FrameworkStatus {
-    started
-    in_progress
-    compliant
+  started
+  in_progress
+  compliant
 }
 
 model TrustAccessRequest {
-    id                     String   @id @default(dbgenerated("generate_prefixed_cuid('tar'::text)"))
-    organizationId         String
-    organization           Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-    
-    name                   String
-    email                  String
-    company                String?
-    jobTitle               String?
-    purpose                String?
-    requestedDurationDays  Int?
-    requestedScopes        String[]
-    
-    status                 TrustAccessRequestStatus @default(under_review)
-    reviewerMemberId       String?
-    reviewer               Member? @relation("TrustAccessRequestReviewer", fields: [reviewerMemberId], references: [id], onDelete: SetNull)
-    reviewedAt             DateTime?
-    decisionReason         String?
-    
-    ipAddress              String?
-    userAgent              String?
-    
-    createdAt              DateTime @default(now())
-    updatedAt              DateTime @updatedAt
-    
-    grant                  TrustAccessGrant? @relation("RequestGrant")
-    
-    @@index([organizationId])
-    @@index([email])
-    @@index([status])
-    @@index([organizationId, status])
+  id             String       @id @default(dbgenerated("generate_prefixed_cuid('tar'::text)"))
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  name                  String
+  email                 String
+  company               String?
+  jobTitle              String?
+  purpose               String?
+  requestedDurationDays Int?
+  requestedScopes       String[]
+
+  status           TrustAccessRequestStatus @default(under_review)
+  reviewerMemberId String?
+  reviewer         Member?                  @relation("TrustAccessRequestReviewer", fields: [reviewerMemberId], references: [id], onDelete: SetNull)
+  reviewedAt       DateTime?
+  decisionReason   String?
+
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  grant         TrustAccessGrant?   @relation("RequestGrant")
+  ndaAgreements TrustNDAAgreement[] @relation("RequestNDA")
+
+  @@index([organizationId])
+  @@index([email])
+  @@index([status])
+  @@index([organizationId, status])
 }
 
 model TrustAccessGrant {
-    id                  String   @id @default(dbgenerated("generate_prefixed_cuid('tag'::text)"))
-    
-    accessRequestId     String   @unique
-    accessRequest       TrustAccessRequest @relation("RequestGrant", fields: [accessRequestId], references: [id], onDelete: Cascade)
-    
-    subjectEmail        String
-    scopes              String[]
-    
-    status              TrustAccessGrantStatus @default(active)
-    expiresAt           DateTime
-    
-    issuedByMemberId    String?
-    issuedBy            Member? @relation("IssuedGrants", fields: [issuedByMemberId], references: [id], onDelete: SetNull)
-    
-    revokedAt           DateTime?
-    revokedByMemberId   String?
-    revokedBy           Member? @relation("RevokedGrants", fields: [revokedByMemberId], references: [id], onDelete: SetNull)
-    revokeReason        String?
-    
-    createdAt           DateTime @default(now())
-    updatedAt           DateTime @updatedAt
-    
-    @@index([accessRequestId])
-    @@index([subjectEmail])
-    @@index([status])
-    @@index([expiresAt])
-    @@index([status, expiresAt])
+  id String @id @default(dbgenerated("generate_prefixed_cuid('tag'::text)"))
+
+  accessRequestId String             @unique
+  accessRequest   TrustAccessRequest @relation("RequestGrant", fields: [accessRequestId], references: [id], onDelete: Cascade)
+
+  subjectEmail String
+  scopes       String[]
+
+  status    TrustAccessGrantStatus @default(active)
+  expiresAt DateTime
+
+  issuedByMemberId String?
+  issuedBy         Member? @relation("IssuedGrants", fields: [issuedByMemberId], references: [id], onDelete: SetNull)
+
+  revokedAt         DateTime?
+  revokedByMemberId String?
+  revokedBy         Member?   @relation("RevokedGrants", fields: [revokedByMemberId], references: [id], onDelete: SetNull)
+  revokeReason      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ndaAgreement TrustNDAAgreement? @relation("GrantNDA")
+
+  @@index([accessRequestId])
+  @@index([subjectEmail])
+  @@index([status])
+  @@index([expiresAt])
+  @@index([status, expiresAt])
 }
 
 enum TrustAccessRequestStatus {
-    under_review
-    approved
-    denied
-    canceled
+  under_review
+  approved
+  denied
+  canceled
 }
 
 enum TrustAccessGrantStatus {
-    active
-    expired
-    revoked
+  active
+  expired
+  revoked
+}
+
+model TrustNDAAgreement {
+  id String @id @default(dbgenerated("generate_prefixed_cuid('tna'::text)"))
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  accessRequestId String
+  accessRequest   TrustAccessRequest @relation("RequestNDA", fields: [accessRequestId], references: [id], onDelete: Cascade)
+
+  grantId String?           @unique
+  grant   TrustAccessGrant? @relation("GrantNDA", fields: [grantId], references: [id], onDelete: SetNull)
+
+  signerName  String?
+  signerEmail String?
+
+  status TrustNDAStatus @default(pending)
+
+  signToken          String   @unique
+  signTokenExpiresAt DateTime
+
+  pdfTemplateKey String?
+  pdfSignedKey   String?
+
+  signedAt DateTime?
+
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([accessRequestId])
+  @@index([signToken])
+  @@index([status])
+}
+
+enum TrustNDAStatus {
+  pending
+  signed
+  void
 }

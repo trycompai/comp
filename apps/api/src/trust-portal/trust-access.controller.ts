@@ -8,6 +8,7 @@ import {
   Post,
   Query,
   Req,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -17,9 +18,9 @@ import {
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
-import type { Request } from 'express';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { OrganizationId } from '../auth/auth-context.decorator';
+import { AuthenticatedRequest } from '../auth/types';
 import {
   ApproveAccessRequestDto,
   CreateAccessRequestDto,
@@ -27,6 +28,7 @@ import {
   ListAccessRequestsDto,
   RevokeGrantDto,
 } from './dto/trust-access.dto';
+import { SignNdaDto } from './dto/nda.dto';
 import { TrustAccessService } from './trust-access.service';
 
 @ApiTags('Trust Access')
@@ -50,8 +52,12 @@ export class TrustAccessController {
     @Body() dto: CreateAccessRequestDto,
     @Req() req: Request,
   ) {
-    const ipAddress = req.ip || req.socket.remoteAddress;
-    const userAgent = req.headers['user-agent'];
+    const ipAddress =
+      (req as any).ip ?? (req as any).socket.remoteAddress ?? undefined;
+    const userAgent =
+      typeof req.headers['user-agent'] === 'string'
+        ? req.headers['user-agent']
+        : undefined;
 
     return this.trustAccessService.createAccessRequest(
       friendlyUrl,
@@ -133,6 +139,9 @@ export class TrustAccessController {
     @Req() req: Request,
   ) {
     const userId = (req as any).userId;
+    if (!userId) {
+      throw new UnauthorizedException('User ID is required');
+    }
     const memberId = await this.trustAccessService.getMemberIdFromUserId(
       userId,
       organizationId,
@@ -166,6 +175,9 @@ export class TrustAccessController {
     @Req() req: Request,
   ) {
     const userId = (req as any).userId;
+    if (!userId) {
+      throw new UnauthorizedException('User ID is required');
+    }
     const memberId = await this.trustAccessService.getMemberIdFromUserId(
       userId,
       organizationId,
@@ -216,12 +228,98 @@ export class TrustAccessController {
     @Body() dto: RevokeGrantDto,
     @Req() req: Request,
   ) {
-    const memberId = (req as any).user?.memberId;
+    const userId = (req as any).userId;
+    if (!userId) {
+      throw new UnauthorizedException('User ID is required');
+    }
+    const memberId = await this.trustAccessService.getMemberIdFromUserId(
+      userId,
+      organizationId,
+    );
     return this.trustAccessService.revokeGrant(
       organizationId,
       grantId,
       dto,
       memberId,
     );
+  }
+
+  @Get('nda/:token')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get NDA details by token',
+    description: 'Fetch NDA agreement details for signing',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'NDA details returned',
+  })
+  async getNda(@Param('token') token: string) {
+    return this.trustAccessService.getNdaByToken(token);
+  }
+
+  @Post('nda/:token/sign')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Sign NDA',
+    description:
+      'Sign NDA agreement, generate watermarked PDF, and create access grant',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'NDA signed successfully',
+  })
+  async signNda(
+    @Param('token') token: string,
+    @Body() dto: SignNdaDto,
+    @Req() req: Request,
+  ) {
+    const userId = (req as any).userId;
+    if (!userId) {
+      throw new UnauthorizedException('User ID is required');
+    }
+
+    if (!dto.accept) {
+      throw new Error('You must accept the NDA to proceed');
+    }
+
+    const ipAddress =
+      (req as any).ip ?? (req as any).socket.remoteAddress ?? undefined;
+    const userAgent =
+      typeof req.headers['user-agent'] === 'string'
+        ? req.headers['user-agent']
+        : undefined;
+
+    return this.trustAccessService.signNda(
+      token,
+      dto.name,
+      dto.email,
+      ipAddress,
+      userAgent,
+    );
+  }
+
+  @Post('admin/requests/:id/resend-nda')
+  @UseGuards(HybridAuthGuard)
+  @ApiSecurity('apikey')
+  @ApiHeader({
+    name: 'X-Organization-Id',
+    description: 'Organization ID',
+    required: true,
+  })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Resend NDA email',
+    description: 'Resend NDA signing email to requester',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'NDA email resent',
+  })
+  async resendNda(
+    @OrganizationId() organizationId: string,
+    @Param('id') requestId: string,
+  ) {
+    return this.trustAccessService.resendNda(organizationId, requestId);
   }
 }
