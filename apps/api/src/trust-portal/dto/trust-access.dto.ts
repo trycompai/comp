@@ -87,3 +87,10 @@ export class ListAccessRequestsDto {
   @IsOptional()
   status?: AccessRequestStatusFilter;
 }
+
+export class ReclaimAccessDto {
+  @ApiProperty()
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+}

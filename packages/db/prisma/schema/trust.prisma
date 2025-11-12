@@ -94,6 +94,9 @@ model TrustAccessGrant {
   status    TrustAccessGrantStatus @default(active)
   expiresAt DateTime
 
+  accessToken          String?   @unique
+  accessTokenExpiresAt DateTime?
+
   issuedByMemberId String?
   issuedBy         Member? @relation("IssuedGrants", fields: [issuedByMemberId], references: [id], onDelete: SetNull)
 
@@ -112,6 +115,7 @@ model TrustAccessGrant {
   @@index([status])
   @@index([expiresAt])
   @@index([status, expiresAt])
+  @@index([accessToken])
 }
 
 enum TrustAccessRequestStatus {

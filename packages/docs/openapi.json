@@ -7335,6 +7335,66 @@
         ]
       }
     },
+    "/v1/trust-access/{friendlyUrl}/reclaim": {
+      "post": {
+        "description": "Generate access link for users with existing grants to redownload data",
+        "operationId": "TrustAccessController_reclaimAccess_v1",
+        "parameters": [
+          {
+            "name": "friendlyUrl",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReclaimAccessDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Access link sent to email"
+          }
+        },
+        "summary": "Reclaim access",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
+    "/v1/trust-access/access/{token}": {
+      "get": {
+        "description": "Retrieve compliance data using access token",
+        "operationId": "TrustAccessController_getGrantByAccessToken_v1",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Grant data returned"
+          }
+        },
+        "summary": "Get grant data by access token",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
     "/v1/framework-editor/task-template": {
       "get": {
         "description": "Retrieve all framework editor task templates",
@@ -10053,6 +10113,17 @@
           "name",
           "email",
           "accept"
+        ]
+      },
+      "ReclaimAccessDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
         ]
       },
       "UpdateTaskTemplateDto": {

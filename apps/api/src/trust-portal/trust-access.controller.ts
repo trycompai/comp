@@ -26,6 +26,7 @@ import {
   CreateAccessRequestDto,
   DenyAccessRequestDto,
   ListAccessRequestsDto,
+  ReclaimAccessDto,
   RevokeGrantDto,
 } from './dto/trust-access.dto';
 import { SignNdaDto } from './dto/nda.dto';
@@ -346,5 +347,37 @@ export class TrustAccessController {
     @Param('id') requestId: string,
   ) {
     return this.trustAccessService.previewNda(organizationId, requestId);
+  }
+
+  @Post(':friendlyUrl/reclaim')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Reclaim access',
+    description:
+      'Generate access link for users with existing grants to redownload data',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Access link sent to email',
+  })
+  async reclaimAccess(
+    @Param('friendlyUrl') friendlyUrl: string,
+    @Body() dto: ReclaimAccessDto,
+  ) {
+    return this.trustAccessService.reclaimAccess(friendlyUrl, dto.email);
+  }
+
+  @Get('access/:token')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get grant data by access token',
+    description: 'Retrieve compliance data using access token',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Grant data returned',
+  })
+  async getGrantByAccessToken(@Param('token') token: string) {
+    return this.trustAccessService.getGrantByAccessToken(token);
   }
 }

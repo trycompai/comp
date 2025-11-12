@@ -661,4 +661,117 @@ export class TrustAccessService {
       pdfDownloadUrl: pdfUrl,
     };
   }
+
+  async reclaimAccess(friendlyUrl: string, email: string) {
+    const trust = await db.trust.findUnique({
+      where: { friendlyUrl },
+      include: { organization: true },
+    });
+
+    if (!trust || trust.status !== 'published') {
+      throw new NotFoundException('Trust site not found or not published');
+    }
+
+    const grant = await db.trustAccessGrant.findFirst({
+      where: {
+        subjectEmail: email,
+        status: 'active',
+        expiresAt: {
+          gt: new Date(),
+        },
+        accessRequest: {
+          organizationId: trust.organizationId,
+        },
+      },
+      include: {
+        accessRequest: {
+          include: {
+            organization: true,
+          },
+        },
+        ndaAgreement: true,
+      },
+    });
+
+    if (!grant) {
+      throw new NotFoundException(
+        'No active access grant found for this email',
+      );
+    }
+
+    let accessToken = grant.accessToken;
+    let accessTokenExpiresAt = grant.accessTokenExpiresAt;
+
+    if (!accessToken || !accessTokenExpiresAt || accessTokenExpiresAt < new Date()) {
+      accessToken = nanoid(32);
+      accessTokenExpiresAt = new Date();
+      accessTokenExpiresAt.setHours(accessTokenExpiresAt.getHours() + 24);
+
+      await db.trustAccessGrant.update({
+        where: { id: grant.id },
+        data: {
+          accessToken,
+          accessTokenExpiresAt,
+        },
+      });
+    }
+
+    const accessLink = `${process.env.TRUST_APP_URL}/${friendlyUrl}/access/${accessToken}`;
+
+    await this.emailService.sendAccessReclaimEmail({
+      toEmail: email,
+      toName: grant.accessRequest.name,
+      organizationName: grant.accessRequest.organization.name,
+      accessLink,
+      expiresAt: grant.expiresAt,
+    });
+
+    return {
+      message: 'Access link sent to your email',
+      accessLink,
+      expiresAt: accessTokenExpiresAt,
+    };
+  }
+
+  async getGrantByAccessToken(token: string) {
+    const grant = await db.trustAccessGrant.findUnique({
+      where: { accessToken: token },
+      include: {
+        accessRequest: {
+          include: {
+            organization: true,
+          },
+        },
+        ndaAgreement: true,
+      },
+    });
+
+    if (!grant) {
+      throw new NotFoundException('Invalid access token');
+    }
+
+    if (grant.status !== 'active') {
+      throw new BadRequestException('Access grant is not active');
+    }
+
+    if (grant.expiresAt < new Date()) {
+      throw new BadRequestException('Access grant has expired');
+    }
+
+    if (!grant.accessTokenExpiresAt || grant.accessTokenExpiresAt < new Date()) {
+      throw new BadRequestException('Access token has expired');
+    }
+
+    const ndaPdfUrl = grant.ndaAgreement?.pdfSignedKey
+      ? await this.ndaPdfService.getSignedUrl(grant.ndaAgreement.pdfSignedKey)
+      : null;
+
+    return {
+      organizationName: grant.accessRequest.organization.name,
+      scopes: grant.scopes,
+      expiresAt: grant.expiresAt,
+      subjectEmail: grant.subjectEmail,
+      ndaPdfUrl,
+    };
+  }
 }
