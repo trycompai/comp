@@ -7420,10 +7420,10 @@
         ]
       }
     },
-    "/v1/trust-access/access/{token}/documents": {
+    "/v1/trust-access/access/{token}/policies": {
       "get": {
-        "description": "Get list of documents available to grant",
-        "operationId": "TrustAccessController_getDocumentsByAccessToken_v1",
+        "description": "Get list of published policies available for download",
+        "operationId": "TrustAccessController_getPoliciesByAccessToken_v1",
         "parameters": [
           {
             "name": "token",
@@ -7436,30 +7436,22 @@
         ],
         "responses": {
           "200": {
-            "description": "Documents list returned"
+            "description": "Policies list returned"
           }
         },
-        "summary": "List documents by access token",
+        "summary": "List policies by access token",
         "tags": [
           "Trust Access"
         ]
       }
     },
-    "/v1/trust-access/access/{token}/documents/{documentId}/download": {
+    "/v1/trust-access/access/{token}/policies/download-all": {
       "get": {
-        "description": "Get presigned URL for document download",
-        "operationId": "TrustAccessController_downloadDocument_v1",
+        "description": "Generate combined PDF from all published policy content with watermark",
+        "operationId": "TrustAccessController_downloadAllPolicies_v1",
         "parameters": [
           {
             "name": "token",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "documentId",
             "required": true,
             "in": "path",
             "schema": {
@@ -7469,10 +7461,10 @@
         ],
         "responses": {
           "200": {
-            "description": "Download URL returned"
+            "description": "Download URL for watermarked PDF returned"
           }
         },
-        "summary": "Download document by access token",
+        "summary": "Download all policies as watermarked PDF",
         "tags": [
           "Trust Access"
         ]

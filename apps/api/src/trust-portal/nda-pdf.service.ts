@@ -229,4 +229,19 @@ By signing below, the Receiving Party agrees to be bound by the terms of this Ag
   async getSignedUrl(s3Key: string): Promise<string> {
     return this.attachmentsService.getPresignedDownloadUrl(s3Key);
   }
+
+  async watermarkExistingPdf(
+    pdfBuffer: Buffer,
+    params: {
+      name: string;
+      email: string;
+      docId: string;
+    },
+  ): Promise<Buffer> {
+    const { name, email, docId } = params;
+    const pdfDoc = await PDFDocument.load(pdfBuffer);
+    await this.addWatermark(pdfDoc, name, email, docId);
+    const pdfBytes = await pdfDoc.save();
+    return Buffer.from(pdfBytes);
+  }
 }

@@ -390,37 +390,32 @@ export class TrustAccessController {
     return this.trustAccessService.getGrantByAccessToken(token);
   }
 
-  @Get('access/:token/documents')
+  @Get('access/:token/policies')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'List documents by access token',
-    description: 'Get list of documents available to grant',
+    summary: 'List policies by access token',
+    description: 'Get list of published policies available for download',
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Documents list returned',
+    description: 'Policies list returned',
   })
-  async getDocumentsByAccessToken(@Param('token') token: string) {
-    return this.trustAccessService.getDocumentsByAccessToken(token);
+  async getPoliciesByAccessToken(@Param('token') token: string) {
+    return this.trustAccessService.getPoliciesByAccessToken(token);
   }
 
-  @Get('access/:token/documents/:documentId/download')
+  @Get('access/:token/policies/download-all')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Download document by access token',
-    description: 'Get presigned URL for document download',
+    summary: 'Download all policies as watermarked PDF',
+    description:
+      'Generate combined PDF from all published policy content with watermark',
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Download URL returned',
+    description: 'Download URL for watermarked PDF returned',
   })
-  async downloadDocument(
-    @Param('token') token: string,
-    @Param('documentId') documentId: string,
-  ) {
-    return this.trustAccessService.downloadDocumentByAccessToken(
-      token,
-      documentId,
-    );
+  async downloadAllPolicies(@Param('token') token: string) {
+    return this.trustAccessService.downloadAllPoliciesByAccessToken(token);
   }
 }

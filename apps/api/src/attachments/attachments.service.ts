@@ -301,6 +301,26 @@ export class AttachmentsService {
     return this.generateSignedUrl(s3Key);
   }
 
+  async getObjectBuffer(s3Key: string): Promise<Buffer> {
+    const getCommand = new GetObjectCommand({
+      Bucket: this.bucketName,
+      Key: s3Key,
+    });
+
+    const response = await this.s3Client.send(getCommand);
+    const chunks: Uint8Array[] = [];
+    
+    if (!response.Body) {
+      throw new InternalServerErrorException('No file data received from S3');
+    }
+
+    for await (const chunk of response.Body as any) {
+      chunks.push(chunk);
+    }
+
+    return Buffer.concat(chunks);
+  }
+
   private sanitizeFileName(fileName: string): string {
     return fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
   }

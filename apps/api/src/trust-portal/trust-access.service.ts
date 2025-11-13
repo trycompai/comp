@@ -15,6 +15,7 @@ import {
 import { TrustEmailService } from './email.service';
 import { NdaPdfService } from './nda-pdf.service';
 import { AttachmentsService } from '../attachments/attachments.service';
+import { PolicyPdfRendererService } from './policy-pdf-renderer.service';
 
 @Injectable()
 export class TrustAccessService {
@@ -31,6 +32,7 @@ export class TrustAccessService {
     private readonly ndaPdfService: NdaPdfService,
     private readonly emailService: TrustEmailService,
     private readonly attachmentsService: AttachmentsService,
+    private readonly pdfRendererService: PolicyPdfRendererService,
   ) {
     if (
       !process.env.TRUST_APP_URL &&
@@ -908,7 +910,9 @@ export class TrustAccessService {
     };
   }
 
-  async getDocumentsByAccessToken(token: string) {
+
+
+  private async validateAccessToken(token: string) {
     const grant = await db.trustAccessGrant.findUnique({
       where: { accessToken: token },
       include: {
@@ -939,72 +943,112 @@ export class TrustAccessService {
       throw new BadRequestException('Access token has expired');
     }
 
-    const documents = await db.trustDocument.findMany({
+    return grant;
+  }
+
+  async getPoliciesByAccessToken(token: string) {
+    const grant = await db.trustAccessGrant.findUnique({
+      where: { accessToken: token },
+      include: {
+        accessRequest: {
+          include: {
+            organization: true,
+          },
+        },
+      },
+    });
+
+    if (!grant) {
+      throw new NotFoundException('Invalid access token');
+    }
+
+    if (grant.status !== 'active') {
+      throw new BadRequestException('Access grant is not active');
+    }
+
+    if (grant.expiresAt < new Date()) {
+      throw new BadRequestException('Access grant has expired');
+    }
+
+    if (
+      !grant.accessTokenExpiresAt ||
+      grant.accessTokenExpiresAt < new Date()
+    ) {
+      throw new BadRequestException('Access token has expired');
+    }
+
+    const policies = await db.policy.findMany({
       where: {
         organizationId: grant.accessRequest.organizationId,
-        isActive: true,
+        status: 'published',
+        isArchived: false,
       },
       select: {
         id: true,
         name: true,
         description: true,
-        s3Key: true,
+        lastPublishedAt: true,
+        updatedAt: true,
       },
+      orderBy: [{ lastPublishedAt: 'desc' }, { updatedAt: 'desc' }],
     });
 
-    return documents;
+    return policies;
   }
 
-  async downloadDocumentByAccessToken(token: string, documentId: string) {
-    const grant = await db.trustAccessGrant.findUnique({
-      where: { accessToken: token },
-      include: {
-        accessRequest: {
-          include: {
-            organization: true,
-          },
-        },
-      },
-    });
 
-    if (!grant) {
-      throw new NotFoundException('Invalid access token');
-    }
 
-    if (grant.status !== 'active') {
-      throw new BadRequestException('Access grant is not active');
-    }
+  async downloadAllPoliciesByAccessToken(token: string) {
+    const grant = await this.validateAccessToken(token);
 
-    if (grant.expiresAt < new Date()) {
-      throw new BadRequestException('Access grant has expired');
-    }
-
-    if (
-      !grant.accessTokenExpiresAt ||
-      grant.accessTokenExpiresAt < new Date()
-    ) {
-      throw new BadRequestException('Access token has expired');
-    }
-
-    const document = await db.trustDocument.findFirst({
+    const policies = await db.policy.findMany({
       where: {
-        id: documentId,
         organizationId: grant.accessRequest.organizationId,
-        isActive: true,
+        status: 'published',
+        isArchived: false,
       },
+      select: {
+        id: true,
+        name: true,
+        content: true,
+      },
+      orderBy: [{ lastPublishedAt: 'desc' }, { updatedAt: 'desc' }],
     });
 
-    if (!document) {
-      throw new NotFoundException('Document not found or access denied');
+    if (policies.length === 0) {
+      throw new NotFoundException('No published policies available');
     }
 
-    const downloadUrl = await this.attachmentsService.getPresignedDownloadUrl(
-      document.s3Key,
+    const pdfBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
+      policies.map((p) => ({
+        name: p.name,
+        content: p.content,
+      })),
+      grant.accessRequest.organization.name,
     );
 
-    return {
-      name: document.name,
-      downloadUrl,
-    };
+    const bundleDocId = `bundle-${grant.id}-${Date.now()}`;
+    const watermarked = await this.ndaPdfService.watermarkExistingPdf(
+      pdfBuffer,
+      {
+        name: grant.accessRequest.name,
+        email: grant.subjectEmail,
+        docId: bundleDocId,
+      },
+    );
+
+    const key = await this.attachmentsService.uploadToS3(
+      watermarked,
+      `policies-bundle-grant-${grant.id}-${Date.now()}.pdf`,
+      'application/pdf',
+      grant.accessRequest.organizationId,
+      'trust_policy_downloads',
+      `${grant.id}`,
+    );
+
+    const downloadUrl =
+      await this.attachmentsService.getPresignedDownloadUrl(key);
+
+    return { name: 'All Policies', downloadUrl };
   }
 }
