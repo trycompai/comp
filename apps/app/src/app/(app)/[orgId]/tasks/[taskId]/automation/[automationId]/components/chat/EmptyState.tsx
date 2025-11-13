@@ -1,15 +1,20 @@
+import {
+  PromptInput,
+  PromptInputBody,
+  PromptInputFooter,
+  PromptInputSubmit,
+  PromptInputTextarea,
+  PromptInputTools,
+  usePromptInputController,
+} from '@comp/ui';
 import { Card, CardDescription, CardHeader } from '@comp/ui/card';
 import { Skeleton } from '@comp/ui/skeleton';
 import { useState } from 'react';
-import { Textarea } from '../../components/ui/textarea';
 import { AUTOMATION_EXAMPLES, AutomationExample } from '../../constants/automation-examples';
 
 interface EmptyStateProps {
-  input: string;
-  onInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   onExampleClick: (prompt: string) => void;
   status: string;
-  inputRef: React.RefObject<HTMLTextAreaElement | null>;
   onSubmit: () => void;
   suggestions?: { title: string; prompt: string; vendorName?: string; vendorWebsite?: string }[];
   isLoadingSuggestions?: boolean;
@@ -115,15 +120,14 @@ function SuggestionCardSkeleton() {
 }
 
 export function EmptyState({
-  input,
-  onInputChange,
   onExampleClick,
   status,
-  inputRef,
   onSubmit,
   suggestions,
   isLoadingSuggestions = false,
 }: EmptyStateProps) {
+  const { textInput } = usePromptInputController();
+
   // Use dynamic suggestions if provided, otherwise fall back to static examples
   const examplesToShow: AutomationExample[] = suggestions
     ? suggestions.map((s) => ({
@@ -143,31 +147,29 @@ export function EmptyState({
           <p className="text-2xl font-medium text-primary tracking-wide z-20">
             What evidence do you want to collect?
           </p>
-          <Textarea
-            ref={inputRef}
-            placeholder="Describe what evidence you want to collect..."
-            className="w-full max-w-3xl transition-all duration-200 hover:shadow-md hover:shadow-primary/5 focus:shadow-lg focus:shadow-primary/10 focus:ring-2 focus:ring-primary/30 min-h-[44px] max-h-[200px] resize-none overflow-y-auto"
-            value={input}
-            onChange={(e) => {
-              onInputChange(e);
-              // Auto-resize
-              e.target.style.height = 'auto';
-              e.target.style.height = `${e.target.scrollHeight}px`;
+          <PromptInput
+            onSubmit={async ({ text }) => {
+              onSubmit();
             }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                onSubmit();
-                // Reset height after submit
-                if (e.currentTarget) {
-                  e.currentTarget.style.height = 'auto';
+            className="w-full max-w-3xl"
+          >
+            <PromptInputBody>
+              <PromptInputTextarea
+                placeholder="Describe what evidence you want to collect..."
+                disabled={status === 'streaming' || status === 'submitted'}
+                className="min-h-[80px] max-h-[400px]"
+              />
+            </PromptInputBody>
+            <PromptInputFooter>
+              <PromptInputTools />
+              <PromptInputSubmit
+                status={status === 'streaming' || status === 'submitted' ? 'submitted' : undefined}
+                disabled={
+                  !textInput.value.trim() || status === 'streaming' || status === 'submitted'
                 }
-              }
-            }}
-            disabled={status === 'streaming' || status === 'submitted'}
-            rows={1}
-            style={{ height: 'auto' }}
-          />
+              />
+            </PromptInputFooter>
+          </PromptInput>
         </div>
 
         <div className="w-full max-w-4xl space-y-4 mt-16">
