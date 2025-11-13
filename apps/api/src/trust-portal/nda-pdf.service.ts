@@ -14,8 +14,7 @@ export class NdaPdfService {
     signerEmail: string;
     agreementId: string;
   }): Promise<Buffer> {
-    const { organizationName, signerName, signerEmail, agreementId } =
-      params;
+    const { organizationName, signerName, signerEmail, agreementId } = params;
 
     const pdfDoc = await PDFDocument.create();
     const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);

@@ -309,7 +309,7 @@ export class AttachmentsService {
 
     const response = await this.s3Client.send(getCommand);
     const chunks: Uint8Array[] = [];
-    
+
     if (!response.Body) {
       throw new InternalServerErrorException('No file data received from S3');
     }

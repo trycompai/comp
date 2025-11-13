@@ -16,8 +16,7 @@ export class TrustEmailService {
     organizationName: string;
     ndaSigningLink: string;
   }): Promise<void> {
-    const { toEmail, toName, organizationName, ndaSigningLink } =
-      params;
+    const { toEmail, toName, organizationName, ndaSigningLink } = params;
 
     const { id } = await sendEmail({
       to: toEmail,

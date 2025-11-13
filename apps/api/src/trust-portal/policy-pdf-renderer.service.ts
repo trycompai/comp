@@ -130,7 +130,9 @@ export class PolicyPdfRendererService {
     return content.map((item) => ({
       type: item.type || 'paragraph',
       attrs: item.attrs,
-      content: item.content ? this.convertToInternalFormat(item.content) : undefined,
+      content: item.content
+        ? this.convertToInternalFormat(item.content)
+        : undefined,
       text: item.text,
       marks: item.marks,
     }));
@@ -262,7 +264,11 @@ export class PolicyPdfRendererService {
                   config.yPosition += config.lineHeight;
                 }
 
-                if (item.content.some((n) => n.type === 'bulletList' || n.type === 'orderedList')) {
+                if (
+                  item.content.some(
+                    (n) => n.type === 'bulletList' || n.type === 'orderedList',
+                  )
+                ) {
                   const nestedLists = item.content.filter(
                     (n) => n.type === 'bulletList' || n.type === 'orderedList',
                   );

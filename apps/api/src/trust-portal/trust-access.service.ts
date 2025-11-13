@@ -910,8 +910,6 @@ export class TrustAccessService {
     };
   }
 
-
-
   private async validateAccessToken(token: string) {
     const grant = await db.trustAccessGrant.findUnique({
       where: { accessToken: token },
@@ -995,8 +993,6 @@ export class TrustAccessService {
 
     return policies;
   }
-
-
 
   async downloadAllPoliciesByAccessToken(token: string) {
     const grant = await this.validateAccessToken(token);
