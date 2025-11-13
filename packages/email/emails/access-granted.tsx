@@ -16,18 +16,11 @@ import { Logo } from '../components/logo';
 interface Props {
   toName: string;
   organizationName: string;
-  scopes: string[];
   expiresAt: Date;
   portalUrl?: string | null;
 }
 
-export const AccessGrantedEmail = ({
-  toName,
-  organizationName,
-  scopes,
-  expiresAt,
-  portalUrl,
-}: Props) => {
+export const AccessGrantedEmail = ({ toName, organizationName, expiresAt, portalUrl }: Props) => {
   return (
     <Html>
       <Tailwind>
@@ -57,24 +50,12 @@ export const AccessGrantedEmail = ({
               Access Granted ✓
             </Heading>
 
-            <Text className="text-[14px] leading-[24px] text-[#121212]">
-              Hello {toName},
-            </Text>
+            <Text className="text-[14px] leading-[24px] text-[#121212]">Hello {toName},</Text>
 
             <Text className="text-[14px] leading-[24px] text-[#121212]">
               Your NDA has been signed and your access to <strong>{organizationName}</strong>'s
-              compliance documentation is now active.
+              policy documentation is now active.
             </Text>
-
-            <Text className="text-[14px] leading-[24px] text-[#121212]">
-              <strong>You now have access to:</strong>
-            </Text>
-
-            <ul className="text-[14px] leading-[24px] text-[#121212]">
-              {scopes.map((scope) => (
-                <li key={scope}>{scope}</li>
-              ))}
-            </ul>
 
             <Text className="text-[14px] leading-[24px] text-[#121212]">
               Your access will expire on:{' '}
@@ -110,8 +91,8 @@ export const AccessGrantedEmail = ({
               <Text className="m-0 text-[14px] leading-[24px] text-[#121212]">
                 <strong>Lost your access link?</strong>
                 <br />
-                Visit the trust portal and click "Already have access?" to receive a new access
-                link via email.
+                Visit the trust portal and click "Already have access?" to receive a new access link
+                via email.
               </Text>
             </Section>
 

@@ -10128,18 +10128,11 @@
           "requestedDurationDays": {
             "type": "number",
             "minimum": 1
-          },
-          "requestedScopes": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
           }
         },
         "required": [
           "name",
-          "email",
-          "requestedScopes"
+          "email"
         ]
       },
       "ApproveAccessRequestDto": {
@@ -10148,12 +10141,6 @@
           "durationDays": {
             "type": "number",
             "minimum": 1
-          },
-          "scopes": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
           }
         }
       },

@@ -42,12 +42,6 @@ export class CreateAccessRequestDto {
   @Min(1)
   @IsOptional()
   requestedDurationDays?: number;
-
-  @ApiProperty({ type: [String] })
-  @IsArray()
-  @ArrayNotEmpty()
-  @IsString({ each: true })
-  requestedScopes: string[];
 }
 
 export class ApproveAccessRequestDto {
@@ -56,13 +50,6 @@ export class ApproveAccessRequestDto {
   @Min(1)
   @IsOptional()
   durationDays?: number;
-
-  @ApiPropertyOptional({ type: [String] })
-  @IsArray()
-  @ArrayNotEmpty()
-  @IsString({ each: true })
-  @IsOptional()
-  scopes?: string[];
 }
 
 export class DenyAccessRequestDto {

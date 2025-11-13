@@ -23,7 +23,6 @@ export function GrantsTab({ orgId }: { orgId: string }) {
         <TableHeader>
           <TableRow>
             <TableHead>Email</TableHead>
-            <TableHead>Scopes</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Expires</TableHead>
             <TableHead>Revoked</TableHead>
@@ -34,20 +33,6 @@ export function GrantsTab({ orgId }: { orgId: string }) {
           {data.map((grant) => (
             <TableRow key={grant.id}>
               <TableCell>{grant.subjectEmail}</TableCell>
-              <TableCell>
-                <div className="flex flex-wrap gap-1">
-                  {grant.scopes.slice(0, 3).map((scope) => (
-                    <Badge key={scope} variant="secondary" className="text-xs">
-                      {scope}
-                    </Badge>
-                  ))}
-                  {grant.scopes.length > 3 && (
-                    <Badge variant="secondary" className="text-xs">
-                      +{grant.scopes.length - 3}
-                    </Badge>
-                  )}
-                </div>
-              </TableCell>
               <TableCell>
                 <Badge
                   variant={

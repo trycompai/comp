@@ -21,12 +21,7 @@ interface Props {
   expiresAt: Date;
 }
 
-export const AccessReclaimEmail = ({
-  toName,
-  organizationName,
-  accessLink,
-  expiresAt,
-}: Props) => {
+export const AccessReclaimEmail = ({ toName, organizationName, accessLink, expiresAt }: Props) => {
   return (
     <Html>
       <Tailwind>
@@ -56,9 +51,7 @@ export const AccessReclaimEmail = ({
               Access Your Data
             </Heading>
 
-            <Text className="text-[14px] leading-[24px] text-[#121212]">
-              Hello {toName},
-            </Text>
+            <Text className="text-[14px] leading-[24px] text-[#121212]">Hello {toName},</Text>
 
             <Text className="text-[14px] leading-[24px] text-[#121212]">
               You requested access to <strong>{organizationName}</strong>'s compliance

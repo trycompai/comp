@@ -10,12 +10,11 @@ export class NdaPdfService {
 
   async generateNdaPdf(params: {
     organizationName: string;
-    scopes: string[];
     signerName: string;
     signerEmail: string;
     agreementId: string;
   }): Promise<Buffer> {
-    const { organizationName, scopes, signerName, signerEmail, agreementId } =
+    const { organizationName, signerName, signerEmail, agreementId } =
       params;
 
     const pdfDoc = await PDFDocument.create();
@@ -60,7 +59,7 @@ export class NdaPdfService {
     const ndaText = `This Non-Disclosure Agreement ("Agreement") is entered into on ${now.toLocaleDateString('en-US')} between ${organizationName} ("Disclosing Party") and ${signerName} ("Receiving Party").
 
 1. CONFIDENTIAL INFORMATION
-The Receiving Party acknowledges that they will receive access to confidential compliance documentation and materials, including but not limited to: ${scopes.join(', ')}.
+The Receiving Party acknowledges that they will receive access to confidential compliance documentation and policy materials.
 
 2. OBLIGATIONS
 The Receiving Party agrees to:

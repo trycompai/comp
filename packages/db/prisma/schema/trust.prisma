@@ -59,7 +59,6 @@ model TrustAccessRequest {
   jobTitle              String?
   purpose               String?
   requestedDurationDays Int?
-  requestedScopes       String[]
 
   status           TrustAccessRequestStatus @default(under_review)
   reviewerMemberId String?
@@ -89,7 +88,6 @@ model TrustAccessGrant {
   accessRequest   TrustAccessRequest @relation("RequestGrant", fields: [accessRequestId], references: [id], onDelete: Cascade)
 
   subjectEmail String
-  scopes       String[]
 
   status    TrustAccessGrantStatus @default(active)
   expiresAt DateTime
@@ -183,7 +181,6 @@ model TrustDocument {
   name        String
   description String?
   s3Key       String
-  scopes      String[]
 
   isActive Boolean @default(true)
 

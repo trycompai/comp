@@ -18,15 +18,9 @@ interface Props {
   toName: string;
   organizationName: string;
   ndaSigningLink: string;
-  scopes: string[];
 }
 
-export const NdaSigningEmail = ({
-  toName,
-  organizationName,
-  ndaSigningLink,
-  scopes,
-}: Props) => {
+export const NdaSigningEmail = ({ toName, organizationName, ndaSigningLink }: Props) => {
   return (
     <Html>
       <Tailwind>
@@ -56,9 +50,7 @@ export const NdaSigningEmail = ({
               NDA Signature Required
             </Heading>
 
-            <Text className="text-[14px] leading-[24px] text-[#121212]">
-              Hello {toName},
-            </Text>
+            <Text className="text-[14px] leading-[24px] text-[#121212]">Hello {toName},</Text>
 
             <Text className="text-[14px] leading-[24px] text-[#121212]">
               Your request to <strong>{organizationName}</strong>'s trust portal has been approved.
@@ -66,20 +58,10 @@ export const NdaSigningEmail = ({
 
             <Text className="text-[14px] leading-[24px] text-[#121212]">
               <strong>
-                Before you can access the trust portal documentation, you must review and sign a Non-Disclosure
-                Agreement (NDA).
+                Before you can access the policy documentation, you must review and sign a
+                Non-Disclosure Agreement (NDA).
               </strong>
             </Text>
-
-            <Text className="text-[14px] leading-[24px] text-[#121212]">
-              The NDA covers access to the following:
-            </Text>
-
-            <ul className="text-[14px] leading-[24px] text-[#121212]">
-              {scopes.map((scope) => (
-                <li key={scope}>{scope}</li>
-              ))}
-            </ul>
 
             <Section className="mt-[32px] mb-[42px] text-center">
               <Button

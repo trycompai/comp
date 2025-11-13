@@ -15,9 +15,8 @@ export class TrustEmailService {
     toName: string;
     organizationName: string;
     ndaSigningLink: string;
-    scopes: string[];
   }): Promise<void> {
-    const { toEmail, toName, organizationName, ndaSigningLink, scopes } =
+    const { toEmail, toName, organizationName, ndaSigningLink } =
       params;
 
     const { id } = await sendEmail({
@@ -27,7 +26,6 @@ export class TrustEmailService {
         toName,
         organizationName,
         ndaSigningLink,
-        scopes,
       }),
       system: true,
     });
@@ -39,11 +37,10 @@ export class TrustEmailService {
     toEmail: string;
     toName: string;
     organizationName: string;
-    scopes: string[];
     expiresAt: Date;
     portalUrl?: string | null;
   }): Promise<void> {
-    const { toEmail, toName, organizationName, scopes, expiresAt, portalUrl } = params;
+    const { toEmail, toName, organizationName, expiresAt, portalUrl } = params;
 
     const { id } = await sendEmail({
       to: toEmail,
@@ -51,7 +48,6 @@ export class TrustEmailService {
       react: AccessGrantedEmail({
         toName,
         organizationName,
-        scopes,
         expiresAt,
         portalUrl,
       }),

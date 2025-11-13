@@ -11,7 +11,6 @@ export type AccessRequest = {
   jobTitle?: string | null;
   purpose?: string | null;
   requestedDurationDays?: number | null;
-  requestedScopes: string[];
   status: 'under_review' | 'approved' | 'denied' | 'canceled';
   createdAt: string;
   reviewedAt?: string | null;
@@ -30,7 +29,6 @@ export type AccessRequest = {
 export type AccessGrant = {
   id: string;
   subjectEmail: string;
-  scopes: string[];
   status: 'active' | 'expired' | 'revoked';
   expiresAt: string;
   accessRequestId: string;
@@ -64,10 +62,10 @@ export function useApproveAccessRequest(orgId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ requestId, scopes, durationDays }: { requestId: string; scopes: string[]; durationDays: number }) => {
+    mutationFn: async ({ requestId, durationDays }: { requestId: string; durationDays: number }) => {
       const response = await api.post(
         `/v1/trust-access/admin/requests/${requestId}/approve`,
-        { scopes, durationDays },
+        { durationDays },
         orgId,
       );
 

@@ -36,19 +36,6 @@ export function columns({
       cell: ({ getValue }) => (getValue() as string | null) ?? '-',
     },
     {
-      id: 'requestedScopes',
-      header: 'Requested Reports',
-      cell: ({ row }) => (
-        <div className="flex flex-wrap gap-1">
-          {row.original.requestedScopes.map((scope) => (
-            <Badge key={scope} variant="outline">
-              {scope}
-            </Badge>
-          ))}
-        </div>
-      ),
-    },
-    {
       accessorKey: 'status',
       header: 'Status',
       cell: ({ row }) => {
@@ -75,7 +62,6 @@ export function columns({
                 onClick={() =>
                   approve.mutate({
                     requestId: row.original.id,
-                    scopes: row.original.requestedScopes,
                     durationDays: row.original.requestedDurationDays ?? 30,
                   })
                 }

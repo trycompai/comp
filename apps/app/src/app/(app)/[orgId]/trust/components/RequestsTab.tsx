@@ -54,7 +54,6 @@ export function RequestsTab({ orgId }: { orgId: string }) {
             <TableHead>Email</TableHead>
             <TableHead>Company</TableHead>
             <TableHead>Purpose</TableHead>
-            <TableHead>Scopes</TableHead>
             <TableHead>Duration</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>NDA</TableHead>
@@ -71,20 +70,6 @@ export function RequestsTab({ orgId }: { orgId: string }) {
                 <TableCell>{request.email}</TableCell>
                 <TableCell>{request.company || '-'}</TableCell>
                 <TableCell className="max-w-xs truncate">{request.purpose || '-'}</TableCell>
-                <TableCell>
-                  <div className="flex flex-wrap gap-1">
-                    {request.requestedScopes.slice(0, 2).map((scope) => (
-                      <Badge key={scope} variant="secondary" className="text-xs">
-                        {scope}
-                      </Badge>
-                    ))}
-                    {request.requestedScopes.length > 2 && (
-                      <Badge variant="secondary" className="text-xs">
-                        +{request.requestedScopes.length - 2}
-                      </Badge>
-                    )}
-                  </div>
-                </TableCell>
                 <TableCell>{request.requestedDurationDays ?? 30}d</TableCell>
                 <TableCell>
                   <Badge

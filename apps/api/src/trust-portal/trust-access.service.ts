@@ -95,7 +95,6 @@ export class TrustAccessService {
         status: 'already_approved',
         message: 'You already have active access',
         grant: {
-          scopes: existingGrant.scopes,
           expiresAt: existingGrant.expiresAt,
         },
       };
@@ -124,7 +123,6 @@ export class TrustAccessService {
         jobTitle: dto.jobTitle,
         purpose: dto.purpose,
         requestedDurationDays: dto.requestedDurationDays,
-        requestedScopes: dto.requestedScopes,
         status: 'under_review',
         ipAddress,
         userAgent,
@@ -219,11 +217,6 @@ export class TrustAccessService {
 
     const durationDays =
       dto.durationDays || request.requestedDurationDays || 30;
-    const scopes = (dto.scopes?.length ? dto.scopes : request.requestedScopes) ?? [];
-
-    if (!scopes.length) {
-      throw new BadRequestException('At least one scope must be selected');
-    }
 
     const member = memberId
       ? await db.member.findFirst({
@@ -257,7 +250,6 @@ export class TrustAccessService {
           status: 'approved',
           reviewerMemberId: member.id,
           reviewedAt: new Date(),
-          requestedScopes: scopes,
           requestedDurationDays: durationDays,
         },
       });
@@ -273,13 +265,12 @@ export class TrustAccessService {
           data: {
             requestId,
             ndaAgreementId: ndaAgreement.id,
-            scopes,
             durationDays,
           },
         },
       });
 
-      return { request: updatedRequest, ndaAgreement, scopes, durationDays };
+      return { request: updatedRequest, ndaAgreement, durationDays };
     });
 
     const ndaSigningLink = `${this.TRUST_APP_URL}/nda/${result.ndaAgreement.signToken}`;
@@ -289,7 +280,6 @@ export class TrustAccessService {
       toName: request.name,
       organizationName: request.organization.name,
       ndaSigningLink,
-      scopes: result.scopes,
     });
 
     return {
@@ -490,7 +480,9 @@ export class TrustAccessService {
     }
 
     if (nda.status === 'void') {
-      throw new BadRequestException('This NDA has been revoked and is no longer valid');
+      throw new BadRequestException(
+        'This NDA has been revoked and is no longer valid',
+      );
     }
 
     if (nda.status !== 'pending') {
@@ -502,7 +494,6 @@ export class TrustAccessService {
       organizationName: nda.accessRequest.organization.name,
       requesterName: nda.accessRequest.name,
       requesterEmail: nda.accessRequest.email,
-      scopes: nda.accessRequest.requestedScopes,
       expiresAt: nda.signTokenExpiresAt,
     };
   }
@@ -535,7 +526,9 @@ export class TrustAccessService {
     }
 
     if (nda.status === 'void') {
-      throw new BadRequestException('This NDA has been revoked and is no longer valid');
+      throw new BadRequestException(
+        'This NDA has been revoked and is no longer valid',
+      );
     }
 
     if (nda.status === 'signed' && nda.grant) {
@@ -569,7 +562,6 @@ export class TrustAccessService {
         grant: nda.grant,
         pdfDownloadUrl: pdfUrl,
         portalUrl,
-        scopes: nda.grant.scopes,
         expiresAt: nda.grant.expiresAt,
       };
     }
@@ -578,14 +570,8 @@ export class TrustAccessService {
       throw new BadRequestException('NDA has already been signed');
     }
 
-    const scopes = nda.accessRequest.requestedScopes;
-    if (!scopes?.length) {
-      throw new BadRequestException('Cannot sign NDA: request has no scopes');
-    }
-
     const pdfBuffer = await this.ndaPdfService.generateNdaPdf({
       organizationName: nda.accessRequest.organization.name,
-      scopes: nda.accessRequest.requestedScopes,
       signerName,
       signerEmail,
       agreementId: nda.id,
@@ -610,7 +596,6 @@ export class TrustAccessService {
         data: {
           accessRequestId: nda.accessRequestId,
           subjectEmail: signerEmail,
-          scopes: nda.accessRequest.requestedScopes,
           expiresAt,
           accessToken,
           accessTokenExpiresAt,
@@ -647,7 +632,6 @@ export class TrustAccessService {
       toEmail: signerEmail,
       toName: signerName,
       organizationName: nda.accessRequest.organization.name,
-      scopes: result.grant.scopes,
       expiresAt: result.grant.expiresAt,
       portalUrl,
     });
@@ -659,7 +643,6 @@ export class TrustAccessService {
       grant: result.grant,
       pdfDownloadUrl: pdfUrl,
       portalUrl,
-      scopes: result.grant.scopes,
       expiresAt: result.grant.expiresAt,
     };
   }
@@ -708,7 +691,6 @@ export class TrustAccessService {
       toName: request.name,
       organizationName: request.organization.name,
       ndaSigningLink,
-      scopes: request.requestedScopes,
     });
 
     return {
@@ -734,7 +716,6 @@ export class TrustAccessService {
     const previewId = this.generateToken(16);
     const pdfBuffer = await this.ndaPdfService.generateNdaPdf({
       organizationName: request.organization.name,
-      scopes: request.requestedScopes,
       signerName: request.name,
       signerEmail: request.email,
       agreementId: `preview-${previewId}`,
@@ -783,7 +764,6 @@ export class TrustAccessService {
     const previewId = this.generateToken(16);
     const pdfBuffer = await this.ndaPdfService.generateNdaPdf({
       organizationName: nda.accessRequest.organization.name,
-      scopes: nda.accessRequest.requestedScopes,
       signerName: nda.accessRequest.name,
       signerEmail: nda.accessRequest.email,
       agreementId: `preview-${previewId}`,
@@ -922,7 +902,6 @@ export class TrustAccessService {
 
     return {
       organizationName: grant.accessRequest.organization.name,
-      scopes: grant.scopes,
       expiresAt: grant.expiresAt,
       subjectEmail: grant.subjectEmail,
       ndaPdfUrl,
@@ -964,16 +943,12 @@ export class TrustAccessService {
       where: {
         organizationId: grant.accessRequest.organizationId,
         isActive: true,
-        scopes: {
-          hasSome: grant.scopes,
-        },
       },
       select: {
         id: true,
         name: true,
         description: true,
         s3Key: true,
-        scopes: true,
       },
     });
 
@@ -1016,9 +991,6 @@ export class TrustAccessService {
         id: documentId,
         organizationId: grant.accessRequest.organizationId,
         isActive: true,
-        scopes: {
-          hasSome: grant.scopes,
-        },
       },
     });
 

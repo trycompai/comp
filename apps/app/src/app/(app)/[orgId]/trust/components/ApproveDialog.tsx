@@ -11,7 +11,6 @@ import {
 import { useForm } from '@tanstack/react-form';
 import { toast } from 'sonner';
 import { DurationPicker } from './DurationPicker';
-import { ScopesSelect } from './ScopesSelect';
 
 export function ApproveDialog({
   orgId,
@@ -27,14 +26,12 @@ export function ApproveDialog({
 
   const form = useForm({
     defaultValues: {
-      scopes: data?.requestedScopes || [],
       durationDays: data?.requestedDurationDays ?? 30,
     },
     onSubmit: async ({ value }) => {
       await toast.promise(
         approveRequest({
           requestId,
-          scopes: value.scopes,
           durationDays: value.durationDays,
         }),
         {
@@ -90,29 +87,6 @@ export function ApproveDialog({
               </div>
             </div>
             <div className="space-y-4">
-              <form.Field
-                name="scopes"
-                validators={{
-                  onChange: ({ value }) =>
-                    value.length === 0 ? 'Select at least 1 scope' : undefined,
-                }}
-              >
-                {(field) => (
-                  <div>
-                    <div className="text-sm font-medium mb-2">Access Scopes</div>
-                    <ScopesSelect
-                      value={field.state.value}
-                      onChange={(v) => {
-                        field.handleChange(v);
-                        field.validate('change');
-                      }}
-                    />
-                    {field.state.meta.errors.length > 0 && (
-                      <p className="text-sm text-destructive mt-1">{field.state.meta.errors[0]}</p>
-                    )}
-                  </div>
-                )}
-              </form.Field>
               <form.Field
                 name="durationDays"
                 validators={{
