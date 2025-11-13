@@ -29,6 +29,7 @@ export class TasksService {
         status: task.status,
         createdAt: task.createdAt,
         updatedAt: task.updatedAt,
+        taskTemplateId: task.taskTemplateId,
       }));
     } catch (error) {
       console.error('Error fetching tasks:', error);

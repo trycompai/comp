@@ -1,6 +1,19 @@
+import { db } from '@db';
 import { IntegrationsGrid } from './components/IntegrationsGrid';
 
-export default function IntegrationsPage() {
+export default async function IntegrationsPage() {
+  // Fetch task templates server-side
+  const taskTemplates = await db.frameworkEditorTaskTemplate.findMany({
+    select: {
+      id: true,
+      name: true,
+      description: true,
+    },
+    orderBy: {
+      name: 'asc',
+    },
+  });
+
   return (
     <div className="container mx-auto p-8">
       <div className="max-w-7xl mx-auto space-y-10">
@@ -17,7 +30,7 @@ export default function IntegrationsPage() {
         </div>
 
         {/* Integrations Grid */}
-        <IntegrationsGrid />
+        <IntegrationsGrid taskTemplates={taskTemplates} />
       </div>
     </div>
   );
