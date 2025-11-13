@@ -7837,5 +7837,653 @@
     "identifier": "1",
     "createdAt": "2025-09-01 13:27:39.721",
     "updatedAt": "2025-09-01 13:27:39.721"
+  },
+  {
+    "id": "frk_rq_68c1eafed7ef7c22cc3ba9db",
+    "frameworkId": "frk_68c1ead24950f84849db81bb",
+    "name": "PCI Requirement",
+    "description": "Everything related to PCI",
+    "identifier": "",
+    "createdAt": "2025-09-10 21:17:50.456",
+    "updatedAt": "2025-09-10 21:17:50.456"
+  },
+  {
+    "id": "frk_rq_68cc0e89f26cd9c83ed5e882",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Understanding the needs and expectations of interested parties",
+    "description": "\"The organization shall determine:\r\n\r\n— the interested parties that are relevant to the AI management system;\r\n— the relevant requirements of these interested parties;\r\n— which of these requirements will be addressed through the AI management system.\"",
+    "identifier": "ISO/IEC 42001:2023 Clause 4.2",
+    "createdAt": "2025-09-18 13:52:08.493",
+    "updatedAt": "2025-09-18 13:52:08.493"
+  },
+  {
+    "id": "frk_rq_68cc0eadde4caac33efff2ce",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Determining the scope of the AI management system",
+    "description": "\"The organization shall determine the boundaries and applicability of the AI management system to establish its scope.\r\n\r\nWhen determining this scope, the organization shall consider:\r\n\r\n— the external and internal issues referred to in 4.1;\r\n— the requirements referred to in 4.2.\r\n\r\nThe scope shall be available as documented information.\r\n\r\nThe scope of the AI management system shall determine the organization’s activities with respect to this document’s requirements on the AI management system, leadership, planning, support, operation, performance, evaluation, improvement, controls and objectives.\"",
+    "identifier": "ISO/IEC 42001:2023 Clause 4.3",
+    "createdAt": "2025-09-18 13:52:45.221",
+    "updatedAt": "2025-09-18 13:52:45.221"
+  },
+  {
+    "id": "frk_rq_68cc0ecd7ec7814948c7f618",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "AI management system",
+    "description": "The organization shall establish, implement, maintain, continually improve and document an AI management system, including the processes needed and their interactions, in accordance with the requirements of this document.",
+    "identifier": "ISO/IEC 42001:2023 Clause 4.4",
+    "createdAt": "2025-09-18 13:53:17.221",
+    "updatedAt": "2025-09-18 13:53:17.221"
+  },
+  {
+    "id": "frk_rq_68cc0e5eddc90f9619ae850d",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Understanding the organization and its context  ",
+    "description": "\"The organization shall determine external and internal issues that are relevant to its purpose and that affect its ability to achieve the intended result(s) of its AI management system.\r\n\r\nThe organization shall consider the intended purpose of the AI systems that are developed, provided or used by the organization. The organization shall determine its roles with respect to these AI systems\"",
+    "identifier": "ISO/IEC 42001:2023 Clause 4.1",
+    "createdAt": "2025-09-18 13:51:25.644",
+    "updatedAt": "2025-09-18 13:53:54.032"
+  },
+  {
+    "id": "frk_rq_68cc0f7b1fe3d0eba7057907",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Leadership and commitment",
+    "description": "Top management shall demonstrate leadership and commitment with respect to the AI management\r\nsystem by:\r\n\r\n— ensuring that the AI policy (see 5.2) and AI objectives (see 6.2) are established and are compatible with the strategic direction of the organization\r\n— ensuring the integration of the AI management system requirements into the organization’s business processes\r\n— ensuring that the resources needed for the AI management system are available\r\n— communicating the importance of effective AI management and of conforming to the AI management system requirements\r\n— ensuring that the AI management system achieves its intended result(s);\r\n— directing and supporting persons to contribute to the effectiveness of the AI management system\r\n— promoting continual improvement;\r\n— supporting other relevant roles to demonstrate their leadership as it applies to their areas of responsibility.",
+    "identifier": "ISO/IEC 42001:2023 Clause 5.1",
+    "createdAt": "2025-09-18 13:56:11.042",
+    "updatedAt": "2025-09-18 13:56:11.042"
+  },
+  {
+    "id": "frk_rq_68cc0f9de0890c314f870108",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Policy",
+    "description": "Top management shall establish an AI policy that:\r\na) is appropriate to the purpose of the organization\r\nb) provides a framework for setting AI objectives (see 6.2);\r\nc) includes a commitment to meet applicable requirements\r\nd) includes a commitment to continual improvement of the AI management system\r\n\r\nThe AI policy shall:\r\n— be available as documented information\r\n— refer as relevant to other organizational policies;\r\n— be communicated within the organization\r\n— be available to interested parties, as appropriate",
+    "identifier": "ISO/IEC 42001:2023 Clause 5.2",
+    "createdAt": "2025-09-18 13:56:45.087",
+    "updatedAt": "2025-09-18 13:56:45.087"
+  },
+  {
+    "id": "frk_rq_68cc0fb516f402f740147419",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Organizational roles, responsibilities and authorities",
+    "description": "Top management shall ensure that the responsibilities and authorities for relevant roles are assigned and communicated within the organization.\r\nTop management shall assign the responsibility and authority for:\r\na) ensuring that the AI management system conforms to the requirements of this document;\r\nb) reporting on the performance of the AI management system to top management.",
+    "identifier": "ISO/IEC 42001:2023 Clause 5.3",
+    "createdAt": "2025-09-18 13:57:08.649",
+    "updatedAt": "2025-09-18 13:57:08.649"
+  },
+  {
+    "id": "frk_rq_68cc0fd04f279d7a96eacc6f",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Actions to address risks and opportunities (General)",
+    "description": "When planning for the AI management system, the organization shall consider the issues referred to in 4.1 and the requirements referred to in 4.2 and determine the risks and opportunities that need to be addressed to:\r\n\r\n— give assurance that the AI management system can achieve its intended result(s);\r\n— prevent or reduce undesired effects;\r\n— achieve continual improvement\r\n\r\nThe organization shall establish and maintain AI risk criteria that support:\r\n— distinguishing acceptable from non-acceptable risks\r\n— performing AI risk assessments\r\n— conducting AI risk treatment\r\n— assessing AI risk impacts.\r\n\r\nThe organization shall determine the risks and opportunities according to:\r\n\r\n— the domain and application context of an AI system;\r\n— the intended use;\r\n— the external and internal context described in 4.1\r\n\r\nThe organization shall plan:\r\n\r\na) actions to address these risks and opportunities;\r\n\r\nb) how to:\r\n1) integrate and implement the actions into its AI management system processes;\r\n2) evaluate the effectiveness of these actions.",
+    "identifier": "ISO/IEC 42001:2023 Clause 6.1.1",
+    "createdAt": "2025-09-18 13:57:35.538",
+    "updatedAt": "2025-09-18 13:57:35.538"
+  },
+  {
+    "id": "frk_rq_68cc0ff05be924f5d0d58a6f",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "AI risk assessment",
+    "description": "The organization shall define and establish an AI risk assessment process that:\r\n\r\na) is informed by and aligned to the AI policy (see 5.2) and AI objectives\r\nb) is designed such that repeated AI risk assessments can produce consistent, valid and comparable results;\r\nc) identifies risks that aid or prevent achieving its AI objectives\r\nd) analyses the AI risks to:\r\n1) assess the potential consequences to the organization, individuals and societies that would result if the identified risks were to materialize\r\n2) assess, where applicable, the realistic likelihood of the identified risks\r\n3) determine the levels of risk\r\ne) evaluates the AI risks to:\r\n1) compare the results of the risk analysis with the risk criteria\r\n2) prioritize the assessed risks for risk treatment.\r\n\r\nThe organization shall retain documented information about the AI risk assessment process.",
+    "identifier": "ISO/IEC 42001:2023 Clause 6.1.2",
+    "createdAt": "2025-09-18 13:58:08.309",
+    "updatedAt": "2025-09-18 13:58:08.309"
+  },
+  {
+    "id": "frk_rq_68cc10611c3b98926aaf2cd5",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Planning of Changes",
+    "description": "When the organization determines the need for changes to the AI management system, the changes shall be carried out in a planned manner.",
+    "identifier": "ISO/IEC 42001:2023 Clause 6.3",
+    "createdAt": "2025-09-18 14:00:00.872",
+    "updatedAt": "2025-09-18 14:00:00.872"
+  },
+  {
+    "id": "frk_rq_68cc124496843ba357887e21",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Awareness",
+    "description": "Persons doing work under the organization’s control shall be aware of:\r\n\r\n— the AI policy (see 5.2);\r\n— their contribution to the effectiveness of the AI management system, including the benefits of improved AI performance;\r\n— the implications of not conforming with the AI management system requirements.",
+    "identifier": "ISO/IEC 42001:2023 Clause 7.3",
+    "createdAt": "2025-09-18 14:08:04.278",
+    "updatedAt": "2025-09-18 14:08:04.278"
+  },
+  {
+    "id": "frk_rq_68cc1023e32bf22413738e2f",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "AI risk treatment",
+    "description": "Taking the risk assessment results into account, the organization shall define an AI risk treatment process to:\r\na) select appropriate AI risk treatment options\r\nb) determine all controls that are necessary to implement the AI risk treatment options chosen and compare the controls with those in Annex A to verify that no necessary controls have been omitted\r\nc) consider the controls from Annex A that are relevant for the implementation of the AI risk treatment options\r\nd) identify if additional controls are necessary beyond those in Annex A in order to implement all risk treatment options\r\ne) consider the guidance in Annex B for the implementation of controls determined in b) and c)\r\nf) produce a statement of applicability that contains the necessary controls [see b), c) and d)] and provide justification for inclusion and exclusion of controls. Justification for exclusion can include where the controls are not deemed necessary by the risk assessment and where they are not required by (or are subject to exceptions under) applicable external requirements\r\ng) formulate an AI risk treatment plan.\r\n\r\nThe organization shall obtain approval from the designated management for the AI risk treatment plan and for acceptance of the residual AI risks. The necessary controls shall be:\r\n— aligned to the objectives in 6.2\r\n— available as documented information\r\n— communicated within the organization\r\n— available to interested parties, as appropriate",
+    "identifier": "ISO/IEC 42001:2023 Clause 6.1.3",
+    "createdAt": "2025-09-18 13:58:58.502",
+    "updatedAt": "2025-09-18 13:58:58.502"
+  },
+  {
+    "id": "frk_rq_68cc1037f2716f51a47b2a2c",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "AI system impact assessment",
+    "description": "The organization shall define a process for assessing the potential consequences for individuals and societies that can result from the development, provision or use of AI systems.\r\n\r\nThe AI system impact assessment shall determine the potential consequences an AI system’s deployment, intended use and foreseeable misuse has on individuals and societies.\r\n\r\nThe impact assessment should take into account the specific technical and societal context where the AI system is deployed and applicable jurisdictions.\r\n\r\nThe result of the system impact assessment shall be documented. Where appropriate, the result of the system impact assessment can be made available to relevant interested parties as defined by the organization.\r\n\r\nThe organization shall consider an AI system impact assessment results in the risk assessment (see 6.1.2). A.5 in Table A.1 provides controls for assessing impacts of AI systems.",
+    "identifier": "ISO/IEC 42001:2023 Clause 6.1.4",
+    "createdAt": "2025-09-18 13:59:19.049",
+    "updatedAt": "2025-09-18 13:59:19.049"
+  },
+  {
+    "id": "frk_rq_68cc104bfdfae778fc876c94",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "AI objectives and planning to achieve them",
+    "description": "The organization shall establish AI objectives at relevant functions and levels:\r\n\r\nThe AI objectives shall:\r\na) be consistent with the AI policy (see 5.2);\r\nb) be measurable (if practicable);\r\nc) take into account applicable requirements;\r\nd) be monitored;\r\ne) be communicated;\r\nf) be updated as appropriate;\r\ng) be available as documented information;\r\n\r\nWhen planning how to achieve its AI objectives, the organization shall determine:\r\n— what will be done;\r\n— what resources will be required;\r\n— who will be responsible;\r\n— when it will be completed;\r\n— how the results will be evaluated.",
+    "identifier": "ISO/IEC 42001:2023 Clause 6.2",
+    "createdAt": "2025-09-18 13:59:38.703",
+    "updatedAt": "2025-09-18 13:59:38.703"
+  },
+  {
+    "id": "frk_rq_68cc106d0cdb75961110d7bd",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Resources",
+    "description": "\"The organization shall determine and provide the resources needed for the establishment,\r\nimplementation, maintenance and continual improvement of the AI management system.\"",
+    "identifier": "ISO/IEC 42001:2023 Clause 7.1",
+    "createdAt": "2025-09-18 14:00:13.212",
+    "updatedAt": "2025-09-18 14:00:13.212"
+  },
+  {
+    "id": "frk_rq_68cc108f1697a1687b11d500",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Competence",
+    "description": "The organization shall:\r\n\r\n— determine the necessary competence of person(s) doing work under its control that affects its AI performance;\r\n— ensure that these persons are competent on the basis of appropriate education, training or experience;\r\n— where applicable, take actions to acquire the necessary competence, and evaluate the effectiveness of the actions taken.\r\n\r\nAppropriate documented information shall be available as evidence of competence",
+    "identifier": "ISO/IEC 42001:2023 Clause 7.2",
+    "createdAt": "2025-09-18 14:00:46.785",
+    "updatedAt": "2025-09-18 14:00:46.785"
+  },
+  {
+    "id": "frk_rq_68cc126823caf86fae495b66",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Communication",
+    "description": "The organization shall determine the internal and external communications relevant to the AI management system including:\r\n— on what it will communicate;\r\n— when to communicate;\r\n— with whom to communicate;\r\n— how to communicate.",
+    "identifier": "ISO/IEC 42001:2023 Clause 7.4",
+    "createdAt": "2025-09-18 14:08:40.394",
+    "updatedAt": "2025-09-18 14:08:40.394"
+  },
+  {
+    "id": "frk_rq_68cc131dece6bc88bea70bea",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Operational planning and control",
+    "description": "The organization shall plan, implement and control the processes needed to meet requirements, and to implement the actions determined in Clause 6, by:\r\n\r\n— establishing criteria for the processes;\r\n— implementing control of the processes in accordance with the criteria.\r\n\r\nThe organization should implement the controls determined according to 6.1.3 that are related to the operation of the AI management system (e.g. AI system development and usage life cycle related controls).\r\n\r\nThe effectiveness of these controls shall be monitored and corrective actions shall be considered if the intended results are not achieved. Annex A lists reference controls and Annex B provides implementation guidance for them.\r\n\r\nDocumented information shall be available to the extent necessary to have confidence that the processes have been carried out as planned.\r\n\r\nThe organization shall control planned changes and review the consequences of unintended changes, taking action to mitigate any adverse effects, as necessary.\r\n\r\nThe organization shall ensure that externally provided processes, products or services that are relevant to the AI management system are controlled.",
+    "identifier": "ISO/IEC 42001:2023 Clause 8.1",
+    "createdAt": "2025-09-18 14:11:40.662",
+    "updatedAt": "2025-09-18 14:11:40.662"
+  },
+  {
+    "id": "frk_rq_68cc12d0f52f5c1d91f117f1",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Documented information (General)",
+    "description": "The organization’s AI management system shall include:\r\na) documented information required by this document;\r\nb) documented information determined by the organization as being necessary for the effectiveness of the AI management system.",
+    "identifier": "ISO/IEC 42001:2023 Clause 7.5.1",
+    "createdAt": "2025-09-18 14:10:23.727",
+    "updatedAt": "2025-09-18 14:10:23.727"
+  },
+  {
+    "id": "frk_rq_68cc1342bdd7f557947e44a2",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "AI risk assessment ",
+    "description": "The organization shall perform AI risk assessments in accordance with 6.1.2 at planned intervals or when significant changes are proposed or occur.\r\n\r\nThe organization shall retain documented information of the results of all AI risk assessments.",
+    "identifier": "ISO/IEC 42001:2023 Clause 8.2",
+    "createdAt": "2025-09-18 14:12:17.819",
+    "updatedAt": "2025-09-18 14:12:17.819"
+  },
+  {
+    "id": "frk_rq_68cc13d7452ced814c6e99f0",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Management review - General",
+    "description": "Top management shall review the organization’s AI management system, at planned intervals, to ensure its continuing suitability, adequacy and effectiveness.",
+    "identifier": "ISO/IEC 42001:2023 Clause 9.3.1",
+    "createdAt": "2025-09-18 14:14:46.905",
+    "updatedAt": "2025-09-18 14:14:46.905"
+  },
+  {
+    "id": "frk_rq_68cc13f34b88f4b16f70a060",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Management review inputs",
+    "description": "The management review shall include:\r\na) the status of actions from previous management reviews;\r\nb) changes in external and internal issues that are relevant to the AI management system;\r\nc) changes in needs and expectations of interested parties that are relevant to the AI management system;\r\nd) information on the AI management system performance, including trends in:\r\n1) nonconformities and corrective actions;\r\n2) monitoring and measurement results;\r\n3) audit results;\r\ne) opportunities for continual improvement.",
+    "identifier": "ISO/IEC 42001:2023 Clause 9.3.2",
+    "createdAt": "2025-09-18 14:15:15.324",
+    "updatedAt": "2025-09-18 14:15:15.324"
+  },
+  {
+    "id": "frk_rq_68cc5a4fd31458ffff814315",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "AI system impact assessment process",
+    "description": "The organization shall establish a process to assess the potential consequences for individuals and societies that can result from the AI system throughout its life cycle.",
+    "identifier": "ISO/IEC 42001:2023 A.5.2",
+    "createdAt": "2025-09-18 19:15:26.849",
+    "updatedAt": "2025-09-18 19:15:26.849"
+  },
+  {
+    "id": "frk_rq_68cc5a5a379347f5e3eb59bf",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Documentation of AI system impact assessments",
+    "description": "The organization shall document the results of AI system impact assessments and retain results for a defined period.",
+    "identifier": "ISO/IEC 42001:2023 A.5.3",
+    "createdAt": "2025-09-18 19:15:38.442",
+    "updatedAt": "2025-09-18 19:15:38.442"
+  },
+  {
+    "id": "frk_rq_68cc5a6ca8269484c65f9ec4",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Assessing AI system impact on individuals and groups of individuals",
+    "description": "\"The organization shall assess and document the potential impacts of AI systems to individuals or groups of individuals\r\nthroughout the system’s life cycle.\"",
+    "identifier": "ISO/IEC 42001:2023 A.5.4",
+    "createdAt": "2025-09-18 19:15:55.751",
+    "updatedAt": "2025-09-18 19:15:55.751"
+  },
+  {
+    "id": "frk_rq_68cc5a771abf96227e04340d",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Assessing societal impacts of AI systems",
+    "description": "The organization shall assess and document the potential societal impacts of their AI systems throughout their life cycle.",
+    "identifier": "ISO/IEC 42001:2023 A.5.5",
+    "createdAt": "2025-09-18 19:16:07.428",
+    "updatedAt": "2025-09-18 19:16:07.428"
+  },
+  {
+    "id": "frk_rq_68cc5a9d72bacbed2987c4b8",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Objectives for responsible development of AI system",
+    "description": "The organization shall identify and document objectives to guide the development of trustworthy AI systems, and take those objectives into account and integrate measures to achieve them in the development life cycle.",
+    "identifier": "ISO/IEC 42001:2023 A.6.1.2",
+    "createdAt": "2025-09-18 19:16:44.703",
+    "updatedAt": "2025-09-18 19:16:44.703"
+  },
+  {
+    "id": "frk_rq_68cc5aca98f03da8f8367cba",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "\"Documentation of AI system design and development\"",
+    "description": "\"The organization shall document the AI system design and development based on organizational objectives, documented\r\nrequirements and specification criteria.\"",
+    "identifier": "ISO/IEC 42001:2023 A.6.2.3",
+    "createdAt": "2025-09-18 19:17:30.244",
+    "updatedAt": "2025-09-18 19:17:30.244"
+  },
+  {
+    "id": "frk_rq_68cc5ae5ff5cddebb560aa22",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "AI system deployment",
+    "description": "The organization shall document a deployment plan and ensure that appropriate requirements are met prior to deployment.",
+    "identifier": "ISO/IEC 42001:2023 A.6.2.5",
+    "createdAt": "2025-09-18 19:17:57.416",
+    "updatedAt": "2025-09-18 19:17:57.416"
+  },
+  {
+    "id": "frk_rq_68cc5af0bf60b2e58133ff53",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "AI system operation and monitoring",
+    "description": "The organization shall define and document the necessary elements for the ongoing operation of the AI system. At the minimum, this should include system and performance monitoring, repairs, updates and support",
+    "identifier": "ISO/IEC 42001:2023 A.6.2.6",
+    "createdAt": "2025-09-18 19:18:08.155",
+    "updatedAt": "2025-09-18 19:18:08.155"
+  },
+  {
+    "id": "frk_rq_68cc5afff58160f9f1c4dd20",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "AI system technical documentation",
+    "description": "The organization shall determine what AI system technical documentation is needed for each relevant category of interested parties, such as users, partners, supervisory authorities, and provide the technical documentation to them in the appropriate form.",
+    "identifier": "ISO/IEC 42001:2023 A.6.2.7",
+    "createdAt": "2025-09-18 19:18:22.876",
+    "updatedAt": "2025-09-18 19:18:22.876"
+  },
+  {
+    "id": "frk_rq_68cc5b0cffc0c85df3924feb",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "AI system recording of event logs",
+    "description": "The organization shall determine at which phases of the AI system life cycle, record keeping of event logs should be enabled, but at the minimum when the AI system is in use.",
+    "identifier": "ISO/IEC 42001:2023 A.6.2.8",
+    "createdAt": "2025-09-18 19:18:35.569",
+    "updatedAt": "2025-09-18 19:18:35.569"
+  },
+  {
+    "id": "frk_rq_68cc5b1b6a671e5fdb9e83f8",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Data for development and enhancement of AI system",
+    "description": "The organization shall define, document and implement data management processes related to the development of AI systems.",
+    "identifier": "ISO/IEC 42001:2023 A.7.2",
+    "createdAt": "2025-09-18 19:18:51.302",
+    "updatedAt": "2025-09-18 19:18:51.302"
+  },
+  {
+    "id": "frk_rq_68cc5b28c6250d5e578180f9",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Acquisition of data",
+    "description": "The organization shall determine and document details about the acquisition and selection of the data used in AI systems.",
+    "identifier": "ISO/IEC 42001:2023 A.7.3",
+    "createdAt": "2025-09-18 19:19:03.592",
+    "updatedAt": "2025-09-18 19:19:03.592"
+  },
+  {
+    "id": "frk_rq_68cc12e9ccf8c0f87b0ab7ed",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Creating and updating",
+    "description": "When creating and updating documented information, the organization shall ensure appropriate:\r\n\r\n— identification and description (e.g. a title, date, author or reference number);\r\n— format (e.g. language, software version, graphics) and media (e.g. paper, electronic);\r\n— review and approval for suitability and adequacy.",
+    "identifier": "ISO/IEC 42001:2023 Clause 7.5.2",
+    "createdAt": "2025-09-18 14:10:48.775",
+    "updatedAt": "2025-09-18 14:10:48.775"
+  },
+  {
+    "id": "frk_rq_68cc12fe773e2545f63bbb68",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Control of documented information  ",
+    "description": "Documented information required by the AI management system and by this document shall be controlled to ensure:\r\n\r\na) it is available and suitable for use, where and when it is needed;\r\nb) it is adequately protected (e.g. from loss of confidentiality, improper use or loss of integrity).\r\nFor the control of documented information, the organization shall address the following activities, as applicable:\r\n— distribution, access, retrieval and use;\r\n— storage and preservation, including preservation of legibility;\r\n— control of changes (e.g. version control);\r\n— retention and disposition.\r\n\r\nDocumented information of external origin determined by the organization to be necessary for the planning and operation of the AI management system shall be identified as appropriate and controlled.",
+    "identifier": "ISO/IEC 42001:2023 Clause 7.5.3",
+    "createdAt": "2025-09-18 14:11:09.518",
+    "updatedAt": "2025-09-18 14:11:09.518"
+  },
+  {
+    "id": "frk_rq_68cc1356217bdfd8243f6ffa",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "AI risk treatment ",
+    "description": "The organization shall implement the AI risk treatment plan according to 6.1.3 and verify its effectiveness.\r\n\r\nWhen risk assessments identify new risks that require treatment, a risk treatment process in accordance with 6.1.3 shall be performed for these risks.\r\n\r\nWhen risk treatment options as defined by the risk treatment plan are not effective, these treatment options shall be reviewed and revalidated following the risk treatment process according to 6.1.3 and the risk treatment plan shall be updated.\r\n\r\nThe organization shall retain documented information of the results of all AI risk treatments.",
+    "identifier": "ISO/IEC 42001:2023 Clause 8.3",
+    "createdAt": "2025-09-18 14:12:38.489",
+    "updatedAt": "2025-09-18 14:12:38.489"
+  },
+  {
+    "id": "frk_rq_68cc136d293aef7e72dae81a",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "AI system impact assessment",
+    "description": "The organization shall perform AI system impact assessments according to 6.1.4 at planned intervals or when significant changes are proposed to occur.\r\n\r\nThe organization shall retain documented information of the results of all AI system impact assessments.",
+    "identifier": "ISO/IEC 42001:2023 Clause 8.4",
+    "createdAt": "2025-09-18 14:13:01.110",
+    "updatedAt": "2025-09-18 14:13:01.110"
+  },
+  {
+    "id": "frk_rq_68cc139ce4e9397e774a970b",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Monitoring, measurement, analysis and evaluation  ",
+    "description": "The organization shall determine:\r\n— what needs to be monitored and measured;\r\n— the methods for monitoring, measurement, analysis and evaluation, as applicable, to ensure valid results;\r\n— when the monitoring and measuring shall be performed;\r\n— when the results from monitoring and measurement shall be analysed and evaluated.\r\n\r\nDocumented information shall be available as evidence of the results.\r\n\r\nThe organization shall evaluate the performance and the effectiveness of the AI management system.",
+    "identifier": "ISO/IEC 42001:2023 Clause 9.1",
+    "createdAt": "2025-09-18 14:13:48.239",
+    "updatedAt": "2025-09-18 14:13:48.239"
+  },
+  {
+    "id": "frk_rq_68cc13aebd1f91aa8a6e2288",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Internal audit - General",
+    "description": "The organization shall conduct internal audits at planned intervals to provide information on whether the AI management system:\r\n\r\na) conforms to:\r\n1) the organization’s own requirements for its AI management system;\r\n2) the requirements of this document;\r\nb) is effectively implemented and maintained.",
+    "identifier": "ISO/IEC 42001:2023 Clause 9.2.1",
+    "createdAt": "2025-09-18 14:14:06.463",
+    "updatedAt": "2025-09-18 14:14:06.463"
+  },
+  {
+    "id": "frk_rq_68cc13c78fe780fd336736f8",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Internal Audit ",
+    "description": "The organization shall plan, establish, implement and maintain (an) audit programme(s), including the frequency, methods, responsibilities, planning requirements and reporting.\r\n\r\nWhen establishing the internal audit programme(s), the organization shall consider the importance of the processes concerned and the results of previous audits.\r\n\r\nThe organization shall:\r\na) define the audit objectives, criteria and scope for each audit;\r\nb) select auditors and conduct audits to ensure objectivity and the impartiality of the audit process;\r\nc) ensure that the results of audits are reported to relevant managers.\r\n\r\nDocumented information shall be available as evidence of the implementation of the audit programme(s) and the audit results.",
+    "identifier": "ISO/IEC 42001:2023 Clause 9.2.2",
+    "createdAt": "2025-09-18 14:14:30.947",
+    "updatedAt": "2025-09-18 14:14:30.947"
+  },
+  {
+    "id": "frk_rq_68cc1424b567f1f8cb7c31f0",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Management review",
+    "description": "The results of the management review shall include decisions related to continual improvement opportunities and any need for changes to the AI management system.\r\n\r\nDocumented information shall be available as evidence of the results of management reviews.",
+    "identifier": "ISO/IEC 42001:2023 Clause 9.3.3",
+    "createdAt": "2025-09-18 14:16:03.670",
+    "updatedAt": "2025-09-18 14:16:03.670"
+  },
+  {
+    "id": "frk_rq_68cc1484d319859ad5a42fc1",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Continual improvement",
+    "description": "The organization shall continually improve the suitability, adequacy and effectiveness of the AI management system.",
+    "identifier": "ISO/IEC 42001:2023 Clause 10.1",
+    "createdAt": "2025-09-18 14:17:40.421",
+    "updatedAt": "2025-09-18 14:17:40.421"
+  },
+  {
+    "id": "frk_rq_68cc1499a406e703a08e8d8a",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Nonconformity and corrective action",
+    "description": "When a nonconformity occurs, the organization shall:\r\na) react to the nonconformity and as applicable:\r\n1) take action to control and correct it;\r\n2) deal with the consequences;\r\n\r\nb) evaluate the need for action to eliminate the cause(s) of the nonconformity, in order that it does not\r\nrecur or occur elsewhere, by:\r\n1) reviewing the nonconformity;\r\n2) determining the causes of the nonconformity;\r\n3) determining if similar nonconformities exist or can potentially occur;\r\n\r\nc) implement any action needed;\r\n\r\nd) review the effectiveness of any corrective action taken;\r\n\r\ne) make changes to the AI management system, if necessary.\r\nCorrective actions shall be appropriate to the effects of the nonconformities encountered.\r\nDocumented information shall be available as evidence of:\r\n— the nature of the nonconformities and any subsequent actions taken;\r\n— the results of any corrective action",
+    "identifier": "ISO/IEC 42001:2023 Clause 10.2",
+    "createdAt": "2025-09-18 14:18:01.175",
+    "updatedAt": "2025-09-18 14:18:01.175"
+  },
+  {
+    "id": "frk_rq_68cc58794cb877178071a215",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "AI Policy",
+    "description": "The organization shall document a policy for the development or use of AI systems.",
+    "identifier": "ISO/IEC 42001:2023 A.2.2",
+    "createdAt": "2025-09-18 19:07:36.841",
+    "updatedAt": "2025-09-18 19:07:36.841"
+  },
+  {
+    "id": "frk_rq_68cc588533f95e19633f1adc",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Alignment with other organizational policies",
+    "description": "The organization shall determine where other policies can be affected by or apply to, the organization’s objectives with respect to AI systems.",
+    "identifier": "ISO/IEC 42001:2023 A.2.3",
+    "createdAt": "2025-09-18 19:07:49.434",
+    "updatedAt": "2025-09-18 19:07:49.434"
+  },
+  {
+    "id": "frk_rq_68cc5893f5f46050ad0ea974",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Review of the AI policy",
+    "description": "The AI policy shall be reviewed at planned intervals or additionally as needed to ensure its continuing suitability, adequacy and effectiveness.",
+    "identifier": "ISO/IEC 42001:2023 A.2.4",
+    "createdAt": "2025-09-18 19:08:03.204",
+    "updatedAt": "2025-09-18 19:08:03.204"
+  },
+  {
+    "id": "frk_rq_68cc58aea3157dcac365d9f7",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "AI roles and responsibilities ",
+    "description": "Roles and responsibilities for AI shall be defined and allocated according to the needs of the organization.",
+    "identifier": "ISO/IEC 42001:2023 A.3.2",
+    "createdAt": "2025-09-18 19:08:29.943",
+    "updatedAt": "2025-09-18 19:08:29.943"
+  },
+  {
+    "id": "frk_rq_68cc58bb7fa931aabc7d29f2",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Reporting of concerns",
+    "description": "The organization shall define and put in place a process for employees of the organization to report concerns about the organization’s role with respect to an AI system throughout its life cycle.",
+    "identifier": "ISO/IEC 42001:2023 A.3.3",
+    "createdAt": "2025-09-18 19:08:42.514",
+    "updatedAt": "2025-09-18 19:08:42.514"
+  },
+  {
+    "id": "frk_rq_68cc58dc1ef78d1fe51b83be",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Resource Documentation",
+    "description": "The organization shall identify and document relevant resources required for the activities at given AI system life cycle stages and other AI-related activities relevant for the organization.",
+    "identifier": "ISO/IEC 42001:2023 A.4.2",
+    "createdAt": "2025-09-18 19:09:16.286",
+    "updatedAt": "2025-09-18 19:09:16.286"
+  },
+  {
+    "id": "frk_rq_68cc58e8ea648286acddda43",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Data resources",
+    "description": "As part of resource identification, the organization shall document information about the data resources utilized for the AI system.",
+    "identifier": "ISO/IEC 42001:2023 A.4.3",
+    "createdAt": "2025-09-18 19:09:28.453",
+    "updatedAt": "2025-09-18 19:09:28.453"
+  },
+  {
+    "id": "frk_rq_68cc58f88bcbeef356b5081c",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Tooling resources",
+    "description": "As part of resource identification, the organization shall document information about the tooling resources utilized for the AI system",
+    "identifier": "ISO/IEC 42001:2023 A.4.4",
+    "createdAt": "2025-09-18 19:09:43.798",
+    "updatedAt": "2025-09-18 19:09:43.798"
+  },
+  {
+    "id": "frk_rq_68cc5906894ada4eceff256b",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "System and computing resources",
+    "description": "As part of resource identification, the organization shall document information about the system and computing resources utilized for the AI system.",
+    "identifier": "ISO/IEC 42001:2023 A.4.5",
+    "createdAt": "2025-09-18 19:09:58.352",
+    "updatedAt": "2025-09-18 19:09:58.352"
+  },
+  {
+    "id": "frk_rq_68cc5a3a422aaca23633eba8",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Human resources",
+    "description": "\"As part of resource identification, the organization shall document information about the human resources and\r\ntheir competences utilized for the development, deployment, operation, change management, maintenance, transfer and decommissioning, as well as verification and integration of the AI system.\"",
+    "identifier": "ISO/IEC 42001:2023 A.4.6",
+    "createdAt": "2025-09-18 19:15:05.460",
+    "updatedAt": "2025-09-18 19:15:05.460"
+  },
+  {
+    "id": "frk_rq_68cc5aaaeb5095fd2da1a92c",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Processes for trustworthy AI system design and development",
+    "description": "The organization shall define and document the specific processes for the responsible design and development of the AI system.",
+    "identifier": "ISO/IEC 42001:2023 A.6.1.3",
+    "createdAt": "2025-09-18 19:16:58.318",
+    "updatedAt": "2025-09-18 19:16:58.318"
+  },
+  {
+    "id": "frk_rq_68cc5ab9b661ac977104733b",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "AI system requirements and specification",
+    "description": "The organization shall specify and document requirements for new AI systems or material enhancements to existing systems",
+    "identifier": "ISO/IEC 42001:2023 A.6.2.2",
+    "createdAt": "2025-09-18 19:17:12.978",
+    "updatedAt": "2025-09-18 19:17:12.978"
+  },
+  {
+    "id": "frk_rq_68cc5b347ac42a6ed8a90c67",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Quality of data for AI systems",
+    "description": "The organization shall define and document requirements for data quality and ensure that data used to develop and operate the AI system meet those requirements",
+    "identifier": "ISO/IEC 42001:2023 A.7.4",
+    "createdAt": "2025-09-18 19:19:15.784",
+    "updatedAt": "2025-09-18 19:19:15.784"
+  },
+  {
+    "id": "frk_rq_68cc5b41171a8cadfef58dd7",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Data provenance",
+    "description": "The organization shall define and document a process for recording the provenance of data used in its AI systems over the life cycles of the data and the AI system.",
+    "identifier": "ISO/IEC 42001:2023 A.7.5",
+    "createdAt": "2025-09-18 19:19:28.718",
+    "updatedAt": "2025-09-18 19:19:28.718"
+  },
+  {
+    "id": "frk_rq_68cc5b4f01de903a82db622d",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Data preparation",
+    "description": "The organization shall define and document their needs for and approaches to data preparation",
+    "identifier": "ISO/IEC 42001:2023 A.7.6",
+    "createdAt": "2025-09-18 19:19:43.022",
+    "updatedAt": "2025-09-18 19:19:43.022"
+  },
+  {
+    "id": "frk_rq_68cc5b5f0af0a89e2ddbc059",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "System documentation and information for users",
+    "description": "The organization shall determine and provide the necessary information to users of the system.",
+    "identifier": "ISO/IEC 42001:2023 A.8.2",
+    "createdAt": "2025-09-18 19:19:59.099",
+    "updatedAt": "2025-09-18 19:19:59.099"
+  },
+  {
+    "id": "frk_rq_68cc5b76ac80dbc2af7ee28b",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "External reporting",
+    "description": "The organization shall provide capabilities for interested parties to report adverse impacts of the system",
+    "identifier": "ISO/IEC 42001:2023 A.8.3",
+    "createdAt": "2025-09-18 19:20:22.048",
+    "updatedAt": "2025-09-18 19:20:22.048"
+  },
+  {
+    "id": "frk_rq_68cc5b81b072f6717d2acfc5",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Communication of incidents",
+    "description": "The organization shall determine and document a plan for communicating incidents to users of the system.",
+    "identifier": "ISO/IEC 42001:2023 A.8.4",
+    "createdAt": "2025-09-18 19:20:32.637",
+    "updatedAt": "2025-09-18 19:20:32.637"
+  },
+  {
+    "id": "frk_rq_68cc5ad9f59cea7dc12cb935",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "AI system verification and validation",
+    "description": "The organization shall define and document verification and validation measures for the AI system and specify criteria for their use.",
+    "identifier": "ISO/IEC 42001:2023 A.6.2.4",
+    "createdAt": "2025-09-18 19:17:45.085",
+    "updatedAt": "2025-09-18 19:17:45.085"
+  },
+  {
+    "id": "frk_rq_68cc5b8c4bbc9a2326ce718a",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Information for interested parties",
+    "description": "The organization shall determine and document their obligations to reporting information about the AI system to interested parties.",
+    "identifier": "ISO/IEC 42001:2023 A.8.5",
+    "createdAt": "2025-09-18 19:20:43.656",
+    "updatedAt": "2025-09-18 19:20:43.656"
+  },
+  {
+    "id": "frk_rq_68cc5b9f143db7a8e8f2fd99",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Processes for responsible use of AI systems",
+    "description": "The organization shall define and document the processes for the responsible use of AI systems",
+    "identifier": "ISO/IEC 42001:2023 A.9.2",
+    "createdAt": "2025-09-18 19:21:03.416",
+    "updatedAt": "2025-09-18 19:21:03.416"
+  },
+  {
+    "id": "frk_rq_68cc5bb1b016fed3f0f73d6f",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Objectives for responsible use of AI system",
+    "description": "The organization shall identify and document objectives to guide the responsible use of AI systems.",
+    "identifier": "ISO/IEC 42001:2023 A.9.3",
+    "createdAt": "2025-09-18 19:21:21.287",
+    "updatedAt": "2025-09-18 19:21:21.287"
+  },
+  {
+    "id": "frk_rq_68cc5bba0a7d17f5e4e79ffc",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Intended use of the AI system",
+    "description": "The organization shall ensure that the AI system is used according to the intended uses of the AI system and its accompanying documentation.",
+    "identifier": "ISO/IEC 42001:2023 A.9.4",
+    "createdAt": "2025-09-18 19:21:29.807",
+    "updatedAt": "2025-09-18 19:21:29.807"
+  },
+  {
+    "id": "frk_rq_68cc5bc95fa70354cb5631c6",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Allocating responsibilities",
+    "description": "The organization shall ensure that responsibilities within their AI system life cycle are allocated between the organization, its partners, suppliers, customers and third parties",
+    "identifier": "ISO/IEC 42001:2023 A.10.2",
+    "createdAt": "2025-09-18 19:21:45.396",
+    "updatedAt": "2025-09-18 19:21:45.396"
+  },
+  {
+    "id": "frk_rq_68cc5bd5e8781f93897c507f",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Suppliers",
+    "description": "\"The organization shall establish a process to ensure that its usage of services, products or materials provided by suppliers aligns with the organization’s approach to the\r\nresponsible development and use of AI systems.\"",
+    "identifier": "ISO/IEC 42001:2023 A.10.3",
+    "createdAt": "2025-09-18 19:21:57.138",
+    "updatedAt": "2025-09-18 19:21:57.138"
+  },
+  {
+    "id": "frk_rq_68cc5be2faf1c4c90a37c8bc",
+    "frameworkId": "frk_68cc0e2a21184ed168ab2eea",
+    "name": "Customers",
+    "description": "The organization shall ensure that its responsible approach to the development and use of AI systems considers their customer expectations and needs.",
+    "identifier": "ISO/IEC 42001:2023 A.10.4",
+    "createdAt": "2025-09-18 19:22:09.561",
+    "updatedAt": "2025-09-18 19:22:09.561"
+  },
+  {
+    "id": "frk_rq_68e135fdd2009db3cf2629ad",
+    "frameworkId": "frk_68e135d0212b3b6cd39ceb94",
+    "name": "NEN 7510",
+    "description": "NEN 7510 Requirements",
+    "identifier": "",
+    "createdAt": "2025-10-04 14:58:04.631",
+    "updatedAt": "2025-10-04 14:58:04.631"
   }
 ]

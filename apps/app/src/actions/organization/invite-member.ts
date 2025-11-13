@@ -8,7 +8,7 @@ import type { ActionResponse } from '../types';
 
 const inviteMemberSchema = z.object({
   email: z.string().email(),
-  role: z.enum(['owner', 'admin', 'auditor', 'employee']),
+  role: z.enum(['owner', 'admin', 'auditor', 'employee', 'contractor']),
 });
 
 export const inviteMember = authActionClient

@@ -63,7 +63,7 @@ const getTasks = async (statusParam?: string) => {
 
   const tasks = await db.task.findMany({
     where: whereClause,
-    orderBy: [{ status: 'asc' }, { order: 'asc' }, { createdAt: 'asc' }],
+    orderBy: [{ status: 'asc' }, { title: 'asc' }],
   });
   return tasks;
 };
@@ -83,7 +83,7 @@ const getMembersWithMetadata = async () => {
     where: {
       organizationId: orgId,
       role: {
-        notIn: [Role.employee, Role.auditor],
+        notIn: [Role.employee, Role.auditor, Role.contractor],
       },
       deactivated: false,
     },

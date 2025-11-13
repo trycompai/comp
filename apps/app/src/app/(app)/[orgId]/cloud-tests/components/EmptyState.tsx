@@ -22,7 +22,7 @@ const CLOUD_PROVIDERS = [
     description: 'Scan AWS Security Hub for vulnerabilities and compliance issues',
     color: 'from-orange-500 to-yellow-600',
     logoUrl: 'https://img.logo.dev/aws.amazon.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ',
-    guideUrl: 'https://trycomp.ai/docs/integrations/aws',
+    guideUrl: 'https://trycomp.ai/docs/cloud-tests/aws',
   },
   {
     id: 'gcp' as const,
@@ -31,7 +31,7 @@ const CLOUD_PROVIDERS = [
     description: 'Monitor GCP Security Command Center for security findings',
     color: 'from-blue-500 to-cyan-600',
     logoUrl: 'https://img.logo.dev/cloud.google.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ',
-    guideUrl: 'https://trycomp.ai/docs/integrations/gcp',
+    guideUrl: 'https://trycomp.ai/docs/cloud-tests/gcp',
   },
   {
     id: 'azure' as const,
@@ -40,7 +40,7 @@ const CLOUD_PROVIDERS = [
     description: 'Check Azure Security Center for compliance data',
     color: 'from-blue-600 to-indigo-700',
     logoUrl: 'https://img.logo.dev/azure.microsoft.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ',
-    guideUrl: 'https://trycomp.ai/docs/integrations/azure',
+    guideUrl: 'https://trycomp.ai/docs/cloud-tests/azure',
   },
 ];
 
@@ -117,12 +117,18 @@ const PROVIDER_FIELDS: Record<'aws' | 'gcp' | 'azure', ProviderFieldWithOptions[
   ],
 };
 
+type TriggerInfo = {
+  taskId?: string;
+  publicAccessToken?: string;
+};
+
 interface EmptyStateProps {
   onBack?: () => void;
   connectedProviders?: string[];
+  onConnected?: (trigger?: TriggerInfo) => void;
 }
 
-export function EmptyState({ onBack, connectedProviders = [] }: EmptyStateProps = {}) {
+export function EmptyState({ onBack, connectedProviders = [], onConnected }: EmptyStateProps = {}) {
   const [step, setStep] = useState<Step>('choose');
   const [selectedProvider, setSelectedProvider] = useState<CloudProvider>(null);
   const [credentials, setCredentials] = useState<Record<string, string>>({});
@@ -224,6 +230,12 @@ export function EmptyState({ onBack, connectedProviders = [] }: EmptyStateProps 
 
       if (result?.data?.success) {
         setStep('success');
+        if (result.data?.trigger) {
+          onConnected?.(result.data.trigger);
+        }
+        if (result.data?.runErrors && result.data.runErrors.length > 0) {
+          toast.error(result.data.runErrors[0] || 'Initial scan reported an issue');
+        }
         // If user already has clouds, automatically return to results after 2 seconds
         if (onBack) {
           setTimeout(() => {

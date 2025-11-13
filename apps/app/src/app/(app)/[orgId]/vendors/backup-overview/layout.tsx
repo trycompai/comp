@@ -94,7 +94,7 @@ const getAssignees = cache(async () => {
     where: {
       organizationId: activeOrganizationId,
       role: {
-        notIn: ['employee'],
+        notIn: ['employee', 'contractor'],
       },
       deactivated: false,
     },

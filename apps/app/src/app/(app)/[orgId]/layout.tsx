@@ -64,7 +64,7 @@ export default async function Layout({
     return redirect('/auth/unauthorized');
   }
 
-  if (member.role === 'employee') {
+  if (member.role === 'employee' || member.role === 'contractor') {
     return redirect('/no-access');
   }
 

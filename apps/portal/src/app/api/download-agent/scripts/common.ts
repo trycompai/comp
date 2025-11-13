@@ -1,15 +1,17 @@
 import type { SupportedOS } from '../types';
 
 export function getScriptFilename(os: SupportedOS): string {
-  return os === 'macos' ? 'run_me_first.command' : 'run_me_first.bat';
+  return os === 'macos' || os === 'macos-intel' ? 'run_me_first.command' : 'run_me_first.bat';
 }
 
 export function getPackageFilename(os: SupportedOS): string {
-  return os === 'macos' ? 'compai-device-agent.pkg' : 'compai-device-agent.msi';
+  return os === 'macos' || os === 'macos-intel'
+    ? 'compai-device-agent.pkg'
+    : 'compai-device-agent.msi';
 }
 
 export function getReadmeContent(os: SupportedOS): string {
-  if (os === 'macos') {
+  if (os === 'macos' || os === 'macos-intel') {
     return `Installation Instructions for macOS:
 
 1. First, run the setup script by double-clicking "run_me_first.command"

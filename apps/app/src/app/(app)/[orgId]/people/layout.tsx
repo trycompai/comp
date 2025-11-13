@@ -24,7 +24,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
 
   const employees = allMembers.filter((member) => {
     const roles = member.role.includes(',') ? member.role.split(',') : [member.role];
-    return roles.includes('employee');
+    return roles.includes('employee') || roles.includes('contractor');
   });
 
   return (

@@ -186,6 +186,7 @@ export async function executeAutomationScript(data: {
   orgId: string;
   taskId: string;
   automationId: string;
+  version?: number; // Optional: test specific version
 }) {
   try {
     const result = await callEnterpriseApi('/api/tasks-automations/trigger/execute', {
@@ -359,6 +360,12 @@ export async function publishAutomation(
         scriptKey: response.scriptKey,
         changelog,
       },
+    });
+
+    // Enable automation if not already enabled
+    await db.evidenceAutomation.update({
+      where: { id: automationId },
+      data: { isEnabled: true },
     });
 
     return {

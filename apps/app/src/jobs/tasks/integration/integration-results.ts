@@ -113,7 +113,8 @@ export const sendIntegrationResults = schemaTask({
       logger.info(`Integration run completed for ${integration.name}`);
       return { success: true, totalResults: results.length, results };
     } catch (error) {
-      logger.error(`Error running integration: ${error}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error(`Error running integration: ${errorMessage}`);
 
       // Record the failure using model name that matches the database
       try {
@@ -125,7 +126,7 @@ export const sendIntegrationResults = schemaTask({
             status: 'error',
             severity: 'ERROR',
             resultDetails: {
-              error: error instanceof Error ? error.message : String(error),
+              error: errorMessage,
             },
             integrationId: integration.integration_id,
             organizationId: integration.organization.id,
@@ -135,7 +136,10 @@ export const sendIntegrationResults = schemaTask({
         logger.error(`Failed to create error record: ${createError}`);
       }
 
-      throw error;
+      return {
+        success: false,
+        error: errorMessage,
+      };
     }
   },
 });

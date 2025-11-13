@@ -105,10 +105,11 @@ export const publishAllPoliciesAction = authActionClient
         where: {
           organizationId: parsedInput.organizationId,
           isActive: true,
-          deactivated: false,
-          role: {
-            contains: Role.employee,
-          },
+          deactivated: false,          
+          OR: [
+            { role: { contains: Role.employee } },
+            { role: { contains: Role.contractor } },
+          ],
         },
         include: {
           user: {

@@ -3,9 +3,10 @@
 import { Button } from '@comp/ui/button';
 import { Textarea } from '@comp/ui/textarea';
 import { Save } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { updateEvaluationCriteria } from '../../actions/task-automation-actions';
+import { useTaskAutomation } from '../../hooks/use-task-automation';
 
 interface EvaluationCriteriaCardProps {
   automationId: string;
@@ -17,17 +18,29 @@ export function EvaluationCriteriaCard({
   automationId,
   initialCriteria,
 }: EvaluationCriteriaCardProps) {
+  const { automation } = useTaskAutomation();
   const [isEditing, setIsEditing] = useState(false);
   const [criteria, setCriteria] = useState(initialCriteria || '');
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleSave = async () => {
+  // Update local state when automation data changes
+  useEffect(() => {
+    if (automation?.evaluationCriteria) {
+      setCriteria(automation.evaluationCriteria);
+    }
+  }, [automation?.evaluationCriteria]);
+
+  const handleSave = async (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
     setIsSaving(true);
     try {
       const result = await updateEvaluationCriteria(automationId, criteria);
       if (result.success) {
         toast.success('Success criteria updated');
         setIsEditing(false);
+        // Emit event to trigger refresh across the app
+        window.dispatchEvent(new CustomEvent('task-automation:criteria-updated'));
       } else {
         toast.error(result.error || 'Failed to update criteria');
       }
@@ -38,7 +51,9 @@ export function EvaluationCriteriaCard({
     }
   };
 
-  const handleCancel = () => {
+  const handleCancel = (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
     setCriteria(initialCriteria || '');
     setIsEditing(false);
   };
@@ -110,6 +125,7 @@ export function EvaluationCriteriaCard({
             />
             <div className="flex items-center justify-end gap-2">
               <Button
+                type="button"
                 size="sm"
                 variant="ghost"
                 onClick={handleCancel}
@@ -118,7 +134,13 @@ export function EvaluationCriteriaCard({
               >
                 Cancel
               </Button>
-              <Button size="sm" onClick={handleSave} disabled={isSaving} className="h-8">
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleSave}
+                disabled={isSaving}
+                className="h-8"
+              >
                 <Save className="w-3.5 h-3.5 mr-1.5" />
                 Save
               </Button>

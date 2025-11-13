@@ -306,5 +306,40 @@
     "description": "ISO Controls",
     "createdAt": "2025-09-01 13:23:28.289",
     "updatedAt": "2025-09-01 13:23:28.289"
+  },
+  {
+    "id": "frk_ct_68c1eb1c5f317f452216e2d7",
+    "name": "PCI",
+    "description": "PCI Controls",
+    "createdAt": "2025-09-10 21:18:19.912",
+    "updatedAt": "2025-09-10 21:18:19.912"
+  },
+  {
+    "id": "frk_ct_68cc25ac90e3fe79c1beb98d",
+    "name": "ISO 42001",
+    "description": "Additional ISO 42001 Controls",
+    "createdAt": "2025-09-18 15:30:51.512",
+    "updatedAt": "2025-09-18 15:30:51.512"
+  },
+  {
+    "id": "frk_ct_68e1364141d03b5e6d70e728",
+    "name": "NEN 7510",
+    "description": "NEN 7510 Controls",
+    "createdAt": "2025-10-04 14:59:12.925",
+    "updatedAt": "2025-10-04 14:59:12.925"
+  },
+  {
+    "id": "frk_ct_68e8079750107bcc63fc79d9",
+    "name": "Encrypted Data at Rest",
+    "description": "The organization encrypts all production databases containing customer data at rest",
+    "createdAt": "2025-10-09 19:05:59.357",
+    "updatedAt": "2025-10-09 19:05:59.357"
+  },
+  {
+    "id": "frk_ct_68e80a11f225cb2253e31fa0",
+    "name": "Organization Structure & Reporting Lines",
+    "description": "Management establishes, with board oversight, structures, reporting lines, authorities, and responsibilities",
+    "createdAt": "2025-10-09 19:16:33.433",
+    "updatedAt": "2025-10-09 19:16:33.433"
   }
 ]

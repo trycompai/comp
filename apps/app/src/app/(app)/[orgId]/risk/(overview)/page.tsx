@@ -109,7 +109,7 @@ const getAssignees = cache(async () => {
       isActive: true,
       deactivated: false,
       role: {
-        notIn: ['employee'],
+        notIn: ['employee', 'contractor'],
       },
     },
     include: {

@@ -40,7 +40,9 @@ export const runIntegrationTests = task({
       };
     }
 
-    logger.info(`Found ${integrations.length} integrations to test for organization: ${organizationId}`);
+    logger.info(
+      `Found ${integrations.length} integrations to test for organization: ${organizationId}`,
+    );
 
     const batchItems = integrations.map((integration) => ({
       payload: {
@@ -58,22 +60,62 @@ export const runIntegrationTests = task({
     try {
       const batchHandle = await sendIntegrationResults.batchTriggerAndWait(batchItems);
 
-      // Check if any child runs failed
-      const failedRuns = batchHandle.runs.filter((run) => !run.ok);
+      const failedIntegrations: Array<{
+        id: string;
+        integrationId: string;
+        name: string;
+        error: string;
+      }> = [];
 
-      if (failedRuns.length > 0) {
-        const errorMessages = failedRuns
-          .map((run) => {
-            const errorMsg = run.error instanceof Error ? run.error.message : String(run.error);
-            return errorMsg;
-          })
-          .join('; ');
+      batchHandle.runs.forEach((run, index) => {
+        const integration = integrations[index];
 
-        logger.error(`Integration tests failed for organization ${organizationId}: ${errorMessages}`);
-        throw new Error(errorMessages);
+        if (run.ok) {
+          // Check if the task completed but returned success: false
+          const runOutput = run.output as { success?: boolean; error?: string } | undefined;
+
+          if (runOutput && runOutput.success === false) {
+            failedIntegrations.push({
+              id: integration.id,
+              integrationId: integration.integrationId,
+              name: integration.name,
+              error: runOutput.error || 'Integration failed',
+            });
+          }
+        } else {
+          // Task crashed or threw an error
+          const errorMessage =
+            run.error instanceof Error ? run.error.message : String(run.error ?? 'Unknown error');
+
+          failedIntegrations.push({
+            id: integration.id,
+            integrationId: integration.integrationId,
+            name: integration.name,
+            error: errorMessage,
+          });
+        }
+      });
+
+      if (failedIntegrations.length > 0) {
+        const errorMessages = failedIntegrations.map(({ error }) => error).join('; ');
+
+        logger.warn(
+          `Integration tests completed with errors for organization ${organizationId}: ${errorMessages}`,
+        );
+
+        return {
+          success: false,
+          organizationId,
+          integrationsCount: integrations.length,
+          batchHandleId: batchHandle.id,
+          errors: failedIntegrations.map(({ error }) => error),
+          failedIntegrations,
+        };
       }
 
-      logger.info(`Successfully completed batch integration tests for organization: ${organizationId}`);
+      logger.info(
+        `Successfully completed batch integration tests for organization: ${organizationId}`,
+      );
 
       return {
         success: true,
@@ -82,8 +124,18 @@ export const runIntegrationTests = task({
         batchHandleId: batchHandle.id,
       };
     } catch (error) {
-      logger.error(`Failed to run integration tests for organization ${organizationId}: ${error}`);
-      throw error;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      logger.error(
+        `Failed to run integration tests for organization ${organizationId}: ${errorMessage}`,
+      );
+
+      return {
+        success: false,
+        organizationId,
+        integrationsCount: integrations.length,
+        errors: [errorMessage],
+      };
     }
   },
 });

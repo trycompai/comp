@@ -135,7 +135,7 @@ export const getAssignees = async () => {
     where: {
       organizationId,
       role: {
-        notIn: ['employee'],
+        notIn: ['employee', 'contractor'],
       },
       deactivated: false,
     },

@@ -42,6 +42,8 @@ export function MultiRoleComboboxContent({
         return 'Auditor';
       case 'employee':
         return 'Employee';
+      case 'contractor':
+        return 'Contractor';
       default:
         return roleValue;
     }
@@ -56,6 +58,8 @@ export function MultiRoleComboboxContent({
       case 'auditor':
         return 'Read-only access for compliance checks.';
       case 'employee':
+        return 'Can sign policies and complete training.';
+      case 'contractor':
         return 'Can sign policies and complete training.';
       default:
         return '';

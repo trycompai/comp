@@ -1,13 +1,16 @@
 'use client';
 
+import { detectOSFromUserAgent, SupportedOS } from '@/utils/os';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { cn } from '@comp/ui/cn';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import type { Member } from '@db';
-import { CheckCircle2, Circle, Download, Loader2, XCircle } from 'lucide-react';
+import { CheckCircle2, Circle, Download, HelpCircle, Loader2, XCircle } from 'lucide-react';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import type { FleetPolicy, Host } from '../../types';
 
@@ -23,14 +26,27 @@ export function DeviceAgentAccordionItem({
   fleetPolicies = [],
 }: DeviceAgentAccordionItemProps) {
   const [isDownloading, setIsDownloading] = useState(false);
+  const [detectedOS, setDetectedOS] = useState<SupportedOS | null>(null);
 
-  // Detect OS from user agent
-  const isMacOS = typeof window !== 'undefined' && navigator.userAgent.includes('Mac');
+  const isMacOS = useMemo(
+    () => detectedOS === 'macos' || detectedOS === 'macos-intel',
+    [detectedOS],
+  );
+
+  const mdmEnabledStatus = useMemo(() => {
+    return {
+      id: 'mdm',
+      response: host?.mdm.connected_to_fleet ? 'pass' : 'fail',
+      name: 'MDM Enabled',
+    };
+  }, [host]);
 
   const hasInstalledAgent = host !== null;
-  const allPoliciesPass =
-    fleetPolicies.length === 0 || fleetPolicies.every((policy) => policy.response === 'pass');
-  const isCompleted = hasInstalledAgent && allPoliciesPass;
+  const failedPoliciesCount = useMemo(() => {
+    return fleetPolicies.filter((policy) => policy.response !== 'pass').length + (!isMacOS || mdmEnabledStatus.response === 'pass' ? 0 : 1);
+  }, [fleetPolicies, mdmEnabledStatus, isMacOS]);
+
+  const isCompleted = hasInstalledAgent && failedPoliciesCount === 0;
 
   const handleDownload = async () => {
     setIsDownloading(true);
@@ -55,12 +71,22 @@ export function DeviceAgentAccordionItem({
 
       // Now trigger the actual download using the browser's native download mechanism
       // This will show in the browser's download UI immediately
-      const downloadUrl = `/api/download-agent?token=${encodeURIComponent(token)}`;
+      const downloadUrl = `/api/download-agent?token=${encodeURIComponent(token)}&os=${detectedOS}`;
 
       // Method 1: Using a temporary link (most reliable)
       const a = document.createElement('a');
       a.href = downloadUrl;
-      a.download = isMacOS ? 'Comp AI Agent-1.0.0-arm64.dmg' : 'compai-device-agent.zip';
+
+      // Set filename based on OS and architecture
+      if (isMacOS) {
+        a.download =
+          detectedOS === 'macos'
+            ? 'Comp AI Agent-1.0.0-arm64.dmg'
+            : 'Comp AI Agent-1.0.0-intel.dmg';
+      } else {
+        a.download = 'compai-device-agent.zip';
+      }
+
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -95,6 +121,14 @@ export function DeviceAgentAccordionItem({
     }
   };
 
+  useEffect(() => {
+    const detectOS = async () => {
+      const os = await detectOSFromUserAgent();
+      setDetectedOS(os);
+    };
+    detectOS();
+  }, []);
+
   return (
     <AccordionItem value="device-agent" className="border rounded-xs">
       <AccordionTrigger className="px-4 hover:no-underline [&[data-state=open]]:pb-2">
@@ -107,9 +141,9 @@ export function DeviceAgentAccordionItem({
           <span className={cn('text-base', isCompleted && 'text-muted-foreground line-through')}>
             Download and install Comp AI Device Agent
           </span>
-          {hasInstalledAgent && !allPoliciesPass && (
+          {hasInstalledAgent && failedPoliciesCount > 0 && (
             <span className="text-amber-600 dark:text-amber-400 text-xs ml-auto">
-              {fleetPolicies.filter((p) => p.response !== 'pass').length} policies failing
+              {failedPoliciesCount} policies failing
             </span>
           )}
         </div>
@@ -129,15 +163,31 @@ export function DeviceAgentAccordionItem({
                   <p className="mt-1">
                     Click the download button below to get the Device Agent installer.
                   </p>
-                  <Button
-                    size="sm"
-                    variant="default"
-                    onClick={handleDownload}
-                    disabled={isDownloading || hasInstalledAgent}
-                    className="gap-2 mt-2"
-                  >
-                    {getButtonContent()}
-                  </Button>
+                  <div className="flex items-center gap-2 mt-2">
+                    {isMacOS && !hasInstalledAgent && (
+                      <Select
+                        value={detectedOS || 'macos'}
+                        onValueChange={(value: 'macos' | 'macos-intel') => setDetectedOS(value)}
+                      >
+                        <SelectTrigger className="w-[136px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="macos">Apple Silicon</SelectItem>
+                          <SelectItem value="macos-intel">Intel</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="default"
+                      onClick={handleDownload}
+                      disabled={isDownloading || hasInstalledAgent}
+                      className="gap-2"
+                    >
+                      {getButtonContent()}
+                    </Button>
+                  </div>
                 </li>
                 {!isMacOS && (
                   <li>
@@ -206,28 +256,81 @@ export function DeviceAgentAccordionItem({
               </CardHeader>
               <CardContent className="space-y-3">
                 {fleetPolicies.length > 0 ? (
-                  fleetPolicies.map((policy) => (
-                    <div
-                      key={policy.id}
-                      className={cn(
-                        'hover:bg-muted/50 flex items-center justify-between rounded-md border border-l-4 p-3 shadow-sm transition-colors',
-                        policy.response === 'pass' ? 'border-l-green-500' : 'border-l-red-500',
-                      )}
-                    >
-                      <p className="text-sm font-medium">{policy.name}</p>
-                      {policy.response === 'pass' ? (
-                        <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
-                          <CheckCircle2 size={16} />
-                          <span className="text-sm">Pass</span>
+                  <>
+                    {fleetPolicies.map((policy) => (
+                      <div
+                        key={policy.id}
+                        className={cn(
+                          'hover:bg-muted/50 flex items-center justify-between rounded-md border border-l-4 p-3 shadow-sm transition-colors',
+                          policy.response === 'pass' ? 'border-l-green-500' : 'border-l-red-500',
+                        )}
+                      >
+                        <p className="text-sm font-medium">{policy.name}</p>
+                        {policy.response === 'pass' ? (
+                          <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                            <CheckCircle2 size={16} />
+                            <span className="text-sm">Pass</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 text-red-600 dark:text-red-400">
+                            <XCircle size={16} />
+                            <span className="text-sm">Fail</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    {isMacOS && (
+                      <div
+                        className={cn(
+                          'hover:bg-muted/50 flex items-center justify-between rounded-md border border-l-4 p-3 shadow-sm transition-colors',
+                          mdmEnabledStatus.response === 'pass' ? 'border-l-green-500' : 'border-l-red-500',
+                        )}
+                      >
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium">{mdmEnabledStatus.name}</p>
+                          {mdmEnabledStatus.response === 'fail' && host?.id && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button
+                                    type="button"
+                                    className="text-muted-foreground hover:text-foreground transition-colors"
+                                  >
+                                    <HelpCircle size={14} />
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <p>
+                                    There are additional steps required to enable MDM. Please check{' '}
+                                    <a
+                                      href="https://trycomp.ai/docs/device-agent#mdm-user-guide"
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-600 dark:text-blue-400 hover:underline"
+                                    >
+                                      this documentation
+                                    </a>
+                                    .
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
                         </div>
-                      ) : (
-                        <div className="flex items-center gap-1 text-red-600 dark:text-red-400">
-                          <XCircle size={16} />
-                          <span className="text-sm">Fail</span>
-                        </div>
-                      )}
-                    </div>
-                  ))
+                        {mdmEnabledStatus.response === 'pass' ? (
+                          <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                            <CheckCircle2 size={16} />
+                            <span className="text-sm">Pass</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 text-red-600 dark:text-red-400">
+                            <XCircle size={16} />
+                            <span className="text-sm">Fail</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <p className="text-muted-foreground text-sm">
                     No policies configured for this device.
@@ -248,7 +351,7 @@ export function DeviceAgentAccordionItem({
               <AccordionContent className="px-4 pb-4">
                 <div className="text-muted-foreground space-y-2 text-sm">
                   <p>
-                    <strong>Operating Systems:</strong> macOS 10.14+, Windows 10+, Ubuntu 18.04+
+                    <strong>Operating Systems:</strong> macOS 14+, Windows 10+
                   </p>
                   <p>
                     <strong>Memory:</strong> 512MB RAM minimum
