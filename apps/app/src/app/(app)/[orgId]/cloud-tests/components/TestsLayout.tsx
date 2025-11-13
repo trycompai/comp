@@ -199,7 +199,7 @@ export function TestsLayout({
     const providerFindings = findingsByProvider[provider.integrationId] ?? [];
 
     return (
-      <div className="container mx-auto flex w-full flex-col gap-6 p-4 md:p-6 lg:p-8">
+      <div className="mx-auto max-w-7xl flex w-full flex-col gap-6 py-4 md:py-6 lg:py-8">
         <div className="flex items-center justify-between">
           <div className="space-y-1">
             <h1 className="text-2xl font-semibold tracking-tight">Cloud Security Tests</h1>
