@@ -554,12 +554,13 @@ export async function triggerPolicyUpdates(
 export async function createVendors(
   questionsAndAnswers: ContextItem[],
   organizationId: string,
+  vendorData?: VendorData[],
 ): Promise<any[]> {
-  // Extract vendors using AI
-  const vendorData = await extractVendorsFromContext(questionsAndAnswers);
+  // Extract vendors using AI if not provided
+  const vendorsToCreate = vendorData || await extractVendorsFromContext(questionsAndAnswers);
 
   // Create vendor records in database
-  const createdVendors = await createVendorsFromData(vendorData, organizationId);
+  const createdVendors = await createVendorsFromData(vendorsToCreate, organizationId);
 
   // Trigger background research for each vendor
   await triggerVendorResearch(createdVendors);

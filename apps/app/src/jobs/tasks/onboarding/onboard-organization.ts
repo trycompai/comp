@@ -6,6 +6,7 @@ import { generateVendorMitigationsForOrg } from './generate-vendor-mitigation';
 import {
   createRisks,
   createVendors,
+  extractVendorsFromContext,
   getOrganizationContext,
   updateOrganizationPolicies,
 } from './onboard-organization-helpers';
@@ -93,8 +94,41 @@ export const onboardOrganization = task({
         },
       });
 
-      // Create vendors
-      const vendors = await createVendors(questionsAndAnswers, payload.organizationId);
+      // Extract vendors first so we can show them immediately
+      const vendorData = await extractVendorsFromContext(questionsAndAnswers);
+
+      // Track vendors immediately as "pending" before creation
+      if (vendorData.length > 0) {
+        metadata.set('vendorsTotal', vendorData.length);
+        metadata.set('vendorsCompleted', 0);
+        metadata.set('vendorsRemaining', vendorData.length);
+        // Use temporary IDs based on index until we have real IDs
+        metadata.set(
+          'vendorsInfo',
+          vendorData.map((v, index) => ({ id: `temp_${index}`, name: v.vendor_name })),
+        );
+        // Mark all as pending initially
+        vendorData.forEach((_, index) => {
+          metadata.set(`vendor_temp_${index}_status`, 'pending');
+        });
+      }
+
+      // Create vendors (pass extracted data to avoid re-extraction)
+      const vendors = await createVendors(questionsAndAnswers, payload.organizationId, vendorData);
+
+      // Update tracking with real vendor IDs and mark as completed
+      if (vendors.length > 0) {
+        metadata.set('vendorsCompleted', vendors.length);
+        metadata.set('vendorsRemaining', 0);
+        metadata.set(
+          'vendorsInfo',
+          vendors.map((v) => ({ id: v.id, name: v.name })),
+        );
+        // Mark all as completed
+        vendors.forEach((vendor) => {
+          metadata.set(`vendor_${vendor.id}_status`, 'completed');
+        });
+      }
 
       // Mark vendors step as complete in metadata (real-time)
       metadata.set('vendors', true);
@@ -109,7 +143,26 @@ export const onboardOrganization = task({
       );
 
       // Create risks
-      await createRisks(questionsAndAnswers, payload.organizationId, organization.name);
+      const risks = await createRisks(
+        questionsAndAnswers,
+        payload.organizationId,
+        organization.name,
+      );
+
+      // Track risks with metadata for real-time tracking
+      if (risks.length > 0) {
+        metadata.set('risksTotal', risks.length);
+        metadata.set('risksCompleted', risks.length);
+        metadata.set('risksRemaining', 0);
+        metadata.set(
+          'risksInfo',
+          risks.map((r) => ({ id: r.id, name: r.title })),
+        );
+        // All risks are created immediately, so mark them all as completed
+        risks.forEach((risk) => {
+          metadata.set(`risk_${risk.id}_status`, 'completed');
+        });
+      }
 
       // Mark risks step as complete in metadata (real-time)
       metadata.set('risk', true);

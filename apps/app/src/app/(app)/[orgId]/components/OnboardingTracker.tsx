@@ -37,6 +37,8 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
   const [isMinimized, setIsMinimized] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
   const [isPoliciesExpanded, setIsPoliciesExpanded] = useState(false);
+  const [isVendorsExpanded, setIsVendorsExpanded] = useState(false);
+  const [isRisksExpanded, setIsRisksExpanded] = useState(false);
 
   // useRealtimeRun will automatically get the token from TriggerProvider context
   // This gives us real-time updates including metadata changes
@@ -63,6 +65,16 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
         risk: false,
         policies: false,
         currentStep: null,
+        vendorsTotal: 0,
+        vendorsCompleted: 0,
+        vendorsRemaining: 0,
+        vendorsInfo: [],
+        vendorsStatus: {},
+        risksTotal: 0,
+        risksCompleted: 0,
+        risksRemaining: 0,
+        risksInfo: [],
+        risksStatus: {},
         policiesTotal: 0,
         policiesCompleted: 0,
         policiesRemaining: 0,
@@ -72,6 +84,24 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
     }
 
     const meta = run.metadata as Record<string, unknown>;
+    
+    // Build vendorsStatus object from individual vendor status keys
+    const vendorsStatus: Record<string, 'pending' | 'processing' | 'completed'> = {};
+    const vendorsInfo = (meta.vendorsInfo as Array<{ id: string; name: string }>) || [];
+    
+    vendorsInfo.forEach((vendor) => {
+      const statusKey = `vendor_${vendor.id}_status`;
+      vendorsStatus[vendor.id] = (meta[statusKey] as 'pending' | 'processing' | 'completed') || 'pending';
+    });
+    
+    // Build risksStatus object from individual risk status keys
+    const risksStatus: Record<string, 'pending' | 'processing' | 'completed'> = {};
+    const risksInfo = (meta.risksInfo as Array<{ id: string; name: string }>) || [];
+    
+    risksInfo.forEach((risk) => {
+      const statusKey = `risk_${risk.id}_status`;
+      risksStatus[risk.id] = (meta[statusKey] as 'pending' | 'processing' | 'completed') || 'pending';
+    });
     
     // Build policiesStatus object from individual policy status keys
     const policiesStatus: Record<string, 'pending' | 'processing' | 'completed'> = {};
@@ -88,6 +118,16 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
       risk: meta.risk === true,
       policies: meta.policies === true,
       currentStep: (meta.currentStep as string) || null,
+      vendorsTotal: (meta.vendorsTotal as number) || 0,
+      vendorsCompleted: (meta.vendorsCompleted as number) || 0,
+      vendorsRemaining: (meta.vendorsRemaining as number) || 0,
+      vendorsInfo,
+      vendorsStatus,
+      risksTotal: (meta.risksTotal as number) || 0,
+      risksCompleted: (meta.risksCompleted as number) || 0,
+      risksRemaining: (meta.risksRemaining as number) || 0,
+      risksInfo,
+      risksStatus,
       policiesTotal: (meta.policiesTotal as number) || 0,
       policiesCompleted: (meta.policiesCompleted as number) || 0,
       policiesRemaining: (meta.policiesRemaining as number) || 0,
@@ -106,6 +146,28 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
     // Otherwise find first incomplete step
     return ONBOARDING_STEPS.find((step) => !stepStatus[step.key as keyof typeof stepStatus]);
   }, [stepStatus]);
+
+  // Auto-expand current step and collapse others
+  useEffect(() => {
+    if (!currentStep) return;
+
+    const stepKey = currentStep.key;
+    
+    // Expand current step if it has items to show
+    if (stepKey === 'vendors' && stepStatus.vendorsTotal > 0) {
+      setIsVendorsExpanded(true);
+      setIsRisksExpanded(false);
+      setIsPoliciesExpanded(false);
+    } else if (stepKey === 'risk' && stepStatus.risksTotal > 0) {
+      setIsVendorsExpanded(false);
+      setIsRisksExpanded(true);
+      setIsPoliciesExpanded(false);
+    } else if (stepKey === 'policies' && stepStatus.policiesTotal > 0) {
+      setIsVendorsExpanded(false);
+      setIsRisksExpanded(false);
+      setIsPoliciesExpanded(true);
+    }
+  }, [currentStep?.key, stepStatus.vendorsTotal, stepStatus.risksTotal, stepStatus.policiesTotal]);
 
   // Build dynamic current step message with progress
   const currentStepMessage = useMemo(() => {
@@ -267,7 +329,179 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
               {ONBOARDING_STEPS.map((step) => {
                 const isCompleted = stepStatus[step.key as keyof typeof stepStatus];
                 const isCurrent = currentStep?.key === step.key;
+                const isVendorsStep = step.key === 'vendors';
+                const isRisksStep = step.key === 'risk';
                 const isPoliciesStep = step.key === 'policies';
+                
+                // Vendors step with expandable dropdown
+                if (isVendorsStep && stepStatus.vendorsTotal > 0) {
+                  return (
+                    <div key={step.key} className="flex flex-col gap-2">
+                      <button
+                        onClick={() => setIsVendorsExpanded(!isVendorsExpanded)}
+                        className="flex items-center gap-2 w-full text-left"
+                      >
+                        {isCompleted ? (
+                          <CheckCircle2 className="text-chart-positive h-5 w-5 flex-shrink-0" />
+                        ) : isCurrent ? (
+                          <Loader2 className="h-5 w-5 flex-shrink-0 animate-spin text-primary" />
+                        ) : (
+                          <div className="h-5 w-5 flex-shrink-0 rounded-full border-2 border-muted" />
+                        )}
+                        <div className="flex flex-1 items-center justify-between gap-2 min-w-0">
+                          <span
+                            className={`text-sm ${
+                              isCompleted
+                                ? 'text-chart-positive'
+                                : isCurrent
+                                  ? 'text-primary font-medium'
+                                  : 'text-muted-foreground'
+                            }`}
+                          >
+                            {step.label}
+                          </span>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <span className="text-muted-foreground text-sm">
+                              {stepStatus.vendorsCompleted}/{stepStatus.vendorsTotal}
+                            </span>
+                            {isVendorsExpanded ? (
+                              <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                      
+                      {/* Expanded vendor list */}
+                      {isVendorsExpanded && stepStatus.vendorsInfo.length > 0 && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="flex flex-col gap-1.5 pl-7">
+                            {stepStatus.vendorsInfo.map((vendor) => {
+                              const vendorStatus = stepStatus.vendorsStatus[vendor.id] || 'pending';
+                              const isVendorCompleted = vendorStatus === 'completed';
+                              const isVendorProcessing = vendorStatus === 'processing';
+                              
+                              return (
+                                <div key={vendor.id} className="flex items-center gap-2">
+                                  {isVendorCompleted ? (
+                                    <CheckCircle2 className="text-chart-positive h-4 w-4 flex-shrink-0" />
+                                  ) : isVendorProcessing ? (
+                                    <Loader2 className="h-4 w-4 flex-shrink-0 animate-spin text-primary" />
+                                  ) : (
+                                    <div className="h-4 w-4 flex-shrink-0 rounded-full border-2 border-muted" />
+                                  )}
+                                  <span
+                                    className={`text-sm truncate ${
+                                      isVendorCompleted
+                                        ? 'text-chart-positive'
+                                        : isVendorProcessing
+                                          ? 'text-primary'
+                                          : 'text-muted-foreground'
+                                    }`}
+                                  >
+                                    {vendor.name}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </motion.div>
+                      )}
+                    </div>
+                  );
+                }
+                
+                // Risks step with expandable dropdown
+                if (isRisksStep && stepStatus.risksTotal > 0) {
+                  return (
+                    <div key={step.key} className="flex flex-col gap-2">
+                      <button
+                        onClick={() => setIsRisksExpanded(!isRisksExpanded)}
+                        className="flex items-center gap-2 w-full text-left"
+                      >
+                        {isCompleted ? (
+                          <CheckCircle2 className="text-chart-positive h-5 w-5 flex-shrink-0" />
+                        ) : isCurrent ? (
+                          <Loader2 className="h-5 w-5 flex-shrink-0 animate-spin text-primary" />
+                        ) : (
+                          <div className="h-5 w-5 flex-shrink-0 rounded-full border-2 border-muted" />
+                        )}
+                        <div className="flex flex-1 items-center justify-between gap-2 min-w-0">
+                          <span
+                            className={`text-sm ${
+                              isCompleted
+                                ? 'text-chart-positive'
+                                : isCurrent
+                                  ? 'text-primary font-medium'
+                                  : 'text-muted-foreground'
+                            }`}
+                          >
+                            {step.label}
+                          </span>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <span className="text-muted-foreground text-sm">
+                              {stepStatus.risksCompleted}/{stepStatus.risksTotal}
+                            </span>
+                            {isRisksExpanded ? (
+                              <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                      
+                      {/* Expanded risk list */}
+                      {isRisksExpanded && stepStatus.risksInfo.length > 0 && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="flex flex-col gap-1.5 pl-7">
+                            {stepStatus.risksInfo.map((risk) => {
+                              const riskStatus = stepStatus.risksStatus[risk.id] || 'pending';
+                              const isRiskCompleted = riskStatus === 'completed';
+                              const isRiskProcessing = riskStatus === 'processing';
+                              
+                              return (
+                                <div key={risk.id} className="flex items-center gap-2">
+                                  {isRiskCompleted ? (
+                                    <CheckCircle2 className="text-chart-positive h-4 w-4 flex-shrink-0" />
+                                  ) : isRiskProcessing ? (
+                                    <Loader2 className="h-4 w-4 flex-shrink-0 animate-spin text-primary" />
+                                  ) : (
+                                    <div className="h-4 w-4 flex-shrink-0 rounded-full border-2 border-muted" />
+                                  )}
+                                  <span
+                                    className={`text-sm truncate ${
+                                      isRiskCompleted
+                                        ? 'text-chart-positive'
+                                        : isRiskProcessing
+                                          ? 'text-primary'
+                                          : 'text-muted-foreground'
+                                    }`}
+                                  >
+                                    {risk.name}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </motion.div>
+                      )}
+                    </div>
+                  );
+                }
                 
                 if (isPoliciesStep && stepStatus.policiesTotal > 0) {
                   // Policies step with expandable dropdown
