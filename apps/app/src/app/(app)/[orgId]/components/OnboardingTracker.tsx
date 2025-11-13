@@ -5,6 +5,8 @@ import type { Onboarding } from '@db';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, ChevronsDown, ChevronsUp, Loader2, Rocket, Settings, ShieldAlert, X, Zap } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -33,6 +35,8 @@ const getFriendlyStatusName = (status: string): string => {
 
 export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) => {
   const triggerJobId = onboarding.triggerJobId;
+  const pathname = usePathname();
+  const orgId = pathname?.split('/')[1] || '';
   const [mounted, setMounted] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
@@ -388,8 +392,8 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                               const isVendorCompleted = vendorStatus === 'completed';
                               const isVendorProcessing = vendorStatus === 'processing';
                               
-                              return (
-                                <div key={vendor.id} className="flex items-center gap-2">
+                              const content = (
+                                <>
                                   {isVendorCompleted ? (
                                     <CheckCircle2 className="text-chart-positive h-4 w-4 flex-shrink-0" />
                                   ) : isVendorProcessing ? (
@@ -408,6 +412,21 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                                   >
                                     {vendor.name}
                                   </span>
+                                </>
+                              );
+                              
+                              return (
+                                <div key={vendor.id} className="flex items-center gap-2">
+                                  {isVendorCompleted && orgId ? (
+                                    <Link
+                                      href={`/${orgId}/vendors/${vendor.id}`}
+                                      className="flex items-center gap-2 flex-1 min-w-0 hover:opacity-80 transition-opacity"
+                                    >
+                                      {content}
+                                    </Link>
+                                  ) : (
+                                    content
+                                  )}
                                 </div>
                               );
                             })}
@@ -473,8 +492,8 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                               const isRiskCompleted = riskStatus === 'completed';
                               const isRiskProcessing = riskStatus === 'processing';
                               
-                              return (
-                                <div key={risk.id} className="flex items-center gap-2">
+                              const content = (
+                                <>
                                   {isRiskCompleted ? (
                                     <CheckCircle2 className="text-chart-positive h-4 w-4 flex-shrink-0" />
                                   ) : isRiskProcessing ? (
@@ -493,6 +512,21 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                                   >
                                     {risk.name}
                                   </span>
+                                </>
+                              );
+                              
+                              return (
+                                <div key={risk.id} className="flex items-center gap-2">
+                                  {isRiskCompleted && orgId ? (
+                                    <Link
+                                      href={`/${orgId}/risk/${risk.id}`}
+                                      className="flex items-center gap-2 flex-1 min-w-0 hover:opacity-80 transition-opacity"
+                                    >
+                                      {content}
+                                    </Link>
+                                  ) : (
+                                    content
+                                  )}
                                 </div>
                               );
                             })}
@@ -558,8 +592,8 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                               const isPolicyCompleted = policyStatus === 'completed';
                               const isPolicyProcessing = policyStatus === 'processing';
                               
-                              return (
-                                <div key={policy.id} className="flex items-center gap-2">
+                              const content = (
+                                <>
                                   {isPolicyCompleted ? (
                                     <CheckCircle2 className="text-chart-positive h-4 w-4 flex-shrink-0" />
                                   ) : isPolicyProcessing ? (
@@ -578,6 +612,21 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                                   >
                                     {policy.name}
                                   </span>
+                                </>
+                              );
+                              
+                              return (
+                                <div key={policy.id} className="flex items-center gap-2">
+                                  {isPolicyCompleted && orgId ? (
+                                    <Link
+                                      href={`/${orgId}/policies/${policy.id}`}
+                                      className="flex items-center gap-2 flex-1 min-w-0 hover:opacity-80 transition-opacity"
+                                    >
+                                      {content}
+                                    </Link>
+                                  ) : (
+                                    content
+                                  )}
                                 </div>
                               );
                             })}
