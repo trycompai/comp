@@ -1,5 +1,5 @@
 import { db } from '@db';
-import { logger, queue, task, tasks } from '@trigger.dev/sdk';
+import { logger, metadata, queue, task, tasks } from '@trigger.dev/sdk';
 import axios from 'axios';
 import { generateRiskMitigationsForOrg } from './generate-risk-mitigation';
 import { generateVendorMitigationsForOrg } from './generate-vendor-mitigation';
@@ -21,6 +21,12 @@ export const onboardOrganization = task({
   },
   run: async (payload: { organizationId: string }) => {
     logger.info(`Start onboarding organization ${payload.organizationId}`);
+
+    // Initialize metadata for real-time tracking
+    metadata.set('currentStep', 'Researching Vendors...');
+    metadata.set('vendors', false);
+    metadata.set('risk', false);
+    metadata.set('policies', false);
 
     try {
       // Get organization context
@@ -90,6 +96,10 @@ export const onboardOrganization = task({
       // Create vendors
       const vendors = await createVendors(questionsAndAnswers, payload.organizationId);
 
+      // Mark vendors step as complete in metadata (real-time)
+      metadata.set('vendors', true);
+      metadata.set('currentStep', 'Creating Risks...');
+
       // Fan-out vendor mitigations as separate jobs
       await tasks.trigger<typeof generateVendorMitigationsForOrg>(
         'generate-vendor-mitigations-for-org',
@@ -101,6 +111,15 @@ export const onboardOrganization = task({
       // Create risks
       await createRisks(questionsAndAnswers, payload.organizationId, organization.name);
 
+      // Mark risks step as complete in metadata (real-time)
+      metadata.set('risk', true);
+
+      // Get policy count for the step message
+      const policyCount = await db.policy.count({
+        where: { organizationId: payload.organizationId },
+      });
+      metadata.set('currentStep', `Tailoring Policies... (0/${policyCount})`);
+
       // Fan-out risk mitigations as separate jobs
       await tasks.trigger<typeof generateRiskMitigationsForOrg>(
         'generate-risk-mitigations-for-org',
@@ -109,10 +128,17 @@ export const onboardOrganization = task({
         },
       );
 
-      // Update policies
+      // Update policies with progress tracking
       await updateOrganizationPolicies(payload.organizationId, questionsAndAnswers, frameworks);
 
-      // Mark onboarding as completed
+      // Mark policies step as complete in metadata (real-time)
+      metadata.set('policies', true);
+      metadata.set('currentStep', 'Finalizing...');
+
+      // Mark onboarding as completed in metadata
+      metadata.set('completed', true);
+
+      // Mark onboarding as completed in database
       await db.onboarding.update({
         where: { organizationId: payload.organizationId },
         data: { triggerJobCompleted: true },

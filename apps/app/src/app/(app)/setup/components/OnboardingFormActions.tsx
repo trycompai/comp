@@ -9,6 +9,7 @@ interface OnboardingFormActionsProps {
   isLastStep: boolean;
   isOnboarding: boolean; // For the loader in the Finish button
   isCurrentStepValid: boolean;
+  onPrefillAll?: () => void;
 }
 
 export function OnboardingFormActions({
@@ -18,9 +19,29 @@ export function OnboardingFormActions({
   isLastStep,
   isOnboarding,
   isCurrentStepValid,
+  onPrefillAll,
 }: OnboardingFormActionsProps) {
+  // Check if we're on localhost
+  const isLocalhost =
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname.startsWith('192.168.') ||
+      window.location.hostname.startsWith('10.0.'));
+
   return (
     <div className="flex items-center gap-2">
+      {isLocalhost && onPrefillAll && stepIndex === 0 && (
+        <Button
+          type="button"
+          variant="outline"
+          className="flex items-center gap-2"
+          onClick={onPrefillAll}
+          disabled={isSubmitting}
+        >
+          Complete
+        </Button>
+      )}
       <AnimatePresence>
         {stepIndex > 0 && (
           <motion.div

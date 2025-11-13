@@ -209,6 +209,40 @@ export function useOnboardingForm({
     }
   };
 
+  // Pre-fill all answers for localhost development
+  const handlePrefillAll = async () => {
+    try {
+      // Fetch frameworks to get valid IDs
+      const response = await fetch('/api/frameworks');
+      if (!response.ok) throw new Error('Failed to fetch frameworks');
+      const data = await response.json();
+      const visibleFrameworks = data.frameworks.filter((f: { visible: boolean }) => f.visible);
+      
+      // Use first two visible frameworks, or just the first one if only one exists
+      const frameworkIds = visibleFrameworks
+        .slice(0, 2)
+        .map((f: { id: string }) => f.id);
+
+      const prefilledAnswers: Partial<CompanyDetails> = {
+        frameworkIds: frameworkIds.length > 0 ? frameworkIds : [],
+        organizationName: 'Test Company',
+        website: 'https://example.com',
+      };
+
+      // Set all answers at once
+      setSavedAnswers(prefilledAnswers);
+
+      // Fill current step form
+      form.reset({ [step.key]: prefilledAnswers[step.key as keyof typeof prefilledAnswers] || '' });
+
+      // Submit with all prefilled answers
+      handleCreateOrganizationAction(prefilledAnswers);
+    } catch (error) {
+      console.error('Error pre-filling answers:', error);
+      toast.error('Failed to pre-fill answers');
+    }
+  };
+
   const isLastStep = stepIndex === prePaymentSteps.length - 1;
 
   return {
@@ -222,6 +256,7 @@ export function useOnboardingForm({
     mounted,
     onSubmit,
     handleBack,
+    handlePrefillAll,
     isLastStep,
   };
 }

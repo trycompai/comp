@@ -12,7 +12,7 @@ import {
   RiskTreatmentType,
   VendorCategory,
 } from '@db';
-import { logger, tasks } from '@trigger.dev/sdk';
+import { logger, metadata, tasks } from '@trigger.dev/sdk';
 import { generateObject, generateText, jsonSchema } from 'ai';
 import axios from 'axios';
 import type { researchVendor } from '../scrape/research';
@@ -519,6 +519,19 @@ export async function triggerPolicyUpdates(
   const policies = await getOrganizationPolicies(organizationId);
 
   if (policies.length > 0) {
+    // Initialize policy progress tracking in parent metadata
+    metadata.set('policiesTotal', policies.length);
+    metadata.set('policiesCompleted', 0);
+    metadata.set('policiesRemaining', policies.length);
+    // Store policy info for tracking individual policies
+    metadata.set('policiesInfo', policies.map((p) => ({ id: p.id, name: p.name })));
+    
+    // Initialize individual policy statuses - all start as 'pending'
+    // Each policy gets its own metadata key: policy_{id}_status
+    policies.forEach((policy) => {
+      metadata.set(`policy_${policy.id}_status`, 'pending');
+    });
+
     await updatePolicy.batchTriggerAndWait(
       policies.map((policy) => ({
         payload: {

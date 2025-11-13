@@ -32,7 +32,7 @@ export default async function TasksPage({
   const controls = await getControls();
 
   return (
-    <div className="max-w-[1200px] mx-auto py-8">
+    <div className="max-w-[1200px] mx-auto py-8 w-full">
       <PageWithBreadcrumb breadcrumbs={[{ label: 'Tasks', href: `/${orgId}/tasks` }]}>
         <TaskList tasks={tasks} members={members} controls={controls} />
       </PageWithBreadcrumb>

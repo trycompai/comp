@@ -1,19 +1,18 @@
 'use client';
 
-import { LogoSpinner } from '@/components/logo-spinner';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
+import { Card, CardContent } from '@comp/ui/card';
 import type { Onboarding } from '@db';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlertTriangle, Rocket, ShieldAlert, Zap } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, ChevronsDown, ChevronsUp, Loader2, Rocket, Settings, ShieldAlert, X, Zap } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { useEffect, useMemo, useState } from 'react';
 
-const PROGRESS_MESSAGES = [
-  'Learning about your company...',
-  'Creating Risks...',
-  'Creating Vendors...',
-  'Tailoring Policies...',
-];
+const ONBOARDING_STEPS = [
+  { key: 'vendors', label: 'Researching Vendors', order: 1 },
+  { key: 'risk', label: 'Creating Risks', order: 2 },
+  { key: 'policies', label: 'Tailoring Policies', order: 3 },
+] as const;
 
 const IN_PROGRESS_STATUSES = [
   'QUEUED',
@@ -33,65 +32,182 @@ const getFriendlyStatusName = (status: string): string => {
 };
 
 export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) => {
-  const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
   const triggerJobId = onboarding.triggerJobId;
+  const [mounted, setMounted] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(false);
+  const [isPoliciesExpanded, setIsPoliciesExpanded] = useState(false);
 
   // useRealtimeRun will automatically get the token from TriggerProvider context
+  // This gives us real-time updates including metadata changes
   const { run, error } = useRealtimeRun(triggerJobId || '', {
     enabled: !!triggerJobId,
   });
 
   useEffect(() => {
-    if (!triggerJobId) return;
+    setMounted(true);
+  }, []);
 
-    let interval: NodeJS.Timeout;
-    if (run && IN_PROGRESS_STATUSES.includes(run.status)) {
-      interval = setInterval(() => {
-        setCurrentMessageIndex((prevIndex) => (prevIndex + 1) % PROGRESS_MESSAGES.length);
-      }, 4000);
-    } else {
-      setCurrentMessageIndex(0); // Reset when not in progress
+  // Auto-minimize when completed
+  useEffect(() => {
+    if (run?.status === 'COMPLETED' && !isMinimized) {
+      setIsMinimized(true);
     }
-    return () => clearInterval(interval);
-  }, [run, triggerJobId]);
+  }, [run?.status, isMinimized]);
 
-  if (!triggerJobId) {
-    return <div className="text-muted-foreground text-sm">Unable to load onboarding tracker.</div>;
+  // Extract step completion from metadata (real-time updates)
+  const stepStatus = useMemo(() => {
+    if (!run?.metadata) {
+      return {
+        vendors: false,
+        risk: false,
+        policies: false,
+        currentStep: null,
+        policiesTotal: 0,
+        policiesCompleted: 0,
+        policiesRemaining: 0,
+        policiesInfo: [],
+        policiesStatus: {},
+      };
+    }
+
+    const meta = run.metadata as Record<string, unknown>;
+    
+    // Build policiesStatus object from individual policy status keys
+    const policiesStatus: Record<string, 'pending' | 'processing' | 'completed'> = {};
+    const policiesInfo = (meta.policiesInfo as Array<{ id: string; name: string }>) || [];
+    
+    policiesInfo.forEach((policy) => {
+      // Check for individual policy status key: policy_{id}_status
+      const statusKey = `policy_${policy.id}_status`;
+      policiesStatus[policy.id] = (meta[statusKey] as 'pending' | 'processing' | 'completed') || 'pending';
+    });
+    
+    return {
+      vendors: meta.vendors === true,
+      risk: meta.risk === true,
+      policies: meta.policies === true,
+      currentStep: (meta.currentStep as string) || null,
+      policiesTotal: (meta.policiesTotal as number) || 0,
+      policiesCompleted: (meta.policiesCompleted as number) || 0,
+      policiesRemaining: (meta.policiesRemaining as number) || 0,
+      policiesInfo,
+      policiesStatus,
+    };
+  }, [run?.metadata]);
+
+  // Calculate current step from metadata
+  const currentStep = useMemo(() => {
+    if (stepStatus.currentStep) {
+      // Use the currentStep from metadata if available
+      const step = ONBOARDING_STEPS.find((s) => stepStatus.currentStep?.includes(s.label));
+      return step || null;
+    }
+    // Otherwise find first incomplete step
+    return ONBOARDING_STEPS.find((step) => !stepStatus[step.key as keyof typeof stepStatus]);
+  }, [stepStatus]);
+
+  // Build dynamic current step message with progress
+  const currentStepMessage = useMemo(() => {
+    if (stepStatus.currentStep) {
+      // If it's the policies step, update the count dynamically
+      if (stepStatus.currentStep.includes('Tailoring Policies')) {
+        if (stepStatus.policiesTotal > 0) {
+          return `Tailoring Policies... (${stepStatus.policiesCompleted}/${stepStatus.policiesTotal})`;
+        }
+        return 'Tailoring Policies...';
+      }
+      return stepStatus.currentStep;
+    }
+    if (currentStep) {
+      return currentStep.label;
+    }
+    return 'Initializing...';
+  }, [stepStatus.currentStep, stepStatus.policiesTotal, stepStatus.policiesCompleted, currentStep]);
+
+  if (!triggerJobId || !mounted) {
+    return null;
   }
 
-  if (!triggerJobId) {
-    return (
-      <Card className="bg-card text-card-foreground mx-auto my-2 w-full max-w-2xl shadow-xl">
-        <CardHeader className="p-4 text-center">
-          <CardTitle className="text-foreground text-xl font-semibold">Onboarding Status</CardTitle>
-          <CardDescription className="text-muted-foreground mt-0.5 text-xs">
-            Organization setup has not started yet.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex min-h-[80px] items-center justify-center p-4">
-          <div className="flex flex-col items-center justify-center gap-2 text-center">
-            <AlertTriangle className="text-warning h-6 w-6" /> {/* Use theme warning color */}
-            <div>
-              <p className="text-warning text-base font-medium">Awaiting Initiation</p>
-              <p className="text-muted-foreground mt-0.5 text-xs">
-                No onboarding process has been started.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+  // Dismiss completed card
+  if (run?.status === 'COMPLETED' && isDismissed) {
+    return null;
+  }
+
+  // Minimized view - show only current step
+  if (isMinimized) {
+    const isCompleted = run?.status === 'COMPLETED';
+    
+    return createPortal(
+      <AnimatePresence>
+        <motion.div
+          initial={{ opacity: 0, y: 20, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 20, scale: 0.95 }}
+          transition={{ duration: 0.2 }}
+          className="fixed bottom-4 right-4 z-50 min-w-[400px] max-w-[calc(100vw-2rem)]"
+        >
+          <Card className="shadow-2xl border">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  {isCompleted ? (
+                    <Rocket className="h-5 w-5 flex-shrink-0 text-chart-positive" />
+                  ) : (
+                    <Settings className="h-5 w-5 flex-shrink-0 text-primary" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-base font-medium text-foreground">
+                      {isCompleted ? 'Setup Complete' : 'Setting up your organization'}
+                    </p>
+                    {!isCompleted && currentStepMessage && (
+                      <p className="text-sm text-muted-foreground mt-0.5 truncate">
+                        {currentStepMessage}
+                      </p>
+                    )}
+                    {isCompleted && (
+                      <p className="text-sm text-muted-foreground mt-0.5">
+                        Your organization is ready!
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {isCompleted && (
+                    <button
+                      onClick={() => setIsDismissed(true)}
+                      className="text-muted-foreground hover:text-foreground transition-colors"
+                      aria-label="Close"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setIsMinimized(false)}
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Expand"
+                  >
+                    <ChevronsUp className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </AnimatePresence>,
+      document.body,
     );
   }
 
   const renderStatusContent = () => {
     if (!run && !error) {
       return (
-        <div className="flex flex-col items-center justify-center gap-2 text-center">
-          <LogoSpinner />
-          <div>
-            <p className="text-primary text-base font-medium">Initializing Status</p>
-            <p className="text-muted-foreground mt-1 text-xs">
-              Checking the current onboarding status...
+        <div className="flex items-center gap-3">
+          <Loader2 className="h-5 w-5 flex-shrink-0 animate-spin text-primary" />
+          <div className="flex-1 min-w-0">
+            <p className="text-base font-medium text-foreground">Initializing...</p>
+            <p className="text-muted-foreground text-sm mt-1">
+              Checking onboarding status
             </p>
           </div>
         </div>
@@ -99,15 +215,21 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
     }
     if (!run) {
       return (
-        <div className="flex flex-col items-center justify-center gap-2 text-center">
-          <AlertTriangle className="text-warning h-6 w-6" /> {/* Use theme warning color */}
-          <div>
-            <p className="text-warning text-base font-medium">Status Unavailable</p>{' '}
-            {/* Use theme warning color */}
-            <p className="text-muted-foreground mt-1 text-xs">
-              Could not retrieve current onboarding status.
+        <div className="flex items-start gap-3">
+          <AlertTriangle className="text-warning h-5 w-5 flex-shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-warning text-base font-medium">Status Unavailable</p>
+            <p className="text-muted-foreground text-sm mt-1">
+              Could not retrieve status
             </p>
           </div>
+          <button
+            onClick={() => setIsMinimized(true)}
+            className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+            aria-label="Minimize"
+          >
+            <ChevronsDown className="h-5 w-5" />
+          </button>
         </div>
       );
     }
@@ -122,34 +244,182 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
       case 'DEQUEUED':
       case 'DELAYED':
         return (
-          <div className="flex flex-col items-center justify-center gap-2 text-center">
-            <LogoSpinner />
-            <div>
-              <AnimatePresence mode="wait">
-                <motion.p
-                  key={currentMessageIndex} // Important for AnimatePresence to detect changes
-                  className="text-primary h-6 text-base font-medium" // Added h-6 for consistent height
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  {PROGRESS_MESSAGES[currentMessageIndex]}
-                </motion.p>
-              </AnimatePresence>
-              <p className="text-muted-foreground mt-1 text-xs">
-                We are setting up your organization. This may take a few moments.
-              </p>
+          <div className="flex flex-col gap-4 h-full overflow-hidden">
+            {/* Header */}
+            <div className="flex items-start justify-between gap-3 flex-shrink-0">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <Settings className="h-5 w-5 flex-shrink-0 text-primary" />
+                <p className="text-base font-medium text-foreground">
+                  Setting up your organization
+                </p>
+              </div>
+              <button
+                onClick={() => setIsMinimized(true)}
+                className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+                aria-label="Minimize"
+              >
+                <ChevronsDown className="h-5 w-5" />
+              </button>
+            </div>
+            
+            {/* Step progress - scrollable */}
+            <div className="flex flex-col gap-2.5 flex-1 overflow-y-auto min-h-0 pr-1">
+              {ONBOARDING_STEPS.map((step) => {
+                const isCompleted = stepStatus[step.key as keyof typeof stepStatus];
+                const isCurrent = currentStep?.key === step.key;
+                const isPoliciesStep = step.key === 'policies';
+                
+                if (isPoliciesStep && stepStatus.policiesTotal > 0) {
+                  // Policies step with expandable dropdown
+                  return (
+                    <div key={step.key} className="flex flex-col gap-2">
+                      <button
+                        onClick={() => setIsPoliciesExpanded(!isPoliciesExpanded)}
+                        className="flex items-center gap-2 w-full text-left"
+                      >
+                        {isCompleted ? (
+                          <CheckCircle2 className="text-chart-positive h-5 w-5 flex-shrink-0" />
+                        ) : isCurrent ? (
+                          <Loader2 className="h-5 w-5 flex-shrink-0 animate-spin text-primary" />
+                        ) : (
+                          <div className="h-5 w-5 flex-shrink-0 rounded-full border-2 border-muted" />
+                        )}
+                        <div className="flex flex-1 items-center justify-between gap-2 min-w-0">
+                          <span
+                            className={`text-sm ${
+                              isCompleted
+                                ? 'text-chart-positive'
+                                : isCurrent
+                                  ? 'text-primary font-medium'
+                                  : 'text-muted-foreground'
+                            }`}
+                          >
+                            {step.label}
+                          </span>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <span className="text-muted-foreground text-sm">
+                              {stepStatus.policiesCompleted}/{stepStatus.policiesTotal}
+                            </span>
+                            {isPoliciesExpanded ? (
+                              <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                      
+                      {/* Expanded policy list */}
+                      {isPoliciesExpanded && stepStatus.policiesInfo.length > 0 && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="flex flex-col gap-1.5 pl-7">
+                            {stepStatus.policiesInfo.map((policy) => {
+                              const policyStatus = stepStatus.policiesStatus[policy.id] || 'pending';
+                              const isPolicyCompleted = policyStatus === 'completed';
+                              const isPolicyProcessing = policyStatus === 'processing';
+                              
+                              return (
+                                <div key={policy.id} className="flex items-center gap-2">
+                                  {isPolicyCompleted ? (
+                                    <CheckCircle2 className="text-chart-positive h-4 w-4 flex-shrink-0" />
+                                  ) : isPolicyProcessing ? (
+                                    <Loader2 className="h-4 w-4 flex-shrink-0 animate-spin text-primary" />
+                                  ) : (
+                                    <div className="h-4 w-4 flex-shrink-0 rounded-full border-2 border-muted" />
+                                  )}
+                                  <span
+                                    className={`text-sm truncate ${
+                                      isPolicyCompleted
+                                        ? 'text-chart-positive'
+                                        : isPolicyProcessing
+                                          ? 'text-primary'
+                                          : 'text-muted-foreground'
+                                    }`}
+                                  >
+                                    {policy.name}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </motion.div>
+                      )}
+                    </div>
+                  );
+                }
+                
+                // Regular step
+                return (
+                  <div key={step.key} className="flex items-center gap-2">
+                    {isCompleted ? (
+                      <CheckCircle2 className="text-chart-positive h-5 w-5 flex-shrink-0" />
+                    ) : isCurrent ? (
+                      <Loader2 className="h-5 w-5 flex-shrink-0 animate-spin text-primary" />
+                    ) : (
+                      <div className="h-5 w-5 flex-shrink-0 rounded-full border-2 border-muted" />
+                    )}
+                    <span
+                      className={`text-sm ${
+                        isCompleted
+                          ? 'text-chart-positive'
+                          : isCurrent
+                            ? 'text-primary font-medium'
+                            : 'text-muted-foreground'
+                      }`}
+                    >
+                      {step.label}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         );
       case 'COMPLETED':
         return (
-          <div className="flex flex-col items-center justify-center gap-2 text-center">
-            <Rocket className="text-chart-positive h-6 w-6" />
-            <div>
-              <p className="text-chart-positive text-base font-medium">Setup Complete</p>
-              <p className="text-muted-foreground mt-1 text-xs">Your organization is ready.</p>
+          <div className="flex flex-col gap-4 h-full overflow-hidden">
+            {/* Header */}
+            <div className="flex items-start justify-between gap-3 flex-shrink-0">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <Rocket className="h-5 w-5 flex-shrink-0 text-chart-positive" />
+                <p className="text-base font-medium text-foreground">
+                  Setup Complete
+                </p>
+              </div>
+              <button
+                onClick={() => setIsMinimized(true)}
+                className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+                aria-label="Minimize"
+              >
+                <ChevronsDown className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="flex-1 flex flex-col justify-center">
+              <div className="flex flex-col gap-2">
+                <p className="text-chart-positive text-base font-medium">Your organization is ready!</p>
+                <p className="text-muted-foreground text-sm">
+                  All onboarding steps have been completed successfully.
+                </p>
+              </div>
+            </div>
+            
+            {/* Show completed steps */}
+            <div className="flex flex-col gap-2.5 flex-shrink-0">
+              {ONBOARDING_STEPS.map((step) => (
+                <div key={step.key} className="flex items-center gap-2">
+                  <CheckCircle2 className="text-chart-positive h-5 w-5 flex-shrink-0" />
+                  <span className="text-sm text-chart-positive">
+                    {step.label}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         );
@@ -161,16 +431,23 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
       case 'TIMED_OUT': {
         const errorMessage = run.error?.message || 'An unexpected issue occurred.';
         const truncatedMessage =
-          errorMessage.length > 100 ? `${errorMessage.substring(0, 97)}...` : errorMessage;
+          errorMessage.length > 60 ? `${errorMessage.substring(0, 57)}...` : errorMessage;
         return (
-          <div className="flex flex-col items-center justify-center gap-2 text-center">
-            <ShieldAlert className="text-destructive h-6 w-6" />{' '}
-            <div>
+          <div className="flex items-start gap-3">
+            <ShieldAlert className="text-destructive h-5 w-5 flex-shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
               <p className="text-destructive text-base font-medium">
                 Setup <span className="capitalize">{friendlyStatus}</span>
               </p>
-              <p className="text-destructive/80 mt-1 text-xs">{truncatedMessage}</p>
+              <p className="text-destructive/80 text-sm mt-1">{truncatedMessage}</p>
             </div>
+            <button
+              onClick={() => setIsMinimized(true)}
+              className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+              aria-label="Minimize"
+            >
+              <ChevronsDown className="h-5 w-5" />
+            </button>
           </div>
         );
       }
@@ -178,32 +455,43 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
         const exhaustiveCheck: never = run.status as never;
 
         return (
-          <div className="flex flex-col items-center justify-center gap-2 text-center">
-            <Zap className="text-warning h-6 w-6" />
-            <div>
+          <div className="flex items-start gap-3">
+            <Zap className="text-warning h-5 w-5 flex-shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
               <p className="text-warning text-base font-medium">Unknown Status</p>
-              <p className="text-muted-foreground mt-1 text-xs">
-                Received an unhandled status: {exhaustiveCheck}
+              <p className="text-muted-foreground text-sm mt-1">
+                Status: {exhaustiveCheck}
               </p>
             </div>
+            <button
+              onClick={() => setIsMinimized(true)}
+              className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+              aria-label="Minimize"
+            >
+              <ChevronsDown className="h-5 w-5" />
+            </button>
           </div>
         );
       }
     }
   };
 
-  if (run?.status === 'COMPLETED') {
-    return null;
-  }
-
-  return (
-    <Card
-      id="onboarding-banner"
-      className="w-full overflow-hidden rounded-none border-x-0 border-t-0"
+  return createPortal(
+    <motion.div
+      initial={{ opacity: 0, y: 20, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 20, scale: 0.95 }}
+      transition={{ duration: 0.2 }}
+      className="fixed bottom-4 right-4 z-50 min-w-[400px] w-96 max-w-[calc(100vw-2rem)]"
     >
-      <CardContent className="bg-background flex flex-col items-center justify-center">
-        <div className="w-full pt-4">{renderStatusContent()}</div>
-      </CardContent>
-    </Card>
+      <Card className="shadow-2xl border h-[600px] flex flex-col overflow-hidden">
+        <CardContent className="p-5 flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+            {renderStatusContent()}
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>,
+    document.body,
   );
 };
