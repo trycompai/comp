@@ -34,6 +34,7 @@ export function OrganizationSetupForm({
     mounted,
     onSubmit,
     handleBack,
+    handlePrefillAll,
     isLastStep,
   } = useOnboardingForm({
     setupId,
