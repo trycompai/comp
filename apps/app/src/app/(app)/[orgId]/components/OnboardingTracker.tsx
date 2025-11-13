@@ -4,11 +4,24 @@ import { Card, CardContent } from '@comp/ui/card';
 import type { Onboarding } from '@db';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, ChevronsDown, ChevronsUp, Loader2, Rocket, Settings, ShieldAlert, X, Zap } from 'lucide-react';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  ChevronsDown,
+  ChevronsUp,
+  Loader2,
+  Rocket,
+  Settings,
+  ShieldAlert,
+  X,
+  Zap,
+} from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { createPortal } from 'react-dom';
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 const ONBOARDING_STEPS = [
   { key: 'vendors', label: 'Researching Vendors', order: 1 },
@@ -88,35 +101,38 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
     }
 
     const meta = run.metadata as Record<string, unknown>;
-    
+
     // Build vendorsStatus object from individual vendor status keys
     const vendorsStatus: Record<string, 'pending' | 'processing' | 'completed'> = {};
     const vendorsInfo = (meta.vendorsInfo as Array<{ id: string; name: string }>) || [];
-    
+
     vendorsInfo.forEach((vendor) => {
       const statusKey = `vendor_${vendor.id}_status`;
-      vendorsStatus[vendor.id] = (meta[statusKey] as 'pending' | 'processing' | 'completed') || 'pending';
+      vendorsStatus[vendor.id] =
+        (meta[statusKey] as 'pending' | 'processing' | 'completed') || 'pending';
     });
-    
+
     // Build risksStatus object from individual risk status keys
     const risksStatus: Record<string, 'pending' | 'processing' | 'completed'> = {};
     const risksInfo = (meta.risksInfo as Array<{ id: string; name: string }>) || [];
-    
+
     risksInfo.forEach((risk) => {
       const statusKey = `risk_${risk.id}_status`;
-      risksStatus[risk.id] = (meta[statusKey] as 'pending' | 'processing' | 'completed') || 'pending';
+      risksStatus[risk.id] =
+        (meta[statusKey] as 'pending' | 'processing' | 'completed') || 'pending';
     });
-    
+
     // Build policiesStatus object from individual policy status keys
     const policiesStatus: Record<string, 'pending' | 'processing' | 'completed'> = {};
     const policiesInfo = (meta.policiesInfo as Array<{ id: string; name: string }>) || [];
-    
+
     policiesInfo.forEach((policy) => {
       // Check for individual policy status key: policy_{id}_status
       const statusKey = `policy_${policy.id}_status`;
-      policiesStatus[policy.id] = (meta[statusKey] as 'pending' | 'processing' | 'completed') || 'pending';
+      policiesStatus[policy.id] =
+        (meta[statusKey] as 'pending' | 'processing' | 'completed') || 'pending';
     });
-    
+
     return {
       vendors: meta.vendors === true,
       risk: meta.risk === true,
@@ -156,7 +172,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
     if (!currentStep) return;
 
     const stepKey = currentStep.key;
-    
+
     // Expand current step if it has items to show
     if (stepKey === 'vendors' && stepStatus.vendorsTotal > 0) {
       setIsVendorsExpanded(true);
@@ -203,7 +219,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
   // Minimized view - show only current step
   if (isMinimized) {
     const isCompleted = run?.status === 'COMPLETED';
-    
+
     return createPortal(
       <AnimatePresence>
         <motion.div
@@ -248,13 +264,15 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                       <X className="h-5 w-5" />
                     </button>
                   )}
-                  <button
-                    onClick={() => setIsMinimized(false)}
-                    className="text-muted-foreground hover:text-foreground transition-colors"
-                    aria-label="Expand"
-                  >
-                    <ChevronsUp className="h-5 w-5" />
-                  </button>
+                  {!isCompleted && (
+                    <button
+                      onClick={() => setIsMinimized(false)}
+                      className="text-muted-foreground hover:text-foreground transition-colors"
+                      aria-label="Expand"
+                    >
+                      <ChevronsUp className="h-5 w-5" />
+                    </button>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -272,9 +290,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
           <Loader2 className="h-5 w-5 flex-shrink-0 animate-spin text-primary" />
           <div className="flex-1 min-w-0">
             <p className="text-base font-medium text-foreground">Initializing...</p>
-            <p className="text-muted-foreground text-sm mt-1">
-              Checking onboarding status
-            </p>
+            <p className="text-muted-foreground text-sm mt-1">Checking onboarding status</p>
           </div>
         </div>
       );
@@ -285,9 +301,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
           <AlertTriangle className="text-warning h-5 w-5 flex-shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <p className="text-warning text-base font-medium">Status Unavailable</p>
-            <p className="text-muted-foreground text-sm mt-1">
-              Could not retrieve status
-            </p>
+            <p className="text-muted-foreground text-sm mt-1">Could not retrieve status</p>
           </div>
           <button
             onClick={() => setIsMinimized(true)}
@@ -327,7 +341,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                 <ChevronsDown className="h-5 w-5" />
               </button>
             </div>
-            
+
             {/* Step progress - scrollable */}
             <div className="flex flex-col gap-2.5 flex-1 overflow-y-auto min-h-0 pr-1">
               {ONBOARDING_STEPS.map((step) => {
@@ -336,7 +350,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                 const isVendorsStep = step.key === 'vendors';
                 const isRisksStep = step.key === 'risk';
                 const isPoliciesStep = step.key === 'policies';
-                
+
                 // Vendors step with expandable dropdown
                 if (isVendorsStep && stepStatus.vendorsTotal > 0) {
                   return (
@@ -376,7 +390,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                           </div>
                         </div>
                       </button>
-                      
+
                       {/* Expanded vendor list */}
                       {isVendorsExpanded && stepStatus.vendorsInfo.length > 0 && (
                         <motion.div
@@ -391,18 +405,18 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                               const vendorStatus = stepStatus.vendorsStatus[vendor.id] || 'pending';
                               const isVendorCompleted = vendorStatus === 'completed';
                               const isVendorProcessing = vendorStatus === 'processing';
-                              
+
                               const content = (
                                 <>
                                   {isVendorCompleted ? (
-                                    <CheckCircle2 className="text-chart-positive h-4 w-4 flex-shrink-0" />
+                                    <CheckCircle2 className="text-chart-positive h-4 w-4 flex-shrink-0 pointer-events-none" />
                                   ) : isVendorProcessing ? (
-                                    <Loader2 className="h-4 w-4 flex-shrink-0 animate-spin text-primary" />
+                                    <Loader2 className="h-4 w-4 flex-shrink-0 animate-spin text-primary pointer-events-none" />
                                   ) : (
-                                    <div className="h-4 w-4 flex-shrink-0 rounded-full border-2 border-muted" />
+                                    <div className="h-4 w-4 flex-shrink-0 rounded-full border-2 border-muted pointer-events-none" />
                                   )}
                                   <span
-                                    className={`text-sm truncate ${
+                                    className={`text-sm truncate pointer-events-none ${
                                       isVendorCompleted
                                         ? 'text-chart-positive'
                                         : isVendorProcessing
@@ -414,13 +428,14 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                                   </span>
                                 </>
                               );
-                              
+
                               return (
                                 <div key={vendor.id} className="flex items-center gap-2">
                                   {isVendorCompleted && orgId ? (
                                     <Link
                                       href={`/${orgId}/vendors/${vendor.id}`}
-                                      className="flex items-center gap-2 flex-1 min-w-0 hover:opacity-80 transition-opacity"
+                                      className="flex items-center gap-2 flex-1 min-w-0 hover:underline transition-all cursor-pointer"
+                                      style={{ cursor: 'pointer' }}
                                     >
                                       {content}
                                     </Link>
@@ -436,7 +451,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                     </div>
                   );
                 }
-                
+
                 // Risks step with expandable dropdown
                 if (isRisksStep && stepStatus.risksTotal > 0) {
                   return (
@@ -476,7 +491,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                           </div>
                         </div>
                       </button>
-                      
+
                       {/* Expanded risk list */}
                       {isRisksExpanded && stepStatus.risksInfo.length > 0 && (
                         <motion.div
@@ -491,18 +506,18 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                               const riskStatus = stepStatus.risksStatus[risk.id] || 'pending';
                               const isRiskCompleted = riskStatus === 'completed';
                               const isRiskProcessing = riskStatus === 'processing';
-                              
+
                               const content = (
                                 <>
                                   {isRiskCompleted ? (
-                                    <CheckCircle2 className="text-chart-positive h-4 w-4 flex-shrink-0" />
+                                    <CheckCircle2 className="text-chart-positive h-4 w-4 flex-shrink-0 pointer-events-none" />
                                   ) : isRiskProcessing ? (
-                                    <Loader2 className="h-4 w-4 flex-shrink-0 animate-spin text-primary" />
+                                    <Loader2 className="h-4 w-4 flex-shrink-0 animate-spin text-primary pointer-events-none" />
                                   ) : (
-                                    <div className="h-4 w-4 flex-shrink-0 rounded-full border-2 border-muted" />
+                                    <div className="h-4 w-4 flex-shrink-0 rounded-full border-2 border-muted pointer-events-none" />
                                   )}
                                   <span
-                                    className={`text-sm truncate ${
+                                    className={`text-sm truncate pointer-events-none ${
                                       isRiskCompleted
                                         ? 'text-chart-positive'
                                         : isRiskProcessing
@@ -514,13 +529,14 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                                   </span>
                                 </>
                               );
-                              
+
                               return (
                                 <div key={risk.id} className="flex items-center gap-2">
                                   {isRiskCompleted && orgId ? (
                                     <Link
                                       href={`/${orgId}/risk/${risk.id}`}
-                                      className="flex items-center gap-2 flex-1 min-w-0 hover:opacity-80 transition-opacity"
+                                      className="flex items-center gap-2 flex-1 min-w-0 hover:underline transition-all cursor-pointer"
+                                      style={{ cursor: 'pointer' }}
                                     >
                                       {content}
                                     </Link>
@@ -536,7 +552,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                     </div>
                   );
                 }
-                
+
                 if (isPoliciesStep && stepStatus.policiesTotal > 0) {
                   // Policies step with expandable dropdown
                   return (
@@ -568,15 +584,16 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                             <span className="text-muted-foreground text-sm">
                               {stepStatus.policiesCompleted}/{stepStatus.policiesTotal}
                             </span>
-                            {isPoliciesExpanded ? (
-                              <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                            ) : (
-                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                            )}
+                            {!isCompleted &&
+                              (isPoliciesExpanded ? (
+                                <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                              ))}
                           </div>
                         </div>
                       </button>
-                      
+
                       {/* Expanded policy list */}
                       {isPoliciesExpanded && stepStatus.policiesInfo.length > 0 && (
                         <motion.div
@@ -588,21 +605,22 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                         >
                           <div className="flex flex-col gap-1.5 pl-7">
                             {stepStatus.policiesInfo.map((policy) => {
-                              const policyStatus = stepStatus.policiesStatus[policy.id] || 'pending';
+                              const policyStatus =
+                                stepStatus.policiesStatus[policy.id] || 'pending';
                               const isPolicyCompleted = policyStatus === 'completed';
                               const isPolicyProcessing = policyStatus === 'processing';
-                              
+
                               const content = (
                                 <>
                                   {isPolicyCompleted ? (
-                                    <CheckCircle2 className="text-chart-positive h-4 w-4 flex-shrink-0" />
+                                    <CheckCircle2 className="text-chart-positive h-4 w-4 flex-shrink-0 pointer-events-none" />
                                   ) : isPolicyProcessing ? (
-                                    <Loader2 className="h-4 w-4 flex-shrink-0 animate-spin text-primary" />
+                                    <Loader2 className="h-4 w-4 flex-shrink-0 animate-spin text-primary pointer-events-none" />
                                   ) : (
-                                    <div className="h-4 w-4 flex-shrink-0 rounded-full border-2 border-muted" />
+                                    <div className="h-4 w-4 flex-shrink-0 rounded-full border-2 border-muted pointer-events-none" />
                                   )}
                                   <span
-                                    className={`text-sm truncate ${
+                                    className={`text-sm truncate pointer-events-none ${
                                       isPolicyCompleted
                                         ? 'text-chart-positive'
                                         : isPolicyProcessing
@@ -614,13 +632,14 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                                   </span>
                                 </>
                               );
-                              
+
                               return (
                                 <div key={policy.id} className="flex items-center gap-2">
                                   {isPolicyCompleted && orgId ? (
                                     <Link
                                       href={`/${orgId}/policies/${policy.id}`}
-                                      className="flex items-center gap-2 flex-1 min-w-0 hover:opacity-80 transition-opacity"
+                                      className="flex items-center gap-2 flex-1 min-w-0 hover:underline transition-all cursor-pointer"
+                                      style={{ cursor: 'pointer' }}
                                     >
                                       {content}
                                     </Link>
@@ -636,7 +655,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                     </div>
                   );
                 }
-                
+
                 // Regular step
                 return (
                   <div key={step.key} className="flex items-center gap-2">
@@ -671,9 +690,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
             <div className="flex items-start justify-between gap-3 flex-shrink-0">
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 <Rocket className="h-5 w-5 flex-shrink-0 text-chart-positive" />
-                <p className="text-base font-medium text-foreground">
-                  Setup Complete
-                </p>
+                <p className="text-base font-medium text-foreground">Setup Complete</p>
               </div>
               <button
                 onClick={() => setIsMinimized(true)}
@@ -683,24 +700,24 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                 <ChevronsDown className="h-5 w-5" />
               </button>
             </div>
-            
+
             <div className="flex-1 flex flex-col justify-center">
               <div className="flex flex-col gap-2">
-                <p className="text-chart-positive text-base font-medium">Your organization is ready!</p>
+                <p className="text-chart-positive text-base font-medium">
+                  Your organization is ready!
+                </p>
                 <p className="text-muted-foreground text-sm">
                   All onboarding steps have been completed successfully.
                 </p>
               </div>
             </div>
-            
+
             {/* Show completed steps */}
             <div className="flex flex-col gap-2.5 flex-shrink-0">
               {ONBOARDING_STEPS.map((step) => (
                 <div key={step.key} className="flex items-center gap-2">
                   <CheckCircle2 className="text-chart-positive h-5 w-5 flex-shrink-0" />
-                  <span className="text-sm text-chart-positive">
-                    {step.label}
-                  </span>
+                  <span className="text-sm text-chart-positive">{step.label}</span>
                 </div>
               ))}
             </div>
@@ -742,9 +759,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
             <Zap className="text-warning h-5 w-5 flex-shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
               <p className="text-warning text-base font-medium">Unknown Status</p>
-              <p className="text-muted-foreground text-sm mt-1">
-                Status: {exhaustiveCheck}
-              </p>
+              <p className="text-muted-foreground text-sm mt-1">Status: {exhaustiveCheck}</p>
             </div>
             <button
               onClick={() => setIsMinimized(true)}
