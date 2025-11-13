@@ -147,7 +147,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
           transition={{ duration: 0.2 }}
           className="fixed bottom-4 right-4 z-50 min-w-[400px] max-w-[calc(100vw-2rem)]"
         >
-          <Card className="shadow-lg border">
+          <Card className="shadow-2xl border">
             <CardContent className="p-4">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -484,7 +484,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
       transition={{ duration: 0.2 }}
       className="fixed bottom-4 right-4 z-50 min-w-[400px] w-96 max-w-[calc(100vw-2rem)]"
     >
-      <Card className="shadow-lg border h-[600px] flex flex-col overflow-hidden">
+      <Card className="shadow-2xl border h-[600px] flex flex-col overflow-hidden">
         <CardContent className="p-5 flex-1 flex flex-col overflow-hidden">
           <div className="flex-1 flex flex-col overflow-hidden min-h-0">
             {renderStatusContent()}

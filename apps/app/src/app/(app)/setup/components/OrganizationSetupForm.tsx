@@ -152,6 +152,7 @@ export function OrganizationSetupForm({
               isLastStep={isLastStep}
               isOnboarding={isOnboarding}
               isCurrentStepValid={isCurrentStepValid}
+              onPrefillAll={handlePrefillAll}
             />
           </div>
         </AnimatedWrapper>
