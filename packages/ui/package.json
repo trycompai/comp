@@ -228,6 +228,10 @@
       "types": "./dist/components/input-otp.d.ts",
       "import": "./dist/components/input-otp.js"
     },
+    "./input-group": {
+      "types": "./dist/components/input-group.d.ts",
+      "import": "./dist/components/input-group.js"
+    },
     "./inner-menu": {
       "types": "./dist/components/inner-menu.d.ts",
       "import": "./dist/components/inner-menu.js"
@@ -391,6 +395,10 @@
     "./editor/selectors/link-selector": {
       "types": "./dist/components/editor/selectors/link-selector.d.ts",
       "import": "./dist/components/editor/selectors/link-selector.js"
+    },
+    "./ai-elements/prompt-input": {
+      "types": "./dist/components/ai-elements/prompt-input.d.ts",
+      "import": "./dist/components/ai-elements/prompt-input.js"
     },
     "./truncate": {
       "types": "./dist/utils/truncate.d.ts",
