@@ -55,7 +55,13 @@ function TaskCard({ task, orgId }: { task: RelevantTask; orgId: string }) {
         throw new Error(response.error || 'Failed to fetch tasks');
       }
 
-      const matchingTask = response.data.find((t) => t.taskTemplateId === task.taskTemplateId);
+      // Debug logging
+      console.log('Looking for taskTemplateId:', task.taskTemplateId);
+      console.log('Available tasks:', response.data.map((t) => ({ id: t.id, taskTemplateId: t.taskTemplateId })));
+
+      const matchingTask = response.data.find(
+        (t) => t.taskTemplateId && t.taskTemplateId === task.taskTemplateId,
+      );
 
       if (!matchingTask) {
         toast.dismiss('navigating');
