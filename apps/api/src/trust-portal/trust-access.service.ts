@@ -258,6 +258,7 @@ export class TrustAccessService {
           reviewerMemberId: member.id,
           reviewedAt: new Date(),
           requestedScopes: scopes,
+          requestedDurationDays: durationDays,
         },
       });
 
