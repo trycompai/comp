@@ -482,88 +482,89 @@ export function QuestionnaireParser() {
 
             {/* Command bar - inline on desktop, stacked on mobile */}
             <div className="flex items-center gap-3 flex-wrap lg:flex-nowrap">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search questions or answers..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 h-9 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
-              />
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <div className="relative">
-                {!hasClickedAutoAnswer && results.some((qa) => !qa.answer) && (
-                  <>
-                    <style
-                      dangerouslySetInnerHTML={{
-                        __html: `
+              <div className="relative flex-1 lg:w-72">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 h-9 text-sm"
+                />
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="relative">
+                  {!hasClickedAutoAnswer && results.some((qa) => !qa.answer) && (
+                    <>
+                      <style
+                        dangerouslySetInnerHTML={{
+                          __html: `
                       @keyframes ping-subtle {
                         0%, 100% { transform: scale(1); opacity: 0.8; }
                         60% { transform: scale(1.05); opacity: 0.5; }
                       }
                     `,
-                      }}
-                    />
-                    <span
-                      className="absolute -inset-0.5 rounded-md bg-primary/10"
-                      style={{ animation: 'ping-subtle 2.5s ease-in-out infinite' }}
-                    />
-                  </>
-                )}
-                <Button
-                  onClick={handleAutoAnswer}
-                  disabled={isAutoAnswering || isLoading}
-                  size="sm"
-                  className="relative z-10 h-9"
-                >
-                  {isAutoAnswering ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <>
-                      <Zap className="mr-2 h-4 w-4" />
-                      Auto-Answer All
+                        }}
+                      />
+                      <span
+                        className="absolute -inset-0.5 rounded-md bg-primary/10"
+                        style={{ animation: 'ping-subtle 2.5s ease-in-out infinite' }}
+                      />
                     </>
                   )}
-                </Button>
-              </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
                   <Button
-                    variant="outline"
+                    onClick={handleAutoAnswer}
+                    disabled={isAutoAnswering || isLoading}
                     size="sm"
-                    disabled={isExporting || isLoading}
-                    className="h-9"
+                    className="relative z-10 h-9"
                   >
-                    <Download className="mr-2 h-4 w-4" />
-                    Export
-                    <ChevronDown className="ml-2 h-4 w-4" />
+                    {isAutoAnswering ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>
+                        <Zap className="mr-2 h-4 w-4" />
+                        Auto-Answer All
+                      </>
+                    )}
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={() => handleExport('xlsx')}
-                    disabled={isExporting || isLoading}
-                  >
-                    <FileSpreadsheet className="mr-2 h-4 w-4" />
-                    Excel
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleExport('csv')}
-                    disabled={isExporting || isLoading}
-                  >
-                    <FileTextIcon className="mr-2 h-4 w-4" />
-                    CSV
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleExport('pdf')}
-                    disabled={isExporting || isLoading}
-                  >
-                    <File className="mr-2 h-4 w-4" />
-                    PDF
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={isExporting || isLoading}
+                      className="h-9"
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      Export
+                      <ChevronDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onClick={() => handleExport('xlsx')}
+                      disabled={isExporting || isLoading}
+                    >
+                      <FileSpreadsheet className="mr-2 h-4 w-4" />
+                      Excel
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleExport('csv')}
+                      disabled={isExporting || isLoading}
+                    >
+                      <FileTextIcon className="mr-2 h-4 w-4" />
+                      CSV
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleExport('pdf')}
+                      disabled={isExporting || isLoading}
+                    >
+                      <File className="mr-2 h-4 w-4" />
+                      PDF
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
           </div>
 
