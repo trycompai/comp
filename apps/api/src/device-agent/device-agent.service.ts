@@ -3,7 +3,11 @@ import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { Readable, PassThrough } from 'stream';
 import archiver from 'archiver';
 import { generateWindowsScript } from './scripts/windows';
-import { getPackageFilename, getReadmeContent, getScriptFilename } from './scripts/common';
+import {
+  getPackageFilename,
+  getReadmeContent,
+  getScriptFilename,
+} from './scripts/common';
 
 @Injectable()
 export class DeviceAgentService {
@@ -15,7 +19,8 @@ export class DeviceAgentService {
     // AWS configuration is validated at startup via ConfigModule
     // For device agents, we use the FLEET_AGENT_BUCKET_NAME if available,
     // otherwise fall back to the main bucket
-    this.fleetBucketName = process.env.FLEET_AGENT_BUCKET_NAME || process.env.APP_AWS_BUCKET_NAME!;
+    this.fleetBucketName =
+      process.env.FLEET_AGENT_BUCKET_NAME || process.env.APP_AWS_BUCKET_NAME!;
     this.s3Client = new S3Client({
       region: process.env.APP_AWS_REGION || 'us-east-1',
       credentials: {
@@ -25,7 +30,11 @@ export class DeviceAgentService {
     });
   }
 
-  async downloadMacAgent(): Promise<{ stream: Readable; filename: string; contentType: string }> {
+  async downloadMacAgent(): Promise<{
+    stream: Readable;
+    filename: string;
+    contentType: string;
+  }> {
     try {
       const macosPackageFilename = 'Comp AI Agent-1.0.0-arm64.dmg';
       const packageKey = `macos/${macosPackageFilename}`;
@@ -46,7 +55,9 @@ export class DeviceAgentService {
       // Use S3 stream directly as Node.js Readable
       const s3Stream = s3Response.Body as Readable;
 
-      this.logger.log(`Successfully retrieved macOS agent: ${macosPackageFilename}`);
+      this.logger.log(
+        `Successfully retrieved macOS agent: ${macosPackageFilename}`,
+      );
 
       return {
         stream: s3Stream,
@@ -62,13 +73,18 @@ export class DeviceAgentService {
     }
   }
 
-  async downloadWindowsAgent(organizationId: string, employeeId: string): Promise<{ stream: Readable; filename: string; contentType: string }> {
+  async downloadWindowsAgent(
+    organizationId: string,
+    employeeId: string,
+  ): Promise<{ stream: Readable; filename: string; contentType: string }> {
     try {
-      this.logger.log(`Creating Windows agent zip for org ${organizationId}, employee ${employeeId}`);
+      this.logger.log(
+        `Creating Windows agent zip for org ${organizationId}, employee ${employeeId}`,
+      );
 
       // Hardcoded device marker paths used by the setup scripts
       const fleetDevicePathWindows = 'C:\\ProgramData\\CompAI\\Fleet';
-      
+
       // Generate the Windows setup script
       const script = generateWindowsScript({
         orgId: organizationId,
@@ -123,7 +139,9 @@ export class DeviceAgentService {
         });
         archive.append(s3Stream, { name: packageFilename, store: true });
       } else {
-        this.logger.warn('Windows MSI file not found in S3, creating zip without MSI');
+        this.logger.warn(
+          'Windows MSI file not found in S3, creating zip without MSI',
+        );
       }
 
       // Finalize the archive

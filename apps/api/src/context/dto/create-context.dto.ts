@@ -12,7 +12,8 @@ export class CreateContextDto {
 
   @ApiProperty({
     description: 'The answer or detailed explanation for the question',
-    example: 'We use a hybrid authentication system supporting both API keys and session-based authentication. API keys are used for programmatic access while sessions are used for web interface interactions.',
+    example:
+      'We use a hybrid authentication system supporting both API keys and session-based authentication. API keys are used for programmatic access while sessions are used for web interface interactions.',
   })
   @IsString()
   @IsNotEmpty()

@@ -1,12 +1,12 @@
-import { 
-  Controller, 
-  Get, 
+import {
+  Controller,
+  Get,
   Post,
   Patch,
   Delete,
   Body,
   Param,
-  UseGuards 
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBody,
@@ -17,10 +17,7 @@ import {
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
-import {
-  AuthContext,
-  OrganizationId,
-} from '../auth/auth-context.decorator';
+import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import { CreateVendorDto } from './dto/create-vendor.dto';
@@ -58,18 +55,20 @@ export class VendorsController {
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
   ) {
-    const vendors = await this.vendorsService.findAllByOrganization(organizationId);
+    const vendors =
+      await this.vendorsService.findAllByOrganization(organizationId);
 
     return {
       data: vendors,
       count: vendors.length,
       authType: authContext.authType,
-      ...(authContext.userId && authContext.userEmail && {
-        authenticatedUser: {
-          id: authContext.userId,
-          email: authContext.userEmail,
-        },
-      }),
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
     };
   }
 
@@ -90,12 +89,13 @@ export class VendorsController {
     return {
       ...vendor,
       authType: authContext.authType,
-      ...(authContext.userId && authContext.userEmail && {
-        authenticatedUser: {
-          id: authContext.userId,
-          email: authContext.userEmail,
-        },
-      }),
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
     };
   }
 
@@ -112,17 +112,21 @@ export class VendorsController {
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
   ) {
-    const vendor = await this.vendorsService.create(organizationId, createVendorDto);
+    const vendor = await this.vendorsService.create(
+      organizationId,
+      createVendorDto,
+    );
 
     return {
       ...vendor,
       authType: authContext.authType,
-      ...(authContext.userId && authContext.userEmail && {
-        authenticatedUser: {
-          id: authContext.userId,
-          email: authContext.userEmail,
-        },
-      }),
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
     };
   }
 
@@ -150,12 +154,13 @@ export class VendorsController {
     return {
       ...updatedVendor,
       authType: authContext.authType,
-      ...(authContext.userId && authContext.userEmail && {
-        authenticatedUser: {
-          id: authContext.userId,
-          email: authContext.userEmail,
-        },
-      }),
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
     };
   }
 
@@ -171,17 +176,21 @@ export class VendorsController {
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
   ) {
-    const result = await this.vendorsService.deleteById(vendorId, organizationId);
+    const result = await this.vendorsService.deleteById(
+      vendorId,
+      organizationId,
+    );
 
     return {
       ...result,
       authType: authContext.authType,
-      ...(authContext.userId && authContext.userEmail && {
-        authenticatedUser: {
-          id: authContext.userId,
-          email: authContext.userEmail,
-        },
-      }),
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
     };
   }
 }

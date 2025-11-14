@@ -14,10 +14,15 @@ export class VendorsService {
         orderBy: { createdAt: 'desc' },
       });
 
-      this.logger.log(`Retrieved ${vendors.length} vendors for organization ${organizationId}`);
+      this.logger.log(
+        `Retrieved ${vendors.length} vendors for organization ${organizationId}`,
+      );
       return vendors;
     } catch (error) {
-      this.logger.error(`Failed to retrieve vendors for organization ${organizationId}:`, error);
+      this.logger.error(
+        `Failed to retrieve vendors for organization ${organizationId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -25,14 +30,16 @@ export class VendorsService {
   async findById(id: string, organizationId: string) {
     try {
       const vendor = await db.vendor.findFirst({
-        where: { 
+        where: {
           id,
-          organizationId 
+          organizationId,
         },
       });
 
       if (!vendor) {
-        throw new NotFoundException(`Vendor with ID ${id} not found in organization ${organizationId}`);
+        throw new NotFoundException(
+          `Vendor with ID ${id} not found in organization ${organizationId}`,
+        );
       }
 
       this.logger.log(`Retrieved vendor: ${vendor.name} (${id})`);
@@ -55,15 +62,24 @@ export class VendorsService {
         },
       });
 
-      this.logger.log(`Created new vendor: ${vendor.name} (${vendor.id}) for organization ${organizationId}`);
+      this.logger.log(
+        `Created new vendor: ${vendor.name} (${vendor.id}) for organization ${organizationId}`,
+      );
       return vendor;
     } catch (error) {
-      this.logger.error(`Failed to create vendor for organization ${organizationId}:`, error);
+      this.logger.error(
+        `Failed to create vendor for organization ${organizationId}:`,
+        error,
+      );
       throw error;
     }
   }
 
-  async updateById(id: string, organizationId: string, updateVendorDto: UpdateVendorDto) {
+  async updateById(
+    id: string,
+    organizationId: string,
+    updateVendorDto: UpdateVendorDto,
+  ) {
     try {
       // First check if the vendor exists in the organization
       await this.findById(id, organizationId);
@@ -94,12 +110,12 @@ export class VendorsService {
       });
 
       this.logger.log(`Deleted vendor: ${existingVendor.name} (${id})`);
-      return { 
+      return {
         message: 'Vendor deleted successfully',
         deletedVendor: {
           id: existingVendor.id,
           name: existingVendor.name,
-        }
+        },
       };
     } catch (error) {
       if (error instanceof NotFoundException) {

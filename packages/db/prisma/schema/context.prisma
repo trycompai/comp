@@ -1,18 +1,18 @@
 model Context {
-    id             String       @id @default(dbgenerated("generate_prefixed_cuid('ctx'::text)"))
-    organizationId String
-    organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  id             String       @id @default(dbgenerated("generate_prefixed_cuid('ctx'::text)"))
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
-    question String
-    answer   String
+  question String
+  answer   String
 
-    tags String[]
+  tags String[]
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    @@index([organizationId])
-    @@index([question])
-    @@index([answer])
-    @@index([tags])
+  @@index([organizationId])
+  @@index([question])
+  @@index([answer])
+  @@index([tags])
 }

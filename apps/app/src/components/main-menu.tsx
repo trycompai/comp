@@ -10,6 +10,7 @@ import {
   Gauge,
   ListCheck,
   NotebookText,
+  ShieldCheck,
   ShieldEllipsis,
   Store,
   Users,
@@ -86,6 +87,14 @@ export function MainMenu({
       name: 'Tasks',
       disabled: false,
       icon: ListCheck,
+      protected: false,
+    },
+    {
+      id: 'trust',
+      path: '/:organizationId/trust',
+      name: 'Trust',
+      disabled: false,
+      icon: ShieldCheck,
       protected: false,
     },
     {

@@ -1,12 +1,12 @@
-import { 
-  Controller, 
-  Get, 
+import {
+  Controller,
+  Get,
   Post,
   Patch,
   Delete,
   Body,
   Param,
-  UseGuards 
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBody,
@@ -17,10 +17,7 @@ import {
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
-import {
-  AuthContext,
-  OrganizationId,
-} from '../auth/auth-context.decorator';
+import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import { CreateContextDto } from './dto/create-context.dto';
@@ -58,18 +55,20 @@ export class ContextController {
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
   ) {
-    const contextEntries = await this.contextService.findAllByOrganization(organizationId);
+    const contextEntries =
+      await this.contextService.findAllByOrganization(organizationId);
 
     return {
       data: contextEntries,
       count: contextEntries.length,
       authType: authContext.authType,
-      ...(authContext.userId && authContext.userEmail && {
-        authenticatedUser: {
-          id: authContext.userId,
-          email: authContext.userEmail,
-        },
-      }),
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
     };
   }
 
@@ -85,17 +84,21 @@ export class ContextController {
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
   ) {
-    const contextEntry = await this.contextService.findById(contextId, organizationId);
+    const contextEntry = await this.contextService.findById(
+      contextId,
+      organizationId,
+    );
 
     return {
       ...contextEntry,
       authType: authContext.authType,
-      ...(authContext.userId && authContext.userEmail && {
-        authenticatedUser: {
-          id: authContext.userId,
-          email: authContext.userEmail,
-        },
-      }),
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
     };
   }
 
@@ -112,17 +115,21 @@ export class ContextController {
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
   ) {
-    const contextEntry = await this.contextService.create(organizationId, createContextDto);
+    const contextEntry = await this.contextService.create(
+      organizationId,
+      createContextDto,
+    );
 
     return {
       ...contextEntry,
       authType: authContext.authType,
-      ...(authContext.userId && authContext.userEmail && {
-        authenticatedUser: {
-          id: authContext.userId,
-          email: authContext.userEmail,
-        },
-      }),
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
     };
   }
 
@@ -150,12 +157,13 @@ export class ContextController {
     return {
       ...updatedContextEntry,
       authType: authContext.authType,
-      ...(authContext.userId && authContext.userEmail && {
-        authenticatedUser: {
-          id: authContext.userId,
-          email: authContext.userEmail,
-        },
-      }),
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
     };
   }
 
@@ -171,17 +179,21 @@ export class ContextController {
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
   ) {
-    const result = await this.contextService.deleteById(contextId, organizationId);
+    const result = await this.contextService.deleteById(
+      contextId,
+      organizationId,
+    );
 
     return {
       ...result,
       authType: authContext.authType,
-      ...(authContext.userId && authContext.userEmail && {
-        authenticatedUser: {
-          id: authContext.userId,
-          email: authContext.userEmail,
-        },
-      }),
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
     };
   }
 }

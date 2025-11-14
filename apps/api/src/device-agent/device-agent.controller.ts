@@ -1,9 +1,9 @@
-import { 
-  Controller, 
-  Get, 
+import {
+  Controller,
+  Get,
   UseGuards,
   StreamableFile,
-  Response
+  Response,
 } from '@nestjs/common';
 import {
   ApiHeader,
@@ -12,10 +12,7 @@ import {
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
-import {
-  AuthContext,
-  OrganizationId,
-} from '../auth/auth-context.decorator';
+import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import { DeviceAgentService } from './device-agent.service';
@@ -48,15 +45,16 @@ export class DeviceAgentController {
     @AuthContext() authContext: AuthContextType,
     @Response({ passthrough: true }) res: ExpressResponse,
   ) {
-    const { stream, filename, contentType } = await this.deviceAgentService.downloadMacAgent();
+    const { stream, filename, contentType } =
+      await this.deviceAgentService.downloadMacAgent();
 
     // Set headers for file download
     res.set({
       'Content-Type': contentType,
       'Content-Disposition': `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
       'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0',
+      Pragma: 'no-cache',
+      Expires: '0',
     });
 
     return new StreamableFile(stream);
@@ -75,19 +73,20 @@ export class DeviceAgentController {
   ) {
     // Use the authenticated user's ID as the employee ID
     const employeeId = authContext.userId || 'unknown-user';
-    
-    const { stream, filename, contentType } = await this.deviceAgentService.downloadWindowsAgent(
-      organizationId,
-      employeeId,
-    );
+
+    const { stream, filename, contentType } =
+      await this.deviceAgentService.downloadWindowsAgent(
+        organizationId,
+        employeeId,
+      );
 
     // Set headers for file download
     res.set({
       'Content-Type': contentType,
       'Content-Disposition': `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
       'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0',
+      Pragma: 'no-cache',
+      Expires: '0',
     });
 
     return new StreamableFile(stream);

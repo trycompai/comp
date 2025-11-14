@@ -6,4 +6,3 @@ export const TASK_TEMPLATE_BODIES = {
     description: 'Update framework editor task template data',
   },
 };
-

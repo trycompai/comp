@@ -1,11 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { 
-  RiskCategory, 
-  Departments, 
-  RiskStatus, 
-  Likelihood, 
-  Impact, 
-  RiskTreatmentType 
+import {
+  RiskCategory,
+  Departments,
+  RiskStatus,
+  Likelihood,
+  Impact,
+  RiskTreatmentType,
 } from '@trycompai/db';
 
 export class RiskResponseDto {
@@ -23,7 +23,8 @@ export class RiskResponseDto {
 
   @ApiProperty({
     description: 'Detailed description of the risk',
-    example: 'Weak password requirements could lead to unauthorized access to user accounts',
+    example:
+      'Weak password requirements could lead to unauthorized access to user accounts',
   })
   description: string;
 
@@ -80,7 +81,8 @@ export class RiskResponseDto {
   @ApiProperty({
     description: 'Description of the treatment strategy',
     nullable: true,
-    example: 'Implement multi-factor authentication and strengthen password requirements',
+    example:
+      'Implement multi-factor authentication and strengthen password requirements',
   })
   treatmentStrategyDescription: string | null;
 

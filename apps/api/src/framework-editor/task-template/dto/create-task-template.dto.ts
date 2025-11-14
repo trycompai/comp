@@ -35,4 +35,3 @@ export class CreateTaskTemplateDto {
   @IsEnum(Departments)
   department: Departments;
 }
-

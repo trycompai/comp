@@ -83,7 +83,9 @@ export class OrganizationService {
         },
       });
 
-      this.logger.log(`Updated organization: ${updatedOrganization.name} (${id})`);
+      this.logger.log(
+        `Updated organization: ${updatedOrganization.name} (${id})`,
+      );
       return updatedOrganization;
     } catch (error) {
       if (error instanceof NotFoundException) {

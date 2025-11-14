@@ -1,8 +1,4 @@
-import {
-  PipeTransform,
-  Injectable,
-  BadRequestException,
-} from '@nestjs/common';
+import { PipeTransform, Injectable, BadRequestException } from '@nestjs/common';
 
 @Injectable()
 export class ValidateIdPipe implements PipeTransform<string, string> {
@@ -23,4 +19,3 @@ export class ValidateIdPipe implements PipeTransform<string, string> {
     return value;
   }
 }
-

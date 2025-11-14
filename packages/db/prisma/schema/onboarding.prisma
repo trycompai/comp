@@ -1,18 +1,18 @@
 model Onboarding {
-    organizationId        String       @id
-    organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-    policies              Boolean      @default(false)
-    employees             Boolean      @default(false)
-    vendors               Boolean      @default(false)
-    integrations          Boolean      @default(false)
-    risk                  Boolean      @default(false)
-    team                  Boolean      @default(false)
-    tasks                 Boolean      @default(false)
-    callBooked            Boolean      @default(false)
-    companyBookingDetails Json?
-    companyDetails        Json?
-    triggerJobId          String?
-    triggerJobCompleted   Boolean      @default(false)
+  organizationId        String       @id
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  policies              Boolean      @default(false)
+  employees             Boolean      @default(false)
+  vendors               Boolean      @default(false)
+  integrations          Boolean      @default(false)
+  risk                  Boolean      @default(false)
+  team                  Boolean      @default(false)
+  tasks                 Boolean      @default(false)
+  callBooked            Boolean      @default(false)
+  companyBookingDetails Json?
+  companyDetails        Json?
+  triggerJobId          String?
+  triggerJobCompleted   Boolean      @default(false)
 
-    @@index([organizationId])
+  @@index([organizationId])
 }

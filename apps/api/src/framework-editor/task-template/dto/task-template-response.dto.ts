@@ -46,4 +46,3 @@ export class TaskTemplateResponseDto {
   })
   updatedAt: Date;
 }
-

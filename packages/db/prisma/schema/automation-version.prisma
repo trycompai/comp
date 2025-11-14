@@ -1,19 +1,19 @@
 model EvidenceAutomationVersion {
-    id        String   @id @default(dbgenerated("generate_prefixed_cuid('eav'::text)"))
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  id        String   @id @default(dbgenerated("generate_prefixed_cuid('eav'::text)"))
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    // Relations
-    evidenceAutomationId String
-    evidenceAutomation   EvidenceAutomation @relation(fields: [evidenceAutomationId], references: [id], onDelete: Cascade)
+  // Relations
+  evidenceAutomationId String
+  evidenceAutomation   EvidenceAutomation @relation(fields: [evidenceAutomationId], references: [id], onDelete: Cascade)
 
-    // Version details
-    version     Int // Sequential version number (1, 2, 3...)
-    scriptKey   String // S3 key for this version's script
-    publishedBy String? // User ID who published
-    changelog   String? // Optional description of changes
+  // Version details
+  version     Int // Sequential version number (1, 2, 3...)
+  scriptKey   String // S3 key for this version's script
+  publishedBy String? // User ID who published
+  changelog   String? // Optional description of changes
 
-    @@unique([evidenceAutomationId, version])
-    @@index([evidenceAutomationId])
-    @@index([createdAt])
+  @@unique([evidenceAutomationId, version])
+  @@index([evidenceAutomationId])
+  @@index([createdAt])
 }

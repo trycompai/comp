@@ -35,7 +35,8 @@ export const GET_TASK_TEMPLATE_BY_ID_RESPONSES = {
     schema: {
       example: {
         statusCode: 404,
-        message: 'Framework editor task template with ID frk_tt_abc123def456 not found',
+        message:
+          'Framework editor task template with ID frk_tt_abc123def456 not found',
       },
     },
   },
@@ -50,4 +51,3 @@ export const GET_TASK_TEMPLATE_BY_ID_RESPONSES = {
     },
   },
 };
-

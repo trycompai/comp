@@ -36,7 +36,9 @@ export class MemberQueries {
   /**
    * Get all members for an organization
    */
-  static async findAllByOrganization(organizationId: string): Promise<PeopleResponseDto[]> {
+  static async findAllByOrganization(
+    organizationId: string,
+  ): Promise<PeopleResponseDto[]> {
     return db.member.findMany({
       where: { organizationId },
       select: this.MEMBER_SELECT,
@@ -47,9 +49,12 @@ export class MemberQueries {
   /**
    * Find a member by ID within an organization
    */
-  static async findByIdInOrganization(memberId: string, organizationId: string): Promise<PeopleResponseDto | null> {
+  static async findByIdInOrganization(
+    memberId: string,
+    organizationId: string,
+  ): Promise<PeopleResponseDto | null> {
     return db.member.findFirst({
-      where: { 
+      where: {
         id: memberId,
         organizationId,
       },
@@ -60,7 +65,10 @@ export class MemberQueries {
   /**
    * Create a new member
    */
-  static async createMember(organizationId: string, createData: CreatePeopleDto): Promise<PeopleResponseDto> {
+  static async createMember(
+    organizationId: string,
+    createData: CreatePeopleDto,
+  ): Promise<PeopleResponseDto> {
     return db.member.create({
       data: {
         organizationId,
@@ -77,12 +85,18 @@ export class MemberQueries {
   /**
    * Update a member by ID
    */
-  static async updateMember(memberId: string, updateData: UpdatePeopleDto): Promise<PeopleResponseDto> {
+  static async updateMember(
+    memberId: string,
+    updateData: UpdatePeopleDto,
+  ): Promise<PeopleResponseDto> {
     // Prepare update data with defaults for optional fields
     const updatePayload: any = { ...updateData };
-    
+
     // Handle fleetDmLabelId: convert undefined to null for database
-    if (updateData.fleetDmLabelId === undefined && 'fleetDmLabelId' in updateData) {
+    if (
+      updateData.fleetDmLabelId === undefined &&
+      'fleetDmLabelId' in updateData
+    ) {
       updatePayload.fleetDmLabelId = null;
     }
 
@@ -96,12 +110,15 @@ export class MemberQueries {
   /**
    * Get member for deletion (with minimal user info)
    */
-  static async findMemberForDeletion(memberId: string, organizationId: string): Promise<{
+  static async findMemberForDeletion(
+    memberId: string,
+    organizationId: string,
+  ): Promise<{
     id: string;
     user: { id: string; name: string; email: string };
   } | null> {
     return db.member.findFirst({
-      where: { 
+      where: {
         id: memberId,
         organizationId,
       },
@@ -130,9 +147,12 @@ export class MemberQueries {
   /**
    * Bulk create members for an organization
    */
-  static async bulkCreateMembers(organizationId: string, memberData: CreatePeopleDto[]): Promise<PeopleResponseDto[]> {
+  static async bulkCreateMembers(
+    organizationId: string,
+    memberData: CreatePeopleDto[],
+  ): Promise<PeopleResponseDto[]> {
     // Prepare data for createMany
-    const data = memberData.map(member => ({
+    const data = memberData.map((member) => ({
       organizationId,
       userId: member.userId,
       role: member.role,
@@ -151,7 +171,7 @@ export class MemberQueries {
     return db.member.findMany({
       where: {
         organizationId,
-        userId: { in: memberData.map(m => m.userId) },
+        userId: { in: memberData.map((m) => m.userId) },
       },
       select: this.MEMBER_SELECT,
       orderBy: { createdAt: 'desc' },

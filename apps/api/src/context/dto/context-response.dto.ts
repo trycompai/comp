@@ -21,7 +21,8 @@ export class ContextResponseDto {
 
   @ApiProperty({
     description: 'The answer or detailed explanation for the question',
-    example: 'We use a hybrid authentication system supporting both API keys and session-based authentication.',
+    example:
+      'We use a hybrid authentication system supporting both API keys and session-based authentication.',
   })
   answer: string;
 

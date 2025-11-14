@@ -1,10 +1,16 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional, IsEnum, IsUrl } from 'class-validator';
-import { 
-  VendorCategory, 
-  VendorStatus, 
-  Likelihood, 
-  Impact 
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsEnum,
+  IsUrl,
+} from 'class-validator';
+import {
+  VendorCategory,
+  VendorStatus,
+  Likelihood,
+  Impact,
 } from '@trycompai/db';
 
 export class CreateVendorDto {
@@ -18,7 +24,8 @@ export class CreateVendorDto {
 
   @ApiProperty({
     description: 'Detailed description of the vendor and services provided',
-    example: 'Cloud infrastructure provider offering AWS-like services including compute, storage, and networking solutions for enterprise customers.',
+    example:
+      'Cloud infrastructure provider offering AWS-like services including compute, storage, and networking solutions for enterprise customers.',
   })
   @IsString()
   @IsNotEmpty()

@@ -1,121 +1,124 @@
 model User {
-    id            String    @id @default(dbgenerated("generate_prefixed_cuid('usr'::text)"))
-    name          String
-    email         String
-    emailVerified Boolean
-    image         String?
-    createdAt     DateTime  @default(now())
-    updatedAt     DateTime  @updatedAt
-    lastLogin     DateTime?
+  id            String    @id @default(dbgenerated("generate_prefixed_cuid('usr'::text)"))
+  name          String
+  email         String
+  emailVerified Boolean
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  lastLogin     DateTime?
 
-    accounts           Account[]
-    auditLog           AuditLog[]
-    integrationResults IntegrationResult[]
-    invitations        Invitation[]
-    members            Member[]
-    sessions           Session[]
+  accounts           Account[]
+  auditLog           AuditLog[]
+  integrationResults IntegrationResult[]
+  invitations        Invitation[]
+  members            Member[]
+  sessions           Session[]
 
-    @@unique([email])
+  @@unique([email])
 }
 
 model EmployeeTrainingVideoCompletion {
-    id          String    @id @default(dbgenerated("generate_prefixed_cuid('evc'::text)"))
-    completedAt DateTime?
-    videoId     String
+  id          String    @id @default(dbgenerated("generate_prefixed_cuid('evc'::text)"))
+  completedAt DateTime?
+  videoId     String
 
-    memberId String
-    member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
-    @@unique([memberId, videoId])
-    @@index([memberId])
+  @@unique([memberId, videoId])
+  @@index([memberId])
 }
 
 model Session {
-    id                   String   @id @default(dbgenerated("generate_prefixed_cuid('ses'::text)"))
-    expiresAt            DateTime
-    token                String
-    createdAt            DateTime @default(now())
-    updatedAt            DateTime @updatedAt
-    ipAddress            String?
-    userAgent            String?
-    userId               String
-    activeOrganizationId String?
-    user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                   String   @id @default(dbgenerated("generate_prefixed_cuid('ses'::text)"))
+  expiresAt            DateTime
+  token                String
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  ipAddress            String?
+  userAgent            String?
+  userId               String
+  activeOrganizationId String?
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-    @@unique([token])
+  @@unique([token])
 }
 
 model Account {
-    id                    String    @id @default(dbgenerated("generate_prefixed_cuid('acc'::text)"))
-    accountId             String
-    providerId            String
-    userId                String
-    user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-    accessToken           String?
-    refreshToken          String?
-    idToken               String?
-    accessTokenExpiresAt  DateTime?
-    refreshTokenExpiresAt DateTime?
-    scope                 String?
-    password              String?
-    createdAt             DateTime
-    updatedAt             DateTime
+  id                    String    @id @default(dbgenerated("generate_prefixed_cuid('acc'::text)"))
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime
+  updatedAt             DateTime
 }
 
 model Verification {
-    id         String   @id @default(dbgenerated("generate_prefixed_cuid('ver'::text)"))
-    identifier String
-    value      String
-    expiresAt  DateTime
-    createdAt  DateTime @default(now())
-    updatedAt  DateTime @updatedAt
+  id         String   @id @default(dbgenerated("generate_prefixed_cuid('ver'::text)"))
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 // JWT Plugin - Required by Better Auth JWT plugin
 // https://www.better-auth.com/docs/plugins/jwt
 model Jwks {
-    id         String   @id @default(dbgenerated("generate_prefixed_cuid('jwk'::text)"))
-    publicKey  String
-    privateKey String
-    createdAt  DateTime @default(now())
+  id         String   @id @default(dbgenerated("generate_prefixed_cuid('jwk'::text)"))
+  publicKey  String
+  privateKey String
+  createdAt  DateTime @default(now())
 
-    @@map("jwks")
+  @@map("jwks")
 }
 
 model Member {
-    id             String       @id @default(dbgenerated("generate_prefixed_cuid('mem'::text)"))
-    organizationId String
-    organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-    userId         String
-    user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-    role           String // Purposefully a string, since BetterAuth doesn't support enums this way
-    createdAt      DateTime     @default(now())
+  id             String       @id @default(dbgenerated("generate_prefixed_cuid('mem'::text)"))
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           String // Purposefully a string, since BetterAuth doesn't support enums this way
+  createdAt      DateTime     @default(now())
 
-    department                      Departments                       @default(none)
-    isActive                        Boolean                           @default(true)
+  department                      Departments                       @default(none)
+  isActive                        Boolean                           @default(true)
     deactivated                     Boolean                           @default(false)
-    employeeTrainingVideoCompletion EmployeeTrainingVideoCompletion[]
-    fleetDmLabelId                  Int?
+  employeeTrainingVideoCompletion EmployeeTrainingVideoCompletion[]
+  fleetDmLabelId                  Int?
 
-    assignedPolicies Policy[]   @relation("PolicyAssignee") // Policies where this member is an assignee
-    approvedPolicies Policy[]   @relation("PolicyApprover") // Policies where this member is an approver
-    risks            Risk[]
-    tasks            Task[]
-    vendors          Vendor[]
-    comments         Comment[]
-    auditLogs        AuditLog[]
+  assignedPolicies       Policy[]             @relation("PolicyAssignee") // Policies where this member is an assignee
+  approvedPolicies       Policy[]             @relation("PolicyApprover") // Policies where this member is an approver
+  risks                  Risk[]
+  tasks                  Task[]
+  vendors                Vendor[]
+  comments               Comment[]
+  auditLogs              AuditLog[]
+  reviewedAccessRequests TrustAccessRequest[] @relation("TrustAccessRequestReviewer")
+  issuedGrants           TrustAccessGrant[]   @relation("IssuedGrants")
+  revokedGrants          TrustAccessGrant[]   @relation("RevokedGrants")
 }
 
 model Invitation {
-    id             String       @id @default(dbgenerated("generate_prefixed_cuid('inv'::text)"))
-    organizationId String
-    organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-    email          String
-    role           String // Purposefully a string, since BetterAuth doesn't support enums this way
-    status         String
-    expiresAt      DateTime
-    inviterId      String
-    user           User         @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+  id             String       @id @default(dbgenerated("generate_prefixed_cuid('inv'::text)"))
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email          String
+  role           String // Purposefully a string, since BetterAuth doesn't support enums this way
+  status         String
+  expiresAt      DateTime
+  inviterId      String
+  user           User         @relation(fields: [inviterId], references: [id], onDelete: Cascade)
 }
 
 // This is only for the app to consume, shouldn't be enforced by DB
@@ -129,7 +132,7 @@ enum Role {
 }
 
 enum PolicyStatus {
-    draft
-    published
-    needs_review
+  draft
+  published
+  needs_review
 }
