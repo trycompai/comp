@@ -187,7 +187,7 @@ export const PromptSecret = memo(function PromptSecret({
         {secretData?.description && (
           <div className="grid gap-2">
             <Label className="text-sm">Description</Label>
-            <div className="text-sm text-muted-foreground bg-muted/50 rounded-md p-3">
+            <div className="text-sm text-muted-foreground bg-muted/50 rounded-md p-3 break-words whitespace-pre-wrap max-h-48 overflow-y-auto">
               {secretData.description}
             </div>
           </div>

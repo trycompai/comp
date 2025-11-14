@@ -258,7 +258,7 @@ export function EmptyState({ onBack, connectedProviders = [], onConnected }: Emp
   // AWS Step 2.5: Region Selection (after credential validation)
   if (step === 'validate-aws' && provider && selectedProvider === 'aws') {
     return (
-      <div className="container mx-auto flex min-h-[600px] w-full flex-col gap-6 p-4 md:p-6 lg:p-8">
+      <div className="mx-auto max-w-7xl flex min-h-[600px] w-full flex-col gap-6 py-4 md:py-6 lg:py-8">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={() => setStep('connect')}>
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -413,7 +413,7 @@ export function EmptyState({ onBack, connectedProviders = [], onConnected }: Emp
     const fields = PROVIDER_FIELDS[provider.id];
 
     return (
-      <div className="container mx-auto flex min-h-[600px] w-full flex-col gap-6 p-4 md:p-6 lg:p-8">
+      <div className="mx-auto max-w-7xl flex min-h-[600px] w-full flex-col gap-6 py-4 md:py-6 lg:py-8">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={handleBack}>
             <ArrowLeft className="mr-2 h-4 w-4" />

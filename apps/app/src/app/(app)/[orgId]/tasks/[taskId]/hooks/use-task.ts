@@ -27,8 +27,14 @@ export function useTask({ initialData }: UseTaskOptions = {}): UseTaskReturn {
   }>();
 
   const { data, error, isLoading, mutate } = useSWR(
-    [`task-${taskId}`, orgId, taskId],
+    // Only fetch if both orgId and taskId are available
+    orgId && taskId ? [`task-${taskId}`, orgId, taskId] : null,
     async () => {
+      // Guard clause - should not happen due to key check, but extra safety
+      if (!orgId || !taskId) {
+        throw new Error('Organization ID and Task ID are required');
+      }
+
       const response = await api.get<TaskData>(`/v1/tasks/${taskId}`, orgId);
 
       if (response.error) {

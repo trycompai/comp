@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@comp/ui/button';
-import { Check, Circle, List, Loader2, Plus } from 'lucide-react';
+import { Check, Circle, List, Loader2, Plus, X, XCircle } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import React from 'react';
 
@@ -10,6 +10,8 @@ const statuses = [
   { id: 'in_progress', title: 'In Progress' },
   { id: 'todo', title: 'Todo' },
   { id: 'done', title: 'Done' },
+  { id: 'failed', title: 'Failed' },
+  { id: 'not_relevant', title: 'Not Relevant' },
 ] as const;
 type StatusId = (typeof statuses)[number]['id'];
 
@@ -32,6 +34,8 @@ export function TaskFilterHeader() {
     in_progress: Loader2,
     todo: Circle,
     done: Check,
+    failed: XCircle,
+    not_relevant: X,
   };
 
   // Helper function to determine button styling based on active state.

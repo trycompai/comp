@@ -30,6 +30,7 @@ export * from './hover-card';
 export * from './icons';
 export * from './inner-menu';
 export * from './input';
+export * from './input-group';
 export * from './input-otp';
 export * from './label';
 export * from './multiple-selector';
@@ -69,3 +70,6 @@ export {
 
 // Editor components
 export * from './editor';
+
+// AI Elements components
+export * from './ai-elements/prompt-input';

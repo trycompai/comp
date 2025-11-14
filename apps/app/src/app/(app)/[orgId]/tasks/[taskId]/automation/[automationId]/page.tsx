@@ -42,6 +42,9 @@ export default async function Page({
     }
   }
 
+  // Pass task info for client-side suggestion loading (non-blocking)
+  const taskDescription = task.description || task.title;
+
   return (
     <ChatProvider initialMessages={initialMessages}>
       <AutomationLayoutWrapper>
@@ -51,6 +54,7 @@ export default async function Page({
             taskId={taskId}
             automationId={automationId}
             taskName={taskName}
+            taskDescription={automationId === 'new' ? taskDescription : undefined}
           />
         </div>
       </AutomationLayoutWrapper>

@@ -1,11 +1,12 @@
 import { db } from '@db';
-import { logger, queue, task, tasks } from '@trigger.dev/sdk';
+import { logger, metadata, queue, task, tasks } from '@trigger.dev/sdk';
 import axios from 'axios';
 import { generateRiskMitigationsForOrg } from './generate-risk-mitigation';
 import { generateVendorMitigationsForOrg } from './generate-vendor-mitigation';
 import {
   createRisks,
   createVendors,
+  extractVendorsFromContext,
   getOrganizationContext,
   updateOrganizationPolicies,
 } from './onboard-organization-helpers';
@@ -21,6 +22,12 @@ export const onboardOrganization = task({
   },
   run: async (payload: { organizationId: string }) => {
     logger.info(`Start onboarding organization ${payload.organizationId}`);
+
+    // Initialize metadata for real-time tracking
+    metadata.set('currentStep', 'Researching Vendors...');
+    metadata.set('vendors', false);
+    metadata.set('risk', false);
+    metadata.set('policies', false);
 
     try {
       // Get organization context
@@ -87,8 +94,45 @@ export const onboardOrganization = task({
         },
       });
 
-      // Create vendors
-      const vendors = await createVendors(questionsAndAnswers, payload.organizationId);
+      // Extract vendors first so we can show them immediately
+      const vendorData = await extractVendorsFromContext(questionsAndAnswers);
+
+      // Track vendors immediately as "pending" before creation
+      if (vendorData.length > 0) {
+        metadata.set('vendorsTotal', vendorData.length);
+        metadata.set('vendorsCompleted', 0);
+        metadata.set('vendorsRemaining', vendorData.length);
+        // Use temporary IDs based on index until we have real IDs
+        metadata.set(
+          'vendorsInfo',
+          vendorData.map((v, index) => ({ id: `temp_${index}`, name: v.vendor_name })),
+        );
+        // Mark all as pending initially
+        vendorData.forEach((_, index) => {
+          metadata.set(`vendor_temp_${index}_status`, 'pending');
+        });
+      }
+
+      // Create vendors (pass extracted data to avoid re-extraction)
+      const vendors = await createVendors(questionsAndAnswers, payload.organizationId, vendorData);
+
+      // Update tracking with real vendor IDs and mark as completed
+      if (vendors.length > 0) {
+        metadata.set('vendorsCompleted', vendors.length);
+        metadata.set('vendorsRemaining', 0);
+        metadata.set(
+          'vendorsInfo',
+          vendors.map((v) => ({ id: v.id, name: v.name })),
+        );
+        // Mark all as completed
+        vendors.forEach((vendor) => {
+          metadata.set(`vendor_${vendor.id}_status`, 'completed');
+        });
+      }
+
+      // Mark vendors step as complete in metadata (real-time)
+      metadata.set('vendors', true);
+      metadata.set('currentStep', 'Creating Risks...');
 
       // Fan-out vendor mitigations as separate jobs
       await tasks.trigger<typeof generateVendorMitigationsForOrg>(
@@ -99,7 +143,35 @@ export const onboardOrganization = task({
       );
 
       // Create risks
-      await createRisks(questionsAndAnswers, payload.organizationId, organization.name);
+      const risks = await createRisks(
+        questionsAndAnswers,
+        payload.organizationId,
+        organization.name,
+      );
+
+      // Track risks with metadata for real-time tracking
+      if (risks.length > 0) {
+        metadata.set('risksTotal', risks.length);
+        metadata.set('risksCompleted', risks.length);
+        metadata.set('risksRemaining', 0);
+        metadata.set(
+          'risksInfo',
+          risks.map((r) => ({ id: r.id, name: r.title })),
+        );
+        // All risks are created immediately, so mark them all as completed
+        risks.forEach((risk) => {
+          metadata.set(`risk_${risk.id}_status`, 'completed');
+        });
+      }
+
+      // Mark risks step as complete in metadata (real-time)
+      metadata.set('risk', true);
+
+      // Get policy count for the step message
+      const policyCount = await db.policy.count({
+        where: { organizationId: payload.organizationId },
+      });
+      metadata.set('currentStep', `Tailoring Policies... (0/${policyCount})`);
 
       // Fan-out risk mitigations as separate jobs
       await tasks.trigger<typeof generateRiskMitigationsForOrg>(
@@ -109,10 +181,17 @@ export const onboardOrganization = task({
         },
       );
 
-      // Update policies
+      // Update policies with progress tracking
       await updateOrganizationPolicies(payload.organizationId, questionsAndAnswers, frameworks);
 
-      // Mark onboarding as completed
+      // Mark policies step as complete in metadata (real-time)
+      metadata.set('policies', true);
+      metadata.set('currentStep', 'Finalizing...');
+
+      // Mark onboarding as completed in metadata
+      metadata.set('completed', true);
+
+      // Mark onboarding as completed in database
       await db.onboarding.update({
         where: { organizationId: payload.organizationId },
         data: { triggerJobCompleted: true },

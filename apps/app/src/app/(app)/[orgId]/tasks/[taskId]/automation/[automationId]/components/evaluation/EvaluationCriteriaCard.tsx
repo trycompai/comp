@@ -30,7 +30,9 @@ export function EvaluationCriteriaCard({
     }
   }, [automation?.evaluationCriteria]);
 
-  const handleSave = async () => {
+  const handleSave = async (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
     setIsSaving(true);
     try {
       const result = await updateEvaluationCriteria(automationId, criteria);
@@ -49,7 +51,9 @@ export function EvaluationCriteriaCard({
     }
   };
 
-  const handleCancel = () => {
+  const handleCancel = (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
     setCriteria(initialCriteria || '');
     setIsEditing(false);
   };
@@ -121,6 +125,7 @@ export function EvaluationCriteriaCard({
             />
             <div className="flex items-center justify-end gap-2">
               <Button
+                type="button"
                 size="sm"
                 variant="ghost"
                 onClick={handleCancel}
@@ -129,7 +134,13 @@ export function EvaluationCriteriaCard({
               >
                 Cancel
               </Button>
-              <Button size="sm" onClick={handleSave} disabled={isSaving} className="h-8">
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleSave}
+                disabled={isSaving}
+                className="h-8"
+              >
                 <Save className="w-3.5 h-3.5 mr-1.5" />
                 Save
               </Button>
