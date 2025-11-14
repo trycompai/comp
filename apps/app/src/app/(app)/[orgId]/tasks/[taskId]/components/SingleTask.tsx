@@ -1,8 +1,14 @@
 'use client';
 
 import { regenerateTaskAction } from '@/actions/tasks/regenerate-task-action';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator,
+} from '@comp/ui/breadcrumb';
 import { Button } from '@comp/ui/button';
-import { Card } from '@comp/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -20,8 +26,10 @@ import {
   type Task,
   type User,
 } from '@db';
-import { RefreshCw, Trash2 } from 'lucide-react';
+import { ChevronRight, RefreshCw, Trash2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Comments } from '../../../../../../components/comments/Comments';
@@ -44,6 +52,9 @@ interface SingleTaskProps {
 }
 
 export function SingleTask({ initialTask, initialAutomations }: SingleTaskProps) {
+  const params = useParams();
+  const orgId = params.orgId as string;
+
   // Use SWR hooks with initial data from server
   const {
     task,
@@ -107,40 +118,51 @@ export function SingleTask({ initialTask, initialAutomations }: SingleTaskProps)
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 animate-in fade-in slide-in-from-bottom-4 duration-500 py-8">
+    <div className="mx-auto max-w-7xl px-6 animate-in fade-in slide-in-from-bottom-4 duration-500 py-6">
+      {/* Breadcrumb */}
+      <div className="mb-5">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link
+                  href={`/${orgId}/tasks`}
+                  className="text-muted-foreground hover:text-foreground text-sm"
+                >
+                  Tasks
+                </Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator>
+              <ChevronRight className="h-4 w-4" />
+            </BreadcrumbSeparator>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <span className="text-foreground font-medium text-sm">{task.title}</span>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      </div>
+
       {/* Main Content Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column - Title, Description, Content */}
-        <div className="lg:col-span-2">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column - Title, Description, Automations (Front & Center) */}
+        <div className="lg:col-span-2 space-y-6">
           {/* Header Section */}
-          <div className="mb-6">
-            <h1 className="text-3xl font-semibold tracking-tight text-foreground mb-3">
-              {task.title}
-            </h1>
-            {task.description && (
-              <p className="text-base text-muted-foreground leading-relaxed">{task.description}</p>
-            )}
-          </div>
-
-          {/* Main Content Area */}
-          <div className="space-y-4">
-            <TaskMainContent task={task} showComments={false} />
-
-            {/* Comments Section - integrated */}
-            <Comments
-              entityId={task.id}
-              entityType={CommentEntityType.task}
-              variant="inline"
-              title=""
-            />
-          </div>
-        </div>
-
-        {/* Right Column - Properties (starts at top) */}
-        <div className="lg:col-span-1 space-y-4">
-          <Card className="border border-border bg-card shadow-sm overflow-hidden">
-            <div className="relative">
-              <div className="absolute top-4 right-4 flex items-center gap-1 z-10">
+          <div>
+            <div className="flex items-start justify-between gap-4 mb-3">
+              <div className="flex-1">
+                <h1 className="text-2xl font-semibold tracking-tight text-foreground mb-2">
+                  {task.title}
+                </h1>
+                {task.description && (
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {task.description}
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center gap-1">
                 <Button
                   variant="ghost"
                   size="icon"
@@ -160,15 +182,35 @@ export function SingleTask({ initialTask, initialAutomations }: SingleTaskProps)
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
-              <div className="p-6">
-                <TaskPropertiesSidebar handleUpdateTask={handleUpdateTask} />
-              </div>
             </div>
-          </Card>
-          {/* Automations section */}
-          <Card className="border border-border bg-card shadow-sm overflow-hidden">
+          </div>
+
+          {/* Automations Section - Front & Center */}
+          <div>
             <TaskAutomations automations={automations || []} />
-          </Card>
+          </div>
+
+          {/* Attachments - De-emphasized */}
+          <div className="space-y-3">
+            <TaskMainContent task={task} showComments={false} />
+          </div>
+
+          {/* Comments Section */}
+          <div>
+            <Comments
+              entityId={task.id}
+              entityType={CommentEntityType.task}
+              variant="inline"
+              title=""
+            />
+          </div>
+        </div>
+
+        {/* Right Column - Properties */}
+        <div className="lg:col-span-1">
+          <div className="pl-6 border-l border-border">
+            <TaskPropertiesSidebar handleUpdateTask={handleUpdateTask} />
+          </div>
         </div>
       </div>
 
