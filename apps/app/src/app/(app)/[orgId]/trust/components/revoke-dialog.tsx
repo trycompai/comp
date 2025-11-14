@@ -56,6 +56,7 @@ export function RevokeDialog({
             e.preventDefault();
             form.handleSubmit();
           }}
+          className="flex flex-col gap-1"
         >
           <DialogHeader>
             <DialogTitle>Revoke Access Grant</DialogTitle>
@@ -76,13 +77,14 @@ export function RevokeDialog({
                     aria-invalid={isInvalid}
                     placeholder="Reason for revocation..."
                     rows={4}
+                    className="resize-none"
                   />
                   {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </Field>
               );
             }}
           </form.Field>
-          <DialogFooter>
+          <DialogFooter className="gap-1">
             <Button variant="outline" onClick={onClose} type="button">
               Cancel
             </Button>

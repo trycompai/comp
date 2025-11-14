@@ -30,7 +30,7 @@ export function ApproveDialog({
       durationDays: data?.requestedDurationDays ?? 30,
     },
     onSubmit: async ({ value }) => {
-       toast.promise(
+      toast.promise(
         approveRequest({
           requestId,
           durationDays: value.durationDays,
@@ -57,6 +57,7 @@ export function ApproveDialog({
             e.preventDefault();
             form.handleSubmit();
           }}
+          className="flex flex-col gap-1"
         >
           <DialogHeader>
             <DialogTitle>Approve Access Request</DialogTitle>
@@ -65,29 +66,29 @@ export function ApproveDialog({
             </DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-3">
-              <div>
-                <div className="text-sm font-medium text-muted-foreground mb-1">Name</div>
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1">
+                <div className="text-sm font-medium text-muted-foreground">Name</div>
                 <div>{data.name}</div>
               </div>
-              <div>
-                <div className="text-sm font-medium text-muted-foreground mb-1">Email</div>
+              <div className="flex flex-col gap-1">
+                <div className="text-sm font-medium text-muted-foreground">Email</div>
                 <div>{data.email}</div>
               </div>
-              <div>
-                <div className="text-sm font-medium text-muted-foreground mb-1">Company</div>
+              <div className="flex flex-col gap-1">
+                <div className="text-sm font-medium text-muted-foreground">Company</div>
                 <div>{data.company || '-'}</div>
               </div>
-              <div>
-                <div className="text-sm font-medium text-muted-foreground mb-1">Job Title</div>
+              <div className="flex flex-col gap-1">
+                <div className="text-sm font-medium text-muted-foreground">Job Title</div>
                 <div>{data.jobTitle || '-'}</div>
               </div>
-              <div>
-                <div className="text-sm font-medium text-muted-foreground mb-1">Purpose</div>
+              <div className="flex flex-col gap-1">
+                <div className="text-sm font-medium text-muted-foreground">Purpose</div>
                 <div>{data.purpose || '-'}</div>
               </div>
             </div>
-            <div className="space-y-4">
+            <div className="flex flex-col gap-4">
               <form.Field
                 name="durationDays"
                 validators={{
@@ -115,7 +116,7 @@ export function ApproveDialog({
               </form.Field>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-1">
             <Button variant="outline" type="button" onClick={onClose}>
               Cancel
             </Button>

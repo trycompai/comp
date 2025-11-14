@@ -56,6 +56,7 @@ export function DenyDialog({
             e.preventDefault();
             form.handleSubmit();
           }}
+          className="flex flex-col gap-1"
         >
           <DialogHeader>
             <DialogTitle>Deny Access Request</DialogTitle>
@@ -76,13 +77,14 @@ export function DenyDialog({
                     aria-invalid={isInvalid}
                     placeholder="Reason for denial..."
                     rows={4}
+                    className="resize-none"
                   />
                   {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </Field>
               );
             }}
           </form.Field>
-          <DialogFooter>
+          <DialogFooter className="gap-1">
             <Button variant="outline" type="button" onClick={onClose}>
               Cancel
             </Button>
