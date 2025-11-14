@@ -12,9 +12,14 @@ interface MobileMenuProps {
   organizations: Organization[];
   isCollapsed?: boolean;
   organizationId?: string;
+  isQuestionnaireEnabled?: boolean;
 }
 
-export function MobileMenu({ organizationId, organizations }: MobileMenuProps) {
+export function MobileMenu({
+  organizationId,
+  organizations,
+  isQuestionnaireEnabled = false,
+}: MobileMenuProps) {
   const [isOpen, setOpen] = useState(false);
 
   const handleCloseSheet = () => {
@@ -49,6 +54,7 @@ export function MobileMenu({ organizationId, organizations }: MobileMenuProps) {
             organizationId={organizationId}
             organization={currentOrganization}
             onItemClick={handleCloseSheet}
+            isQuestionnaireEnabled={isQuestionnaireEnabled}
           />
         </div>
       </SheetContent>
