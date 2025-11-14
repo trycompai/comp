@@ -1029,33 +1029,33 @@ export function QuestionnaireParser() {
                     className="h-11 lg:h-12"
                   />
                 </TabsContent>
-
-                {/* Action Button */}
-                <div className="flex items-center justify-end">
-                  <Button
-                    onClick={handleParse}
-                    disabled={
-                      isLoading ||
-                      (activeTab === 'file' && !selectedFile) ||
-                      (activeTab === 'url' && !url.trim())
-                    }
-                    className="h-11 lg:h-12 px-6 lg:px-8 w-full sm:w-auto"
-                    size="lg"
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Analyzing...
-                      </>
-                    ) : (
-                      <>
-                        <FileText className="mr-2 h-4 w-4" />
-                        Analyze Questionnaire
-                      </>
-                    )}
-                  </Button>
-                </div>
             </Tabs>
+
+            {/* Action Button */}
+            <div className="flex items-center justify-end">
+              <Button
+                onClick={handleParse}
+                disabled={
+                  isLoading ||
+                  (activeTab === 'file' && !selectedFile) ||
+                  (activeTab === 'url' && !url.trim())
+                }
+                className="h-11 lg:h-12 px-6 lg:px-8 w-full sm:w-auto"
+                size="lg"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    <FileText className="mr-2 h-4 w-4" />
+                    Analyze Questionnaire
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
 
           {/* Info sidebar - takes 1 column, hidden on mobile */}
