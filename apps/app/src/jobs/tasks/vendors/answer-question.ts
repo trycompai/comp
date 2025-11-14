@@ -1,7 +1,7 @@
 import { logger, task } from '@trigger.dev/sdk';
 import { generateAnswerWithRAG } from './answer-question-helpers';
 
-export const answerQuestion = task({
+export const answerQuestion= task({
   id: 'answer-question',
   retry: {
     maxAttempts: 2,

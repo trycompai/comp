@@ -59,7 +59,7 @@ export async function upsertEmbedding(
       },
     });
 
-    logger.debug('Successfully upserted embedding', {
+    logger.info('Successfully upserted embedding', {
       id,
       sourceType: metadata.sourceType,
       sourceId: metadata.sourceId,

@@ -67,7 +67,7 @@ export async function findSimilarContent(
       .map((result) => {
         const metadata = result.metadata as any;
         return {
-          id: result.id,
+          id: String(result.id),
           score: result.score,
           content: metadata?.content || '',
           sourceType: metadata?.sourceType || 'policy',
