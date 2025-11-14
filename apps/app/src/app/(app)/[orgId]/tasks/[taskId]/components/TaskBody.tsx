@@ -166,10 +166,12 @@ export function TaskBody({
         disabled={isUploading || !!busyAttachmentId}
         multiple
       />
-      <div className="space-y-3">
-        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-          Attachments
-        </h3>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            Attachments
+          </h3>
+        </div>
 
         {/* Show error state if attachments failed to load */}
         {attachmentsError && (
@@ -265,7 +267,7 @@ export function TaskBody({
               <button
                 onClick={triggerFileInput}
                 disabled={isUploading || !!busyAttachmentId}
-                className="inline-flex items-center gap-1.5 px-3 py-2 text-sm rounded-md border border-dashed border-border hover:border-border/80 hover:bg-muted/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md border border-dashed border-border/40 hover:border-border/60 hover:bg-muted/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-muted-foreground"
               >
                 {isUploading ? (
                   <Loader2 className="h-3 w-3 animate-spin" />
@@ -283,16 +285,16 @@ export function TaskBody({
             <button
               onClick={triggerFileInput}
               disabled={isUploading || !!busyAttachmentId}
-              className="w-full rounded-lg border border-dashed border-border/40 bg-secondary px-4 py-8 text-center hover:border-border/60 hover:bg-muted/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full rounded-md border border-dashed border-border/30 bg-muted/30 px-3 py-4 text-center hover:border-border/50 hover:bg-muted/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <div className="flex flex-col items-center gap-2">
+              <div className="flex flex-col items-center gap-1.5">
                 {isUploading ? (
-                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                 ) : (
-                  <Plus className="h-5 w-5 text-muted-foreground" />
+                  <Plus className="h-4 w-4 text-muted-foreground" />
                 )}
-                <span className="text-sm text-muted-foreground">
-                  {isUploading ? 'Uploading...' : 'Add attachments'}
+                <span className="text-xs text-muted-foreground">
+                  {isUploading ? 'Uploading...' : 'Add file'}
                 </span>
               </div>
             </button>

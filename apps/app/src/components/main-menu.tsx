@@ -6,6 +6,7 @@ import { cn } from '@comp/ui/cn';
 import { Icons } from '@comp/ui/icons';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import {
+  FileTextIcon,
   FlaskConical,
   Gauge,
   ListCheck,
@@ -49,6 +50,7 @@ export function MainMenu({
   organization,
   isCollapsed = false,
   onItemClick,
+  isQuestionnaireEnabled = false,
 }: Props) {
   const pathname = usePathname();
   const [activeStyle, setActiveStyle] = useState({ top: '0px', height: '0px' });
@@ -111,6 +113,15 @@ export function MainMenu({
       disabled: false,
       icon: Store,
       protected: false,
+    },
+    {
+      id: 'questionnaire',
+      path: '/:organizationId/security-questionnaire',
+      name: 'Questionnaire',
+      disabled: false,
+      icon: FileTextIcon,
+      protected: false,
+      hidden: !isQuestionnaireEnabled,
     },
     {
       id: 'integrations',
@@ -319,4 +330,5 @@ type Props = {
   organization?: { advancedModeEnabled?: boolean } | null;
   isCollapsed?: boolean;
   onItemClick?: () => void;
+  isQuestionnaireEnabled?: boolean;
 };

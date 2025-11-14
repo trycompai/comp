@@ -54,60 +54,56 @@ export function TaskFilterHeader() {
   };
 
   return (
-    <div className="flex flex-col border-b-0">
-      {/* Header with filters and create button */}
-      <div className="flex items-center justify-between">
-        {/* Status Filter Buttons */}
-        <div className="flex items-center space-x-1">
-          <Button
-            variant={statusFilter === null ? 'secondary' : 'ghost'}
-            size="sm"
-            className={getButtonClasses(statusFilter === null)}
-            onClick={() => setStatusFilter(null)}
-          >
-            <List className="h-3.5 w-3.5" />
-            <span>All</span>
-          </Button>
-          {statuses.map((status) => {
-            const Icon = statusIcons[status.id];
-            const isActive = statusFilter === status.id;
-            return (
-              <Button
-                key={status.id}
-                variant={isActive ? 'secondary' : 'ghost'}
-                size="sm"
-                className={getButtonClasses(isActive)}
-                onClick={() => setStatusFilter(status.id)}
-              >
-                {React.createElement(Icon, { className: 'h-3.5 w-3.5' })}
-                <span>{status.title}</span>
-              </Button>
-            );
-          })}
-          {/* Conditionally render the 'Clear filters' button only when filters are active. */}
-          {filtersActive && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={clearFilters}
-              className="text-muted-foreground"
-            >
-              Clear filters
-            </Button>
-          )}
-        </div>
-
-        {/* Create Task Button */}
+    <div className="flex items-center justify-between">
+      {/* Status Filter Buttons */}
+      <div className="flex items-center gap-1">
         <Button
-          variant="default"
+          variant={statusFilter === null ? 'secondary' : 'ghost'}
           size="sm"
-          onClick={() => setCreateTaskOpen('true')}
-          className="flex items-center space-x-1.5"
+          className={getButtonClasses(statusFilter === null)}
+          onClick={() => setStatusFilter(null)}
         >
-          <Plus className="h-3.5 w-3.5" />
-          <span>Create Task</span>
+          <List className="h-3.5 w-3.5" />
+          <span>All</span>
         </Button>
+        {statuses.map((status) => {
+          const Icon = statusIcons[status.id];
+          const isActive = statusFilter === status.id;
+          return (
+            <Button
+              key={status.id}
+              variant={isActive ? 'secondary' : 'ghost'}
+              size="sm"
+              className={getButtonClasses(isActive)}
+              onClick={() => setStatusFilter(status.id)}
+            >
+              {React.createElement(Icon, { className: 'h-3.5 w-3.5' })}
+              <span>{status.title}</span>
+            </Button>
+          );
+        })}
+        {filtersActive && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={clearFilters}
+            className="text-muted-foreground"
+          >
+            Clear
+          </Button>
+        )}
       </div>
+
+      {/* Create Task Button */}
+      <Button
+        variant="default"
+        size="sm"
+        onClick={() => setCreateTaskOpen('true')}
+        className="flex items-center gap-1.5"
+      >
+        <Plus className="h-3.5 w-3.5" />
+        <span>Create Task</span>
+      </Button>
     </div>
   );
 }

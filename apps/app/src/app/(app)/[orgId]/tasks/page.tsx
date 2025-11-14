@@ -1,6 +1,5 @@
-import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { auth } from '@/utils/auth';
-import { db, Role, TaskStatus } from '@db';
+import { db, Role } from '@db';
 import { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { TaskList } from './components/TaskList';
@@ -24,23 +23,19 @@ export default async function TasksPage({
 }) {
   // Extract specific params to pass down
   const { orgId } = await params;
-  const allSearchParams = await searchParams;
-  const statusFilter = allSearchParams?.status as string | undefined;
 
-  const tasks = await getTasks(statusFilter);
+  const tasks = await getTasks();
   const members = await getMembersWithMetadata();
   const controls = await getControls();
 
   return (
-    <div className="max-w-[1200px] mx-auto py-8 w-full">
-      <PageWithBreadcrumb breadcrumbs={[{ label: 'Tasks', href: `/${orgId}/tasks` }]}>
-        <TaskList tasks={tasks} members={members} controls={controls} />
-      </PageWithBreadcrumb>
+    <div className="mx-auto w-full max-w-[1400px] px-6 py-8">
+      <TaskList tasks={tasks} members={members} controls={controls} />
     </div>
   );
 }
 
-const getTasks = async (statusParam?: string) => {
+const getTasks = async () => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -51,18 +46,39 @@ const getTasks = async (statusParam?: string) => {
     return [];
   }
 
-  const whereClause: {
-    organizationId: string;
-    status?: TaskStatus;
-  } = { organizationId: orgId };
-
-  // Filter by Status (using passed argument)
-  if (typeof statusParam === 'string' && statusParam in TaskStatus) {
-    whereClause.status = statusParam as TaskStatus;
-  }
-
   const tasks = await db.task.findMany({
-    where: whereClause,
+    where: {
+      organizationId: orgId,
+    },
+    include: {
+      controls: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+          evidenceAutomations: {
+            select: {
+              id: true,
+              isEnabled: true,
+              name: true,
+              runs: {
+                orderBy: {
+                  createdAt: 'desc',
+                },
+                take: 3,
+                select: {
+                  status: true,
+                  success: true,
+                  evaluationStatus: true,
+                  createdAt: true,
+                  triggeredBy: true,
+                  runDuration: true,
+                },
+              },
+            },
+          },
+    },
     orderBy: [{ status: 'asc' }, { title: 'asc' }],
   });
   return tasks;
