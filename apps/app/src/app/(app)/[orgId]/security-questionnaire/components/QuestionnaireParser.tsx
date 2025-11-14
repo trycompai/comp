@@ -946,113 +946,116 @@ export function QuestionnaireParser() {
               className="w-full"
             >
               <TabsList className="inline-flex h-9 w-full sm:w-auto">
-                <TabsTrigger value="file" className="gap-2 text-xs flex-1 sm:flex-initial sm:px-4">
-                  <Upload className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">File</span>
+                <TabsTrigger
+                  value="file"
+                  className="gap-2 text-sm flex-1 sm:flex-initial"
+                >
+                  <Upload className="h-4 w-4" />
+                  <span className="hidden sm:inline">File Upload</span>
                 </TabsTrigger>
-                <TabsTrigger value="url" className="gap-2 text-xs flex-1 sm:flex-initial sm:px-4">
-                  <LinkIcon className="h-3.5 w-3.5" />
+                <TabsTrigger value="url" className="gap-2 text-sm flex-1 sm:flex-initial">
+                  <LinkIcon className="h-4 w-4" />
                   <span className="hidden sm:inline">URL</span>
                 </TabsTrigger>
               </TabsList>
 
               <TabsContent value="file" className="space-y-4 mt-6">
-                {selectedFile ? (
-                  <div className="flex items-center justify-between gap-4 p-4 bg-muted/30 rounded-lg border border-border/40">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{selectedFile.name}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setSelectedFile(null)}
-                      disabled={isLoading}
-                      className="h-9 w-9 shrink-0"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ) : (
-                  <Dropzone
-                    onDrop={handleFileSelect}
-                    maxSize={10 * 1024 * 1024}
-                    maxFiles={1}
-                    multiple={false}
-                    disabled={isLoading}
-                  >
-                    {({ getRootProps, getInputProps, isDragActive }) => (
-                      <div
-                        {...getRootProps()}
-                        className={cn(
-                          'flex flex-col items-center justify-center gap-4 border-2 border-dashed rounded-xl p-12 lg:p-16 cursor-pointer transition-all',
-                          isDragActive
-                            ? 'border-primary bg-primary/5 scale-[1.01]'
-                            : 'border-border/40 bg-muted/10 hover:border-primary/40 hover:bg-muted/20',
-                          isLoading && 'opacity-50 pointer-events-none',
-                        )}
-                      >
-                        <input {...getInputProps()} />
-                        <div className="flex flex-col items-center gap-3">
-                          <Upload className="h-10 w-10 text-muted-foreground" />
-                          <div className="text-center space-y-1">
-                            <p className="text-sm font-medium text-foreground">
-                              {isDragActive ? 'Drop file here' : 'Drag & drop or click to select'}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              PDF, Excel, CSV, Word (max 10MB)
-                            </p>
-                          </div>
+                  {selectedFile ? (
+                    <div className="flex items-center justify-between gap-4 p-4 bg-muted/30 rounded-lg border border-border/40">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{selectedFile.name}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
                         </div>
                       </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setSelectedFile(null)}
+                        disabled={isLoading}
+                        className="h-9 w-9 shrink-0"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <Dropzone
+                      onDrop={handleFileSelect}
+                      maxSize={10 * 1024 * 1024}
+                      maxFiles={1}
+                      multiple={false}
+                      disabled={isLoading}
+                    >
+                      {({ getRootProps, getInputProps, isDragActive }) => (
+                        <div
+                          {...getRootProps()}
+                          className={cn(
+                            'flex flex-col items-center justify-center gap-4 border-2 border-dashed rounded-xl p-12 lg:p-16 cursor-pointer transition-all',
+                            isDragActive
+                              ? 'border-primary bg-primary/5 scale-[1.01]'
+                              : 'border-border/40 bg-muted/10 hover:border-primary/40 hover:bg-muted/20',
+                            isLoading && 'opacity-50 pointer-events-none',
+                          )}
+                        >
+                          <input {...getInputProps()} />
+                          <div className="flex flex-col items-center gap-3">
+                            <Upload className="h-10 w-10 text-muted-foreground" />
+                            <div className="text-center space-y-1">
+                              <p className="text-sm font-medium text-foreground">
+                                {isDragActive ? 'Drop file here' : 'Drag & drop or click to select'}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                PDF, Excel, CSV, Word (max 10MB)
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </Dropzone>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="url" className="space-y-4 mt-6">
+                  <Input
+                    id="questionnaire-url"
+                    type="url"
+                    placeholder="https://example.com/questionnaire"
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    disabled={isLoading}
+                    className="h-11 lg:h-12"
+                  />
+                </TabsContent>
+
+                {/* Action Button */}
+                <div className="flex items-center justify-end">
+                  <Button
+                    onClick={handleParse}
+                    disabled={
+                      isLoading ||
+                      (activeTab === 'file' && !selectedFile) ||
+                      (activeTab === 'url' && !url.trim())
+                    }
+                    className="h-11 lg:h-12 px-6 lg:px-8 w-full sm:w-auto"
+                    size="lg"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Analyzing...
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="mr-2 h-4 w-4" />
+                        Analyze Questionnaire
+                      </>
                     )}
-                  </Dropzone>
-                )}
-              </TabsContent>
-
-              <TabsContent value="url" className="space-y-4 mt-6">
-                <Input
-                  id="questionnaire-url"
-                  type="url"
-                  placeholder="https://example.com/questionnaire"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  disabled={isLoading}
-                  className="h-11 lg:h-12"
-                />
-              </TabsContent>
+                  </Button>
+                </div>
             </Tabs>
-
-            {/* Action Button */}
-            <div className="flex items-center justify-end">
-              <Button
-                onClick={handleParse}
-                disabled={
-                  isLoading ||
-                  (activeTab === 'file' && !selectedFile) ||
-                  (activeTab === 'url' && !url.trim())
-                }
-                className="h-11 lg:h-12 px-6 lg:px-8 w-full sm:w-auto"
-                size="lg"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Analyzing...
-                  </>
-                ) : (
-                  <>
-                    <FileText className="mr-2 h-4 w-4" />
-                    Analyze Questionnaire
-                  </>
-                )}
-              </Button>
-            </div>
           </div>
 
           {/* Info sidebar - takes 1 column, hidden on mobile */}
