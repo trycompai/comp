@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
-import { ArrowRight, Check, Copy } from 'lucide-react';
-import { toast } from 'sonner';
-import Link from 'next/link';
 import { Button } from '@comp/ui/button';
 import { Card } from '@comp/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
+import { ArrowRight, Check, Copy } from 'lucide-react';
+import Link from 'next/link';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 export function BookingStep({
   email,
@@ -35,12 +35,12 @@ export function BookingStep({
 
   const handleCopyOrgId = async () => {
     if (isCopied) return;
-    
+
     try {
       await navigator.clipboard.writeText(orgId);
       setIsCopied(true);
       toast.success('Org ID copied to clipboard');
-      
+
       // Reset after 3 seconds
       setTimeout(() => {
         setIsCopied(false);
@@ -74,7 +74,7 @@ export function BookingStep({
                     variant="outline"
                     className="text-xs rounded-tl-none rounded-bl-none"
                     onClick={handleCopyOrgId}
-                    aria-label={isCopied ? "Copied!" : "Copy Org ID"}
+                    aria-label={isCopied ? 'Copied!' : 'Copy Org ID'}
                   >
                     {isCopied ? (
                       <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
@@ -84,7 +84,7 @@ export function BookingStep({
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p className="text-xs">{isCopied ? "Copied!" : "Copy Org ID"}</p>
+                  <p className="text-xs">{isCopied ? 'Copied!' : 'Copy Org ID'}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>

@@ -48,10 +48,10 @@ export const updatePolicy = schemaTask({
       if (metadata.parent) {
         // Update this policy's status to completed using individual key
         metadata.parent.set(`policy_${params.policyId}_status`, 'completed');
-        
+
         // Increment completed count
         metadata.parent.increment('policiesCompleted', 1);
-        
+
         // Decrement remaining count
         metadata.parent.increment('policiesRemaining', -1);
       }

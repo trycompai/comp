@@ -43,7 +43,10 @@ export function DeviceAgentAccordionItem({
 
   const hasInstalledAgent = host !== null;
   const failedPoliciesCount = useMemo(() => {
-    return fleetPolicies.filter((policy) => policy.response !== 'pass').length + (!isMacOS || mdmEnabledStatus.response === 'pass' ? 0 : 1);
+    return (
+      fleetPolicies.filter((policy) => policy.response !== 'pass').length +
+      (!isMacOS || mdmEnabledStatus.response === 'pass' ? 0 : 1)
+    );
   }, [fleetPolicies, mdmEnabledStatus, isMacOS]);
 
   const isCompleted = hasInstalledAgent && failedPoliciesCount === 0;
@@ -283,7 +286,9 @@ export function DeviceAgentAccordionItem({
                       <div
                         className={cn(
                           'hover:bg-muted/50 flex items-center justify-between rounded-md border border-l-4 p-3 shadow-sm transition-colors',
-                          mdmEnabledStatus.response === 'pass' ? 'border-l-green-500' : 'border-l-red-500',
+                          mdmEnabledStatus.response === 'pass'
+                            ? 'border-l-green-500'
+                            : 'border-l-red-500',
                         )}
                       >
                         <div className="flex items-center gap-2">

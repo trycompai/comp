@@ -1,22 +1,14 @@
 {
   "$schema": "https://turborepo.org/schema.json",
-  "globalDependencies": [
-    "**/.env"
-  ],
+  "globalDependencies": ["**/.env"],
   "ui": "stream",
   "tasks": {
     "prisma:generate": {
       "cache": false,
-      "outputs": [
-        "prisma/schema.prisma",
-        "node_modules/.prisma/**"
-      ]
+      "outputs": ["prisma/schema.prisma", "node_modules/.prisma/**"]
     },
     "build": {
-      "dependsOn": [
-        "^build",
-        "prisma:generate"
-      ],
+      "dependsOn": ["^build", "prisma:generate"],
       "env": [
         "AUTH_GOOGLE_ID",
         "AUTH_GOOGLE_SECRET",
@@ -60,31 +52,17 @@
         "NEXT_PUBLIC_API_URL",
         "NEXT_PUBLIC_BETTER_AUTH_URL"
       ],
-      "inputs": [
-        "$TURBO_DEFAULT$",
-        ".env"
-      ],
-      "outputs": [
-        ".next/**",
-        "!.next/cache/**",
-        "next-env.d.ts"
-      ]
+      "inputs": ["$TURBO_DEFAULT$", ".env"],
+      "outputs": [".next/**", "!.next/cache/**", "next-env.d.ts"]
     },
     "lint": {
-      "dependsOn": [
-        "^lint"
-      ]
+      "dependsOn": ["^lint"]
     },
     "typecheck": {
-      "outputs": [
-        "node_modules/.cache/tsbuildinfo.json"
-      ]
+      "outputs": ["node_modules/.cache/tsbuildinfo.json"]
     },
     "dev": {
-      "inputs": [
-        "$TURBO_DEFAULT$",
-        ".env"
-      ],
+      "inputs": ["$TURBO_DEFAULT$", ".env"],
       "persistent": true,
       "cache": false
     },
@@ -96,13 +74,8 @@
     },
     "test": {
       "cache": false,
-      "outputs": [
-        "coverage/**"
-      ],
-      "inputs": [
-        "$TURBO_DEFAULT$",
-        ".env"
-      ]
+      "outputs": ["coverage/**"],
+      "inputs": ["$TURBO_DEFAULT$", ".env"]
     }
   }
 }

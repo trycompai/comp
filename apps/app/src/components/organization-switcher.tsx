@@ -104,7 +104,7 @@ export function OrganizationSwitcher({
 
   const sortedOrganizations = [...organizations].sort((a, b) => {
     if (sortOrder === 'alphabetical') {
-      return (a.name).localeCompare(b.name);
+      return a.name.localeCompare(b.name);
     } else if (sortOrder === 'recent') {
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     }

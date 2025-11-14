@@ -1,6 +1,6 @@
 /**
  * Task Automation Library
- * 
+ *
  * Main export file for all task automation utilities, types, and API clients.
  */
 
@@ -11,10 +11,7 @@ export * from './types';
 export { taskAutomationApi } from './task-automation-api';
 
 // Export store
-export { 
-  useTaskAutomationStore, 
-  useTaskAutomationDataMapper,
-} from './task-automation-store';
+export { useTaskAutomationDataMapper, useTaskAutomationStore } from './task-automation-store';
 
 // Export chat context
 export { ChatProvider, useSharedChatContext } from './chat-context';

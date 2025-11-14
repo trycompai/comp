@@ -158,7 +158,7 @@ export function TeamMembersClient({
     const member = data.members.find((m) => m.id === memberId);
 
     // Client-side check (optional, robust check should be server-side in authClient)
-    const memberRoles = member?.role?.split(',').map(r => r.trim()) ?? [];
+    const memberRoles = member?.role?.split(',').map((r) => r.trim()) ?? [];
     if (member && memberRoles.includes('owner') && !rolesArray.includes('owner')) {
       // Show toast error directly, no need to return an error object
       toast.error('The Owner role cannot be removed.');

@@ -524,8 +524,11 @@ export async function triggerPolicyUpdates(
     metadata.set('policiesCompleted', 0);
     metadata.set('policiesRemaining', policies.length);
     // Store policy info for tracking individual policies
-    metadata.set('policiesInfo', policies.map((p) => ({ id: p.id, name: p.name })));
-    
+    metadata.set(
+      'policiesInfo',
+      policies.map((p) => ({ id: p.id, name: p.name })),
+    );
+
     // Initialize individual policy statuses - all start as 'pending'
     // Each policy gets its own metadata key: policy_{id}_status
     policies.forEach((policy) => {
@@ -557,7 +560,7 @@ export async function createVendors(
   vendorData?: VendorData[],
 ): Promise<any[]> {
   // Extract vendors using AI if not provided
-  const vendorsToCreate = vendorData || await extractVendorsFromContext(questionsAndAnswers);
+  const vendorsToCreate = vendorData || (await extractVendorsFromContext(questionsAndAnswers));
 
   // Create vendor records in database
   const createdVendors = await createVendorsFromData(vendorsToCreate, organizationId);

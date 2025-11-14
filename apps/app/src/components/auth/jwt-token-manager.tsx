@@ -22,10 +22,10 @@ export function JwtTokenManager() {
 
         // Check if we have an active session
         const currentSession = await authClient.getSession();
-        
+
         if (currentSession.data?.session) {
           console.log('🔄 Active session found, capturing JWT token...');
-          
+
           // Call getSession with onSuccess to capture JWT token
           await authClient.getSession({
             fetchOptions: {
@@ -35,8 +35,8 @@ export function JwtTokenManager() {
                   localStorage.setItem('jwt_token', jwtToken);
                   console.log('🎯 JWT token captured and stored');
                 }
-              }
-            }
+              },
+            },
           });
         }
       } catch (error) {

@@ -148,7 +148,8 @@ export function PublishDialog({ open, onOpenChange }: PublishDialogProps) {
             <DialogHeader>
               <DialogTitle>Automation Published!</DialogTitle>
               <DialogDescription>
-                Version {publishedVersion} has been published and is now running. Where would you like to go?
+                Version {publishedVersion} has been published and is now running. Where would you
+                like to go?
               </DialogDescription>
             </DialogHeader>
 

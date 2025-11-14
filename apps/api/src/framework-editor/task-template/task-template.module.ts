@@ -10,4 +10,3 @@ import { TaskTemplateService } from './task-template.service';
   exports: [TaskTemplateService],
 })
 export class TaskTemplateModule {}
-

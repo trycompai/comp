@@ -1,9 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { 
-  VendorCategory, 
-  VendorStatus, 
-  Likelihood, 
-  Impact 
+import {
+  VendorCategory,
+  VendorStatus,
+  Likelihood,
+  Impact,
 } from '@trycompai/db';
 
 export class VendorResponseDto {
@@ -21,7 +21,8 @@ export class VendorResponseDto {
 
   @ApiProperty({
     description: 'Detailed description of the vendor and services provided',
-    example: 'Cloud infrastructure provider offering AWS-like services including compute, storage, and networking solutions for enterprise customers.',
+    example:
+      'Cloud infrastructure provider offering AWS-like services including compute, storage, and networking solutions for enterprise customers.',
   })
   description: string;
 

@@ -17,7 +17,7 @@ import { z } from 'zod';
 import { isFriendlyAvailable } from '../actions/is-friendly-available';
 import { trustPortalSwitchAction } from '../actions/trust-portal-switch';
 import { updateTrustPortalFrameworks } from '../actions/update-trust-portal-frameworks';
-import { GDPR, HIPAA, ISO27001, SOC2Type1, SOC2Type2, PCIDSS, ISO42001, NEN7510 } from './logos';
+import { GDPR, HIPAA, ISO27001, ISO42001, NEN7510, PCIDSS, SOC2Type1, SOC2Type2 } from './logos';
 
 const trustPortalSwitchSchema = z.object({
   enabled: z.boolean(),

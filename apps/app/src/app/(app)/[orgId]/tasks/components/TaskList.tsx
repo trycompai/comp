@@ -25,7 +25,13 @@ const statuses = [
 ] as const;
 
 // Parser for validating StatusId from URL query parameters.
-const statusIdParser = parseAsStringLiteral<StatusId>(['in_progress', 'todo', 'done', 'failed', 'not_relevant']);
+const statusIdParser = parseAsStringLiteral<StatusId>([
+  'in_progress',
+  'todo',
+  'done',
+  'failed',
+  'not_relevant',
+]);
 
 /**
  * Renders the main task list view, including filtering and drag-and-drop capabilities.
@@ -67,8 +73,8 @@ export function TaskList({
     }
     // Sort each group alphabetically by title (A-Z)
     for (const status in grouped) {
-      grouped[status as StatusId].sort((a, b) => 
-        a.title.localeCompare(b.title, undefined, { sensitivity: 'base' })
+      grouped[status as StatusId].sort((a, b) =>
+        a.title.localeCompare(b.title, undefined, { sensitivity: 'base' }),
       );
     }
     return grouped;

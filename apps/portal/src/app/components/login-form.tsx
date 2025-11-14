@@ -1,7 +1,7 @@
 'use client';
 
-import { GoogleSignIn } from './google-sign-in';
 import { useSearchParams } from 'next/navigation';
+import { GoogleSignIn } from './google-sign-in';
 
 interface LoginFormProps {
   inviteCode?: string;

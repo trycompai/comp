@@ -14,10 +14,15 @@ export class RisksService {
         orderBy: { createdAt: 'desc' },
       });
 
-      this.logger.log(`Retrieved ${risks.length} risks for organization ${organizationId}`);
+      this.logger.log(
+        `Retrieved ${risks.length} risks for organization ${organizationId}`,
+      );
       return risks;
     } catch (error) {
-      this.logger.error(`Failed to retrieve risks for organization ${organizationId}:`, error);
+      this.logger.error(
+        `Failed to retrieve risks for organization ${organizationId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -25,14 +30,16 @@ export class RisksService {
   async findById(id: string, organizationId: string) {
     try {
       const risk = await db.risk.findFirst({
-        where: { 
+        where: {
           id,
-          organizationId 
+          organizationId,
         },
       });
 
       if (!risk) {
-        throw new NotFoundException(`Risk with ID ${id} not found in organization ${organizationId}`);
+        throw new NotFoundException(
+          `Risk with ID ${id} not found in organization ${organizationId}`,
+        );
       }
 
       this.logger.log(`Retrieved risk: ${risk.title} (${id})`);
@@ -55,15 +62,24 @@ export class RisksService {
         },
       });
 
-      this.logger.log(`Created new risk: ${risk.title} (${risk.id}) for organization ${organizationId}`);
+      this.logger.log(
+        `Created new risk: ${risk.title} (${risk.id}) for organization ${organizationId}`,
+      );
       return risk;
     } catch (error) {
-      this.logger.error(`Failed to create risk for organization ${organizationId}:`, error);
+      this.logger.error(
+        `Failed to create risk for organization ${organizationId}:`,
+        error,
+      );
       throw error;
     }
   }
 
-  async updateById(id: string, organizationId: string, updateRiskDto: UpdateRiskDto) {
+  async updateById(
+    id: string,
+    organizationId: string,
+    updateRiskDto: UpdateRiskDto,
+  ) {
     try {
       // First check if the risk exists in the organization
       await this.findById(id, organizationId);
@@ -94,12 +110,12 @@ export class RisksService {
       });
 
       this.logger.log(`Deleted risk: ${existingRisk.title} (${id})`);
-      return { 
+      return {
         message: 'Risk deleted successfully',
         deletedRisk: {
           id: existingRisk.id,
           title: existingRisk.title,
-        }
+        },
       };
     } catch (error) {
       if (error instanceof NotFoundException) {

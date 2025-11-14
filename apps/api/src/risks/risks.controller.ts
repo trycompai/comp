@@ -1,12 +1,12 @@
-import { 
-  Controller, 
-  Get, 
+import {
+  Controller,
+  Get,
   Post,
   Patch,
   Delete,
   Body,
   Param,
-  UseGuards 
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBody,
@@ -17,10 +17,7 @@ import {
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
-import {
-  AuthContext,
-  OrganizationId,
-} from '../auth/auth-context.decorator';
+import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import { CreateRiskDto } from './dto/create-risk.dto';
@@ -64,12 +61,13 @@ export class RisksController {
       data: risks,
       count: risks.length,
       authType: authContext.authType,
-      ...(authContext.userId && authContext.userEmail && {
-        authenticatedUser: {
-          id: authContext.userId,
-          email: authContext.userEmail,
-        },
-      }),
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
     };
   }
 
@@ -90,12 +88,13 @@ export class RisksController {
     return {
       ...risk,
       authType: authContext.authType,
-      ...(authContext.userId && authContext.userEmail && {
-        authenticatedUser: {
-          id: authContext.userId,
-          email: authContext.userEmail,
-        },
-      }),
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
     };
   }
 
@@ -117,12 +116,13 @@ export class RisksController {
     return {
       ...risk,
       authType: authContext.authType,
-      ...(authContext.userId && authContext.userEmail && {
-        authenticatedUser: {
-          id: authContext.userId,
-          email: authContext.userEmail,
-        },
-      }),
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
     };
   }
 
@@ -150,12 +150,13 @@ export class RisksController {
     return {
       ...updatedRisk,
       authType: authContext.authType,
-      ...(authContext.userId && authContext.userEmail && {
-        authenticatedUser: {
-          id: authContext.userId,
-          email: authContext.userEmail,
-        },
-      }),
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
     };
   }
 
@@ -176,12 +177,13 @@ export class RisksController {
     return {
       ...result,
       authType: authContext.authType,
-      ...(authContext.userId && authContext.userEmail && {
-        authenticatedUser: {
-          id: authContext.userId,
-          email: authContext.userEmail,
-        },
-      }),
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
     };
   }
 }

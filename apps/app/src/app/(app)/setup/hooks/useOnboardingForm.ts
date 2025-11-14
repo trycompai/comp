@@ -217,11 +217,9 @@ export function useOnboardingForm({
       if (!response.ok) throw new Error('Failed to fetch frameworks');
       const data = await response.json();
       const visibleFrameworks = data.frameworks.filter((f: { visible: boolean }) => f.visible);
-      
+
       // Use first two visible frameworks, or just the first one if only one exists
-      const frameworkIds = visibleFrameworks
-        .slice(0, 2)
-        .map((f: { id: string }) => f.id);
+      const frameworkIds = visibleFrameworks.slice(0, 2).map((f: { id: string }) => f.id);
 
       const prefilledAnswers: Partial<CompanyDetails> = {
         frameworkIds: frameworkIds.length > 0 ? frameworkIds : [],

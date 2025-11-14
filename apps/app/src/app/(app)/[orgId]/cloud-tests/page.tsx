@@ -1,6 +1,6 @@
 import { auth as betterAuth } from '@/utils/auth';
-import { auth } from '@trigger.dev/sdk';
 import { db } from '@db';
+import { auth } from '@trigger.dev/sdk';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { TestsLayout } from './components/TestsLayout';

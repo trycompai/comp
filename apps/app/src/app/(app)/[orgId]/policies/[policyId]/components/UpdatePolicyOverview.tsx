@@ -106,7 +106,10 @@ export function UpdatePolicyOverview({
           reviewDate.toDateString());
 
     // If policy is draft and being published OR policy is published and has changes
-    if ((['draft', 'needs_review'].includes(policy.status) && status === 'published') || isPublishedWithChanges) {
+    if (
+      (['draft', 'needs_review'].includes(policy.status) && status === 'published') ||
+      isPublishedWithChanges
+    ) {
       setIsApprovalDialogOpen(true);
       setIsSubmitting(false);
     } else {
@@ -278,14 +281,10 @@ export function UpdatePolicyOverview({
                 variant="outline"
                 disabled
                 className={cn(
-                  'w-full pl-3 text-left font-normal pointer-events-none cursor-not-allowed select-none'
+                  'w-full pl-3 text-left font-normal pointer-events-none cursor-not-allowed select-none',
                 )}
               >
-                {policy.reviewDate ? (
-                  format(new Date(policy.reviewDate), 'PPP')
-                ) : (
-                  <span>None</span>
-                )}
+                {policy.reviewDate ? format(new Date(policy.reviewDate), 'PPP') : <span>None</span>}
                 <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
               </Button>
             </div>

@@ -16,4 +16,3 @@ export const TASK_TEMPLATE_OPERATIONS = {
     description: 'Delete a framework editor task template by ID',
   },
 };
-
