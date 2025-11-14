@@ -1,3 +1,17 @@
+# [1.58.0](https://github.com/trycompai/comp/compare/v1.57.1...v1.58.0) (2025-11-13)
+
+
+### Features
+
+* **onboarding:** add individual tracking for vendors and risks with auto-expand ([#1748](https://github.com/trycompai/comp/issues/1748)) ([7a85be8](https://github.com/trycompai/comp/commit/7a85be80f4c27da0cef485ad09e7152222dc8c48))
+
+## [1.57.1](https://github.com/trycompai/comp/compare/v1.57.0...v1.57.1) (2025-11-13)
+
+
+### Bug Fixes
+
+* **tasks:** show all task statuses and sort alphabetically ([#1743](https://github.com/trycompai/comp/issues/1743)) ([413b14c](https://github.com/trycompai/comp/commit/413b14ca95d5490a086aecb418a3305c2099534a))
+
 # [1.57.0](https://github.com/trycompai/comp/compare/v1.56.7...v1.57.0) (2025-11-11)
 
 

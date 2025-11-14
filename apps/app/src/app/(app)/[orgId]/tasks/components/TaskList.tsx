@@ -20,10 +20,12 @@ const statuses = [
   { id: 'in_progress', title: 'In Progress' },
   { id: 'todo', title: 'Todo' },
   { id: 'done', title: 'Done' },
+  { id: 'failed', title: 'Failed' },
+  { id: 'not_relevant', title: 'Not Relevant' },
 ] as const;
 
 // Parser for validating StatusId from URL query parameters.
-const statusIdParser = parseAsStringLiteral<StatusId>(['in_progress', 'todo', 'done']);
+const statusIdParser = parseAsStringLiteral<StatusId>(['in_progress', 'todo', 'done', 'failed', 'not_relevant']);
 
 /**
  * Renders the main task list view, including filtering and drag-and-drop capabilities.
@@ -54,14 +56,20 @@ export function TaskList({
       in_progress: [],
       todo: [],
       done: [],
+      failed: [],
+      not_relevant: [],
     };
-    // Sort tasks by the server-provided order before grouping.
-    const sortedTasks = [...initialTasks].sort((a, b) => a.order - b.order);
-    for (const task of sortedTasks) {
-      // Group tasks into the appropriate status array.
+    // Group tasks by status first
+    for (const task of initialTasks) {
       if (grouped[task.status as StatusId]) {
         grouped[task.status as StatusId].push(task);
       }
+    }
+    // Sort each group alphabetically by title (A-Z)
+    for (const status in grouped) {
+      grouped[status as StatusId].sort((a, b) => 
+        a.title.localeCompare(b.title, undefined, { sensitivity: 'base' })
+      );
     }
     return grouped;
   }, [initialTasks]);
@@ -75,32 +83,11 @@ export function TaskList({
         hoverIndex,
       });
       if (item.status !== targetStatus && updateTaskStatus !== 'executing') {
-        // Find the target group tasks and calculate new order
-        const targetGroup = tasksByStatus[targetStatus] || [];
-        // Find the order of the task we are hovering over (if any)
-        // Note: This assumes tasks are already sorted by order in tasksByStatus
-        const hoverTaskOrder =
-          hoverIndex < targetGroup.length ? targetGroup[hoverIndex].order : null;
-
-        let newOrder: number;
-        if (hoverTaskOrder !== null) {
-          // Simple approach: take the order of the hovered item
-          // More complex: calculate midpoint between hoverItem and item before/after
-          newOrder = hoverTaskOrder;
-        } else {
-          // Dropped at the end, find max order + 1
-          newOrder = targetGroup.length > 0 ? Math.max(...targetGroup.map((t) => t.order)) + 1 : 0;
-        }
-
-        // TODO: Update the server action (updateTask) to accept and set the 'order'
-        // For now, just updating status
+        // Update task status (tasks will be sorted alphabetically on next render)
         updateTaskExecute({
           id: item.id,
-          status: targetStatus /*, order: newOrder */,
+          status: targetStatus,
         });
-
-        // Optional: Re-index orders in the source and target groups if needed
-        // (Requires another server action or more complex update logic)
       }
     },
     [updateTaskExecute, updateTaskStatus, tasksByStatus],

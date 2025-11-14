@@ -32,7 +32,7 @@ export default async function TasksPage({
   const controls = await getControls();
 
   return (
-    <div className="max-w-[1200px] mx-auto py-8">
+    <div className="max-w-[1200px] mx-auto py-8 w-full">
       <PageWithBreadcrumb breadcrumbs={[{ label: 'Tasks', href: `/${orgId}/tasks` }]}>
         <TaskList tasks={tasks} members={members} controls={controls} />
       </PageWithBreadcrumb>
@@ -63,7 +63,7 @@ const getTasks = async (statusParam?: string) => {
 
   const tasks = await db.task.findMany({
     where: whereClause,
-    orderBy: [{ status: 'asc' }, { order: 'asc' }, { createdAt: 'asc' }],
+    orderBy: [{ status: 'asc' }, { title: 'asc' }],
   });
   return tasks;
 };
@@ -83,7 +83,7 @@ const getMembersWithMetadata = async () => {
     where: {
       organizationId: orgId,
       role: {
-        notIn: [Role.employee, Role.auditor],
+        notIn: [Role.employee, Role.auditor, Role.contractor],
       },
     },
     include: {

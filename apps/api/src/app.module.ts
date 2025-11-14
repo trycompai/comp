@@ -9,6 +9,7 @@ import { PeopleModule } from './people/people.module';
 import { DevicesModule } from './devices/devices.module';
 import { DeviceAgentModule } from './device-agent/device-agent.module';
 import { awsConfig } from './config/aws.config';
+import { betterAuthConfig } from './config/better-auth.config';
 import { HealthModule } from './health/health.module';
 import { OrganizationModule } from './organization/organization.module';
 import { PoliciesModule } from './policies/policies.module';
@@ -23,7 +24,8 @@ import { TaskTemplateModule } from './framework-editor/task-template/task-templa
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [awsConfig],
+      // .env file is loaded manually in main.ts before NestJS starts
+      load: [awsConfig, betterAuthConfig],
       validationOptions: {
         allowUnknown: true,
         abortEarly: true,
