@@ -260,7 +260,17 @@ export function QuestionnaireParser() {
     onSuccess: ({ data }: { data: any }) => {
       const responseData = data?.data || data;
       const filename = responseData?.filename;
-      if (filename) {
+      const downloadUrl = responseData?.downloadUrl;
+
+      if (downloadUrl && filename) {
+        // Trigger download
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
         toast.success(`Exported as ${filename}`);
       }
     },
@@ -429,7 +439,7 @@ export function QuestionnaireParser() {
         <div className="flex flex-col w-full gap-6">
           {/* Header with title and command bar inline */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-border/50">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 lg:gap-3">
               <Button
                 variant="ghost"
                 size="icon"
@@ -442,7 +452,7 @@ export function QuestionnaireParser() {
               </Button>
 
               <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
-                <AlertDialogContent>
+                <AlertDialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg">
                   <AlertDialogHeader>
                     <AlertDialogTitle>Exit questionnaire session?</AlertDialogTitle>
                     <AlertDialogDescription>
@@ -462,15 +472,17 @@ export function QuestionnaireParser() {
                 </AlertDialogContent>
               </AlertDialog>
               <div className="h-4 w-px bg-border" />
-              <BookOpen className="h-5 w-5 text-muted-foreground" />
-              <div className="flex flex-col gap-1.5">
-                <h2 className="text-lg font-semibold text-foreground">Questions & Answers</h2>
-                <div className="flex items-center gap-3">
+              <BookOpen className="h-4 lg:h-5 w-4 lg:w-5 text-muted-foreground" />
+              <div className="flex flex-col gap-1 lg:gap-1.5">
+                <h2 className="text-base lg:text-lg font-semibold text-foreground">
+                  Questions & Answers
+                </h2>
+                <div className="flex items-center gap-2 lg:gap-3">
                   <p className="text-xs text-muted-foreground">
                     {searchQuery && filteredResults ? `${filteredResults.length} of ` : ''}
                     {totalCount} questions • {answeredCount} answered
                   </p>
-                  <div className="h-1 w-20 bg-muted rounded-full overflow-hidden">
+                  <div className="h-1 w-16 lg:w-20 bg-muted rounded-full overflow-hidden">
                     <div
                       className="h-full bg-primary transition-all duration-500"
                       style={{ width: `${progressPercentage}%` }}
@@ -481,7 +493,7 @@ export function QuestionnaireParser() {
             </div>
 
             {/* Command bar - inline on desktop, stacked on mobile */}
-            <div className="flex items-center gap-3 flex-wrap lg:flex-nowrap">
+            <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-2 lg:gap-3 w-full lg:w-auto">
               <div className="relative flex-1 lg:w-72">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -491,8 +503,8 @@ export function QuestionnaireParser() {
                   className="pl-9 h-9 text-sm"
                 />
               </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <div className="relative">
+              <div className="flex items-center gap-2 w-full lg:w-auto">
+                <div className="relative flex-1 lg:flex-initial">
                   {!hasClickedAutoAnswer && results.some((qa) => !qa.answer) && (
                     <>
                       <style
@@ -515,7 +527,7 @@ export function QuestionnaireParser() {
                     onClick={handleAutoAnswer}
                     disabled={isAutoAnswering || isLoading}
                     size="sm"
-                    className="relative z-10 h-9"
+                    className="relative z-10 h-9 w-full lg:w-auto"
                   >
                     {isAutoAnswering ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -575,31 +587,203 @@ export function QuestionnaireParser() {
                 <ScrollArea className="flex-1">
                   <div className="pr-4">
                     {filteredResults && filteredResults.length > 0 ? (
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="border-b border-border/50">
-                            <TableHead className="w-12 text-xs">#</TableHead>
-                            <TableHead className="min-w-[300px] text-xs">Question</TableHead>
-                            <TableHead className="min-w-[300px] text-xs">Answer</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
+                      <>
+                        {/* Desktop table view */}
+                        <div className="hidden lg:block">
+                          <Table>
+                            <TableHeader>
+                              <TableRow className="border-b border-border/50">
+                                <TableHead className="w-12 text-xs">#</TableHead>
+                                <TableHead className="min-w-[300px] text-xs">Question</TableHead>
+                                <TableHead className="min-w-[300px] text-xs">Answer</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {filteredResults.map((qa, index) => {
+                                const originalIndex = results.findIndex((r) => r === qa);
+                                const isEditing = editingIndex === originalIndex;
+                                const questionStatus = questionStatuses.get(originalIndex);
+                                const isProcessing = questionStatus === 'processing';
+                                const hasAnswer = !!qa.answer;
+
+                                return (
+                                  <TableRow key={originalIndex} className="border-muted/30">
+                                    <TableCell className="font-medium align-middle">
+                                      <span className="tabular-nums">{originalIndex + 1}</span>
+                                    </TableCell>
+                                    <TableCell className="font-medium align-middle">
+                                      {qa.question}
+                                    </TableCell>
+                                    <TableCell className="align-middle">
+                                      {isEditing ? (
+                                        <div className="space-y-2">
+                                          <Textarea
+                                            value={editingAnswer}
+                                            onChange={(e) => setEditingAnswer(e.target.value)}
+                                            className="min-h-[80px]"
+                                            autoFocus
+                                          />
+                                          <div className="flex gap-2">
+                                            <Button
+                                              size="sm"
+                                              onClick={() => handleSaveAnswer(originalIndex)}
+                                            >
+                                              Save
+                                            </Button>
+                                            <Button
+                                              size="sm"
+                                              onClick={handleCancelEdit}
+                                              variant="outline"
+                                            >
+                                              Cancel
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <div className="space-y-2">
+                                          {qa.answer ? (
+                                            <div
+                                              className="rounded-lg p-2 transition-colors flex items-start gap-2 cursor-pointer hover:bg-muted/50"
+                                              onClick={() => handleEditAnswer(originalIndex)}
+                                            >
+                                              <p className="text-sm text-foreground min-h-[20px] flex-1">
+                                                {qa.answer}
+                                              </p>
+                                            </div>
+                                          ) : isProcessing ? (
+                                            <div className="flex items-center gap-2 p-2">
+                                              <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />
+                                              <span className="text-sm text-muted-foreground">
+                                                Generating answer...
+                                              </span>
+                                            </div>
+                                          ) : (
+                                            <div className="grid grid-cols-2 gap-2 w-full">
+                                              <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => handleEditAnswer(originalIndex)}
+                                                className="h-8 w-full"
+                                              >
+                                                Write Answer
+                                              </Button>
+                                              <Button
+                                                size="sm"
+                                                onClick={() =>
+                                                  handleAnswerSingleQuestion(originalIndex)
+                                                }
+                                                disabled={answeringQuestionIndex === originalIndex}
+                                                className="h-8 w-full"
+                                              >
+                                                <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+                                                Auto-Answer
+                                              </Button>
+                                            </div>
+                                          )}
+                                          {qa.sources && qa.sources.length > 0 && (
+                                            <div>
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => {
+                                                  const newExpanded = new Set(expandedSources);
+                                                  if (newExpanded.has(originalIndex)) {
+                                                    newExpanded.delete(originalIndex);
+                                                  } else {
+                                                    newExpanded.add(originalIndex);
+                                                  }
+                                                  setExpandedSources(newExpanded);
+                                                }}
+                                                className="h-auto p-1 text-xs text-muted-foreground hover:text-foreground"
+                                              >
+                                                <BookOpen className="mr-1 h-3 w-3" />
+                                                {expandedSources.has(originalIndex) ? (
+                                                  <>
+                                                    Hide sources ({qa.sources.length})
+                                                    <ChevronUp className="ml-1 h-3 w-3" />
+                                                  </>
+                                                ) : (
+                                                  <>
+                                                    Show sources ({qa.sources.length})
+                                                    <ChevronDown className="ml-1 h-3 w-3" />
+                                                  </>
+                                                )}
+                                              </Button>
+                                              {expandedSources.has(originalIndex) && (
+                                                <div className="mt-2 space-y-1 pl-4 border-l-2 border-muted/30">
+                                                  {qa.sources.map((source, sourceIndex) => {
+                                                    const isPolicy =
+                                                      source.sourceType === 'policy' &&
+                                                      source.sourceId;
+                                                    const sourceContent =
+                                                      source.sourceName || source.sourceType;
+
+                                                    return (
+                                                      <div
+                                                        key={sourceIndex}
+                                                        className="flex items-center gap-2 text-xs"
+                                                      >
+                                                        <div className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                                                        {isPolicy ? (
+                                                          <Link
+                                                            href={`/${orgId}/policies/${source.sourceId}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="font-medium text-primary hover:underline inline-flex items-center gap-1"
+                                                          >
+                                                            {sourceContent}
+                                                            <LinkIcon className="h-3 w-3" />
+                                                          </Link>
+                                                        ) : (
+                                                          <span className="font-medium text-muted-foreground">
+                                                            {sourceContent}
+                                                          </span>
+                                                        )}
+                                                      </div>
+                                                    );
+                                                  })}
+                                                </div>
+                                              )}
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })}
+                            </TableBody>
+                          </Table>
+                        </div>
+
+                        {/* Mobile card view */}
+                        <div className="lg:hidden space-y-4">
                           {filteredResults.map((qa, index) => {
                             const originalIndex = results.findIndex((r) => r === qa);
                             const isEditing = editingIndex === originalIndex;
                             const questionStatus = questionStatuses.get(originalIndex);
                             const isProcessing = questionStatus === 'processing';
-                            const hasAnswer = !!qa.answer;
 
                             return (
-                              <TableRow key={originalIndex} className="border-muted/30">
-                                <TableCell className="font-medium align-middle">
-                                  <span className="tabular-nums">{originalIndex + 1}</span>
-                                </TableCell>
-                                <TableCell className="font-medium align-middle">
-                                  {qa.question}
-                                </TableCell>
-                                <TableCell className="align-middle">
+                              <div
+                                key={originalIndex}
+                                className="flex flex-col gap-3 p-4 rounded-lg bg-muted/20 border border-border/30"
+                              >
+                                {/* Question number and text */}
+                                <div className="flex flex-col gap-2">
+                                  <span className="text-xs font-medium text-muted-foreground tabular-nums">
+                                    Question {originalIndex + 1}
+                                  </span>
+                                  <p className="text-sm font-medium text-foreground">
+                                    {qa.question}
+                                  </p>
+                                </div>
+
+                                {/* Answer section */}
+                                <div className="flex flex-col gap-2">
+                                  <span className="text-xs font-medium text-muted-foreground">
+                                    Answer
+                                  </span>
                                   {isEditing ? (
                                     <div className="space-y-2">
                                       <Textarea
@@ -625,119 +809,119 @@ export function QuestionnaireParser() {
                                       </div>
                                     </div>
                                   ) : (
-                                    <div className="space-y-2">
+                                    <>
                                       {qa.answer ? (
                                         <div
-                                          className="rounded-lg p-2 transition-colors flex items-start gap-2 cursor-pointer hover:bg-muted/50"
+                                          className="rounded-lg p-3 bg-muted/30 border border-border/30 cursor-pointer hover:bg-muted/50 transition-colors"
                                           onClick={() => handleEditAnswer(originalIndex)}
                                         >
-                                          <p className="text-sm text-foreground min-h-[20px] flex-1">
-                                            {qa.answer}
-                                          </p>
+                                          <p className="text-sm text-foreground">{qa.answer}</p>
                                         </div>
                                       ) : isProcessing ? (
-                                        <div className="flex items-center gap-2 p-2">
+                                        <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/30 border border-border/30">
                                           <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />
                                           <span className="text-sm text-muted-foreground">
                                             Generating answer...
                                           </span>
                                         </div>
                                       ) : (
-                                        <div className="flex items-center gap-2">
-                                          <Button
-                                            size="sm"
-                                            variant="outline"
-                                            onClick={() => handleEditAnswer(originalIndex)}
-                                            className="h-8"
-                                          >
-                                            Write Answer
-                                          </Button>
+                                        <div className="flex flex-col gap-2">
                                           <Button
                                             size="sm"
                                             onClick={() =>
                                               handleAnswerSingleQuestion(originalIndex)
                                             }
                                             disabled={answeringQuestionIndex === originalIndex}
-                                            className="h-8"
+                                            className="w-full justify-center"
                                           >
                                             <Sparkles className="mr-1.5 h-3.5 w-3.5" />
                                             Auto-Answer
                                           </Button>
-                                        </div>
-                                      )}
-                                      {qa.sources && qa.sources.length > 0 && (
-                                        <div>
                                           <Button
-                                            variant="ghost"
                                             size="sm"
-                                            onClick={() => {
-                                              const newExpanded = new Set(expandedSources);
-                                              if (newExpanded.has(originalIndex)) {
-                                                newExpanded.delete(originalIndex);
-                                              } else {
-                                                newExpanded.add(originalIndex);
-                                              }
-                                              setExpandedSources(newExpanded);
-                                            }}
-                                            className="h-auto p-1 text-xs text-muted-foreground hover:text-foreground"
+                                            variant="outline"
+                                            onClick={() => handleEditAnswer(originalIndex)}
+                                            className="w-full justify-center"
                                           >
-                                            <BookOpen className="mr-1 h-3 w-3" />
-                                            {expandedSources.has(originalIndex) ? (
-                                              <>
-                                                Hide sources ({qa.sources.length})
-                                                <ChevronUp className="ml-1 h-3 w-3" />
-                                              </>
-                                            ) : (
-                                              <>
-                                                Show sources ({qa.sources.length})
-                                                <ChevronDown className="ml-1 h-3 w-3" />
-                                              </>
-                                            )}
+                                            Write Answer
                                           </Button>
-                                          {expandedSources.has(originalIndex) && (
-                                            <div className="mt-2 space-y-1 pl-4 border-l-2 border-muted/30">
-                                              {qa.sources.map((source, sourceIndex) => {
-                                                const isPolicy =
-                                                  source.sourceType === 'policy' && source.sourceId;
-                                                const sourceContent =
-                                                  source.sourceName || source.sourceType;
-
-                                                return (
-                                                  <div
-                                                    key={sourceIndex}
-                                                    className="flex items-center gap-2 text-xs"
-                                                  >
-                                                    <div className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
-                                                    {isPolicy ? (
-                                                      <Link
-                                                        href={`/${orgId}/policies/${source.sourceId}`}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="font-medium text-primary hover:underline inline-flex items-center gap-1"
-                                                      >
-                                                        {sourceContent}
-                                                        <LinkIcon className="h-3 w-3" />
-                                                      </Link>
-                                                    ) : (
-                                                      <span className="font-medium text-muted-foreground">
-                                                        {sourceContent}
-                                                      </span>
-                                                    )}
-                                                  </div>
-                                                );
-                                              })}
-                                            </div>
-                                          )}
                                         </div>
                                       )}
-                                    </div>
+                                    </>
                                   )}
-                                </TableCell>
-                              </TableRow>
+                                </div>
+
+                                {/* Sources */}
+                                {qa.sources && qa.sources.length > 0 && (
+                                  <div className="pt-2 border-t border-border/30">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        const newExpanded = new Set(expandedSources);
+                                        if (newExpanded.has(originalIndex)) {
+                                          newExpanded.delete(originalIndex);
+                                        } else {
+                                          newExpanded.add(originalIndex);
+                                        }
+                                        setExpandedSources(newExpanded);
+                                      }}
+                                      className="h-auto p-1 text-xs text-muted-foreground hover:text-foreground w-full justify-start"
+                                    >
+                                      <BookOpen className="mr-1 h-3 w-3" />
+                                      {expandedSources.has(originalIndex) ? (
+                                        <>
+                                          Hide sources ({qa.sources.length})
+                                          <ChevronUp className="ml-1 h-3 w-3" />
+                                        </>
+                                      ) : (
+                                        <>
+                                          Show sources ({qa.sources.length})
+                                          <ChevronDown className="ml-1 h-3 w-3" />
+                                        </>
+                                      )}
+                                    </Button>
+                                    {expandedSources.has(originalIndex) && (
+                                      <div className="mt-2 space-y-1 pl-4 border-l-2 border-muted/30">
+                                        {qa.sources.map((source, sourceIndex) => {
+                                          const isPolicy =
+                                            source.sourceType === 'policy' && source.sourceId;
+                                          const sourceContent =
+                                            source.sourceName || source.sourceType;
+
+                                          return (
+                                            <div
+                                              key={sourceIndex}
+                                              className="flex items-center gap-2 text-xs"
+                                            >
+                                              <div className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                                              {isPolicy ? (
+                                                <Link
+                                                  href={`/${orgId}/policies/${source.sourceId}`}
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  className="font-medium text-primary hover:underline inline-flex items-center gap-1"
+                                                >
+                                                  {sourceContent}
+                                                  <LinkIcon className="h-3 w-3" />
+                                                </Link>
+                                              ) : (
+                                                <span className="font-medium text-muted-foreground">
+                                                  {sourceContent}
+                                                </span>
+                                              )}
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
                             );
                           })}
-                        </TableBody>
-                      </Table>
+                        </div>
+                      </>
                     ) : (
                       <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
                         <Search className="h-8 w-8 mb-3 opacity-40" />
@@ -753,7 +937,7 @@ export function QuestionnaireParser() {
         </div>
       ) : (
         // Two-column layout - upload on left, info on right
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 w-full items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12 w-full items-start">
           {/* Main upload area - takes 2 columns */}
           <div className="lg:col-span-2 flex flex-col gap-6">
             <Tabs
@@ -761,14 +945,14 @@ export function QuestionnaireParser() {
               onValueChange={(v) => setActiveTab(v as typeof activeTab)}
               className="w-full"
             >
-              <TabsList className="inline-flex h-9 w-auto">
-                <TabsTrigger value="file" className="gap-2 text-xs">
+              <TabsList className="inline-flex h-9 w-full sm:w-auto">
+                <TabsTrigger value="file" className="gap-2 text-xs flex-1 sm:flex-initial sm:px-4">
                   <Upload className="h-3.5 w-3.5" />
-                  File
+                  <span className="hidden sm:inline">File</span>
                 </TabsTrigger>
-                <TabsTrigger value="url" className="gap-2 text-xs">
+                <TabsTrigger value="url" className="gap-2 text-xs flex-1 sm:flex-initial sm:px-4">
                   <LinkIcon className="h-3.5 w-3.5" />
-                  URL
+                  <span className="hidden sm:inline">URL</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -806,7 +990,7 @@ export function QuestionnaireParser() {
                       <div
                         {...getRootProps()}
                         className={cn(
-                          'flex flex-col items-center justify-center gap-4 border-2 border-dashed rounded-xl p-16 cursor-pointer transition-all',
+                          'flex flex-col items-center justify-center gap-4 border-2 border-dashed rounded-xl p-12 lg:p-16 cursor-pointer transition-all',
                           isDragActive
                             ? 'border-primary bg-primary/5 scale-[1.01]'
                             : 'border-border/40 bg-muted/10 hover:border-primary/40 hover:bg-muted/20',
@@ -839,7 +1023,7 @@ export function QuestionnaireParser() {
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   disabled={isLoading}
-                  className="h-12"
+                  className="h-11 lg:h-12"
                 />
               </TabsContent>
             </Tabs>
@@ -853,7 +1037,7 @@ export function QuestionnaireParser() {
                   (activeTab === 'file' && !selectedFile) ||
                   (activeTab === 'url' && !url.trim())
                 }
-                className="h-12 px-8"
+                className="h-11 lg:h-12 px-6 lg:px-8 w-full sm:w-auto"
                 size="lg"
               >
                 {isLoading ? (
@@ -871,8 +1055,8 @@ export function QuestionnaireParser() {
             </div>
           </div>
 
-          {/* Info sidebar - takes 1 column */}
-          <div className="flex flex-col gap-6">
+          {/* Info sidebar - takes 1 column, hidden on mobile */}
+          <div className="hidden lg:flex flex-col gap-6">
             <div className="flex flex-col gap-4 p-6 rounded-lg bg-muted/30 border border-border/30">
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
