@@ -6,6 +6,7 @@ import { cn } from '@comp/ui/cn';
 import { Icons } from '@comp/ui/icons';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import {
+  FileTextIcon,
   FlaskConical,
   Gauge,
   ListCheck,
@@ -110,6 +111,14 @@ export function MainMenu({
       name: 'Vendors',
       disabled: false,
       icon: Store,
+      protected: false,
+    },
+    {
+      id: 'questionnaire',
+      path: '/:organizationId/security-questionnaire',
+      name: 'Questionnaire',
+      disabled: false,
+      icon: FileTextIcon,
       protected: false,
     },
     {
