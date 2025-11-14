@@ -8,9 +8,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@comp/ui/dialog';
+import { Field, FieldError, FieldLabel } from '@comp/ui/field';
 import { useForm } from '@tanstack/react-form';
 import { toast } from 'sonner';
-import { DurationPicker } from './DurationPicker';
+import { DurationPicker } from './duration-picker';
 
 export function ApproveDialog({
   orgId,
@@ -29,7 +30,7 @@ export function ApproveDialog({
       durationDays: data?.requestedDurationDays ?? 30,
     },
     onSubmit: async ({ value }) => {
-      await toast.promise(
+       toast.promise(
         approveRequest({
           requestId,
           durationDays: value.durationDays,
@@ -97,15 +98,20 @@ export function ApproveDialog({
                   },
                 }}
               >
-                {(field) => (
-                  <div>
-                    <div className="text-sm font-medium mb-2">Duration</div>
-                    <DurationPicker value={field.state.value} onChange={field.handleChange} />
-                    {field.state.meta.errors.length > 0 && (
-                      <p className="text-sm text-destructive mt-1">{field.state.meta.errors[0]}</p>
-                    )}
-                  </div>
-                )}
+                {(field) => {
+                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor="duration">Duration</FieldLabel>
+                      <DurationPicker
+                        value={field.state.value}
+                        onChange={field.handleChange}
+                        aria-invalid={isInvalid}
+                      />
+                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    </Field>
+                  );
+                }}
               </form.Field>
             </div>
           </div>

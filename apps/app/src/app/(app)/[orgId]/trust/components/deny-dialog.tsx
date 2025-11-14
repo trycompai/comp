@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@comp/ui/dialog';
+import { Field, FieldError, FieldLabel } from '@comp/ui/field';
 import { Textarea } from '@comp/ui/textarea';
 import { useForm } from '@tanstack/react-form';
 import { toast } from 'sonner';
@@ -61,22 +62,25 @@ export function DenyDialog({
             <DialogDescription>Please provide a reason for denying this request</DialogDescription>
           </DialogHeader>
           <form.Field name="reason">
-            {(field) => (
-              <div>
-                <Textarea
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onBlur={field.handleBlur}
-                  placeholder="Reason for denial..."
-                  rows={4}
-                />
-                {field.state.meta.errors.map((error, i) => (
-                  <p key={i} className="text-sm text-destructive mt-1">
-                    {String(error)}
-                  </p>
-                ))}
-              </div>
-            )}
+            {(field) => {
+              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+              return (
+                <Field data-invalid={isInvalid}>
+                  <FieldLabel htmlFor="reason">Reason</FieldLabel>
+                  <Textarea
+                    id="reason"
+                    name={field.name}
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                    aria-invalid={isInvalid}
+                    placeholder="Reason for denial..."
+                    rows={4}
+                  />
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              );
+            }}
           </form.Field>
           <DialogFooter>
             <Button variant="outline" type="button" onClick={onClose}>

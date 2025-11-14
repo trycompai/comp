@@ -2,8 +2,8 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
 import { useState } from 'react';
-import { GrantsTab } from './GrantsTab';
-import { RequestsTab } from './RequestsTab';
+import { GrantsTab } from './grants-tab';
+import { RequestsTab } from './request-tab';
 
 export function TrustAccessRequestsClient({ orgId }: { orgId: string }) {
   const [tab, setTab] = useState<'requests' | 'grants'>('requests');

@@ -3,7 +3,7 @@ import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@comp/ui/table';
 import { useState } from 'react';
-import { RevokeDialog } from './RevokeDialog';
+import { RevokeDialog } from './revoke-dialog';
 
 export function GrantsTab({ orgId }: { orgId: string }) {
   const { data, isLoading } = useAccessGrants(orgId);

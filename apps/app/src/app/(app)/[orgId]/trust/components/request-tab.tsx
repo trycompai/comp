@@ -4,8 +4,8 @@ import { Button } from '@comp/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@comp/ui/table';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { ApproveDialog } from './ApproveDialog';
-import { DenyDialog } from './DenyDialog';
+import { ApproveDialog } from './approve-dialog';
+import { DenyDialog } from './deny-dialog';
 
 export function RequestsTab({ orgId }: { orgId: string }) {
   const { data, isLoading } = useAccessRequests(orgId);

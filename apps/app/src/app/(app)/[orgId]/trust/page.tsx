@@ -1,6 +1,6 @@
 import PageCore from '@/components/pages/PageCore.tsx';
 import type { Metadata } from 'next';
-import { TrustAccessRequestsClient } from './components/TrustAccessRequestsClient';
+import { TrustAccessRequestsClient } from './components/trust-access-request-client';
 
 export default async function TrustAccessPage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
