@@ -50,6 +50,7 @@ export function MainMenu({
   organization,
   isCollapsed = false,
   onItemClick,
+  isQuestionnaireEnabled = false,
 }: Props) {
   const pathname = usePathname();
   const [activeStyle, setActiveStyle] = useState({ top: '0px', height: '0px' });
@@ -120,6 +121,7 @@ export function MainMenu({
       disabled: false,
       icon: FileTextIcon,
       protected: false,
+      hidden: !isQuestionnaireEnabled,
     },
     {
       id: 'integrations',
@@ -328,4 +330,5 @@ type Props = {
   organization?: { advancedModeEnabled?: boolean } | null;
   isCollapsed?: boolean;
   onItemClick?: () => void;
+  isQuestionnaireEnabled?: boolean;
 };

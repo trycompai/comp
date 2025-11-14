@@ -1,14 +1,26 @@
+import { getFeatureFlags } from '@/app/posthog';
 import { auth } from '@/utils/auth';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage } from '@comp/ui/breadcrumb';
 import { headers } from 'next/headers';
-import { FeatureFlagWrapper } from './components/FeatureFlagWrapper';
+import { notFound } from 'next/navigation';
+import { QuestionnaireParser } from './components/QuestionnaireParser';
 
 export default async function SecurityQuestionnairePage() {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
 
-  const userEmail = session?.user?.email ?? null;
+  if (!session?.user?.id) {
+    return notFound();
+  }
+
+  // Check feature flag on server
+  const flags = await getFeatureFlags(session.user.id);
+  const isFeatureEnabled = flags['ai-vendor-questionnaire'] === true;
+
+  if (!isFeatureEnabled) {
+    return notFound();
+  }
 
   return (
     <div className="flex flex-col gap-6 p-4 lg:p-6">
@@ -33,7 +45,7 @@ export default async function SecurityQuestionnairePage() {
             organization's policies and documentation.
           </p>
         </div>
-        <FeatureFlagWrapper userEmail={userEmail} />
+        <QuestionnaireParser />
       </div>
     </div>
   );
