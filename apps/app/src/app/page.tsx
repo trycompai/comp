@@ -69,6 +69,7 @@ export default async function RootPage({
     where: {
       organizationId: orgId,
       userId: session.user.id,
+      deactivated: false,
     },
   });
 

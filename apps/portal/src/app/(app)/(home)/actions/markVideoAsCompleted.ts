@@ -39,6 +39,7 @@ export const markVideoAsCompleted = authActionClient
       where: {
         userId: user.id,
         organizationId: organizationId,
+        deactivated: false,
       },
     });
 

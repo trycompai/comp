@@ -56,6 +56,7 @@ export const onboardOrganization = task({
           role: {
             contains: 'owner',
           },
+          deactivated: false,
         },
       });
 

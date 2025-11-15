@@ -257,6 +257,7 @@ export async function findCommentAuthor(organizationId: string) {
     where: {
       organizationId,
       OR: [{ role: { contains: 'owner' } }, { role: { contains: 'admin' } }],
+      deactivated: false,
     },
     orderBy: [
       { role: 'desc' }, // Prefer owner over admin

@@ -28,6 +28,7 @@ export default async function OrganizationPage({ params }: { params: Promise<{ o
         where: {
           userId: session.user.id,
           organizationId: orgId,
+          deactivated: false,
         },
         include: {
           user: true,

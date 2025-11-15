@@ -101,6 +101,7 @@ const getMembersWithMetadata = async () => {
       role: {
         notIn: [Role.employee, Role.auditor, Role.contractor],
       },
+      deactivated: false,
     },
     include: {
       user: true,

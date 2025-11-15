@@ -47,6 +47,7 @@ export async function validateMemberAndOrg(userId: string, orgId: string) {
     where: {
       userId,
       organizationId: orgId,
+      deactivated: false,
     },
   });
 

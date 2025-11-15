@@ -3,10 +3,17 @@ import { Badge } from '@comp/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import { cn } from '@comp/ui/cn';
 import { ScrollArea } from '@comp/ui/scroll-area';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@comp/ui/tooltip';
 import { AuditLog, AuditLogEntityType } from '@db';
 import { format } from 'date-fns';
 import {
   ActivityIcon,
+  AlertTriangle,
   CalendarIcon,
   ClockIcon,
   FileIcon,
@@ -90,6 +97,7 @@ const getUserInfo = (log: AuditLogWithRelations) => {
       name: log.user.name,
       email: log.user.email,
       avatarUrl: log.user.image || undefined,
+      deactivated: log.member?.deactivated || false,
     };
   }
 
@@ -98,6 +106,7 @@ const getUserInfo = (log: AuditLogWithRelations) => {
     name: undefined,
     email: undefined,
     avatarUrl: undefined,
+    deactivated: false,
   };
 };
 
@@ -110,10 +119,26 @@ const LogItem = ({ log }: { log: AuditLogWithRelations }) => {
     <Card className="border-0 border-none">
       <CardContent>
         <div className="flex items-start gap-4">
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={userInfo.avatarUrl || ''} alt={userInfo.name || 'User'} />
-            <AvatarFallback>{getInitials(userInfo.name)}</AvatarFallback>
-          </Avatar>
+          <div className="relative">
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={userInfo.avatarUrl || ''} alt={userInfo.name || 'User'} />
+              <AvatarFallback>{getInitials(userInfo.name)}</AvatarFallback>
+            </Avatar>
+            {userInfo.deactivated && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="absolute -bottom-0.5 -right-0.5 rounded-full">
+                      <AlertTriangle className="h-3.5 w-3.5 text-red-500 fill-yellow-400" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>This user is deactivated.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </div>
 
           <div className="flex-1 space-y-2">
             <div className="flex items-center justify-between">

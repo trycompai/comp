@@ -89,6 +89,13 @@ export class AuthorResponseDto {
     nullable: true,
   })
   image: string | null;
+
+  @ApiProperty({
+    description: 'Whether the user is deactivated',
+    example: false,
+    nullable: true,
+  })
+  deactivated: boolean;
 }
 
 export class CommentResponseDto {
