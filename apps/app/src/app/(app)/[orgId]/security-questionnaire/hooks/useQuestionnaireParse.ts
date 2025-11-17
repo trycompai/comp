@@ -1,7 +1,7 @@
 'use client';
 
-import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import type { parseQuestionnaireTask } from '@/jobs/tasks/vendors/parse-questionnaire';
+import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { useAction } from 'next-safe-action/hooks';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
@@ -96,7 +96,9 @@ export function useQuestionnaireParse({
             setExtractedContent(extractedContent || null);
             setQuestionStatuses(new Map());
             setHasClickedAutoAnswer(false);
-            toast.success(`Successfully parsed ${questionsAndAnswers.length} question-answer pairs`);
+            toast.success(
+              `Successfully parsed ${questionsAndAnswers.length} question-answer pairs`,
+            );
           } else {
             toast.error('Parsed data is missing questions');
           }
@@ -137,6 +139,8 @@ export function useQuestionnaireParse({
         return;
       }
 
+      // Clear old token before setting new task ID to prevent using wrong token with new run
+      setParseToken(null);
       setParseTaskId(taskId);
 
       const tokenResult = await createRunReadToken(taskId);
@@ -185,4 +189,3 @@ export function useQuestionnaireParse({
     uploadFileAction,
   };
 }
-

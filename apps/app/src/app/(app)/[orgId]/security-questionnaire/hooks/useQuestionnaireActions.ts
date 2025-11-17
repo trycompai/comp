@@ -27,25 +27,27 @@ interface UseQuestionnaireActionsProps {
   setQuestionStatuses: React.Dispatch<
     React.SetStateAction<Map<number, 'pending' | 'processing' | 'completed'>>
   >;
-      uploadFileAction: {
-        execute: (payload: any) => void;
-        status: 'idle' | 'executing' | 'hasSucceeded' | 'hasErrored' | 'transitioning' | 'hasNavigated';
-      };
-      parseAction: {
-        execute: (payload: any) => void;
-        status: 'idle' | 'executing' | 'hasSucceeded' | 'hasErrored' | 'transitioning' | 'hasNavigated';
-      };
-      triggerAutoAnswer: (payload: {
-        vendorId: string;
-        organizationId: string;
-        questionsAndAnswers: QuestionAnswer[];
-      }) => void;
-      triggerSingleAnswer: (payload: {
-        question: string;
-        organizationId: string;
-        questionIndex: number;
-        totalQuestions: number;
-      }) => void;
+  setParseTaskId: (id: string | null) => void;
+  setParseToken: (token: string | null) => void;
+  uploadFileAction: {
+    execute: (payload: any) => void;
+    status: 'idle' | 'executing' | 'hasSucceeded' | 'hasErrored' | 'transitioning' | 'hasNavigated';
+  };
+  parseAction: {
+    execute: (payload: any) => void;
+    status: 'idle' | 'executing' | 'hasSucceeded' | 'hasErrored' | 'transitioning' | 'hasNavigated';
+  };
+  triggerAutoAnswer: (payload: {
+    vendorId: string;
+    organizationId: string;
+    questionsAndAnswers: QuestionAnswer[];
+  }) => void;
+  triggerSingleAnswer: (payload: {
+    question: string;
+    organizationId: string;
+    questionIndex: number;
+    totalQuestions: number;
+  }) => void;
 }
 
 export function useQuestionnaireActions({
@@ -66,11 +68,13 @@ export function useQuestionnaireActions({
   answeringQuestionIndex,
   setAnsweringQuestionIndex,
   setQuestionStatuses,
-      uploadFileAction,
-      parseAction,
-      triggerAutoAnswer,
-      triggerSingleAnswer,
-    }: UseQuestionnaireActionsProps) {
+  setParseTaskId,
+  setParseToken,
+  uploadFileAction,
+  parseAction,
+  triggerAutoAnswer,
+  triggerSingleAnswer,
+}: UseQuestionnaireActionsProps) {
   const exportAction = useAction(exportQuestionnaire, {
     onSuccess: ({ data }: { data: any }) => {
       const responseData = data?.data || data;
@@ -106,6 +110,9 @@ export function useQuestionnaireActions({
   }, [setSelectedFile]);
 
   const handleParse = async () => {
+    // Clear old parse state before starting new parse to prevent token mismatch
+    setParseTaskId(null);
+    setParseToken(null);
     setIsParseProcessStarted(true);
 
     if (selectedFile) {

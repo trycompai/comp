@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuestionnaireActions } from './useQuestionnaireActions';
 import { useQuestionnaireAutoAnswer } from './useQuestionnaireAutoAnswer';
 import { useQuestionnaireParse } from './useQuestionnaireParse';
@@ -65,11 +65,13 @@ export function useQuestionnaireParser() {
     answeringQuestionIndex: state.answeringQuestionIndex,
     setAnsweringQuestionIndex: state.setAnsweringQuestionIndex,
     setQuestionStatuses: state.setQuestionStatuses,
-      uploadFileAction: parse.uploadFileAction,
-      parseAction: parse.parseAction,
-      triggerAutoAnswer: autoAnswer.triggerAutoAnswer,
-      triggerSingleAnswer: singleAnswer.triggerSingleAnswer,
-    });
+    setParseTaskId: state.setParseTaskId,
+    setParseToken: state.setParseToken,
+    uploadFileAction: parse.uploadFileAction,
+    parseAction: parse.parseAction,
+    triggerAutoAnswer: autoAnswer.triggerAutoAnswer,
+    triggerSingleAnswer: singleAnswer.triggerSingleAnswer,
+  });
 
   const isLoading = useMemo(() => {
     const isUploading = parse.uploadFileAction.status === 'executing';
@@ -167,7 +169,9 @@ export function useQuestionnaireParser() {
   ]);
 
   // Throttled status for smooth transitions
-  const [parseStatus, setParseStatus] = useState<'uploading' | 'starting' | 'queued' | 'analyzing' | 'processing' | null>(null);
+  const [parseStatus, setParseStatus] = useState<
+    'uploading' | 'starting' | 'queued' | 'analyzing' | 'processing' | null
+  >(null);
   const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastStatusRef = useRef<string | null>(null);
   const statusStartTimeRef = useRef<number | null>(null);
@@ -207,12 +211,17 @@ export function useQuestionnaireParser() {
         statusStartTimeRef.current = Date.now();
       } else {
         // Check if current status has been visible for minimum duration
-        const isEarlyStage = lastStatusRef.current === 'uploading' || lastStatusRef.current === 'starting' || lastStatusRef.current === 'queued';
+        const isEarlyStage =
+          lastStatusRef.current === 'uploading' ||
+          lastStatusRef.current === 'starting' ||
+          lastStatusRef.current === 'queued';
         const minDisplayTime = isEarlyStage ? 3000 : 1500; // 3s minimum for early stages, 1.5s for later
-        
-        const timeSinceStatusStart = statusStartTimeRef.current ? Date.now() - statusStartTimeRef.current : 0;
+
+        const timeSinceStatusStart = statusStartTimeRef.current
+          ? Date.now() - statusStartTimeRef.current
+          : 0;
         const remainingTime = Math.max(0, minDisplayTime - timeSinceStatusStart);
-        
+
         statusTimeoutRef.current = setTimeout(() => {
           setParseStatus(rawParseStatus);
           lastStatusRef.current = rawParseStatus;
