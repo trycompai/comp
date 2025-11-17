@@ -1,5 +1,5 @@
 import { logger, task } from '@trigger.dev/sdk';
-import { BUCKET_NAME, extractS3KeyFromUrl, s3Client } from '@/app/s3';
+import { APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET, BUCKET_NAME, extractS3KeyFromUrl, s3Client } from '@/app/s3';
 import { env } from '@/env.mjs';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { openai } from '@ai-sdk/openai';
@@ -309,8 +309,16 @@ async function extractContentFromS3Key(
   s3Key: string,
   fileType: string,
 ): Promise<{ content: string; fileType: string }> {
+  if (!s3Client) {
+    throw new Error('S3 client is not initialized. Please check AWS S3 environment variables (APP_AWS_REGION, APP_AWS_ACCESS_KEY_ID, APP_AWS_SECRET_ACCESS_KEY).');
+  }
+
+  if (!APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET) {
+    throw new Error('Questionnaire upload bucket is not configured. Please set APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET environment variable.');
+  }
+
   const getCommand = new GetObjectCommand({
-    Bucket: BUCKET_NAME!,
+    Bucket: APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET,
     Key: s3Key,
   });
   
