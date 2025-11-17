@@ -1,35 +1,36 @@
 model Attachment {
-    id         String               @id @default(dbgenerated("generate_prefixed_cuid('att'::text)"))
-    name       String
-    url        String
-    type       AttachmentType
-    entityId   String
-    entityType AttachmentEntityType
+  id         String               @id @default(dbgenerated("generate_prefixed_cuid('att'::text)"))
+  name       String
+  url        String
+  type       AttachmentType
+  entityId   String
+  entityType AttachmentEntityType
 
-    // Dates
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  // Dates
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    // Relationships
-    organizationId String
-    organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-    comment        Comment?     @relation(fields: [commentId], references: [id])
-    commentId      String?
+  // Relationships
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  comment        Comment?     @relation(fields: [commentId], references: [id])
+  commentId      String?
 
-    @@index([entityId, entityType])
+  @@index([entityId, entityType])
 }
 
 enum AttachmentEntityType {
-    task
-    vendor
-    risk
-    comment
+  task
+  vendor
+  risk
+  comment
+  trust_nda
 }
 
 enum AttachmentType {
-    image
-    video
-    audio
-    document
-    other
+  image
+  video
+  audio
+  document
+  other
 }
