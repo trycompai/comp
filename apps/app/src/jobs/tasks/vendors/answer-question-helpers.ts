@@ -1,6 +1,6 @@
 import { findSimilarContent } from '@/lib/vector';
-import { logger } from '@trigger.dev/sdk';
 import { openai } from '@ai-sdk/openai';
+import { logger } from '@trigger.dev/sdk';
 import { generateText } from 'ai';
 
 export interface AnswerWithSources {
@@ -37,13 +37,16 @@ export async function generateAnswerWithRAG(
 
     // Extract sources information and deduplicate by sourceName
     // Multiple chunks from the same source (same policy/context) should appear as a single source
-    const sourceMap = new Map<string, {
-      sourceType: string;
-      sourceName?: string;
-      sourceId: string;
-      policyName?: string;
-      score: number;
-    }>();
+    const sourceMap = new Map<
+      string,
+      {
+        sourceType: string;
+        sourceName?: string;
+        sourceId: string;
+        policyName?: string;
+        score: number;
+      }
+    >();
 
     for (const result of similarContent) {
       // Generate sourceName first to use as deduplication key
@@ -55,12 +58,12 @@ export async function generateAnswerWithRAG(
       } else if (result.contextQuestion) {
         sourceName = 'Context Q&A';
       }
-      
+
       // Use sourceName as the unique key to prevent duplicates
       // For policies: same policy name = same source
       // For context: all context entries = single "Context Q&A" source
       const key = sourceName || result.sourceId;
-      
+
       // If we haven't seen this source, or this chunk has a higher score, use it
       const existing = sourceMap.get(key);
       if (!existing || result.score > existing.score) {
@@ -114,11 +117,13 @@ Your task is to answer questions based ONLY on the provided context from the org
 CRITICAL RULES:
 1. Answer based ONLY on the provided context. Do not make up facts or use general knowledge.
 2. If the context does not contain enough information to answer the question, respond with exactly: "N/A - no evidence found"
-3. Be concise and direct. Use enterprise-ready language.
-4. If multiple sources provide information, synthesize them into a coherent answer.
-5. Do not include disclaimers or notes about the source unless specifically relevant.
-6. Format your answer as a clear, professional response suitable for a vendor questionnaire.
-7. Always write in first person plural (we, our, us) as if speaking on behalf of the organization.`,
+3. BE CONCISE. Give SHORT, direct answers. Do NOT provide detailed explanations or elaborate unnecessarily.
+4. Use enterprise-ready language appropriate for vendor questionnaires.
+5. If multiple sources provide information, synthesize them into ONE concise answer.
+6. Do not include disclaimers or notes about the source unless specifically relevant.
+7. Format your answer as a clear, professional response suitable for a vendor questionnaire.
+8. Always write in first person plural (we, our, us) as if speaking on behalf of the organization.
+9. Keep answers to 1-3 sentences maximum unless the question explicitly requires more detail.`,
       prompt: `Based on the following context from our organization's policies and documentation, answer this question:
 
 Question: ${question}
@@ -149,4 +154,3 @@ Answer the question based ONLY on the provided context, using first person plura
     return { answer: null, sources: [] };
   }
 }
-
