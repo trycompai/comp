@@ -1,7 +1,7 @@
 import { logger, task } from '@trigger.dev/sdk';
-import { APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET, BUCKET_NAME, extractS3KeyFromUrl, s3Client } from '@/app/s3';
+import { extractS3KeyFromUrl } from '@/app/s3';
 import { env } from '@/env.mjs';
-import { GetObjectCommand } from '@aws-sdk/client-s3';
+import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { openai } from '@ai-sdk/openai';
 import { db } from '@db';
 import { generateObject, generateText, jsonSchema } from 'ai';
@@ -272,9 +272,15 @@ async function extractContentFromAttachment(
     throw new Error('Attachment not found');
   }
   
+  const bucketName = process.env.APP_AWS_BUCKET_NAME;
+  if (!bucketName) {
+    throw new Error('APP_AWS_BUCKET_NAME environment variable is not set in Trigger.dev.');
+  }
+  
   const key = extractS3KeyFromUrl(attachment.url);
+  const s3Client = createS3Client();
   const getCommand = new GetObjectCommand({
-    Bucket: BUCKET_NAME!,
+    Bucket: bucketName,
     Key: key,
   });
   
@@ -303,22 +309,46 @@ async function extractContentFromAttachment(
 }
 
 /**
+ * Creates an S3 client instance for Trigger.dev tasks
+ * Reads environment variables directly (not from shared s3.ts module)
+ */
+function createS3Client(): S3Client {
+  const region = process.env.APP_AWS_REGION || 'us-east-1';
+  const accessKeyId = process.env.APP_AWS_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.APP_AWS_SECRET_ACCESS_KEY;
+
+  if (!accessKeyId || !secretAccessKey) {
+    throw new Error(
+      'AWS S3 credentials are missing. Please set APP_AWS_ACCESS_KEY_ID and APP_AWS_SECRET_ACCESS_KEY environment variables in Trigger.dev.',
+    );
+  }
+
+  return new S3Client({
+    region,
+    credentials: {
+      accessKeyId,
+      secretAccessKey,
+    },
+  });
+}
+
+/**
  * Extracts content from an S3 key (for temporary questionnaire files)
  */
 async function extractContentFromS3Key(
   s3Key: string,
   fileType: string,
 ): Promise<{ content: string; fileType: string }> {
-  if (!s3Client) {
-    throw new Error('S3 client is not initialized. Please check AWS S3 environment variables (APP_AWS_REGION, APP_AWS_ACCESS_KEY_ID, APP_AWS_SECRET_ACCESS_KEY).');
+  const questionnaireBucket = process.env.APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET;
+  
+  if (!questionnaireBucket) {
+    throw new Error('Questionnaire upload bucket is not configured. Please set APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET environment variable in Trigger.dev.');
   }
 
-  if (!APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET) {
-    throw new Error('Questionnaire upload bucket is not configured. Please set APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET environment variable.');
-  }
+  const s3Client = createS3Client();
 
   const getCommand = new GetObjectCommand({
-    Bucket: APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET,
+    Bucket: questionnaireBucket,
     Key: s3Key,
   });
   
