@@ -71,8 +71,8 @@ export function QuestionnaireResultsHeader({
 }: QuestionnaireResultsHeaderProps) {
   return (
     <>
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-border/50">
-        <div className="flex items-center gap-2 lg:gap-3">
+      <div className="flex flex-col gap-4 pb-6 border-b border-border/50">
+        <div className="flex items-center gap-3 min-w-0">
           <Button
             variant="ghost"
             size="icon"
@@ -104,18 +104,15 @@ export function QuestionnaireResultsHeader({
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-          <div className="h-4 w-px bg-border" />
-          <BookOpen className="h-4 lg:h-5 w-4 lg:w-5 text-muted-foreground" />
-          <div className="flex flex-col gap-1 lg:gap-1.5">
-            <h2 className="text-base lg:text-lg font-semibold text-foreground">
-              Questions & Answers
-            </h2>
-            <div className="flex items-center gap-2 lg:gap-3">
-              <p className="text-xs text-muted-foreground">
+          <div className="h-5 w-px bg-border flex-shrink-0" />
+          <div className="flex flex-col gap-1.5 min-w-0">
+            <h2 className="text-lg font-semibold text-foreground">Questions & Answers</h2>
+            <div className="flex items-center gap-3">
+              <p className="text-xs text-muted-foreground whitespace-nowrap">
                 {searchQuery && filteredResults ? `${filteredResults.length} of ` : ''}
                 {totalCount} questions • {answeredCount} answered
               </p>
-              <div className="h-1 w-16 lg:w-20 bg-muted rounded-full overflow-hidden">
+              <div className="h-1.5 w-24 bg-muted rounded-full overflow-hidden flex-shrink-0">
                 <div
                   className="h-full bg-primary transition-all duration-500"
                   style={{ width: `${progressPercentage}%` }}
@@ -125,18 +122,18 @@ export function QuestionnaireResultsHeader({
           </div>
         </div>
 
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-2 lg:gap-3 w-full lg:w-auto">
-          <div className="relative flex-1 lg:w-72">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="relative flex-1 sm:flex-none sm:w-80">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search..."
+              placeholder="Search questions..."
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="pl-9 h-9 text-sm"
+              className="pl-9 h-10 text-sm"
             />
           </div>
-          <div className="flex items-center gap-2 w-full lg:w-auto">
-            <div className="relative flex-1 lg:flex-initial">
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <div className="relative">
               {!hasClickedAutoAnswer && results.some((qa) => !qa.answer) && (
                 <>
                   <style
@@ -161,8 +158,8 @@ export function QuestionnaireResultsHeader({
                   onAutoAnswer();
                 }}
                 disabled={isAutoAnswering || isLoading}
-                size="sm"
-                className="relative z-10 h-9 w-full lg:w-auto"
+                size="default"
+                className="relative z-10 h-10 whitespace-nowrap"
               >
                 {isAutoAnswering ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -178,9 +175,9 @@ export function QuestionnaireResultsHeader({
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
-                  size="sm"
+                  size="default"
                   disabled={isExporting || isLoading}
-                  className="h-9"
+                  className="h-10 whitespace-nowrap"
                 >
                   <Download className="mr-2 h-4 w-4" />
                   Export

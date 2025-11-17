@@ -41,7 +41,7 @@ export function QuestionnaireParser() {
     handleToggleSource,
   } = useQuestionnaireParser();
 
-    if (!results || results.length === 0) {
+  if (!results || results.length === 0) {
     return (
       <QuestionnaireUpload
         selectedFile={selectedFile}
