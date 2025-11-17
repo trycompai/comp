@@ -6,7 +6,6 @@ import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { cache } from 'react';
 import { QuestionnaireParser } from './components/QuestionnaireParser';
-import { QuestionnaireSidebar } from './components/QuestionnaireSidebar';
 
 export default async function SecurityQuestionnairePage() {
   const session = await auth.api.getSession({
@@ -68,24 +67,7 @@ export default async function SecurityQuestionnairePage() {
 
   return (
     <div className="mx-auto max-w-[1200px] px-6 py-8">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
-        <div className="lg:col-span-2 flex flex-col gap-6 min-w-0">
-          <div className="flex flex-col gap-2 lg:gap-3">
-            <h1 className="text-xl lg:text-2xl font-semibold text-foreground">
-              Security Questionnaire
-            </h1>
-            <p className="text-xs lg:text-sm text-muted-foreground leading-relaxed max-w-3xl">
-              Automatically analyze and answer questionnaires using AI. Upload questionnaires from
-              vendors, and our system will extract questions and generate answers based on your
-              organization's policies and documentation.
-            </p>
-          </div>
-          <QuestionnaireParser />
-        </div>
-        <div className="lg:col-span-1">
-          <QuestionnaireSidebar />
-        </div>
-      </div>
+      <QuestionnaireParser />
     </div>
   );
 }

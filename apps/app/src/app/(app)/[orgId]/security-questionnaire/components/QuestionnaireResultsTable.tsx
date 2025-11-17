@@ -3,14 +3,7 @@
 import { Button } from '@comp/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@comp/ui/table';
 import { Textarea } from '@comp/ui/textarea';
-import {
-  BookOpen,
-  ChevronDown,
-  ChevronUp,
-  Link as LinkIcon,
-  Loader2,
-  Sparkles,
-} from 'lucide-react';
+import { BookOpen, ChevronDown, ChevronUp, Link as LinkIcon, Loader2, Zap } from 'lucide-react';
 import Link from 'next/link';
 import type { QuestionAnswer } from './types';
 
@@ -52,151 +45,150 @@ export function QuestionnaireResultsTable({
   onToggleSource,
 }: QuestionnaireResultsTableProps) {
   return (
-    <Table>
-      <TableHeader>
-        <TableRow className="border-b border-border/50">
-          <TableHead className="w-12 text-xs">#</TableHead>
-          <TableHead className="min-w-[300px] text-xs">Question</TableHead>
-          <TableHead className="min-w-[300px] text-xs">Answer</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {filteredResults.map((qa, index) => {
-          const originalIndex = results.findIndex((r) => r === qa);
-          const isEditing = editingIndex === originalIndex;
-          const questionStatus = questionStatuses.get(originalIndex);
-          const isProcessing = questionStatus === 'processing';
+    <div className="border border-border rounded-lg overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-muted/30 hover:bg-muted/30">
+            <TableHead className="w-12 text-xs font-semibold pl-6">#</TableHead>
+            <TableHead className="w-1/2 text-xs font-semibold">Question</TableHead>
+            <TableHead className="w-1/2 text-xs font-semibold pr-6">Answer</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {filteredResults.map((qa, index) => {
+            const originalIndex = results.findIndex((r) => r === qa);
+            const isEditing = editingIndex === originalIndex;
+            const questionStatus = questionStatuses.get(originalIndex);
+            const isProcessing = questionStatus === 'processing';
 
-          return (
-            <TableRow key={originalIndex} className="border-muted/30">
-              <TableCell className="font-medium align-middle">
-                <span className="tabular-nums">{originalIndex + 1}</span>
-              </TableCell>
-              <TableCell className="font-medium align-middle">{qa.question}</TableCell>
-              <TableCell className="align-middle">
-                {isEditing ? (
-                  <div className="space-y-2">
-                    <Textarea
-                      value={editingAnswer}
-                      onChange={(e) => onEditingAnswerChange(e.target.value)}
-                      className="min-h-[80px]"
-                      autoFocus
-                    />
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={() => onSaveAnswer(originalIndex)}>
-                        Save
-                      </Button>
-                      <Button size="sm" onClick={onCancelEdit} variant="outline">
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {qa.answer ? (
-                      <div
-                        className="rounded-xs p-2 transition-colors flex items-start gap-2 cursor-pointer hover:bg-muted/50"
-                        onClick={() => onEditAnswer(originalIndex)}
-                      >
-                        <p className="text-sm text-foreground min-h-[20px] flex-1">{qa.answer}</p>
-                      </div>
-                    ) : isProcessing ? (
-                      <div className="flex items-center gap-2 p-2">
-                        <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />
-                        <span className="text-sm text-muted-foreground">Generating answer...</span>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-2 w-full">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => onEditAnswer(originalIndex)}
-                          className="h-8 w-full"
-                        >
-                          Write Answer
+            return (
+              <TableRow key={originalIndex} className="group">
+                <TableCell className="align-top py-6 font-medium pl-6">
+                  <span className="tabular-nums text-muted-foreground">{originalIndex + 1}</span>
+                </TableCell>
+                <TableCell className="align-top py-6 font-medium w-1/2">
+                  <p className="leading-relaxed">{qa.question}</p>
+                </TableCell>
+                <TableCell className="align-top py-6 pr-6 w-1/2">
+                  {isEditing ? (
+                    <div className="space-y-3">
+                      <Textarea
+                        value={editingAnswer}
+                        onChange={(e) => onEditingAnswerChange(e.target.value)}
+                        className="min-h-[120px]"
+                        autoFocus
+                      />
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={() => onSaveAnswer(originalIndex)}>
+                          Save
                         </Button>
-                        {!qa.failedToGenerate ? (
+                        <Button size="sm" onClick={onCancelEdit} variant="outline">
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {qa.answer ? (
+                        <div className="cursor-pointer" onClick={() => onEditAnswer(originalIndex)}>
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            {qa.answer}
+                          </p>
+                        </div>
+                      ) : isProcessing ? (
+                        <div className="flex items-center gap-2 py-2">
+                          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                          <span className="text-sm text-muted-foreground">Finding answer...</span>
+                        </div>
+                      ) : (
+                        <div className="flex gap-2 justify-end">
                           <Button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onEditAnswer(originalIndex);
+                            }}
+                            variant="outline"
                             size="sm"
+                          >
+                            Write Answer
+                          </Button>
+                          <Button
                             onClick={(e) => {
                               e.stopPropagation();
                               onAnswerSingleQuestion(originalIndex);
                             }}
-                            disabled={answeringQuestionIndex === originalIndex || (isAutoAnswering && hasClickedAutoAnswer)}
-                            className="h-8 w-full"
+                            disabled={
+                              isProcessing ||
+                              (isAutoAnswering && answeringQuestionIndex !== originalIndex)
+                            }
+                            size="sm"
                           >
-                            <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-                            Auto-Answer
+                            <Zap className="size-4" />
+                            Auto-Fill
                           </Button>
-                        ) : (
-                          <div className="h-8 flex items-center justify-center px-2 rounded-xs bg-muted/30 border border-border/30">
-                            <span className="text-xs text-muted-foreground text-center">
-                              Insufficient data
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    {qa.sources && qa.sources.length > 0 && (
-                      <div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onToggleSource(originalIndex)}
-                          className="h-auto p-1 text-xs text-muted-foreground hover:text-foreground"
-                        >
-                          <BookOpen className="mr-1 h-3 w-3" />
-                          {expandedSources.has(originalIndex) ? (
-                            <>
-                              Hide sources ({qa.sources.length})
-                              <ChevronUp className="ml-1 h-3 w-3" />
-                            </>
-                          ) : (
-                            <>
-                              Show sources ({qa.sources.length})
-                              <ChevronDown className="ml-1 h-3 w-3" />
-                            </>
-                          )}
-                        </Button>
-                        {expandedSources.has(originalIndex) && (
-                          <div className="mt-2 space-y-1 pl-4 border-l-2 border-muted/30">
-                            {qa.sources.map((source, sourceIndex) => {
-                              const isPolicy = source.sourceType === 'policy' && source.sourceId;
-                              const sourceContent = source.sourceName || source.sourceType;
+                        </div>
+                      )}
 
-                              return (
-                                <div key={sourceIndex} className="flex items-center gap-2 text-xs">
-                                  <div className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
-                                  {isPolicy ? (
-                                    <Link
-                                      href={`/${orgId}/policies/${source.sourceId}`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="font-medium text-primary hover:underline inline-flex items-center gap-1"
-                                    >
-                                      {sourceContent}
-                                      <LinkIcon className="h-3 w-3" />
-                                    </Link>
-                                  ) : (
-                                    <span className="font-medium text-muted-foreground">
-                                      {sourceContent}
-                                    </span>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </TableCell>
-            </TableRow>
-          );
-        })}
-      </TableBody>
-    </Table>
+                      {qa.sources && qa.sources.length > 0 && (
+                        <div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onToggleSource(originalIndex)}
+                            className="h-auto p-1 text-xs text-muted-foreground hover:text-foreground -ml-2"
+                          >
+                            <BookOpen className="mr-1.5 h-3 w-3" />
+                            {expandedSources.has(originalIndex) ? (
+                              <>
+                                Hide sources ({qa.sources.length})
+                                <ChevronUp className="ml-1 h-3 w-3" />
+                              </>
+                            ) : (
+                              <>
+                                Show sources ({qa.sources.length})
+                                <ChevronDown className="ml-1 h-3 w-3" />
+                              </>
+                            )}
+                          </Button>
+                          {expandedSources.has(originalIndex) && (
+                            <div className="mt-2 space-y-1.5 pl-4 border-l-2 border-muted">
+                              {qa.sources.map((source, sourceIndex) => {
+                                const isPolicy = source.sourceType === 'policy' && source.sourceId;
+                                const sourceContent = source.sourceName || source.sourceType;
+
+                                return (
+                                  <div
+                                    key={sourceIndex}
+                                    className="flex items-center gap-2 text-xs"
+                                  >
+                                    <div className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                                    {isPolicy ? (
+                                      <Link
+                                        href={`/${orgId}/policies/${source.sourceId}`}
+                                        className="text-primary hover:underline flex items-center gap-1"
+                                        target="_blank"
+                                      >
+                                        {sourceContent}
+                                        <LinkIcon className="h-3 w-3" />
+                                      </Link>
+                                    ) : (
+                                      <span className="text-muted-foreground">{sourceContent}</span>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </div>
   );
 }
-

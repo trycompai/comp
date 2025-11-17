@@ -2,14 +2,7 @@
 
 import { Button } from '@comp/ui/button';
 import { Textarea } from '@comp/ui/textarea';
-import {
-  BookOpen,
-  ChevronDown,
-  ChevronUp,
-  Link as LinkIcon,
-  Loader2,
-  Sparkles,
-} from 'lucide-react';
+import { BookOpen, ChevronDown, ChevronUp, Link as LinkIcon, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import type { QuestionAnswer } from './types';
 
@@ -112,11 +105,13 @@ export function QuestionnaireResultsCards({
                             e.stopPropagation();
                             onAnswerSingleQuestion(originalIndex);
                           }}
-                          disabled={answeringQuestionIndex === originalIndex || (isAutoAnswering && hasClickedAutoAnswer)}
+                          disabled={
+                            answeringQuestionIndex === originalIndex ||
+                            (isAutoAnswering && hasClickedAutoAnswer)
+                          }
                           className="w-full justify-center"
                         >
-                          <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-                          Auto-Answer
+                          Answer
                         </Button>
                       )}
                       {qa.failedToGenerate && (
@@ -198,4 +193,3 @@ export function QuestionnaireResultsCards({
     </div>
   );
 }
-

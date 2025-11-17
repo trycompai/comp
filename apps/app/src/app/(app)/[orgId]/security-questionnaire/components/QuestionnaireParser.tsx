@@ -2,6 +2,7 @@
 
 import { QuestionnaireResults } from './QuestionnaireResults';
 import { QuestionnaireUpload } from './QuestionnaireUpload';
+import { QuestionnaireSidebar } from './QuestionnaireSidebar';
 import { useQuestionnaireParser } from '../hooks/useQuestionnaireParser';
 
 export function QuestionnaireParser() {
@@ -41,22 +42,47 @@ export function QuestionnaireParser() {
     handleToggleSource,
   } = useQuestionnaireParser();
 
-  if (!results || results.length === 0) {
+  const hasResults = results && results.length > 0;
+
+  if (!hasResults) {
     return (
-      <QuestionnaireUpload
-        selectedFile={selectedFile}
-        onFileSelect={handleFileSelect}
-        onFileRemove={() => setSelectedFile(null)}
-        onParse={handleParse}
-        isLoading={isLoading}
-        parseStatus={parseStatus}
-        orgId={orgId}
-      />
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-2 lg:gap-3">
+          <h1 className="text-xl lg:text-2xl font-semibold text-foreground">
+            Security Questionnaire
+          </h1>
+          <p className="text-xs lg:text-sm text-muted-foreground leading-relaxed max-w-3xl">
+            Automatically analyze and answer questionnaires using AI. Upload questionnaires from
+            vendors, and our system will extract questions and generate answers based on your
+            organization's policies and documentation.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
+          <div className="lg:col-span-2">
+            <QuestionnaireUpload
+            selectedFile={selectedFile}
+            onFileSelect={handleFileSelect}
+            onFileRemove={() => setSelectedFile(null)}
+            onParse={handleParse}
+            isLoading={isLoading}
+            parseStatus={parseStatus}
+            orgId={orgId}
+          />
+          </div>
+          <div className="lg:col-span-1">
+            <QuestionnaireSidebar />
+          </div>
+        </div>
+      </div>
     );
   }
 
   return (
-    <QuestionnaireResults
+    <div className="flex flex-col gap-6">
+      <h1 className="text-xl lg:text-2xl font-semibold text-foreground">
+        Vendor Questionnaire
+      </h1>
+      <QuestionnaireResults
       orgId={orgId}
       results={results}
       filteredResults={filteredResults}
@@ -85,6 +111,7 @@ export function QuestionnaireParser() {
       totalCount={totalCount}
       answeredCount={answeredCount}
       progressPercentage={progressPercentage}
-    />
+      />
+    </div>
   );
 }
