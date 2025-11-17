@@ -52,6 +52,7 @@ export function MainMenu({
   isCollapsed = false,
   onItemClick,
   isQuestionnaireEnabled = false,
+  isTrustNdaEnabled = false,
 }: Props) {
   const pathname = usePathname();
   const [activeStyle, setActiveStyle] = useState({ top: '0px', height: '0px' });
@@ -98,6 +99,7 @@ export function MainMenu({
       disabled: false,
       icon: ShieldCheck,
       protected: false,
+      hidden: !isTrustNdaEnabled,
     },
     {
       id: 'people',
@@ -340,4 +342,5 @@ type Props = {
   isCollapsed?: boolean;
   onItemClick?: () => void;
   isQuestionnaireEnabled?: boolean;
+  isTrustNdaEnabled?: boolean;
 };
