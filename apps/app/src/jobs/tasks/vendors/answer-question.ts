@@ -4,11 +4,8 @@ import { generateAnswerWithRAG } from './answer-question-helpers';
 
 export const answerQuestion= task({
   id: 'answer-question',
-  queue: {
-    concurrencyLimit: 10, // Max 10 questions processing simultaneously
-  },
   retry: {
-    maxAttempts: 2,
+    maxAttempts: 3,
   },
   run: async (payload: {
     question: string;

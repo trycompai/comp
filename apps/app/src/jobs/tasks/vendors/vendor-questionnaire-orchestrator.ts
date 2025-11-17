@@ -7,7 +7,7 @@ const BATCH_SIZE = 500; // Process 500 (prev. used) 10 questions at a time
 export const vendorQuestionnaireOrchestratorTask = task({
   id: 'vendor-questionnaire-orchestrator',
   retry: {
-    maxAttempts: 1,
+    maxAttempts: 3,
   },
   run: async (payload: {
     vendorId: string;
