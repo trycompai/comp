@@ -135,43 +135,23 @@ export function QuestionnaireResultsHeader({
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="relative">
-              {!hasClickedAutoAnswer && results.some((qa) => !qa.answer) && (
+            <Button
+              onClick={(e) => {
+                e.stopPropagation();
+                onAutoAnswer();
+              }}
+              disabled={isAutoAnswering || isLoading}
+              size="default"
+            >
+              {isAutoAnswering ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
                 <>
-                  <style
-                    dangerouslySetInnerHTML={{
-                      __html: `
-                      @keyframes ping-subtle {
-                        0%, 100% { transform: scale(1); opacity: 0.8; }
-                        60% { transform: scale(1.05); opacity: 0.5; }
-                      }
-                    `,
-                    }}
-                  />
-                  <span
-                    className="absolute -inset-0.5 rounded-xs bg-primary/10"
-                    style={{ animation: 'ping-subtle 2.5s ease-in-out infinite' }}
-                  />
+                  <Zap className="size-4" />
+                  Auto-Fill All
                 </>
               )}
-              <Button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAutoAnswer();
-                }}
-                disabled={isAutoAnswering || isLoading}
-                size="default"
-              >
-                {isAutoAnswering ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <>
-                    <Zap className="size-4" />
-                    Auto-Fill All
-                  </>
-                )}
-              </Button>
-            </div>
+            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="default" disabled={isExporting || isLoading}>

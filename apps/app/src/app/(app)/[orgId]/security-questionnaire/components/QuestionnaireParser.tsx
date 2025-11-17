@@ -1,9 +1,9 @@
 'use client';
 
-import { QuestionnaireResults } from './QuestionnaireResults';
-import { QuestionnaireUpload } from './QuestionnaireUpload';
-import { QuestionnaireSidebar } from './QuestionnaireSidebar';
 import { useQuestionnaireParser } from '../hooks/useQuestionnaireParser';
+import { QuestionnaireResults } from './QuestionnaireResults';
+import { QuestionnaireSidebar } from './QuestionnaireSidebar';
+import { QuestionnaireUpload } from './QuestionnaireUpload';
 
 export function QuestionnaireParser() {
   const {
@@ -60,14 +60,14 @@ export function QuestionnaireParser() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
           <div className="lg:col-span-2">
             <QuestionnaireUpload
-            selectedFile={selectedFile}
-            onFileSelect={handleFileSelect}
-            onFileRemove={() => setSelectedFile(null)}
-            onParse={handleParse}
-            isLoading={isLoading}
-            parseStatus={parseStatus}
-            orgId={orgId}
-          />
+              selectedFile={selectedFile}
+              onFileSelect={handleFileSelect}
+              onFileRemove={() => setSelectedFile(null)}
+              onParse={handleParse}
+              isLoading={isLoading}
+              parseStatus={parseStatus}
+              orgId={orgId}
+            />
           </div>
           <div className="lg:col-span-1">
             <QuestionnaireSidebar />
@@ -79,38 +79,36 @@ export function QuestionnaireParser() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-xl lg:text-2xl font-semibold text-foreground">
-        Vendor Questionnaire
-      </h1>
+      <h1 className="text-xl lg:text-2xl font-semibold text-foreground">Security Questionnaire</h1>
       <QuestionnaireResults
-      orgId={orgId}
-      results={results}
-      filteredResults={filteredResults}
-      searchQuery={searchQuery}
-      onSearchChange={setSearchQuery}
-      editingIndex={editingIndex}
-      editingAnswer={editingAnswer}
-      onEditingAnswerChange={setEditingAnswer}
-      expandedSources={expandedSources}
-      questionStatuses={questionStatuses}
-      answeringQuestionIndex={answeringQuestionIndex}
-      hasClickedAutoAnswer={hasClickedAutoAnswer}
-      isLoading={isLoading}
-      isAutoAnswering={isAutoAnswering}
-      isExporting={isExporting}
-      showExitDialog={showExitDialog}
-      onShowExitDialogChange={setShowExitDialog}
-      onExit={confirmReset}
-      onAutoAnswer={handleAutoAnswer}
-      onAnswerSingleQuestion={handleAnswerSingleQuestion}
-      onEditAnswer={handleEditAnswer}
-      onSaveAnswer={handleSaveAnswer}
-      onCancelEdit={handleCancelEdit}
-      onExport={handleExport}
-      onToggleSource={handleToggleSource}
-      totalCount={totalCount}
-      answeredCount={answeredCount}
-      progressPercentage={progressPercentage}
+        orgId={orgId}
+        results={results}
+        filteredResults={filteredResults}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        editingIndex={editingIndex}
+        editingAnswer={editingAnswer}
+        onEditingAnswerChange={setEditingAnswer}
+        expandedSources={expandedSources}
+        questionStatuses={questionStatuses}
+        answeringQuestionIndex={answeringQuestionIndex}
+        hasClickedAutoAnswer={hasClickedAutoAnswer}
+        isLoading={isLoading}
+        isAutoAnswering={isAutoAnswering}
+        isExporting={isExporting}
+        showExitDialog={showExitDialog}
+        onShowExitDialogChange={setShowExitDialog}
+        onExit={confirmReset}
+        onAutoAnswer={handleAutoAnswer}
+        onAnswerSingleQuestion={handleAnswerSingleQuestion}
+        onEditAnswer={handleEditAnswer}
+        onSaveAnswer={handleSaveAnswer}
+        onCancelEdit={handleCancelEdit}
+        onExport={handleExport}
+        onToggleSource={handleToggleSource}
+        totalCount={totalCount}
+        answeredCount={answeredCount}
+        progressPercentage={progressPercentage}
       />
     </div>
   );

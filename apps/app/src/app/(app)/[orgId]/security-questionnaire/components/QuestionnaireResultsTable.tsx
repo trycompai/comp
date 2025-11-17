@@ -100,6 +100,22 @@ export function QuestionnaireResultsTable({
                           <Loader2 className="h-4 w-4 animate-spin text-primary" />
                           <span className="text-sm text-muted-foreground">Finding answer...</span>
                         </div>
+                      ) : qa.failedToGenerate ? (
+                        <div className="flex items-center justify-between gap-4">
+                          <p className="text-sm text-muted-foreground italic">
+                            Could not find an answer
+                          </p>
+                          <Button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onEditAnswer(originalIndex);
+                            }}
+                            variant="outline"
+                            size="sm"
+                          >
+                            Write Answer
+                          </Button>
+                        </div>
                       ) : (
                         <div className="flex gap-2 justify-end">
                           <Button
