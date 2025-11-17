@@ -19,7 +19,6 @@ import {
 } from '@comp/ui/dropdown-menu';
 import { Input } from '@comp/ui/input';
 import {
-  BookOpen,
   ChevronDown,
   Download,
   File,
@@ -27,7 +26,6 @@ import {
   FileText as FileTextIcon,
   Loader2,
   Search,
-  X,
   Zap,
 } from 'lucide-react';
 import type { QuestionAnswer } from './types';
@@ -71,72 +69,73 @@ export function QuestionnaireResultsHeader({
 }: QuestionnaireResultsHeaderProps) {
   return (
     <>
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-border/50">
-        <div className="flex items-center gap-2 lg:gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onShowExitDialogChange(true)}
-            disabled={isLoading}
-            className="h-8 w-8 text-muted-foreground hover:text-foreground"
-            title="Exit and start over"
-          >
-            <X className="h-4 w-4" />
-          </Button>
+      <div className="flex flex-col gap-4">
+        <AlertDialog open={showExitDialog} onOpenChange={onShowExitDialogChange}>
+          <AlertDialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Exit questionnaire session?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will discard all questions and answers. Make sure to export your work before
+                exiting if you want to keep it.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={onExit}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Exit and Discard
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
-          <AlertDialog open={showExitDialog} onOpenChange={onShowExitDialogChange}>
-            <AlertDialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg">
-              <AlertDialogHeader>
-                <AlertDialogTitle>Exit questionnaire session?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will discard all questions and answers. Make sure to export your work before
-                  exiting if you want to keep it.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={onExit}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  Exit and Discard
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-          <div className="h-4 w-px bg-border" />
-          <BookOpen className="h-4 lg:h-5 w-4 lg:w-5 text-muted-foreground" />
-          <div className="flex flex-col gap-1 lg:gap-1.5">
-            <h2 className="text-base lg:text-lg font-semibold text-foreground">
-              Questions & Answers
-            </h2>
-            <div className="flex items-center gap-2 lg:gap-3">
-              <p className="text-xs text-muted-foreground">
-                {searchQuery && filteredResults ? `${filteredResults.length} of ` : ''}
-                {totalCount} questions • {answeredCount} answered
-              </p>
-              <div className="h-1 w-16 lg:w-20 bg-muted rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-primary transition-all duration-500"
-                  style={{ width: `${progressPercentage}%` }}
-                />
-              </div>
+        <div className="grid grid-cols-3 gap-8">
+          {/* Total Questions */}
+          <div className="px-4 py-3.5 border-l-2 border-l-primary/40">
+            <div className="text-muted-foreground mb-1 text-[10px] font-medium uppercase tracking-widest">
+              Questions
+            </div>
+            <div className="text-foreground text-2xl font-semibold tabular-nums tracking-tight">
+              {totalCount}
+            </div>
+          </div>
+
+          {/* Answered */}
+          <div className="px-4 py-3.5 border-l-2 border-l-emerald-500/40">
+            <div className="text-muted-foreground mb-1 text-[10px] font-medium uppercase tracking-widest">
+              Answered
+            </div>
+            <div className="text-foreground text-2xl font-semibold tabular-nums tracking-tight">
+              {answeredCount}
+            </div>
+          </div>
+
+          {/* Progress */}
+          <div className="px-4 py-3.5 border-l-2 border-l-blue-500/40">
+            <div className="text-muted-foreground mb-1 text-[10px] font-medium uppercase tracking-widest">
+              Progress
+            </div>
+            <div className="text-foreground text-2xl font-semibold tabular-nums tracking-tight">
+              {progressPercentage}%
             </div>
           </div>
         </div>
 
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-2 lg:gap-3 w-full lg:w-auto">
-          <div className="relative flex-1 lg:w-72">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="flex items-center justify-between gap-3">
+          <div className="relative max-w-md">
             <Input
-              placeholder="Search..."
+              placeholder="Search questions..."
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="pl-9 h-9 text-sm"
+              className="text-sm w-80"
+              leftIcon={<Search className="h-4 w-4" />}
             />
           </div>
-          <div className="flex items-center gap-2 w-full lg:w-auto">
-            <div className="relative flex-1 lg:flex-initial">
+
+          <div className="flex items-center gap-3">
+            <div className="relative">
               {!hasClickedAutoAnswer && results.some((qa) => !qa.answer) && (
                 <>
                   <style
@@ -161,30 +160,24 @@ export function QuestionnaireResultsHeader({
                   onAutoAnswer();
                 }}
                 disabled={isAutoAnswering || isLoading}
-                size="sm"
-                className="relative z-10 h-9 w-full lg:w-auto"
+                size="default"
               >
                 {isAutoAnswering ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="size-4 animate-spin" />
                 ) : (
                   <>
-                    <Zap className="mr-2 h-4 w-4" />
-                    Auto-Answer All
+                    <Zap className="size-4" />
+                    Auto-Fill All
                   </>
                 )}
               </Button>
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={isExporting || isLoading}
-                  className="h-9"
-                >
-                  <Download className="mr-2 h-4 w-4" />
+                <Button variant="outline" size="default" disabled={isExporting || isLoading}>
+                  <Download className="size-4" />
                   Export
-                  <ChevronDown className="ml-2 h-4 w-4" />
+                  <ChevronDown className="size-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -195,11 +188,17 @@ export function QuestionnaireResultsHeader({
                   <FileSpreadsheet className="mr-2 h-4 w-4" />
                   Excel
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onExport('csv')} disabled={isExporting || isLoading}>
+                <DropdownMenuItem
+                  onClick={() => onExport('csv')}
+                  disabled={isExporting || isLoading}
+                >
                   <FileTextIcon className="mr-2 h-4 w-4" />
                   CSV
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onExport('pdf')} disabled={isExporting || isLoading}>
+                <DropdownMenuItem
+                  onClick={() => onExport('pdf')}
+                  disabled={isExporting || isLoading}
+                >
                   <File className="mr-2 h-4 w-4" />
                   PDF
                 </DropdownMenuItem>
@@ -211,4 +210,3 @@ export function QuestionnaireResultsHeader({
     </>
   );
 }
-

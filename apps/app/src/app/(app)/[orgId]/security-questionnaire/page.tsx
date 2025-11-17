@@ -1,12 +1,10 @@
 import { getFeatureFlags } from '@/app/posthog';
 import { AppOnboarding } from '@/components/app-onboarding';
-import { CreatePolicySheet } from '@/components/sheets/create-policy-sheet';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
-import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage } from '@comp/ui/breadcrumb';
-import { cache } from 'react';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
+import { cache } from 'react';
 import { QuestionnaireParser } from './components/QuestionnaireParser';
 
 export default async function SecurityQuestionnairePage() {
@@ -34,70 +32,44 @@ export default async function SecurityQuestionnairePage() {
   // Show onboarding if no published policies exist
   if (!hasPublishedPolicies) {
     return (
-      <div className="flex flex-col gap-6 p-4 lg:p-6">
-
-        <div className="py-4">
-          <AppOnboarding
-            title={'Security Questionnaire'}
-            description={
-              'Automatically analyze and answer questionnaires using AI. Upload questionnaires from vendors, and our system will extract questions and generate answers based on your organization\'s policies and documentation.'
-            }
-            cta={'Create policy'}
-            imageSrcLight="/questionaire/tmp-questionaire-empty-state.png"
-            imageSrcDark="/questionaire/tmp-questionaire-empty-state.png"
-            imageAlt="Security Questionnaire"
-            sheetName="create-policy-sheet"
-            ctaDisabled={true}
-            ctaTooltip="To use this feature you need to publish policy"
-            faqs={[
-              {
-                questionKey: 'What is a security questionnaire?',
-                answerKey:
-                  'A security questionnaire is a document used by vendors and partners to assess your organization\'s security practices and compliance posture.',
-              },
-              {
-                questionKey: 'Why do I need published policies?',
-                answerKey:
-                  'Published policies are required for the AI to generate accurate answers. The system uses your organization\'s policies and documentation to answer questionnaire questions automatically.',
-              },
-              {
-                questionKey: 'How does it work?',
-                answerKey:
-                  'Upload a questionnaire file, and our AI will extract questions and generate answers based on your published policies and context. You can review and edit answers before exporting.',
-              },
-            ]}
-          />
-          <CreatePolicySheet />
-        </div>
+      <div className="mx-auto max-w-[1200px] px-6 py-8">
+        <AppOnboarding
+          title={'Security Questionnaire'}
+          description={
+            "Automatically answer security questionnaires with the information we have about your company. Upload questionnaires from vendors and we'll extract the questions and provide answers based on your policies and organizational details."
+          }
+          ctaDisabled={true}
+          cta={'Publish policies'}
+          ctaTooltip="To use this feature you need to publish policies first"
+          href={`/${organizationId}/policies/all`}
+          imageSrcLight="/questionaire/tmp-questionaire-empty-state.png"
+          imageSrcDark="/questionaire/tmp-questionaire-empty-state.png"
+          imageAlt="Security Questionnaire"
+          faqs={[
+            {
+              questionKey: 'What is a security questionnaire?',
+              answerKey:
+                "A security questionnaire is a document used by vendors and partners to assess your organization's security practices and compliance posture.",
+            },
+            {
+              questionKey: 'Why do I need published policies?',
+              answerKey:
+                "Published policies are used to get accurate answers. The system uses your organization's policies and context to answer questionnaire questions automatically.",
+            },
+            {
+              questionKey: 'How does it work?',
+              answerKey:
+                'Upload a questionnaire file, our AI will extract the questions and find answers based on your published policies and context. You can review and edit answers before exporting.',
+            },
+          ]}
+        />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-6 p-4 lg:p-6">
-      <div className="flex items-center justify-between">
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbPage>Questionnaire</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-      </div>
-
-      <div className="flex flex-col gap-6 lg:gap-8">
-        <div className="flex flex-col gap-2 lg:gap-3">
-          <h1 className="text-xl lg:text-2xl font-semibold text-foreground">
-            Security Questionnaire
-          </h1>
-          <p className="text-xs lg:text-sm text-muted-foreground leading-relaxed max-w-3xl">
-            Automatically analyze and answer questionnaires using AI. Upload questionnaires from
-            vendors, and our system will extract questions and generate answers based on your
-            organization's policies and documentation.
-          </p>
-        </div>
-        <QuestionnaireParser />
-      </div>
+    <div className="mx-auto max-w-[1200px] px-6 py-8">
+      <QuestionnaireParser />
     </div>
   );
 }

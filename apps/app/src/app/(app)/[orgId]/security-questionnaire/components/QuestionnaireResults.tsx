@@ -69,7 +69,7 @@ export function QuestionnaireResults({
   progressPercentage,
 }: QuestionnaireResultsProps) {
   return (
-    <div className="flex flex-col w-full gap-6">
+    <div className="flex flex-col gap-4 min-w-0">
       <QuestionnaireResultsHeader
         showExitDialog={showExitDialog}
         onShowExitDialogChange={onShowExitDialogChange}
@@ -89,11 +89,11 @@ export function QuestionnaireResults({
         onExport={onExport}
       />
 
-      <div className="flex flex-col flex-1 min-h-0">
+      <div className="flex flex-col flex-1 min-h-0 min-w-0">
         {results && results.length > 0 ? (
           <>
-            <ScrollArea className="flex-1">
-              <div className="pr-4">
+            <ScrollArea className="flex-1 min-w-0">
+              <div className="min-w-0">
                 {filteredResults && filteredResults.length > 0 ? (
                   <>
                     <div className="hidden lg:block">
