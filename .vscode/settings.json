@@ -23,5 +23,6 @@
   },
   "[typescriptreact]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
-  }
+  },
+  "typescript.tsserver.experimental.enableProjectDiagnostics": true
 }

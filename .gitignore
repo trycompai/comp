@@ -85,3 +85,4 @@ packages/*/dist
 
 # Release script
 scripts/sync-release-branch.sh
+/.vscode
