@@ -4,6 +4,7 @@ import { authActionClient } from '@/actions/safe-action';
 import { parseQuestionnaireTask } from '@/jobs/tasks/vendors/parse-questionnaire';
 import { tasks } from '@trigger.dev/sdk';
 import { z } from 'zod';
+import { APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET } from '@/app/s3';
 
 const inputSchema = z.object({
   inputType: z.enum(['file', 'url', 'attachment', 's3']),
@@ -34,6 +35,11 @@ export const parseQuestionnaireAI = authActionClient
     
     if (!session?.activeOrganizationId) {
       throw new Error('No active organization');
+    }
+
+    // Validate questionnaire upload bucket is configured
+    if (!APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET) {
+      throw new Error('Questionnaire upload service is not configured. Please set APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET environment variable to use this feature.');
     }
     
     const organizationId = session.activeOrganizationId;
