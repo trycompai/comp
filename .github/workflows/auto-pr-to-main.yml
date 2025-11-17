@@ -18,6 +18,7 @@ on:
       - cursor/*
       - codex/*
       - chas/*
+      - tofik/*
 jobs:
   create-pull-request:
     runs-on: warp-ubuntu-latest-arm64-4x
@@ -36,9 +37,9 @@ jobs:
         uses: repo-sync/pull-request@v2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          destination_branch: 'main'
-          pr_title: '[dev] [${{ github.actor }}] ${{ github.ref_name }}'
-          pr_label: 'automated-pr'
+          destination_branch: "main"
+          pr_title: "[dev] [${{ github.actor }}] ${{ github.ref_name }}"
+          pr_label: "automated-pr"
           pr_body: |
             This is an automated pull request to merge ${{ github.ref_name }} into dev.
             It was created by the [Auto Pull Request] action.

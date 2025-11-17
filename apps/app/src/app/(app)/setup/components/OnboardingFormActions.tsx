@@ -1,6 +1,7 @@
 import { Button } from '@comp/ui/button';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface OnboardingFormActionsProps {
   onBack: () => void;
@@ -21,13 +22,19 @@ export function OnboardingFormActions({
   isCurrentStepValid,
   onPrefillAll,
 }: OnboardingFormActionsProps) {
-  // Check if we're on localhost
-  const isLocalhost =
-    typeof window !== 'undefined' &&
-    (window.location.hostname === 'localhost' ||
-      window.location.hostname === '127.0.0.1' ||
-      window.location.hostname.startsWith('192.168.') ||
-      window.location.hostname.startsWith('10.0.'));
+  // Check if we're on localhost - use useState/useEffect to avoid hydration mismatch
+  const [isLocalhost, setIsLocalhost] = useState(false);
+
+  useEffect(() => {
+    // Only check on client side after mount
+    const hostname = window.location.hostname;
+    setIsLocalhost(
+      hostname === 'localhost' ||
+        hostname === '127.0.0.1' ||
+        hostname.startsWith('192.168.') ||
+        hostname.startsWith('10.0.')
+    );
+  }, []);
 
   return (
     <div className="flex items-center gap-2">
