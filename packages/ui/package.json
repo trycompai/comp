@@ -256,6 +256,10 @@
       "types": "./dist/components/form.d.ts",
       "import": "./dist/components/form.js"
     },
+    "./field": {
+      "types": "./dist/components/field.d.ts",
+      "import": "./dist/components/field.js"
+    },
     "./empty-card": {
       "types": "./dist/components/empty-card.d.ts",
       "import": "./dist/components/empty-card.js"
