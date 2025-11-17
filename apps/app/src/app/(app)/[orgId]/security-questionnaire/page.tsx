@@ -47,6 +47,8 @@ export default async function SecurityQuestionnairePage() {
             imageSrcDark="/questionaire/tmp-questionaire-empty-state.png"
             imageAlt="Security Questionnaire"
             sheetName="create-policy-sheet"
+            ctaDisabled={true}
+            ctaTooltip="To use this feature you need to publish policy"
             faqs={[
               {
                 questionKey: 'What is a security questionnaire?',
