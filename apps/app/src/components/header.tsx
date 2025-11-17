@@ -1,7 +1,7 @@
 import { getFeatureFlags } from '@/app/posthog';
-import { auth } from '@/utils/auth';
 import { UserMenu } from '@/components/user-menu';
 import { getOrganizations } from '@/data/getOrganizations';
+import { auth } from '@/utils/auth';
 import { Skeleton } from '@comp/ui/skeleton';
 import { headers } from 'next/headers';
 import { Suspense } from 'react';
@@ -18,14 +18,17 @@ export async function Header({
 }) {
   const { organizations } = await getOrganizations();
 
-  // Check feature flag for questionnaire menu item
+  // Check feature flags for menu items
   const session = await auth.api.getSession({
     headers: await headers(),
   });
   let isQuestionnaireEnabled = false;
+  let isTrustNdaEnabled = false;
   if (session?.user?.id) {
     const flags = await getFeatureFlags(session.user.id);
     isQuestionnaireEnabled = flags['ai-vendor-questionnaire'] === true;
+    isTrustNdaEnabled =
+      flags['is-trust-nda-enabled'] === true || flags['is-trust-nda-enabled'] === 'true';
   }
 
   return (
@@ -34,6 +37,7 @@ export async function Header({
         organizations={organizations}
         organizationId={organizationId}
         isQuestionnaireEnabled={isQuestionnaireEnabled}
+        isTrustNdaEnabled={isTrustNdaEnabled}
       />
 
       {!hideChat && <AssistantButton />}

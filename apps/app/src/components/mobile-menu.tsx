@@ -13,12 +13,14 @@ interface MobileMenuProps {
   isCollapsed?: boolean;
   organizationId?: string;
   isQuestionnaireEnabled?: boolean;
+  isTrustNdaEnabled?: boolean;
 }
 
 export function MobileMenu({
   organizationId,
   organizations,
   isQuestionnaireEnabled = false,
+  isTrustNdaEnabled = false,
 }: MobileMenuProps) {
   const [isOpen, setOpen] = useState(false);
 
@@ -55,6 +57,7 @@ export function MobileMenu({
             organization={currentOrganization}
             onItemClick={handleCloseSheet}
             isQuestionnaireEnabled={isQuestionnaireEnabled}
+            isTrustNdaEnabled={isTrustNdaEnabled}
           />
         </div>
       </SheetContent>
