@@ -1,10 +1,11 @@
 import { logger, metadata, task } from '@trigger.dev/sdk';
+import { syncOrganizationEmbeddings } from '@/lib/vector';
 import { answerQuestion } from './answer-question';
 
-const BATCH_SIZE = 10; // Process 10 questions at a time
+const BATCH_SIZE = 500; // Process 500 (prev. used) 10 questions at a time
 
-export const autoAnswerQuestionnaireTask = task({
-  id: 'auto-answer-questionnaire',
+export const vendorQuestionnaireOrchestratorTask = task({
+  id: 'vendor-questionnaire-orchestrator',
   retry: {
     maxAttempts: 1,
   },
@@ -22,9 +23,28 @@ export const autoAnswerQuestionnaireTask = task({
       questionCount: payload.questionsAndAnswers.length,
     });
 
+    // Sync organization embeddings before generating answers
+    // Uses incremental sync: only updates what changed (much faster than full sync)
+    try {
+      await syncOrganizationEmbeddings(payload.organizationId);
+      logger.info('Organization embeddings synced successfully', {
+        organizationId: payload.organizationId,
+      });
+    } catch (error) {
+      logger.warn('Failed to sync organization embeddings', {
+        organizationId: payload.organizationId,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+      // Continue with existing embeddings if sync fails
+    }
+
     // Filter questions that need answers (skip already answered)
+    // Preserve original index if provided (for single question answers)
     const questionsToAnswer = payload.questionsAndAnswers
-      .map((qa, index) => ({ ...qa, index }))
+      .map((qa, index) => ({ 
+        ...qa, 
+        index: (qa as any)._originalIndex !== undefined ? (qa as any)._originalIndex : index 
+      }))
       .filter((qa) => !qa.answer || qa.answer.trim().length === 0);
 
     logger.info('Questions to answer', {
@@ -38,6 +58,13 @@ export const autoAnswerQuestionnaireTask = task({
     metadata.set('questionsRemaining', questionsToAnswer.length);
     metadata.set('currentBatch', 0);
     metadata.set('totalBatches', Math.ceil(questionsToAnswer.length / BATCH_SIZE));
+    
+    // Initialize individual question statuses - all start as 'pending'
+    // Each question will update its own status to 'processing' when it starts
+    // and 'completed' when it finishes
+    questionsToAnswer.forEach((qa) => {
+      metadata.set(`question_${qa.index}_status`, 'pending');
+    });
 
     // Process questions in batches of 10
     const allAnswers: Array<{
@@ -116,14 +143,15 @@ export const autoAnswerQuestionnaireTask = task({
         }
       });
 
-      // Update progress metadata
-      const completed = allAnswers.length;
-      metadata.set('questionsCompleted', completed);
-      metadata.set('questionsRemaining', questionsToAnswer.length - completed);
+      // Note: Individual answers and progress counters are updated in metadata 
+      // by each answer-question task via metadata.parent.set() and metadata.parent.increment()
+      // This allows frontend to show answers as they complete individually
+      // No need to update counters here - they're already updated by individual tasks
 
       logger.info(`Batch ${batchNumber}/${totalBatches} completed`, {
-        completed,
-        remaining: questionsToAnswer.length - completed,
+        batchSize: batch.length,
+        totalAnswersSoFar: allAnswers.length,
+        remaining: questionsToAnswer.length - allAnswers.length,
       });
     }
 

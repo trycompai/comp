@@ -61,7 +61,9 @@ export async function findSimilarContent(
         const metadata = result.metadata as any;
         const hasCorrectOrg = metadata?.organizationId === organizationId;
         const hasMinScore = result.score >= MIN_SIMILARITY_SCORE;
-        return hasCorrectOrg && hasMinScore;
+        // Exclude questionnaire Q&A from results - we only use Policy and Context as sources
+        const isNotQuestionnaire = metadata?.sourceType !== 'questionnaire';
+        return hasCorrectOrg && hasMinScore && isNotQuestionnaire;
       })
       .slice(0, limit) // Take only the top N after filtering
       .map((result) => {

@@ -80,6 +80,7 @@
     "next-safe-action": "^8.0.3",
     "next-themes": "^0.4.4",
     "nuqs": "^2.4.3",
+    "pdf-parse": "^2.4.5",
     "playwright-core": "^1.52.0",
     "posthog-js": "^1.236.6",
     "posthog-node": "^5.8.2",

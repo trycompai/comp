@@ -16,6 +16,7 @@ export interface EmbeddingMetadata {
   vendorId?: string;
   vendorName?: string;
   questionnaireQuestion?: string;
+  updatedAt?: string; // ISO timestamp for incremental sync comparison
 }
 
 /**
@@ -56,18 +57,89 @@ export async function upsertEmbedding(
         ...(metadata.vendorId && { vendorId: metadata.vendorId }),
         ...(metadata.vendorName && { vendorName: metadata.vendorName }),
         ...(metadata.questionnaireQuestion && { questionnaireQuestion: metadata.questionnaireQuestion }),
+        ...(metadata.updatedAt && { updatedAt: metadata.updatedAt }),
       },
     });
 
-    logger.info('Successfully upserted embedding', {
-      id,
-      sourceType: metadata.sourceType,
-      sourceId: metadata.sourceId,
-    });
+    // Removed per-embedding success logging for performance (only log errors)
   } catch (error) {
     logger.error('Failed to upsert embedding', {
       id,
       sourceType: metadata.sourceType,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    throw error;
+  }
+}
+
+/**
+ * Batch upsert embeddings: generates embeddings in parallel, then upserts in parallel
+ * Much faster than sequential upsertEmbedding calls
+ * @param items - Array of items to upsert
+ */
+export async function batchUpsertEmbeddings(
+  items: Array<{
+    id: string;
+    text: string;
+    metadata: EmbeddingMetadata;
+  }>,
+): Promise<void> {
+  if (!vectorIndex) {
+    throw new Error('Upstash Vector is not configured');
+  }
+
+  if (items.length === 0) {
+    return;
+  }
+
+  // Filter out empty texts
+  const validItems = items.filter((item) => item.text && item.text.trim().length > 0);
+
+  if (validItems.length === 0) {
+    return;
+  }
+
+  try {
+    // Step 1: Generate all embeddings in parallel (much faster)
+    const embeddings = await Promise.all(
+      validItems.map((item) => generateEmbedding(item.text)),
+    );
+
+    // Step 2: Upsert all embeddings in parallel
+    // Check vectorIndex before using it (TypeScript safety)
+    if (!vectorIndex) {
+      throw new Error('Upstash Vector is not configured');
+    }
+
+    // Store reference to avoid null check issues in map
+    const index = vectorIndex;
+
+    await Promise.all(
+      validItems.map((item, idx) => {
+        const embedding = embeddings[idx];
+        return index.upsert({
+          id: item.id,
+          vector: embedding,
+          metadata: {
+            organizationId: item.metadata.organizationId,
+            sourceType: item.metadata.sourceType,
+            sourceId: item.metadata.sourceId,
+            content: item.text.substring(0, 1000), // Store first 1000 chars for reference
+            ...(item.metadata.policyName && { policyName: item.metadata.policyName }),
+            ...(item.metadata.contextQuestion && { contextQuestion: item.metadata.contextQuestion }),
+            ...(item.metadata.vendorId && { vendorId: item.metadata.vendorId }),
+            ...(item.metadata.vendorName && { vendorName: item.metadata.vendorName }),
+            ...(item.metadata.questionnaireQuestion && {
+              questionnaireQuestion: item.metadata.questionnaireQuestion,
+            }),
+            ...(item.metadata.updatedAt && { updatedAt: item.metadata.updatedAt }),
+          },
+        });
+      }),
+    );
+  } catch (error) {
+    logger.error('Failed to batch upsert embeddings', {
+      itemCount: validItems.length,
       error: error instanceof Error ? error.message : 'Unknown error',
     });
     throw error;

@@ -14,7 +14,7 @@ export interface AnswerWithSources {
 
 /**
  * Generates an answer for a question using RAG (Retrieval-Augmented Generation)
- * This is extracted from auto-answer-questionnaire.ts to be used in Trigger.dev tasks
+ * This is extracted from vendor-questionnaire-orchestrator.ts to be used in Trigger.dev tasks
  */
 export async function generateAnswerWithRAG(
   question: string,
@@ -35,8 +35,18 @@ export async function generateAnswerWithRAG(
       })),
     });
 
-    // Extract sources information
-    const sources = similarContent.map((result) => {
+    // Extract sources information and deduplicate by sourceName
+    // Multiple chunks from the same source (same policy/context) should appear as a single source
+    const sourceMap = new Map<string, {
+      sourceType: string;
+      sourceName?: string;
+      sourceId: string;
+      policyName?: string;
+      score: number;
+    }>();
+
+    for (const result of similarContent) {
+      // Generate sourceName first to use as deduplication key
       let sourceName: string | undefined;
       if (result.policyName) {
         sourceName = `Policy: ${result.policyName}`;
@@ -45,15 +55,27 @@ export async function generateAnswerWithRAG(
       } else if (result.contextQuestion) {
         sourceName = 'Context Q&A';
       }
+      
+      // Use sourceName as the unique key to prevent duplicates
+      // For policies: same policy name = same source
+      // For context: all context entries = single "Context Q&A" source
+      const key = sourceName || result.sourceId;
+      
+      // If we haven't seen this source, or this chunk has a higher score, use it
+      const existing = sourceMap.get(key);
+      if (!existing || result.score > existing.score) {
+        sourceMap.set(key, {
+          sourceType: result.sourceType,
+          sourceName,
+          sourceId: result.sourceId,
+          policyName: result.policyName,
+          score: result.score,
+        });
+      }
+    }
 
-      return {
-        sourceType: result.sourceType,
-        sourceName,
-        sourceId: result.sourceId,
-        policyName: result.policyName,
-        score: result.score,
-      };
-    });
+    // Convert map to array and sort by score (highest first)
+    const sources = Array.from(sourceMap.values()).sort((a, b) => b.score - a.score);
 
     // If no relevant content found, return null
     if (similarContent.length === 0) {
@@ -84,7 +106,7 @@ export async function generateAnswerWithRAG(
 
     // Generate answer using LLM with RAG
     const { text } = await generateText({
-      model: openai('gpt-4o-mini'),
+      model: openai('gpt-5-mini'), // Faster model for answer generation
       system: `You are an expert at answering security and compliance questions for vendor questionnaires.
 
 Your task is to answer questions based ONLY on the provided context from the organization's policies and documentation.

@@ -1,7 +1,7 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
-import { autoAnswerQuestionnaireTask } from '@/jobs/tasks/vendors/auto-answer-questionnaire';
+import { vendorQuestionnaireOrchestratorTask } from '@/jobs/tasks/vendors/vendor-questionnaire-orchestrator';
 import { tasks } from '@trigger.dev/sdk';
 import { z } from 'zod';
 
@@ -14,12 +14,12 @@ const inputSchema = z.object({
   ),
 });
 
-export const autoAnswerQuestionnaire = authActionClient
+export const vendorQuestionnaireOrchestrator = authActionClient
   .inputSchema(inputSchema)
   .metadata({
-    name: 'auto-answer-questionnaire',
+    name: 'vendor-questionnaire-orchestrator',
     track: {
-      event: 'auto-answer-questionnaire',
+      event: 'vendor-questionnaire-orchestrator',
       channel: 'server',
     },
   })
@@ -35,8 +35,8 @@ export const autoAnswerQuestionnaire = authActionClient
 
     try {
       // Trigger the root orchestrator task - it will handle batching internally
-      const handle = await tasks.trigger<typeof autoAnswerQuestionnaireTask>(
-        'auto-answer-questionnaire',
+      const handle = await tasks.trigger<typeof vendorQuestionnaireOrchestratorTask>(
+        'vendor-questionnaire-orchestrator',
         {
           vendorId: `org_${organizationId}`,
           organizationId,
@@ -53,7 +53,7 @@ export const autoAnswerQuestionnaire = authActionClient
     } catch (error) {
       throw error instanceof Error
         ? error
-        : new Error('Failed to trigger auto-answer questionnaire');
+        : new Error('Failed to trigger vendor questionnaire orchestrator');
     }
   });
 
