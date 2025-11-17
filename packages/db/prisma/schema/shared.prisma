@@ -1,104 +1,105 @@
 model ApiKey {
-    id         String    @id @default(dbgenerated("generate_prefixed_cuid('apk'::text)"))
-    name       String
-    key        String    @unique
-    salt       String?
-    createdAt  DateTime  @default(now())
-    expiresAt  DateTime?
-    lastUsedAt DateTime?
-    isActive   Boolean   @default(true)
+  id         String    @id @default(dbgenerated("generate_prefixed_cuid('apk'::text)"))
+  name       String
+  key        String    @unique
+  salt       String?
+  createdAt  DateTime  @default(now())
+  expiresAt  DateTime?
+  lastUsedAt DateTime?
+  isActive   Boolean   @default(true)
 
-    organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-    organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
 
-    @@index([organizationId])
-    @@index([key])
+  @@index([organizationId])
+  @@index([key])
 }
 
 model AuditLog {
-    id             String              @id @default(dbgenerated("generate_prefixed_cuid('aud'::text)"))
-    timestamp      DateTime            @default(now())
-    organizationId String
-    userId         String
-    memberId       String?
-    data           Json
-    description    String?
-    entityId       String?
-    entityType     AuditLogEntityType?
+  id             String              @id @default(dbgenerated("generate_prefixed_cuid('aud'::text)"))
+  timestamp      DateTime            @default(now())
+  organizationId String
+  userId         String
+  memberId       String?
+  data           Json
+  description    String?
+  entityId       String?
+  entityType     AuditLogEntityType?
 
-    organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-    user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-    member       Member?      @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  member       Member?      @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
-    @@index([userId])
-    @@index([organizationId])
-    @@index([memberId])
-    @@index([entityType])
+  @@index([userId])
+  @@index([organizationId])
+  @@index([memberId])
+  @@index([entityType])
 }
 
 enum AuditLogEntityType {
-    organization
-    framework
-    requirement
-    control
-    policy
-    task
-    people
-    risk
-    vendor
-    tests
-    integration
+  organization
+  framework
+  requirement
+  control
+  policy
+  task
+  people
+  risk
+  vendor
+  tests
+  integration
+  trust
 }
 
 model GlobalVendors {
-    website                     String   @id @unique
-    company_name                String?
-    legal_name                  String?
-    company_description         String?
-    company_hq_address          String?
-    privacy_policy_url          String?
-    terms_of_service_url        String?
-    service_level_agreement_url String?
-    security_page_url           String?
-    trust_page_url              String?
-    security_certifications     String[]
-    subprocessors               String[]
-    type_of_company             String?
+  website                     String   @id @unique
+  company_name                String?
+  legal_name                  String?
+  company_description         String?
+  company_hq_address          String?
+  privacy_policy_url          String?
+  terms_of_service_url        String?
+  service_level_agreement_url String?
+  security_page_url           String?
+  trust_page_url              String?
+  security_certifications     String[]
+  subprocessors               String[]
+  type_of_company             String?
 
-    approved  Boolean  @default(false)
-    createdAt DateTime @default(now())
+  approved  Boolean  @default(false)
+  createdAt DateTime @default(now())
 
-    @@index([website])
+  @@index([website])
 }
 
 enum Departments {
-    none
-    admin
-    gov
-    hr
-    it
-    itsm
-    qms
+  none
+  admin
+  gov
+  hr
+  it
+  itsm
+  qms
 }
 
 enum Frequency {
-    monthly
-    quarterly
-    yearly
+  monthly
+  quarterly
+  yearly
 }
 
 enum Likelihood {
-    very_unlikely
-    unlikely
-    possible
-    likely
-    very_likely
+  very_unlikely
+  unlikely
+  possible
+  likely
+  very_likely
 }
 
 enum Impact {
-    insignificant
-    minor
-    moderate
-    major
-    severe
+  insignificant
+  minor
+  moderate
+  major
+  severe
 }

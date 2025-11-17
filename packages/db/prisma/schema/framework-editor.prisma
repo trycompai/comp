@@ -1,96 +1,96 @@
 // --- Data for Framework Editor ---
 model FrameworkEditorVideo {
-    id          String @id @default(dbgenerated("generate_prefixed_cuid('frk_vi'::text)"))
-    title       String
-    description String
-    youtubeId   String
-    url         String
+  id          String @id @default(dbgenerated("generate_prefixed_cuid('frk_vi'::text)"))
+  title       String
+  description String
+  youtubeId   String
+  url         String
 
-    // Dates
-    createdAt DateTime @default(now())
-    updatedAt DateTime @default(now()) @updatedAt
+  // Dates
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 }
 
 model FrameworkEditorFramework {
-    id          String  @id @default(dbgenerated("generate_prefixed_cuid('frk'::text)"))
-    name        String // e.g., "soc2", "iso27001"
-    version     String
-    description String
-    visible     Boolean @default(false)
+  id          String  @id @default(dbgenerated("generate_prefixed_cuid('frk'::text)"))
+  name        String // e.g., "soc2", "iso27001"
+  version     String
+  description String
+  visible     Boolean @default(false)
 
-    requirements       FrameworkEditorRequirement[]
-    frameworkInstances FrameworkInstance[]
+  requirements       FrameworkEditorRequirement[]
+  frameworkInstances FrameworkInstance[]
 
-    // Dates
-    createdAt DateTime @default(now())
-    updatedAt DateTime @default(now()) @updatedAt
+  // Dates
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 }
 
 model FrameworkEditorRequirement {
-    id          String                   @id @default(dbgenerated("generate_prefixed_cuid('frk_rq'::text)"))
-    frameworkId String
-    framework   FrameworkEditorFramework @relation(fields: [frameworkId], references: [id])
+  id          String                   @id @default(dbgenerated("generate_prefixed_cuid('frk_rq'::text)"))
+  frameworkId String
+  framework   FrameworkEditorFramework @relation(fields: [frameworkId], references: [id])
 
-    name        String // Original requirement ID within that framework, e.g., "Privacy"
-    identifier  String @default("") // Unique identifier for the requirement, e.g., "cc1-1"
-    description String
+  name        String // Original requirement ID within that framework, e.g., "Privacy"
+  identifier  String @default("") // Unique identifier for the requirement, e.g., "cc1-1"
+  description String
 
-    controlTemplates FrameworkEditorControlTemplate[]
-    requirementMaps  RequirementMap[]
+  controlTemplates FrameworkEditorControlTemplate[]
+  requirementMaps  RequirementMap[]
 
-    // Dates
-    createdAt DateTime @default(now())
-    updatedAt DateTime @default(now()) @updatedAt
+  // Dates
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 }
 
 model FrameworkEditorPolicyTemplate {
-    id          String      @id @default(dbgenerated("generate_prefixed_cuid('frk_pt'::text)"))
-    name        String
-    description String
-    frequency   Frequency // Using the enum from shared.prisma
-    department  Departments // Using the enum from shared.prisma
-    content     Json
+  id          String      @id @default(dbgenerated("generate_prefixed_cuid('frk_pt'::text)"))
+  name        String
+  description String
+  frequency   Frequency // Using the enum from shared.prisma
+  department  Departments // Using the enum from shared.prisma
+  content     Json
 
-    controlTemplates FrameworkEditorControlTemplate[]
+  controlTemplates FrameworkEditorControlTemplate[]
 
-    // Dates
-    createdAt DateTime @default(now())
-    updatedAt DateTime @default(now()) @updatedAt
+  // Dates
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
-    // Instances
-    policies Policy[]
+  // Instances
+  policies Policy[]
 }
 
 model FrameworkEditorTaskTemplate {
-    id          String      @id @default(dbgenerated("generate_prefixed_cuid('frk_tt'::text)"))
-    name        String
-    description String
-    frequency   Frequency // Using the enum from shared.prisma
-    department  Departments // Using the enum from shared.prisma
+  id          String      @id @default(dbgenerated("generate_prefixed_cuid('frk_tt'::text)"))
+  name        String
+  description String
+  frequency   Frequency // Using the enum from shared.prisma
+  department  Departments // Using the enum from shared.prisma
 
-    controlTemplates FrameworkEditorControlTemplate[]
+  controlTemplates FrameworkEditorControlTemplate[]
 
-    // Dates
-    createdAt DateTime @default(now())
-    updatedAt DateTime @default(now()) @updatedAt
+  // Dates
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
-    // Instances
-    tasks Task[]
+  // Instances
+  tasks Task[]
 }
 
 model FrameworkEditorControlTemplate {
-    id          String @id @default(dbgenerated("generate_prefixed_cuid('frk_ct'::text)"))
-    name        String
-    description String
+  id          String @id @default(dbgenerated("generate_prefixed_cuid('frk_ct'::text)"))
+  name        String
+  description String
 
-    policyTemplates FrameworkEditorPolicyTemplate[]
-    requirements    FrameworkEditorRequirement[]
-    taskTemplates   FrameworkEditorTaskTemplate[]
+  policyTemplates FrameworkEditorPolicyTemplate[]
+  requirements    FrameworkEditorRequirement[]
+  taskTemplates   FrameworkEditorTaskTemplate[]
 
-    // Dates
-    createdAt DateTime @default(now())
-    updatedAt DateTime @default(now()) @updatedAt
+  // Dates
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
-    // Instances
-    controls Control[]
+  // Instances
+  controls Control[]
 }

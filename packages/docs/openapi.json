@@ -6900,6 +6900,576 @@
         ]
       }
     },
+    "/v1/trust-access/{friendlyUrl}/requests": {
+      "post": {
+        "description": "External users submit request for data access from trust site",
+        "operationId": "TrustAccessController_createAccessRequest_v1",
+        "parameters": [
+          {
+            "name": "friendlyUrl",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAccessRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Access request created and sent for review"
+          }
+        },
+        "summary": "Submit data access request",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
+    "/v1/trust-access/admin/requests": {
+      "get": {
+        "description": "Get all access requests for organization",
+        "operationId": "TrustAccessController_listAccessRequests_v1",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "under_review",
+                "approved",
+                "denied",
+                "canceled"
+              ]
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Access requests retrieved"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "List access requests",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
+    "/v1/trust-access/admin/requests/{id}": {
+      "get": {
+        "description": "Get detailed information about a specific access request",
+        "operationId": "TrustAccessController_getAccessRequest_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Request details returned"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get access request details",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
+    "/v1/trust-access/admin/requests/{id}/approve": {
+      "post": {
+        "description": "Approve request and create time-limited grant",
+        "operationId": "TrustAccessController_approveRequest_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproveAccessRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Request approved successfully"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Approve access request",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
+    "/v1/trust-access/admin/requests/{id}/deny": {
+      "post": {
+        "description": "Reject access request with reason",
+        "operationId": "TrustAccessController_denyRequest_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DenyAccessRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Request denied"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Deny access request",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
+    "/v1/trust-access/admin/grants": {
+      "get": {
+        "description": "Get all active and expired grants",
+        "operationId": "TrustAccessController_listGrants_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Grants retrieved"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "List access grants",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
+    "/v1/trust-access/admin/grants/{id}/revoke": {
+      "post": {
+        "description": "Immediately revoke active grant",
+        "operationId": "TrustAccessController_revokeGrant_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevokeGrantDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Grant revoked"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Revoke access grant",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
+    "/v1/trust-access/nda/{token}": {
+      "get": {
+        "description": "Fetch NDA agreement details for signing",
+        "operationId": "TrustAccessController_getNda_v1",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "NDA details returned"
+          }
+        },
+        "summary": "Get NDA details by token",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
+    "/v1/trust-access/nda/{token}/preview-nda": {
+      "post": {
+        "description": "Generate preview NDA PDF for external user before signing",
+        "operationId": "TrustAccessController_previewNdaByToken_v1",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Preview NDA generated"
+          }
+        },
+        "summary": "Preview NDA by token",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
+    "/v1/trust-access/nda/{token}/sign": {
+      "post": {
+        "description": "Sign NDA agreement, generate watermarked PDF, and create access grant",
+        "operationId": "TrustAccessController_signNda_v1",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignNdaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "NDA signed successfully"
+          }
+        },
+        "summary": "Sign NDA",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
+    "/v1/trust-access/admin/requests/{id}/resend-nda": {
+      "post": {
+        "description": "Resend NDA signing email to requester",
+        "operationId": "TrustAccessController_resendNda_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "NDA email resent"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Resend NDA email",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
+    "/v1/trust-access/admin/requests/{id}/preview-nda": {
+      "post": {
+        "description": "Generate preview NDA with watermark and save to S3 with preview-* prefix",
+        "operationId": "TrustAccessController_previewNda_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Preview NDA generated"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Preview NDA PDF",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
+    "/v1/trust-access/{friendlyUrl}/reclaim": {
+      "post": {
+        "description": "Generate access link for users with existing grants to redownload data",
+        "operationId": "TrustAccessController_reclaimAccess_v1",
+        "parameters": [
+          {
+            "name": "friendlyUrl",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReclaimAccessDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Access link sent to email"
+          }
+        },
+        "summary": "Reclaim access",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
+    "/v1/trust-access/access/{token}": {
+      "get": {
+        "description": "Retrieve compliance data using access token",
+        "operationId": "TrustAccessController_getGrantByAccessToken_v1",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Grant data returned"
+          }
+        },
+        "summary": "Get grant data by access token",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
+    "/v1/trust-access/access/{token}/policies": {
+      "get": {
+        "description": "Get list of published policies available for download",
+        "operationId": "TrustAccessController_getPoliciesByAccessToken_v1",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Policies list returned"
+          }
+        },
+        "summary": "List policies by access token",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
+    "/v1/trust-access/access/{token}/policies/download-all": {
+      "get": {
+        "description": "Generate combined PDF from all published policy content with watermark",
+        "operationId": "TrustAccessController_downloadAllPolicies_v1",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Download URL for watermarked PDF returned"
+          }
+        },
+        "summary": "Download all policies as watermarked PDF",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
     "/v1/framework-editor/task-template": {
       "get": {
         "description": "Retrieve all framework editor task templates",
@@ -9533,6 +10103,95 @@
         "required": [
           "domain",
           "verified"
+        ]
+      },
+      "CreateAccessRequestDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "company": {
+            "type": "string"
+          },
+          "jobTitle": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string"
+          },
+          "requestedDurationDays": {
+            "type": "number",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "name",
+          "email"
+        ]
+      },
+      "ApproveAccessRequestDto": {
+        "type": "object",
+        "properties": {
+          "durationDays": {
+            "type": "number",
+            "minimum": 1
+          }
+        }
+      },
+      "DenyAccessRequestDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
+      "RevokeGrantDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
+      "SignNdaDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "accept": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "email",
+          "accept"
+        ]
+      },
+      "ReclaimAccessDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
         ]
       },
       "UpdateTaskTemplateDto": {

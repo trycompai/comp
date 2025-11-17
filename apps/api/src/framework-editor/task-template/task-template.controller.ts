@@ -1,6 +1,6 @@
-import { 
-  Controller, 
-  Get, 
+import {
+  Controller,
+  Get,
   Patch,
   Delete,
   Body,
@@ -18,9 +18,7 @@ import {
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
-import {
-  AuthContext,
-} from '../../auth/auth-context.decorator';
+import { AuthContext } from '../../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import type { AuthContext as AuthContextType } from '../../auth/types';
 import { UpdateTaskTemplateDto } from './dto/update-task-template.dto';
@@ -67,17 +65,19 @@ export class TaskTemplateController {
     @Param('id', ValidateIdPipe) taskTemplateId: string,
     @AuthContext() authContext: AuthContextType,
   ) {
-    const taskTemplate = await this.taskTemplateService.findById(taskTemplateId);
+    const taskTemplate =
+      await this.taskTemplateService.findById(taskTemplateId);
 
     return {
       ...taskTemplate,
       authType: authContext.authType,
-      ...(authContext.userId && authContext.userEmail && {
-        authenticatedUser: {
-          id: authContext.userId,
-          email: authContext.userEmail,
-        },
-      }),
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
     };
   }
 
@@ -90,7 +90,13 @@ export class TaskTemplateController {
   @ApiResponse(UPDATE_TASK_TEMPLATE_RESPONSES[401])
   @ApiResponse(UPDATE_TASK_TEMPLATE_RESPONSES[404])
   @ApiResponse(UPDATE_TASK_TEMPLATE_RESPONSES[500])
-  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }))
+  @UsePipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  )
   async updateTaskTemplate(
     @Param('id', ValidateIdPipe) taskTemplateId: string,
     @Body() updateTaskTemplateDto: UpdateTaskTemplateDto,
@@ -104,12 +110,13 @@ export class TaskTemplateController {
     return {
       ...updatedTaskTemplate,
       authType: authContext.authType,
-      ...(authContext.userId && authContext.userEmail && {
-        authenticatedUser: {
-          id: authContext.userId,
-          email: authContext.userEmail,
-        },
-      }),
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
     };
   }
 
@@ -129,13 +136,13 @@ export class TaskTemplateController {
     return {
       ...result,
       authType: authContext.authType,
-      ...(authContext.userId && authContext.userEmail && {
-        authenticatedUser: {
-          id: authContext.userId,
-          email: authContext.userEmail,
-        },
-      }),
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
     };
   }
 }
-

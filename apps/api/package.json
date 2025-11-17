@@ -20,8 +20,12 @@
     "class-validator": "^0.14.2",
     "dotenv": "^17.2.3",
     "jose": "^6.0.12",
+    "jspdf": "^3.0.3",
+    "nanoid": "^5.1.6",
+    "pdf-lib": "^1.17.1",
     "prisma": "^6.13.0",
     "reflect-metadata": "^0.2.2",
+    "resend": "^6.4.2",
     "rxjs": "^7.8.1",
     "swagger-ui-express": "^5.0.1",
     "zod": "^4.0.14"

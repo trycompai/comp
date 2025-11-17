@@ -1,8 +1,12 @@
 import type { ApiResponseOptions } from '@nestjs/swagger';
 
-export const DOWNLOAD_WINDOWS_AGENT_RESPONSES: Record<number, ApiResponseOptions> = {
+export const DOWNLOAD_WINDOWS_AGENT_RESPONSES: Record<
+  number,
+  ApiResponseOptions
+> = {
   200: {
-    description: 'Windows agent ZIP file download containing MSI installer and setup scripts',
+    description:
+      'Windows agent ZIP file download containing MSI installer and setup scripts',
     content: {
       'application/zip': {
         schema: {
@@ -14,7 +18,8 @@ export const DOWNLOAD_WINDOWS_AGENT_RESPONSES: Record<number, ApiResponseOptions
     },
     headers: {
       'Content-Disposition': {
-        description: 'Indicates file should be downloaded with specific filename',
+        description:
+          'Indicates file should be downloaded with specific filename',
         schema: {
           type: 'string',
           example: 'attachment; filename="compai-device-agent-windows.zip"',

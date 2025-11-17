@@ -5,6 +5,7 @@ const APP_AWS_ACCESS_KEY_ID = process.env.APP_AWS_ACCESS_KEY_ID;
 const APP_AWS_SECRET_ACCESS_KEY = process.env.APP_AWS_SECRET_ACCESS_KEY;
 
 export const BUCKET_NAME = process.env.APP_AWS_BUCKET_NAME;
+export const APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET = process.env.APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET;
 
 let s3ClientInstance: S3Client;
 
