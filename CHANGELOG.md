@@ -1,3 +1,10 @@
+## [1.59.2](https://github.com/trycompai/comp/compare/v1.59.1...v1.59.2) (2025-11-18)
+
+
+### Bug Fixes
+
+* **tasks:** include 'not_relevant' status in task completion checks ([#1770](https://github.com/trycompai/comp/issues/1770)) ([b5dd9c8](https://github.com/trycompai/comp/commit/b5dd9c8d4976facff39badf5dab19139b581ffde))
+
 ## [1.59.1](https://github.com/trycompai/comp/compare/v1.59.0...v1.59.1) (2025-11-17)
 
 
