@@ -96,7 +96,7 @@ export const getOrganizationControlProgress = async (controlId: string) => {
 
     progress.byType[taskTypeKey].total++;
 
-    const isCompleted = task.status === 'done';
+    const isCompleted = task.status === 'done' || task.status === 'not_relevant';
 
     if (isCompleted) {
       progress.completed++;

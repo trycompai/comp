@@ -88,7 +88,7 @@ export function TaskList({
   // Calculate overall stats from all tasks (not filtered)
   const overallStats = useMemo(() => {
     const total = initialTasks.length;
-    const done = initialTasks.filter((t) => t.status === 'done').length;
+    const done = initialTasks.filter((t) => t.status === 'done' || t.status === 'not_relevant').length;
     const inProgress = initialTasks.filter((t) => t.status === 'in_progress').length;
     const todo = initialTasks.filter((t) => t.status === 'todo').length;
     const completionRate = total > 0 ? Math.round((done / total) * 100) : 0;
