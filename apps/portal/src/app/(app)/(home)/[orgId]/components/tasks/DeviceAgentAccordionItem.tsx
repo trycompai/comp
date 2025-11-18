@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import type { Member } from '@db';
 import { CheckCircle2, Circle, Download, HelpCircle, Loader2, XCircle } from 'lucide-react';
-import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import type { FleetPolicy, Host } from '../../types';
@@ -43,7 +42,10 @@ export function DeviceAgentAccordionItem({
 
   const hasInstalledAgent = host !== null;
   const failedPoliciesCount = useMemo(() => {
-    return fleetPolicies.filter((policy) => policy.response !== 'pass').length + (!isMacOS || mdmEnabledStatus.response === 'pass' ? 0 : 1);
+    return (
+      fleetPolicies.filter((policy) => policy.response !== 'pass').length +
+      (!isMacOS || mdmEnabledStatus.response === 'pass' ? 0 : 1)
+    );
   }, [fleetPolicies, mdmEnabledStatus, isMacOS]);
 
   const isCompleted = hasInstalledAgent && failedPoliciesCount === 0;
@@ -84,7 +86,7 @@ export function DeviceAgentAccordionItem({
             ? 'Comp AI Agent-1.0.0-arm64.dmg'
             : 'Comp AI Agent-1.0.0-intel.dmg';
       } else {
-        a.download = 'compai-device-agent.zip';
+        a.download = 'Comp AI Agent 1.0.0.exe';
       }
 
       document.body.appendChild(a);
@@ -189,35 +191,13 @@ export function DeviceAgentAccordionItem({
                     </Button>
                   </div>
                 </li>
-                {!isMacOS && (
-                  <li>
-                    <strong>Run the "Install Me First" file</strong>
-                    <p className="mt-1">
-                      After extracting the downloaded zip file, locate and run the "Install Me
-                      First" file to prepare your system.
-                    </p>
-                  </li>
-                )}
                 <li>
-                  <strong>
-                    {isMacOS
-                      ? 'Install the Comp AI Device Agent'
-                      : 'Run the Comp AI Device Agent installer'}
-                  </strong>
+                  <strong>Install the Comp AI Device Agent</strong>
                   <p className="mt-1">
                     {isMacOS
                       ? 'Double-click the downloaded DMG file and follow the installation instructions.'
-                      : 'Follow the installation wizard steps. When you reach the introduction screen (as shown below), click "Continue" to proceed through the installation.'}
+                      : 'Double-click the downloaded EXE file and follow the installation instructions.'}
                   </p>
-                  {!isMacOS && (
-                    <Image
-                      src="/osquery-agent.jpeg"
-                      alt="Fleet osquery installer introduction screen"
-                      width={600}
-                      height={400}
-                      className="mt-2 rounded-xs border"
-                    />
-                  )}
                 </li>
                 {isMacOS ? (
                   <li>
@@ -283,7 +263,9 @@ export function DeviceAgentAccordionItem({
                       <div
                         className={cn(
                           'hover:bg-muted/50 flex items-center justify-between rounded-md border border-l-4 p-3 shadow-sm transition-colors',
-                          mdmEnabledStatus.response === 'pass' ? 'border-l-green-500' : 'border-l-red-500',
+                          mdmEnabledStatus.response === 'pass'
+                            ? 'border-l-green-500'
+                            : 'border-l-red-500',
                         )}
                       >
                         <div className="flex items-center gap-2">
