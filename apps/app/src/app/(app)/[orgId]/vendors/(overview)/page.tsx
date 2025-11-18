@@ -85,8 +85,11 @@ export default async function Page({
       breadcrumbs={[{ label: 'Vendors', href: `/${orgId}/vendors`, current: true }]}
     >
       <VendorsTable
-        promises={Promise.all([getVendors(orgId, parsedSearchParams), getAssignees(orgId)])}
+        vendors={vendorsResult.data}
+        pageCount={vendorsResult.pageCount}
+        assignees={assignees}
         onboardingRunId={onboarding?.triggerJobId ?? null}
+        searchParams={parsedSearchParams}
       />
     </PageWithBreadcrumb>
   );
