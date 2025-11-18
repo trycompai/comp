@@ -10,9 +10,13 @@ WORKDIR /app
 COPY package.json ./
 
 # Install bun and deps
+# Note: workspace:* dependencies will be skipped and copied manually below
 RUN curl -fsSL https://bun.sh/install | bash \
   && export PATH="/root/.bun/bin:$PATH" \
-  && bun install --production --ignore-scripts
+  && bun install --production --ignore-scripts || true
+
+# Copy pre-built workspace packages (must be before copying app contents)
+COPY node_modules/@trycompai ./node_modules/@trycompai
 
 # Now copy the pre-built app contents (dist/, prisma/, etc.)
 COPY . .
