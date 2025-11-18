@@ -44,8 +44,7 @@ export default async function RiskRegisterPage(props: {
   ]);
 
   const isEmpty = risksResult.data?.length === 0;
-  const isDefaultView =
-    search.page === 1 && search.title === '' && validFilters.length === 0;
+  const isDefaultView = search.page === 1 && search.title === '' && validFilters.length === 0;
   const isOnboardingActive = Boolean(onboarding?.triggerJobId);
 
   // Show AppOnboarding only if empty, default view, AND onboarding is not active

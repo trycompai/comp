@@ -114,23 +114,23 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
     const meta = run.metadata as Record<string, unknown>;
 
     // Build vendorsStatus object from individual vendor status keys
-    const vendorsStatus: Record<string, 'pending' | 'processing' | 'completed'> = {};
+    const vendorsStatus: Record<string, 'pending' | 'processing' | 'assessing' | 'completed'> = {};
     const vendorsInfo = (meta.vendorsInfo as Array<{ id: string; name: string }>) || [];
 
     vendorsInfo.forEach((vendor) => {
       const statusKey = `vendor_${vendor.id}_status`;
       vendorsStatus[vendor.id] =
-        (meta[statusKey] as 'pending' | 'processing' | 'completed') || 'pending';
+        (meta[statusKey] as 'pending' | 'processing' | 'assessing' | 'completed') || 'pending';
     });
 
     // Build risksStatus object from individual risk status keys
-    const risksStatus: Record<string, 'pending' | 'processing' | 'completed'> = {};
+    const risksStatus: Record<string, 'pending' | 'processing' | 'assessing' | 'completed'> = {};
     const risksInfo = (meta.risksInfo as Array<{ id: string; name: string }>) || [];
 
     risksInfo.forEach((risk) => {
       const statusKey = `risk_${risk.id}_status`;
       risksStatus[risk.id] =
-        (meta[statusKey] as 'pending' | 'processing' | 'completed') || 'pending';
+        (meta[statusKey] as 'pending' | 'processing' | 'assessing' | 'completed') || 'pending';
     });
 
     // Build policiesStatus object from individual policy status keys
@@ -356,18 +356,55 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
             {/* Step progress - scrollable */}
             <div className="flex flex-col gap-2.5 flex-1 overflow-y-auto min-h-0 pr-1">
               {ONBOARDING_STEPS.map((step) => {
-                const isCompleted = stepStatus[step.key as keyof typeof stepStatus];
                 const isCurrent = currentStep?.key === step.key;
                 const isVendorsStep = step.key === 'vendors';
                 const isRisksStep = step.key === 'risk';
                 const isPoliciesStep = step.key === 'policies';
 
+                // Determine completion based on actual counts, not boolean flags
+                const vendorsCompleted =
+                  stepStatus.vendorsTotal > 0 &&
+                  stepStatus.vendorsCompleted >= stepStatus.vendorsTotal;
+                const risksCompleted =
+                  stepStatus.risksTotal > 0 && stepStatus.risksCompleted >= stepStatus.risksTotal;
+                const policiesCompleted =
+                  stepStatus.policiesTotal > 0 &&
+                  stepStatus.policiesCompleted >= stepStatus.policiesTotal;
+
+                const isCompleted =
+                  (isVendorsStep && vendorsCompleted) ||
+                  (isRisksStep && risksCompleted) ||
+                  (isPoliciesStep && policiesCompleted);
+
+                // Check if any items are actively being processed (not just queued)
+                const vendorsProcessing = Object.values(stepStatus.vendorsStatus || {}).some(
+                  (status) => status === 'processing' || status === 'assessing',
+                );
+                const risksProcessing = Object.values(stepStatus.risksStatus || {}).some(
+                  (status) => status === 'processing' || status === 'assessing',
+                );
+                const policiesProcessing = Object.values(stepStatus.policiesStatus || {}).some(
+                  (status) => status === 'processing',
+                );
+
+                // Show spinner if actively processing, even if not the current step
+                const isActivelyProcessing =
+                  (isVendorsStep && vendorsProcessing) ||
+                  (isRisksStep && risksProcessing) ||
+                  (isPoliciesStep && policiesProcessing);
+
                 const vendorsQueued =
                   stepStatus.vendorsCompleted < stepStatus.vendorsTotal &&
-                  stepStatus.vendorsTotal > 0;
+                  stepStatus.vendorsTotal > 0 &&
+                  !vendorsProcessing;
+                const risksQueued =
+                  stepStatus.risksCompleted < stepStatus.risksTotal &&
+                  stepStatus.risksTotal > 0 &&
+                  !risksProcessing;
                 const policiesQueued =
                   stepStatus.policiesCompleted < stepStatus.policiesTotal &&
-                  stepStatus.policiesTotal > 0;
+                  stepStatus.policiesTotal > 0 &&
+                  !policiesProcessing;
 
                 // Vendors step with expandable dropdown
                 if (isVendorsStep && stepStatus.vendorsTotal > 0) {
@@ -379,7 +416,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                       >
                         {isCompleted ? (
                           <CheckCircle2 className="text-chart-positive h-5 w-5 shrink-0" />
-                        ) : isCurrent ? (
+                        ) : isCurrent || isActivelyProcessing ? (
                           <Loader2 className="h-5 w-5 shrink-0 animate-spin text-primary" />
                         ) : vendorsQueued ? (
                           <Clock3 className="h-5 w-5 shrink-0 text-muted-foreground" />
@@ -485,9 +522,9 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                       >
                         {isCompleted ? (
                           <CheckCircle2 className="text-chart-positive h-5 w-5 shrink-0" />
-                        ) : isCurrent ? (
+                        ) : isCurrent || isActivelyProcessing ? (
                           <Loader2 className="h-5 w-5 shrink-0 animate-spin text-primary" />
-                        ) : policiesQueued && !isCurrent ? (
+                        ) : risksQueued ? (
                           <Clock3 className="h-5 w-5 shrink-0 text-muted-foreground" />
                         ) : (
                           <div className="h-5 w-5 shrink-0 rounded-full border-2 border-muted" />
@@ -588,8 +625,10 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                       >
                         {isCompleted ? (
                           <CheckCircle2 className="text-chart-positive h-5 w-5 shrink-0" />
-                        ) : isCurrent ? (
+                        ) : isCurrent || isActivelyProcessing ? (
                           <Loader2 className="h-5 w-5 shrink-0 animate-spin text-primary" />
+                        ) : policiesQueued ? (
+                          <Clock3 className="h-5 w-5 shrink-0 text-muted-foreground" />
                         ) : (
                           <div className="h-5 w-5 shrink-0 rounded-full border-2 border-muted" />
                         )}

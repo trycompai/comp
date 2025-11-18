@@ -184,7 +184,7 @@ export function PoliciesTable({ promises, onboardingRunId }: PoliciesTableProps)
                 <div className="flex flex-col">
                   <span className="text-sm font-medium text-primary">Tailoring your policies</span>
                   <span className="text-xs text-muted-foreground">
-                    Personalizing {policyProgress.completed}/{policyProgress.total} policies
+                    Personalized {policyProgress.completed}/{policyProgress.total} policies
                   </span>
                 </div>
               </div>

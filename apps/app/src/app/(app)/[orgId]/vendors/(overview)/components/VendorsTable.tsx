@@ -50,7 +50,7 @@ export function VendorsTable({
   const session = useSession();
   const orgId = session?.data?.session?.activeOrganizationId;
 
-  const { itemStatuses, progress, itemsInfo, isActive } = useOnboardingStatus(
+  const { itemStatuses, progress, itemsInfo, isActive, isLoading } = useOnboardingStatus(
     onboardingRunId,
     'vendors',
   );
@@ -310,6 +310,12 @@ export function VendorsTable({
   const isEmpty = mergedVendors.length === 0;
   // Show empty state if onboarding is active (even if progress metadata isn't set yet)
   const showEmptyState = isEmpty && onboardingRunId && isActive;
+
+  // Prevent flicker: if we're loading onboarding status and have a runId, render null
+  // Once we know the status, show animation if empty and active, otherwise show table
+  if (onboardingRunId && isLoading) {
+    return null;
+  }
 
   // Show loading animation instead of table when empty and onboarding is active
   if (showEmptyState) {

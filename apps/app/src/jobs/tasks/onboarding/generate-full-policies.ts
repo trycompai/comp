@@ -5,7 +5,7 @@ import { getOrganizationContext, triggerPolicyUpdates } from './onboard-organiza
 // v4 queues must be declared in advance
 const generateFullPoliciesQueue = queue({
   name: 'generate-full-policies',
-  concurrencyLimit: 100,
+  concurrencyLimit: 6,
 });
 
 export const generateFullPolicies = task({

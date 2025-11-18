@@ -8,8 +8,8 @@ import {
 } from './onboard-organization-helpers';
 
 // Queues
-const riskMitigationQueue = queue({ name: 'risk-mitigations', concurrencyLimit: 100 });
-const riskMitigationFanoutQueue = queue({ name: 'risk-mitigations-fanout', concurrencyLimit: 100 });
+const riskMitigationQueue = queue({ name: 'risk-mitigations', concurrencyLimit: 15 });
+const riskMitigationFanoutQueue = queue({ name: 'risk-mitigations-fanout', concurrencyLimit: 6 });
 
 export const generateRiskMitigation = task({
   id: 'generate-risk-mitigation',
@@ -17,48 +17,44 @@ export const generateRiskMitigation = task({
   retry: {
     maxAttempts: 5,
   },
-  run: async (payload: { organizationId: string; riskId: string }) => {
-    const { organizationId, riskId } = payload;
+  run: async (payload: {
+    organizationId: string;
+    riskId: string;
+    authorId: string;
+    policies: PolicyContext[];
+  }) => {
+    const { organizationId, riskId, authorId, policies } = payload;
     logger.info(`Generating risk mitigation for risk ${riskId} in org ${organizationId}`);
 
-    const [risk, policies, author] = await Promise.all([
-      db.risk.findFirst({ where: { id: riskId, organizationId } }),
-      db.policy.findMany({ where: { organizationId }, select: { name: true, description: true } }),
-      findCommentAuthor(organizationId),
-    ]);
+    const risk = await db.risk.findFirst({ where: { id: riskId, organizationId } });
 
     if (!risk) {
       logger.warn(`Risk ${riskId} not found in org ${organizationId}`);
       return;
     }
 
-    if (!author) {
-      logger.warn(
-        `No eligible author found for org ${organizationId}; skipping mitigation for risk ${riskId}`,
-      );
-      return;
-    }
-
     // Mark as processing before generating mitigation
     // Update root onboarding task metadata if available (when triggered from onboarding)
     // Try root first (onboarding task), then parent (fanout task), then own metadata
-    const targetMetadata = metadata.root || metadata.parent || metadata;
-    targetMetadata.set(`risk_${riskId}_status`, 'processing');
+    const metadataHandle = metadata.root ?? metadata.parent ?? metadata;
+    metadataHandle.set(`risk_${riskId}_status`, 'processing');
 
-    await createRiskMitigationComment(risk, policies as PolicyContext[], organizationId, author.id);
+    await createRiskMitigationComment(risk, policies, organizationId, authorId);
 
     // Mark risk as closed and assign to owner/admin
     await db.risk.update({
       where: { id: risk.id, organizationId },
       data: {
         status: RiskStatus.closed,
-        assigneeId: author.id,
+        assigneeId: authorId,
       },
     });
 
     // Mark as completed after mitigation is done
     // Update root onboarding task metadata if available
-    targetMetadata.set(`risk_${riskId}_status`, 'completed');
+    metadataHandle.set(`risk_${riskId}_status`, 'completed');
+    metadataHandle.increment('risksCompleted', 1);
+    metadataHandle.decrement('risksRemaining', 1);
 
     // Revalidate only the risk detail page in the individual job
     try {
@@ -91,15 +87,37 @@ export const generateRiskMitigationsForOrg = task({
     const { organizationId } = payload;
     logger.info(`Fan-out risk mitigations for org ${organizationId}`);
 
-    const risks = await db.risk.findMany({ where: { organizationId } });
+    const [risks, policyRows, author] = await Promise.all([
+      db.risk.findMany({ where: { organizationId } }),
+      db.policy.findMany({
+        where: { organizationId },
+        select: { name: true, description: true },
+      }),
+      findCommentAuthor(organizationId),
+    ]);
+
     if (risks.length === 0) {
       logger.info(`No risks found for org ${organizationId}`);
       return;
     }
 
+    if (!author) {
+      logger.warn(
+        `No onboarding author found for org ${organizationId}; skipping risk mitigations`,
+      );
+      return;
+    }
+
+    const policies = policyRows.map((p) => ({ name: p.name, description: p.description }));
+
     await generateRiskMitigation.batchTrigger(
       risks.map((r) => ({
-        payload: { organizationId, riskId: r.id },
+        payload: {
+          organizationId,
+          riskId: r.id,
+          authorId: author.id,
+          policies,
+        },
         concurrencyKey: `${organizationId}:${r.id}`,
       })),
     );

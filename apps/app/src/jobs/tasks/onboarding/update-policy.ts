@@ -7,7 +7,7 @@ if (!process.env.OPENAI_API_KEY) {
 }
 
 // v4: define queue ahead of time
-export const updatePolicyQueue = queue({ name: 'update-policy', concurrencyLimit: 100 });
+export const updatePolicyQueue = queue({ name: 'update-policy', concurrencyLimit: 12 });
 
 export const updatePolicy = schemaTask({
   id: 'update-policy',

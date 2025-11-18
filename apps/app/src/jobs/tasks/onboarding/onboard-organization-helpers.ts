@@ -331,7 +331,6 @@ export async function createVendorsFromData(
   const createdVendors = await Promise.all(vendorPromises);
 
   // Update metadata with all real IDs and mark as created (will be marked as assessing after all are created)
-  let newVendorsCount = 0;
   createdVendors.forEach((vendor) => {
     const status = metadata.get(`vendor_${vendor.id}_status`);
     if (status === 'completed') {
@@ -340,14 +339,9 @@ export async function createVendorsFromData(
     }
     // New vendor, mark as created
     metadata.set(`vendor_${vendor.id}_status`, 'created');
-    newVendorsCount++;
   });
 
-  // Update progress counters once for all new vendors
-  if (newVendorsCount > 0) {
-    metadata.increment('vendorsCompleted', newVendorsCount);
-    metadata.decrement('vendorsRemaining', newVendorsCount);
-  }
+  // Note: vendorsCompleted is incremented when mitigation is generated, not when created
 
   return createdVendors;
 }
@@ -549,9 +543,7 @@ export async function createRisksFromData(
     logger.info(`Created risk: ${createdRisk.id} (${createdRisk.title})`);
   });
 
-  // Update progress counters once for all risks
-  metadata.increment('risksCompleted', createdRisks.length);
-  metadata.decrement('risksRemaining', createdRisks.length);
+  // Note: risksCompleted is incremented when mitigation is generated, not when created
 
   logger.info(`Created ${riskData.length} risks`);
   return createdRisks;
@@ -612,9 +604,7 @@ async function createRisksFromDataWithBaseline(
     logger.info(`Created risk: ${createdRisk.id} (${createdRisk.title})`);
   });
 
-  // Update progress counters once for all risks
-  metadata.increment('risksCompleted', createdRisks.length);
-  metadata.decrement('risksRemaining', createdRisks.length);
+  // Note: risksCompleted is incremented when mitigation is generated, not when created
 
   logger.info(`Created ${allRisksToCreate.length} risks (including baseline)`);
   return createdRisks;
