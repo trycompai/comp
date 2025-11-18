@@ -113,12 +113,24 @@ export function ModernTaskList({ tasks, members, statusFilter }: ModernTaskListP
             <div className="divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-200/60 bg-white">
               {statusTasks.map((task, index) => {
                 const member = assignedMember(task);
+                const isNotRelevant = task.status === 'not_relevant';
                 return (
                   <div
                     key={task.id}
-                    className="group flex items-center gap-4 p-4 transition-colors hover:bg-slate-50/50 cursor-pointer"
+                    className={`group relative flex items-center gap-4 p-4 transition-colors cursor-pointer ${
+                      isNotRelevant
+                        ? 'opacity-50 bg-slate-100/50 backdrop-blur-md hover:bg-slate-100/60'
+                        : 'hover:bg-slate-50/50'
+                    }`}
                     onClick={() => handleTaskClick(task.id)}
                   >
+                    {isNotRelevant && (
+                      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                        <span className="text-sm font-bold uppercase tracking-[0.15em] text-slate-600">
+                          NOT RELEVANT
+                        </span>
+                      </div>
+                    )}
                     <div
                       className="flex shrink-0 items-center"
                       onClick={(e) => e.stopPropagation()}
@@ -128,14 +140,16 @@ export function ModernTaskList({ tasks, members, statusFilter }: ModernTaskListP
                     <div className="flex min-w-0 flex-1 items-center gap-4">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <div className="text-sm font-semibold text-slate-900">{task.title}</div>
+                          <div className={`text-sm font-semibold ${isNotRelevant ? 'text-slate-500' : 'text-slate-900'}`}>
+                            {task.title}
+                          </div>
                           <AutomationIndicator
                             automations={task.evidenceAutomations}
                             variant="inline"
                           />
                         </div>
                         {task.description && (
-                          <div className="text-slate-500 mt-0.5 line-clamp-1 text-xs">
+                          <div className={`mt-0.5 line-clamp-1 text-xs ${isNotRelevant ? 'text-slate-400' : 'text-slate-500'}`}>
                             {task.description}
                           </div>
                         )}

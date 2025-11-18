@@ -6,7 +6,7 @@ export function getControlStatus(control: ControlWithRelations): StatusType {
   const tasks = control.tasks || [];
 
   const allPoliciesArePublished = policies.every((policy) => policy.status === 'published');
-  const allTasksAreCompleted = tasks.every((task) => task.status === 'done');
+  const allTasksAreCompleted = tasks.every((task) => task.status === 'done' || task.status === 'not_relevant');
 
   if (!allPoliciesArePublished && !allTasksAreCompleted) {
     return 'not_started';
