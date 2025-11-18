@@ -15,16 +15,12 @@ RUN curl -fsSL https://bun.sh/install | bash \
   && export PATH="/root/.bun/bin:$PATH" \
   && bun install --production --ignore-scripts || true
 
-# Copy pre-built workspace packages from dist/node_modules (prepared in buildspec)
 COPY dist/node_modules/@trycompai ./node_modules/@trycompai
 COPY dist/node_modules/@prisma ./node_modules/@prisma
 COPY dist/node_modules/.prisma ./node_modules/.prisma
 
-# Copy the built application files (NestJS compiled output)
 COPY dist/src ./src
 COPY dist/tsconfig.build.tsbuildinfo ./tsconfig.build.tsbuildinfo
-
-# Copy prisma folder (needed for schema and migrations metadata)
 COPY prisma ./prisma
 
 # Set environment variables
