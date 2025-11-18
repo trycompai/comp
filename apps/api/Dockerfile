@@ -15,13 +15,11 @@ RUN curl -fsSL https://bun.sh/install | bash \
   && export PATH="/root/.bun/bin:$PATH" \
   && bun install --production --ignore-scripts || true
 
-COPY dist/node_modules/@trycompai ./node_modules/@trycompai
-COPY dist/node_modules/@prisma ./node_modules/@prisma
-COPY dist/node_modules/.prisma ./node_modules/.prisma
+COPY node_modules/@trycompai ./node_modules/@trycompai
+COPY node_modules/@prisma ./node_modules/@prisma
+COPY node_modules/.prisma ./node_modules/.prisma
 
-COPY dist/src ./src
-COPY dist/tsconfig.build.tsbuildinfo ./tsconfig.build.tsbuildinfo
-COPY prisma ./prisma
+COPY . .
 
 # Set environment variables
 ENV NODE_ENV=production

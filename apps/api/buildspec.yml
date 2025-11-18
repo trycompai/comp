@@ -50,23 +50,35 @@ phases:
       - ls -la dist/src/
       - '[ -f "dist/src/main.js" ] || { echo "❌ main.js not found in dist/src"; exit 1; }'
 
-      - mkdir -p dist/node_modules/@trycompai
-      - mkdir -p dist/node_modules/@trycompai/email
-      - cp -r ../../packages/email/dist dist/node_modules/@trycompai/email/
-      - cp ../../packages/email/package.json dist/node_modules/@trycompai/email/
-      - mkdir -p dist/node_modules/@trycompai/ui
-      - cp -r ../../packages/ui/dist dist/node_modules/@trycompai/ui/
-      - cp ../../packages/ui/package.json dist/node_modules/@trycompai/ui/
-      - mkdir -p dist/node_modules/@trycompai/utils
-      - cp -r ../../packages/utils/src dist/node_modules/@trycompai/utils/
-      - cp ../../packages/utils/package.json dist/node_modules/@trycompai/utils/
+      - mkdir -p ../docker-build
+      - cp -r dist/* ../docker-build/
+      - cp -r prisma ../docker-build/
 
-      - mkdir -p dist/node_modules
-      - cp -r ../../node_modules/@prisma dist/node_modules/@prisma
-      - cp -r ../../node_modules/.prisma dist/node_modules/.prisma
+      - echo "Verifying copied files..."
+      - ls -la ../docker-build/
+      - ls -la ../docker-build/src/
+      - '[ -f "../docker-build/src/main.js" ] || { echo "❌ main.js not found in docker-build/src"; exit 1; }'
+
+      - mkdir -p ../docker-build/node_modules/@trycompai
+      - mkdir -p ../docker-build/node_modules/@trycompai/email
+      - cp -r ../../packages/email/dist ../docker-build/node_modules/@trycompai/email/
+      - cp ../../packages/email/package.json ../docker-build/node_modules/@trycompai/email/
+      - mkdir -p ../docker-build/node_modules/@trycompai/ui
+      - cp -r ../../packages/ui/dist ../docker-build/node_modules/@trycompai/ui/
+      - cp ../../packages/ui/package.json ../docker-build/node_modules/@trycompai/ui/
+      - mkdir -p ../docker-build/node_modules/@trycompai/utils
+      - cp -r ../../packages/utils/src ../docker-build/node_modules/@trycompai/utils/
+      - cp ../../packages/utils/package.json ../docker-build/node_modules/@trycompai/utils/
+
+      - cp -r ../../node_modules/@prisma ../docker-build/node_modules/@prisma
+      - cp -r ../../node_modules/.prisma ../docker-build/node_modules/.prisma
+
+      - cp Dockerfile ../docker-build/
+      - cp package.json ../docker-build/
+      - cp ../../bun.lock ../docker-build/ || true
 
       - echo "Building Docker image..."
-      - docker build --build-arg BUILDKIT_INLINE_CACHE=1 -t $ECR_REPOSITORY_URI:$IMAGE_TAG .
+      - docker build --build-arg BUILDKIT_INLINE_CACHE=1 -t $ECR_REPOSITORY_URI:$IMAGE_TAG ../docker-build/
       - docker tag $ECR_REPOSITORY_URI:$IMAGE_TAG $ECR_REPOSITORY_URI:latest
 
   post_build:
