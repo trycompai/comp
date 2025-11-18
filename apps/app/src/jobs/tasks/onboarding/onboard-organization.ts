@@ -12,7 +12,7 @@ import {
 } from './onboard-organization-helpers';
 
 // v4 queues must be declared in advance
-const onboardOrgQueue = queue({ name: 'onboard-organization', concurrencyLimit: 6 });
+const onboardOrgQueue = queue({ name: 'onboard-organization', concurrencyLimit: 50 });
 
 export const onboardOrganization = task({
   id: 'onboard-organization',

@@ -8,8 +8,8 @@ import {
 } from './onboard-organization-helpers';
 
 // Queues
-const riskMitigationQueue = queue({ name: 'risk-mitigations', concurrencyLimit: 15 });
-const riskMitigationFanoutQueue = queue({ name: 'risk-mitigations-fanout', concurrencyLimit: 6 });
+const riskMitigationQueue = queue({ name: 'risk-mitigations', concurrencyLimit: 50 });
+const riskMitigationFanoutQueue = queue({ name: 'risk-mitigations-fanout', concurrencyLimit: 50 });
 
 export const generateRiskMitigation = task({
   id: 'generate-risk-mitigation',
