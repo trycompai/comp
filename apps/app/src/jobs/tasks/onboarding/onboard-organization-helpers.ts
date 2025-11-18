@@ -53,6 +53,14 @@ export type RiskData = {
   department: Departments;
 };
 
+type OrganizationRecord = NonNullable<Awaited<ReturnType<typeof db.organization.findUnique>>>;
+
+type OrganizationContextResult = {
+  organization: OrganizationRecord;
+  questionsAndAnswers: ContextItem[];
+  policies: { id: string; name: string; description: string | null }[];
+};
+
 // Baseline risks that must always exist for every organization regardless of frameworks
 const BASELINE_RISKS: Array<{
   title: string;
@@ -134,7 +142,9 @@ export async function revalidateOrganizationPath(organizationId: string): Promis
 /**
  * Fetches organization data and context
  */
-export async function getOrganizationContext(organizationId: string) {
+export async function getOrganizationContext(
+  organizationId: string,
+): Promise<OrganizationContextResult> {
   const [organization, contextHub, policies] = await Promise.all([
     db.organization.findUnique({
       where: { id: organizationId },
@@ -144,7 +154,7 @@ export async function getOrganizationContext(organizationId: string) {
     }),
     db.policy.findMany({
       where: { organizationId },
-      select: { name: true, description: true },
+      select: { id: true, name: true, description: true },
     }),
   ]);
 
@@ -157,7 +167,13 @@ export async function getOrganizationContext(organizationId: string) {
     answer: context.answer,
   }));
 
-  return { organization, questionsAndAnswers, policies };
+  const typedPolicies = policies as Array<{
+    id: string;
+    name: string;
+    description: string | null;
+  }>;
+
+  return { organization, questionsAndAnswers, policies: typedPolicies };
 }
 
 /**
@@ -526,10 +542,10 @@ export async function triggerPolicyUpdates(
     // Store policy info for tracking individual policies
     metadata.set('policiesInfo', policies.map((p) => ({ id: p.id, name: p.name })));
     
-    // Initialize individual policy statuses - all start as 'pending'
+    // Initialize individual policy statuses - all start as 'queued'
     // Each policy gets its own metadata key: policy_{id}_status
     policies.forEach((policy) => {
-      metadata.set(`policy_${policy.id}_status`, 'pending');
+      metadata.set(`policy_${policy.id}_status`, 'queued');
     });
 
     await updatePolicy.batchTriggerAndWait(

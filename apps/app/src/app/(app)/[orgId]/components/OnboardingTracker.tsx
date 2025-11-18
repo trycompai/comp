@@ -1,5 +1,6 @@
 'use client';
 
+import { Button } from '@comp/ui/button';
 import { Card, CardContent } from '@comp/ui/card';
 import type { Onboarding } from '@db';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
@@ -11,6 +12,7 @@ import {
   ChevronUp,
   ChevronsDown,
   ChevronsUp,
+  Clock3,
   Loader2,
   Rocket,
   Settings,
@@ -19,8 +21,8 @@ import {
   Zap,
 } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 const ONBOARDING_STEPS = [
@@ -48,7 +50,9 @@ const getFriendlyStatusName = (status: string): string => {
 
 export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) => {
   const triggerJobId = onboarding.triggerJobId;
+  const organizationId = onboarding.organizationId;
   const pathname = usePathname();
+  const router = useRouter();
   const orgId = pathname?.split('/')[1] || '';
   const [mounted, setMounted] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
@@ -62,6 +66,13 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
   const { run, error } = useRealtimeRun(triggerJobId || '', {
     enabled: !!triggerJobId,
   });
+
+  const handleRetry = useCallback(() => {
+    if (!organizationId) {
+      return;
+    }
+    void router.push(`/onboarding/${organizationId}?retry=1`);
+  }, [organizationId, router]);
 
   useEffect(() => {
     setMounted(true);
@@ -123,14 +134,14 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
     });
 
     // Build policiesStatus object from individual policy status keys
-    const policiesStatus: Record<string, 'pending' | 'processing' | 'completed'> = {};
+    const policiesStatus: Record<string, 'queued' | 'pending' | 'processing' | 'completed'> = {};
     const policiesInfo = (meta.policiesInfo as Array<{ id: string; name: string }>) || [];
 
     policiesInfo.forEach((policy) => {
       // Check for individual policy status key: policy_{id}_status
       const statusKey = `policy_${policy.id}_status`;
       policiesStatus[policy.id] =
-        (meta[statusKey] as 'pending' | 'processing' | 'completed') || 'pending';
+        (meta[statusKey] as 'queued' | 'pending' | 'processing' | 'completed') || 'queued';
     });
 
     return {
@@ -234,9 +245,9 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   {isCompleted ? (
-                    <Rocket className="h-5 w-5 flex-shrink-0 text-chart-positive" />
+                    <Rocket className="h-5 w-5 shrink-0 text-chart-positive" />
                   ) : (
-                    <Settings className="h-5 w-5 flex-shrink-0 text-primary" />
+                    <Settings className="h-5 w-5 shrink-0 text-primary" />
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-base font-medium text-foreground">
@@ -254,7 +265,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex items-center gap-2 shrink-0">
                   {isCompleted && (
                     <button
                       onClick={() => setIsDismissed(true)}
@@ -287,7 +298,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
     if (!run && !error) {
       return (
         <div className="flex items-center gap-3">
-          <Loader2 className="h-5 w-5 flex-shrink-0 animate-spin text-primary" />
+          <Loader2 className="h-5 w-5 shrink-0 animate-spin text-primary" />
           <div className="flex-1 min-w-0">
             <p className="text-base font-medium text-foreground">Initializing...</p>
             <p className="text-muted-foreground text-sm mt-1">Checking onboarding status</p>
@@ -298,14 +309,14 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
     if (!run) {
       return (
         <div className="flex items-start gap-3">
-          <AlertTriangle className="text-warning h-5 w-5 flex-shrink-0 mt-0.5" />
+          <AlertTriangle className="text-warning h-5 w-5 shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <p className="text-warning text-base font-medium">Status Unavailable</p>
             <p className="text-muted-foreground text-sm mt-1">Could not retrieve status</p>
           </div>
           <button
             onClick={() => setIsMinimized(true)}
-            className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+            className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
             aria-label="Minimize"
           >
             <ChevronsDown className="h-5 w-5" />
@@ -326,16 +337,16 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
         return (
           <div className="flex flex-col gap-4 h-full overflow-hidden">
             {/* Header */}
-            <div className="flex items-start justify-between gap-3 flex-shrink-0">
+            <div className="flex items-start justify-between gap-3 shrink-0">
               <div className="flex items-center gap-3 flex-1 min-w-0">
-                <Settings className="h-5 w-5 flex-shrink-0 text-primary" />
+                <Settings className="h-5 w-5 shrink-0 text-primary" />
                 <p className="text-base font-medium text-foreground">
                   Setting up your organization
                 </p>
               </div>
               <button
                 onClick={() => setIsMinimized(true)}
-                className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+                className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
                 aria-label="Minimize"
               >
                 <ChevronsDown className="h-5 w-5" />
@@ -351,6 +362,13 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                 const isRisksStep = step.key === 'risk';
                 const isPoliciesStep = step.key === 'policies';
 
+                const vendorsQueued =
+                  stepStatus.vendorsCompleted < stepStatus.vendorsTotal &&
+                  stepStatus.vendorsTotal > 0;
+                const policiesQueued =
+                  stepStatus.policiesCompleted < stepStatus.policiesTotal &&
+                  stepStatus.policiesTotal > 0;
+
                 // Vendors step with expandable dropdown
                 if (isVendorsStep && stepStatus.vendorsTotal > 0) {
                   return (
@@ -360,11 +378,13 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                         className="flex items-center gap-2 w-full text-left"
                       >
                         {isCompleted ? (
-                          <CheckCircle2 className="text-chart-positive h-5 w-5 flex-shrink-0" />
+                          <CheckCircle2 className="text-chart-positive h-5 w-5 shrink-0" />
                         ) : isCurrent ? (
-                          <Loader2 className="h-5 w-5 flex-shrink-0 animate-spin text-primary" />
+                          <Loader2 className="h-5 w-5 shrink-0 animate-spin text-primary" />
+                        ) : vendorsQueued ? (
+                          <Clock3 className="h-5 w-5 shrink-0 text-muted-foreground" />
                         ) : (
-                          <div className="h-5 w-5 flex-shrink-0 rounded-full border-2 border-muted" />
+                          <div className="h-5 w-5 shrink-0 rounded-full border-2 border-muted" />
                         )}
                         <div className="flex flex-1 items-center justify-between gap-2 min-w-0">
                           <span
@@ -378,7 +398,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                           >
                             {step.label}
                           </span>
-                          <div className="flex items-center gap-2 flex-shrink-0">
+                          <div className="flex items-center gap-2 shrink-0">
                             <span className="text-muted-foreground text-sm">
                               {stepStatus.vendorsCompleted}/{stepStatus.vendorsTotal}
                             </span>
@@ -405,15 +425,18 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                               const vendorStatus = stepStatus.vendorsStatus[vendor.id] || 'pending';
                               const isVendorCompleted = vendorStatus === 'completed';
                               const isVendorProcessing = vendorStatus === 'processing';
+                              const isVendorQueued = vendorStatus === 'pending';
 
                               const content = (
                                 <>
                                   {isVendorCompleted ? (
-                                    <CheckCircle2 className="text-chart-positive h-4 w-4 flex-shrink-0 pointer-events-none" />
+                                    <CheckCircle2 className="text-chart-positive h-4 w-4 shrink-0 pointer-events-none" />
                                   ) : isVendorProcessing ? (
-                                    <Loader2 className="h-4 w-4 flex-shrink-0 animate-spin text-primary pointer-events-none" />
+                                    <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary pointer-events-none" />
+                                  ) : isVendorQueued ? (
+                                    <Clock3 className="h-4 w-4 shrink-0 text-muted-foreground pointer-events-none" />
                                   ) : (
-                                    <div className="h-4 w-4 flex-shrink-0 rounded-full border-2 border-muted pointer-events-none" />
+                                    <div className="h-4 w-4 shrink-0 rounded-full border-2 border-muted pointer-events-none" />
                                   )}
                                   <span
                                     className={`text-sm truncate pointer-events-none ${
@@ -461,11 +484,13 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                         className="flex items-center gap-2 w-full text-left"
                       >
                         {isCompleted ? (
-                          <CheckCircle2 className="text-chart-positive h-5 w-5 flex-shrink-0" />
+                          <CheckCircle2 className="text-chart-positive h-5 w-5 shrink-0" />
                         ) : isCurrent ? (
-                          <Loader2 className="h-5 w-5 flex-shrink-0 animate-spin text-primary" />
+                          <Loader2 className="h-5 w-5 shrink-0 animate-spin text-primary" />
+                        ) : policiesQueued && !isCurrent ? (
+                          <Clock3 className="h-5 w-5 shrink-0 text-muted-foreground" />
                         ) : (
-                          <div className="h-5 w-5 flex-shrink-0 rounded-full border-2 border-muted" />
+                          <div className="h-5 w-5 shrink-0 rounded-full border-2 border-muted" />
                         )}
                         <div className="flex flex-1 items-center justify-between gap-2 min-w-0">
                           <span
@@ -479,7 +504,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                           >
                             {step.label}
                           </span>
-                          <div className="flex items-center gap-2 flex-shrink-0">
+                          <div className="flex items-center gap-2 shrink-0">
                             <span className="text-muted-foreground text-sm">
                               {stepStatus.risksCompleted}/{stepStatus.risksTotal}
                             </span>
@@ -510,11 +535,11 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                               const content = (
                                 <>
                                   {isRiskCompleted ? (
-                                    <CheckCircle2 className="text-chart-positive h-4 w-4 flex-shrink-0 pointer-events-none" />
+                                    <CheckCircle2 className="text-chart-positive h-4 w-4 shrink-0 pointer-events-none" />
                                   ) : isRiskProcessing ? (
-                                    <Loader2 className="h-4 w-4 flex-shrink-0 animate-spin text-primary pointer-events-none" />
+                                    <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary pointer-events-none" />
                                   ) : (
-                                    <div className="h-4 w-4 flex-shrink-0 rounded-full border-2 border-muted pointer-events-none" />
+                                    <div className="h-4 w-4 shrink-0 rounded-full border-2 border-muted pointer-events-none" />
                                   )}
                                   <span
                                     className={`text-sm truncate pointer-events-none ${
@@ -562,11 +587,11 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                         className="flex items-center gap-2 w-full text-left"
                       >
                         {isCompleted ? (
-                          <CheckCircle2 className="text-chart-positive h-5 w-5 flex-shrink-0" />
+                          <CheckCircle2 className="text-chart-positive h-5 w-5 shrink-0" />
                         ) : isCurrent ? (
-                          <Loader2 className="h-5 w-5 flex-shrink-0 animate-spin text-primary" />
+                          <Loader2 className="h-5 w-5 shrink-0 animate-spin text-primary" />
                         ) : (
-                          <div className="h-5 w-5 flex-shrink-0 rounded-full border-2 border-muted" />
+                          <div className="h-5 w-5 shrink-0 rounded-full border-2 border-muted" />
                         )}
                         <div className="flex flex-1 items-center justify-between gap-2 min-w-0">
                           <span
@@ -580,7 +605,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                           >
                             {step.label}
                           </span>
-                          <div className="flex items-center gap-2 flex-shrink-0">
+                          <div className="flex items-center gap-2 shrink-0">
                             <span className="text-muted-foreground text-sm">
                               {stepStatus.policiesCompleted}/{stepStatus.policiesTotal}
                             </span>
@@ -605,19 +630,22 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                         >
                           <div className="flex flex-col gap-1.5 pl-7">
                             {stepStatus.policiesInfo.map((policy) => {
-                              const policyStatus =
-                                stepStatus.policiesStatus[policy.id] || 'pending';
+                              const policyStatus = stepStatus.policiesStatus[policy.id] || 'queued';
                               const isPolicyCompleted = policyStatus === 'completed';
                               const isPolicyProcessing = policyStatus === 'processing';
+                              const isPolicyQueued =
+                                policyStatus === 'queued' || policyStatus === 'pending';
 
                               const content = (
                                 <>
                                   {isPolicyCompleted ? (
-                                    <CheckCircle2 className="text-chart-positive h-4 w-4 flex-shrink-0 pointer-events-none" />
+                                    <CheckCircle2 className="text-chart-positive h-4 w-4 shrink-0 pointer-events-none" />
                                   ) : isPolicyProcessing ? (
-                                    <Loader2 className="h-4 w-4 flex-shrink-0 animate-spin text-primary pointer-events-none" />
+                                    <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary pointer-events-none" />
+                                  ) : isPolicyQueued ? (
+                                    <Clock3 className="h-4 w-4 shrink-0 text-muted-foreground pointer-events-none" />
                                   ) : (
-                                    <div className="h-4 w-4 flex-shrink-0 rounded-full border-2 border-muted pointer-events-none" />
+                                    <div className="h-4 w-4 shrink-0 rounded-full border-2 border-muted pointer-events-none" />
                                   )}
                                   <span
                                     className={`text-sm truncate pointer-events-none ${
@@ -625,7 +653,9 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                                         ? 'text-chart-positive'
                                         : isPolicyProcessing
                                           ? 'text-primary'
-                                          : 'text-muted-foreground'
+                                          : isPolicyQueued
+                                            ? 'text-muted-foreground'
+                                            : 'text-muted-foreground'
                                     }`}
                                   >
                                     {policy.name}
@@ -660,11 +690,13 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                 return (
                   <div key={step.key} className="flex items-center gap-2">
                     {isCompleted ? (
-                      <CheckCircle2 className="text-chart-positive h-5 w-5 flex-shrink-0" />
+                      <CheckCircle2 className="text-chart-positive h-5 w-5 shrink-0" />
                     ) : isCurrent ? (
-                      <Loader2 className="h-5 w-5 flex-shrink-0 animate-spin text-primary" />
+                      <Loader2 className="h-5 w-5 shrink-0 animate-spin text-primary" />
+                    ) : policiesQueued ? (
+                      <Clock3 className="h-5 w-5 shrink-0 text-muted-foreground" />
                     ) : (
-                      <div className="h-5 w-5 flex-shrink-0 rounded-full border-2 border-muted" />
+                      <div className="h-5 w-5 shrink-0 rounded-full border-2 border-muted" />
                     )}
                     <span
                       className={`text-sm ${
@@ -687,14 +719,14 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
         return (
           <div className="flex flex-col gap-4 h-full overflow-hidden">
             {/* Header */}
-            <div className="flex items-start justify-between gap-3 flex-shrink-0">
+            <div className="flex items-start justify-between gap-3 shrink-0">
               <div className="flex items-center gap-3 flex-1 min-w-0">
-                <Rocket className="h-5 w-5 flex-shrink-0 text-chart-positive" />
+                <Rocket className="h-5 w-5 shrink-0 text-chart-positive" />
                 <p className="text-base font-medium text-foreground">Setup Complete</p>
               </div>
               <button
                 onClick={() => setIsMinimized(true)}
-                className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+                className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
                 aria-label="Minimize"
               >
                 <ChevronsDown className="h-5 w-5" />
@@ -713,10 +745,10 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
             </div>
 
             {/* Show completed steps */}
-            <div className="flex flex-col gap-2.5 flex-shrink-0">
+            <div className="flex flex-col gap-2.5 shrink-0">
               {ONBOARDING_STEPS.map((step) => (
                 <div key={step.key} className="flex items-center gap-2">
-                  <CheckCircle2 className="text-chart-positive h-5 w-5 flex-shrink-0" />
+                  <CheckCircle2 className="text-chart-positive h-5 w-5 shrink-0" />
                   <span className="text-sm text-chart-positive">{step.label}</span>
                 </div>
               ))}
@@ -733,21 +765,32 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
         const truncatedMessage =
           errorMessage.length > 60 ? `${errorMessage.substring(0, 57)}...` : errorMessage;
         return (
-          <div className="flex items-start gap-3">
-            <ShieldAlert className="text-destructive h-5 w-5 flex-shrink-0 mt-0.5" />
-            <div className="flex-1 min-w-0">
-              <p className="text-destructive text-base font-medium">
-                Setup <span className="capitalize">{friendlyStatus}</span>
-              </p>
-              <p className="text-destructive/80 text-sm mt-1">{truncatedMessage}</p>
+          <div className="flex flex-col gap-3">
+            <div className="flex items-start gap-3">
+              <ShieldAlert className="text-destructive h-5 w-5 shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-destructive text-base font-medium">Setup needs attention</p>
+                <p className="text-muted-foreground text-sm mt-1">
+                  Something went wrong while tailoring your environment. Retry the onboarding job or
+                  contact support for help.
+                </p>
+              </div>
+              <button
+                onClick={() => setIsMinimized(true)}
+                className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                aria-label="Minimize"
+              >
+                <ChevronsDown className="h-5 w-5" />
+              </button>
             </div>
-            <button
-              onClick={() => setIsMinimized(true)}
-              className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
-              aria-label="Minimize"
-            >
-              <ChevronsDown className="h-5 w-5" />
-            </button>
+            <div className="flex gap-2 flex-wrap">
+              <Button size="sm" onClick={handleRetry} disabled={!organizationId}>
+                Retry setup
+              </Button>
+              <Button size="sm" variant="outline" asChild>
+                <a href="mailto:support@trycomp.ai">Contact support</a>
+              </Button>
+            </div>
           </div>
         );
       }
@@ -756,14 +799,14 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
 
         return (
           <div className="flex items-start gap-3">
-            <Zap className="text-warning h-5 w-5 flex-shrink-0 mt-0.5" />
+            <Zap className="text-warning h-5 w-5 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
               <p className="text-warning text-base font-medium">Unknown Status</p>
               <p className="text-muted-foreground text-sm mt-1">Status: {exhaustiveCheck}</p>
             </div>
             <button
               onClick={() => setIsMinimized(true)}
-              className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+              className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
               aria-label="Minimize"
             >
               <ChevronsDown className="h-5 w-5" />

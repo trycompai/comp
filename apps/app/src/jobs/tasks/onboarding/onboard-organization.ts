@@ -31,9 +31,32 @@ export const onboardOrganization = task({
 
     try {
       // Get organization context
-      const { organization, questionsAndAnswers, policies } = await getOrganizationContext(
+      const {
+        organization,
+        questionsAndAnswers,
+        policies,
+      }: Awaited<ReturnType<typeof getOrganizationContext>> = await getOrganizationContext(
         payload.organizationId,
       );
+      const policyList = policies ?? [];
+      // Initialize policy metadata immediately so UI can reflect pending status
+      if (policyList.length > 0) {
+        metadata.set('policiesTotal', policyList.length);
+        metadata.set('policiesCompleted', 0);
+        metadata.set('policiesRemaining', policyList.length);
+        metadata.set(
+          'policiesInfo',
+          policyList.map((policy) => ({ id: policy.id, name: policy.name })),
+        );
+        policyList.forEach((policy) => {
+          metadata.set(`policy_${policy.id}_status`, 'queued');
+        });
+      } else {
+        metadata.set('policiesTotal', 0);
+        metadata.set('policiesCompleted', 0);
+        metadata.set('policiesRemaining', 0);
+        metadata.set('policiesInfo', []);
+      }
 
       const frameworkInstances = await db.frameworkInstance.findMany({
         where: {
@@ -168,9 +191,7 @@ export const onboardOrganization = task({
       metadata.set('risk', true);
 
       // Get policy count for the step message
-      const policyCount = await db.policy.count({
-        where: { organizationId: payload.organizationId },
-      });
+      const policyCount = policyList.length;
       metadata.set('currentStep', `Tailoring Policies... (0/${policyCount})`);
 
       // Fan-out risk mitigations as separate jobs
