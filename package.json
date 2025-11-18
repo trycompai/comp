@@ -85,6 +85,7 @@
   "workspaces": [
     "apps/*",
     "packages/analytics",
+    "packages/db",
     "packages/email",
     "packages/integrations",
     "packages/kv",

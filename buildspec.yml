@@ -1,20 +1,53 @@
-# Prepare standalone build
-- echo "Preparing standalone build..."
-- echo "DEBUG - Checking what Next.js built..."
-- ls -la .next/
-- ls -la .next/standalone/ || echo "No standalone directory"
-- echo "DEBUG - Checking if static files exist..."
-- ls -la .next/static/ || echo "No static directory found"
-- echo "DEBUG - Copying static files to standalone..."
-- cp -r public .next/standalone/apps/app/ || echo "No public folder"
-- cp -r .next/static .next/standalone/apps/app/.next/ || echo "No .next/static directory"
-- echo "DEBUG - Final verification..."
-- ls -la .next/standalone/ || echo "Standalone empty"
-- echo "Looking for static files in standalone..."
-- find .next/standalone -type f -name "*.css" | head -5 || echo "No CSS files found"
-- find .next/standalone -type f -name "*.js" | head -5 || echo "No JS files found"
-- find .next/standalone -type f -name "*.ttf" | head -3 || echo "No font files found"
-- echo "Checking specific paths..."
-- ls -la .next/standalone/apps/app/.next/static/chunks/ || echo "No chunks directory"
-- ls -la .next/standalone/apps/app/.next/static/media/ || echo "No media directory"
-- ls -la .next/standalone/apps/app/public/ || echo "No public directory"
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo "Logging in to Amazon ECR..."
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - REPOSITORY_URI=$ECR_REPOSITORY_URI
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - IMAGE_TAG=${COMMIT_HASH:=latest}
+      - echo "Installing Bun..."
+      - curl -fsSL https://bun.sh/install | bash
+      - export PATH="/root/.bun/bin:$PATH"
+      - echo "Installing Turbo..."
+      - bun add -g turbo
+
+  build:
+    commands:
+      # Validate environment variables
+      - echo "Validating environment variables..."
+      - '[ -n "$DATABASE_URL" ] || { echo "❌ DATABASE_URL is not set"; exit 1; }'
+      - '[ -n "$BASE_URL" ] || { echo "❌ BASE_URL is not set"; exit 1; }'
+      - '[ -n "$BETTER_AUTH_URL" ] || { echo "❌ BETTER_AUTH_URL is not set"; exit 1; }'
+      - '[ -n "$TRUST_APP_URL" ] || { echo "❌ TRUST_APP_URL is not set"; exit 1; }'
+
+      - echo "Pruning workspace for @comp/api..."
+      # Generate the pruned workspace in ./out
+      - bunx turbo prune --scope=@comp/api --docker
+
+      - echo "Building Docker image..."
+      # Build using the pruned context (./out)
+      # The Dockerfile is located at ./out/full/apps/api/Dockerfile
+      - docker build -f out/full/apps/api/Dockerfile -t $ECR_REPOSITORY_URI:$IMAGE_TAG out/
+      - docker tag $ECR_REPOSITORY_URI:$IMAGE_TAG $ECR_REPOSITORY_URI:latest
+
+  post_build:
+    commands:
+      - echo "Pushing images to ECR..."
+      - docker push $ECR_REPOSITORY_URI:$IMAGE_TAG
+      - docker push $ECR_REPOSITORY_URI:latest
+      - echo "Updating ECS service..."
+      - aws ecs update-service --cluster $ECS_CLUSTER_NAME --service $ECS_SERVICE_NAME --force-new-deployment
+      - 'printf "[{\"name\":\"%s-container\",\"imageUri\":\"%s\"}]" api $ECR_REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json'
+
+cache:
+  paths:
+    - '/root/.bun/install/cache/**/*'
+    # We can cache turborepo cache if we used it, but we are pruning.
+
+artifacts:
+  files:
+    - imagedefinitions.json
+  name: ${APP_NAME}-build
