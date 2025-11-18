@@ -1,5 +1,5 @@
 import { VendorStatus, db } from '@db';
-import { logger, queue, task } from '@trigger.dev/sdk';
+import { logger, metadata, queue, task } from '@trigger.dev/sdk';
 import axios from 'axios';
 import {
   createVendorRiskComment,
@@ -8,10 +8,10 @@ import {
 } from './onboard-organization-helpers';
 
 // Queues
-const vendorMitigationQueue = queue({ name: 'vendor-risk-mitigations', concurrencyLimit: 100 });
+const vendorMitigationQueue = queue({ name: 'vendor-risk-mitigations', concurrencyLimit: 50 });
 const vendorMitigationFanoutQueue = queue({
   name: 'vendor-risk-mitigations-fanout',
-  concurrencyLimit: 100,
+  concurrencyLimit: 50,
 });
 
 export const generateVendorMitigation = task({
@@ -20,38 +20,44 @@ export const generateVendorMitigation = task({
   retry: {
     maxAttempts: 5,
   },
-  run: async (payload: { organizationId: string; vendorId: string }) => {
-    const { organizationId, vendorId } = payload;
+  run: async (payload: {
+    organizationId: string;
+    vendorId: string;
+    authorId: string;
+    policies: PolicyContext[];
+  }) => {
+    const { organizationId, vendorId, authorId, policies } = payload;
     logger.info(`Generating vendor mitigation for vendor ${vendorId} in org ${organizationId}`);
 
-    const [vendor, policies, author] = await Promise.all([
-      db.vendor.findFirst({ where: { id: vendorId, organizationId } }),
-      db.policy.findMany({ where: { organizationId }, select: { name: true, description: true } }),
-      findCommentAuthor(organizationId),
-    ]);
+    const vendor = await db.vendor.findFirst({ where: { id: vendorId, organizationId } });
 
     if (!vendor) {
       logger.warn(`Vendor ${vendorId} not found in org ${organizationId}`);
       return;
     }
 
-    if (!author) {
-      logger.warn(
-        `No eligible author found for org ${organizationId}; skipping mitigation for vendor ${vendorId}`,
-      );
-      return;
-    }
+    // Mark as processing before generating mitigation
+    // Update root onboarding task metadata if available (when triggered from onboarding)
+    // Try root first (onboarding task), then parent (fanout task), then own metadata
+    const metadataHandle = metadata.root ?? metadata.parent ?? metadata;
+    metadataHandle.set(`vendor_${vendorId}_status`, 'processing');
 
-    await createVendorRiskComment(vendor, policies as PolicyContext[], organizationId, author.id);
+    await createVendorRiskComment(vendor, policies, organizationId, authorId);
 
     // Mark vendor as assessed and assign to owner/admin
     await db.vendor.update({
       where: { id: vendor.id, organizationId },
       data: {
         status: VendorStatus.assessed,
-        assigneeId: author.id,
+        assigneeId: authorId,
       },
     });
+
+    // Mark as completed after mitigation is done
+    // Update root onboarding task metadata if available
+    metadataHandle.set(`vendor_${vendorId}_status`, 'completed');
+    metadataHandle.increment('vendorsCompleted', 1);
+    metadataHandle.decrement('vendorsRemaining', 1);
 
     // Revalidate the vendor detail page so the new comment shows up
     try {
@@ -74,15 +80,37 @@ export const generateVendorMitigationsForOrg = task({
     const { organizationId } = payload;
     logger.info(`Fan-out vendor mitigations for org ${organizationId}`);
 
-    const vendors = await db.vendor.findMany({ where: { organizationId } });
+    const [vendors, policyRows, author] = await Promise.all([
+      db.vendor.findMany({ where: { organizationId } }),
+      db.policy.findMany({
+        where: { organizationId },
+        select: { name: true, description: true },
+      }),
+      findCommentAuthor(organizationId),
+    ]);
+
     if (vendors.length === 0) {
       logger.info(`No vendors found for org ${organizationId}`);
       return;
     }
 
+    if (!author) {
+      logger.warn(
+        `No onboarding author found for org ${organizationId}; skipping vendor mitigations`,
+      );
+      return;
+    }
+
+    const policies = policyRows.map((p) => ({ name: p.name, description: p.description }));
+
     await generateVendorMitigation.batchTrigger(
       vendors.map((v) => ({
-        payload: { organizationId, vendorId: v.id },
+        payload: {
+          organizationId,
+          vendorId: v.id,
+          authorId: author.id,
+          policies,
+        },
         concurrencyKey: `${organizationId}:${v.id}`,
       })),
     );

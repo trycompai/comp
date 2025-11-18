@@ -3,9 +3,10 @@ import { StatusIndicator } from '@/components/status-indicator';
 import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
 import { Badge } from '@comp/ui/badge';
 import type { ColumnDef } from '@tanstack/react-table';
-import { UserIcon } from 'lucide-react';
+import { Loader2, UserIcon } from 'lucide-react';
 import Link from 'next/link';
 import { RiskRow } from '../../RisksTable';
+import { useRiskOnboardingStatus } from '../risk-onboarding-context';
 
 export const columns = (orgId: string): ColumnDef<RiskRow>[] => [
   {
@@ -13,11 +14,7 @@ export const columns = (orgId: string): ColumnDef<RiskRow>[] => [
     accessorKey: 'title',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Risk" />,
     cell: ({ row }) => {
-      return (
-        <Link href={`/${orgId}/risk/${row.original.id}`}>
-          <span className="line-clamp-1 capitalize">{row.original.title}</span>
-        </Link>
-      );
+      return <RiskNameCell row={row} orgId={orgId} />;
     },
     meta: {
       label: 'Risk',
@@ -35,7 +32,7 @@ export const columns = (orgId: string): ColumnDef<RiskRow>[] => [
     accessorKey: 'status',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
     cell: ({ row }) => {
-      return <StatusIndicator status={row.original.status} />;
+      return <RiskStatusCell row={row} />;
     },
     meta: {
       label: 'Status',
@@ -102,3 +99,65 @@ export const columns = (orgId: string): ColumnDef<RiskRow>[] => [
     enableColumnFilter: true,
   },
 ];
+
+function RiskNameCell({ row, orgId }: { row: { original: RiskRow }; orgId: string }) {
+  const risk = row.original;
+  const status = useRiskOnboardingStatus(risk.id);
+  const isPending = risk.isPending;
+  // Don't show active status if risk is already closed (mitigated)
+  const isResolved = risk.status === 'closed';
+  const isActive =
+    !isResolved &&
+    (status === 'pending' ||
+      status === 'processing' ||
+      status === 'created' ||
+      status === 'assessing');
+
+  if (isPending || isActive) {
+    return (
+      <div className="flex items-center gap-2 text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin text-primary" />
+        <span className="line-clamp-1 capitalize">{risk.title}</span>
+      </div>
+    );
+  }
+
+  return (
+    <Link href={`/${orgId}/risk/${risk.id}`}>
+      <span className="line-clamp-1 capitalize">{risk.title}</span>
+    </Link>
+  );
+}
+
+function RiskStatusCell({ row }: { row: { original: RiskRow } }) {
+  const risk = row.original;
+  const status = useRiskOnboardingStatus(risk.id);
+  const isPending = risk.isPending;
+  const isResolved = risk.status === 'closed';
+  // Don't show assessing if risk is already resolved
+  const isAssessing = !isResolved && (risk.isAssessing || status === 'assessing');
+  const isActive =
+    !isResolved &&
+    (status === 'pending' ||
+      status === 'processing' ||
+      status === 'created' ||
+      status === 'assessing');
+
+  if (isPending || isActive) {
+    const statusText =
+      status === 'pending' || status === 'processing' || isPending
+        ? 'Creating...'
+        : status === 'assessing' || isAssessing
+          ? 'Assessing...'
+          : 'Processing...';
+
+    return (
+      <div className="flex items-center gap-2">
+        <Loader2 className="h-4 w-4 animate-spin text-primary" />
+        <span className="text-muted-foreground text-sm">{statusText}</span>
+      </div>
+    );
+  }
+
+  return <StatusIndicator status={risk.status} />;
+}

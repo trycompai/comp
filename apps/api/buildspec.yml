@@ -32,51 +32,48 @@ phases:
       - echo "Installing API dependencies only..."
       - bun install --filter=@comp/api --frozen-lockfile || bun install --filter=@comp/api --ignore-scripts || bun install --ignore-scripts
 
-      # Build NestJS application (prebuild automatically handles Prisma)
+      - echo "Building @trycompai/email package..."
+      - cd packages/email
+      - bun run build
+      - cd ../..
+
       - echo "Building NestJS application..."
       - echo "APP_NAME is set to $APP_NAME"
       - echo "Current directory $(pwd)"
       - echo "Available apps $(ls -la apps/)"
       - cd apps/api
       - echo "Changed to $(pwd)"
-      - echo "Running build (includes automatic prebuild db:generate)..."
       - bun run build
 
-      # Verify build output exists
       - echo "Checking build output..."
       - ls -la dist/
       - ls -la dist/src/
       - '[ -f "dist/src/main.js" ] || { echo "❌ main.js not found in dist/src"; exit 1; }'
 
-      # Create self-contained bundle for Docker (stay in apps/api)
-      - echo "Creating self-contained bundle..."
       - mkdir -p ../docker-build
-
-      # Copy built application (preserves NestJS structure)
-      - echo "Copying built application..."
       - cp -r dist/* ../docker-build/
-
-      # Copy prisma folder (needed for runtime imports)
-      - echo "Copying prisma folder..."
       - cp -r prisma ../docker-build/
 
-      # Verify files were copied correctly
       - echo "Verifying copied files..."
       - ls -la ../docker-build/
       - ls -la ../docker-build/src/
       - '[ -f "../docker-build/src/main.js" ] || { echo "❌ main.js not found in docker-build/src"; exit 1; }'
 
-      # Copy entire node_modules for runtime (includes @trycompai/db from npm)
-      - echo "Skipping host node_modules copy; Dockerfile installs prod deps inside image"
+      - mkdir -p ../docker-build/node_modules/@trycompai
+      - mkdir -p ../docker-build/node_modules/@trycompai/email
+      - cp -r ../../packages/email/dist ../docker-build/node_modules/@trycompai/email/
+      - cp ../../packages/email/package.json ../docker-build/node_modules/@trycompai/email/
+      - mkdir -p ../docker-build/node_modules/@trycompai/utils
+      - cp -r ../../packages/utils/src ../docker-build/node_modules/@trycompai/utils/
+      - cp ../../packages/utils/package.json ../docker-build/node_modules/@trycompai/utils/
 
-      # Copy Dockerfile
-      - echo "Copying Dockerfile..."
+      - cp -r ../../node_modules/@prisma ../docker-build/node_modules/@prisma
+      - cp -r ../../node_modules/.prisma ../docker-build/node_modules/.prisma
+
       - cp Dockerfile ../docker-build/
-      - echo "Copying package manifests for image install..."
       - cp package.json ../docker-build/
       - cp ../../bun.lock ../docker-build/ || true
 
-      # Build Docker image
       - echo "Building Docker image..."
       - docker build --build-arg BUILDKIT_INLINE_CACHE=1 -t $ECR_REPOSITORY_URI:$IMAGE_TAG ../docker-build/
       - docker tag $ECR_REPOSITORY_URI:$IMAGE_TAG $ECR_REPOSITORY_URI:latest
