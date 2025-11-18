@@ -112,7 +112,7 @@ export function TasksByCategory({ tasks, members, statusFilter }: TasksByCategor
   // Calculate stats for a category
   const getCategoryStats = (categoryTasks: Task[]) => {
     const total = categoryTasks.length;
-    const done = categoryTasks.filter((t) => t.status === 'done').length;
+    const done = categoryTasks.filter((t) => t.status === 'done' || t.status === 'not_relevant').length;
     const inProgress = categoryTasks.filter((t) => t.status === 'in_progress').length;
     const completionRate = total > 0 ? Math.round((done / total) * 100) : 0;
     return { total, done, inProgress, completionRate };
@@ -262,20 +262,34 @@ export function TasksByCategory({ tasks, members, statusFilter }: TasksByCategor
                   const member = assignedMember(task);
                   const statusStyle =
                     statusPalette[task.status as keyof typeof statusPalette] ?? statusPalette.todo;
+                  const isNotRelevant = task.status === 'not_relevant';
                   return (
                     <div
                       key={task.id}
-                      className="group relative flex cursor-pointer flex-col gap-3 rounded-sm border border-border/60 bg-card/50 p-4 transition-colors hover:bg-muted/20"
+                      className={`group relative flex cursor-pointer flex-col gap-3 rounded-sm border border-border/60 p-4 transition-colors ${
+                        isNotRelevant
+                          ? 'opacity-50 bg-slate-100/50 backdrop-blur-md hover:bg-slate-100/60'
+                          : 'bg-card/50 hover:bg-muted/20'
+                      }`}
                       onClick={() => handleTaskClick(task.id)}
                     >
                       <span
                         className={`absolute left-0 top-0 h-full w-[2px] ${statusStyle.indicator}`}
                       />
+                      {isNotRelevant && (
+                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                          <span className="text-sm font-bold uppercase tracking-[0.15em] text-slate-600">
+                            NOT RELEVANT
+                          </span>
+                        </div>
+                      )}
 
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1 space-y-2">
                           <div className="flex items-start gap-2">
-                            <h4 className="flex-1 text-sm font-semibold text-foreground line-clamp-2">
+                            <h4 className={`flex-1 text-sm font-semibold line-clamp-2 ${
+                              isNotRelevant ? 'text-slate-500' : 'text-foreground'
+                            }`}>
                               {task.title}
                             </h4>
                             <AutomationIndicator
@@ -284,7 +298,9 @@ export function TasksByCategory({ tasks, members, statusFilter }: TasksByCategor
                             />
                           </div>
                           {task.description && (
-                            <p className="text-xs text-muted-foreground/80 line-clamp-2 leading-relaxed">
+                            <p className={`text-xs line-clamp-2 leading-relaxed ${
+                              isNotRelevant ? 'text-slate-400' : 'text-muted-foreground/80'
+                            }`}>
                               {task.description}
                             </p>
                           )}
