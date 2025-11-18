@@ -58,54 +58,31 @@ phases:
       - ls -la dist/src/
       - '[ -f "dist/src/main.js" ] || { echo "❌ main.js not found in dist/src"; exit 1; }'
 
-      # Create self-contained bundle for Docker (stay in apps/api)
-      - echo "Creating self-contained bundle..."
-      - mkdir -p ../docker-build
+      # Prepare workspace packages for Docker (copy into dist for COPY in Dockerfile)
+      - echo "Preparing workspace packages for Docker..."
+      - mkdir -p dist/node_modules/@trycompai
+      # Email package
+      - mkdir -p dist/node_modules/@trycompai/email
+      - cp -r ../../packages/email/dist dist/node_modules/@trycompai/email/
+      - cp ../../packages/email/package.json dist/node_modules/@trycompai/email/
+      # UI package
+      - mkdir -p dist/node_modules/@trycompai/ui
+      - cp -r ../../packages/ui/dist dist/node_modules/@trycompai/ui/
+      - cp ../../packages/ui/package.json dist/node_modules/@trycompai/ui/
+      # Utils package
+      - mkdir -p dist/node_modules/@trycompai/utils
+      - cp -r ../../packages/utils/src dist/node_modules/@trycompai/utils/
+      - cp ../../packages/utils/package.json dist/node_modules/@trycompai/utils/
 
-      # Copy built application (preserves NestJS structure)
-      - echo "Copying built application..."
-      - cp -r dist/* ../docker-build/
+      # Copy pre-generated Prisma client to dist (avoids bun/npm conflicts in Docker)
+      - echo "Copying pre-generated Prisma client to dist..."
+      - mkdir -p dist/node_modules
+      - cp -r ../../node_modules/@prisma dist/node_modules/@prisma
+      - cp -r ../../node_modules/.prisma dist/node_modules/.prisma
 
-      # Copy prisma folder (needed for runtime imports)
-      - echo "Copying prisma folder..."
-      - cp -r prisma ../docker-build/
-
-      # Verify files were copied correctly
-      - echo "Verifying copied files..."
-      - ls -la ../docker-build/
-      - ls -la ../docker-build/src/
-      - '[ -f "../docker-build/src/main.js" ] || { echo "❌ main.js not found in docker-build/src"; exit 1; }'
-
-      # Copy entire node_modules for runtime (includes @trycompai/db from npm)
-      - echo "Skipping host node_modules copy; Dockerfile installs prod deps inside image"
-
-      # Copy built workspace packages (needed for runtime)
-      # These packages are built above and need to be available in Docker
-      - echo "Copying built workspace packages..."
-      - mkdir -p ../docker-build/node_modules/@trycompai
-      # Email package - copy dist and package.json
-      - mkdir -p ../docker-build/node_modules/@trycompai/email
-      - cp -r ../../packages/email/dist ../docker-build/node_modules/@trycompai/email/
-      - cp ../../packages/email/package.json ../docker-build/node_modules/@trycompai/email/
-      # UI package - copy dist and package.json
-      - mkdir -p ../docker-build/node_modules/@trycompai/ui
-      - cp -r ../../packages/ui/dist ../docker-build/node_modules/@trycompai/ui/
-      - cp ../../packages/ui/package.json ../docker-build/node_modules/@trycompai/ui/
-      # Utils package - copy src (no build step) and package.json
-      - mkdir -p ../docker-build/node_modules/@trycompai/utils
-      - cp -r ../../packages/utils/src ../docker-build/node_modules/@trycompai/utils/
-      - cp ../../packages/utils/package.json ../docker-build/node_modules/@trycompai/utils/
-
-      # Copy Dockerfile
-      - echo "Copying Dockerfile..."
-      - cp Dockerfile ../docker-build/
-      - echo "Copying package manifests for image install..."
-      - cp package.json ../docker-build/
-      - cp ../../bun.lock ../docker-build/ || true
-
-      # Build Docker image
+      # Build Docker image from apps/api directory
       - echo "Building Docker image..."
-      - docker build --build-arg BUILDKIT_INLINE_CACHE=1 -t $ECR_REPOSITORY_URI:$IMAGE_TAG ../docker-build/
+      - docker build --build-arg BUILDKIT_INLINE_CACHE=1 -t $ECR_REPOSITORY_URI:$IMAGE_TAG .
       - docker tag $ECR_REPOSITORY_URI:$IMAGE_TAG $ECR_REPOSITORY_URI:latest
 
   post_build:
