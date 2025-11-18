@@ -5,8 +5,8 @@ import { Badge } from '@comp/ui/badge';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Loader2, UserIcon } from 'lucide-react';
 import Link from 'next/link';
-import { useRiskOnboardingStatus } from '../risk-onboarding-context';
 import { RiskRow } from '../../RisksTable';
+import { useRiskOnboardingStatus } from '../risk-onboarding-context';
 
 export const columns = (orgId: string): ColumnDef<RiskRow>[] => [
   {
@@ -106,7 +106,12 @@ function RiskNameCell({ row, orgId }: { row: { original: RiskRow }; orgId: strin
   const isPending = risk.isPending;
   // Don't show active status if risk is already closed (mitigated)
   const isResolved = risk.status === 'closed';
-  const isActive = !isResolved && (status === 'pending' || status === 'processing' || status === 'created' || status === 'assessing');
+  const isActive =
+    !isResolved &&
+    (status === 'pending' ||
+      status === 'processing' ||
+      status === 'created' ||
+      status === 'assessing');
 
   if (isPending || isActive) {
     return (
@@ -131,10 +136,15 @@ function RiskStatusCell({ row }: { row: { original: RiskRow } }) {
   const isResolved = risk.status === 'closed';
   // Don't show assessing if risk is already resolved
   const isAssessing = !isResolved && (risk.isAssessing || status === 'assessing');
-  const isActive = !isResolved && (status === 'pending' || status === 'processing' || status === 'created' || status === 'assessing');
+  const isActive =
+    !isResolved &&
+    (status === 'pending' ||
+      status === 'processing' ||
+      status === 'created' ||
+      status === 'assessing');
 
-  if (isPending || (isActive && status !== 'completed')) {
-    const statusText = 
+  if (isPending || isActive) {
+    const statusText =
       status === 'pending' || status === 'processing' || isPending
         ? 'Creating...'
         : status === 'assessing' || isAssessing
