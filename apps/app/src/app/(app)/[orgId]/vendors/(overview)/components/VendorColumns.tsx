@@ -2,15 +2,60 @@ import { DataTableColumnHeader } from '@/components/data-table/data-table-column
 import { VendorStatus } from '@/components/vendor-status';
 import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
 import { Badge } from '@comp/ui/badge';
-import type { ColumnDef } from '@tanstack/react-table';
-import { UserIcon } from 'lucide-react';
+import type { ColumnDef, Row } from '@tanstack/react-table';
+import { Loader2, UserIcon } from 'lucide-react';
 import Link from 'next/link';
-import type { GetVendorsResult } from '../data/queries';
+import { useVendorOnboardingStatus } from './vendor-onboarding-context';
 import { VendorDeleteCell } from './VendorDeleteCell';
+import type { VendorRow } from './VendorsTable';
 
-type VendorRow = GetVendorsResult['data'][number];
+function VendorNameCell({ row, orgId }: { row: Row<VendorRow>; orgId: string }) {
+  const vendorId = row.original.id;
+  const onboardingStatus = useVendorOnboardingStatus();
+  const status = onboardingStatus[vendorId];
+  const isPending = row.original.isPending || status === 'pending' || status === 'processing';
+  const isAssessing = row.original.isAssessing || status === 'assessing';
+  const isResolved = row.original.status === 'assessed';
 
-export const columns: ColumnDef<VendorRow>[] = [
+  if ((isPending || isAssessing) && !isResolved) {
+    return (
+      <div className="flex items-center gap-2">
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+        <span className="text-muted-foreground">{row.original.name}</span>
+      </div>
+    );
+  }
+  return <Link href={`/${orgId}/vendors/${row.original.id}`}>{row.original.name}</Link>;
+}
+
+function VendorStatusCell({ row }: { row: Row<VendorRow> }) {
+  const vendorId = row.original.id;
+  const onboardingStatus = useVendorOnboardingStatus();
+  const status = onboardingStatus[vendorId];
+  const isPending = row.original.isPending || status === 'pending' || status === 'processing';
+  const isAssessing = row.original.isAssessing || status === 'assessing';
+  const isResolved = row.original.status === 'assessed';
+
+  if (isPending && !isResolved) {
+    return (
+      <div className="flex items-center gap-2">
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+        <span className="text-muted-foreground text-sm">Creating...</span>
+      </div>
+    );
+  }
+  if (isAssessing && !isResolved) {
+    return (
+      <div className="flex items-center gap-2">
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+        <span className="text-muted-foreground text-sm">Assessing...</span>
+      </div>
+    );
+  }
+  return <VendorStatus status={row.original.status} />;
+}
+
+export const columns = (orgId: string): ColumnDef<VendorRow>[] => [
   {
     id: 'name',
     accessorKey: 'name',
@@ -18,11 +63,7 @@ export const columns: ColumnDef<VendorRow>[] = [
       return <DataTableColumnHeader column={column} title="Vendor Name" />;
     },
     cell: ({ row }) => {
-      return (
-        <Link href={`/${row.original.organizationId}/vendors/${row.original.id}`}>
-          {row.original.name}
-        </Link>
-      );
+      return <VendorNameCell row={row} orgId={orgId} />;
     },
     meta: {
       label: 'Vendor Name',
@@ -41,7 +82,7 @@ export const columns: ColumnDef<VendorRow>[] = [
       return <DataTableColumnHeader column={column} title="Status" />;
     },
     cell: ({ row }) => {
-      return <VendorStatus status={row.original.status} />;
+      return <VendorStatusCell row={row} />;
     },
     meta: {
       label: 'Status',

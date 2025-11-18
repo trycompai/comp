@@ -1,7 +1,7 @@
 'use server';
 
-import { openai } from '@ai-sdk/openai';
-import { generateObject } from 'ai';
+import { groq } from '@ai-sdk/groq';
+import { generateObject, NoObjectGeneratedError } from 'ai';
 import { z } from 'zod';
 
 const RelevantTasksSchema = z.object({
@@ -36,14 +36,14 @@ export async function getRelevantTasksForIntegration(
     })
     .join('\n');
 
-  const systemPrompt = `GRC expert. Find tasks relevant to integration. Return JSON with: taskTemplateId, taskName, reason (1 sentence), prompt (actionable, ready to use). Be selective.`;
+  const systemPrompt = `GRC expert. Find tasks relevant to integration. Return JSON with an array of tasks. Each task must have: taskTemplateId, taskName, reason (1 sentence), prompt (actionable, ready to use). Be selective. ALWAYS return an array, even if there's only one task.`;
 
   const userPrompt = `Integration: ${integrationName} - ${integrationDescription}
 
 Tasks (format: ID|Name|Description):
 ${tasksList}
 
-Return only clearly relevant tasks.`;
+Return ONLY clearly relevant tasks as an ARRAY. Format: {"relevantTasks": [{"taskTemplateId": "...", "taskName": "...", "reason": "...", "prompt": "..."}, ...]}`;
 
   const promptSize = (systemPrompt + userPrompt).length;
   console.log(`[getRelevantTasks] Prompt size: ${promptSize} chars, ${taskTemplates.length} tasks`);
@@ -51,20 +51,51 @@ Return only clearly relevant tasks.`;
   try {
     const startTime = Date.now();
     const { object, usage } = await generateObject({
-      model: openai('gpt-4.1-mini'),
+      model: groq('meta-llama/llama-4-scout-17b-16e-instruct'),
       schema: RelevantTasksSchema,
       system: systemPrompt,
       prompt: userPrompt,
     });
     const duration = Date.now() - startTime;
 
+    // Handle case where model returns single object instead of array
+    let tasks = object.relevantTasks;
+    if (!Array.isArray(tasks)) {
+      // If it's a single object, wrap it in an array
+      if (tasks && typeof tasks === 'object' && 'taskTemplateId' in tasks) {
+        tasks = [tasks];
+      } else {
+        tasks = [];
+      }
+    }
+
     console.log(
-      `[getRelevantTasks] Generated ${object.relevantTasks.length} tasks in ${duration}ms (tokens: ${usage?.totalTokens || 'unknown'})`,
+      `[getRelevantTasks] Generated ${tasks.length} tasks in ${duration}ms (tokens: ${usage?.totalTokens || 'unknown'})`,
     );
 
-    return object.relevantTasks;
+    return tasks;
   } catch (error) {
     console.error('Error generating relevant tasks:', error);
+    // Try to extract tasks from error if available
+    if (NoObjectGeneratedError.isInstance(error)) {
+      try {
+        const errorText = error.text;
+        if (errorText) {
+          const parsed = JSON.parse(errorText);
+          if (parsed.relevantTasks) {
+            const tasks = Array.isArray(parsed.relevantTasks)
+              ? parsed.relevantTasks
+              : [parsed.relevantTasks];
+            if (tasks.length > 0 && tasks[0].taskTemplateId) {
+              console.log(`[getRelevantTasks] Recovered ${tasks.length} tasks from error response`);
+              return tasks;
+            }
+          }
+        }
+      } catch {
+        // Ignore parse errors
+      }
+    }
     return [];
   }
 }

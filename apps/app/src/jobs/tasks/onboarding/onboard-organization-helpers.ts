@@ -53,6 +53,14 @@ export type RiskData = {
   department: Departments;
 };
 
+type OrganizationRecord = NonNullable<Awaited<ReturnType<typeof db.organization.findUnique>>>;
+
+type OrganizationContextResult = {
+  organization: OrganizationRecord;
+  questionsAndAnswers: ContextItem[];
+  policies: { id: string; name: string; description: string | null }[];
+};
+
 // Baseline risks that must always exist for every organization regardless of frameworks
 const BASELINE_RISKS: Array<{
   title: string;
@@ -134,7 +142,9 @@ export async function revalidateOrganizationPath(organizationId: string): Promis
 /**
  * Fetches organization data and context
  */
-export async function getOrganizationContext(organizationId: string) {
+export async function getOrganizationContext(
+  organizationId: string,
+): Promise<OrganizationContextResult> {
   const [organization, contextHub, policies] = await Promise.all([
     db.organization.findUnique({
       where: { id: organizationId },
@@ -144,7 +154,7 @@ export async function getOrganizationContext(organizationId: string) {
     }),
     db.policy.findMany({
       where: { organizationId },
-      select: { name: true, description: true },
+      select: { id: true, name: true, description: true },
     }),
   ]);
 
@@ -157,7 +167,13 @@ export async function getOrganizationContext(organizationId: string) {
     answer: context.answer,
   }));
 
-  return { organization, questionsAndAnswers, policies };
+  const typedPolicies = policies as Array<{
+    id: string;
+    name: string;
+    description: string | null;
+  }>;
+
+  return { organization, questionsAndAnswers, policies: typedPolicies };
 }
 
 /**
@@ -272,9 +288,13 @@ export async function createVendorsFromData(
   vendorData: VendorData[],
   organizationId: string,
 ): Promise<any[]> {
-  const createdVendors = [];
+  // Mark all vendors as processing before creation
+  vendorData.forEach((_, index) => {
+    metadata.set(`vendor_temp_${index}_status`, 'processing');
+  });
 
-  for (const vendor of vendorData) {
+  // Check for existing vendors and create new ones concurrently
+  const vendorPromises = vendorData.map(async (vendor, index) => {
     const existingVendor = await db.vendor.findMany({
       where: {
         organizationId,
@@ -284,7 +304,10 @@ export async function createVendorsFromData(
 
     if (existingVendor.length > 0) {
       logger.info(`Vendor ${vendor.vendor_name} already exists`);
-      continue;
+      // Mark as completed if it already exists
+      const existing = existingVendor[0];
+      metadata.set(`vendor_${existing.id}_status`, 'completed');
+      return existing;
     }
 
     const createdVendor = await db.vendor.create({
@@ -301,9 +324,24 @@ export async function createVendorsFromData(
       },
     });
 
-    createdVendors.push(createdVendor);
     logger.info(`Created vendor: ${createdVendor.id} (${createdVendor.name})`);
-  }
+    return createdVendor;
+  });
+
+  const createdVendors = await Promise.all(vendorPromises);
+
+  // Update metadata with all real IDs and mark as created (will be marked as assessing after all are created)
+  createdVendors.forEach((vendor) => {
+    const status = metadata.get(`vendor_${vendor.id}_status`);
+    if (status === 'completed') {
+      // Already marked as completed (existing vendor)
+      return;
+    }
+    // New vendor, mark as created
+    metadata.set(`vendor_${vendor.id}_status`, 'created');
+  });
+
+  // Note: vendorsCompleted is incremented when mitigation is generated, not when created
 
   return createdVendors;
 }
@@ -469,15 +507,20 @@ export async function getExistingRisks(organizationId: string) {
 }
 
 /**
- * Creates risks from extracted data
+ * Creates risks from extracted data (AI-generated risks only)
  */
 export async function createRisksFromData(
   riskData: RiskData[],
   organizationId: string,
 ): Promise<Risk[]> {
-  const createdRisks: Risk[] = [];
-  for (const risk of riskData) {
-    const createdRisk = await db.risk.create({
+  // Mark all risks as processing before creation
+  riskData.forEach((_, index) => {
+    metadata.set(`risk_temp_${index}_status`, 'processing');
+  });
+
+  // Create all risks concurrently
+  const createPromises = riskData.map((risk) =>
+    db.risk.create({
       data: {
         title: risk.risk_name,
         description: risk.risk_description,
@@ -489,13 +532,81 @@ export async function createRisksFromData(
         treatmentStrategyDescription: risk.risk_treatment_strategy_description,
         organizationId,
       },
-    });
+    }),
+  );
 
-    createdRisks.push(createdRisk);
+  const createdRisks = await Promise.all(createPromises);
+
+  // Update metadata with all real IDs and mark as created (will be marked as assessing after all are created)
+  createdRisks.forEach((createdRisk) => {
+    metadata.set(`risk_${createdRisk.id}_status`, 'created');
     logger.info(`Created risk: ${createdRisk.id} (${createdRisk.title})`);
-  }
+  });
+
+  // Note: risksCompleted is incremented when mitigation is generated, not when created
 
   logger.info(`Created ${riskData.length} risks`);
+  return createdRisks;
+}
+
+/**
+ * Creates risks from combined baseline and AI-generated data
+ */
+async function createRisksFromDataWithBaseline(
+  allRisksToCreate: Array<{
+    isBaseline: boolean;
+    baselineData: (typeof BASELINE_RISKS)[0] | null;
+    riskData: RiskData | null;
+  }>,
+  organizationId: string,
+): Promise<Risk[]> {
+  // Mark all risks as processing before creation
+  allRisksToCreate.forEach((_, index) => {
+    metadata.set(`risk_temp_${index}_status`, 'processing');
+  });
+
+  // Create all risks concurrently (baseline + AI-generated)
+  const createPromises = allRisksToCreate.map((risk) => {
+    if (risk.isBaseline && risk.baselineData) {
+      return db.risk.create({
+        data: {
+          title: risk.baselineData.title,
+          description: risk.baselineData.description,
+          category: risk.baselineData.category,
+          department: risk.baselineData.department,
+          status: risk.baselineData.status,
+          organizationId,
+        },
+      });
+    } else if (risk.riskData) {
+      return db.risk.create({
+        data: {
+          title: risk.riskData.risk_name,
+          description: risk.riskData.risk_description,
+          category: risk.riskData.category,
+          department: risk.riskData.department,
+          likelihood: risk.riskData.risk_residual_probability,
+          impact: risk.riskData.risk_residual_impact,
+          treatmentStrategy: risk.riskData.risk_treatment_strategy,
+          treatmentStrategyDescription: risk.riskData.risk_treatment_strategy_description,
+          organizationId,
+        },
+      });
+    }
+    throw new Error('Invalid risk data');
+  });
+
+  const createdRisks = await Promise.all(createPromises);
+
+  // Update metadata with all real IDs and mark as created (will be marked as assessing after all are created)
+  createdRisks.forEach((createdRisk) => {
+    metadata.set(`risk_${createdRisk.id}_status`, 'created');
+    logger.info(`Created risk: ${createdRisk.id} (${createdRisk.title})`);
+  });
+
+  // Note: risksCompleted is incremented when mitigation is generated, not when created
+
+  logger.info(`Created ${allRisksToCreate.length} risks (including baseline)`);
   return createdRisks;
 }
 
@@ -524,12 +635,15 @@ export async function triggerPolicyUpdates(
     metadata.set('policiesCompleted', 0);
     metadata.set('policiesRemaining', policies.length);
     // Store policy info for tracking individual policies
-    metadata.set('policiesInfo', policies.map((p) => ({ id: p.id, name: p.name })));
-    
-    // Initialize individual policy statuses - all start as 'pending'
+    metadata.set(
+      'policiesInfo',
+      policies.map((p) => ({ id: p.id, name: p.name })),
+    );
+
+    // Initialize individual policy statuses - all start as 'queued'
     // Each policy gets its own metadata key: policy_{id}_status
     policies.forEach((policy) => {
-      metadata.set(`policy_${policy.id}_status`, 'pending');
+      metadata.set(`policy_${policy.id}_status`, 'queued');
     });
 
     await updatePolicy.batchTriggerAndWait(
@@ -557,7 +671,7 @@ export async function createVendors(
   vendorData?: VendorData[],
 ): Promise<any[]> {
   // Extract vendors using AI if not provided
-  const vendorsToCreate = vendorData || await extractVendorsFromContext(questionsAndAnswers);
+  const vendorsToCreate = vendorData || (await extractVendorsFromContext(questionsAndAnswers));
 
   // Create vendor records in database
   const createdVendors = await createVendorsFromData(vendorsToCreate, organizationId);
@@ -591,11 +705,11 @@ export async function createRisks(
   organizationId: string,
   organizationName: string,
 ): Promise<Risk[]> {
-  // Ensure baseline risks exist first so the AI doesn't recreate them
-  await ensureBaselineRisks(organizationId);
-
-  // Get existing risks to avoid duplicates (includes baseline)
+  // Check if baseline risks need to be created (but don't create them yet)
   const existingRisks = await getExistingRisks(organizationId);
+  const baselineRisksToCreate = BASELINE_RISKS.filter(
+    (base) => !existingRisks.some((r) => r.title === base.title),
+  );
 
   // Extract risks using AI
   const riskData = await extractRisksFromContext(
@@ -604,9 +718,51 @@ export async function createRisks(
     existingRisks,
   );
 
-  // Create risk records in database
-  const risks = await createRisksFromData(riskData, organizationId);
-  return risks;
+  // Combine baseline risks and AI-generated risks for tracking
+  const allRisksToCreate = [
+    ...baselineRisksToCreate.map((base) => ({
+      isBaseline: true,
+      baselineData: base,
+      riskData: null as RiskData | null,
+    })),
+    ...riskData.map((risk) => ({
+      isBaseline: false,
+      baselineData: null as (typeof BASELINE_RISKS)[0] | null,
+      riskData: risk,
+    })),
+  ];
+
+  // Track all risks immediately as "pending" before creation
+  if (allRisksToCreate.length > 0) {
+    metadata.set('risksTotal', allRisksToCreate.length);
+    metadata.set('risksCompleted', 0);
+    metadata.set('risksRemaining', allRisksToCreate.length);
+    // Use temporary IDs based on index until we have real IDs
+    metadata.set(
+      'risksInfo',
+      allRisksToCreate.map((r, index) => ({
+        id: `temp_${index}`,
+        name: r.isBaseline ? r.baselineData!.title : r.riskData!.risk_name,
+      })),
+    );
+    // Mark all as pending initially
+    allRisksToCreate.forEach((_, index) => {
+      metadata.set(`risk_temp_${index}_status`, 'pending');
+    });
+  }
+
+  // Create all risks together (baseline + AI-generated) in one batch
+  const createdRisks = await createRisksFromDataWithBaseline(allRisksToCreate, organizationId);
+
+  // Update tracking with real risk IDs
+  if (createdRisks.length > 0) {
+    metadata.set(
+      'risksInfo',
+      createdRisks.map((r) => ({ id: r.id, name: r.title })),
+    );
+  }
+
+  return createdRisks;
 }
 
 /**
