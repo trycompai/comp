@@ -1,5 +1,5 @@
 import { RiskStatus, db } from '@db';
-import { logger, queue, task } from '@trigger.dev/sdk';
+import { logger, metadata, queue, task } from '@trigger.dev/sdk';
 import axios from 'axios';
 import {
   createRiskMitigationComment,
@@ -39,6 +39,12 @@ export const generateRiskMitigation = task({
       return;
     }
 
+    // Mark as processing before generating mitigation
+    // Update root onboarding task metadata if available (when triggered from onboarding)
+    // Try root first (onboarding task), then parent (fanout task), then own metadata
+    const targetMetadata = metadata.root || metadata.parent || metadata;
+    targetMetadata.set(`risk_${riskId}_status`, 'processing');
+
     await createRiskMitigationComment(risk, policies as PolicyContext[], organizationId, author.id);
 
     // Mark risk as closed and assign to owner/admin
@@ -49,6 +55,10 @@ export const generateRiskMitigation = task({
         assigneeId: author.id,
       },
     });
+
+    // Mark as completed after mitigation is done
+    // Update root onboarding task metadata if available
+    targetMetadata.set(`risk_${riskId}_status`, 'completed');
 
     // Revalidate only the risk detail page in the individual job
     try {

@@ -3,12 +3,12 @@ import { VendorStatus } from '@/components/vendor-status';
 import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
 import { Badge } from '@comp/ui/badge';
 import type { ColumnDef } from '@tanstack/react-table';
-import { UserIcon } from 'lucide-react';
+import { Loader2, UserIcon } from 'lucide-react';
 import Link from 'next/link';
 import type { GetVendorsResult } from '../data/queries';
 import { VendorDeleteCell } from './VendorDeleteCell';
 
-type VendorRow = GetVendorsResult['data'][number];
+type VendorRow = GetVendorsResult['data'][number] & { isPending?: boolean };
 
 export const columns: ColumnDef<VendorRow>[] = [
   {
@@ -18,6 +18,16 @@ export const columns: ColumnDef<VendorRow>[] = [
       return <DataTableColumnHeader column={column} title="Vendor Name" />;
     },
     cell: ({ row }) => {
+      const isPending = row.original.isPending;
+      if (isPending) {
+        return (
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            <span className="text-muted-foreground">{row.original.name}</span>
+            <span className="text-muted-foreground text-xs">(Creating...)</span>
+          </div>
+        );
+      }
       return (
         <Link href={`/${row.original.organizationId}/vendors/${row.original.id}`}>
           {row.original.name}
@@ -41,6 +51,23 @@ export const columns: ColumnDef<VendorRow>[] = [
       return <DataTableColumnHeader column={column} title="Status" />;
     },
     cell: ({ row }) => {
+      if (row.original.isPending) {
+        return (
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            <span className="text-muted-foreground text-sm">Creating...</span>
+          </div>
+        );
+      }
+      // Check if vendor is being assessed
+      if (row.original.isAssessing) {
+        return (
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            <span className="text-muted-foreground text-sm">Assessing...</span>
+          </div>
+        );
+      }
       return <VendorStatus status={row.original.status} />;
     },
     meta: {

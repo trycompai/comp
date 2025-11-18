@@ -137,19 +137,18 @@ export const onboardOrganization = task({
       }
 
       // Create vendors (pass extracted data to avoid re-extraction)
+      // Tracking is handled inside createVendors -> createVendorsFromData
       const vendors = await createVendors(questionsAndAnswers, payload.organizationId, vendorData);
 
-      // Update tracking with real vendor IDs and mark as completed
+      // Update tracking with real vendor IDs (tracking during creation uses temp IDs)
       if (vendors.length > 0) {
-        metadata.set('vendorsCompleted', vendors.length);
-        metadata.set('vendorsRemaining', 0);
         metadata.set(
           'vendorsInfo',
           vendors.map((v) => ({ id: v.id, name: v.name })),
         );
-        // Mark all as completed
+        // Mark all created vendors as "assessing" since they need mitigation
         vendors.forEach((vendor) => {
-          metadata.set(`vendor_${vendor.id}_status`, 'completed');
+          metadata.set(`vendor_${vendor.id}_status`, 'assessing');
         });
       }
 
@@ -165,25 +164,17 @@ export const onboardOrganization = task({
         },
       );
 
-      // Create risks
+      // Create risks (tracking is handled inside createRisks)
       const risks = await createRisks(
         questionsAndAnswers,
         payload.organizationId,
         organization.name,
       );
 
-      // Track risks with metadata for real-time tracking
+      // Mark all created risks as "assessing" since they need mitigation
       if (risks.length > 0) {
-        metadata.set('risksTotal', risks.length);
-        metadata.set('risksCompleted', risks.length);
-        metadata.set('risksRemaining', 0);
-        metadata.set(
-          'risksInfo',
-          risks.map((r) => ({ id: r.id, name: r.title })),
-        );
-        // All risks are created immediately, so mark them all as completed
         risks.forEach((risk) => {
-          metadata.set(`risk_${risk.id}_status`, 'completed');
+          metadata.set(`risk_${risk.id}_status`, 'assessing');
         });
       }
 

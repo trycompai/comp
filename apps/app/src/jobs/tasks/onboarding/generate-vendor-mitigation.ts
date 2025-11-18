@@ -1,5 +1,5 @@
 import { VendorStatus, db } from '@db';
-import { logger, queue, task } from '@trigger.dev/sdk';
+import { logger, metadata, queue, task } from '@trigger.dev/sdk';
 import axios from 'axios';
 import {
   createVendorRiskComment,
@@ -42,6 +42,12 @@ export const generateVendorMitigation = task({
       return;
     }
 
+    // Mark as processing before generating mitigation
+    // Update root onboarding task metadata if available (when triggered from onboarding)
+    // Try root first (onboarding task), then parent (fanout task), then own metadata
+    const targetMetadata = metadata.root || metadata.parent || metadata;
+    targetMetadata.set(`vendor_${vendorId}_status`, 'processing');
+
     await createVendorRiskComment(vendor, policies as PolicyContext[], organizationId, author.id);
 
     // Mark vendor as assessed and assign to owner/admin
@@ -52,6 +58,10 @@ export const generateVendorMitigation = task({
         assigneeId: author.id,
       },
     });
+
+    // Mark as completed after mitigation is done
+    // Update root onboarding task metadata if available
+    targetMetadata.set(`vendor_${vendorId}_status`, 'completed');
 
     // Revalidate the vendor detail page so the new comment shows up
     try {
