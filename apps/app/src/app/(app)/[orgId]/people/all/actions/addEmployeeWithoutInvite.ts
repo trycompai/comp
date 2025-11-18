@@ -58,16 +58,45 @@ export const addEmployeeWithoutInvite = async ({
       userId = newUser.id;
     }
 
-    const member = await auth.api.addMember({
-      body: {
-        userId: existingUser?.id ?? userId,
+    const finalUserId = existingUser?.id ?? userId;
+
+    // Check if there's an existing member (including deactivated ones) for this user and organization
+    const existingMember = await db.member.findFirst({
+      where: {
+        userId: finalUserId,
         organizationId,
-        role: roles, // Auth API expects role or role array
       },
     });
 
-    // Create training video completion entries for the new member
-    if (member?.id) {
+    let member;
+    if (existingMember) {
+      // If member exists but is deactivated, reactivate it and update roles
+      if (existingMember.deactivated) {
+        const roleString = roles.sort().join(',');
+        member = await db.member.update({
+          where: { id: existingMember.id },
+          data: {
+            deactivated: false,
+            role: roleString,
+          },
+        });
+      } else {
+        // Member already exists and is active, return existing member
+        member = existingMember;
+      }
+    } else {
+      // No existing member, create a new one
+      member = await auth.api.addMember({
+        body: {
+          userId: finalUserId,
+          organizationId,
+          role: roles, // Auth API expects role or role array
+        },
+      });
+    }
+
+    // Create training video completion entries for the new member (only if member was just created/reactivated)
+    if (member?.id && !existingMember) {
       await createTrainingVideoEntries(member.id);
     }
 
