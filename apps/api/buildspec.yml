@@ -63,9 +63,6 @@ phases:
       - mkdir -p ../docker-build/node_modules/@trycompai/email
       - cp -r ../../packages/email/dist ../docker-build/node_modules/@trycompai/email/
       - cp ../../packages/email/package.json ../docker-build/node_modules/@trycompai/email/
-      - mkdir -p ../docker-build/node_modules/@trycompai/ui
-      - cp -r ../../packages/ui/dist ../docker-build/node_modules/@trycompai/ui/
-      - cp ../../packages/ui/package.json ../docker-build/node_modules/@trycompai/ui/
       - mkdir -p ../docker-build/node_modules/@trycompai/utils
       - cp -r ../../packages/utils/src ../docker-build/node_modules/@trycompai/utils/
       - cp ../../packages/utils/package.json ../docker-build/node_modules/@trycompai/utils/
