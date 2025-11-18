@@ -32,11 +32,7 @@ phases:
       - echo "Installing API dependencies only..."
       - bun install --filter=@comp/api --frozen-lockfile || bun install --filter=@comp/api --ignore-scripts || bun install --ignore-scripts
 
-      # Build workspace dependencies (ui -> email)
-      - echo "Building @trycompai/ui package..."
-      - cd packages/ui
-      - bun run build
-      - cd ../..
+      # Build email package (required dependency for API)
       - echo "Building @trycompai/email package..."
       - cd packages/email
       - bun run build
@@ -80,21 +76,14 @@ phases:
       - echo "Skipping host node_modules copy; Dockerfile installs prod deps inside image"
 
       # Copy built workspace packages (needed for runtime)
-      # These packages are built above and need to be available in Docker
+      # Only copy packages that are actually imported at runtime
+      # Email package is already bundled, so only need its dist
       - echo "Copying built workspace packages..."
       - mkdir -p ../docker-build/node_modules/@trycompai
-      # Email package - copy dist and package.json
+      # Email package - copy dist and package.json (needed at runtime)
       - mkdir -p ../docker-build/node_modules/@trycompai/email
       - cp -r ../../packages/email/dist ../docker-build/node_modules/@trycompai/email/
       - cp ../../packages/email/package.json ../docker-build/node_modules/@trycompai/email/
-      # UI package - copy dist and package.json
-      - mkdir -p ../docker-build/node_modules/@trycompai/ui
-      - cp -r ../../packages/ui/dist ../docker-build/node_modules/@trycompai/ui/
-      - cp ../../packages/ui/package.json ../docker-build/node_modules/@trycompai/ui/
-      # Utils package - copy src (no build step) and package.json
-      - mkdir -p ../docker-build/node_modules/@trycompai/utils
-      - cp -r ../../packages/utils/src ../docker-build/node_modules/@trycompai/utils/
-      - cp ../../packages/utils/package.json ../docker-build/node_modules/@trycompai/utils/
 
       # Copy Dockerfile
       - echo "Copying Dockerfile..."
