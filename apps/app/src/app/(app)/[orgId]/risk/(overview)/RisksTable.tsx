@@ -22,6 +22,7 @@ import useSWR from 'swr';
 import * as z from 'zod';
 import { getRisksAction } from './actions/get-risks-action';
 import { RiskOnboardingProvider } from './components/risk-onboarding-context';
+import { RisksLoadingAnimation } from './components/risks-loading-animation';
 import { columns as getColumns } from './components/table/RiskColumns';
 import type { GetRiskSchema } from './data/validations';
 import { useOnboardingStatus } from './hooks/use-onboarding-status';
@@ -281,9 +282,45 @@ export const RisksTable = ({
     [itemStatuses],
   );
 
+  // Calculate actual assessment progress
+  const assessmentProgress = useMemo(() => {
+    if (!progress || !itemsInfo.length) {
+      return null;
+    }
+
+    // Count risks that are completed (either 'completed' in metadata or 'closed' in DB)
+    const completedCount = risks.filter((risk) => {
+      const metadataStatus = itemStatuses[risk.id];
+      return metadataStatus === 'completed' || risk.status === 'closed';
+    }).length;
+
+    // Also count risks in metadata that are completed but not yet in DB
+    const completedInMetadata = Object.values(itemStatuses).filter(
+      (status) => status === 'completed',
+    ).length;
+
+    // Total is the max of progress.total, itemsInfo.length, or actual risks created
+    const total = Math.max(progress.total, itemsInfo.length, risks.length);
+
+    // Completed is the max of DB closed risks or metadata completed
+    const completed = Math.max(completedCount, completedInMetadata);
+
+    return { total, completed };
+  }, [progress, itemsInfo, risks, itemStatuses]);
+
   const isEmpty = mergedRisks.length === 0;
   // Show empty state if onboarding is active (even if progress metadata isn't set yet)
   const showEmptyState = isEmpty && onboardingRunId && isActive;
+
+  // Show loading animation instead of table when empty and onboarding is active
+  if (showEmptyState) {
+    return (
+      <>
+        <RisksLoadingAnimation />
+        <CreateRiskSheet assignees={assignees} />
+      </>
+    );
+  }
 
   return (
     <>
@@ -303,20 +340,28 @@ export const RisksTable = ({
                 </div>
                 <div className="flex flex-col">
                   <span className="text-sm font-medium text-primary">
-                    {progress
-                      ? progress.completed === 0
+                    {assessmentProgress
+                      ? assessmentProgress.completed === 0
                         ? 'Researching and creating risks'
-                        : progress.completed < progress.total
+                        : assessmentProgress.completed < assessmentProgress.total
                           ? 'Assessing risks and generating mitigation plans'
                           : 'Assessing risks and generating mitigation plans'
-                      : 'Researching and creating risks'}
+                      : progress
+                        ? progress.completed === 0
+                          ? 'Researching and creating risks'
+                          : 'Assessing risks and generating mitigation plans'
+                        : 'Researching and creating risks'}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    {progress
-                      ? progress.completed === 0
+                    {assessmentProgress
+                      ? assessmentProgress.completed === 0
                         ? 'AI is analyzing your organization...'
-                        : `${progress.completed}/${progress.total} risks created`
-                      : 'AI is analyzing your organization...'}
+                        : `${assessmentProgress.completed}/${assessmentProgress.total} risks assessed`
+                      : progress
+                        ? progress.completed === 0
+                          ? 'AI is analyzing your organization...'
+                          : `${progress.completed}/${progress.total} risks created`
+                        : 'AI is analyzing your organization...'}
                   </span>
                 </div>
               </div>
