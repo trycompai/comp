@@ -8,9 +8,9 @@ export const getDoneTasks = cache(async (organizationId: string) => {
     },
   });
 
-  const doneTasks = tasks.filter((t) => t.status === 'done');
+  const doneTasks = tasks.filter((t) => t.status === 'done' || t.status === 'not_relevant');
   const incompleteTasks = tasks.filter(
-    (t) => t.status === 'todo' || t.status === 'in_progress' || t.status === 'not_relevant',
+    (t) => t.status === 'todo' || t.status === 'in_progress',
   );
 
   return {
