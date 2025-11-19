@@ -2,7 +2,7 @@
 
 import { Checkbox } from '@comp/ui/checkbox';
 import { cn } from '@comp/ui/cn';
-import type { FrameworkEditorFramework } from '@db';
+import type { FrameworkEditorFramework } from '@trycompai/db';
 
 type FrameworkCardProps = {
   framework: Pick<FrameworkEditorFramework, 'id' | 'name' | 'description' | 'version' | 'visible'>;

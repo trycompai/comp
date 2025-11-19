@@ -1,6 +1,6 @@
 'use client';
 
-import type { Member, Task, User } from '@db';
+import type { Member, Task, User } from '@trycompai/db';
 import { ArrowLeft, Folder } from 'lucide-react';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
@@ -112,7 +112,9 @@ export function TasksByCategory({ tasks, members, statusFilter }: TasksByCategor
   // Calculate stats for a category
   const getCategoryStats = (categoryTasks: Task[]) => {
     const total = categoryTasks.length;
-    const done = categoryTasks.filter((t) => t.status === 'done' || t.status === 'not_relevant').length;
+    const done = categoryTasks.filter(
+      (t) => t.status === 'done' || t.status === 'not_relevant',
+    ).length;
     const inProgress = categoryTasks.filter((t) => t.status === 'in_progress').length;
     const completionRate = total > 0 ? Math.round((done / total) * 100) : 0;
     return { total, done, inProgress, completionRate };
@@ -287,9 +289,11 @@ export function TasksByCategory({ tasks, members, statusFilter }: TasksByCategor
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1 space-y-2">
                           <div className="flex items-start gap-2">
-                            <h4 className={`flex-1 text-sm font-semibold line-clamp-2 ${
-                              isNotRelevant ? 'text-slate-500' : 'text-foreground'
-                            }`}>
+                            <h4
+                              className={`flex-1 text-sm font-semibold line-clamp-2 ${
+                                isNotRelevant ? 'text-slate-500' : 'text-foreground'
+                              }`}
+                            >
                               {task.title}
                             </h4>
                             <AutomationIndicator
@@ -298,9 +302,11 @@ export function TasksByCategory({ tasks, members, statusFilter }: TasksByCategor
                             />
                           </div>
                           {task.description && (
-                            <p className={`text-xs line-clamp-2 leading-relaxed ${
-                              isNotRelevant ? 'text-slate-400' : 'text-muted-foreground/80'
-                            }`}>
+                            <p
+                              className={`text-xs line-clamp-2 leading-relaxed ${
+                                isNotRelevant ? 'text-slate-400' : 'text-muted-foreground/80'
+                              }`}
+                            >
                               {task.description}
                             </p>
                           )}

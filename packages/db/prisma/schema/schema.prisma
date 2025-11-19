@@ -1,5 +1,8 @@
 generator client {
-  provider        = "prisma-client-js"
+  provider        = "prisma-client"
+  output          = "../generated"
+  moduleFormat    = "esm"
+  runtime         = "bun"
   previewFeatures = ["postgresqlExtensions"]
   binaryTargets   = ["rhel-openssl-3.0.x", "native", "debian-openssl-3.0.x", "linux-musl-openssl-3.0.x", "linux-musl-arm64-openssl-3.0.x"]
 }

@@ -8,7 +8,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { X } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 
-import type { Task } from '@db';
+import type { Task } from '@trycompai/db';
 import { UpdateTaskOverviewForm } from '../forms/risks/task/update-task-overview-form';
 
 export function TaskOverviewSheet({ task }: { task: Task }) {

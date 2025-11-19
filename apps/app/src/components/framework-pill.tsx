@@ -1,6 +1,6 @@
 'use client';
 
-import type { FrameworkEditorFramework } from '@db';
+import type { FrameworkEditorFramework } from '@trycompai/db';
 import { SelectablePill } from './selectable-pill';
 
 type FrameworkPillProps = {

@@ -14,7 +14,7 @@ import {
 } from '@comp/ui/command';
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@comp/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import type { Organization } from '@db';
+import type { Organization } from '@trycompai/db';
 import { Check, ChevronsUpDown, Loader2, Plus, Search } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
@@ -104,7 +104,7 @@ export function OrganizationSwitcher({
 
   const sortedOrganizations = [...organizations].sort((a, b) => {
     if (sortOrder === 'alphabetical') {
-      return (a.name).localeCompare(b.name);
+      return a.name.localeCompare(b.name);
     } else if (sortOrder === 'recent') {
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     }

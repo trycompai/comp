@@ -4,7 +4,7 @@ import { initializeOrganization } from '@/actions/organization/lib/initialize-or
 import { authActionClientWithoutOrg } from '@/actions/safe-action';
 import { createTrainingVideoEntries } from '@/lib/db/employee';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
+import { db } from '@trycompai/db';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { z } from 'zod';

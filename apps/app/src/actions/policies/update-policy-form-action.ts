@@ -2,7 +2,7 @@
 
 'use server';
 
-import { db, PolicyStatus } from '@db';
+import { db, PolicyStatus } from '@trycompai/db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { authActionClient } from '../safe-action';
 import { updatePolicyFormSchema } from '../schema';

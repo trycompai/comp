@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@comp/ui/dialog';
-import { Member, User } from '@db';
+import { Member, User } from '@trycompai/db';
 import { Loader2 } from 'lucide-react';
 
 interface SubmitApprovalDialogProps {

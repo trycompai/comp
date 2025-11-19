@@ -3,7 +3,7 @@
 import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
-import { EvidenceAutomationRun, EvidenceAutomationRunStatus } from '@db';
+import { EvidenceAutomationRun, EvidenceAutomationRunStatus } from '@trycompai/db';
 import { formatDistanceToNow } from 'date-fns';
 import { Activity, ChevronDown } from 'lucide-react';
 import { useMemo, useState } from 'react';

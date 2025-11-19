@@ -2,7 +2,7 @@
 
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
-import { Impact, Likelihood } from '@db';
+import { Impact, Likelihood } from '@trycompai/db';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';

@@ -7,8 +7,8 @@ import { StatusIndicator } from '@/components/status-indicator';
 import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import { Departments, Member, type Risk, RiskCategory, RiskStatus, type User } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Departments, Member, type Risk, RiskCategory, RiskStatus, type User } from '@trycompai/db';
 import { Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 

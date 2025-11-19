@@ -1,7 +1,7 @@
 'use client';
 
 import { FrameworkPill } from '@/components/framework-pill';
-import type { FrameworkEditorFramework } from '@db';
+import type { FrameworkEditorFramework } from '@trycompai/db';
 import { useEffect, useRef, useState } from 'react';
 
 interface FrameworkSelectionProps {

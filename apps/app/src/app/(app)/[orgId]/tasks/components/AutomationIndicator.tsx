@@ -1,6 +1,5 @@
 'use client';
 
-import type { EvidenceAutomation, EvidenceAutomationRun } from '@db';
 import { CheckCircle2, Circle, Loader2, Sparkles, XCircle } from 'lucide-react';
 import { useMemo } from 'react';
 
@@ -19,7 +18,10 @@ interface AutomationIndicatorProps {
   variant?: 'badge' | 'inline';
 }
 
-export function AutomationIndicator({ automations = [], variant = 'badge' }: AutomationIndicatorProps) {
+export function AutomationIndicator({
+  automations = [],
+  variant = 'badge',
+}: AutomationIndicatorProps) {
   const automationState = useMemo(() => {
     if (!automations || automations.length === 0) return null;
 
@@ -68,15 +70,17 @@ export function AutomationIndicator({ automations = [], variant = 'badge' }: Aut
     return (
       <div className="flex items-center gap-1.5">
         <div className="relative">
-          <Sparkles className={`h-3.5 w-3.5 ${
-            automationState.health === 'healthy'
-              ? 'text-emerald-500'
-              : automationState.health === 'warning'
-                ? 'text-amber-500'
-                : automationState.health === 'error'
-                  ? 'text-red-500'
-                  : 'text-slate-400'
-          }`} />
+          <Sparkles
+            className={`h-3.5 w-3.5 ${
+              automationState.health === 'healthy'
+                ? 'text-emerald-500'
+                : automationState.health === 'warning'
+                  ? 'text-amber-500'
+                  : automationState.health === 'error'
+                    ? 'text-red-500'
+                    : 'text-slate-400'
+            }`}
+          />
           {automationState.status === 'running' && (
             <Loader2 className="absolute -top-0.5 -right-0.5 h-2 w-2 animate-spin text-blue-500" />
           )}
@@ -109,13 +113,14 @@ export function AutomationIndicator({ automations = [], variant = 'badge' }: Aut
     <div
       className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] font-medium ${healthColors[automationState.health]}`}
     >
-      <Icon className={`h-3 w-3 shrink-0 ${
-        automationState.status === 'running' ? 'animate-pulse' : ''
-      }`} />
+      <Icon
+        className={`h-3 w-3 shrink-0 ${
+          automationState.status === 'running' ? 'animate-pulse' : ''
+        }`}
+      />
       <span>
         {automationState.count > 1 ? `${automationState.count} automations` : 'Automated'}
       </span>
     </div>
   );
 }
-

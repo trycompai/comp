@@ -9,8 +9,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@comp/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
 import { Textarea } from '@comp/ui/textarea';
-import { Member, User } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Member, User } from '@trycompai/db';
 import { format } from 'date-fns';
 import { ArrowRightIcon, CalendarIcon } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';

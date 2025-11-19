@@ -1,7 +1,7 @@
 'use server';
 
-import { db } from '@db';
 import { logger } from '@trigger.dev/sdk';
+import { db } from '@trycompai/db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { authActionClient } from '../safe-action';
 import { updatePolicySchema } from '../schema';

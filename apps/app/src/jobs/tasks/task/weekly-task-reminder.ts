@@ -1,5 +1,5 @@
-import { db } from '@db';
 import { logger, schedules } from '@trigger.dev/sdk';
+import { db } from '@trycompai/db';
 import { sendWeeklyTaskDigestEmailTask } from '../email/weekly-task-digest-email';
 
 export const weeklyTaskReminder = schedules.task({

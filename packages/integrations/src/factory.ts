@@ -128,7 +128,7 @@ handlers.set('gcp', {
 handlers.set('deel', {
   id: 'deel',
   // This is a placeholder implementation; replace with actual fetch once available
-  fetch: async (credentials: DeelCredentials): Promise<IntegrationFinding[]> => {
+  fetch: async (_credentials: DeelCredentials): Promise<IntegrationFinding[]> => {
     return []; // Return empty array as placeholder
   },
   processCredentials: async (encryptedSettings, decrypt) => {
@@ -143,7 +143,7 @@ handlers.set('deel', {
 handlers.set('github', {
   id: 'github',
   // Placeholder for now - will be used by automations
-  fetch: async (credentials: GitHubCredentials): Promise<IntegrationFinding[]> => {
+  fetch: async (_credentials: GitHubCredentials): Promise<IntegrationFinding[]> => {
     return []; // GitHub integration is primarily for automation access
   },
   processCredentials: async (encryptedSettings, decrypt) => {

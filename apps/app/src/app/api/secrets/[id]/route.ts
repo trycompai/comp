@@ -1,6 +1,6 @@
 import { decrypt, encrypt, type EncryptedData } from '@/lib/encryption';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
+import { db } from '@trycompai/db';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 

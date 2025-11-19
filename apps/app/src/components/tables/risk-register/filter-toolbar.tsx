@@ -6,7 +6,7 @@ import { cn } from '@comp/ui/cn';
 import { Input } from '@comp/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Skeleton } from '@comp/ui/skeleton';
-import { Departments, Member, RiskStatus, User } from '@db';
+import { Departments, Member, RiskStatus, User } from '@trycompai/db';
 import { Plus, Search, X } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import { useCallback, useTransition } from 'react';

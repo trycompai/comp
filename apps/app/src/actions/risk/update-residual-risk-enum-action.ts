@@ -1,6 +1,6 @@
 'use server';
 
-import { db } from '@db';
+import { db } from '@trycompai/db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { authActionClient } from '../safe-action';
 import { updateResidualRiskEnumSchema } from '../schema'; // Use the new enum schema

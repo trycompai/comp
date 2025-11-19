@@ -3,8 +3,8 @@
 import type { runIntegrationTests } from '@/jobs/tasks/integration/run-integration-tests';
 import { Button } from '@comp/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
-import { Integration } from '@db';
 import { useRealtimeTaskTrigger } from '@trigger.dev/react-hooks';
+import { Integration } from '@trycompai/db';
 import { Plus, Settings } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';

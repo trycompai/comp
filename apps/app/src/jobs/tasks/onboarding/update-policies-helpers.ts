@@ -1,7 +1,12 @@
 import { openai } from '@ai-sdk/openai';
-import { db, FrameworkEditorFramework, FrameworkEditorPolicyTemplate, type Policy } from '@db';
 import type { JSONContent } from '@tiptap/react';
 import { logger } from '@trigger.dev/sdk';
+import {
+  db,
+  FrameworkEditorFramework,
+  FrameworkEditorPolicyTemplate,
+  type Policy,
+} from '@trycompai/db';
 import { generateObject, NoObjectGeneratedError } from 'ai';
 import { z } from 'zod';
 import { generatePrompt } from '../../lib/prompts';

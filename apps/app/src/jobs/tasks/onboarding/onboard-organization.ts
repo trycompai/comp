@@ -1,5 +1,5 @@
-import { db } from '@db';
 import { logger, metadata, queue, task, tasks } from '@trigger.dev/sdk';
+import { db } from '@trycompai/db';
 import axios from 'axios';
 import { generateRiskMitigationsForOrg } from './generate-risk-mitigation';
 import { generateVendorMitigationsForOrg } from './generate-vendor-mitigation';

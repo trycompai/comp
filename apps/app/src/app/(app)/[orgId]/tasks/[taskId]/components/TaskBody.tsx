@@ -1,7 +1,7 @@
 'use client';
 
 import { useTaskAttachmentActions, useTaskAttachments } from '@/hooks/use-tasks-api';
-import type { AttachmentEntityType } from '@db';
+import type { AttachmentEntityType } from '@trycompai/db';
 import { FileIcon, FileText, ImageIcon, Loader2, Plus, X } from 'lucide-react';
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';

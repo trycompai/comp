@@ -29,7 +29,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@comp/ui/dialog';
-import type { Context } from '@db';
+import type { Context } from '@trycompai/db';
 import { Pencil, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';

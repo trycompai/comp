@@ -10,7 +10,7 @@ import { CreatePolicySheet } from '@/components/sheets/create-policy-sheet';
 import { useDataTable } from '@/hooks/use-data-table';
 import { downloadAllPolicies } from '@/lib/pdf-generator';
 import { Button } from '@comp/ui/button';
-import type { Policy } from '@db';
+import type { Policy } from '@trycompai/db';
 import { useParams } from 'next/navigation';
 import { getLogsForPolicy } from '../../[policyId]/data';
 import { getPolicies } from '../data/queries';

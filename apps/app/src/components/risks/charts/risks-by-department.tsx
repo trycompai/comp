@@ -1,6 +1,6 @@
 import { auth } from '@/utils/auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
-import { db } from '@db';
+import { db } from '@trycompai/db';
 import { headers } from 'next/headers';
 import { cache } from 'react';
 import { DepartmentChart } from './department-chart';

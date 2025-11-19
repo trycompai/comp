@@ -1,4 +1,4 @@
-import { CommentEntityType } from '@db';
+import { CommentEntityType } from '@trycompai/db';
 import {
   BadRequestException,
   Body,

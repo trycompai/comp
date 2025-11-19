@@ -5,7 +5,7 @@ import { Button } from '@comp/ui/button';
 import { Drawer, DrawerContent, DrawerTitle } from '@comp/ui/drawer';
 import { useMediaQuery } from '@comp/ui/hooks';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@comp/ui/sheet';
-import { Policy } from '@db';
+import { Policy } from '@trycompai/db';
 import { ArchiveIcon, ArchiveRestoreIcon, X } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';

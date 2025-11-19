@@ -1,5 +1,5 @@
 import { auth } from '@/utils/auth';
-import { db } from '@db';
+import { db } from '@trycompai/db';
 import { headers } from 'next/headers';
 import { cache } from 'react';
 import 'server-only';

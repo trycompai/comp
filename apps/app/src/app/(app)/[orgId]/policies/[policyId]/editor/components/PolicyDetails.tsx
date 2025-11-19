@@ -5,12 +5,12 @@ import { Card, CardContent } from '@comp/ui/card';
 import { validateAndFixTipTapContent } from '@comp/ui/editor';
 import '@comp/ui/editor.css';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
-import type { PolicyDisplayFormat } from '@db';
 import type { JSONContent } from '@tiptap/react';
+import type { PolicyDisplayFormat } from '@trycompai/db';
 import { useAction } from 'next-safe-action/hooks';
 import { toast } from 'sonner';
-import { PdfViewer } from '../../components/PdfViewer';
 import { switchPolicyDisplayFormatAction } from '../../actions/switch-policy-display-format';
+import { PdfViewer } from '../../components/PdfViewer';
 import { updatePolicy } from '../actions/update-policy';
 
 interface PolicyContentManagerProps {
@@ -43,14 +43,14 @@ export function PolicyContentManager({
   return (
     <Card>
       <CardContent className="p-4">
-        <Tabs
-          defaultValue={displayFormat}
-          onValueChange={handleTabChange}
-          className="w-full"
-        >
+        <Tabs defaultValue={displayFormat} onValueChange={handleTabChange} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="EDITOR" disabled={isPendingApproval}>Editor View</TabsTrigger>
-            <TabsTrigger value="PDF" disabled={isPendingApproval}>PDF View</TabsTrigger>
+            <TabsTrigger value="EDITOR" disabled={isPendingApproval}>
+              Editor View
+            </TabsTrigger>
+            <TabsTrigger value="PDF" disabled={isPendingApproval}>
+              PDF View
+            </TabsTrigger>
           </TabsList>
           <TabsContent value="EDITOR" className="mt-4">
             <PolicyEditorWrapper
@@ -60,11 +60,7 @@ export function PolicyContentManager({
             />
           </TabsContent>
           <TabsContent value="PDF" className="mt-4">
-            <PdfViewer
-              policyId={policyId}
-              pdfUrl={pdfUrl}
-              isPendingApproval={isPendingApproval}
-            />
+            <PdfViewer policyId={policyId} pdfUrl={pdfUrl} isPendingApproval={isPendingApproval} />
           </TabsContent>
         </Tabs>
       </CardContent>
@@ -81,7 +77,9 @@ function PolicyEditorWrapper({
   policyContent: JSONContent | JSONContent[];
   isPendingApproval: boolean;
 }) {
-  const formattedContent = Array.isArray(policyContent) ? policyContent : [policyContent as JSONContent];
+  const formattedContent = Array.isArray(policyContent)
+    ? policyContent
+    : [policyContent as JSONContent];
   const sanitizedContent = formattedContent.map((node) => {
     if (node.marks) node.marks = node.marks.filter((mark) => mark.type !== 'textStyle');
     if (node.content) node.content = node.content.map((child) => child);

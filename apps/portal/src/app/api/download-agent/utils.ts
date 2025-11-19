@@ -1,5 +1,5 @@
 import { logger } from '@/utils/logger';
-import { db } from '@db';
+import { db } from '@trycompai/db';
 import type { SupportedOS } from './types';
 
 /**

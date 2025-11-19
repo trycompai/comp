@@ -40,7 +40,7 @@ const config: NextConfig = {
       ? `${process.env.STATIC_ASSETS_URL}/app`
       : '',
   reactStrictMode: false,
-  transpilePackages: ['@trycompai/db', '@prisma/client'],
+  transpilePackages: ['@trycompai/ui'],
   images: {
     remotePatterns: [
       {
@@ -61,7 +61,7 @@ const config: NextConfig = {
           : undefined,
     },
     authInterrupts: true,
-    optimizePackageImports: ['@trycompai/db', '@trycompai/ui'],
+    optimizePackageImports: ['@trycompai/ui'],
     // Reduce build peak memory
     webpackMemoryOptimizations: true,
   },

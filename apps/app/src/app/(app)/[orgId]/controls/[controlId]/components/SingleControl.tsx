@@ -17,7 +17,7 @@ import type {
   Policy,
   RequirementMap,
   Task,
-} from '@db';
+} from '@trycompai/db';
 import { MoreVertical, Trash2 } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';

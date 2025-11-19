@@ -1,5 +1,5 @@
 import { auth } from '@/utils/auth';
-import { db, Departments, RiskCategory, RiskStatus } from '@db';
+import { db, Departments, RiskCategory, RiskStatus } from '@trycompai/db';
 import { headers } from 'next/headers';
 import { z } from 'zod';
 

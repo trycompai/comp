@@ -1,7 +1,7 @@
 import { getFeatureFlags } from '@/app/posthog';
 import { AppOnboarding } from '@/components/app-onboarding';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
+import { db } from '@trycompai/db';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { cache } from 'react';

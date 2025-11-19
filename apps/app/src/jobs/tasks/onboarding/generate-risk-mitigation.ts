@@ -1,5 +1,5 @@
-import { RiskStatus, db } from '@db';
 import { logger, metadata, queue, task } from '@trigger.dev/sdk';
+import { RiskStatus, db } from '@trycompai/db';
 import axios from 'axios';
 import {
   createRiskMitigationComment,

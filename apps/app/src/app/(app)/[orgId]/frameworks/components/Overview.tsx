@@ -1,6 +1,6 @@
 'use client';
 
-import { FrameworkEditorFramework, Policy, Task } from '@db';
+import { FrameworkEditorFramework, Policy, Task } from '@trycompai/db';
 import { FrameworkInstanceWithControls } from '../types';
 import { ComplianceOverview } from './ComplianceOverview';
 import { DraggableCards } from './DraggableCards';

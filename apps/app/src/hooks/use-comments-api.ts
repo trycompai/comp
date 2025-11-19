@@ -2,7 +2,7 @@
 
 import { useApi } from '@/hooks/use-api';
 import { useApiSWR, UseApiSWROptions } from '@/hooks/use-api-swr';
-import type { CommentEntityType } from '@db';
+import type { CommentEntityType } from '@trycompai/db';
 import { useCallback } from 'react';
 
 // Helper function to convert API date strings to Date objects

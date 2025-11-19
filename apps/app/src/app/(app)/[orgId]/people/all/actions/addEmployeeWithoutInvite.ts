@@ -2,8 +2,8 @@
 
 import { createTrainingVideoEntries } from '@/lib/db/employee';
 import { auth } from '@/utils/auth';
-import type { Role } from '@db';
-import { db } from '@db';
+import type { Role } from '@trycompai/db';
+import { db } from '@trycompai/db';
 import { headers } from 'next/headers';
 
 export const addEmployeeWithoutInvite = async ({

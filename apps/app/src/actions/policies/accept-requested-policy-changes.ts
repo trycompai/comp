@@ -1,8 +1,8 @@
 'use server';
 
 import { sendNewPolicyEmail } from '@/jobs/tasks/email/new-policy-email';
-import { db, PolicyStatus } from '@db';
 import { tasks } from '@trigger.dev/sdk';
+import { db, PolicyStatus } from '@trycompai/db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { authActionClient } from '../safe-action';

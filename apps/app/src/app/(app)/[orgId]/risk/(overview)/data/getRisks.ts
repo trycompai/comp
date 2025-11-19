@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { auth } from '@/utils/auth';
-import { db, Prisma, type User } from '@db';
+import { db, Prisma, type User } from '@trycompai/db';
 import { headers } from 'next/headers';
 import type { GetRiskSchema } from './validations';
 

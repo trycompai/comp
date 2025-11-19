@@ -20,7 +20,7 @@ import {
   DialogTitle,
 } from '@comp/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
-import type { FrameworkEditorFramework } from '@db';
+import type { FrameworkEditorFramework } from '@trycompai/db';
 
 type Props = {
   onOpenChange: (isOpen: boolean) => void;

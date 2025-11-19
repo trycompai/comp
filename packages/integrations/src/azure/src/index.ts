@@ -19,33 +19,6 @@ interface AzureFinding {
   resultDetails: any;
 }
 
-interface ComplianceControl {
-  Id: string;
-  name: string;
-  standard: string;
-  Title: string;
-  description: string;
-  state: string;
-  Compliance: {
-    Status: string;
-  };
-  Severity: {
-    Label: string;
-  };
-  Remediation: {
-    Recommendation: {
-      Text: string;
-      Url: string;
-    };
-  };
-  Description: string;
-}
-
-interface ComplianceStandard {
-  name: string;
-  controls: ComplianceControl[];
-}
-
 interface AzureResponse {
   value: Array<{
     name: string;
@@ -103,7 +76,6 @@ async function fetchComplianceData(credentials: AzureCredentials): Promise<Azure
 
     // Fetch controls for each standard
     console.log('Fetching controls for the following standards: ', standards);
-    const complianceData: ComplianceStandard[] = [];
 
     // Fetch details for each control
     const findings: AzureFinding[] = [];

@@ -2,7 +2,7 @@
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Separator } from '@comp/ui/separator';
-import type { Member, Task, User } from '@db';
+import type { Member, Task, User } from '@trycompai/db';
 import { Check, Circle, FolderTree, List, Plus, XCircle } from 'lucide-react';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
@@ -88,7 +88,9 @@ export function TaskList({
   // Calculate overall stats from all tasks (not filtered)
   const overallStats = useMemo(() => {
     const total = initialTasks.length;
-    const done = initialTasks.filter((t) => t.status === 'done' || t.status === 'not_relevant').length;
+    const done = initialTasks.filter(
+      (t) => t.status === 'done' || t.status === 'not_relevant',
+    ).length;
     const inProgress = initialTasks.filter((t) => t.status === 'in_progress').length;
     const todo = initialTasks.filter((t) => t.status === 'todo').length;
     const completionRate = total > 0 ? Math.round((done / total) * 100) : 0;

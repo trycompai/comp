@@ -2,7 +2,7 @@
 
 import { getOrganizations } from '@/data/getOrganizations';
 import { auth } from '@/utils/auth';
-import type { Organization } from '@db';
+import type { Organization } from '@trycompai/db';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';

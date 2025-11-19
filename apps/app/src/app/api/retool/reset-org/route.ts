@@ -1,5 +1,5 @@
 import { initializeOrganization } from '@/actions/organization/lib/initialize-organization';
-import { db } from '@db';
+import { db } from '@trycompai/db';
 import { type NextRequest, NextResponse } from 'next/server';
 
 // Configure this route to use Node.js runtime instead of Edge

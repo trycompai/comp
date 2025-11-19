@@ -10,7 +10,7 @@ import {
   DialogTrigger,
 } from '@comp/ui/dialog';
 import MultipleSelector, { Option } from '@comp/ui/multiple-selector';
-import { Control } from '@db';
+import { Control } from '@trycompai/db';
 import { PlusIcon } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';

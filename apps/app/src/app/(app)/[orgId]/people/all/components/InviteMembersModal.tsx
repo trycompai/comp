@@ -1,7 +1,7 @@
 'use client';
 
-import type { Role } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
+import type { Role } from '@trycompai/db';
 import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';

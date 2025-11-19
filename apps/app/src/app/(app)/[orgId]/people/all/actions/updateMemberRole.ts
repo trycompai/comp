@@ -1,6 +1,6 @@
 'use server';
 
-import { db, Departments, Role } from '@db';
+import { db, Departments, Role } from '@trycompai/db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
 // Adjust safe-action import for colocalized structure

@@ -9,9 +9,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@comp/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Textarea } from '@comp/ui/textarea';
-import type { Member, RiskStatus, User } from '@db';
-import { Departments, RiskCategory } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
+import type { Member, RiskStatus, User } from '@trycompai/db';
+import { Departments, RiskCategory } from '@trycompai/db';
 import { ArrowRightIcon } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useQueryState } from 'nuqs';

@@ -6,7 +6,7 @@ import { Sidebar } from '@/components/sidebar';
 import { TriggerTokenProvider } from '@/components/trigger-token-provider';
 import { SidebarProvider } from '@/context/sidebar-context';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
+import { db } from '@trycompai/db';
 import dynamic from 'next/dynamic';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';

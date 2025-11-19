@@ -20,10 +20,9 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
-      "@db": ["./prisma"],
       "@/jobs": ["./src/jobs"],
       "@/jobs/*": ["./src/jobs/*"],
-      "@comp/email": ["../../packages/email/index.ts"],
+      "@comp/email": ["../../packages/email/src/index.ts"],
       "@comp/email/*": ["../../packages/email/*"],
       "@comp/utils": ["../../packages/utils/src/index.ts"],
       "@comp/utils/*": ["../../packages/utils/src/*"],
@@ -45,7 +44,7 @@
       "@comp/kv/*": ["../../packages/kv/src/*"],
       "@comp/tsconfig": ["../../packages/tsconfig/index.ts"],
       "@comp/tsconfig/*": ["../../packages/tsconfig/*"],
-      "@trycompai/email": ["../../packages/email/index.ts"],
+      "@trycompai/email": ["../../packages/email/src/index.ts"],
       "@trycompai/email/*": ["../../packages/email/*"]
     }
   },

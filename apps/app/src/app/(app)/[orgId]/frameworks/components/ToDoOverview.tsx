@@ -5,7 +5,7 @@ import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { ScrollArea } from '@comp/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
-import { Policy, Task } from '@db';
+import { Policy, Task } from '@trycompai/db';
 import {
   ArrowRight,
   CheckCircle2,

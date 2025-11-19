@@ -3,7 +3,7 @@ import { UpdateOrganizationAdvancedMode } from '@/components/forms/organization/
 import { UpdateOrganizationName } from '@/components/forms/organization/update-organization-name';
 import { UpdateOrganizationWebsite } from '@/components/forms/organization/update-organization-website';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
+import { db } from '@trycompai/db';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { cache } from 'react';

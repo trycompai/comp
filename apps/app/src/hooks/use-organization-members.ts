@@ -1,5 +1,5 @@
 import { api } from '@/lib/api-client';
-import { Member, User } from '@db';
+import { Member, User } from '@trycompai/db';
 import { useParams } from 'next/navigation';
 import useSWR from 'swr';
 

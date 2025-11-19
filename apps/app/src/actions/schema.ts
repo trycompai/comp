@@ -8,7 +8,7 @@ import {
   RiskCategory,
   RiskStatus,
   TaskStatus,
-} from '@db';
+} from '@trycompai/db';
 import { z } from 'zod';
 
 export const organizationSchema = z.object({

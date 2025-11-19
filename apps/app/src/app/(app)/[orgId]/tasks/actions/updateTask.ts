@@ -1,7 +1,7 @@
 'use server';
 
 import { auth } from '@/utils/auth';
-import { db, Task } from '@db';
+import { db, Task } from '@trycompai/db';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 

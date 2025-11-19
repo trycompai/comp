@@ -2,7 +2,7 @@
 
 import { encrypt } from '@/lib/encryption';
 import { getIntegrationHandler } from '@comp/integrations';
-import { db } from '@db';
+import { db } from '@trycompai/db';
 import { revalidatePath } from 'next/cache';
 import { cookies, headers } from 'next/headers';
 import { z } from 'zod';

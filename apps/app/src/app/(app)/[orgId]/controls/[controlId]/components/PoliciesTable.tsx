@@ -6,8 +6,8 @@ import { StatusIndicator } from '@/components/status-indicator';
 import { useDataTable } from '@/hooks/use-data-table';
 import { Icons } from '@comp/ui/icons';
 import { Input } from '@comp/ui/input';
-import { Policy } from '@db';
 import { ColumnDef } from '@tanstack/react-table';
+import { Policy } from '@trycompai/db';
 import { useMemo, useState } from 'react';
 
 interface PoliciesTableProps {

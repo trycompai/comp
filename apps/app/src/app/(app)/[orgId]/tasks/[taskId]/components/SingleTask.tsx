@@ -25,7 +25,7 @@ import {
   type Member,
   type Task,
   type User,
-} from '@db';
+} from '@trycompai/db';
 import { ChevronRight, RefreshCw, Trash2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import Link from 'next/link';

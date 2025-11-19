@@ -2,8 +2,8 @@
 
 import { Button } from '@comp/ui/button';
 import { Card, CardContent } from '@comp/ui/card';
-import type { Onboarding } from '@db';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
+import type { Onboarding } from '@trycompai/db';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlertTriangle,

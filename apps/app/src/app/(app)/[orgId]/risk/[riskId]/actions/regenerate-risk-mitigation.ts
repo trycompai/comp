@@ -6,8 +6,8 @@ import {
   findCommentAuthor,
   type PolicyContext,
 } from '@/jobs/tasks/onboarding/onboard-organization-helpers';
-import { db } from '@db';
 import { tasks } from '@trigger.dev/sdk';
+import { db } from '@trycompai/db';
 import { z } from 'zod';
 
 export const regenerateRiskMitigationAction = authActionClient

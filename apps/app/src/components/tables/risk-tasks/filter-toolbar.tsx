@@ -3,7 +3,7 @@
 import { cn } from '@comp/ui/cn';
 import { Input } from '@comp/ui/input';
 import { Skeleton } from '@comp/ui/skeleton';
-import type { Member, User } from '@db';
+import type { Member, User } from '@trycompai/db';
 import { Search } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import { useTransition } from 'react';

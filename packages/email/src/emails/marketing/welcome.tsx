@@ -2,11 +2,7 @@ import { Body, Container, Font, Heading, Html, Preview, Tailwind } from '@react-
 import { Footer } from '../../components/footer';
 import { Logo } from '../../components/logo';
 
-interface Props {
-  name: string;
-}
-
-export const WelcomeEmail = ({ name }: Props) => {
+export const WelcomeEmail = () => {
   return (
     <Html>
       <Tailwind>

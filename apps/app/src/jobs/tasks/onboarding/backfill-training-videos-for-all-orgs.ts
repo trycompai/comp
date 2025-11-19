@@ -1,5 +1,5 @@
-import { db } from '@db';
 import { logger, task } from '@trigger.dev/sdk';
+import { db } from '@trycompai/db';
 import { backfillTrainingVideosForOrg } from './backfill-training-videos-for-org';
 
 export const backfillTrainingVideosForAllOrgs = task({

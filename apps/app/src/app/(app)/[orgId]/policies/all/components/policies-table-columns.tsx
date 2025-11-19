@@ -4,8 +4,8 @@ import { DataTableColumnHeader } from '@/components/data-table/data-table-column
 import { StatusIndicator } from '@/components/status-indicator';
 import { formatDate } from '@/lib/format';
 import { Badge } from '@comp/ui/badge';
-import { Policy } from '@db';
 import { type ColumnDef, type Row } from '@tanstack/react-table';
+import { Policy } from '@trycompai/db';
 import { ExternalLink, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -75,8 +75,7 @@ function PolicyNameCell({ row, orgId }: { row: Row<Policy>; orgId: string }) {
   const policyName = row.getValue('name') as string;
   const policyHref = `/${orgId}/policies/${row.original.id}`;
   const status = usePolicyTailoringStatus(row.original.id);
-  const isTailoring =
-    status === 'queued' || status === 'pending' || status === 'processing';
+  const isTailoring = status === 'queued' || status === 'pending' || status === 'processing';
 
   if (isTailoring) {
     return (
@@ -107,16 +106,11 @@ function PolicyNameCell({ row, orgId }: { row: Row<Policy>; orgId: string }) {
 
 function PolicyStatusCell({ row }: { row: Row<Policy> }) {
   const status = usePolicyTailoringStatus(row.original.id);
-  const isTailoring =
-    status === 'queued' || status === 'pending' || status === 'processing';
+  const isTailoring = status === 'queued' || status === 'pending' || status === 'processing';
 
   if (isTailoring) {
     const label =
-      status === 'processing'
-        ? 'Tailoring'
-        : status === 'queued'
-          ? 'Queued'
-          : 'Preparing';
+      status === 'processing' ? 'Tailoring' : status === 'queued' ? 'Queued' : 'Preparing';
     return (
       <div className="flex items-center gap-2 text-sm text-primary">
         <Loader2 className="h-4 w-4 animate-spin" />

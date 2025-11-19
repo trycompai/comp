@@ -4,7 +4,7 @@ import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
-import type { Role } from '@db'; // Assuming Role is from prisma
+import type { Role } from '@trycompai/db'; // Assuming Role is from prisma
 import { ChevronsUpDown, Lock, X } from 'lucide-react';
 
 interface MultiRoleComboboxTriggerProps {

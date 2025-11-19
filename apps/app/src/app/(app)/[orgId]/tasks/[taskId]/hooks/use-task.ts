@@ -1,5 +1,5 @@
 import { api } from '@/lib/api-client';
-import { Control, Task } from '@db';
+import { Control, Task } from '@trycompai/db';
 import { useParams } from 'next/navigation';
 import useSWR from 'swr';
 

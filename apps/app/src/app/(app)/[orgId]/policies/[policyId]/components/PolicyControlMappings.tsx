@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import { SelectPills } from '@comp/ui/select-pills';
-import { Control } from '@db';
+import { Control } from '@trycompai/db';
 import { useAction } from 'next-safe-action/hooks';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';

@@ -3,8 +3,8 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
-import type { TaskStatus } from '@db';
-import { db } from '@db';
+import type { TaskStatus } from '@trycompai/db';
+import { db } from '@trycompai/db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { updateVendorTaskSchema } from '../schema';
 

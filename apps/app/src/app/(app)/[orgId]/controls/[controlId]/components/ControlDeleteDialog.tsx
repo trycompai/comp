@@ -11,8 +11,8 @@ import {
   DialogTitle,
 } from '@comp/ui/dialog';
 import { Form } from '@comp/ui/form';
-import { Control } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Control } from '@trycompai/db';
 import { Trash2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';

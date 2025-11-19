@@ -2,7 +2,7 @@
 
 import { authActionClient } from '@/actions/safe-action';
 import { logger } from '@/utils/logger';
-import { db } from '@db';
+import { db } from '@trycompai/db';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 

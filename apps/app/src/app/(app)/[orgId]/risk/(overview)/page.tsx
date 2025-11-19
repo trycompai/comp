@@ -3,7 +3,7 @@ import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { CreateRiskSheet } from '@/components/sheets/create-risk-sheet';
 import { getValidFilters } from '@/lib/data-table';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
+import { db } from '@trycompai/db';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { cache } from 'react';

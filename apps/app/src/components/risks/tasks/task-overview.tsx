@@ -5,7 +5,7 @@ import { TaskOverviewSheet } from '@/components/sheets/task-overview-sheet';
 import { Alert, AlertDescription, AlertTitle } from '@comp/ui/alert';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
-import type { Task, User } from '@db';
+import type { Task, User } from '@trycompai/db';
 import { PencilIcon, ShieldAlert } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 

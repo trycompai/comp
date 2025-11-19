@@ -1,7 +1,7 @@
 'use server';
 
 import { createTrainingVideoEntries } from '@/lib/db/employee';
-import { db } from '@db';
+import { db } from '@trycompai/db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';

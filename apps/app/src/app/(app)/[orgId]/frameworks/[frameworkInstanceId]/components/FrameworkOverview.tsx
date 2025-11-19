@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
 import { Progress } from '@comp/ui/progress';
-import { Control, Task } from '@db';
+import { Control, Task } from '@trycompai/db';
 import { BarChart3, MoreVertical, Target, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { getControlStatus } from '../../lib/utils';

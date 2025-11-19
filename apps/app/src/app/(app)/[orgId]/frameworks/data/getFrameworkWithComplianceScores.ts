@@ -1,6 +1,6 @@
 'use server';
 
-import { Control, type Task } from '@db';
+import { Control, type Task } from '@trycompai/db';
 import { FrameworkInstanceWithComplianceScore } from '../components/types';
 import { computeFrameworkStats } from '../lib/compute';
 import { FrameworkInstanceWithControls } from '../types';

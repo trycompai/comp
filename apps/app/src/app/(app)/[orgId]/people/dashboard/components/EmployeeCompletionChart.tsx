@@ -10,7 +10,7 @@ import * as React from 'react';
 
 // Use correct types from the database
 import { TrainingVideo } from '@/lib/data/training-videos';
-import { EmployeeTrainingVideoCompletion, Member, Policy, User } from '@db';
+import { EmployeeTrainingVideoCompletion, Member, Policy, User } from '@trycompai/db';
 
 interface EmployeeCompletionChartProps {
   employees: (Member & {

@@ -1,12 +1,11 @@
 'use server';
 
-import { APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET, s3Client } from '@/app/s3';
 import { authActionClient } from '@/actions/safe-action';
+import { APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET, s3Client } from '@/app/s3';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
-import { db } from '@db';
-import { AttachmentEntityType, AttachmentType } from '@db';
-import { z } from 'zod';
+import { AttachmentType } from '@trycompai/db';
 import { randomBytes } from 'crypto';
+import { z } from 'zod';
 
 const uploadSchema = z.object({
   fileName: z.string(),
@@ -53,7 +52,9 @@ export const uploadQuestionnaireFile = authActionClient
     }
 
     if (!APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET) {
-      throw new Error('Questionnaire upload bucket is not configured. Please set APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET environment variable.');
+      throw new Error(
+        'Questionnaire upload bucket is not configured. Please set APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET environment variable.',
+      );
     }
 
     try {
@@ -100,35 +101,32 @@ export const uploadQuestionnaireFile = authActionClient
       // Provide more helpful error messages for common S3 errors
       if (error && typeof error === 'object' && 'Code' in error) {
         const awsError = error as { Code: string; message?: string };
-        
+
         if (awsError.Code === 'AccessDenied') {
           throw new Error(
             `Access denied to S3 bucket "${APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET}". ` +
-            `Please verify that:\n` +
-            `1. The bucket "${APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET}" exists\n` +
-            `2. Your AWS credentials have s3:PutObject permission for this bucket\n` +
-            `3. The bucket is in the correct region (${process.env.APP_AWS_REGION || 'not set'})\n` +
-            `4. The bucket name is correct`
+              `Please verify that:\n` +
+              `1. The bucket "${APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET}" exists\n` +
+              `2. Your AWS credentials have s3:PutObject permission for this bucket\n` +
+              `3. The bucket is in the correct region (${process.env.APP_AWS_REGION || 'not set'})\n` +
+              `4. The bucket name is correct`,
           );
         }
-        
+
         if (awsError.Code === 'NoSuchBucket') {
           throw new Error(
             `S3 bucket "${APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET}" does not exist. ` +
-            `Please create the bucket or update APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET environment variable.`
+              `Please create the bucket or update APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET environment variable.`,
           );
         }
-        
+
         if (awsError.Code === 'InvalidAccessKeyId' || awsError.Code === 'SignatureDoesNotMatch') {
           throw new Error(
-            `Invalid AWS credentials. Please check APP_AWS_ACCESS_KEY_ID and APP_AWS_SECRET_ACCESS_KEY environment variables.`
+            `Invalid AWS credentials. Please check APP_AWS_ACCESS_KEY_ID and APP_AWS_SECRET_ACCESS_KEY environment variables.`,
           );
         }
       }
-      
-      throw error instanceof Error
-        ? error
-        : new Error('Failed to upload questionnaire file');
+
+      throw error instanceof Error ? error : new Error('Failed to upload questionnaire file');
     }
   });
-

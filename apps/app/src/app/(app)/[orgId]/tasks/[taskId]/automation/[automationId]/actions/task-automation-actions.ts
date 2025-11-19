@@ -1,6 +1,6 @@
 'use server';
 
-import { db } from '@db';
+import { db } from '@trycompai/db';
 /**
  * Server actions for task automation
  * These actions securely call the enterprise API with server-side license key

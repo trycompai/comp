@@ -4,7 +4,7 @@ import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@comp/ui/card';
 import { Dialog } from '@comp/ui/dialog';
 import { ScrollArea } from '@comp/ui/scroll-area';
-import type { FrameworkEditorFramework } from '@db';
+import type { FrameworkEditorFramework } from '@trycompai/db';
 import { PlusIcon } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';

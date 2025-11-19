@@ -3,7 +3,7 @@
 import { BUCKET_NAME, extractS3KeyFromUrl, s3Client } from '@/app/s3';
 import { auth } from '@/utils/auth';
 import { DeleteObjectCommand } from '@aws-sdk/client-s3';
-import { Attachment, AttachmentEntityType, db } from '@db';
+import { Attachment, AttachmentEntityType, db } from '@trycompai/db';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { z } from 'zod';

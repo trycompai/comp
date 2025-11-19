@@ -2,32 +2,35 @@
   "name": "@trycompai/integrations",
   "version": "1.0.0",
   "dependencies": {
-    "@ai-sdk/openai": "^2.0.0",
+    "@ai-sdk/openai": "^2.0.65",
     "@aws-sdk/client-securityhub": "^3.0.0",
-    "@aws-sdk/client-sts": "^3.0.0",
+    "@aws-sdk/client-sts": "^3.808.0",
     "@azure/identity": "^4.10.0",
     "@comp/app": "workspace:*",
     "@slack/bolt": "^3.22.0",
     "@slack/web-api": "^7.8.0",
-    "ai": "^5.0.0",
+    "ai": "^5.0.93",
     "jsonwebtoken": "^9.0.2",
     "node-fetch": "^2.6.7",
-    "react": "^19.0.0",
+    "react": "^19.2.0",
     "sharp": "^0.34.2",
     "stoppable": "^1.1.0",
-    "zod": "^4.0.14"
+    "zod": "^4.1.12"
   },
   "devDependencies": {
-    "@types/node": "^24.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^24.2.0",
     "@types/node-fetch": "^2.6.2",
-    "typescript": "^5.8.3"
+    "typescript": "^5.9.2"
   },
   "exports": {
     ".": "./src/index.ts"
   },
   "private": true,
   "scripts": {
-    "clean": "rm -rf .turbo node_modules",
+    "build": "tsdown",
+    "clean": "rm -rf .turbo node_modules dist",
+    "dev": "tsdown --watch",
     "format": "prettier --write .",
     "lint": "prettier --check .",
     "typecheck": "tsc --noEmit"

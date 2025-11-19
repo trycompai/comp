@@ -8,7 +8,7 @@ import {
   CommandItem,
   CommandList,
 } from '@comp/ui/command';
-import type { Role } from '@db'; // Assuming Role is from prisma
+import type { Role } from '@trycompai/db'; // Assuming Role is from prisma
 import { Check } from 'lucide-react';
 
 import { cn } from '@comp/ui/cn';

@@ -1,5 +1,5 @@
 import { auth } from '@/utils/auth';
-import { db, Role } from '@db';
+import { db, Role } from '@trycompai/db';
 import { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { TaskList } from './components/TaskList';
@@ -57,27 +57,27 @@ const getTasks = async () => {
           name: true,
         },
       },
-          evidenceAutomations: {
+      evidenceAutomations: {
+        select: {
+          id: true,
+          isEnabled: true,
+          name: true,
+          runs: {
+            orderBy: {
+              createdAt: 'desc',
+            },
+            take: 3,
             select: {
-              id: true,
-              isEnabled: true,
-              name: true,
-              runs: {
-                orderBy: {
-                  createdAt: 'desc',
-                },
-                take: 3,
-                select: {
-                  status: true,
-                  success: true,
-                  evaluationStatus: true,
-                  createdAt: true,
-                  triggeredBy: true,
-                  runDuration: true,
-                },
-              },
+              status: true,
+              success: true,
+              evaluationStatus: true,
+              createdAt: true,
+              triggeredBy: true,
+              runDuration: true,
             },
           },
+        },
+      },
     },
     orderBy: [{ status: 'asc' }, { title: 'asc' }],
   });

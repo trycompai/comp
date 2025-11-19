@@ -6,9 +6,9 @@ import { CreateRiskSheet } from '@/components/sheets/create-risk-sheet';
 import { useDataTable } from '@/hooks/use-data-table';
 import { getFiltersStateParser, getSortingStateParser } from '@/lib/parsers';
 import { useSession } from '@/utils/auth-client';
-import type { Member, Risk, User } from '@db';
-import { Risk as RiskType } from '@db';
 import { ColumnDef } from '@tanstack/react-table';
+import type { Member, Risk, User } from '@trycompai/db';
+import { Risk as RiskType } from '@trycompai/db';
 import { Loader2 } from 'lucide-react';
 import {
   parseAsArrayOf,

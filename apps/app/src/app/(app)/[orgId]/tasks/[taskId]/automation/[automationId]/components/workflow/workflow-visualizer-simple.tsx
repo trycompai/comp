@@ -19,7 +19,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
-import { EvidenceAutomationVersion } from '@db';
+import { EvidenceAutomationVersion } from '@trycompai/db';
 import { Code, Loader2, RotateCcw, Upload, Zap } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';

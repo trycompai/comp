@@ -1,5 +1,5 @@
 import { getFleetInstance } from '@/lib/fleet';
-import { db } from '@db';
+import { db } from '@trycompai/db';
 
 import { logger, queue, task } from '@trigger.dev/sdk';
 import { AxiosError } from 'axios';

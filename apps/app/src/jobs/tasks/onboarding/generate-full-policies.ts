@@ -1,5 +1,5 @@
-import { db } from '@db';
 import { logger, queue, task } from '@trigger.dev/sdk';
+import { db } from '@trycompai/db';
 import { getOrganizationContext, triggerPolicyUpdates } from './onboard-organization-helpers';
 
 // v4 queues must be declared in advance

@@ -1,5 +1,5 @@
 import type { TrainingVideo } from '@/lib/data/training-videos';
-import type { EmployeeTrainingVideoCompletion, Member, Policy, User } from '@db';
+import type { EmployeeTrainingVideoCompletion, Member, Policy, User } from '@trycompai/db';
 
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
