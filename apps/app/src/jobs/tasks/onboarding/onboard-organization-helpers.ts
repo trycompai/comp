@@ -1,4 +1,5 @@
 import { openai } from '@ai-sdk/openai';
+import { logger, metadata, tasks } from '@trigger.dev/sdk';
 import {
   CommentEntityType,
   db,
@@ -11,8 +12,7 @@ import {
   RiskStatus,
   RiskTreatmentType,
   VendorCategory,
-} from '@db';
-import { logger, metadata, tasks } from '@trigger.dev/sdk';
+} from '@trycompai/db';
 import { generateObject, generateText, jsonSchema } from 'ai';
 import axios from 'axios';
 import type { researchVendor } from '../scrape/research';

@@ -1,6 +1,6 @@
-import { Button } from '@comp/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
-import { cn } from '@comp/ui/cn';
+import { Button } from '@trycompai/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
+import { cn } from '@trycompai/ui/cn';
 import { ArrowLeft, CheckCircle2, XCircle } from 'lucide-react';
 import { useMemo } from 'react';
 import type { Host } from '../types';

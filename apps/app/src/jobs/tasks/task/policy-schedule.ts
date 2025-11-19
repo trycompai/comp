@@ -1,6 +1,6 @@
-import { db } from '@db';
 import { Novu } from '@novu/api';
 import { logger, schedules } from '@trigger.dev/sdk';
+import { db } from '@trycompai/db';
 
 export const policySchedule = schedules.task({
   id: 'policy-schedule',

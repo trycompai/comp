@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { ScrollArea } from '@radix-ui/react-scroll-area';
+import { ScrollArea } from '@trycompai/ui/scroll-area';
 import { CompassIcon, RefreshCwIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { BarLoader } from 'react-spinners';

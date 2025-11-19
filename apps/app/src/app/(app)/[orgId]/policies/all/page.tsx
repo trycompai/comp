@@ -1,7 +1,7 @@
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { getValidFilters } from '@/lib/data-table';
 import type { SearchParams } from '@/types';
-import { db } from '@db';
+import { db } from '@trycompai/db';
 import type { Metadata } from 'next';
 import { FullPolicyHeaderActions } from './components/FullPolicyHeaderActions';
 import { PoliciesTable } from './components/policies-table';

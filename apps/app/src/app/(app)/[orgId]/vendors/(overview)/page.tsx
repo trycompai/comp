@@ -1,7 +1,7 @@
 import { AppOnboarding } from '@/components/app-onboarding';
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import type { SearchParams } from '@/types';
-import { db } from '@db';
+import { db } from '@trycompai/db';
 import type { Metadata } from 'next';
 import { CreateVendorSheet } from '../components/create-vendor-sheet';
 import { VendorsTable } from './components/VendorsTable';

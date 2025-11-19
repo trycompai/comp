@@ -2,8 +2,8 @@
 
 import { authActionClient } from '@/actions/safe-action';
 import { updatePolicy } from '@/jobs/tasks/onboarding/update-policy';
-import { db } from '@db';
 import { tasks } from '@trigger.dev/sdk';
+import { db } from '@trycompai/db';
 import { z } from 'zod';
 
 export const regeneratePolicyAction = authActionClient

@@ -1,19 +1,20 @@
 {
-  "extends": "../tsconfig/react-library.json",
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
     },
     "target": "ES2022",
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "verbatimModuleSyntax": false,
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "skipLibCheck": true,
-    "types": ["react", "react-dom"],
-    "declaration": true,
-    "declarationDir": "dist"
+    "types": ["react", "react-dom", "node"],
+    "noEmit": true,
+    "allowJs": true,
+    "esModuleInterop": true
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist"]

@@ -1,7 +1,7 @@
 'use server';
 
-import { db } from '@db';
 import { logger } from '@trigger.dev/sdk';
+import { db } from '@trycompai/db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { authActionClient } from '../safe-action';
 import { updatePolicySchema } from '../schema';
@@ -102,7 +102,7 @@ export const updatePolicyAction = authActionClient
 
       revalidatePath(`/${activeOrganizationId}/policies/${id}`);
       revalidatePath(`/${activeOrganizationId}/policies`);
-      revalidateTag(`user_${user.id}`);
+      revalidateTag(`user_${user.id}`, { expire: 0 });
 
       return {
         success: true,

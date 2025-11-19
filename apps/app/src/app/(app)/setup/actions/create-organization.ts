@@ -6,8 +6,8 @@ import { createFleetLabelForOrg } from '@/jobs/tasks/device/create-fleet-label-f
 import { onboardOrganization as onboardOrganizationTask } from '@/jobs/tasks/onboarding/onboard-organization';
 import { createTrainingVideoEntries } from '@/lib/db/employee';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
 import { tasks } from '@trigger.dev/sdk';
+import { db } from '@trycompai/db';
 import { revalidatePath } from 'next/cache';
 import { cookies, headers } from 'next/headers';
 import { companyDetailsSchema, steps } from '../lib/constants';

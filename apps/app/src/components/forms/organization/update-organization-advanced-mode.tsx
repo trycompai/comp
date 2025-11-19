@@ -2,6 +2,7 @@
 
 import { updateOrganizationAdvancedModeAction } from '@/actions/organization/update-organization-advanced-mode-action';
 import { organizationAdvancedModeSchema } from '@/actions/schema';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Card,
   CardContent,
@@ -9,10 +10,9 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@comp/ui/card';
-import { Form, FormControl, FormField, FormItem, FormMessage } from '@comp/ui/form';
-import { Switch } from '@comp/ui/switch';
-import { zodResolver } from '@hookform/resolvers/zod';
+} from '@trycompai/ui/card';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@trycompai/ui/form';
+import { Switch } from '@trycompai/ui/switch';
 import { Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useForm } from 'react-hook-form';

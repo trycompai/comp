@@ -1,4 +1,4 @@
-import { Departments, TaskFrequency, TaskStatus } from '@db';
+import { Departments, TaskFrequency, TaskStatus } from '@trycompai/db';
 
 // Define possible statuses based on the Prisma schema
 export const taskStatuses: TaskStatus[] = Object.values(TaskStatus);

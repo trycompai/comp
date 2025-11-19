@@ -10,11 +10,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@comp/ui/alert-dialog';
-import { Button } from '@comp/ui/button';
-import { Card, CardContent, CardFooter } from '@comp/ui/card';
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@comp/ui/dialog';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
+} from '@trycompai/ui';
+import { Button } from '@trycompai/ui/button';
+import { Card, CardContent, CardFooter } from '@trycompai/ui/card';
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@trycompai/ui/dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
 import { ExternalLink, Loader2, Maximize2, Trash } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';

@@ -1,5 +1,5 @@
 import { auth } from '@/utils/auth';
-import { db } from '@db';
+import { db } from '@trycompai/db';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { cache } from 'react';
@@ -81,7 +81,10 @@ const getTrustPortal = cache(async (orgId: string) => {
     pcidss: trustPortal?.pci_dss,
     nen7510: trustPortal?.nen7510,
     soc2type1Status: trustPortal?.soc2type1_status,
-    soc2type2Status: !trustPortal?.soc2type2 && trustPortal?.soc2 ? trustPortal?.soc2_status : trustPortal?.soc2type2_status,
+    soc2type2Status:
+      !trustPortal?.soc2type2 && trustPortal?.soc2
+        ? trustPortal?.soc2_status
+        : trustPortal?.soc2type2_status,
     iso27001Status: trustPortal?.iso27001_status,
     iso42001Status: trustPortal?.iso42001_status,
     gdprStatus: trustPortal?.gdpr_status,

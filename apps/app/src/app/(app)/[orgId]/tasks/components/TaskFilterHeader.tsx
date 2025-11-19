@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
+import { Button } from '@trycompai/ui/button';
 import { Check, Circle, List, Loader2, Plus, X, XCircle } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import React from 'react';

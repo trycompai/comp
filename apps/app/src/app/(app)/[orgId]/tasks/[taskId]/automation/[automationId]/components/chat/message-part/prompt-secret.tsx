@@ -1,9 +1,9 @@
 import { AlertCircle, CheckCircle2, Key } from 'lucide-react';
 import { memo, useState } from 'react';
 import { toast } from 'sonner';
-import { Button } from '../../ui/button';
-import { Input } from '../../ui/input';
-import { Label } from '../../ui/label';
+import { Button } from '@trycompai/ui/button';
+import { Input } from '@trycompai/ui/input';
+import { Label } from '@trycompai/ui/label';
 
 interface PromptSecretProps {
   input?: any; // Will be the parsed input from the tool

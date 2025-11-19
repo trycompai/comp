@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
+import { Button } from '@trycompai/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -8,10 +8,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
-import { Input } from '@comp/ui/input';
-import { Label } from '@comp/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
+} from '@trycompai/ui/dialog';
+import { Input } from '@trycompai/ui/input';
+import { Label } from '@trycompai/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/ui/tabs';
 import { Edit2, Loader2, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';

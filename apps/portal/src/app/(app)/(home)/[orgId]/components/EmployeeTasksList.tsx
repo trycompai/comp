@@ -1,9 +1,9 @@
 'use client';
 
 import { trainingVideos } from '@/lib/data/training-videos';
-import { Accordion } from '@comp/ui/accordion';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import type { EmployeeTrainingVideoCompletion, Member, Policy } from '@db';
+import { Accordion } from '@trycompai/ui/accordion';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
 import type { FleetPolicy, Host } from '../types';
 import { DeviceAgentAccordionItem } from './tasks/DeviceAgentAccordionItem';
 import { GeneralTrainingAccordionItem } from './tasks/GeneralTrainingAccordionItem';

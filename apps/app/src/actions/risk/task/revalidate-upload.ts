@@ -23,7 +23,7 @@ export const revalidateUpload = authActionClient
 
     revalidatePath(`/${session.activeOrganizationId}/risk/${riskId}`);
     revalidatePath(`/${session.activeOrganizationId}/risk/${riskId}/tasks/${taskId}`);
-    revalidateTag('risk-cache');
+    revalidateTag('risk-cache', { expire: 0 });
 
     return {
       riskId,

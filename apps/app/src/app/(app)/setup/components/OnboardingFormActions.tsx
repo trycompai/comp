@@ -1,4 +1,4 @@
-import { Button } from '@comp/ui/button';
+import { Button } from '@trycompai/ui/button';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -32,7 +32,7 @@ export function OnboardingFormActions({
       hostname === 'localhost' ||
         hostname === '127.0.0.1' ||
         hostname.startsWith('192.168.') ||
-        hostname.startsWith('10.0.')
+        hostname.startsWith('10.0.'),
     );
   }, []);
 

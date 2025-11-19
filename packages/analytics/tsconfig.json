@@ -3,6 +3,7 @@
   "include": ["src"],
   "exclude": ["node_modules"],
   "compilerOptions": {
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "jsx": "react-jsx"
   }
 }

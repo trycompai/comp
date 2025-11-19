@@ -2,7 +2,7 @@
 
 import { useSession } from '@/utils/auth-client';
 import { useChat } from '@ai-sdk/react';
-import { ScrollArea } from '@comp/ui/scroll-area';
+import { ScrollArea } from '@trycompai/ui/scroll-area';
 import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls } from 'ai';
 import { useState } from 'react';
 import { ChatEmpty } from './chat-empty';

@@ -5,7 +5,7 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { AttachmentEntityType, AttachmentType, db } from '@db';
+import { AttachmentEntityType, AttachmentType } from '@trycompai/db';
 import {
   BadRequestException,
   Injectable,
@@ -14,6 +14,7 @@ import {
 import { randomBytes } from 'crypto';
 import { AttachmentResponseDto } from '../tasks/dto/task-responses.dto';
 import { UploadAttachmentDto } from './upload-attachment.dto';
+import { db } from '@trycompai/db';
 
 @Injectable()
 export class AttachmentsService {

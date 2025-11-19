@@ -1,5 +1,5 @@
-import { VendorStatus, db } from '@db';
 import { logger, metadata, queue, task } from '@trigger.dev/sdk';
+import { VendorStatus, db } from '@trycompai/db';
 import axios from 'axios';
 import {
   createVendorRiskComment,

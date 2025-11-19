@@ -1,5 +1,5 @@
-import { db } from '@db';
 import { logger, task } from '@trigger.dev/sdk';
+import { db } from '@trycompai/db';
 import { sendIntegrationResults } from './integration-results';
 
 export const runIntegrationTests = task({

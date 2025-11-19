@@ -1,6 +1,7 @@
 import { revokeApiKeyAction } from '@/actions/organization/revoke-api-key-action';
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
 import type { ApiKey } from '@/hooks/use-api-keys';
+import type { ColumnDef } from '@tanstack/react-table';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,9 +12,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@comp/ui/alert-dialog';
-import { Button } from '@comp/ui/button';
-import type { ColumnDef } from '@tanstack/react-table';
+} from '@trycompai/ui/alert-dialog';
+import { Button } from '@trycompai/ui/button';
 import { Trash2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';

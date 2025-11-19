@@ -1,7 +1,7 @@
 'use client';
 
 import { RiskMatrixChart } from '@/components/risks/charts/RiskMatrixChart';
-import type { Vendor } from '@db';
+import type { Vendor } from '@trycompai/db';
 import { updateVendorInherentRisk } from '../actions/update-vendor-inherent-risk';
 
 interface InherentRiskChartProps {

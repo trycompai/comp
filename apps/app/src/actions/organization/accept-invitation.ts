@@ -1,7 +1,7 @@
 'use server';
 
 import { createTrainingVideoEntries } from '@/lib/db/employee';
-import { db } from '@db';
+import { db } from '@trycompai/db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
@@ -129,7 +129,7 @@ export const completeInvitation = authActionClientWithoutOrg
 
         revalidatePath(`/${invitation.organization.id}`);
         revalidatePath(`/${invitation.organization.id}/settings/users`);
-        revalidateTag(`user_${user.id}`);
+        revalidateTag(`user_${user.id}`, { expire: 0 });
 
         // Server redirect to the organization's root
         redirect(`/${invitation.organizationId}/`);

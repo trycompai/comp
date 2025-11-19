@@ -8,7 +8,7 @@ import { auth } from '@/utils/auth';
 import { logger } from '@/utils/logger';
 import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { AttachmentEntityType, AttachmentType, db } from '@db';
+import { AttachmentEntityType, AttachmentType, db } from '@trycompai/db';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { z } from 'zod';

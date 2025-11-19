@@ -1,6 +1,6 @@
 import { decrypt, encrypt, type EncryptedData } from '@/lib/encryption';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
+import { db } from '@trycompai/db';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -143,7 +143,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ secret: updatedSecret });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Invalid input', details: error.errors }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid input', details: error.issues }, { status: 400 });
     }
     console.error('Error updating secret:', error);
     return NextResponse.json({ error: 'Failed to update secret' }, { status: 500 });

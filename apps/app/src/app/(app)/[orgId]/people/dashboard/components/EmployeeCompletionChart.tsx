@@ -1,7 +1,7 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
-import { Input } from '@comp/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
+import { Input } from '@trycompai/ui/input';
 import { ExternalLink, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -10,7 +10,7 @@ import * as React from 'react';
 
 // Use correct types from the database
 import { TrainingVideo } from '@/lib/data/training-videos';
-import { EmployeeTrainingVideoCompletion, Member, Policy, User } from '@db';
+import { EmployeeTrainingVideoCompletion, Member, Policy, User } from '@trycompai/db';
 
 interface EmployeeCompletionChartProps {
   employees: (Member & {

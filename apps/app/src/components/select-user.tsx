@@ -1,7 +1,7 @@
 'use client';
 
-import { SelectItem } from '@comp/ui/select';
-import { Spinner } from '@comp/ui/spinner';
+import { SelectItem } from '@trycompai/ui/select';
+import { Spinner } from '@trycompai/ui/spinner';
 import { AssignedUser } from './assigned-user';
 
 interface User {

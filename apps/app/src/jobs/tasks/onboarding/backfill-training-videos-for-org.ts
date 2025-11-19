@@ -1,6 +1,6 @@
 import { trainingVideos } from '@/lib/data/training-videos';
-import { db } from '@db';
 import { logger, task } from '@trigger.dev/sdk';
+import { db } from '@trycompai/db';
 
 export const backfillTrainingVideosForOrg = task({
   id: 'backfill-training-videos-for-org',

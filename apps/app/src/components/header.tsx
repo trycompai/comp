@@ -2,7 +2,7 @@ import { getFeatureFlags } from '@/app/posthog';
 import { UserMenu } from '@/components/user-menu';
 import { getOrganizations } from '@/data/getOrganizations';
 import { auth } from '@/utils/auth';
-import { Skeleton } from '@comp/ui/skeleton';
+import { Skeleton } from '@trycompai/ui/skeleton';
 import { headers } from 'next/headers';
 import { Suspense } from 'react';
 import { AssistantButton } from './ai/chat-button';

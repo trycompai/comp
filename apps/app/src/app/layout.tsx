@@ -1,11 +1,11 @@
 import '@/styles/globals.css';
-import '@comp/ui/globals.css';
+import '@trycompai/ui/globals.css';
 
 import { LinkedInInsight } from '@/components/tracking/LinkedInInsight';
 import { env } from '@/env.mjs';
 import { auth } from '@/utils/auth';
-import { cn } from '@comp/ui/cn';
 import { Analytics as DubAnalytics } from '@dub/analytics/react';
+import { cn } from '@trycompai/ui/cn';
 import { Analytics as VercelAnalytics } from '@vercel/analytics/next';
 import { GeistMono } from 'geist/font/mono';
 import type { Metadata } from 'next';

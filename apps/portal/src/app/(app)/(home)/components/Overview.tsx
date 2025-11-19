@@ -7,7 +7,7 @@ import { redirect } from 'next/navigation';
 import { NoAccessMessage } from './NoAccessMessage';
 // Removed OrganizationSelector import
 import { auth } from '@/app/lib/auth';
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
 import Link from 'next/link';
 
 // Define the type for the member prop including the user and organization relations

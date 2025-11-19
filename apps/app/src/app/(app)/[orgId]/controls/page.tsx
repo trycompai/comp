@@ -1,7 +1,7 @@
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { getValidFilters } from '@/lib/data-table';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
+import { db } from '@trycompai/db';
 import { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { SearchParams } from 'nuqs';

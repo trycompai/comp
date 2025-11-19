@@ -1,7 +1,7 @@
 import { StatusType } from '@/components/status-indicator';
 // Import base types explicitly
-import type { Control, PolicyStatus } from '@db';
-import { Task } from '@db';
+import type { Control, PolicyStatus } from '@trycompai/db';
+import { Task } from '@trycompai/db';
 
 // Define the expected structure for policies passed to getControlStatus
 // This should match the data structure provided by the calling code (e.g., from a Prisma select)
@@ -34,7 +34,8 @@ export function getControlStatus(
       (policy) => policy.status === 'published', // Simplified from artifact.policy.status
     );
   const allTasksDone =
-    controlTasks.length > 0 && controlTasks.every((task) => task.status === 'done' || task.status === 'not_relevant');
+    controlTasks.length > 0 &&
+    controlTasks.every((task) => task.status === 'done' || task.status === 'not_relevant');
 
   if (allPoliciesPublished && (controlTasks.length === 0 || allTasksDone)) return 'completed';
   if (allPoliciesDraft && allTasksTodo) return 'not_started';

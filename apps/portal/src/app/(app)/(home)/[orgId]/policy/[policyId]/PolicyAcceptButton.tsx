@@ -1,7 +1,7 @@
 'use client';
 
 import { acceptPolicy } from '@/actions/accept-policies';
-import { Button } from '@comp/ui/button';
+import { Button } from '@trycompai/ui/button';
 import { Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';

@@ -6,8 +6,8 @@ import { OnboardingLoadingAnimation } from '@/components/onboarding-loading-anim
 import { useDataTable } from '@/hooks/use-data-table';
 import { getFiltersStateParser, getSortingStateParser } from '@/lib/parsers';
 import { useSession } from '@/utils/auth-client';
-import { Departments, Vendor } from '@db';
 import { ColumnDef } from '@tanstack/react-table';
+import { Departments, Vendor, VendorStatus } from '@trycompai/db';
 import { Loader2 } from 'lucide-react';
 import { parseAsInteger, parseAsString, parseAsStringEnum, useQueryState } from 'nuqs';
 import { useCallback, useMemo } from 'react';
@@ -61,7 +61,7 @@ export function VendorsTable({
   const [name] = useQueryState('name', parseAsString.withDefault(''));
   const [status] = useQueryState(
     'status',
-    parseAsStringEnum(['not_assessed', 'assessed'] as const),
+    parseAsStringEnum<VendorStatus>(Object.values(VendorStatus)),
   );
   const [department] = useQueryState(
     'department',

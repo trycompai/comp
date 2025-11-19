@@ -2,7 +2,7 @@
 
 import { authActionClient } from '@/actions/safe-action';
 import { env } from '@/env.mjs';
-import { db } from '@db';
+import { db } from '@trycompai/db';
 import { Vercel } from '@vercel/sdk';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
@@ -163,7 +163,7 @@ export const checkDnsRecordAction = authActionClient
     });
 
     revalidatePath(`/${activeOrgId}/settings/trust-portal`);
-    revalidateTag(`organization_${activeOrgId}`);
+    revalidateTag(`organization_${activeOrgId}`, 'organization');
 
     return {
       success: true,

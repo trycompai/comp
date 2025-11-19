@@ -39,7 +39,7 @@ export const inviteMember = authActionClient
       });
 
       revalidatePath(`/${organizationId}/settings/users`);
-      revalidateTag(`user_${ctx.user.id}`);
+      revalidateTag(`user_${ctx.user.id}`, { expire: 0 });
 
       return {
         success: true,

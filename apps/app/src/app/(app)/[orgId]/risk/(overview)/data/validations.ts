@@ -1,11 +1,12 @@
 import { getFiltersStateParser, getSortingStateParser } from '@/lib/parsers';
-import { Risk } from '@db';
+import { Risk } from '@trycompai/db';
 import {
   createSearchParamsCache,
   parseAsArrayOf,
   parseAsInteger,
   parseAsString,
   parseAsStringEnum,
+  parseAsIsoDateTime,
 } from 'nuqs/server';
 import * as z from 'zod';
 
@@ -14,7 +15,7 @@ export const searchParamsCache = createSearchParamsCache({
   perPage: parseAsInteger.withDefault(50),
   sort: getSortingStateParser<Risk>().withDefault([{ id: 'title', desc: true }]),
   title: parseAsString.withDefault(''),
-  lastUpdated: parseAsArrayOf(z.coerce.date()).withDefault([]),
+  lastUpdated: parseAsArrayOf(parseAsIsoDateTime).withDefault([]),
   // advanced filter
   filters: getFiltersStateParser().withDefault([]),
   joinOperator: parseAsStringEnum(['and', 'or']).withDefault('and'),

@@ -2,19 +2,8 @@
   "name": "@trycompai/tsconfig",
   "description": "Shared TypeScript configurations for Comp AI",
   "version": "1.0.0",
-  "exports": {
-    "./base": "./base.json",
-    "./base.json": "./base.json",
-    "./nextjs": "./nextjs.json",
-    "./nextjs.json": "./nextjs.json",
-    "./react-library": "./react-library.json",
-    "./react-library.json": "./react-library.json"
-  },
   "files": [
-    "base.json",
-    "nextjs.json",
-    "react-library.json",
-    "README.md"
+    "base.json"
   ],
   "keywords": [
     "comp-ai",

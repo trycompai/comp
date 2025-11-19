@@ -1,11 +1,10 @@
 'use client';
 
-import { Badge } from '@comp/ui/badge';
-import { Card } from '@comp/ui/card';
-import { Separator } from '@comp/ui/separator';
+import { Badge } from '@trycompai/ui/badge';
+import { Card } from '@trycompai/ui/card';
+import { Separator } from '@trycompai/ui/separator';
 import { formatDistanceToNow } from 'date-fns';
-import { Activity, CheckCircle2, Clock, Sparkles, XCircle, Zap } from 'lucide-react';
-import Link from 'next/link';
+import { Activity, CheckCircle2, Clock, XCircle, Zap } from 'lucide-react';
 import { useParams } from 'next/navigation';
 
 interface AutomationRun {
@@ -111,9 +110,7 @@ export function AutomationActivityFeed({
             <div className="text-center py-8">
               <Clock className="h-8 w-8 text-muted-foreground mx-auto mb-2 opacity-50" />
               <p className="text-muted-foreground text-sm">No recent activity</p>
-              <p className="text-muted-foreground text-xs mt-1">
-                Automation runs will appear here
-              </p>
+              <p className="text-muted-foreground text-xs mt-1">Automation runs will appear here</p>
             </div>
           ) : (
             recentRuns.map((run, index) => {
@@ -183,4 +180,3 @@ export function AutomationActivityFeed({
     </Card>
   );
 }
-

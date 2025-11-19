@@ -1,4 +1,4 @@
-import { AttachmentEntityType } from '@db';
+import { AttachmentEntityType } from '@trycompai/db';
 import {
   BadRequestException,
   Body,

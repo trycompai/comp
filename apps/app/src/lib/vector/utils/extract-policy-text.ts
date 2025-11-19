@@ -1,4 +1,4 @@
-import type { Policy } from '@db';
+import type { Policy } from '@trycompai/db';
 
 /**
  * Extracts plain text from a TipTap JSON policy content
@@ -36,9 +36,7 @@ export function extractTextFromPolicy(policy: Policy): string {
 
     // Handle headings
     if (node.type === 'heading' && node.content) {
-      const headingText = node.content
-        .map((child: any) => processNode(child))
-        .join('');
+      const headingText = node.content.map((child: any) => processNode(child)).join('');
       parts.push(headingText);
     }
 
@@ -103,4 +101,3 @@ export function extractTextFromPolicy(policy: Policy): string {
 
   return textParts.join('\n\n');
 }
-

@@ -1,12 +1,18 @@
 'use client';
 
 import { useDebounce } from '@/hooks/useDebounce';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel } from '@comp/ui/form';
-import { Input } from '@comp/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import { Switch } from '@comp/ui/switch';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
+import { Form, FormControl, FormField, FormItem, FormLabel } from '@trycompai/ui/form';
+import { Input } from '@trycompai/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@trycompai/ui/select';
+import { Switch } from '@trycompai/ui/switch';
 import { ExternalLink } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import Link from 'next/link';
@@ -17,7 +23,7 @@ import { z } from 'zod';
 import { isFriendlyAvailable } from '../actions/is-friendly-available';
 import { trustPortalSwitchAction } from '../actions/trust-portal-switch';
 import { updateTrustPortalFrameworks } from '../actions/update-trust-portal-frameworks';
-import { GDPR, HIPAA, ISO27001, SOC2Type1, SOC2Type2, PCIDSS, ISO42001, NEN7510 } from './logos';
+import { GDPR, HIPAA, ISO27001, ISO42001, NEN7510, PCIDSS, SOC2Type1, SOC2Type2 } from './logos';
 
 const trustPortalSwitchSchema = z.object({
   enabled: z.boolean(),

@@ -8,7 +8,7 @@
   },
   "devDependencies": {
     "tsup": "^8.5.0",
-    "typescript": "^5.8.3"
+    "typescript": "^5.9.2"
   },
   "exports": {
     ".": {
@@ -40,12 +40,11 @@
     "directory": "packages/kv"
   },
   "scripts": {
-    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "build": "tsdown",
     "clean": "rm -rf .turbo node_modules dist",
-    "dev": "tsup src/index.ts --format cjs,esm --watch --dts",
+    "dev": "tsdown --watch",
     "format": "prettier --write .",
     "lint": "prettier --check .",
     "typecheck": "tsc --noEmit"
-  },
-  "types": "./dist/index.d.ts"
+  }
 }

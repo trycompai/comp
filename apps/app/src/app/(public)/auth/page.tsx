@@ -8,8 +8,8 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@comp/ui/card';
-import { Icons } from '@comp/ui/icons';
+} from '@trycompai/ui/card';
+import { Icons } from '@trycompai/ui/icons';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import Link from 'next/link';

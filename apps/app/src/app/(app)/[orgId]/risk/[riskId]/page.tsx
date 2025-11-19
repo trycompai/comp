@@ -3,7 +3,7 @@ import { InherentRiskChart } from '@/components/risks/charts/InherentRiskChart';
 import { ResidualRiskChart } from '@/components/risks/charts/ResidualRiskChart';
 import { RiskOverview } from '@/components/risks/risk-overview';
 import { auth } from '@/utils/auth';
-import { CommentEntityType, db } from '@db';
+import { CommentEntityType, db } from '@trycompai/db';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';

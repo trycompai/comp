@@ -1,4 +1,4 @@
-import { db } from '@db';
+import { db } from '@trycompai/db';
 import { redirect } from 'next/navigation';
 import { SingleTask } from './components/SingleTask';
 

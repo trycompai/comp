@@ -1,4 +1,4 @@
-import { db } from '@db';
+import { db } from '@trycompai/db';
 import { type NextRequest, NextResponse } from 'next/server';
 
 /**

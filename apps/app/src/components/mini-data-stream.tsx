@@ -1,6 +1,6 @@
 'use client';
 
-import { cn } from '@comp/ui/cn';
+import { cn } from '@trycompai/ui/cn';
 import { motion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 

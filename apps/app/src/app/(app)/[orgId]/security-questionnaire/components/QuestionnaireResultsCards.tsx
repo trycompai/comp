@@ -1,7 +1,7 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
-import { Textarea } from '@comp/ui/textarea';
+import { Button } from '@trycompai/ui/button';
+import { Textarea } from '@trycompai/ui/textarea';
 import { BookOpen, ChevronDown, ChevronUp, Link as LinkIcon, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import type { QuestionAnswer } from './types';

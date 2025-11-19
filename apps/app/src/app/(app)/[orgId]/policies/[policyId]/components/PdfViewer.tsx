@@ -1,7 +1,7 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
-import { cn } from '@comp/ui/cn';
+import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
+import { cn } from '@trycompai/ui/cn';
 import { ExternalLink, FileText, Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';

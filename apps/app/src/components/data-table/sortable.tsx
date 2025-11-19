@@ -1,7 +1,6 @@
 'use client';
 
 import { composeEventHandlers, useComposedRefs } from '@/lib/composition';
-import { cn } from '@comp/ui/cn';
 import {
   type Announcements,
   DndContext,
@@ -37,6 +36,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Slot } from '@radix-ui/react-slot';
+import { cn } from '@trycompai/ui/cn';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 

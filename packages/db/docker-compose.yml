@@ -2,7 +2,7 @@ version: '3.7'
 
 services:
   postgres:
-    image: postgres:17-alpine
+    image: postgres
     restart: always
     environment:
       - POSTGRES_DB=comp

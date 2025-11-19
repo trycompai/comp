@@ -1,4 +1,4 @@
-import { AttachmentEntityType, CommentEntityType } from '@db';
+import { AttachmentEntityType, CommentEntityType } from '@trycompai/db';
 import {
   BadRequestException,
   Injectable,

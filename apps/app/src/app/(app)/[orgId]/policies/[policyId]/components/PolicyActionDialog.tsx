@@ -1,7 +1,8 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
-import { cn } from '@comp/ui/cn';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Button } from '@trycompai/ui/button';
+import { cn } from '@trycompai/ui/cn';
 import {
   Dialog,
   DialogContent,
@@ -9,10 +10,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
-import { Form, FormControl, FormField, FormItem } from '@comp/ui/form';
-import { Textarea } from '@comp/ui/textarea';
-import { zodResolver } from '@hookform/resolvers/zod';
+} from '@trycompai/ui/dialog';
+import { Form, FormControl, FormField, FormItem } from '@trycompai/ui/form';
+import { Textarea } from '@trycompai/ui/textarea';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';

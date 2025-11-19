@@ -1,6 +1,6 @@
 import { LogoSpinner } from '@/components/logo-spinner';
 import { TriggerTokenProvider } from '@/components/trigger-token-provider';
-import { db } from '@db';
+import { db } from '@trycompai/db';
 import { cookies } from 'next/headers';
 import { OnboardingStatus } from './components/onboarding-status';
 

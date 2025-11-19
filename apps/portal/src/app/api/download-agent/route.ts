@@ -1,7 +1,7 @@
 import { logger } from '@/utils/logger';
 import { s3Client } from '@/utils/s3';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
-import { client as kv } from '@comp/kv';
+import { client as kv } from '@trycompai/kv';
 import { type NextRequest, NextResponse } from 'next/server';
 import { Readable } from 'stream';
 

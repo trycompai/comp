@@ -7,6 +7,8 @@ import { fetch as azureFetch } from './azure/src';
 import type { GCPCredentials } from './gcp/src';
 import { fetch as gcpFetch } from './gcp/src';
 
+import { type EncryptedData } from '@trycompai/crypto';
+
 // Add Deel credentials type
 interface DeelCredentials {
   api_key: string;
@@ -15,14 +17,6 @@ interface DeelCredentials {
 // Add GitHub credentials type
 interface GitHubCredentials {
   GITHUB_TOKEN: string;
-}
-
-// Define the EncryptedData type locally to avoid import issues
-interface EncryptedData {
-  encrypted: string;
-  iv: string;
-  tag: string;
-  salt: string;
 }
 
 // Common interface for all integration findings
@@ -128,7 +122,7 @@ handlers.set('gcp', {
 handlers.set('deel', {
   id: 'deel',
   // This is a placeholder implementation; replace with actual fetch once available
-  fetch: async (credentials: DeelCredentials): Promise<IntegrationFinding[]> => {
+  fetch: async (_credentials: DeelCredentials): Promise<IntegrationFinding[]> => {
     return []; // Return empty array as placeholder
   },
   processCredentials: async (encryptedSettings, decrypt) => {
@@ -143,7 +137,7 @@ handlers.set('deel', {
 handlers.set('github', {
   id: 'github',
   // Placeholder for now - will be used by automations
-  fetch: async (credentials: GitHubCredentials): Promise<IntegrationFinding[]> => {
+  fetch: async (_credentials: GitHubCredentials): Promise<IntegrationFinding[]> => {
     return []; // GitHub integration is primarily for automation access
   },
   processCredentials: async (encryptedSettings, decrypt) => {

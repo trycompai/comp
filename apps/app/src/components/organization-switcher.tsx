@@ -1,8 +1,9 @@
 'use client';
 
 import { changeOrganizationAction } from '@/actions/change-organization';
-import { Button } from '@comp/ui/button';
-import { cn } from '@comp/ui/cn';
+import type { Organization } from '@trycompai/db';
+import { Button } from '@trycompai/ui/button';
+import { cn } from '@trycompai/ui/cn';
 import {
   Command,
   CommandEmpty,
@@ -11,10 +12,15 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
-} from '@comp/ui/command';
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@comp/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import type { Organization } from '@db';
+} from '@trycompai/ui/command';
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@trycompai/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@trycompai/ui/select';
 import { Check, ChevronsUpDown, Loader2, Plus, Search } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
@@ -104,7 +110,7 @@ export function OrganizationSwitcher({
 
   const sortedOrganizations = [...organizations].sort((a, b) => {
     if (sortOrder === 'alphabetical') {
-      return (a.name).localeCompare(b.name);
+      return a.name.localeCompare(b.name);
     } else if (sortOrder === 'recent') {
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     }

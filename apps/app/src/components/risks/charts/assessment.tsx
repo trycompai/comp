@@ -1,7 +1,7 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
-import { type ChartConfig, ChartContainer, ChartTooltip } from '@comp/ui/chart';
+import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
+import { type ChartConfig, ChartContainer, ChartTooltip } from '@trycompai/ui/chart';
 import { Legend, Line, LineChart, XAxis, YAxis } from 'recharts';
 
 interface AssessmentChartProps {

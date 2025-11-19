@@ -1,8 +1,8 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
-import type { Departments } from '@db';
-import { db, Prisma } from '@db';
+import type { Departments } from '@trycompai/db';
+import { db, Prisma } from '@trycompai/db';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { appErrors } from '../types';
@@ -139,7 +139,7 @@ export const updateEmployee = authActionClient
       revalidatePath(`/${organizationId}/people`);
 
       return { success: true, data: updatedMemberResult };
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
           const targetFields = error.meta?.target as string[] | undefined;

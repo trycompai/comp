@@ -1,6 +1,6 @@
 'use server';
 
-import { db } from '@db';
+import { db } from '@trycompai/db';
 import { authActionClient } from '../safe-action';
 
 interface User {

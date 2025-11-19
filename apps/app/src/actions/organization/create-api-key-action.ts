@@ -3,7 +3,7 @@
 import { authActionClient } from '@/actions/safe-action';
 import { apiKeySchema } from '@/actions/schema';
 import { generateApiKey, generateSalt, hashApiKey } from '@/lib/api-key';
-import { db } from '@db';
+import { db } from '@trycompai/db';
 import { revalidatePath } from 'next/cache';
 
 export const createApiKeyAction = authActionClient

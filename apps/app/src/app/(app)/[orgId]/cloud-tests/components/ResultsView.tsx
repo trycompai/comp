@@ -1,8 +1,14 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import type { AnyRealtimeRun } from '@trigger.dev/sdk';
+import { Button } from '@trycompai/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@trycompai/ui/select';
 import { AlertTriangle, CheckCircle2, Info, Loader2, RefreshCw, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { FindingsTable } from './FindingsTable';

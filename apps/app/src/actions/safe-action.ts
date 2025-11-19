@@ -2,8 +2,8 @@ import { track } from '@/app/posthog';
 import { env } from '@/env.mjs';
 import { auth } from '@/utils/auth';
 import { logger } from '@/utils/logger';
-import { client } from '@comp/kv';
-import { AuditLogEntityType, db } from '@db';
+import { AuditLogEntityType, db } from '@trycompai/db';
+import { client } from '@trycompai/kv';
 import { Ratelimit } from '@upstash/ratelimit';
 import { DEFAULT_SERVER_ERROR_MESSAGE, createSafeActionClient } from 'next-safe-action';
 import { revalidatePath } from 'next/cache';
@@ -135,10 +135,6 @@ export const authActionClient = actionClientWithMeta
       headers: headersList,
     });
 
-    const member = await auth.api.getActiveMember({
-      headers: headersList,
-    });
-
     if (!session) {
       throw new Error('Unauthorized');
     }
@@ -146,6 +142,13 @@ export const authActionClient = actionClientWithMeta
     if (!session.session.activeOrganizationId) {
       throw new Error('Organization not found');
     }
+
+    const member = await db.member.findFirst({
+      where: {
+        userId: session.user.id,
+        organizationId: session.session.activeOrganizationId,
+      },
+    });
 
     if (!member) {
       throw new Error('Member not found');

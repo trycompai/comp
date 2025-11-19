@@ -2,7 +2,8 @@
 
 import { updateOrganizationNameAction } from '@/actions/organization/update-organization-name-action';
 import { organizationNameSchema } from '@/actions/schema';
-import { Button } from '@comp/ui/button';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Button } from '@trycompai/ui/button';
 import {
   Card,
   CardContent,
@@ -10,10 +11,9 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@comp/ui/card';
-import { Form, FormControl, FormField, FormItem, FormMessage } from '@comp/ui/form';
-import { Input } from '@comp/ui/input';
-import { zodResolver } from '@hookform/resolvers/zod';
+} from '@trycompai/ui/card';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@trycompai/ui/form';
+import { Input } from '@trycompai/ui/input';
 import { Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useForm } from 'react-hook-form';

@@ -1,8 +1,8 @@
 import { AnimatedWrapper } from '@/components/animated-wrapper';
 import { SelectablePill } from '@/components/selectable-pill';
-import { FormLabel } from '@comp/ui/form';
-import { Input } from '@comp/ui/input';
-import { Textarea } from '@comp/ui/textarea';
+import { FormLabel } from '@trycompai/ui/form';
+import { Input } from '@trycompai/ui/input';
+import { Textarea } from '@trycompai/ui/textarea';
 import { X } from 'lucide-react';
 import { useRef, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
