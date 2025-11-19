@@ -8,7 +8,7 @@ export interface SimilarContentResult {
   id: string;
   score: number;
   content: string;
-  sourceType: 'policy' | 'context' | 'document_hub' | 'attachment' | 'questionnaire';
+  sourceType: 'policy' | 'context' | 'document_hub' | 'attachment' | 'questionnaire' | 'manual_answer';
   sourceId: string;
   policyName?: string;
   contextQuestion?: string;
@@ -61,7 +61,7 @@ export async function findSimilarContent(
         const metadata = result.metadata as any;
         const hasCorrectOrg = metadata?.organizationId === organizationId;
         const hasMinScore = result.score >= MIN_SIMILARITY_SCORE;
-        // Exclude questionnaire Q&A from results - we only use Policy and Context as sources
+        // Exclude questionnaire Q&A from results - we use Policy, Context, and Manual Answers as sources
         const isNotQuestionnaire = metadata?.sourceType !== 'questionnaire';
         return hasCorrectOrg && hasMinScore && isNotQuestionnaire;
       })

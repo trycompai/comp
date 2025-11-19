@@ -307,10 +307,79 @@ async function performSync(organizationId: string): Promise<void> {
       total: contextEntries.length,
     });
 
-    // Step 6: Delete orphaned embeddings (policies/context that no longer exist in DB)
+    // Step 6: Sync manual answers (ensure they're always up-to-date)
+    const manualAnswers = await db.securityQuestionnaireManualAnswer.findMany({
+      where: { organizationId },
+      select: {
+        id: true,
+        question: true,
+        answer: true,
+        updatedAt: true,
+      },
+    });
+
+    logger.info('Syncing manual answers', {
+      organizationId,
+      count: manualAnswers.length,
+    });
+
+    let manualAnswersCreated = 0;
+    let manualAnswersUpdated = 0;
+    let manualAnswersSkipped = 0;
+
+    if (manualAnswers.length > 0) {
+      const manualAnswerItems = manualAnswers.map((ma) => {
+        const embeddingId = `manual_answer_${ma.id}`;
+        const text = `${ma.question}\n\n${ma.answer}`;
+        const updatedAt = ma.updatedAt.toISOString();
+        
+        // Check if embedding exists and needs update
+        const existingManualAnswerEmbeddings = existingEmbeddings.get(ma.id) || [];
+        const needsUpdate = existingManualAnswerEmbeddings.length === 0 || 
+          existingManualAnswerEmbeddings[0]?.updatedAt !== updatedAt;
+
+        if (needsUpdate) {
+          if (existingManualAnswerEmbeddings.length === 0) {
+            manualAnswersCreated++;
+          } else {
+            manualAnswersUpdated++;
+          }
+        } else {
+          manualAnswersSkipped++;
+        }
+
+        return {
+          id: embeddingId,
+          text,
+          metadata: {
+            organizationId,
+            sourceType: 'manual_answer' as const,
+            sourceId: ma.id,
+            content: text,
+            updatedAt,
+          },
+        };
+      });
+
+      // Batch upsert all manual answers
+      if (manualAnswerItems.length > 0) {
+        await batchUpsertEmbeddings(manualAnswerItems);
+      }
+    }
+
+    logger.info('Manual answers sync completed', {
+      organizationId,
+      created: manualAnswersCreated,
+      updated: manualAnswersUpdated,
+      skipped: manualAnswersSkipped,
+      total: manualAnswers.length,
+    });
+
+    // Step 7: Delete orphaned embeddings (policies/context/manual_answers that no longer exist in DB)
     // Use the embeddings we already fetched (no additional API call needed)
     const dbPolicyIds = new Set(policies.map(p => p.id));
     const dbContextIds = new Set(contextEntries.map(c => c.id));
+    const dbManualAnswerIds = new Set(manualAnswers.map(ma => ma.id));
     let orphanedDeleted = 0;
 
     // Check for orphaned embeddings using the pre-fetched map
@@ -318,9 +387,11 @@ async function performSync(organizationId: string): Promise<void> {
       for (const [sourceId, embeddings] of existingEmbeddings.entries()) {
         const isPolicy = embeddings[0]?.sourceType === 'policy';
         const isContext = embeddings[0]?.sourceType === 'context';
+        const isManualAnswer = embeddings[0]?.sourceType === 'manual_answer';
         
         const shouldExist = (isPolicy && dbPolicyIds.has(sourceId)) || 
-                            (isContext && dbContextIds.has(sourceId));
+                            (isContext && dbContextIds.has(sourceId)) ||
+                            (isManualAnswer && dbManualAnswerIds.has(sourceId));
 
         if (!shouldExist && vectorIndex) {
           // Delete orphaned embeddings
@@ -330,7 +401,7 @@ async function performSync(organizationId: string): Promise<void> {
             orphanedDeleted += idsToDelete.length;
             logger.info('Deleted orphaned embeddings', {
               sourceId,
-              sourceType: isPolicy ? 'policy' : 'context',
+              sourceType: isPolicy ? 'policy' : isContext ? 'context' : 'manual_answer',
               deletedCount: idsToDelete.length,
             });
           } catch (error) {
@@ -362,6 +433,12 @@ async function performSync(organizationId: string): Promise<void> {
         created: contextCreated,
         updated: contextUpdated,
         skipped: contextSkipped,
+      },
+      manualAnswers: {
+        total: manualAnswers.length,
+        created: manualAnswersCreated,
+        updated: manualAnswersUpdated,
+        skipped: manualAnswersSkipped,
       },
       orphanedDeleted,
     });

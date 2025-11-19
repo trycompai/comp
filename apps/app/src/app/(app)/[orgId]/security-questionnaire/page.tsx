@@ -1,12 +1,13 @@
 import { getFeatureFlags } from '@/app/posthog';
 import { AppOnboarding } from '@/components/app-onboarding';
-import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
+import PageCore from '@/components/pages/PageCore.tsx';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { QuestionnaireOverview } from './start_page/components';
 import { getQuestionnaires } from './start_page/data/queries';
+import { SecurityQuestionnaireBreadcrumb } from './components/SecurityQuestionnaireBreadcrumb';
 
 export default async function SecurityQuestionnairePage() {
   const session = await auth.api.getSession({
@@ -72,13 +73,10 @@ export default async function SecurityQuestionnairePage() {
   const questionnaires = await getQuestionnaires(organizationId);
 
   return (
-    <PageWithBreadcrumb
-      breadcrumbs={[
-        { label: 'Security Questionnaire', href: `/${organizationId}/security-questionnaire`, current: true },
-      ]}
-    >
+    <PageCore className="mt-10">
+      <SecurityQuestionnaireBreadcrumb />
       <QuestionnaireOverview questionnaires={questionnaires} />
-    </PageWithBreadcrumb>
+    </PageCore>
   );
 }
 

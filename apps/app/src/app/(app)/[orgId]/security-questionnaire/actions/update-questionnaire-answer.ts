@@ -5,6 +5,8 @@ import { db } from '@db';
 import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { syncManualAnswerToVector } from '@/lib/vector/sync/sync-manual-answer';
+import { logger } from '@/utils/logger';
 
 const updateAnswerSchema = z.object({
   questionnaireId: z.string(),
@@ -80,7 +82,7 @@ export const updateQuestionnaireAnswer = authActionClient
       // Also save to SecurityQuestionnaireManualAnswer if answer exists
       if (answer && answer.trim().length > 0 && questionAnswer.question) {
         try {
-          await db.securityQuestionnaireManualAnswer.upsert({
+          const manualAnswer = await db.securityQuestionnaireManualAnswer.upsert({
             where: {
               organizationId_question: {
                 organizationId: activeOrganizationId,
@@ -103,9 +105,40 @@ export const updateQuestionnaireAnswer = authActionClient
               updatedAt: new Date(),
             },
           });
+
+          // Sync to vector DB SYNCHRONOUSLY
+          logger.info('🔄 Syncing manual answer to vector DB from questionnaire update', {
+            manualAnswerId: manualAnswer.id,
+            organizationId: activeOrganizationId,
+            questionId: questionAnswerId,
+          });
+
+          const syncResult = await syncManualAnswerToVector(
+            manualAnswer.id,
+            activeOrganizationId,
+          );
+
+          if (!syncResult.success) {
+            logger.error('❌ Failed to sync manual answer to vector DB', {
+              manualAnswerId: manualAnswer.id,
+              organizationId: activeOrganizationId,
+              error: syncResult.error,
+            });
+            // Don't fail the main operation - manual answer is saved in DB
+          } else {
+            logger.info('✅ Successfully synced manual answer to vector DB', {
+              manualAnswerId: manualAnswer.id,
+              embeddingId: syncResult.embeddingId,
+              organizationId: activeOrganizationId,
+            });
+          }
         } catch (error) {
           // Log error but don't fail the main operation
-          console.error('Error saving to manual answers:', error);
+          logger.error('Error saving to manual answers:', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+            questionAnswerId,
+            organizationId: activeOrganizationId,
+          });
         }
       }
 

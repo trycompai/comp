@@ -83,7 +83,15 @@ export function useQuestionnaireDetail({
         setResults((prev) =>
           prev.map((r, i) => {
             if (i === index) {
-              return { ...r, answer: answer.trim(), status: 'manual' as const };
+              const trimmedAnswer = answer.trim();
+              // If answer is empty, reset failedToGenerate and allow auto-fill
+              // If answer has content, mark as manual
+              return { 
+                ...r, 
+                answer: trimmedAnswer || null, 
+                status: trimmedAnswer ? ('manual' as const) : ('untouched' as const),
+                failedToGenerate: false, // Reset failedToGenerate when user saves (even if empty)
+              };
             }
             return r;
           })
@@ -345,7 +353,13 @@ export function useQuestionnaireDetail({
     }
 
     const result = results.find((r) => r.originalIndex === index);
-    if (!result || result.status === 'manual') {
+    if (!result) {
+      return;
+    }
+    
+    // Allow auto-fill even if status is 'manual' - user may have cleared the answer
+    // Only prevent if there's already an answer (non-empty)
+    if (result.status === 'manual' && result.answer && result.answer.trim().length > 0) {
       return;
     }
 
@@ -478,6 +492,10 @@ export function useQuestionnaireDetail({
     autoAnswer.autoAnswerRun?.status,
   ]);
 
+  // Check if saving is in progress
+  const isSaving = updateAnswerAction.status === 'executing';
+  const savingIndex = isSaving && saveIndexRef.current !== null ? saveIndexRef.current : null;
+
   return {
     orgId: organizationId,
     results,
@@ -493,6 +511,8 @@ export function useQuestionnaireDetail({
     isLoading,
     isAutoAnswering,
     isExporting: actions.exportAction.status === 'executing',
+    isSaving,
+    savingIndex,
     filteredResults,
     answeredCount,
     totalCount: results.length,

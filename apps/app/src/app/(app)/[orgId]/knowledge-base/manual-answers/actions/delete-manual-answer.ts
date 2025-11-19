@@ -5,6 +5,8 @@ import { db } from '@db';
 import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { tasks } from '@trigger.dev/sdk';
+import { logger } from '@/utils/logger';
 
 const deleteManualAnswerSchema = z.object({
   manualAnswerId: z.string(),
@@ -47,7 +49,28 @@ export const deleteManualAnswer = authActionClient
         };
       }
 
-      // Delete the manual answer
+      // Trigger Trigger.dev task to delete from vector DB in background
+      // This runs asynchronously and doesn't block the main DB deletion
+      try {
+        await tasks.trigger('delete-manual-answer-from-vector', {
+          manualAnswerId,
+          organizationId: activeOrganizationId,
+        });
+        logger.info('Triggered delete manual answer from vector DB task', {
+          manualAnswerId,
+          organizationId: activeOrganizationId,
+        });
+      } catch (error) {
+        // Log error but continue with DB deletion
+        logger.warn('Failed to trigger delete manual answer from vector DB task', {
+          manualAnswerId,
+          organizationId: activeOrganizationId,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+        // Continue with DB deletion even if task trigger fails
+      }
+
+      // Delete the manual answer from main DB
       await db.securityQuestionnaireManualAnswer.delete({
         where: {
           id: manualAnswerId,

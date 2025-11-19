@@ -2,6 +2,7 @@ import { findSimilarContent } from '@/lib/vector';
 import { openai } from '@ai-sdk/openai';
 import { logger } from '@trigger.dev/sdk';
 import { generateText } from 'ai';
+import { deduplicateSources } from '@/app/(app)/[orgId]/security-questionnaire/utils/deduplicate-sources';
 
 export interface AnswerWithSources {
   answer: string | null;
@@ -35,50 +36,30 @@ export async function generateAnswerWithRAG(
       })),
     });
 
-    // Extract sources information and deduplicate by sourceName
-    // Multiple chunks from the same source (same policy/context) should appear as a single source
-    const sourceMap = new Map<
-      string,
-      {
-        sourceType: string;
-        sourceName?: string;
-        sourceId: string;
-        policyName?: string;
-        score: number;
-      }
-    >();
+    // Extract sources information and deduplicate using universal utility
+    // Multiple chunks from the same source (same policy/context/manual answer) should appear as a single source
+    const sources = deduplicateSources(
+      similarContent.map((result) => {
+        let sourceName: string | undefined;
+        if (result.policyName) {
+          sourceName = `Policy: ${result.policyName}`;
+        } else if (result.vendorName && result.questionnaireQuestion) {
+          sourceName = `Questionnaire: ${result.vendorName}`;
+        } else if (result.contextQuestion) {
+          sourceName = 'Context Q&A';
+        } else if (result.sourceType === 'manual_answer') {
+          sourceName = 'Manual Answer';
+        }
 
-    for (const result of similarContent) {
-      // Generate sourceName first to use as deduplication key
-      let sourceName: string | undefined;
-      if (result.policyName) {
-        sourceName = `Policy: ${result.policyName}`;
-      } else if (result.vendorName && result.questionnaireQuestion) {
-        sourceName = `Questionnaire: ${result.vendorName}`;
-      } else if (result.contextQuestion) {
-        sourceName = 'Context Q&A';
-      }
-
-      // Use sourceName as the unique key to prevent duplicates
-      // For policies: same policy name = same source
-      // For context: all context entries = single "Context Q&A" source
-      const key = sourceName || result.sourceId;
-
-      // If we haven't seen this source, or this chunk has a higher score, use it
-      const existing = sourceMap.get(key);
-      if (!existing || result.score > existing.score) {
-        sourceMap.set(key, {
+        return {
           sourceType: result.sourceType,
           sourceName,
           sourceId: result.sourceId,
           policyName: result.policyName,
           score: result.score,
-        });
-      }
-    }
-
-    // Convert map to array and sort by score (highest first)
-    const sources = Array.from(sourceMap.values()).sort((a, b) => b.score - a.score);
+        };
+      }),
+    );
 
     // If no relevant content found, return null
     if (similarContent.length === 0) {

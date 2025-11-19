@@ -68,7 +68,7 @@ export const authActionClient = actionClientWithMeta
       },
     });
 
-    const { fileData: _, ...inputForLog } = clientInput as any;
+    const { fileData: _, ...inputForLog } = (clientInput || {}) as any;
     logger.info('Input ->', JSON.stringify(inputForLog, null, 2));
     logger.info('Result ->', JSON.stringify(result.data, null, 2));
 
@@ -79,7 +79,7 @@ export const authActionClient = actionClientWithMeta
 
     return result;
   })
-  .use(async ({ next, metadata }) => {
+  .use(async ({ next, metadata, ctx }) => {
     const headersList = await headers();
     let remaining: number | undefined;
 
@@ -97,6 +97,7 @@ export const authActionClient = actionClientWithMeta
 
     return next({
       ctx: {
+        ...ctx,
         ip: headersList.get('x-forwarded-for'),
         userAgent: headersList.get('user-agent'),
         ratelimit: {
@@ -125,11 +126,13 @@ export const authActionClient = actionClientWithMeta
 
     return next({
       ctx: {
+        ...ctx,
         user: session.user,
+        session: session.session,
       },
     });
   })
-  .use(async ({ next, metadata, clientInput }) => {
+  .use(async ({ next, metadata, clientInput, ctx }) => {
     const headersList = await headers();
     const session = await auth.api.getSession({
       headers: headersList,
@@ -151,7 +154,7 @@ export const authActionClient = actionClientWithMeta
       throw new Error('Member not found');
     }
 
-    const { fileData: _, ...inputForAuditLog } = clientInput as any;
+    const { fileData: _, ...inputForAuditLog } = (clientInput || {}) as any;
 
     const data = {
       userId: session.user.id,
@@ -220,7 +223,7 @@ export const authActionClient = actionClientWithMeta
 
     revalidatePath(path);
 
-    return next();
+    return next({ ctx });
   });
 
 // New action client that includes organization access check
@@ -272,7 +275,7 @@ export const authActionClientWithoutOrg = actionClientWithMeta
       },
     });
 
-    const { fileData: _, ...inputForLog } = clientInput as any;
+    const { fileData: _, ...inputForLog } = (clientInput || {}) as any;
     logger.info('Input ->', JSON.stringify(inputForLog, null, 2));
     logger.info('Result ->', JSON.stringify(result.data, null, 2));
 

@@ -1,11 +1,12 @@
 import { auth } from '@/utils/auth';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
-import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
+import PageCore from '@/components/pages/PageCore.tsx';
 import { QuestionnaireResults } from '../components/QuestionnaireResults';
 import { useQuestionnaireDetail } from '../hooks/useQuestionnaireDetail';
 import { getQuestionnaireById } from './data/queries';
 import { QuestionnaireDetailClient } from './components/QuestionnaireDetailClient';
+import { QuestionnaireBreadcrumb } from './components/QuestionnaireBreadcrumb';
 
 export default async function QuestionnaireDetailPage({
   params,
@@ -35,26 +36,15 @@ export default async function QuestionnaireDetailPage({
   }
 
   return (
-    <PageWithBreadcrumb
-      breadcrumbs={[
-        {
-          label: 'Security Questionnaire',
-          href: `/${organizationId}/security-questionnaire`,
-        },
-        {
-          label: questionnaire.filename,
-          href: `/${organizationId}/security-questionnaire/${questionnaireId}`,
-          current: true,
-        },
-      ]}
-    >
+    <PageCore className="mt-10">
+      <QuestionnaireBreadcrumb filename={questionnaire.filename} organizationId={organizationId} />
       <QuestionnaireDetailClient
         questionnaireId={questionnaireId}
         organizationId={organizationId}
         initialQuestions={questionnaire.questions}
         filename={questionnaire.filename}
       />
-    </PageWithBreadcrumb>
+    </PageCore>
   );
 }
 

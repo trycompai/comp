@@ -37,6 +37,8 @@ export function QuestionnaireDetailClient({
     isLoading,
     isAutoAnswering,
     isExporting,
+    isSaving,
+    savingIndex,
     filteredResults,
     answeredCount,
     totalCount,
@@ -90,6 +92,8 @@ export function QuestionnaireDetailClient({
         isLoading={isLoading}
         isAutoAnswering={isAutoAnswering}
         isExporting={isExporting}
+        isSaving={isSaving}
+        savingIndex={savingIndex}
         showExitDialog={false}
         onShowExitDialogChange={() => {}}
         onExit={() => {}}

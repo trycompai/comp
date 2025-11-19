@@ -23,7 +23,7 @@ export function QuestionnaireOverview({ questionnaires }: QuestionnaireOverviewP
   return (
     <div className="flex flex-col gap-8">
       {/* Header with navigation buttons */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex flex-col gap-2">
           <h1 className="text-xl lg:text-2xl font-semibold text-foreground">
             Security Questionnaire
@@ -34,10 +34,10 @@ export function QuestionnaireOverview({ questionnaires }: QuestionnaireOverviewP
             organization's policies and documentation.
           </p>
         </div>
-        <div className="flex items-center gap-0 rounded-md border border-border bg-card p-0.5">
+        <div className="flex w-full items-center gap-0 rounded-md border border-border bg-card p-0.5 md:inline-flex md:w-auto">
           <Link
             href={`/${orgId}/security-questionnaire`}
-            className={`flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-xs font-medium transition-colors ${
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-sm px-3 py-1.5 text-xs font-medium transition-colors md:flex-initial md:justify-start ${
               isOnStartPage
                 ? 'bg-primary text-primary-foreground'
                 : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
@@ -48,7 +48,7 @@ export function QuestionnaireOverview({ questionnaires }: QuestionnaireOverviewP
           </Link>
           <Link
             href={`/${orgId}/knowledge-base`}
-            className={`flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-xs font-medium transition-colors ${
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-sm px-3 py-1.5 text-xs font-medium transition-colors md:flex-initial md:justify-start ${
               isOnKnowledgeBase
                 ? 'bg-primary text-primary-foreground'
                 : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
