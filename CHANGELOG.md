@@ -1,3 +1,11 @@
+# [1.60.0](https://github.com/trycompai/comp/compare/v1.59.3...v1.60.0) (2025-11-19)
+
+
+### Features
+
+* **api:** update dependencies and refactor email service imports ([#1782](https://github.com/trycompai/comp/issues/1782)) ([5afd2dc](https://github.com/trycompai/comp/commit/5afd2dc234b0378d009209e4465f714788c3ec26))
+* **trust:** add loading skeletons for grants and requests tabs ([#1768](https://github.com/trycompai/comp/issues/1768)) ([fed0f41](https://github.com/trycompai/comp/commit/fed0f41b7f60459142f6e8fdbabc995ebcc5975b))
+
 ## [1.59.3](https://github.com/trycompai/comp/compare/v1.59.2...v1.59.3) (2025-11-18)
 
 
