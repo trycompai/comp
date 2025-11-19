@@ -56,8 +56,12 @@ phases:
 
       - mkdir -p ../docker-build/node_modules/@trycompai
       - mkdir -p ../docker-build/node_modules/@trycompai/utils
+      - mkdir -p ../docker-build/node_modules/@trycompai/db
       - cp -r ../../packages/utils/src ../docker-build/node_modules/@trycompai/utils/
       - cp ../../packages/utils/package.json ../docker-build/node_modules/@trycompai/utils/
+
+      - cp -r ../../packages/db/dist ../docker-build/node_modules/@trycompai/db/
+      - cp ../../packages/db/package.json ../docker-build/node_modules/@trycompai/db/
 
       - cp -r ../../node_modules/@prisma ../docker-build/node_modules/@prisma
       - cp -r ../../node_modules/.prisma ../docker-build/node_modules/.prisma
