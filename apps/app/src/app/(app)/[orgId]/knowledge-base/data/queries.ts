@@ -3,10 +3,9 @@
 import { auth } from '@/utils/auth';
 import { db } from '@db';
 import { headers } from 'next/headers';
-import { cache } from 'react';
 import 'server-only';
 
-export const getPublishedPolicies = cache(async (organizationId: string) => {
+export const getPublishedPolicies = async (organizationId: string) => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -34,9 +33,9 @@ export const getPublishedPolicies = cache(async (organizationId: string) => {
   });
 
   return policies;
-});
+};
 
-export const getContextEntries = cache(async (organizationId: string) => {
+export const getContextEntries = async (organizationId: string) => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -66,9 +65,9 @@ export const getContextEntries = cache(async (organizationId: string) => {
   });
 
   return contextEntries;
-});
+};
 
-export const getKnowledgeBaseDocuments = cache(async (organizationId: string) => {
+export const getKnowledgeBaseDocuments = async (organizationId: string) => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -98,5 +97,5 @@ export const getKnowledgeBaseDocuments = cache(async (organizationId: string) =>
   });
 
   return documents;
-});
+};
 
