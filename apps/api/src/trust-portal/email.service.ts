@@ -1,10 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import {
-  sendEmail,
-  NdaSigningEmail,
-  AccessGrantedEmail,
-  AccessReclaimEmail,
-} from '@trycompai/email';
+import { sendEmail } from '../email/resend';
+import { AccessGrantedEmail } from '../email/templates/access-granted';
+import { AccessReclaimEmail } from '../email/templates/access-reclaim';
+import { NdaSigningEmail } from '../email/templates/nda-signing';
 
 @Injectable()
 export class TrustEmailService {
