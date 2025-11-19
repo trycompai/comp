@@ -20,7 +20,12 @@ interface Props {
   portalUrl?: string | null;
 }
 
-export const AccessGrantedEmail = ({ toName, organizationName, expiresAt, portalUrl }: Props) => {
+export const AccessGrantedEmail = ({
+  toName,
+  organizationName,
+  expiresAt,
+  portalUrl,
+}: Props) => {
   return (
     <Html>
       <Tailwind>
@@ -50,11 +55,14 @@ export const AccessGrantedEmail = ({ toName, organizationName, expiresAt, portal
               Access Granted ✓
             </Heading>
 
-            <Text className="text-[14px] leading-[24px] text-[#121212]">Hello {toName},</Text>
+            <Text className="text-[14px] leading-[24px] text-[#121212]">
+              Hello {toName},
+            </Text>
 
             <Text className="text-[14px] leading-[24px] text-[#121212]">
-              Your NDA has been signed and your access to <strong>{organizationName}</strong>'s
-              policy documentation is now active.
+              Your NDA has been signed and your access to{' '}
+              <strong>{organizationName}</strong>'s policy documentation is now
+              active.
             </Text>
 
             <Text className="text-[14px] leading-[24px] text-[#121212]">
@@ -80,8 +88,8 @@ export const AccessGrantedEmail = ({ toName, organizationName, expiresAt, portal
             )}
 
             <Text className="text-[14px] leading-[24px] text-[#121212]">
-              You can download your signed NDA for your records from the confirmation page or by
-              accessing the portal above.
+              You can download your signed NDA for your records from the
+              confirmation page or by accessing the portal above.
             </Text>
 
             <Section
@@ -91,8 +99,8 @@ export const AccessGrantedEmail = ({ toName, organizationName, expiresAt, portal
               <Text className="m-0 text-[14px] leading-[24px] text-[#121212]">
                 <strong>Lost your access link?</strong>
                 <br />
-                Visit the trust portal and click "Already have access?" to receive a new access link
-                via email.
+                Visit the trust portal and click "Already have access?" to
+                receive a new access link via email.
               </Text>
             </Section>
 

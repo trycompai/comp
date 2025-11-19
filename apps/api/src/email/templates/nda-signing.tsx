@@ -17,11 +17,14 @@ import { Logo } from '../components/logo';
 interface Props {
   toName: string;
   organizationName: string;
-  accessLink: string;
-  expiresAt: Date;
+  ndaSigningLink: string;
 }
 
-export const AccessReclaimEmail = ({ toName, organizationName, accessLink, expiresAt }: Props) => {
+export const NdaSigningEmail = ({
+  toName,
+  organizationName,
+  ndaSigningLink,
+}: Props) => {
   return (
     <Html>
       <Tailwind>
@@ -39,7 +42,7 @@ export const AccessReclaimEmail = ({ toName, organizationName, accessLink, expir
             fontStyle="normal"
           />
         </head>
-        <Preview>Access Your Compliance Data - {organizationName}</Preview>
+        <Preview>NDA Signature Required - {organizationName}</Preview>
 
         <Body className="mx-auto my-auto bg-[#fff] font-sans">
           <Container
@@ -48,47 +51,46 @@ export const AccessReclaimEmail = ({ toName, organizationName, accessLink, expir
           >
             <Logo />
             <Heading className="mx-0 my-[30px] p-0 text-center text-[24px] font-normal text-[#121212]">
-              Access Your Data
+              NDA Signature Required
             </Heading>
 
-            <Text className="text-[14px] leading-[24px] text-[#121212]">Hello {toName},</Text>
-
             <Text className="text-[14px] leading-[24px] text-[#121212]">
-              You requested access to <strong>{organizationName}</strong>'s compliance
-              documentation.
+              Hello {toName},
             </Text>
 
             <Text className="text-[14px] leading-[24px] text-[#121212]">
-              Click the button below to access your data:
+              Your request to <strong>{organizationName}</strong>'s trust portal
+              has been approved.
+            </Text>
+
+            <Text className="text-[14px] leading-[24px] text-[#121212]">
+              <strong>
+                Before you can access the policy documentation, you must review
+                and sign a Non-Disclosure Agreement (NDA).
+              </strong>
             </Text>
 
             <Section className="mt-[32px] mb-[42px] text-center">
               <Button
                 className="text-primary border border-solid border-[#121212] bg-transparent px-6 py-3 text-center text-[14px] font-medium text-[#121212] no-underline"
-                href={accessLink}
+                href={ndaSigningLink}
               >
-                Access Compliance Data
+                Review and Sign NDA
               </Button>
             </Section>
 
             <Text className="text-[14px] leading-[24px] break-all text-[#707070]">
               or copy and paste this URL into your browser{' '}
-              <Link href={accessLink} className="text-[#707070] underline">
-                {accessLink}
+              <Link href={ndaSigningLink} className="text-[#707070] underline">
+                {ndaSigningLink}
               </Link>
             </Text>
 
             <br />
             <Section>
               <Text className="text-[12px] leading-[24px] text-[#666666]">
-                This link will expire in 24 hours. Your grant expires on:{' '}
-                <strong>
-                  {expiresAt.toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
-                </strong>
+                This link will expire in 7 days. If you need a new link, please
+                contact the organization.
               </Text>
             </Section>
 
@@ -102,4 +104,4 @@ export const AccessReclaimEmail = ({ toName, organizationName, accessLink, expir
   );
 };
 
-export default AccessReclaimEmail;
+export default NdaSigningEmail;

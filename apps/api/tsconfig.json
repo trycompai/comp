@@ -24,6 +24,7 @@
     "paths": {
       "@/*": ["./src/*"],
       "@db": ["./prisma/index"]
-    }
+    },
+    "jsx": "react-jsx"
   }
 }

@@ -1,8 +1,8 @@
 'use server';
 
-import { openai } from '@ai-sdk/openai';
+import { groq } from '@ai-sdk/groq';
 import { db } from '@db';
-import { generateObject } from 'ai';
+import { generateObject, NoObjectGeneratedError } from 'ai';
 import { performance } from 'perf_hooks';
 import { z } from 'zod';
 import {
@@ -80,21 +80,63 @@ export async function generateAutomationSuggestions(
 
   // Generate AI suggestions
   const aiStartTime = performance.now();
-  const { object, usage } = await generateObject({
-    model: openai('gpt-4.1-mini'), // Testing gpt-5-nano for suggestions
-    schema: SuggestionsSchema,
-    system: AUTOMATION_SUGGESTIONS_SYSTEM_PROMPT,
-    prompt: getAutomationSuggestionsPrompt(taskDescription, vendorList, contextInfo),
-  });
-  const aiTime = performance.now() - aiStartTime;
-  console.log(
-    `[generateAutomationSuggestions] AI generation completed in ${aiTime.toFixed(2)}ms (total tokens: ${usage?.totalTokens || 'unknown'})`,
-  );
+  try {
+    const { object, usage } = await generateObject({
+      model: groq('meta-llama/llama-4-scout-17b-16e-instruct'),
+      schema: SuggestionsSchema,
+      system: AUTOMATION_SUGGESTIONS_SYSTEM_PROMPT,
+      prompt: getAutomationSuggestionsPrompt(taskDescription, vendorList, contextInfo),
+    });
+    const aiTime = performance.now() - aiStartTime;
+    console.log(
+      `[generateAutomationSuggestions] AI generation completed in ${aiTime.toFixed(2)}ms (total tokens: ${usage?.totalTokens || 'unknown'})`,
+    );
 
-  const totalTime = performance.now() - startTime;
-  console.log(
-    `[generateAutomationSuggestions] Total time: ${totalTime.toFixed(2)}ms (vendors: ${vendorsTime.toFixed(2)}ms, context: ${contextTime.toFixed(2)}ms, AI: ${aiTime.toFixed(2)}ms)`,
-  );
+    const totalTime = performance.now() - startTime;
+    console.log(
+      `[generateAutomationSuggestions] Total time: ${totalTime.toFixed(2)}ms (vendors: ${vendorsTime.toFixed(2)}ms, context: ${contextTime.toFixed(2)}ms, AI: ${aiTime.toFixed(2)}ms)`,
+    );
 
-  return object.suggestions;
+    // Handle case where model returns single object instead of array
+    let suggestions = object.suggestions;
+    if (!Array.isArray(suggestions)) {
+      if (suggestions && typeof suggestions === 'object' && 'title' in suggestions) {
+        suggestions = [suggestions];
+      } else {
+        suggestions = [];
+      }
+    }
+
+    return suggestions;
+  } catch (error) {
+    const aiTime = performance.now() - aiStartTime;
+    console.error('[generateAutomationSuggestions] Error generating suggestions:', error);
+    // Try to extract suggestions from error if available
+    if (NoObjectGeneratedError.isInstance(error)) {
+      try {
+        const errorText = error.text;
+        if (errorText) {
+          const parsed = JSON.parse(errorText);
+          if (parsed.suggestions) {
+            const suggestions = Array.isArray(parsed.suggestions)
+              ? parsed.suggestions
+              : [parsed.suggestions];
+            if (suggestions.length > 0 && suggestions[0].title) {
+              console.log(
+                `[generateAutomationSuggestions] Recovered ${suggestions.length} suggestions from error response`,
+              );
+              return suggestions;
+            }
+          }
+        }
+      } catch {
+        // Ignore parse errors
+      }
+    }
+    const totalTime = performance.now() - startTime;
+    console.log(
+      `[generateAutomationSuggestions] Total time: ${totalTime.toFixed(2)}ms (vendors: ${vendorsTime.toFixed(2)}ms, context: ${contextTime.toFixed(2)}ms, AI: ${aiTime.toFixed(2)}ms) - FAILED`,
+    );
+    return [];
+  }
 }

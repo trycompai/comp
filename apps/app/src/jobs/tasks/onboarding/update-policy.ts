@@ -7,7 +7,7 @@ if (!process.env.OPENAI_API_KEY) {
 }
 
 // v4: define queue ahead of time
-export const updatePolicyQueue = queue({ name: 'update-policy', concurrencyLimit: 100 });
+export const updatePolicyQueue = queue({ name: 'update-policy', concurrencyLimit: 50 });
 
 export const updatePolicy = schemaTask({
   id: 'update-policy',
@@ -48,10 +48,10 @@ export const updatePolicy = schemaTask({
       if (metadata.parent) {
         // Update this policy's status to completed using individual key
         metadata.parent.set(`policy_${params.policyId}_status`, 'completed');
-        
+
         // Increment completed count
         metadata.parent.increment('policiesCompleted', 1);
-        
+
         // Decrement remaining count
         metadata.parent.increment('policiesRemaining', -1);
       }
