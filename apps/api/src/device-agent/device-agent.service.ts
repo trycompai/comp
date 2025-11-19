@@ -66,10 +66,7 @@ export class DeviceAgentService {
     }
   }
 
-  async downloadWindowsAgent(
-    organizationId: string,
-    employeeId: string,
-  ): Promise<{ stream: Readable; filename: string; contentType: string }> {
+  async downloadWindowsAgent(): Promise<{ stream: Readable; filename: string; contentType: string }> {
     try {
       const windowsPackageFilename = 'Comp AI Agent 1.0.0.exe';
       const packageKey = `windows/${windowsPackageFilename}`;

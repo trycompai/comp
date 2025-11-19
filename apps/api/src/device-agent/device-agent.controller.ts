@@ -71,14 +71,8 @@ export class DeviceAgentController {
     @AuthContext() authContext: AuthContextType,
     @Response({ passthrough: true }) res: ExpressResponse,
   ) {
-    // Use the authenticated user's ID as the employee ID
-    const employeeId = authContext.userId || 'unknown-user';
-
     const { stream, filename, contentType } =
-      await this.deviceAgentService.downloadWindowsAgent(
-        organizationId,
-        employeeId,
-      );
+      await this.deviceAgentService.downloadWindowsAgent();
 
     // Set headers for file download
     res.set({
