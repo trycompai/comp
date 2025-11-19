@@ -11,9 +11,8 @@ import {
   Tailwind,
   Text,
 } from '@react-email/components';
-import React from 'react';
-import { Footer } from './components/footer';
-import { Logo } from './components/logo';
+import { Footer } from '../components/footer';
+import { Logo } from '../components/logo';
 
 interface Props {
   toName: string;

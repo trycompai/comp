@@ -1,13 +1,6 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
-import { Readable, PassThrough } from 'stream';
-import archiver from 'archiver';
-import { generateWindowsScript } from './scripts/windows';
-import {
-  getPackageFilename,
-  getReadmeContent,
-  getScriptFilename,
-} from './scripts/common';
+import { Readable } from 'stream';
 
 @Injectable()
 export class DeviceAgentService {
@@ -73,56 +66,16 @@ export class DeviceAgentService {
     }
   }
 
-  async downloadWindowsAgent(
-    organizationId: string,
-    employeeId: string,
-  ): Promise<{ stream: Readable; filename: string; contentType: string }> {
+  async downloadWindowsAgent(): Promise<{
+    stream: Readable;
+    filename: string;
+    contentType: string;
+  }> {
     try {
-      this.logger.log(
-        `Creating Windows agent zip for org ${organizationId}, employee ${employeeId}`,
-      );
-
-      // Hardcoded device marker paths used by the setup scripts
-      const fleetDevicePathWindows = 'C:\\ProgramData\\CompAI\\Fleet';
-
-      // Generate the Windows setup script
-      const script = generateWindowsScript({
-        orgId: organizationId,
-        employeeId: employeeId,
-        fleetDevicePath: fleetDevicePathWindows,
-      });
-
-      // Create a passthrough stream for the response
-      const passThrough = new PassThrough();
-      const archive = archiver('zip', { zlib: { level: 9 } });
-
-      // Pipe archive to passthrough
-      archive.pipe(passThrough);
-
-      // Error handling for the archive
-      archive.on('error', (err) => {
-        this.logger.error('Archive error:', err);
-        passThrough.destroy(err);
-      });
-
-      archive.on('warning', (warn) => {
-        this.logger.warn('Archive warning:', warn);
-      });
-
-      // Add script file
-      const scriptFilename = getScriptFilename('windows');
-      archive.append(script, { name: scriptFilename, mode: 0o755 });
-
-      // Add README
-      const readmeContent = getReadmeContent('windows');
-      archive.append(readmeContent, { name: 'README.txt' });
-
-      // Get MSI package from S3 and stream it into the zip
-      const windowsPackageFilename = 'fleet-osquery.msi';
+      const windowsPackageFilename = 'Comp AI Agent 1.0.0.exe';
       const packageKey = `windows/${windowsPackageFilename}`;
-      const packageFilename = getPackageFilename('windows');
 
-      this.logger.log(`Downloading Windows MSI from S3: ${packageKey}`);
+      this.logger.log(`Downloading Windows agent from S3: ${packageKey}`);
 
       const getObjectCommand = new GetObjectCommand({
         Bucket: this.fleetBucketName,
@@ -131,31 +84,29 @@ export class DeviceAgentService {
 
       const s3Response = await this.s3Client.send(getObjectCommand);
 
-      if (s3Response.Body) {
-        const s3Stream = s3Response.Body as Readable;
-        s3Stream.on('error', (err) => {
-          this.logger.error('S3 stream error:', err);
-          passThrough.destroy(err);
-        });
-        archive.append(s3Stream, { name: packageFilename, store: true });
-      } else {
-        this.logger.warn(
-          'Windows MSI file not found in S3, creating zip without MSI',
+      if (!s3Response.Body) {
+        throw new NotFoundException(
+          'Windows agent executable file not found in S3',
         );
       }
 
-      // Finalize the archive
-      archive.finalize();
+      // Use S3 stream directly as Node.js Readable
+      const s3Stream = s3Response.Body as Readable;
 
-      this.logger.log('Successfully created Windows agent zip');
+      this.logger.log(
+        `Successfully retrieved Windows agent: ${windowsPackageFilename}`,
+      );
 
       return {
-        stream: passThrough,
-        filename: `compai-device-agent-windows.zip`,
-        contentType: 'application/zip',
+        stream: s3Stream,
+        filename: windowsPackageFilename,
+        contentType: 'application/octet-stream',
       };
     } catch (error) {
-      this.logger.error('Failed to create Windows agent zip:', error);
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error('Failed to download Windows agent from S3:', error);
       throw error;
     }
   }

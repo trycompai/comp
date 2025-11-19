@@ -1,10 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  VendorCategory,
-  VendorStatus,
-  Likelihood,
-  Impact,
-} from '@trycompai/db';
+import { VendorCategory, VendorStatus, Likelihood, Impact } from '@db';
 
 export class VendorResponseDto {
   @ApiProperty({

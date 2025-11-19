@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import * as React from 'react';
 
 export const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
@@ -16,7 +17,7 @@ export const sendEmail = async ({
 }: {
   to: string;
   subject: string;
-  react: React.ReactElement;
+  react: React.ReactNode;
   marketing?: boolean;
   system?: boolean;
   test?: boolean;
@@ -60,6 +61,7 @@ export const sendEmail = async ({
       cc,
       replyTo,
       subject,
+      // @ts-ignore – React node allowed by the SDK
       react,
       scheduledAt,
     });
