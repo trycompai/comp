@@ -103,7 +103,11 @@
     "vitest": "^3.2.4"
   },
   "exports": {
+    ".": "./src/index.ts",
     "./*": "./src/components/*.tsx",
+    "./cn": "./src/utils/cn.ts",
+    "./hooks": "./src/hooks/index.ts",
+    "./editor": "./src/components/editor/index.tsx",
     "./globals.css": "./src/globals.css",
     "./editor.css": "./src/editor.css",
     "./tailwind.config": "./tailwind.config.ts",

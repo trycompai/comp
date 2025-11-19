@@ -2,7 +2,7 @@
 
 import { JwtTokenManager } from '@/components/auth/jwt-token-manager';
 import { env } from '@/env.mjs';
-import { AnalyticsProvider } from '@comp/analytics';
+import { AnalyticsProvider } from '@trycompai/analytics';
 import { GoogleTagManager } from '@next/third-parties/google';
 import {
   defaultShouldDehydrateQuery,

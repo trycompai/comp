@@ -74,7 +74,7 @@ export const revokeInvitation = authActionClient
       });
 
       revalidatePath(`/${ctx.session.activeOrganizationId}/settings/users`);
-      revalidateTag(`user_${ctx.user.id}`);
+      revalidateTag(`user_${ctx.user.id}`, { expire: 0 });
 
       return {
         success: true,

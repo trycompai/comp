@@ -1,6 +1,6 @@
 'use client';
 
-import { cn } from '@trycompai/ui/utils/cn';
+import { cn } from '@trycompai/ui/cn';
 import { Search, X } from 'lucide-react';
 
 interface SearchInputProps {

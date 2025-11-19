@@ -1,6 +1,7 @@
 import {
   emailOTPClient,
   inferAdditionalFields,
+  inferOrgAdditionalFields,
   multiSessionClient,
   organizationClient,
 } from 'better-auth/client/plugins';
@@ -12,7 +13,9 @@ console.log('process.env.NEXT_PUBLIC_BETTER_AUTH_URL', process.env.NEXT_PUBLIC_B
 export const authClient = createAuthClient({
   baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
   plugins: [
-    organizationClient(),
+    organizationClient({
+      schema: inferOrgAdditionalFields<typeof auth>(),
+    }),
     inferAdditionalFields<typeof auth>(),
     emailOTPClient(),
     multiSessionClient(),

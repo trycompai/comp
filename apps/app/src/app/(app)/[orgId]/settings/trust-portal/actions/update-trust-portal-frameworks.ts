@@ -89,5 +89,5 @@ export async function updateTrustPortalFrameworks({
   });
 
   revalidatePath(`/${orgId}/settings/trust-portal`);
-  revalidateTag(`organization_${orgId}`);
+  revalidateTag(`organization_${orgId}`, { expire: 0 });
 }

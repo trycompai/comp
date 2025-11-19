@@ -16,6 +16,7 @@ import {
   parseAsString,
   parseAsStringEnum,
   useQueryState,
+  parseAsIsoDateTime,
 } from 'nuqs';
 import { useCallback, useMemo } from 'react';
 import useSWR from 'swr';
@@ -73,7 +74,7 @@ export const RisksTable = ({
   );
   const [lastUpdated] = useQueryState(
     'lastUpdated',
-    parseAsArrayOf(z.coerce.date()).withDefault([]),
+    parseAsArrayOf(parseAsIsoDateTime).withDefault([]),
   );
 
   // Build current search params from URL state

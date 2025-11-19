@@ -10,7 +10,7 @@ import {
   SelectLabel,
   SelectTrigger,
   SelectValue,
-} from '../../components/ui/select';
+} from '@trycompai/ui/select';
 import { useAvailableModels } from './use-available-models';
 
 interface Props {

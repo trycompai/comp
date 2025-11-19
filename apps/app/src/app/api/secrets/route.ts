@@ -128,8 +128,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ secret }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      console.error('Invalid input:', error.errors);
-      return NextResponse.json({ error: 'Invalid input', details: error.errors }, { status: 400 });
+      console.error('Invalid input:', error.issues);
+      return NextResponse.json({ error: 'Invalid input', details: error.issues }, { status: 400 });
     }
     console.error('Error creating secret:', error);
     return NextResponse.json({ error: 'Failed to create secret' }, { status: 500 });

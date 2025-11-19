@@ -1,7 +1,8 @@
 'use client';
 
 import { changeOrganizationAction } from '@/actions/change-organization';
-import { Button } from '@trycomp/ui/button';
+import type { Organization } from '@trycompai/db';
+import { Button } from '@trycompai/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,

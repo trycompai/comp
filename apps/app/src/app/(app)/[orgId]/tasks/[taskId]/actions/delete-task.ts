@@ -54,7 +54,7 @@ export const deleteTaskAction = authActionClient
       // Revalidate paths to update UI
       revalidatePath(`/${activeOrganizationId}/tasks`);
       revalidatePath(`/${activeOrganizationId}/tasks/all`);
-      revalidateTag('tasks');
+      revalidateTag('tasks', { expire: 0 });
 
       return {
         success: true,

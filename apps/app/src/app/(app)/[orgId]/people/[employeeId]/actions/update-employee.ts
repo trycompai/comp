@@ -139,7 +139,7 @@ export const updateEmployee = authActionClient
       revalidatePath(`/${organizationId}/people`);
 
       return { success: true, data: updatedMemberResult };
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
           const targetFields = error.meta?.target as string[] | undefined;

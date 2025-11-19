@@ -149,7 +149,7 @@ export const updateMemberRole = authActionClient
       }
 
       revalidatePath(`/${orgId}/settings/users`);
-      revalidateTag(`user_${requestingUserId}`);
+      revalidateTag(`user_${requestingUserId}`, { expire: 0 });
 
       return {
         success: true,

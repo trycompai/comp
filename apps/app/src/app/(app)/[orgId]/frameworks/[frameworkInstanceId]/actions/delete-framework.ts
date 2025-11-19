@@ -53,7 +53,7 @@ export const deleteFrameworkAction = authActionClient
 
       // Revalidate paths to update UI
       revalidatePath(`/${activeOrganizationId}/frameworks`);
-      revalidateTag('frameworks');
+      revalidateTag('frameworks', { expire: 0 });
 
       return {
         success: true,

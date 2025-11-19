@@ -1,14 +1,27 @@
 {
   "name": "@trycompai/integrations",
   "version": "1.0.0",
+  "private": true,
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "clean": "rm -rf .turbo node_modules dist",
+    "dev": "tsdown --watch",
+    "format": "prettier --write .",
+    "lint": "prettier --check .",
+    "typecheck": "tsc --noEmit"
+  },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.65",
     "@aws-sdk/client-securityhub": "^3.0.0",
     "@aws-sdk/client-sts": "^3.808.0",
     "@azure/identity": "^4.10.0",
-    "@comp/app": "workspace:*",
     "@slack/bolt": "^3.22.0",
     "@slack/web-api": "^7.8.0",
+    "@trycompai/crypto": "workspace:*",
     "ai": "^5.0.93",
     "jsonwebtoken": "^9.0.2",
     "node-fetch": "^2.6.7",
@@ -22,18 +35,5 @@
     "@types/node": "^24.2.0",
     "@types/node-fetch": "^2.6.2",
     "typescript": "^5.9.2"
-  },
-  "exports": {
-    ".": "./src/index.ts"
-  },
-  "private": true,
-  "scripts": {
-    "build": "tsdown",
-    "clean": "rm -rf .turbo node_modules dist",
-    "dev": "tsdown --watch",
-    "format": "prettier --write .",
-    "lint": "prettier --check .",
-    "typecheck": "tsc --noEmit"
-  },
-  "sideEffects": false
+  }
 }

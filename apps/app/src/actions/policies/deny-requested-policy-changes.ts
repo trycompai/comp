@@ -86,7 +86,7 @@ export const denyRequestedPolicyChangesAction = authActionClient
 
       revalidatePath(`/${session.activeOrganizationId}/policies`);
       revalidatePath(`/${session.activeOrganizationId}/policies/${id}`);
-      revalidateTag('policies');
+      revalidateTag('policies', { expire: 0 });
 
       return {
         success: true,

@@ -129,7 +129,7 @@ export const completeInvitation = authActionClientWithoutOrg
 
         revalidatePath(`/${invitation.organization.id}`);
         revalidatePath(`/${invitation.organization.id}/settings/users`);
-        revalidateTag(`user_${user.id}`);
+        revalidateTag(`user_${user.id}`, { expire: 0 });
 
         // Server redirect to the organization's root
         redirect(`/${invitation.organizationId}/`);

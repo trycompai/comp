@@ -6,6 +6,7 @@ import {
   parseAsInteger,
   parseAsString,
   parseAsStringEnum,
+  parseAsIsoDateTime,
 } from 'nuqs/server';
 import * as z from 'zod';
 
@@ -14,9 +15,9 @@ export const searchParamsCache = createSearchParamsCache({
   perPage: parseAsInteger.withDefault(50),
   sort: getSortingStateParser<Policy>().withDefault([{ id: 'createdAt', desc: true }]),
   name: parseAsString.withDefault(''),
-  status: parseAsArrayOf(z.nativeEnum(PolicyStatus)).withDefault([]),
-  createdAt: parseAsArrayOf(z.date()).withDefault([]),
-  updatedAt: parseAsArrayOf(z.coerce.date()).withDefault([]),
+  status: parseAsArrayOf(parseAsStringEnum(Object.values(PolicyStatus))).withDefault([]),
+  createdAt: parseAsArrayOf(parseAsIsoDateTime).withDefault([]),
+  updatedAt: parseAsArrayOf(parseAsIsoDateTime).withDefault([]),
   // advanced filter
   filters: getFiltersStateParser().withDefault([]),
   joinOperator: parseAsStringEnum(['and', 'or']).withDefault('and'),
@@ -24,7 +25,7 @@ export const searchParamsCache = createSearchParamsCache({
 
 export const createPolicySchema = z.object({
   name: z.string(),
-  status: z.nativeEnum(PolicyStatus),
+  status: z.enum(PolicyStatus),
 });
 
 export type GetPolicySchema = Awaited<ReturnType<typeof searchParamsCache.parse>>;

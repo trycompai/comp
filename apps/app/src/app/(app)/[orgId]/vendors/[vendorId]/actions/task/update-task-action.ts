@@ -61,7 +61,7 @@ export const updateVendorTaskAction = authActionClient
 
       revalidatePath(`/${session.activeOrganizationId}/vendors/${task.vendors[0].id}`);
       revalidatePath(`/${session.activeOrganizationId}/vendors/${task.vendors[0].id}/tasks/${id}`);
-      revalidateTag(`vendor_${session.activeOrganizationId}`);
+      revalidateTag(`vendor_${session.activeOrganizationId}`, { expire: 0 });
 
       return { success: true };
     } catch (error) {

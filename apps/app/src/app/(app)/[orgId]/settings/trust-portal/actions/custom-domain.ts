@@ -101,7 +101,7 @@ export const customDomainAction = authActionClient
       });
 
       revalidatePath(`/${activeOrganizationId}/settings/trust-portal`);
-      revalidateTag(`organization_${activeOrganizationId}`);
+      revalidateTag(`organization_${activeOrganizationId}`, { expire: 0 });
 
       return {
         success: true,

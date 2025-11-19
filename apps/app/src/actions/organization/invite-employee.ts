@@ -40,7 +40,7 @@ export const inviteEmployee = authActionClient
 
       // Revalidate the employees list page
       revalidatePath(`/${organizationId}/people/all`);
-      revalidateTag(`user_${ctx.user.id}`); // Keep user tag revalidation
+      revalidateTag(`user_${ctx.user.id}`, { expire: 0 }); // Keep user tag revalidation
 
       return {
         success: true,

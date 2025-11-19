@@ -102,7 +102,7 @@ export const updatePolicyAction = authActionClient
 
       revalidatePath(`/${activeOrganizationId}/policies/${id}`);
       revalidatePath(`/${activeOrganizationId}/policies`);
-      revalidateTag(`user_${user.id}`);
+      revalidateTag(`user_${user.id}`, { expire: 0 });
 
       return {
         success: true,

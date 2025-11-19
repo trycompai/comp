@@ -53,7 +53,7 @@ export const updateResidualRiskAction = authActionClient
       revalidatePath(`/${session.activeOrganizationId}/risk`);
       revalidatePath(`/${session.activeOrganizationId}/risk/register`);
       revalidatePath(`/${session.activeOrganizationId}/risk/${id}`);
-      revalidateTag('risks');
+      revalidateTag('risks', { expire: 0 });
 
       return {
         success: true,

@@ -37,7 +37,7 @@ export const updateOrganizationNameAction = authActionClient
       });
 
       revalidatePath('/settings');
-      revalidateTag(`organization_${activeOrganizationId}`);
+      revalidateTag(`organization_${activeOrganizationId}`, { expire: 0 });
 
       return {
         success: true,

@@ -23,9 +23,7 @@ export const createVendorTaskSchema = z.object({
   description: z.string().min(1, {
     message: 'Description is required',
   }),
-  dueDate: z.date({
-    required_error: 'Due date is required',
-  }),
+  dueDate: z.date(),
   assigneeId: z.string().nullable(),
 });
 
@@ -78,8 +76,6 @@ export const updateVendorTaskSchema = z.object({
     message: 'Description is required',
   }),
   dueDate: z.date().optional(),
-  status: z.nativeEnum(TaskStatus, {
-    required_error: 'Task status is required',
-  }),
+  status: z.nativeEnum(TaskStatus),
   assigneeId: z.string().nullable(),
 });

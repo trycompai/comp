@@ -135,10 +135,6 @@ export const authActionClient = actionClientWithMeta
       headers: headersList,
     });
 
-    const member = await auth.api.getActiveMember({
-      headers: headersList,
-    });
-
     if (!session) {
       throw new Error('Unauthorized');
     }
@@ -146,6 +142,13 @@ export const authActionClient = actionClientWithMeta
     if (!session.session.activeOrganizationId) {
       throw new Error('Organization not found');
     }
+
+    const member = await db.member.findFirst({
+      where: {
+        userId: session.user.id,
+        organizationId: session.session.activeOrganizationId,
+      },
+    });
 
     if (!member) {
       throw new Error('Member not found');

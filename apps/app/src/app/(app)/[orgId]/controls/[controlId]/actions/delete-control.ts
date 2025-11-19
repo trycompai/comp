@@ -54,7 +54,7 @@ export const deleteControlAction = authActionClient
       // Revalidate paths to update UI
       revalidatePath(`/${activeOrganizationId}/controls/all`);
       revalidatePath(`/${activeOrganizationId}/controls`);
-      revalidateTag('controls');
+      revalidateTag('controls', { expire: 0 });
 
       return {
         success: true,

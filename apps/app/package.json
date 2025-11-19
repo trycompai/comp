@@ -1,6 +1,30 @@
 {
   "name": "@comp/app",
   "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "analyze-locale-usage": "bunx tsx src/locales/analyze-locale-usage.ts",
+    "build": "next build",
+    "build:docker": "next build",
+    "clean": "rm -rf .next .turbo .trigger node_modules",
+    "deploy:trigger-prod": "npx trigger.dev@4.0.6 deploy",
+    "dev": "bun i && bunx concurrently --kill-others --names \"next,trigger\" --prefix-colors \"yellow,blue\" \"next dev --turbo -p 3000\" \"bunx trigger.dev@4.0.6 dev\"",
+    "lint": "next lint && prettier --check .",
+    "start": "next start",
+    "test": "vitest",
+    "test:all": "./scripts/test-all.sh",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:install": "playwright install --with-deps",
+    "test:e2e:report": "playwright show-report",
+    "test:e2e:setup": "./scripts/setup-e2e.sh",
+    "test:e2e:ui": "playwright test --ui",
+    "test:ui": "vitest --ui",
+    "test:watch": "vitest --watch",
+    "typecheck": "tsc --noEmit"
+  },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.0",
     "@ai-sdk/gateway": "^2.0.11",
@@ -51,6 +75,7 @@
     "@tiptap/react": "^3.11.0",
     "@trigger.dev/react-hooks": "4.0.6",
     "@trigger.dev/sdk": "4.0.6",
+    "@trycompai/crypto": "workspace:*",
     "@trycompai/db": "workspace:*",
     "@trycompai/email": "workspace:*",
     "@trycompai/integrations": "workspace:*",
@@ -142,9 +167,6 @@
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.2.4"
   },
-  "exports": {
-    "./src/lib/encryption": "./src/lib/encryption.ts"
-  },
   "peerDependencies": {
     "react": "^19.1.1",
     "react-dom": "^19.1.0"
@@ -153,29 +175,5 @@
     "overrides": {
       "tiptap-extension-global-drag-handle": "^0.1.18"
     }
-  },
-  "private": true,
-  "scripts": {
-    "analyze-locale-usage": "bunx tsx src/locales/analyze-locale-usage.ts",
-    "build": "next build",
-    "build:docker": "next build",
-    "deploy:trigger-prod": "npx trigger.dev@4.0.6 deploy",
-    "dev": "bun i && bunx concurrently --kill-others --names \"next,trigger\" --prefix-colors \"yellow,blue\" \"next dev --turbo -p 3000\" \"bunx trigger.dev@4.0.6 dev\"",
-    "lint": "next lint && prettier --check .",
-    "clean": "rm -rf .next .turbo .trigger node_modules",
-    "start": "next start",
-    "test": "vitest",
-    "test:all": "./scripts/test-all.sh",
-    "test:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test",
-    "test:e2e:debug": "playwright test --debug",
-    "test:e2e:headed": "playwright test --headed",
-    "test:e2e:install": "playwright install --with-deps",
-    "test:e2e:report": "playwright show-report",
-    "test:e2e:setup": "./scripts/setup-e2e.sh",
-    "test:e2e:ui": "playwright test --ui",
-    "test:ui": "vitest --ui",
-    "test:watch": "vitest --watch",
-    "typecheck": "tsc --noEmit"
   }
 }

@@ -7,6 +7,8 @@ import { fetch as azureFetch } from './azure/src';
 import type { GCPCredentials } from './gcp/src';
 import { fetch as gcpFetch } from './gcp/src';
 
+import { type EncryptedData } from '@trycompai/crypto';
+
 // Add Deel credentials type
 interface DeelCredentials {
   api_key: string;
@@ -15,14 +17,6 @@ interface DeelCredentials {
 // Add GitHub credentials type
 interface GitHubCredentials {
   GITHUB_TOKEN: string;
-}
-
-// Define the EncryptedData type locally to avoid import issues
-interface EncryptedData {
-  encrypted: string;
-  iv: string;
-  tag: string;
-  salt: string;
 }
 
 // Common interface for all integration findings

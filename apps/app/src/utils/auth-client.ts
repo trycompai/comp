@@ -1,6 +1,7 @@
 import {
   emailOTPClient,
   inferAdditionalFields,
+  inferOrgAdditionalFields,
   jwtClient,
   magicLinkClient,
   multiSessionClient,
@@ -22,6 +23,7 @@ export const authClient = createAuthClient({
     organizationClient({
       ac,
       roles: allRoles,
+      schema: inferOrgAdditionalFields<typeof auth>(),
     }),
     inferAdditionalFields<typeof auth>(),
     emailOTPClient(),

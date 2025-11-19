@@ -1,4 +1,4 @@
-import { decrypt } from '@comp/app/src/lib/encryption';
+import { decrypt } from '@trycompai/crypto/encryption';
 import { logger, schemaTask } from '@trigger.dev/sdk';
 import { db } from '@trycompai/db';
 import { type DecryptFunction, getIntegrationHandler } from '@trycompai/integrations';
