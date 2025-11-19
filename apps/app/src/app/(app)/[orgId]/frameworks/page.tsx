@@ -1,7 +1,6 @@
 import { auth } from '@/utils/auth';
 import { db } from '@db';
 import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
 import { cache } from 'react';
 import { Overview } from './components/Overview';
 import { getAllFrameworkInstancesWithControls } from './data/getAllFrameworkInstancesWithControls';
@@ -22,22 +21,14 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
     headers: await headers(),
   });
 
-  if (!session) {
-    redirect('/login');
-  }
-
-  const org = await db.organization.findUnique({
-    where: { id: organizationId },
-    select: { onboardingCompleted: true },
-  });
-
-  if (org && org.onboardingCompleted === false) {
-    redirect(`/onboarding/${organizationId}`);
+  const userId = session?.user?.id;
+  if (!userId) {
+    throw new Error('Unauthorized');
   }
 
   const member = await db.member.findFirst({
     where: {
-      userId: session.user.id,
+      userId,
       organizationId,
     },
   });
