@@ -84,13 +84,7 @@
   },
   "workspaces": [
     "apps/*",
-    "packages/analytics",
-    "packages/email",
-    "packages/integrations",
-    "packages/kv",
-    "packages/tsconfig",
-    "packages/ui",
-    "packages/utils"
+    "packages/*"
   ],
   "dependencies": {
     "@types/cheerio": "^1.0.0",

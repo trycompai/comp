@@ -10,6 +10,7 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
+    "jsx": "react-jsx",
     "target": "esnext",
     "sourceMap": true,
     "outDir": "./dist",

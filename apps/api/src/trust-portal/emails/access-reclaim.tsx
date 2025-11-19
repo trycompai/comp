@@ -11,8 +11,9 @@ import {
   Tailwind,
   Text,
 } from '@react-email/components';
-import { Footer } from '../components/footer';
-import { Logo } from '../components/logo';
+import React from 'react';
+import { Footer } from './components/footer';
+import { Logo } from './components/logo';
 
 interface Props {
   toName: string;
@@ -103,3 +104,4 @@ export const AccessReclaimEmail = ({ toName, organizationName, accessLink, expir
 };
 
 export default AccessReclaimEmail;
+
