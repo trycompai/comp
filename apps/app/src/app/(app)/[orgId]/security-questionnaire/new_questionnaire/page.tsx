@@ -4,7 +4,6 @@ import { auth } from '@/utils/auth';
 import { db } from '@db';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
-import { cache } from 'react';
 import { QuestionnaireParser } from '../components/QuestionnaireParser';
 
 export default async function NewQuestionnairePage() {
@@ -74,7 +73,7 @@ export default async function NewQuestionnairePage() {
   );
 }
 
-const checkPublishedPolicies = cache(async (organizationId: string): Promise<boolean> => {
+const checkPublishedPolicies = async (organizationId: string): Promise<boolean> => {
   const count = await db.policy.count({
     where: {
       organizationId,
@@ -84,5 +83,5 @@ const checkPublishedPolicies = cache(async (organizationId: string): Promise<boo
   });
 
   return count > 0;
-});
+};
 

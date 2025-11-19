@@ -46,19 +46,24 @@ export function QuestionnaireResultsCards({
   return (
     <div className="lg:hidden space-y-4">
       {filteredResults.map((qa, index) => {
-        const originalIndex = results.findIndex((r) => r === qa);
-        const isEditing = editingIndex === originalIndex;
-        const questionStatus = questionStatuses.get(originalIndex);
-        const isProcessing = questionStatus === 'processing';
+        // Use originalIndex if available (from detail page), otherwise find by question text
+        const originalIndex = (qa as any)._originalIndex !== undefined 
+          ? (qa as any)._originalIndex 
+          : results.findIndex((r) => r.question === qa.question);
+        // Fallback to index if not found (shouldn't happen, but safety check)
+        const safeIndex = originalIndex >= 0 ? originalIndex : index;
+        const isEditing = editingIndex === safeIndex;
+        const questionStatus = questionStatuses.get(safeIndex);
+        const isProcessing = questionStatus === 'processing' || answeringQuestionIndex === safeIndex;
 
         return (
           <div
-            key={originalIndex}
+            key={`card-${safeIndex}-${qa.question.substring(0, 20)}`}
             className="flex flex-col gap-3 p-4 rounded-xs bg-muted/20 border border-border/30"
           >
             <div className="flex flex-col gap-2">
               <span className="text-xs font-medium text-muted-foreground tabular-nums">
-                Question {originalIndex + 1}
+                Question {safeIndex + 1}
               </span>
               <p className="text-sm font-medium text-foreground">{qa.question}</p>
             </div>
@@ -74,7 +79,7 @@ export function QuestionnaireResultsCards({
                     autoFocus
                   />
                   <div className="flex gap-2">
-                    <Button size="sm" onClick={() => onSaveAnswer(originalIndex)}>
+                    <Button size="sm" onClick={() => onSaveAnswer(safeIndex)}>
                       Save
                     </Button>
                     <Button size="sm" onClick={onCancelEdit} variant="outline">
@@ -87,14 +92,14 @@ export function QuestionnaireResultsCards({
                   {qa.answer ? (
                     <div
                       className="rounded-xs p-3 bg-muted/30 border border-border/30 cursor-pointer hover:bg-muted/50 transition-colors"
-                      onClick={() => onEditAnswer(originalIndex)}
+                      onClick={() => onEditAnswer(safeIndex)}
                     >
                       <p className="text-sm text-foreground">{qa.answer}</p>
                     </div>
                   ) : isProcessing ? (
                     <div className="flex items-center gap-2 p-3 rounded-xs bg-muted/30 border border-border/30">
                       <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />
-                      <span className="text-sm text-muted-foreground">Generating answer...</span>
+                      <span className="text-sm text-muted-foreground">Finding answer...</span>
                     </div>
                   ) : (
                     <div className="flex flex-col gap-2">
@@ -103,10 +108,10 @@ export function QuestionnaireResultsCards({
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            onAnswerSingleQuestion(originalIndex);
+                            onAnswerSingleQuestion(safeIndex);
                           }}
                           disabled={
-                            answeringQuestionIndex === originalIndex ||
+                            answeringQuestionIndex === safeIndex ||
                             (isAutoAnswering && hasClickedAutoAnswer)
                           }
                           className="w-full justify-center"
@@ -124,7 +129,7 @@ export function QuestionnaireResultsCards({
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => onEditAnswer(originalIndex)}
+                        onClick={() => onEditAnswer(safeIndex)}
                         className="w-full justify-center"
                       >
                         Write Answer
@@ -140,11 +145,11 @@ export function QuestionnaireResultsCards({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => onToggleSource(originalIndex)}
+                  onClick={() => onToggleSource(safeIndex)}
                   className="h-auto p-1 text-xs text-muted-foreground hover:text-foreground w-full justify-start"
                 >
                   <BookOpen className="mr-1 h-3 w-3" />
-                  {expandedSources.has(originalIndex) ? (
+                  {expandedSources.has(safeIndex) ? (
                     <>
                       Hide sources ({qa.sources.length})
                       <ChevronUp className="ml-1 h-3 w-3" />
@@ -156,7 +161,7 @@ export function QuestionnaireResultsCards({
                     </>
                   )}
                 </Button>
-                {expandedSources.has(originalIndex) && (
+                {expandedSources.has(safeIndex) && (
                   <div className="mt-2 space-y-1 pl-4 border-l-2 border-muted/30">
                     {qa.sources.map((source, sourceIndex) => {
                       const isPolicy = source.sourceType === 'policy' && source.sourceId;

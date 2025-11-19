@@ -2,8 +2,11 @@
 
 import { useRealtimeTaskTrigger } from '@trigger.dev/react-hooks';
 import type { vendorQuestionnaireOrchestratorTask } from '@/jobs/tasks/vendors/vendor-questionnaire-orchestrator';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useTransition } from 'react';
 import { toast } from 'sonner';
+import { useAction } from 'next-safe-action/hooks';
+import { saveAnswerAction } from '../actions/save-answer';
+import { saveAnswersBatchAction } from '../actions/save-answers-batch';
 import type { QuestionAnswer } from '../components/types';
 
 interface UseQuestionnaireAutoAnswerProps {
@@ -18,6 +21,7 @@ interface UseQuestionnaireAutoAnswerProps {
     React.SetStateAction<Map<number, 'pending' | 'processing' | 'completed'>>
   >;
   setAnsweringQuestionIndex: (index: number | null) => void;
+  questionnaireId: string | null;
 }
 
 export function useQuestionnaireAutoAnswer({
@@ -30,6 +34,7 @@ export function useQuestionnaireAutoAnswer({
   setResults,
   setQuestionStatuses,
   setAnsweringQuestionIndex,
+  questionnaireId,
 }: UseQuestionnaireAutoAnswerProps) {
   // Use realtime task trigger for auto-answer
   const {
@@ -41,6 +46,15 @@ export function useQuestionnaireAutoAnswer({
     accessToken: autoAnswerToken || undefined,
     enabled: !!autoAnswerToken,
   });
+
+  // Action for saving answers batch
+  const saveAnswersBatch = useAction(saveAnswersBatchAction, {
+    onError: ({ error }) => {
+      console.error('Error saving answers batch:', error);
+    },
+  });
+
+  const [isPending, startTransition] = useTransition();
 
   // Debug logging for run tracking
   useEffect(() => {
@@ -338,6 +352,7 @@ export function useQuestionnaireAutoAnswer({
               if (currentAnswer !== answer.answer) {
                 console.log('[AutoAnswer] Setting answer for question', targetIndex);
                 updatedResults[targetIndex] = {
+                  ...updatedResults[targetIndex], // Preserve status and other fields
                   question: originalQuestion || answer.question, // Preserve original question text
                   answer: answer.answer,
                   sources: answer.sources,
@@ -377,6 +392,8 @@ export function useQuestionnaireAutoAnswer({
   }, [
     autoAnswerRun?.metadata,
     answeringQuestionIndex,
+    questionnaireId,
+    saveAnswersBatch,
     // Don't include results, setResults, setQuestionStatuses, setAnsweringQuestionIndex in deps
     // results is only used for existence check, setState functions are stable
   ]);
@@ -446,6 +463,7 @@ export function useQuestionnaireAutoAnswer({
               // Only update if answer changed
               if (currentAnswer !== answer.answer) {
                 updatedResults[targetIndex] = {
+                  ...updatedResults[targetIndex], // Preserve status and other fields
                   question: originalQuestion || answer.question,
                   answer: answer.answer,
                   sources: answer.sources,
@@ -469,6 +487,33 @@ export function useQuestionnaireAutoAnswer({
 
           return hasChanges ? updatedResults : prevResults;
         });
+
+        // Save all answers in batch after final output (defer to avoid rendering issues)
+        if (questionnaireId) {
+          const answersToSave = answers
+            .map((answer) => {
+              if (answer.answer) {
+                return {
+                  questionIndex: answer.questionIndex,
+                  answer: answer.answer,
+                  sources: answer.sources,
+                  status: 'generated' as const,
+                };
+              }
+              return null;
+            })
+            .filter((a): a is NonNullable<typeof a> => a !== null);
+
+          if (answersToSave.length > 0) {
+            // Use startTransition to defer the save call to avoid rendering issues
+            startTransition(() => {
+              saveAnswersBatch.execute({
+                questionnaireId,
+                answers: answersToSave,
+              });
+            });
+          }
+        }
 
         const isSingleQuestion = answeringQuestionIndex !== null;
 
@@ -534,6 +579,8 @@ export function useQuestionnaireAutoAnswer({
     autoAnswerRun?.output,
     autoAnswerRun?.id,
     answeringQuestionIndex,
+    questionnaireId,
+    saveAnswersBatch,
     setAnsweringQuestionIndex,
     setQuestionStatuses,
     setIsAutoAnswerProcessStarted,

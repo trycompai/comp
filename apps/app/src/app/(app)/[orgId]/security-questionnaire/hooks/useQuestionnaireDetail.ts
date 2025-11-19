@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { useQuestionnaireActions } from './useQuestionnaireActions';
 import { useQuestionnaireAutoAnswer } from './useQuestionnaireAutoAnswer';
 import { useQuestionnaireSingleAnswer } from './useQuestionnaireSingleAnswer';
@@ -45,11 +45,12 @@ export function useQuestionnaireDetail({
   const [results, setResults] = useState<QuestionnaireResult[]>(() =>
     initialQuestions.map((q) => ({
       question: q.question,
-      answer: q.answer || '',
+      answer: q.answer ?? null, // Preserve null instead of converting to empty string
       originalIndex: q.questionIndex,
       sources: q.sources ? (Array.isArray(q.sources) ? q.sources : []) : [],
       questionAnswerId: q.id,
       status: q.status,
+      failedToGenerate: false, // Initialize failedToGenerate
     }))
   );
 
@@ -141,17 +142,89 @@ export function useQuestionnaireDetail({
     setResults: setResults as Dispatch<SetStateAction<QuestionAnswer[] | null>>,
     setQuestionStatuses,
     setAnsweringQuestionIndex,
+    questionnaireId,
   });
+
+  // Wrapper for setResults that handles QuestionnaireResult[] with originalIndex
+  const setResultsWrapper = useCallback((updater: React.SetStateAction<QuestionAnswer[] | null>) => {
+    setResults((prevResults) => {
+      if (!prevResults) {
+        const newResults = typeof updater === 'function' ? updater(null) : updater;
+        if (!newResults) return prevResults; // Return empty array instead of null
+        // Convert QuestionAnswer[] to QuestionnaireResult[]
+        return newResults.map((r, index) => ({
+          question: r.question,
+          answer: r.answer ?? null, // Preserve null instead of converting to empty string
+          originalIndex: index,
+          sources: r.sources || [],
+          questionAnswerId: '',
+          status: 'untouched' as const,
+          failedToGenerate: r.failedToGenerate ?? false, // Preserve failedToGenerate
+        }));
+      }
+
+      const questionAnswerResults = prevResults.map((r) => ({
+        question: r.question,
+        answer: r.answer,
+        sources: r.sources,
+        failedToGenerate: (r as any).failedToGenerate ?? false, // Preserve failedToGenerate from result
+        _originalIndex: r.originalIndex, // Preserve originalIndex
+      }));
+
+      const newResults = typeof updater === 'function' 
+        ? updater(questionAnswerResults)
+        : updater;
+
+      if (!newResults) return prevResults; // Return previous results instead of null
+
+      // Map back to QuestionnaireResult[] preserving originalIndex
+      return newResults.map((newR, index) => {
+        const originalIndex = (newR as any)._originalIndex !== undefined 
+          ? (newR as any)._originalIndex 
+          : index;
+        const existingResult = prevResults.find((r) => r.originalIndex === originalIndex);
+        if (existingResult) {
+          return {
+            ...existingResult,
+            question: newR.question,
+            answer: newR.answer ?? null, // Preserve null instead of converting to empty string
+            sources: newR.sources,
+            failedToGenerate: newR.failedToGenerate ?? false, // Preserve failedToGenerate
+          };
+        }
+        // Fallback: create new result (shouldn't happen)
+        return {
+          question: newR.question,
+          answer: newR.answer ?? null, // Preserve null instead of converting to empty string
+          originalIndex,
+          sources: newR.sources || [],
+          questionAnswerId: '',
+          status: 'untouched' as const,
+          failedToGenerate: newR.failedToGenerate ?? false, // Preserve failedToGenerate
+        };
+      });
+    });
+  }, []);
 
   // Single answer hook (same as useQuestionnaireParser)
   const singleAnswer = useQuestionnaireSingleAnswer({
     singleAnswerToken,
-    results: results as QuestionAnswer[] | null,
+    results: results.map((r) => ({
+      question: r.question,
+      answer: r.answer,
+      sources: r.sources,
+      failedToGenerate: (r as any).failedToGenerate ?? false, // Preserve failedToGenerate from result
+      _originalIndex: r.originalIndex, // Pass originalIndex for reference
+    })) as QuestionAnswer[],
     answeringQuestionIndex,
-    setResults: setResults as Dispatch<SetStateAction<QuestionAnswer[] | null>>,
+    setResults: setResultsWrapper,
     setQuestionStatuses,
     setAnsweringQuestionIndex,
+    questionnaireId,
   });
+
+  // Expose isSingleAnswerTriggering for isLoading calculation
+  const isSingleAnswerTriggering = singleAnswer.isSingleAnswerTriggering;
 
   // Reuse the same actions hook (but adapt it for detail page)
   const actions = useQuestionnaireActions({
@@ -277,6 +350,7 @@ export function useQuestionnaireDetail({
     }
 
     setAnsweringQuestionIndex(index);
+    
     // Set status to processing immediately to show spinner
     setQuestionStatuses((prev) => {
       const newStatuses = new Map(prev);
@@ -347,7 +421,6 @@ export function useQuestionnaireDetail({
       questionnaireId,
       questionAnswerId: result.questionAnswerId,
       answer: editingAnswer.trim(),
-      status: 'manual',
     });
   };
 
@@ -380,6 +453,31 @@ export function useQuestionnaireDetail({
     );
   }, [isAutoAnswerProcessStarted, hasClickedAutoAnswer, autoAnswer.autoAnswerRun?.status]);
 
+  // Calculate isLoading based on answer generation status
+  const isLoading = useMemo(() => {
+    // Check if any question is being processed
+    const hasProcessingQuestions = Array.from(questionStatuses.values()).some(
+      (status) => status === 'processing'
+    );
+    
+    // Check if single answer is being triggered
+    const isSingleAnswerTriggering = singleAnswer.isSingleAnswerTriggering;
+    
+    // Check if auto answer is being triggered or running
+    const isAutoAnswerTriggering = autoAnswer.isAutoAnswerTriggering;
+    const isAutoAnswerRunActive =
+      autoAnswer.autoAnswerRun?.status === 'EXECUTING' ||
+      autoAnswer.autoAnswerRun?.status === 'QUEUED' ||
+      autoAnswer.autoAnswerRun?.status === 'WAITING';
+
+    return hasProcessingQuestions || isSingleAnswerTriggering || isAutoAnswerTriggering || isAutoAnswerRunActive;
+  }, [
+    questionStatuses,
+    isSingleAnswerTriggering,
+    autoAnswer.isAutoAnswerTriggering,
+    autoAnswer.autoAnswerRun?.status,
+  ]);
+
   return {
     orgId: organizationId,
     results,
@@ -392,7 +490,7 @@ export function useQuestionnaireDetail({
     questionStatuses,
     answeringQuestionIndex,
     hasClickedAutoAnswer,
-    isLoading: false,
+    isLoading,
     isAutoAnswering,
     isExporting: actions.exportAction.status === 'executing',
     filteredResults,

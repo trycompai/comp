@@ -99,3 +99,33 @@ export const getKnowledgeBaseDocuments = async (organizationId: string) => {
   return documents;
 };
 
+export const getManualAnswers = async (organizationId: string) => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session?.session?.activeOrganizationId || session.session.activeOrganizationId !== organizationId) {
+    return [];
+  }
+
+  const manualAnswers = await db.securityQuestionnaireManualAnswer.findMany({
+    where: {
+      organizationId,
+    },
+    select: {
+      id: true,
+      question: true,
+      answer: true,
+      tags: true,
+      sourceQuestionnaireId: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+    orderBy: {
+      updatedAt: 'desc',
+    },
+  });
+
+  return manualAnswers;
+};
+

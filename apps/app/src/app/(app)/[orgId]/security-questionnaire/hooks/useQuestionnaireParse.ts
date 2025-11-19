@@ -26,6 +26,7 @@ interface UseQuestionnaireParseProps {
     React.SetStateAction<Map<number, 'pending' | 'processing' | 'completed'>>
   >;
   setHasClickedAutoAnswer: (clicked: boolean) => void;
+  setQuestionnaireId: (id: string | null) => void;
 }
 
 export function useQuestionnaireParse({
@@ -42,6 +43,7 @@ export function useQuestionnaireParse({
   setExtractedContent,
   setQuestionStatuses,
   setHasClickedAutoAnswer,
+  setQuestionnaireId,
 }: UseQuestionnaireParseProps) {
   // Get trigger token for auto-answer (can trigger and read)
   useEffect(() => {
@@ -86,6 +88,7 @@ export function useQuestionnaireParse({
               }>
             | undefined;
           const extractedContent = run.output.extractedContent as string | undefined;
+          const questionnaireId = run.output.questionnaireId as string | undefined;
 
           if (questionsAndAnswers && Array.isArray(questionsAndAnswers)) {
             const initializedResults = questionsAndAnswers.map((qa) => ({
@@ -96,6 +99,9 @@ export function useQuestionnaireParse({
             setExtractedContent(extractedContent || null);
             setQuestionStatuses(new Map());
             setHasClickedAutoAnswer(false);
+            if (questionnaireId) {
+              setQuestionnaireId(questionnaireId);
+            }
             toast.success(
               `Successfully parsed ${questionsAndAnswers.length} question-answer pairs`,
             );

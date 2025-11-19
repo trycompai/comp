@@ -56,15 +56,20 @@ export function QuestionnaireResultsTable({
         </TableHeader>
         <TableBody>
           {filteredResults.map((qa, index) => {
-            const originalIndex = results.findIndex((r) => r === qa);
-            const isEditing = editingIndex === originalIndex;
-            const questionStatus = questionStatuses.get(originalIndex);
-            const isProcessing = questionStatus === 'processing';
+            // Use originalIndex if available (from detail page), otherwise find by question text
+            const originalIndex = (qa as any)._originalIndex !== undefined 
+              ? (qa as any)._originalIndex 
+              : results.findIndex((r) => r.question === qa.question);
+            // Fallback to index if not found (shouldn't happen, but safety check)
+            const safeIndex = originalIndex >= 0 ? originalIndex : index;
+            const isEditing = editingIndex === safeIndex;
+            const questionStatus = questionStatuses.get(safeIndex);
+            const isProcessing = questionStatus === 'processing' || answeringQuestionIndex === safeIndex;
 
             return (
-              <TableRow key={originalIndex} className="group">
+              <TableRow key={`row-${safeIndex}-${qa.question.substring(0, 20)}`} className="group">
                 <TableCell className="align-top py-6 font-medium pl-6">
-                  <span className="tabular-nums text-muted-foreground">{originalIndex + 1}</span>
+                  <span className="tabular-nums text-muted-foreground">{safeIndex + 1}</span>
                 </TableCell>
                 <TableCell className="align-top py-6 font-medium w-1/2">
                   <p className="leading-relaxed">{qa.question}</p>
@@ -79,7 +84,7 @@ export function QuestionnaireResultsTable({
                         autoFocus
                       />
                       <div className="flex gap-2">
-                        <Button size="sm" onClick={() => onSaveAnswer(originalIndex)}>
+                        <Button size="sm" onClick={() => onSaveAnswer(safeIndex)}>
                           Save
                         </Button>
                         <Button size="sm" onClick={onCancelEdit} variant="outline">
@@ -90,7 +95,7 @@ export function QuestionnaireResultsTable({
                   ) : (
                     <div className="space-y-3">
                       {qa.answer ? (
-                        <div className="cursor-pointer" onClick={() => onEditAnswer(originalIndex)}>
+                        <div className="cursor-pointer" onClick={() => onEditAnswer(safeIndex)}>
                           <p className="text-sm text-muted-foreground leading-relaxed">
                             {qa.answer}
                           </p>
@@ -108,7 +113,7 @@ export function QuestionnaireResultsTable({
                           <Button
                             onClick={(e) => {
                               e.stopPropagation();
-                              onEditAnswer(originalIndex);
+                              onEditAnswer(safeIndex);
                             }}
                             variant="outline"
                             size="sm"
@@ -121,7 +126,7 @@ export function QuestionnaireResultsTable({
                           <Button
                             onClick={(e) => {
                               e.stopPropagation();
-                              onEditAnswer(originalIndex);
+                              onEditAnswer(safeIndex);
                             }}
                             variant="outline"
                             size="sm"
@@ -131,11 +136,11 @@ export function QuestionnaireResultsTable({
                           <Button
                             onClick={(e) => {
                               e.stopPropagation();
-                              onAnswerSingleQuestion(originalIndex);
+                              onAnswerSingleQuestion(safeIndex);
                             }}
                             disabled={
                               isProcessing ||
-                              (isAutoAnswering && answeringQuestionIndex !== originalIndex)
+                              (isAutoAnswering && answeringQuestionIndex !== safeIndex)
                             }
                             size="sm"
                           >
@@ -150,11 +155,11 @@ export function QuestionnaireResultsTable({
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => onToggleSource(originalIndex)}
+                            onClick={() => onToggleSource(safeIndex)}
                             className="h-auto p-1 text-xs text-muted-foreground hover:text-foreground -ml-2"
                           >
                             <BookOpen className="mr-1.5 h-3 w-3" />
-                            {expandedSources.has(originalIndex) ? (
+                            {expandedSources.has(safeIndex) ? (
                               <>
                                 Hide sources ({qa.sources.length})
                                 <ChevronUp className="ml-1 h-3 w-3" />
@@ -166,7 +171,7 @@ export function QuestionnaireResultsTable({
                               </>
                             )}
                           </Button>
-                          {expandedSources.has(originalIndex) && (
+                          {expandedSources.has(safeIndex) && (
                             <div className="mt-2 space-y-1.5 pl-4 border-l-2 border-muted">
                               {qa.sources.map((source, sourceIndex) => {
                                 const isPolicy = source.sourceType === 'policy' && source.sourceId;

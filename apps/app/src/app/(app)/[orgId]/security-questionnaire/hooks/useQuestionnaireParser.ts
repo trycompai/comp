@@ -24,6 +24,7 @@ export function useQuestionnaireParser() {
     setExtractedContent: state.setExtractedContent,
     setQuestionStatuses: state.setQuestionStatuses,
     setHasClickedAutoAnswer: state.setHasClickedAutoAnswer,
+    setQuestionnaireId: state.setQuestionnaireId,
   });
 
   const autoAnswer = useQuestionnaireAutoAnswer({
@@ -36,6 +37,7 @@ export function useQuestionnaireParser() {
     setResults: state.setResults,
     setQuestionStatuses: state.setQuestionStatuses,
     setAnsweringQuestionIndex: state.setAnsweringQuestionIndex,
+    questionnaireId: state.questionnaireId,
   });
 
   const singleAnswer = useQuestionnaireSingleAnswer({
@@ -45,6 +47,7 @@ export function useQuestionnaireParser() {
     setResults: state.setResults,
     setQuestionStatuses: state.setQuestionStatuses,
     setAnsweringQuestionIndex: state.setAnsweringQuestionIndex,
+    questionnaireId: state.questionnaireId,
   });
 
   const actions = useQuestionnaireActions({
@@ -53,6 +56,7 @@ export function useQuestionnaireParser() {
     results: state.results,
     editingAnswer: state.editingAnswer,
     expandedSources: state.expandedSources,
+    questionnaireId: state.questionnaireId,
     setSelectedFile: state.setSelectedFile,
     setEditingIndex: state.setEditingIndex,
     setEditingAnswer: state.setEditingAnswer,
