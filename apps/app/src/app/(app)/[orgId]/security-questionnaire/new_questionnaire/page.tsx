@@ -1,15 +1,13 @@
 import { getFeatureFlags } from '@/app/posthog';
 import { AppOnboarding } from '@/components/app-onboarding';
-import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { cache } from 'react';
-import { QuestionnaireOverview } from './start_page/components';
-import { getQuestionnaires } from './start_page/data/queries';
+import { QuestionnaireParser } from '../components/QuestionnaireParser';
 
-export default async function SecurityQuestionnairePage() {
+export default async function NewQuestionnairePage() {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -34,7 +32,7 @@ export default async function SecurityQuestionnairePage() {
   // Show onboarding if no published policies exist
   if (!hasPublishedPolicies) {
     return (
-      <div className="py-4">
+      <div className="mx-auto max-w-[1200px] px-6 py-8">
         <AppOnboarding
           title={'Security Questionnaire'}
           description={
@@ -69,17 +67,10 @@ export default async function SecurityQuestionnairePage() {
     );
   }
 
-  // Fetch questionnaires history
-  const questionnaires = await getQuestionnaires(organizationId);
-
   return (
-    <PageWithBreadcrumb
-      breadcrumbs={[
-        { label: 'Security Questionnaire', href: `/${organizationId}/security-questionnaire`, current: true },
-      ]}
-    >
-      <QuestionnaireOverview questionnaires={questionnaires} />
-    </PageWithBreadcrumb>
+    <div className="mx-auto max-w-[1200px] px-6 py-8">
+      <QuestionnaireParser />
+    </div>
   );
 }
 
@@ -94,3 +85,4 @@ const checkPublishedPolicies = cache(async (organizationId: string): Promise<boo
 
   return count > 0;
 });
+
