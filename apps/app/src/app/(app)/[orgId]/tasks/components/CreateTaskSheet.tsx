@@ -16,6 +16,7 @@ import { Departments, Member, TaskFrequency, User } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRightIcon, X } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
+import { useParams } from 'next/navigation';
 import { useQueryState } from 'nuqs';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
@@ -44,6 +45,8 @@ export function CreateTaskSheet({
   members: (Member & { user: User })[];
   controls: { id: string; name: string }[];
 }) {
+  const params = useParams<{ orgId: string }>();
+  const orgId = params.orgId;
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const [createTaskOpen, setCreateTaskOpen] = useQueryState('create-task');
   const isOpen = Boolean(createTaskOpen);
@@ -80,9 +83,9 @@ export function CreateTaskSheet({
 
   const onSubmit = useCallback(
     (data: z.infer<typeof createTaskSchema>) => {
-      createTask.execute(data);
+      createTask.execute({ ...data, organizationId: orgId });
     },
-    [createTask],
+    [createTask, orgId],
   );
 
   // Memoize control options to prevent re-renders

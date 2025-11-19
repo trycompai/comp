@@ -29,6 +29,10 @@ export const createVendorTaskSchema = z.object({
   assigneeId: z.string().nullable(),
 });
 
+export const createVendorTaskWithOrgSchema = createVendorTaskSchema.extend({
+  orgId: z.string().min(1),
+});
+
 export const vendorContactSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.string().email('Invalid email address'),
@@ -82,4 +86,8 @@ export const updateVendorTaskSchema = z.object({
     required_error: 'Task status is required',
   }),
   assigneeId: z.string().nullable(),
+});
+
+export const updateVendorTaskWithOrgSchema = updateVendorTaskSchema.extend({
+  orgId: z.string().min(1),
 });

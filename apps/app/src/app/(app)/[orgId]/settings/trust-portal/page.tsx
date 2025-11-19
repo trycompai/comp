@@ -1,7 +1,5 @@
-import { auth } from '@/utils/auth';
 import { db } from '@db';
 import type { Metadata } from 'next';
-import { headers } from 'next/headers';
 import { cache } from 'react';
 import { TrustPortalDomain } from './components/TrustPortalDomain';
 import { TrustPortalSwitch } from './components/TrustPortalSwitch';
@@ -53,14 +51,6 @@ export default async function TrustPortalSettings({
 }
 
 const getTrustPortal = cache(async (orgId: string) => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session?.session.activeOrganizationId) {
-    return null;
-  }
-
   const trustPortal = await db.trust.findUnique({
     where: {
       organizationId: orgId,

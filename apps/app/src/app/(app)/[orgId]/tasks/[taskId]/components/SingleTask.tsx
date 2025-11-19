@@ -104,7 +104,7 @@ export function SingleTask({ initialTask, initialAutomations }: SingleTaskProps)
       updatePayload.reviewDate = data.reviewDate;
     }
     if (Object.keys(updatePayload).length > 0) {
-      const result = await updateTask({ id: task.id, ...updatePayload });
+      const result = await updateTask(orgId, { id: task.id, ...updatePayload });
       if (result.success) {
         // Refresh the task data from the server
         await mutateTask();
@@ -237,7 +237,9 @@ export function SingleTask({ initialTask, initialAutomations }: SingleTaskProps)
             </Button>
             <Button
               onClick={() => {
-                regenerate.execute({ taskId: task.id });
+                regenerate.execute({ taskId: task.id, orgId } as Parameters<
+                  typeof regenerate.execute
+                >[0]);
                 setRegenerateConfirmOpen(false);
               }}
               disabled={regenerate.status === 'executing'}

@@ -5,7 +5,6 @@ import { DataTableToolbar } from '@/components/data-table/data-table-toolbar';
 import { OnboardingLoadingAnimation } from '@/components/onboarding-loading-animation';
 import { useDataTable } from '@/hooks/use-data-table';
 import { getFiltersStateParser, getSortingStateParser } from '@/lib/parsers';
-import { useSession } from '@/utils/auth-client';
 import { Departments, Vendor } from '@db';
 import { ColumnDef } from '@tanstack/react-table';
 import { Loader2 } from 'lucide-react';
@@ -38,6 +37,7 @@ interface VendorsTableProps {
   assignees: GetAssigneesResult;
   onboardingRunId?: string | null;
   searchParams: GetVendorsSchema;
+  orgId: string;
 }
 
 export function VendorsTable({
@@ -46,10 +46,8 @@ export function VendorsTable({
   assignees,
   onboardingRunId,
   searchParams: initialSearchParams,
+  orgId,
 }: VendorsTableProps) {
-  const session = useSession();
-  const orgId = session?.data?.session?.activeOrganizationId;
-
   const { itemStatuses, progress, itemsInfo, isActive, isLoading } = useOnboardingStatus(
     onboardingRunId,
     'vendors',
@@ -95,7 +93,6 @@ export function VendorsTable({
 
   // Create stable SWR key from current search params
   const swrKey = useMemo(() => {
-    if (!orgId) return null;
     // Serialize search params to create a stable key
     const key = JSON.stringify(currentSearchParams);
     return ['vendors', orgId, key] as const;
@@ -103,8 +100,8 @@ export function VendorsTable({
 
   // Fetcher function for SWR
   const fetcher = useCallback(async () => {
-    return await getVendorsAction(currentSearchParams);
-  }, [currentSearchParams]);
+    return await getVendorsAction(orgId, currentSearchParams);
+  }, [orgId, currentSearchParams]);
 
   // Use SWR to fetch vendors with polling when onboarding is active
   const { data: vendorsData } = useSWR(swrKey, fetcher, {

@@ -61,6 +61,7 @@ export function TaskDeleteDialog({ isOpen, onClose, task }: TaskDeleteDialogProp
     deleteTask.execute({
       id: task.id,
       entityId: task.id,
+      orgId: task.organizationId,
     });
   };
 

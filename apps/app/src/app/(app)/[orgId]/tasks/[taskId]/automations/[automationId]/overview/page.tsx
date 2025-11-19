@@ -9,12 +9,12 @@ export default async function AutomationOverviewPage({
 }) {
   const { taskId, orgId, automationId } = await params;
 
-  const task = await getTask(taskId);
+  const task = await getTask(orgId, taskId);
   if (!task) {
     redirect(`/${orgId}/tasks`);
   }
 
-  const automation = await getAutomation(automationId);
+  const automation = await getAutomation(orgId, automationId);
   if (!automation) {
     redirect(`/${orgId}/tasks/${taskId}`);
   }
@@ -32,11 +32,12 @@ export default async function AutomationOverviewPage({
   );
 }
 
-const getTask = async (taskId: string) => {
+const getTask = async (orgId: string, taskId: string) => {
   try {
     const task = await db.task.findUnique({
       where: {
         id: taskId,
+        organizationId: orgId,
       },
     });
 
@@ -47,11 +48,14 @@ const getTask = async (taskId: string) => {
   }
 };
 
-const getAutomation = async (automationId: string) => {
+const getAutomation = async (orgId: string, automationId: string) => {
   try {
-    const automation = await db.evidenceAutomation.findUnique({
+    const automation = await db.evidenceAutomation.findFirst({
       where: {
         id: automationId,
+        task: {
+          organizationId: orgId,
+        },
       },
     });
 

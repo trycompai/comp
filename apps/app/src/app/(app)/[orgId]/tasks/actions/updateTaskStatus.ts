@@ -1,6 +1,7 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
+import { requireOrgMembership } from '@/lib/orgs/require-org-membership';
 import { db, TaskStatus } from '@db';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -8,6 +9,7 @@ import { z } from 'zod';
 const updateTaskStatusSchema = z.object({
   id: z.string(),
   status: z.nativeEnum(TaskStatus),
+  orgId: z.string().min(1),
 });
 
 export const updateTaskStatusAction = authActionClient
@@ -21,21 +23,14 @@ export const updateTaskStatusAction = authActionClient
     },
   })
   .action(async ({ parsedInput, ctx }) => {
-    const { id, status } = parsedInput;
-    const { activeOrganizationId } = ctx.session;
-
-    if (!activeOrganizationId) {
-      return {
-        success: false,
-        error: 'Not authorized',
-      };
-    }
+    const { id, status, orgId } = parsedInput;
+    await requireOrgMembership({ orgId, userId: ctx.user.id });
 
     try {
       const task = await db.task.findUnique({
         where: {
           id,
-          organizationId: activeOrganizationId,
+          organizationId: orgId,
         },
       });
 
@@ -48,12 +43,12 @@ export const updateTaskStatusAction = authActionClient
 
       // Update the task status
       await db.task.update({
-        where: { id },
+        where: { id, organizationId: orgId },
         data: { status },
       });
 
       // Revalidate paths to update UI
-      revalidatePath(`/${activeOrganizationId}/tasks`);
+      revalidatePath(`/${orgId}/tasks`);
 
       return {
         success: true,

@@ -46,6 +46,7 @@ export function UpdateTaskOverviewForm({ task }: { task: Task }) {
       description: values.description,
       status: values.status,
       assigneeId: values.assigneeId,
+      orgId: task.organizationId,
     });
   };
 

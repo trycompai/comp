@@ -8,27 +8,23 @@ export default async function TaskPage({
   params: Promise<{ taskId: string; orgId: string; locale: string }>;
 }) {
   const { taskId, orgId } = await params;
-  const task = await getTask(taskId);
+  const task = await getTask(orgId, taskId);
 
   if (!task) {
     redirect(`/${orgId}/tasks`);
   }
 
-  const automations = await getAutomations(taskId);
+  const automations = await getAutomations(orgId, taskId);
 
   return <SingleTask initialTask={task} initialAutomations={automations} />;
 }
 
-const getTask = async (taskId: string) => {
-  if (!taskId) {
-    console.warn('Could not determine active organization ID in getTask');
-    return null;
-  }
-
+const getTask = async (orgId: string, taskId: string) => {
   try {
     const task = await db.task.findUnique({
       where: {
         id: taskId,
+        organizationId: orgId,
       },
       include: {
         controls: true,
@@ -42,15 +38,13 @@ const getTask = async (taskId: string) => {
   }
 };
 
-const getAutomations = async (taskId: string) => {
-  if (!taskId) {
-    console.warn('Could not determine task ID in getAutomations');
-    return [];
-  }
-
+const getAutomations = async (orgId: string, taskId: string) => {
   const automations = await db.evidenceAutomation.findMany({
     where: {
       taskId: taskId,
+      task: {
+        organizationId: orgId,
+      },
     },
     include: {
       runs: {

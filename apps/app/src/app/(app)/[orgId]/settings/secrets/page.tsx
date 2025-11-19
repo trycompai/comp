@@ -1,12 +1,15 @@
-import { auth } from '@/utils/auth';
 import { db } from '@db';
 import type { Metadata } from 'next';
-import { headers } from 'next/headers';
 import { cache } from 'react';
 import { SecretsTable } from './components/table/SecretsTable';
 
-export default async function SecretsPage() {
-  const secrets = await getSecrets();
+export default async function SecretsPage({
+  params,
+}: {
+  params: Promise<{ orgId: string }>;
+}) {
+  const { orgId } = await params;
+  const secrets = await getSecrets(orgId);
 
   return <SecretsTable secrets={secrets} />;
 }
@@ -17,18 +20,10 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-const getSecrets = cache(async () => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session?.session.activeOrganizationId) {
-    return [];
-  }
-
+const getSecrets = cache(async (orgId: string) => {
   const secrets = await db.secret.findMany({
     where: {
-      organizationId: session.session.activeOrganizationId,
+      organizationId: orgId,
     },
     select: {
       id: true,

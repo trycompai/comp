@@ -1,7 +1,5 @@
-import { auth } from '@/utils/auth';
 import { db, Role } from '@db';
 import { Metadata } from 'next';
-import { headers } from 'next/headers';
 import { TaskList } from './components/TaskList';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -24,9 +22,9 @@ export default async function TasksPage({
   // Extract specific params to pass down
   const { orgId } = await params;
 
-  const tasks = await getTasks();
-  const members = await getMembersWithMetadata();
-  const controls = await getControls();
+  const tasks = await getTasks(orgId);
+  const members = await getMembersWithMetadata(orgId);
+  const controls = await getControls(orgId);
 
   return (
     <div className="mx-auto w-full max-w-[1400px] px-6 py-8">
@@ -35,17 +33,7 @@ export default async function TasksPage({
   );
 }
 
-const getTasks = async () => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  const orgId = session?.session.activeOrganizationId;
-
-  if (!orgId) {
-    return [];
-  }
-
+const getTasks = async (orgId: string) => {
   const tasks = await db.task.findMany({
     where: {
       organizationId: orgId,
@@ -57,44 +45,34 @@ const getTasks = async () => {
           name: true,
         },
       },
-          evidenceAutomations: {
+      evidenceAutomations: {
+        select: {
+          id: true,
+          isEnabled: true,
+          name: true,
+          runs: {
+            orderBy: {
+              createdAt: 'desc',
+            },
+            take: 3,
             select: {
-              id: true,
-              isEnabled: true,
-              name: true,
-              runs: {
-                orderBy: {
-                  createdAt: 'desc',
-                },
-                take: 3,
-                select: {
-                  status: true,
-                  success: true,
-                  evaluationStatus: true,
-                  createdAt: true,
-                  triggeredBy: true,
-                  runDuration: true,
-                },
-              },
+              status: true,
+              success: true,
+              evaluationStatus: true,
+              createdAt: true,
+              triggeredBy: true,
+              runDuration: true,
             },
           },
+        },
+      },
     },
     orderBy: [{ status: 'asc' }, { title: 'asc' }],
   });
   return tasks;
 };
 
-const getMembersWithMetadata = async () => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  const orgId = session?.session.activeOrganizationId;
-
-  if (!orgId) {
-    return [];
-  }
-
+const getMembersWithMetadata = async (orgId: string) => {
   const members = await db.member.findMany({
     where: {
       organizationId: orgId,
@@ -110,17 +88,7 @@ const getMembersWithMetadata = async () => {
   return members;
 };
 
-const getControls = async () => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  const orgId = session?.session.activeOrganizationId;
-
-  if (!orgId) {
-    return [];
-  }
-
+const getControls = async (orgId: string) => {
   const controls = await db.control.findMany({
     where: {
       organizationId: orgId,

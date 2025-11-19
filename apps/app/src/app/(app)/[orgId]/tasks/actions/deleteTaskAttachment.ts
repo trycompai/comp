@@ -10,16 +10,28 @@ import { z } from 'zod';
 
 const schema = z.object({
   attachmentId: z.string(),
+  orgId: z.string().min(1),
 });
 
 export const deleteTaskAttachment = async (input: z.infer<typeof schema>) => {
-  const { attachmentId } = input;
+  const { attachmentId, orgId } = input;
   const session = await auth.api.getSession({
     headers: await headers(),
   });
-  const organizationId = session?.session?.activeOrganizationId;
 
-  if (!organizationId) {
+  if (!session) {
+    return { success: false, error: 'Not authorized' } as const;
+  }
+
+  const membership = await db.member.findFirst({
+    where: {
+      organizationId: orgId,
+      userId: session.user.id,
+    },
+    select: { id: true },
+  });
+
+  if (!membership) {
     return { success: false, error: 'Not authorized' } as const;
   }
 
@@ -29,7 +41,7 @@ export const deleteTaskAttachment = async (input: z.infer<typeof schema>) => {
     attachmentToDelete = await db.attachment.findUnique({
       where: {
         id: attachmentId,
-        organizationId: organizationId,
+        organizationId: orgId,
         entityType: AttachmentEntityType.task,
       },
     });
@@ -59,12 +71,12 @@ export const deleteTaskAttachment = async (input: z.infer<typeof schema>) => {
     await db.attachment.delete({
       where: {
         id: attachmentId,
-        organizationId: organizationId,
+        organizationId: orgId,
       },
     });
 
     // Revalidate the task path if needed, depends on how attachments are loaded
-    revalidatePath(`/${organizationId}/tasks/${attachmentToDelete.entityId}`);
+    revalidatePath(`/${orgId}/tasks/${attachmentToDelete.entityId}`);
 
     return {
       success: true,

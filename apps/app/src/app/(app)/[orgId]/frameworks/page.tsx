@@ -42,7 +42,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
     },
   });
 
-  const tasks = await getControlTasks();
+  const tasks = await getControlTasks(organizationId);
   const frameworksWithControls = await getAllFrameworkInstancesWithControls({
     organizationId,
   });
@@ -74,17 +74,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
   );
 }
 
-const getControlTasks = cache(async () => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  const organizationId = session?.session.activeOrganizationId;
-
-  if (!organizationId) {
-    return [];
-  }
-
+const getControlTasks = cache(async (organizationId: string) => {
   const tasks = await db.task.findMany({
     where: {
       organizationId,

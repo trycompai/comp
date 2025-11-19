@@ -1,6 +1,7 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
+import { requireOrgMembership } from '@/lib/orgs/require-org-membership';
 import { db } from '@db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
@@ -8,6 +9,7 @@ import { z } from 'zod';
 const deleteTaskSchema = z.object({
   id: z.string(),
   entityId: z.string(),
+  orgId: z.string().min(1),
 });
 
 export const deleteTaskAction = authActionClient
@@ -21,21 +23,14 @@ export const deleteTaskAction = authActionClient
     },
   })
   .action(async ({ parsedInput, ctx }) => {
-    const { id } = parsedInput;
-    const { activeOrganizationId } = ctx.session;
-
-    if (!activeOrganizationId) {
-      return {
-        success: false,
-        error: 'Not authorized',
-      };
-    }
+    const { id, orgId } = parsedInput;
+    await requireOrgMembership({ orgId, userId: ctx.user.id });
 
     try {
       const task = await db.task.findUnique({
         where: {
           id,
-          organizationId: activeOrganizationId,
+          organizationId: orgId,
         },
       });
 
@@ -48,12 +43,12 @@ export const deleteTaskAction = authActionClient
 
       // Delete the task
       await db.task.delete({
-        where: { id },
+        where: { id, organizationId: orgId },
       });
 
       // Revalidate paths to update UI
-      revalidatePath(`/${activeOrganizationId}/tasks`);
-      revalidatePath(`/${activeOrganizationId}/tasks/all`);
+      revalidatePath(`/${orgId}/tasks`);
+      revalidatePath(`/${orgId}/tasks/all`);
       revalidateTag('tasks');
 
       return {

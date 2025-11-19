@@ -16,28 +16,44 @@ const updateTaskOrderSchema = z.array(
 );
 
 export const updateTaskOrder = async (
+  orgId: string,
   input: z.infer<typeof updateTaskOrderSchema>,
 ): Promise<ActionResponse> => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
-  if (!session?.session?.activeOrganizationId) {
+  if (!session) {
     return {
       success: false,
       error: 'Not authorized - no organization found',
     };
   }
+
+  const membership = await db.member.findFirst({
+    where: {
+      organizationId: orgId,
+      userId: session.user.id,
+    },
+    select: { id: true },
+  });
+
+  if (!membership) {
+    return {
+      success: false,
+      error: 'Not authorized - no organization found',
+    };
+  }
+
   try {
     for (const { id, order, status } of input) {
       await db.task.update({
         where: {
           id,
-          organizationId: session.session.activeOrganizationId,
+          organizationId: orgId,
         },
         data: { order, status },
       });
     }
-    const orgId = session.session.activeOrganizationId;
     revalidatePath(`/${orgId}/tasks`);
     return { success: true, data: null };
   } catch (error) {

@@ -20,7 +20,7 @@ export default async function Page({
   });
 
   if (!task) {
-    redirect('/tasks');
+    redirect(`/${orgId}/tasks`);
   }
 
   const taskName = task.title;

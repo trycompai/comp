@@ -44,6 +44,7 @@ export function UpdateTaskForm({ task, users }: { task: Task; users: User[] }) {
       dueDate: data.dueDate ? data.dueDate : undefined,
       assigneeId: data.assigneeId,
       status: data.status as TaskStatus,
+      orgId: task.organizationId,
     });
   };
 

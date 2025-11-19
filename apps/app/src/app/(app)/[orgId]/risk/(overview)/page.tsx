@@ -2,10 +2,8 @@ import { AppOnboarding } from '@/components/app-onboarding';
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { CreateRiskSheet } from '@/components/sheets/create-risk-sheet';
 import { getValidFilters } from '@/lib/data-table';
-import { auth } from '@/utils/auth';
 import { db } from '@db';
 import type { Metadata } from 'next';
-import { headers } from 'next/headers';
 import { cache } from 'react';
 import { RisksTable } from './RisksTable';
 import { getRisks } from './data/getRisks';
@@ -35,8 +33,8 @@ export default async function RiskRegisterPage(props: {
   };
 
   const [risksResult, assignees, onboarding] = await Promise.all([
-    getRisks(searchParamsForTable),
-    getAssignees(),
+    getRisks(orgId, searchParamsForTable),
+    getAssignees(orgId),
     db.onboarding.findFirst({
       where: { organizationId: orgId },
       select: { triggerJobId: true },
@@ -92,6 +90,7 @@ export default async function RiskRegisterPage(props: {
         assignees={assignees}
         onboardingRunId={onboarding?.triggerJobId ?? null}
         searchParams={searchParamsForTable}
+        orgId={orgId}
       />
     </PageWithBreadcrumb>
   );
@@ -103,18 +102,10 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-const getAssignees = cache(async () => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session || !session.session.activeOrganizationId) {
-    return [];
-  }
-
+const getAssignees = cache(async (orgId: string) => {
   return await db.member.findMany({
     where: {
-      organizationId: session.session.activeOrganizationId,
+      organizationId: orgId,
       isActive: true,
       role: {
         notIn: ['employee', 'contractor'],

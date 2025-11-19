@@ -5,16 +5,31 @@ import { db, Task } from '@db';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 
-export const updateTask = async (input: Partial<Task>) => {
+export const updateTask = async (orgId: string, input: Partial<Task> & { id: string }) => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
   const { id, ...rest } = input;
 
-  if (!session?.session?.activeOrganizationId) {
+  if (!session) {
     return {
       success: false,
-      error: 'Not authorized - no organization found',
+      error: 'Not authorized',
+    };
+  }
+
+  const membership = await db.member.findFirst({
+    where: {
+      organizationId: orgId,
+      userId: session.user.id,
+    },
+    select: { id: true },
+  });
+
+  if (!membership) {
+    return {
+      success: false,
+      error: 'Not authorized',
     };
   }
 
@@ -22,12 +37,10 @@ export const updateTask = async (input: Partial<Task>) => {
     const task = await db.task.update({
       where: {
         id,
-        organizationId: session.session.activeOrganizationId,
+        organizationId: orgId,
       },
       data: { ...rest, updatedAt: new Date() },
     });
-
-    const orgId = session.session.activeOrganizationId;
 
     revalidatePath(`/${orgId}/tasks`);
     revalidatePath(`/${orgId}/tasks/${id}`);

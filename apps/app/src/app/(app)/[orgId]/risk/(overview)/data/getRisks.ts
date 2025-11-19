@@ -1,11 +1,15 @@
 import 'server-only';
 
+import { requireOrgMembership } from '@/lib/orgs/require-org-membership';
 import { auth } from '@/utils/auth';
 import { db, Prisma, type User } from '@db';
 import { headers } from 'next/headers';
 import type { GetRiskSchema } from './validations';
 
-export async function getRisks(input: GetRiskSchema): Promise<{
+export async function getRisks(
+  orgId: string,
+  input: GetRiskSchema,
+): Promise<{
   data: (Omit<
     Prisma.RiskGetPayload<{
       include: { assignee: { include: { user: true } } };
@@ -14,16 +18,20 @@ export async function getRisks(input: GetRiskSchema): Promise<{
   > & { assignee: User | null })[];
   pageCount: number;
 }> {
+  const { title, page, perPage, sort, filters, joinOperator } = input;
+
   const session = await auth.api.getSession({
     headers: await headers(),
   });
 
-  if (!session?.session.activeOrganizationId) {
-    // In case of unauthorized or missing org, return empty data and 0 pageCount
-    return { data: [], pageCount: 0 };
+  const userId = session?.user?.id;
+
+  if (!userId) {
+    throw new Error('Unauthorized');
   }
 
-  const { title, page, perPage, sort, filters, joinOperator } = input;
+  // Check user is a member of the organization.
+  await requireOrgMembership({ orgId, userId: userId });
 
   const orderBy = sort.map((s) => ({
     [s.id]: s.desc ? 'desc' : 'asc',
@@ -37,7 +45,7 @@ export async function getRisks(input: GetRiskSchema): Promise<{
   });
 
   const where: Prisma.RiskWhereInput = {
-    organizationId: session.session.activeOrganizationId,
+    organizationId: orgId,
     ...(title && {
       title: {
         contains: title,

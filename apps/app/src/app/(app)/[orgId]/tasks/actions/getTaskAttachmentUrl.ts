@@ -10,16 +10,31 @@ import { z } from 'zod';
 
 const schema = z.object({
   attachmentId: z.string(),
+  orgId: z.string().min(1),
 });
 
 export const getTaskAttachmentUrl = async (input: z.infer<typeof schema>) => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
-  const { attachmentId } = input;
-  const organizationId = session?.session?.activeOrganizationId;
+  const { attachmentId, orgId } = input;
 
-  if (!organizationId) {
+  if (!session) {
+    return {
+      success: false,
+      error: 'Not authorized - no organization found',
+    } as const;
+  }
+
+  const membership = await db.member.findFirst({
+    where: {
+      organizationId: orgId,
+      userId: session.user.id,
+    },
+    select: { id: true },
+  });
+
+  if (!membership) {
     return {
       success: false,
       error: 'Not authorized - no organization found',
@@ -31,7 +46,7 @@ export const getTaskAttachmentUrl = async (input: z.infer<typeof schema>) => {
     const attachment = await db.attachment.findUnique({
       where: {
         id: attachmentId,
-        organizationId: organizationId,
+        organizationId: orgId,
         entityType: AttachmentEntityType.task, // Ensure it's a task attachment
       },
     });

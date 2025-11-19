@@ -1,3 +1,4 @@
+import { requireOrgMembership } from '@/lib/orgs/require-org-membership';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
 import { headers } from 'next/headers';
@@ -19,10 +20,19 @@ export const getContextEntries = cache(
     data: any[];
     pageCount: number;
   }> => {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.session.activeOrganizationId || session.session.activeOrganizationId !== orgId) {
-      return { data: [], pageCount: 0 };
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      throw new Error('Unauthorized');
     }
+
+    // Check user is a member of the organization.
+    await requireOrgMembership({ orgId, userId: userId });
+
     const where: any = {
       organizationId: orgId,
       ...(search && {

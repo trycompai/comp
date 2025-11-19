@@ -1,9 +1,7 @@
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { getValidFilters } from '@/lib/data-table';
-import { auth } from '@/utils/auth';
 import { db } from '@db';
 import { Metadata } from 'next';
-import { headers } from 'next/headers';
 import { SearchParams } from 'nuqs';
 import { ControlsTable } from './components/controls-table';
 import { getControls } from './data/queries';
@@ -19,21 +17,25 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function ControlsPage({ ...props }: ControlTableProps) {
+export default async function ControlsPage({
+  params,
+  ...props
+}: ControlTableProps & { params: Promise<{ orgId: string }> }) {
+  const { orgId } = await params;
   const searchParams = await props.searchParams;
   const search = searchParamsCache.parse(searchParams);
   const validFilters = getValidFilters(search.filters);
 
   const promises = Promise.all([
-    getControls({
+    getControls(orgId, {
       ...search,
       filters: validFilters,
     }),
   ]);
 
-  const policies = await getPolicies();
-  const tasks = await getTasks();
-  const requirements = await getRequirements();
+  const policies = await getPolicies(orgId);
+  const tasks = await getTasks(orgId);
+  const requirements = await getRequirements(orgId);
 
   return (
     <PageWithBreadcrumb breadcrumbs={[{ label: 'Controls', current: true }]}>
@@ -47,17 +49,7 @@ export default async function ControlsPage({ ...props }: ControlTableProps) {
   );
 }
 
-const getPolicies = async () => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  const orgId = session?.session.activeOrganizationId;
-
-  if (!orgId) {
-    return [];
-  }
-
+const getPolicies = async (orgId: string) => {
   const policies = await db.policy.findMany({
     where: {
       organizationId: orgId,
@@ -74,17 +66,7 @@ const getPolicies = async () => {
   return policies;
 };
 
-const getTasks = async () => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  const orgId = session?.session.activeOrganizationId;
-
-  if (!orgId) {
-    return [];
-  }
-
+const getTasks = async (orgId: string) => {
   const tasks = await db.task.findMany({
     where: {
       organizationId: orgId,
@@ -101,17 +83,7 @@ const getTasks = async () => {
   return tasks;
 };
 
-const getRequirements = async () => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  const orgId = session?.session.activeOrganizationId;
-
-  if (!orgId) {
-    return [];
-  }
-
+const getRequirements = async (orgId: string) => {
   // Get all framework instances for this organization
   const frameworkInstances = await db.frameworkInstance.findMany({
     where: {

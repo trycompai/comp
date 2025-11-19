@@ -1,23 +1,9 @@
-import { auth as betterAuth } from '@/utils/auth';
 import { auth } from '@trigger.dev/sdk';
 import { db } from '@db';
-import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
 import { TestsLayout } from './components/TestsLayout';
 
 export default async function CloudTestsPage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
-  const session = await betterAuth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session?.session.activeOrganizationId) {
-    redirect('/');
-  }
-
-  if (session.session.activeOrganizationId !== orgId) {
-    redirect(`/${session.session.activeOrganizationId}/cloud-tests`);
-  }
 
   // Fetch cloud providers
   const providers =

@@ -1,12 +1,14 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
+import { requireOrgMembership } from '@/lib/orgs/require-org-membership';
 import { db, Departments, TaskFrequency } from '@db';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { z } from 'zod';
 
 const createTaskSchema = z.object({
+  organizationId: z.string().min(1),
   title: z.string().min(1, {
     message: 'Title is required',
   }),
@@ -30,24 +32,28 @@ export const createTaskAction = authActionClient
     },
   })
   .action(async ({ parsedInput, ctx }) => {
-    const { title, description, assigneeId, frequency, department, controlIds, taskTemplateId } =
-      parsedInput;
     const {
-      session: { activeOrganizationId },
-      user,
-    } = ctx;
+      title,
+      description,
+      assigneeId,
+      frequency,
+      department,
+      controlIds,
+      taskTemplateId,
+      organizationId,
+    } = parsedInput;
 
-    if (!user.id || !activeOrganizationId) {
-      throw new Error('Invalid user input');
-    }
+    const { user } = ctx;
 
     try {
+      await requireOrgMembership({ orgId: organizationId, userId: user.id });
+
       const task = await db.task.create({
         data: {
           title,
           description,
           assigneeId: assigneeId || null,
-          organizationId: activeOrganizationId,
+          organizationId,
           status: 'todo',
           order: 0,
           frequency: frequency || null,

@@ -1,8 +1,6 @@
 import 'server-only';
 
-import { auth } from '@/utils/auth';
 import { db, Prisma } from '@db';
-import { headers } from 'next/headers';
 // import { cache } from "react"; // Already handled: ensure it stays removed or remove if re-introduced
 import type { GetControlSchema } from './validations';
 
@@ -43,26 +41,17 @@ export type ControlWithRelations = Prisma.ControlGetPayload<{
 }>;
 
 export async function getControls(
+  orgId: string,
   input: GetControlSchema,
 ): Promise<{ data: ControlWithRelations[]; pageCount: number }> {
   // cache wrapper already handled: ensure it stays removed or remove if re-introduced
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    const organizationId = session?.session.activeOrganizationId;
-
-    if (!organizationId) {
-      throw new Error('Organization not found');
-    }
-
     const orderBy = input.sort.map((sort) => ({
       [sort.id]: sort.desc ? 'desc' : 'asc',
     }));
 
     const where: Prisma.ControlWhereInput = {
-      organizationId,
+      organizationId: orgId,
       ...(input.name && {
         name: {
           contains: input.name,
