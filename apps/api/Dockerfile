@@ -13,7 +13,7 @@ COPY package.json ./
 # Note: workspace:* dependencies will be skipped and copied manually below
 RUN curl -fsSL https://bun.sh/install | bash \
   && export PATH="/root/.bun/bin:$PATH" \
-  && bun install --production --ignore-scripts || true
+  && bun install --production --ignore-scripts
 
 COPY node_modules/@trycompai ./node_modules/@trycompai
 COPY node_modules/@prisma ./node_modules/@prisma
