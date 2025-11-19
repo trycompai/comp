@@ -12,10 +12,15 @@ export class TaskTemplateService {
         orderBy: { name: 'asc' },
       });
 
-      this.logger.log(`Retrieved ${taskTemplates.length} framework editor task templates`);
+      this.logger.log(
+        `Retrieved ${taskTemplates.length} framework editor task templates`,
+      );
       return taskTemplates;
     } catch (error) {
-      this.logger.error('Failed to retrieve framework editor task templates:', error);
+      this.logger.error(
+        'Failed to retrieve framework editor task templates:',
+        error,
+      );
       throw error;
     }
   }
@@ -27,16 +32,23 @@ export class TaskTemplateService {
       });
 
       if (!taskTemplate) {
-        throw new NotFoundException(`Framework editor task template with ID ${id} not found`);
+        throw new NotFoundException(
+          `Framework editor task template with ID ${id} not found`,
+        );
       }
 
-      this.logger.log(`Retrieved framework editor task template: ${taskTemplate.name} (${id})`);
+      this.logger.log(
+        `Retrieved framework editor task template: ${taskTemplate.name} (${id})`,
+      );
       return taskTemplate;
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error(`Failed to retrieve framework editor task template ${id}:`, error);
+      this.logger.error(
+        `Failed to retrieve framework editor task template ${id}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -51,13 +63,18 @@ export class TaskTemplateService {
         data: updateDto,
       });
 
-      this.logger.log(`Updated framework editor task template: ${updatedTaskTemplate.name} (${id})`);
+      this.logger.log(
+        `Updated framework editor task template: ${updatedTaskTemplate.name} (${id})`,
+      );
       return updatedTaskTemplate;
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error(`Failed to update framework editor task template ${id}:`, error);
+      this.logger.error(
+        `Failed to update framework editor task template ${id}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -71,21 +88,25 @@ export class TaskTemplateService {
         where: { id },
       });
 
-      this.logger.log(`Deleted framework editor task template: ${existingTaskTemplate.name} (${id})`);
-      return { 
+      this.logger.log(
+        `Deleted framework editor task template: ${existingTaskTemplate.name} (${id})`,
+      );
+      return {
         message: 'Framework editor task template deleted successfully',
         deletedTaskTemplate: {
           id: existingTaskTemplate.id,
           name: existingTaskTemplate.name,
-        }
+        },
       };
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error(`Failed to delete framework editor task template ${id}:`, error);
+      this.logger.error(
+        `Failed to delete framework editor task template ${id}:`,
+        error,
+      );
       throw error;
     }
   }
 }
-

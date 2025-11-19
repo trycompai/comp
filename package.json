@@ -84,19 +84,16 @@
   },
   "workspaces": [
     "apps/*",
-    "packages/analytics",
-    "packages/email",
-    "packages/integrations",
-    "packages/kv",
-    "packages/tsconfig",
-    "packages/ui",
-    "packages/utils"
+    "packages/*"
   ],
   "dependencies": {
     "@types/cheerio": "^1.0.0",
     "@types/react-syntax-highlighter": "^15.5.13",
+    "@upstash/vector": "^1.2.2",
     "cheerio": "^1.1.2",
     "react-syntax-highlighter": "^15.6.6",
+    "unpdf": "^1.4.0",
+    "xlsx": "^0.18.5",
     "zod": "^3.25.76"
   }
 }

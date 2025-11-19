@@ -77,4 +77,12 @@ export class TaskResponseDto {
     example: '2024-01-15T10:30:00Z',
   })
   updatedAt: Date;
+
+  @ApiProperty({
+    description: 'Task template ID',
+    example: 'frk_tt_68406e353df3bc002994acef',
+    nullable: true,
+    required: false,
+  })
+  taskTemplateId?: string | null;
 }

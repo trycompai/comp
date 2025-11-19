@@ -10,15 +10,16 @@ WORKDIR /app
 COPY package.json ./
 
 # Install bun and deps
+# Note: workspace:* dependencies will be skipped and copied manually below
 RUN curl -fsSL https://bun.sh/install | bash \
   && export PATH="/root/.bun/bin:$PATH" \
-  && bun install --production --ignore-scripts
+  && bun install --production --ignore-scripts || true
 
-# Now copy the pre-built app contents (dist/, prisma/, etc.)
+COPY node_modules/@trycompai ./node_modules/@trycompai
+COPY node_modules/@prisma ./node_modules/@prisma
+COPY node_modules/.prisma ./node_modules/.prisma
+
 COPY . .
-
-# Generate Prisma client inside the image (ensures runtime client matches installed deps)
-RUN npx prisma generate
 
 # Set environment variables
 ENV NODE_ENV=production

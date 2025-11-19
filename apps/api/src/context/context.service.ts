@@ -14,10 +14,15 @@ export class ContextService {
         orderBy: { createdAt: 'desc' },
       });
 
-      this.logger.log(`Retrieved ${contextEntries.length} context entries for organization ${organizationId}`);
+      this.logger.log(
+        `Retrieved ${contextEntries.length} context entries for organization ${organizationId}`,
+      );
       return contextEntries;
     } catch (error) {
-      this.logger.error(`Failed to retrieve context entries for organization ${organizationId}:`, error);
+      this.logger.error(
+        `Failed to retrieve context entries for organization ${organizationId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -25,17 +30,21 @@ export class ContextService {
   async findById(id: string, organizationId: string) {
     try {
       const contextEntry = await db.context.findFirst({
-        where: { 
+        where: {
           id,
-          organizationId 
+          organizationId,
         },
       });
 
       if (!contextEntry) {
-        throw new NotFoundException(`Context entry with ID ${id} not found in organization ${organizationId}`);
+        throw new NotFoundException(
+          `Context entry with ID ${id} not found in organization ${organizationId}`,
+        );
       }
 
-      this.logger.log(`Retrieved context entry: ${contextEntry.question.substring(0, 50)}... (${id})`);
+      this.logger.log(
+        `Retrieved context entry: ${contextEntry.question.substring(0, 50)}... (${id})`,
+      );
       return contextEntry;
     } catch (error) {
       if (error instanceof NotFoundException) {
@@ -55,15 +64,24 @@ export class ContextService {
         },
       });
 
-      this.logger.log(`Created new context entry: ${contextEntry.question.substring(0, 50)}... (${contextEntry.id}) for organization ${organizationId}`);
+      this.logger.log(
+        `Created new context entry: ${contextEntry.question.substring(0, 50)}... (${contextEntry.id}) for organization ${organizationId}`,
+      );
       return contextEntry;
     } catch (error) {
-      this.logger.error(`Failed to create context entry for organization ${organizationId}:`, error);
+      this.logger.error(
+        `Failed to create context entry for organization ${organizationId}:`,
+        error,
+      );
       throw error;
     }
   }
 
-  async updateById(id: string, organizationId: string, updateContextDto: UpdateContextDto) {
+  async updateById(
+    id: string,
+    organizationId: string,
+    updateContextDto: UpdateContextDto,
+  ) {
     try {
       // First check if the context entry exists in the organization
       await this.findById(id, organizationId);
@@ -73,7 +91,9 @@ export class ContextService {
         data: updateContextDto,
       });
 
-      this.logger.log(`Updated context entry: ${updatedContextEntry.question.substring(0, 50)}... (${id})`);
+      this.logger.log(
+        `Updated context entry: ${updatedContextEntry.question.substring(0, 50)}... (${id})`,
+      );
       return updatedContextEntry;
     } catch (error) {
       if (error instanceof NotFoundException) {
@@ -93,13 +113,15 @@ export class ContextService {
         where: { id },
       });
 
-      this.logger.log(`Deleted context entry: ${existingContextEntry.question.substring(0, 50)}... (${id})`);
-      return { 
+      this.logger.log(
+        `Deleted context entry: ${existingContextEntry.question.substring(0, 50)}... (${id})`,
+      );
+      return {
         message: 'Context entry deleted successfully',
         deletedContext: {
           id: existingContextEntry.id,
           question: existingContextEntry.question,
-        }
+        },
       };
     } catch (error) {
       if (error instanceof NotFoundException) {

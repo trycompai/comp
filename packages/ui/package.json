@@ -152,6 +152,10 @@
       "types": "./dist/components/spinner.d.ts",
       "import": "./dist/components/spinner.js"
     },
+    "./sooner": {
+      "types": "./dist/components/sooner.d.ts",
+      "import": "./dist/components/sooner.js"
+    },
     "./sonner": {
       "types": "./dist/components/sonner.d.ts",
       "import": "./dist/components/sonner.js"
@@ -251,6 +255,10 @@
     "./form": {
       "types": "./dist/components/form.d.ts",
       "import": "./dist/components/form.js"
+    },
+    "./field": {
+      "types": "./dist/components/field.d.ts",
+      "import": "./dist/components/field.js"
     },
     "./empty-card": {
       "types": "./dist/components/empty-card.d.ts",

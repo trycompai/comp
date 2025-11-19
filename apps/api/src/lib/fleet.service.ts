@@ -9,7 +9,7 @@ export class FleetService {
   constructor() {
     this.fleetInstance = axios.create({
       baseURL: `${process.env.FLEET_URL}/api/v1/fleet`,
-      headers: { 
+      headers: {
         Authorization: `Bearer ${process.env.FLEET_TOKEN}`,
         'Content-Type': 'application/json',
       },
@@ -19,24 +19,31 @@ export class FleetService {
     // Add request/response interceptors for logging
     this.fleetInstance.interceptors.request.use(
       (config) => {
-        this.logger.debug(`FleetDM Request: ${config.method?.toUpperCase()} ${config.url}`);
+        this.logger.debug(
+          `FleetDM Request: ${config.method?.toUpperCase()} ${config.url}`,
+        );
         return config;
       },
       (error) => {
         this.logger.error('FleetDM Request Error:', error);
         return Promise.reject(error);
-      }
+      },
     );
 
     this.fleetInstance.interceptors.response.use(
       (response) => {
-        this.logger.debug(`FleetDM Response: ${response.status} ${response.config.url}`);
+        this.logger.debug(
+          `FleetDM Response: ${response.status} ${response.config.url}`,
+        );
         return response;
       },
       (error) => {
-        this.logger.error(`FleetDM Response Error: ${error.response?.status} ${error.config?.url}`, error.response?.data);
+        this.logger.error(
+          `FleetDM Response Error: ${error.response?.status} ${error.config?.url}`,
+          error.response?.data,
+        );
         return Promise.reject(error);
-      }
+      },
     );
   }
 
@@ -62,9 +69,9 @@ export class FleetService {
 
   async getMultipleHosts(hostIds: number[]) {
     try {
-      const requests = hostIds.map(id => this.getHostById(id));
+      const requests = hostIds.map((id) => this.getHostById(id));
       const responses = await Promise.all(requests);
-      return responses.map(response => response.host);
+      return responses.map((response) => response.host);
     } catch (error) {
       this.logger.error('Failed to get multiple hosts:', error);
       throw new Error('Failed to fetch multiple hosts');

@@ -1,6 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsArray, ValidateNested, ArrayMinSize, ArrayMaxSize } from 'class-validator';
+import {
+  IsArray,
+  ValidateNested,
+  ArrayMinSize,
+  ArrayMaxSize,
+} from 'class-validator';
 import { CreatePeopleDto } from './create-people.dto';
 
 export class BulkCreatePeopleDto {
@@ -25,7 +30,9 @@ export class BulkCreatePeopleDto {
   })
   @IsArray()
   @ArrayMinSize(1, { message: 'Members array cannot be empty' })
-  @ArrayMaxSize(1000, { message: 'Maximum 1000 members allowed per bulk request' })
+  @ArrayMaxSize(1000, {
+    message: 'Maximum 1000 members allowed per bulk request',
+  })
   @ValidateNested({ each: true })
   @Type(() => CreatePeopleDto)
   members: CreatePeopleDto[];

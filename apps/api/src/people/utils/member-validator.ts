@@ -12,14 +12,18 @@ export class MemberValidator {
     });
 
     if (!organization) {
-      throw new NotFoundException(`Organization with ID ${organizationId} not found`);
+      throw new NotFoundException(
+        `Organization with ID ${organizationId} not found`,
+      );
     }
   }
 
   /**
    * Validates that a user exists and returns user data
    */
-  static async validateUser(userId: string): Promise<{ id: string; name: string; email: string }> {
+  static async validateUser(
+    userId: string,
+  ): Promise<{ id: string; name: string; email: string }> {
     const user = await db.user.findUnique({
       where: { id: userId },
       select: { id: true, name: true, email: true },
@@ -35,9 +39,12 @@ export class MemberValidator {
   /**
    * Validates that a member exists in an organization
    */
-  static async validateMemberExists(memberId: string, organizationId: string): Promise<{ id: string; userId: string }> {
+  static async validateMemberExists(
+    memberId: string,
+    organizationId: string,
+  ): Promise<{ id: string; userId: string }> {
     const member = await db.member.findFirst({
-      where: { 
+      where: {
         id: memberId,
         organizationId,
         deactivated: false,
@@ -46,7 +53,9 @@ export class MemberValidator {
     });
 
     if (!member) {
-      throw new NotFoundException(`Member with ID ${memberId} not found in organization ${organizationId}`);
+      throw new NotFoundException(
+        `Member with ID ${memberId} not found in organization ${organizationId}`,
+      );
     }
 
     return member;
@@ -56,9 +65,9 @@ export class MemberValidator {
    * Validates that a user is not already a member of an organization
    */
   static async validateUserNotMember(
-    userId: string, 
-    organizationId: string, 
-    excludeMemberId?: string
+    userId: string,
+    organizationId: string,
+    excludeMemberId?: string,
   ): Promise<void> {
     const whereClause: any = {
       userId,
@@ -76,7 +85,9 @@ export class MemberValidator {
 
     if (existingMember) {
       const user = await this.validateUser(userId);
-      throw new BadRequestException(`User ${user.email} is already a member of this organization`);
+      throw new BadRequestException(
+        `User ${user.email} is already a member of this organization`,
+      );
     }
   }
 }

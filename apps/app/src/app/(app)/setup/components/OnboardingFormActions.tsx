@@ -1,6 +1,7 @@
 import { Button } from '@comp/ui/button';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface OnboardingFormActionsProps {
   onBack: () => void;
@@ -9,6 +10,7 @@ interface OnboardingFormActionsProps {
   isLastStep: boolean;
   isOnboarding: boolean; // For the loader in the Finish button
   isCurrentStepValid: boolean;
+  onPrefillAll?: () => void;
 }
 
 export function OnboardingFormActions({
@@ -18,9 +20,35 @@ export function OnboardingFormActions({
   isLastStep,
   isOnboarding,
   isCurrentStepValid,
+  onPrefillAll,
 }: OnboardingFormActionsProps) {
+  // Check if we're on localhost - use useState/useEffect to avoid hydration mismatch
+  const [isLocalhost, setIsLocalhost] = useState(false);
+
+  useEffect(() => {
+    // Only check on client side after mount
+    const hostname = window.location.hostname;
+    setIsLocalhost(
+      hostname === 'localhost' ||
+        hostname === '127.0.0.1' ||
+        hostname.startsWith('192.168.') ||
+        hostname.startsWith('10.0.')
+    );
+  }, []);
+
   return (
     <div className="flex items-center gap-2">
+      {isLocalhost && onPrefillAll && stepIndex === 0 && (
+        <Button
+          type="button"
+          variant="outline"
+          className="flex items-center gap-2"
+          onClick={onPrefillAll}
+          disabled={isSubmitting}
+        >
+          Complete
+        </Button>
+      )}
       <AnimatePresence>
         {stepIndex > 0 && (
           <motion.div

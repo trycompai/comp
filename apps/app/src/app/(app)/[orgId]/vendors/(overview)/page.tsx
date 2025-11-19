@@ -1,6 +1,7 @@
 import { AppOnboarding } from '@/components/app-onboarding';
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import type { SearchParams } from '@/types';
+import { db } from '@db';
 import type { Metadata } from 'next';
 import { CreateVendorSheet } from '../components/create-vendor-sheet';
 import { VendorsTable } from './components/VendorsTable';
@@ -19,9 +20,13 @@ export default async function Page({
 
   const parsedSearchParams = await vendorsSearchParamsCache.parse(searchParams);
 
-  const [vendorsResult, assignees] = await Promise.all([
+  const [vendorsResult, assignees, onboarding] = await Promise.all([
     getVendors(orgId, parsedSearchParams),
     getAssignees(orgId),
+    db.onboarding.findFirst({
+      where: { organizationId: orgId },
+      select: { triggerJobId: true },
+    }),
   ]);
 
   // Helper function to check if the current view is the default, unfiltered one
@@ -36,8 +41,12 @@ export default async function Page({
     );
   }
 
-  // Show onboarding only if the view is default/unfiltered and there's no data
-  if (vendorsResult.data.length === 0 && isDefaultView(parsedSearchParams)) {
+  const isEmpty = vendorsResult.data.length === 0;
+  const isDefault = isDefaultView(parsedSearchParams);
+  const isOnboardingActive = Boolean(onboarding?.triggerJobId);
+
+  // Show AppOnboarding only if empty, default view, AND onboarding is not active
+  if (isEmpty && isDefault && !isOnboardingActive) {
     return (
       <div className="py-4">
         <AppOnboarding
@@ -76,7 +85,11 @@ export default async function Page({
       breadcrumbs={[{ label: 'Vendors', href: `/${orgId}/vendors`, current: true }]}
     >
       <VendorsTable
-        promises={Promise.all([getVendors(orgId, parsedSearchParams), getAssignees(orgId)])}
+        vendors={vendorsResult.data}
+        pageCount={vendorsResult.pageCount}
+        assignees={assignees}
+        onboardingRunId={onboarding?.triggerJobId ?? null}
+        searchParams={parsedSearchParams}
       />
     </PageWithBreadcrumb>
   );

@@ -29,19 +29,26 @@ export default async function RiskRegisterPage(props: {
   const search = searchParamsCache.parse(searchParams);
   const validFilters = getValidFilters(search.filters);
 
-  const risksResult = await getRisks({
+  const searchParamsForTable = {
     ...search,
     filters: validFilters,
-  });
+  };
 
-  const assignees = await getAssignees();
+  const [risksResult, assignees, onboarding] = await Promise.all([
+    getRisks(searchParamsForTable),
+    getAssignees(),
+    db.onboarding.findFirst({
+      where: { organizationId: orgId },
+      select: { triggerJobId: true },
+    }),
+  ]);
 
-  if (
-    risksResult.data?.length === 0 &&
-    search.page === 1 &&
-    search.title === '' &&
-    validFilters.length === 0
-  ) {
+  const isEmpty = risksResult.data?.length === 0;
+  const isDefaultView = search.page === 1 && search.title === '' && validFilters.length === 0;
+  const isOnboardingActive = Boolean(onboarding?.triggerJobId);
+
+  // Show AppOnboarding only if empty, default view, AND onboarding is not active
+  if (isEmpty && isDefaultView && !isOnboardingActive) {
     return (
       <div className="py-4">
         <AppOnboarding
@@ -83,6 +90,8 @@ export default async function RiskRegisterPage(props: {
         risks={risksResult?.data || []}
         pageCount={risksResult.pageCount}
         assignees={assignees}
+        onboardingRunId={onboarding?.triggerJobId ?? null}
+        searchParams={searchParamsForTable}
       />
     </PageWithBreadcrumb>
   );

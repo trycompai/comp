@@ -55,7 +55,16 @@ function TaskCard({ task, orgId }: { task: RelevantTask; orgId: string }) {
         throw new Error(response.error || 'Failed to fetch tasks');
       }
 
-      const matchingTask = response.data.find((t) => t.taskTemplateId === task.taskTemplateId);
+      // Debug logging
+      console.log('Looking for taskTemplateId:', task.taskTemplateId);
+      console.log(
+        'Available tasks:',
+        response.data.map((t) => ({ id: t.id, taskTemplateId: t.taskTemplateId })),
+      );
+
+      const matchingTask = response.data.find(
+        (t) => t.taskTemplateId && t.taskTemplateId === task.taskTemplateId,
+      );
 
       if (!matchingTask) {
         toast.dismiss('navigating');
@@ -184,21 +193,22 @@ export function IntegrationsGrid({
   return (
     <div className="space-y-4">
       {/* Search and Filters */}
-      <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-3">
         {/* Search Bar */}
         <SearchInput
           value={searchQuery}
           onChange={setSearchQuery}
           placeholder="Search integrations..."
-          className="w-80 flex-shrink-0"
+          className="w-full"
         />
 
-        {/* Category Filters */}
-        <div className="flex gap-2 flex-wrap">
+        {/* Category Filters - Horizontal scroll on mobile */}
+        <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 sm:overflow-x-visible sm:flex-wrap sm:pb-0 sm:mx-0 sm:px-0 scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           <Button
             size="sm"
             variant={selectedCategory === 'All' ? 'default' : 'outline'}
             onClick={() => setSelectedCategory('All')}
+            className="flex-shrink-0 whitespace-nowrap min-w-fit px-4"
           >
             All
           </Button>
@@ -208,6 +218,7 @@ export function IntegrationsGrid({
               size="sm"
               variant={selectedCategory === category ? 'default' : 'outline'}
               onClick={() => setSelectedCategory(category)}
+              className="flex-shrink-0 whitespace-nowrap min-w-fit px-4"
             >
               {category}
             </Button>

@@ -5,6 +5,7 @@ node_modules
 .pnp
 .pnp.js
 
+.idea/
 # testing
 coverage
 
@@ -84,3 +85,4 @@ packages/*/dist
 
 # Release script
 scripts/sync-release-branch.sh
+/.vscode

@@ -12,6 +12,7 @@ import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { ConditionalOnboardingTracker } from './components/ConditionalOnboardingTracker';
+import { ConditionalPaddingWrapper } from './components/ConditionalPaddingWrapper';
 import { DynamicMinHeight } from './components/DynamicMinHeight';
 
 const HotKeys = dynamic(() => import('@/components/hot-keys').then((mod) => mod.HotKeys), {
@@ -93,7 +94,9 @@ export default async function Layout({
         <AnimatedLayout sidebar={<Sidebar organization={organization} />} isCollapsed={isCollapsed}>
           {onboarding?.triggerJobId && <ConditionalOnboardingTracker onboarding={onboarding} />}
           <Header organizationId={organization.id} />
-          <DynamicMinHeight>{children}</DynamicMinHeight>
+          <ConditionalPaddingWrapper>
+            <DynamicMinHeight>{children}</DynamicMinHeight>
+          </ConditionalPaddingWrapper>
           <AssistantSheet />
           <Suspense fallback={null}>
             <CheckoutCompleteDialog orgId={organization.id} />
