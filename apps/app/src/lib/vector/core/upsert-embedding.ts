@@ -4,7 +4,7 @@ import { vectorIndex } from './client';
 import { generateEmbedding } from './generate-embedding';
 import { logger } from '@/utils/logger';
 
-export type SourceType = 'policy' | 'context' | 'document_hub' | 'attachment' | 'questionnaire' | 'manual_answer';
+export type SourceType = 'policy' | 'context' | 'document_hub' | 'attachment' | 'questionnaire' | 'manual_answer' | 'knowledge_base_document';
 
 export interface EmbeddingMetadata {
   organizationId: string;
@@ -16,6 +16,7 @@ export interface EmbeddingMetadata {
   vendorId?: string;
   vendorName?: string;
   questionnaireQuestion?: string;
+  documentName?: string;
   updatedAt?: string; // ISO timestamp for incremental sync comparison
 }
 
@@ -61,6 +62,7 @@ export async function upsertEmbedding(
       ...(metadata.vendorId && { vendorId: metadata.vendorId }),
       ...(metadata.vendorName && { vendorName: metadata.vendorName }),
       ...(metadata.questionnaireQuestion && { questionnaireQuestion: metadata.questionnaireQuestion }),
+      ...(metadata.documentName && { documentName: metadata.documentName }),
       ...(metadata.updatedAt && { updatedAt: metadata.updatedAt }),
     };
 

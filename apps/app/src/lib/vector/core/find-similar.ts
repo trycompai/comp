@@ -8,13 +8,14 @@ export interface SimilarContentResult {
   id: string;
   score: number;
   content: string;
-  sourceType: 'policy' | 'context' | 'document_hub' | 'attachment' | 'questionnaire' | 'manual_answer';
+  sourceType: 'policy' | 'context' | 'document_hub' | 'attachment' | 'questionnaire' | 'manual_answer' | 'knowledge_base_document';
   sourceId: string;
   policyName?: string;
   contextQuestion?: string;
   vendorId?: string;
   vendorName?: string;
   questionnaireQuestion?: string;
+  documentName?: string;
 }
 
 /**
@@ -79,6 +80,7 @@ export async function findSimilarContent(
           vendorId: metadata?.vendorId,
           vendorName: metadata?.vendorName,
           questionnaireQuestion: metadata?.questionnaireQuestion,
+          documentName: metadata?.documentName,
         };
       });
 

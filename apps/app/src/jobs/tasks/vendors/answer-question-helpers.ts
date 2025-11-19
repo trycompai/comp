@@ -37,7 +37,7 @@ export async function generateAnswerWithRAG(
     });
 
     // Extract sources information and deduplicate using universal utility
-    // Multiple chunks from the same source (same policy/context/manual answer) should appear as a single source
+    // Multiple chunks from the same source (same policy/context/manual answer/knowledge base document) should appear as a single source
     const sources = deduplicateSources(
       similarContent.map((result) => {
         let sourceName: string | undefined;
@@ -49,6 +49,10 @@ export async function generateAnswerWithRAG(
           sourceName = 'Context Q&A';
         } else if (result.sourceType === 'manual_answer') {
           sourceName = 'Manual Answer';
+        } else if (result.sourceType === 'knowledge_base_document' && result.documentName) {
+          sourceName = `Document: ${result.documentName}`;
+        } else if (result.sourceType === 'knowledge_base_document') {
+          sourceName = 'Knowledge Base Document';
         }
 
         return {
@@ -79,6 +83,12 @@ export async function generateAnswerWithRAG(
         sourceInfo = `Source: Questionnaire from "${result.vendorName}"`;
       } else if (result.contextQuestion) {
         sourceInfo = `Source: Context Q&A`;
+      } else if (result.sourceType === 'knowledge_base_document' && result.documentName) {
+        sourceInfo = `Source: Knowledge Base Document "${result.documentName}"`;
+      } else if (result.sourceType === 'knowledge_base_document') {
+        sourceInfo = `Source: Knowledge Base Document`;
+      } else if (result.sourceType === 'manual_answer') {
+        sourceInfo = `Source: Manual Answer`;
       } else {
         sourceInfo = `Source: ${result.sourceType}`;
       }

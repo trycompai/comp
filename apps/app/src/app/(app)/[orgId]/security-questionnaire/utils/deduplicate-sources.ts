@@ -5,6 +5,7 @@
  * - Policies: Same policy name = same source (deduplicated by policyName)
  * - Context: All context entries = single "Context Q&A" source
  * - Manual Answers: All manual answers = single "Manual Answer" source
+ * - Knowledge Base Documents: Deduplicated by sourceId (each document is a separate source)
  * - Other sources: Deduplicated by sourceId
  */
 
@@ -22,6 +23,7 @@ export interface Source {
  * - Policies: policyName
  * - Context: "Context Q&A" (all grouped together)
  * - Manual Answers: "Manual Answer" (all grouped together)
+ * - Knowledge Base Documents: sourceId (each document is separate)
  * - Others: sourceId
  * 
  * When duplicates are found, keeps the one with the highest score.
@@ -42,6 +44,9 @@ export function deduplicateSources(sources: Source[]): Source[] {
     } else if (source.sourceType === 'manual_answer') {
       // Manual Answers: all manual answers are grouped as one source
       deduplicationKey = 'manual_answer:all';
+    } else if (source.sourceType === 'knowledge_base_document') {
+      // Knowledge Base Documents: deduplicate by sourceId (each document is separate)
+      deduplicationKey = `knowledge_base_document:${source.sourceId || 'unknown'}`;
     } else {
       // Other sources: deduplicate by sourceId
       deduplicationKey = source.sourceId || `unknown:${source.sourceType}`;

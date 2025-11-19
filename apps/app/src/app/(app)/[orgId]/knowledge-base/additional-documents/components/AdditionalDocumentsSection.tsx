@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { uploadKnowledgeBaseDocumentAction } from '../actions/upload-document';
 import { downloadKnowledgeBaseDocumentAction } from '../actions/download-document';
 import { deleteKnowledgeBaseDocumentAction } from '../actions/delete-document';
+import { processKnowledgeBaseDocumentsAction } from '../actions/process-documents';
 import { useRouter } from 'next/navigation';
 import { usePagination } from '../../hooks/usePagination';
 import { format } from 'date-fns';
@@ -76,6 +77,8 @@ export function AdditionalDocumentsSection({
       });
       setUploadProgress(newProgress);
 
+      const uploadedDocumentIds: string[] = [];
+
       // Upload files sequentially
       for (const file of files) {
         try {
@@ -94,7 +97,8 @@ export function AdditionalDocumentsSection({
             organizationId,
           });
 
-          if (result?.data?.success) {
+          if (result?.data?.success && result.data.data?.id) {
+            uploadedDocumentIds.push(result.data.data.id);
             newProgress[file.name] = 100;
             setUploadProgress({ ...newProgress });
             toast.success(`Successfully uploaded ${file.name}`);
@@ -108,6 +112,24 @@ export function AdditionalDocumentsSection({
           );
           delete newProgress[file.name];
           setUploadProgress({ ...newProgress });
+        }
+      }
+
+      // Trigger processing for uploaded documents (orchestrator for multiple, individual for single)
+      if (uploadedDocumentIds.length > 0) {
+        try {
+          const result = await processKnowledgeBaseDocumentsAction({
+            documentIds: uploadedDocumentIds,
+            organizationId,
+          });
+
+          if (result?.data?.success) {
+            toast.success(result.data.message || 'Processing documents...');
+          } else {
+            console.error('Failed to trigger document processing:', result?.data?.error);
+          }
+        } catch (error) {
+          console.error('Failed to trigger document processing:', error);
         }
       }
 
@@ -221,7 +243,7 @@ export function AdditionalDocumentsSection({
             <AccordionContent className="px-6 pb-4">
               <div className="mb-4">
                 <p className="text-sm text-muted-foreground">
-                  Upload documents to enhance your knowledge base. Click on a document to download it.
+                  Upload documents or images to enhance your knowledge base. Supported formats: PDF, Word (.docx), Excel, CSV, text files, and images (PNG, JPG, GIF, WebP, SVG). Click on a document to download it.
                 </p>
               </div>
 
@@ -287,6 +309,11 @@ export function AdditionalDocumentsSection({
                   ],
                   'text/plain': ['.txt'],
                   'text/markdown': ['.md'],
+                  'image/png': ['.png'],
+                  'image/jpeg': ['.jpg', '.jpeg'],
+                  'image/gif': ['.gif'],
+                  'image/webp': ['.webp'],
+                  'image/svg+xml': ['.svg'],
                 }}
                 maxSize={10 * 1024 * 1024} // 10MB
                 disabled={isUploading}

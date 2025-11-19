@@ -6,6 +6,8 @@ import { db } from '@db';
 import { DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { tasks } from '@trigger.dev/sdk';
+import { deleteKnowledgeBaseDocumentTask } from '@/jobs/tasks/vector/delete-knowledge-base-document';
 
 const deleteDocumentSchema = z.object({
   documentId: z.string(),
@@ -60,6 +62,20 @@ export const deleteKnowledgeBaseDocumentAction = authActionClient
           success: false,
           error: 'Document not found',
         };
+      }
+
+      // Delete embeddings from vector database first (async, non-blocking)
+      try {
+        await tasks.trigger<typeof deleteKnowledgeBaseDocumentTask>(
+          'delete-knowledge-base-document-from-vector',
+          {
+            documentId: document.id,
+            organizationId: activeOrganizationId,
+          },
+        );
+      } catch (triggerError) {
+        // Log error but continue with deletion
+        console.error('Failed to trigger vector deletion task:', triggerError);
       }
 
       // Delete from S3

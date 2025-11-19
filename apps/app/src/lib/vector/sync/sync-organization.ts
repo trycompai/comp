@@ -8,6 +8,8 @@ import { deleteOrganizationEmbeddings } from '../core/delete-embeddings';
 import { findAllOrganizationEmbeddings, type ExistingEmbedding } from '../core/find-existing-embeddings';
 import { vectorIndex } from '../core/client';
 import { logger } from '@/utils/logger';
+import { tasks } from '@trigger.dev/sdk';
+import { processKnowledgeBaseDocumentTask } from '@/jobs/tasks/vector/process-knowledge-base-document';
 
 /**
  * Lock map to prevent concurrent syncs for the same organization
@@ -375,11 +377,97 @@ async function performSync(organizationId: string): Promise<void> {
       total: manualAnswers.length,
     });
 
-    // Step 7: Delete orphaned embeddings (policies/context/manual_answers that no longer exist in DB)
+    // Step 7: Sync Knowledge Base documents
+    // Note: Documents are processed via Trigger.dev tasks, but we sync completed documents here
+    // and trigger processing for pending/failed documents
+    const knowledgeBaseDocuments = await db.knowledgeBaseDocument.findMany({
+      where: { organizationId },
+      select: {
+        id: true,
+        name: true,
+        s3Key: true,
+        fileType: true,
+        processingStatus: true,
+        updatedAt: true,
+      },
+    });
+
+    logger.info('Found Knowledge Base documents to sync', {
+      organizationId,
+      count: knowledgeBaseDocuments.length,
+    });
+
+    let documentsProcessed = 0;
+    let documentsTriggered = 0;
+    let documentsSkipped = 0;
+
+    // Trigger processing for pending/failed documents
+    for (const document of knowledgeBaseDocuments) {
+      if (document.processingStatus === 'pending' || document.processingStatus === 'failed') {
+        try {
+          // Trigger Trigger.dev task to process document
+          await tasks.trigger<typeof processKnowledgeBaseDocumentTask>(
+            'process-knowledge-base-document',
+            {
+              documentId: document.id,
+              organizationId,
+            },
+          );
+          documentsTriggered++;
+        } catch (error) {
+          logger.warn('Failed to trigger document processing', {
+            documentId: document.id,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+        }
+      } else if (document.processingStatus === 'completed') {
+        // Check if embeddings exist and are up-to-date
+        const documentEmbeddings = existingEmbeddings.get(document.id) || [];
+        const documentUpdatedAt = document.updatedAt.toISOString();
+        
+        const needsUpdate = documentEmbeddings.length === 0 || 
+          documentEmbeddings.some((e: ExistingEmbedding) => !e.updatedAt || e.updatedAt < documentUpdatedAt);
+
+        if (needsUpdate) {
+          // Trigger reprocessing if embeddings are outdated
+          try {
+            await tasks.trigger<typeof processKnowledgeBaseDocumentTask>(
+              'process-knowledge-base-document',
+              {
+                documentId: document.id,
+                organizationId,
+              },
+            );
+            documentsTriggered++;
+          } catch (error) {
+            logger.warn('Failed to trigger document reprocessing', {
+              documentId: document.id,
+              error: error instanceof Error ? error.message : 'Unknown error',
+            });
+          }
+        } else {
+          documentsSkipped++;
+        }
+        documentsProcessed++;
+      } else {
+        documentsSkipped++;
+      }
+    }
+
+    logger.info('Knowledge Base documents sync completed', {
+      organizationId,
+      processed: documentsProcessed,
+      triggered: documentsTriggered,
+      skipped: documentsSkipped,
+      total: knowledgeBaseDocuments.length,
+    });
+
+    // Step 8: Delete orphaned embeddings (policies/context/manual_answers/knowledge_base_documents that no longer exist in DB)
     // Use the embeddings we already fetched (no additional API call needed)
     const dbPolicyIds = new Set(policies.map(p => p.id));
     const dbContextIds = new Set(contextEntries.map(c => c.id));
     const dbManualAnswerIds = new Set(manualAnswers.map(ma => ma.id));
+    const dbKnowledgeBaseDocumentIds = new Set(knowledgeBaseDocuments.map(d => d.id));
     let orphanedDeleted = 0;
 
     // Check for orphaned embeddings using the pre-fetched map
@@ -388,10 +476,12 @@ async function performSync(organizationId: string): Promise<void> {
         const isPolicy = embeddings[0]?.sourceType === 'policy';
         const isContext = embeddings[0]?.sourceType === 'context';
         const isManualAnswer = embeddings[0]?.sourceType === 'manual_answer';
+        const isKnowledgeBaseDocument = embeddings[0]?.sourceType === 'knowledge_base_document';
         
         const shouldExist = (isPolicy && dbPolicyIds.has(sourceId)) || 
                             (isContext && dbContextIds.has(sourceId)) ||
-                            (isManualAnswer && dbManualAnswerIds.has(sourceId));
+                            (isManualAnswer && dbManualAnswerIds.has(sourceId)) ||
+                            (isKnowledgeBaseDocument && dbKnowledgeBaseDocumentIds.has(sourceId));
 
         if (!shouldExist && vectorIndex) {
           // Delete orphaned embeddings
@@ -401,7 +491,7 @@ async function performSync(organizationId: string): Promise<void> {
             orphanedDeleted += idsToDelete.length;
             logger.info('Deleted orphaned embeddings', {
               sourceId,
-              sourceType: isPolicy ? 'policy' : isContext ? 'context' : 'manual_answer',
+              sourceType: isPolicy ? 'policy' : isContext ? 'context' : isManualAnswer ? 'manual_answer' : 'knowledge_base_document',
               deletedCount: idsToDelete.length,
             });
           } catch (error) {
@@ -439,6 +529,12 @@ async function performSync(organizationId: string): Promise<void> {
         created: manualAnswersCreated,
         updated: manualAnswersUpdated,
         skipped: manualAnswersSkipped,
+      },
+      knowledgeBaseDocuments: {
+        total: knowledgeBaseDocuments.length,
+        processed: documentsProcessed,
+        triggered: documentsTriggered,
+        skipped: documentsSkipped,
       },
       orphanedDeleted,
     });

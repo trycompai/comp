@@ -97,6 +97,9 @@ export const uploadKnowledgeBaseDocumentAction = authActionClient
         },
       });
 
+      // Note: Processing is triggered by orchestrator in the component
+      // when multiple files are uploaded, or individually for single files
+
       revalidatePath(`/${organizationId}/knowledge-base`);
 
       return {

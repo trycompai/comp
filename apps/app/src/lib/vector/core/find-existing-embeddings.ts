@@ -7,7 +7,7 @@ import { logger } from '@/utils/logger';
 export interface ExistingEmbedding {
   id: string;
   sourceId: string;
-  sourceType: 'policy' | 'context' | 'manual_answer';
+  sourceType: 'policy' | 'context' | 'manual_answer' | 'knowledge_base_document';
   updatedAt?: string;
 }
 
@@ -18,7 +18,7 @@ export interface ExistingEmbedding {
  */
 export async function findEmbeddingsForSource(
   sourceId: string,
-  sourceType: 'policy' | 'context' | 'manual_answer',
+  sourceType: 'policy' | 'context' | 'manual_answer' | 'knowledge_base_document',
   organizationId: string,
 ): Promise<ExistingEmbedding[]> {
   if (!vectorIndex) {
@@ -36,7 +36,9 @@ export async function findEmbeddingsForSource(
       ? `policy ${sourceId} security compliance`
       : sourceType === 'context'
       ? `context ${sourceId} question answer`
-      : `manual answer ${sourceId} question answer`;
+      : sourceType === 'manual_answer'
+      ? `manual answer ${sourceId} question answer`
+      : `knowledge base document ${sourceId} document content`;
     
     const queryEmbedding = await generateEmbedding(queryText);
     
@@ -63,7 +65,7 @@ export async function findEmbeddingsForSource(
         return {
           id: String(result.id),
           sourceId: metadata?.sourceId || '',
-          sourceType: metadata?.sourceType as 'policy' | 'context' | 'manual_answer',
+          sourceType: metadata?.sourceType as 'policy' | 'context' | 'manual_answer' | 'knowledge_base_document',
           updatedAt: metadata?.updatedAt,
         };
       });
@@ -120,7 +122,8 @@ export async function findAllOrganizationEmbeddings(
           metadata?.sourceType !== 'questionnaire' &&
           (metadata?.sourceType === 'policy' || 
            metadata?.sourceType === 'context' || 
-           metadata?.sourceType === 'manual_answer')
+           metadata?.sourceType === 'manual_answer' ||
+           metadata?.sourceType === 'knowledge_base_document')
         );
       })
       .map((result) => {
@@ -128,7 +131,7 @@ export async function findAllOrganizationEmbeddings(
         return {
           id: String(result.id),
           sourceId: metadata?.sourceId || '',
-          sourceType: metadata?.sourceType as 'policy' | 'context' | 'manual_answer',
+          sourceType: metadata?.sourceType as 'policy' | 'context' | 'manual_answer' | 'knowledge_base_document',
           updatedAt: metadata?.updatedAt,
         };
       });
