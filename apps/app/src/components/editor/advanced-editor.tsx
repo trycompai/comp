@@ -1,6 +1,6 @@
 'use client';
 
-import { Editor, type JSONContent } from '@comp/ui/editor';
+import { Editor, type JSONContent } from '@trycompai/ui/editor';
 
 interface AdvancedEditorProps {
   initialContent?: JSONContent | JSONContent[];

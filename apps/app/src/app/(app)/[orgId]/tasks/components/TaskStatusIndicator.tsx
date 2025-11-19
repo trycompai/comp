@@ -1,5 +1,5 @@
-import { cn } from '@comp/ui/cn';
 import type { TaskStatus } from '@trycompai/db';
+import { cn } from '@trycompai/ui/cn';
 import { BadgeCheck, Circle, CircleDashed, Loader2, OctagonX } from 'lucide-react';
 
 interface TaskStatusIndicatorProps {

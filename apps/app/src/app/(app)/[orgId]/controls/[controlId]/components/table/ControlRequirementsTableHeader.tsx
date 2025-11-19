@@ -1,7 +1,7 @@
 'use client';
 
-import { TableHead, TableHeader, TableRow } from '@comp/ui/table';
 import type { Table } from '@tanstack/react-table';
+import { TableHead, TableHeader, TableRow } from '@trycompai/ui/table';
 import type { RequirementTableData } from './ControlRequirementsTable';
 
 type Props = {

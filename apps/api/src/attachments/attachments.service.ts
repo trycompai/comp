@@ -14,6 +14,7 @@ import {
 import { randomBytes } from 'crypto';
 import { AttachmentResponseDto } from '../tasks/dto/task-responses.dto';
 import { UploadAttachmentDto } from './upload-attachment.dto';
+import { db } from '@trycompai/db';
 
 @Injectable()
 export class AttachmentsService {

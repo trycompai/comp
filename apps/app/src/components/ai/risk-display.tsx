@@ -1,5 +1,5 @@
-import { Badge } from '@comp/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
+import { Badge } from '@trycompai/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
 
 interface Risk {
   id: string;

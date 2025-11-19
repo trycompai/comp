@@ -2,7 +2,9 @@
 
 import { regeneratePolicyAction } from '@/app/(app)/[orgId]/policies/[policyId]/actions/regenerate-policy';
 import { generatePolicyPDF } from '@/lib/pdf-generator';
-import { Button } from '@comp/ui/button';
+import type { JSONContent } from '@tiptap/react';
+import type { Member, Policy, User } from '@trycompai/db';
+import { Button } from '@trycompai/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -10,17 +12,15 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
+} from '@trycompai/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@comp/ui/dropdown-menu';
-import { Icons } from '@comp/ui/icons';
-import type { JSONContent } from '@tiptap/react';
-import type { Member, Policy, User } from '@trycompai/db';
+} from '@trycompai/ui/dropdown-menu';
+import { Icons } from '@trycompai/ui/icons';
 import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
 import { toast } from 'sonner';

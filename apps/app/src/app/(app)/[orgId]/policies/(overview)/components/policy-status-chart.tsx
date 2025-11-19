@@ -3,14 +3,14 @@
 import * as React from 'react';
 import { Label, Pie, PieChart } from 'recharts';
 
-import { Badge } from '@comp/ui/badge';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@comp/ui/card';
+import { Badge } from '@trycompai/ui/badge';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@trycompai/ui/card';
 import {
   type ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from '@comp/ui/chart';
+} from '@trycompai/ui/chart';
 import { Info } from 'lucide-react';
 
 interface PolicyOverviewData {

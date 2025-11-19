@@ -1,12 +1,12 @@
 'use client';
 
 import { PolicyEditor } from '@/components/editor/policy-editor';
-import { Card, CardContent } from '@comp/ui/card';
-import { validateAndFixTipTapContent } from '@comp/ui/editor';
-import '@comp/ui/editor.css';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
 import type { JSONContent } from '@tiptap/react';
 import type { PolicyDisplayFormat } from '@trycompai/db';
+import { Card, CardContent } from '@trycompai/ui/card';
+import { validateAndFixTipTapContent } from '@trycompai/ui/editor';
+import '@trycompai/ui/editor.css';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/ui/tabs';
 import { useAction } from 'next-safe-action/hooks';
 import { toast } from 'sonner';
 import { switchPolicyDisplayFormatAction } from '../../actions/switch-policy-display-format';

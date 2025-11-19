@@ -1,7 +1,7 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
-import { Icons } from '@comp/ui/icons';
+import { Button } from '@trycompai/ui/button';
+import { Icons } from '@trycompai/ui/icons';
 import Link from 'next/link';
 
 export function InviteStatusCard({

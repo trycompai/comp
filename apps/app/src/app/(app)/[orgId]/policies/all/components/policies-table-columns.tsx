@@ -3,9 +3,9 @@
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
 import { StatusIndicator } from '@/components/status-indicator';
 import { formatDate } from '@/lib/format';
-import { Badge } from '@comp/ui/badge';
 import { type ColumnDef, type Row } from '@tanstack/react-table';
 import { Policy } from '@trycompai/db';
+import { Badge } from '@trycompai/ui/badge';
 import { ExternalLink, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 

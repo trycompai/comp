@@ -1,9 +1,9 @@
 'use client';
 
-import { cn } from '@comp/ui/cn';
-import { Input } from '@comp/ui/input';
-import { Skeleton } from '@comp/ui/skeleton';
 import type { Member, User } from '@trycompai/db';
+import { cn } from '@trycompai/ui/cn';
+import { Input } from '@trycompai/ui/input';
+import { Skeleton } from '@trycompai/ui/skeleton';
 import { Search } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import { useTransition } from 'react';

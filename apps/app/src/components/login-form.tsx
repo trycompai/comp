@@ -3,9 +3,9 @@
 import { GithubSignIn } from '@/components/github-sign-in';
 import { GoogleSignIn } from '@/components/google-sign-in';
 import { MagicLinkSignIn } from '@/components/magic-link';
-import { Button } from '@comp/ui/button';
-import { Card, CardContent, CardDescription, CardTitle } from '@comp/ui/card';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@comp/ui/collapsible';
+import { Button } from '@trycompai/ui/button';
+import { Card, CardContent, CardDescription, CardTitle } from '@trycompai/ui/card';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@trycompai/ui/collapsible';
 import { CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';

@@ -2,7 +2,7 @@
 
 import { db } from '@trycompai/db';
 // Remove unused Role import if not needed elsewhere
-// import { Role } from "@comp/db/types";
+// import { Role } from "@trycompai/db/types";
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
 // Adjust safe-action import for colocalized structure

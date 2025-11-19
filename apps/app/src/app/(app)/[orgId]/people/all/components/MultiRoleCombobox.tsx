@@ -3,7 +3,7 @@
 import type { Role } from '@trycompai/db';
 import * as React from 'react';
 
-import { Dialog, DialogContent } from '@comp/ui/dialog';
+import { Dialog, DialogContent } from '@trycompai/ui/dialog';
 import { MultiRoleComboboxContent } from './MultiRoleComboboxContent';
 import { MultiRoleComboboxTrigger } from './MultiRoleComboboxTrigger';
 

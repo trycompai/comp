@@ -1,6 +1,6 @@
 'use client';
 
-import { Input } from '@comp/ui/input';
+import { Input } from '@trycompai/ui/input';
 import { type InputHTMLAttributes, forwardRef, useCallback, useEffect, useState } from 'react';
 
 interface WebsiteInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'prefix'> {

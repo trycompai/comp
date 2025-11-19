@@ -1,7 +1,8 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
+import { EvidenceAutomationVersion } from '@trycompai/db';
+import { Button } from '@trycompai/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -9,8 +10,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
-import { EvidenceAutomationVersion } from '@trycompai/db';
+} from '@trycompai/ui/dialog';
 import { formatDistanceToNow } from 'date-fns';
 import { History, RotateCcw } from 'lucide-react';
 import { useParams } from 'next/navigation';

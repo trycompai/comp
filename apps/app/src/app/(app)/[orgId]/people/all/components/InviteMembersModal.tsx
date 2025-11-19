@@ -11,7 +11,7 @@ import { z } from 'zod';
 
 import type { ActionResponse } from '@/actions/types';
 import { authClient } from '@/utils/auth-client';
-import { Button } from '@comp/ui/button';
+import { Button } from '@trycompai/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -19,7 +19,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
+} from '@trycompai/ui/dialog';
 import {
   Form,
   FormControl,
@@ -28,9 +28,9 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@comp/ui/form';
-import { Input } from '@comp/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
+} from '@trycompai/ui/form';
+import { Input } from '@trycompai/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/ui/tabs';
 import { addEmployeeWithoutInvite } from '../actions/addEmployeeWithoutInvite';
 import { MultiRoleCombobox } from './MultiRoleCombobox';
 

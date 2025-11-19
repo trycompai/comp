@@ -1,6 +1,6 @@
 'use client';
 
-import { cn } from '@comp/ui/cn';
+import { cn } from '@trycompai/ui/cn';
 import { useEffect, useState } from 'react';
 
 interface AnimatedWrapperProps {

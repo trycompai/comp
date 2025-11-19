@@ -1,5 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { db } from '@trycompai/db';
+import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
 import type { CSSProperties } from 'react';
 
 interface Props {

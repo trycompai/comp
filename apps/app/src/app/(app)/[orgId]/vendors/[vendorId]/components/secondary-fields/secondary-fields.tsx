@@ -1,8 +1,8 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import type { GlobalVendors, Member, User, Vendor } from '@trycompai/db';
+import { Button } from '@trycompai/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
 import { PencilIcon } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import { UpdateTitleAndDescriptionSheet } from '../title-and-description/update-title-and-description-sheet';

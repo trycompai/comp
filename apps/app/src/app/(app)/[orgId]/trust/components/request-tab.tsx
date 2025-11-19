@@ -1,8 +1,8 @@
 import { useAccessRequests, usePreviewNda, useResendNda } from '@/hooks/use-access-requests';
-import { Badge } from '@comp/ui/badge';
-import { Button } from '@comp/ui/button';
-import { Skeleton } from '@comp/ui/skeleton';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@comp/ui/table';
+import { Badge } from '@trycompai/ui/badge';
+import { Button } from '@trycompai/ui/button';
+import { Skeleton } from '@trycompai/ui/skeleton';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@trycompai/ui/table';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { ApproveDialog } from './approve-dialog';

@@ -1,6 +1,6 @@
-import { Badge } from '@comp/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import type { Context } from '@trycompai/db';
+import { Badge } from '@trycompai/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
 
 export async function ContextHubList({ entries }: { entries: Context[] }) {
   return (

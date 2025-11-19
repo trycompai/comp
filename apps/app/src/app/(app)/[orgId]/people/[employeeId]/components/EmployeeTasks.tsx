@@ -2,8 +2,8 @@ import type { TrainingVideo } from '@/lib/data/training-videos';
 import type { EmployeeTrainingVideoCompletion, Member, Policy, User } from '@trycompai/db';
 
 import { cn } from '@/lib/utils';
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/ui/tabs';
 import { AlertCircle, CheckCircle2, XCircle } from 'lucide-react';
 import type { FleetPolicy, Host } from '../../devices/types';
 

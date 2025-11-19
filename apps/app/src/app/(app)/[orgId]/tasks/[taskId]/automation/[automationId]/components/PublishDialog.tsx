@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
+import { Button } from '@trycompai/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -8,9 +8,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
-import { Label } from '@comp/ui/label';
-import { Textarea } from '@comp/ui/textarea';
+} from '@trycompai/ui/dialog';
+import { Label } from '@trycompai/ui/label';
+import { Textarea } from '@trycompai/ui/textarea';
 import { Loader2 } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -148,7 +148,8 @@ export function PublishDialog({ open, onOpenChange }: PublishDialogProps) {
             <DialogHeader>
               <DialogTitle>Automation Published!</DialogTitle>
               <DialogDescription>
-                Version {publishedVersion} has been published and is now running. Where would you like to go?
+                Version {publishedVersion} has been published and is now running. Where would you
+                like to go?
               </DialogDescription>
             </DialogHeader>
 

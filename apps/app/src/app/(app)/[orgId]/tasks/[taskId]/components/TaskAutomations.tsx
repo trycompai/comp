@@ -1,9 +1,9 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { Button } from '@comp/ui/button';
-import { Separator } from '@comp/ui/separator';
 import { EvidenceAutomation, EvidenceAutomationRun } from '@trycompai/db';
+import { Button } from '@trycompai/ui/button';
+import { Separator } from '@trycompai/ui/separator';
 import { formatDistanceToNow } from 'date-fns';
 import { ArrowRight, Brain, CheckCircle2, Loader2, Plus, TrendingUp, XCircle } from 'lucide-react';
 import Link from 'next/link';

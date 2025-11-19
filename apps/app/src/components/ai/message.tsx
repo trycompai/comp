@@ -2,7 +2,7 @@
 
 import { useStreamableText } from '@/hooks/use-streamable-text';
 import { type StreamableValue } from '@ai-sdk/rsc';
-import { cn } from '@comp/ui/cn';
+import { cn } from '@trycompai/ui/cn';
 import type { UIMessage } from 'ai';
 
 import equal from 'fast-deep-equal';

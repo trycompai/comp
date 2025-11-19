@@ -2,9 +2,9 @@
 
 import { StatusIndicator } from '@/components/status-indicator';
 import { isPolicyCompleted } from '@/lib/control-compliance';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { Control, Policy, Task } from '@trycompai/db';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { getControlStatus } from '../../../../../lib/utils';

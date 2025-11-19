@@ -1,7 +1,9 @@
 'use client';
 
 import { deletePolicyAction } from '@/actions/policies/delete-policy';
-import { Button } from '@comp/ui/button';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Policy } from '@trycompai/db';
+import { Button } from '@trycompai/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -9,10 +11,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
-import { Form } from '@comp/ui/form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Policy } from '@trycompai/db';
+} from '@trycompai/ui/dialog';
+import { Form } from '@trycompai/ui/form';
 import { Trash2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';

@@ -2,11 +2,17 @@
 
 import { updateResidualRiskEnumAction } from '@/actions/risk/update-residual-risk-enum-action';
 import { updateResidualRiskEnumSchema } from '@/actions/schema';
-import { Button } from '@comp/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel } from '@comp/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Impact, Likelihood } from '@trycompai/db';
+import { Button } from '@trycompai/ui/button';
+import { Form, FormControl, FormField, FormItem, FormLabel } from '@trycompai/ui/form';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@trycompai/ui/select';
 import { Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useQueryState } from 'nuqs';

@@ -1,10 +1,10 @@
 'use client';
 
 import type { runIntegrationTests } from '@/jobs/tasks/integration/run-integration-tests';
-import { Button } from '@comp/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
 import { useRealtimeTaskTrigger } from '@trigger.dev/react-hooks';
 import { Integration } from '@trycompai/db';
+import { Button } from '@trycompai/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/ui/tabs';
 import { Plus, Settings } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';

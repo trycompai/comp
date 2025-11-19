@@ -1,11 +1,11 @@
 'use client';
 
 import { api } from '@/lib/api-client';
-import { Button } from '@comp/ui/button';
-import { Card, CardContent } from '@comp/ui/card';
-import { Input } from '@comp/ui/input';
-import { Switch } from '@comp/ui/switch';
 import { EvidenceAutomationRun, EvidenceAutomationVersion } from '@trycompai/db';
+import { Button } from '@trycompai/ui/button';
+import { Card, CardContent } from '@trycompai/ui/card';
+import { Input } from '@trycompai/ui/input';
+import { Switch } from '@trycompai/ui/switch';
 import { Clock, Code2 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';

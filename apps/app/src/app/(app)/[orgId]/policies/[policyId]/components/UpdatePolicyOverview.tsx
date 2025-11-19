@@ -4,10 +4,16 @@ import { submitPolicyForApprovalAction } from '@/actions/policies/submit-policy-
 import { updatePolicyFormAction } from '@/actions/policies/update-policy-form-action';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { StatusIndicator } from '@/components/status-indicator';
-import { Button } from '@comp/ui/button';
-import { cn } from '@comp/ui/cn';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Departments, Frequency, Member, type Policy, PolicyStatus, User } from '@trycompai/db';
+import { Button } from '@trycompai/ui/button';
+import { cn } from '@trycompai/ui/cn';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@trycompai/ui/select';
 import { format } from 'date-fns';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';

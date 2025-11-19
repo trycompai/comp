@@ -11,7 +11,7 @@ import {
   PromptInputTextarea,
   PromptInputTools,
   usePromptInputController,
-} from '@comp/ui';
+} from '@trycompai/ui/ai-elements/prompt-input';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect } from 'react';

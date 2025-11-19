@@ -1,11 +1,17 @@
 'use client';
 
 import { CreatePolicySheet } from '@/components/sheets/create-policy-sheet';
-import { Button } from '@comp/ui/button';
-import { cn } from '@comp/ui/cn';
-import { Input } from '@comp/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import { Skeleton } from '@comp/ui/skeleton';
+import { Button } from '@trycompai/ui/button';
+import { cn } from '@trycompai/ui/cn';
+import { Input } from '@trycompai/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@trycompai/ui/select';
+import { Skeleton } from '@trycompai/ui/skeleton';
 import { User } from 'better-auth';
 import { Plus, Search, X } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';

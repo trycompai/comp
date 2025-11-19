@@ -1,8 +1,8 @@
 'use client';
 
 import { useSession } from '@/utils/auth-client';
-import { Avatar, AvatarFallback, AvatarImageNext } from '@comp/ui/avatar';
-import { Icons } from '@comp/ui/icons';
+import { Avatar, AvatarFallback, AvatarImageNext } from '@trycompai/ui/avatar';
+import { Icons } from '@trycompai/ui/icons';
 
 type Props = {
   participantType: 'assistant' | 'user';

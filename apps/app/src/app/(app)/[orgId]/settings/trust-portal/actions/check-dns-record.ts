@@ -163,7 +163,7 @@ export const checkDnsRecordAction = authActionClient
     });
 
     revalidatePath(`/${activeOrgId}/settings/trust-portal`);
-    revalidateTag(`organization_${activeOrgId}`);
+    revalidateTag(`organization_${activeOrgId}`, 'organization');
 
     return {
       success: true,

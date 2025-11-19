@@ -2,8 +2,8 @@
 
 import { useApi } from '@/hooks/use-api';
 import { useCommentActions } from '@/hooks/use-comments-api';
-import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
-import { Button } from '@comp/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@trycompai/ui/avatar';
+import { Button } from '@trycompai/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -11,14 +11,14 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
+} from '@trycompai/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@comp/ui/dropdown-menu';
-import { Textarea } from '@comp/ui/textarea';
+} from '@trycompai/ui/dropdown-menu';
+import { Textarea } from '@trycompai/ui/textarea';
 import { FileIcon, FileText, ImageIcon, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import type React from 'react';
 import { useState } from 'react';

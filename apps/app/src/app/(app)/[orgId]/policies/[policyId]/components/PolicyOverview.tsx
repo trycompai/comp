@@ -3,12 +3,12 @@
 import { acceptRequestedPolicyChangesAction } from '@/actions/policies/accept-requested-policy-changes';
 import { denyRequestedPolicyChangesAction } from '@/actions/policies/deny-requested-policy-changes';
 import { authClient } from '@/utils/auth-client';
-import { Alert, AlertDescription, AlertTitle } from '@comp/ui/alert';
-import { Button } from '@comp/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
-import { Icons } from '@comp/ui/icons';
 import type { Member, Policy, User } from '@trycompai/db';
 import { Control } from '@trycompai/db';
+import { Alert, AlertDescription, AlertTitle } from '@trycompai/ui/alert';
+import { Button } from '@trycompai/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
+import { Icons } from '@trycompai/ui/icons';
 import { format } from 'date-fns';
 import { ArchiveIcon, ArchiveRestoreIcon, ShieldCheck, ShieldX } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';

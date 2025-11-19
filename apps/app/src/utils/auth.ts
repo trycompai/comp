@@ -1,9 +1,9 @@
 import { env } from '@/env.mjs';
-import { sendInviteMemberEmail } from '@comp/email/lib/invite-member';
-import { sendEmail } from '@comp/email/lib/resend';
-import { MagicLinkEmail, OTPVerificationEmail } from '@comp/email/src';
 import { dubAnalytics } from '@dub/better-auth';
 import { db } from '@trycompai/db';
+import { MagicLinkEmail, OTPVerificationEmail } from '@trycompai/email';
+import { sendInviteMemberEmail } from '@trycompai/email/lib/invite-member';
+import { sendEmail } from '@trycompai/email/lib/resend';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { nextCookies } from 'better-auth/next-js';
@@ -126,8 +126,6 @@ export const auth = betterAuth({
             ? 'app.trycomp.ai'
             : 'localhost:3000';
         const inviteLink = `${protocol}://${domain}/invite/${data.invitation.id}`;
-
-        const url = `${protocol}://${domain}/auth`;
 
         await sendInviteMemberEmail({
           inviteeEmail: data.email,

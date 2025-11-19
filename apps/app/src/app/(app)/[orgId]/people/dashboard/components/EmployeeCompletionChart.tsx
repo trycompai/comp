@@ -1,7 +1,7 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
-import { Input } from '@comp/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
+import { Input } from '@trycompai/ui/input';
 import { ExternalLink, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';

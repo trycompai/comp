@@ -1,6 +1,8 @@
 import { deleteContextEntryAction } from '@/actions/context-hub/delete-context-entry-action';
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
 import { isJSON } from '@/lib/utils';
+import type { ColumnDef } from '@tanstack/react-table';
+import type { Context } from '@trycompai/db';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,10 +13,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@comp/ui/alert-dialog';
-import { Button } from '@comp/ui/button';
-import type { ColumnDef } from '@tanstack/react-table';
-import type { Context } from '@trycompai/db';
+} from '@trycompai/ui/alert-dialog';
+import { Button } from '@trycompai/ui/button';
 import { Trash2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';

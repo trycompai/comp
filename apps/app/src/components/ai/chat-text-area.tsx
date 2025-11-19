@@ -1,6 +1,6 @@
-import { Icons } from '@comp/ui/icons';
-import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
-import { Textarea as ShadcnTextarea } from '@comp/ui/textarea';
+import { Icons } from '@trycompai/ui/icons';
+import { Popover, PopoverContent, PopoverTrigger } from '@trycompai/ui/popover';
+import { Textarea as ShadcnTextarea } from '@trycompai/ui/textarea';
 import { useRouter } from 'next/navigation';
 
 interface InputProps {

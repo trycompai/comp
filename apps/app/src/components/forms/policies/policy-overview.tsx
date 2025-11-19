@@ -4,14 +4,20 @@ import { updatePolicyFormAction } from '@/actions/policies/update-policy-form-ac
 import { updatePolicyFormSchema } from '@/actions/schema';
 import { StatusIndicator } from '@/components/status-indicator';
 import { useSession } from '@/utils/auth-client';
-import { Button } from '@comp/ui/button';
-import { Calendar } from '@comp/ui/calendar';
-import { cn } from '@comp/ui/cn';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
-import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Departments, Frequency, type Policy, type PolicyStatus } from '@trycompai/db';
+import { Button } from '@trycompai/ui/button';
+import { Calendar } from '@trycompai/ui/calendar';
+import { cn } from '@trycompai/ui/cn';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
+import { Popover, PopoverContent, PopoverTrigger } from '@trycompai/ui/popover';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@trycompai/ui/select';
 import { format } from 'date-fns';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';

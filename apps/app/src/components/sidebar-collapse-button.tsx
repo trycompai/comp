@@ -2,8 +2,8 @@
 
 import { updateSidebarState } from '@/actions/sidebar';
 import { useSidebar } from '@/context/sidebar-context';
-import { Button } from '@comp/ui/button';
-import { cn } from '@comp/ui/cn';
+import { Button } from '@trycompai/ui/button';
+import { cn } from '@trycompai/ui/cn';
 import { ArrowLeftFromLine } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 

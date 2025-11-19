@@ -1,8 +1,8 @@
 'use client';
 
 import { useComments } from '@/hooks/use-comments-api';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import { CommentEntityType } from '@trycompai/db';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
 import { CommentForm } from './CommentForm';
 import { CommentList } from './CommentList';
 

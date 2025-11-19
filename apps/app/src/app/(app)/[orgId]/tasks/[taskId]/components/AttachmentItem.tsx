@@ -1,3 +1,4 @@
+import type { Attachment, AttachmentType } from '@trycompai/db';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -8,10 +9,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@comp/ui/alert-dialog';
-import { Button } from '@comp/ui/button';
-import { cn } from '@comp/ui/cn';
-import type { Attachment, AttachmentType } from '@trycompai/db';
+} from '@trycompai/ui/alert-dialog';
+import { Button } from '@trycompai/ui/button';
+import { cn } from '@trycompai/ui/cn';
 import { Loader2, Trash2 } from 'lucide-react';
 import React from 'react';
 import { getAttachmentIconAndColor } from '../utils/attachmentUtils';

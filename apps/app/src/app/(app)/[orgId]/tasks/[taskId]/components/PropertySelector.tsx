@@ -1,4 +1,4 @@
-import { cn } from '@comp/ui/cn';
+import { cn } from '@trycompai/ui/cn';
 import {
   Command,
   CommandEmpty,
@@ -6,8 +6,8 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from '@comp/ui/command';
-import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
+} from '@trycompai/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@trycompai/ui/popover';
 import { Check } from 'lucide-react';
 import { ReactNode, useState } from 'react';
 

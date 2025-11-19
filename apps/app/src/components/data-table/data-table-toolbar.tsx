@@ -4,9 +4,9 @@ import type { Column, Table } from '@tanstack/react-table';
 import { Plus, Search, X } from 'lucide-react';
 import * as React from 'react';
 
-import { Button } from '@comp/ui/button';
-import { cn } from '@comp/ui/cn';
-import { Input } from '@comp/ui/input';
+import { Button } from '@trycompai/ui/button';
+import { cn } from '@trycompai/ui/cn';
+import { Input } from '@trycompai/ui/input';
 import { useQueryState } from 'nuqs';
 import { DataTableDateFilter } from './data-table-date-filter';
 import { DataTableFacetedFilter } from './data-table-faceted-filter';

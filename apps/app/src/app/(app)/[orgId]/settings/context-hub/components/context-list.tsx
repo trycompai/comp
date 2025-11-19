@@ -1,6 +1,7 @@
 'use client';
 
 import { deleteContextEntryAction } from '@/actions/context-hub/delete-context-entry-action';
+import type { Context } from '@trycompai/db';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,8 +12,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@comp/ui/alert-dialog';
-import { Button } from '@comp/ui/button';
+} from '@trycompai/ui/alert-dialog';
+import { Button } from '@trycompai/ui/button';
 import {
   Card,
   CardContent,
@@ -20,7 +21,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@comp/ui/card';
+} from '@trycompai/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -28,8 +29,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@comp/ui/dialog';
-import type { Context } from '@trycompai/db';
+} from '@trycompai/ui/dialog';
 import { Pencil, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';

@@ -1,9 +1,9 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
-import { Form, FormControl, FormField, FormItem, FormMessage } from '@comp/ui/form';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '@comp/ui/input-otp';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Button } from '@trycompai/ui/button';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@trycompai/ui/form';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@trycompai/ui/input-otp';
 import { Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';

@@ -1,20 +1,37 @@
 'use client';
 
 import { createApiKeyAction } from '@/actions/organization/create-api-key-action';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
-import { Button } from '@comp/ui/button';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@trycompai/ui/accordion';
+import { Button } from '@trycompai/ui/button';
 import {
   Drawer,
   DrawerContent,
   DrawerDescription,
   DrawerHeader,
   DrawerTitle,
-} from '@comp/ui/drawer';
-import { useMediaQuery } from '@comp/ui/hooks';
-import { Input } from '@comp/ui/input';
-import { ScrollArea } from '@comp/ui/scroll-area';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@comp/ui/sheet';
+} from '@trycompai/ui/drawer';
+import { useMediaQuery } from '@trycompai/ui/hooks';
+import { Input } from '@trycompai/ui/input';
+import { ScrollArea } from '@trycompai/ui/scroll-area';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@trycompai/ui/select';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@trycompai/ui/sheet';
 import { Check, Copy, X } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';

@@ -1,8 +1,8 @@
 'use client';
 
 import { authClient } from '@/utils/auth-client';
-import { Button } from '@comp/ui/button';
-import { Icons } from '@comp/ui/icons';
+import { Button } from '@trycompai/ui/button';
+import { Icons } from '@trycompai/ui/icons';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 

@@ -1,9 +1,9 @@
 'use client';
 
-import { Alert, AlertDescription, AlertTitle } from '@comp/ui/alert';
-import { Button } from '@comp/ui/button';
-import { Icons } from '@comp/ui/icons';
 import type { User, Vendor } from '@trycompai/db';
+import { Alert, AlertDescription, AlertTitle } from '@trycompai/ui/alert';
+import { Button } from '@trycompai/ui/button';
+import { Icons } from '@trycompai/ui/icons';
 import { PencilIcon } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import { UpdateTitleAndDescriptionSheet } from './update-title-and-description-sheet';

@@ -1,8 +1,8 @@
 'use client';
 
-import { cn } from '@comp/ui/cn';
-import { Skeleton } from '@comp/ui/skeleton';
-import { Table, TableBody, TableCell, TableRow } from '@comp/ui/table';
+import { cn } from '@trycompai/ui/cn';
+import { Skeleton } from '@trycompai/ui/skeleton';
+import { Table, TableBody, TableCell, TableRow } from '@trycompai/ui/table';
 import { Suspense } from 'react';
 import { DataTableHeader } from './data-table-header';
 

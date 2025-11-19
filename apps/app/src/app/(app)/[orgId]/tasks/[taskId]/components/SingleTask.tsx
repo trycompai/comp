@@ -2,22 +2,6 @@
 
 import { regenerateTaskAction } from '@/actions/tasks/regenerate-task-action';
 import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbSeparator,
-} from '@comp/ui/breadcrumb';
-import { Button } from '@comp/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@comp/ui/dialog';
-import {
   CommentEntityType,
   EvidenceAutomation,
   EvidenceAutomationRun,
@@ -26,6 +10,22 @@ import {
   type Task,
   type User,
 } from '@trycompai/db';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator,
+} from '@trycompai/ui/breadcrumb';
+import { Button } from '@trycompai/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@trycompai/ui/dialog';
 import { ChevronRight, RefreshCw, Trash2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import Link from 'next/link';

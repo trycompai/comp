@@ -1,5 +1,6 @@
 'use client';
 
+import type { Role } from '@trycompai/db'; // Assuming Role is from prisma
 import {
   Command,
   CommandEmpty,
@@ -7,11 +8,10 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from '@comp/ui/command';
-import type { Role } from '@trycompai/db'; // Assuming Role is from prisma
+} from '@trycompai/ui/command';
 import { Check } from 'lucide-react';
 
-import { cn } from '@comp/ui/cn';
+import { cn } from '@trycompai/ui/cn';
 
 interface MultiRoleComboboxContentProps {
   searchTerm: string;

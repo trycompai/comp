@@ -7,6 +7,7 @@
     "posthog-node": "^5.8.2"
   },
   "devDependencies": {
+    "next": "^16.0.3",
     "typescript": "^5.9.2"
   },
   "exports": {

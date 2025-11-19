@@ -2,7 +2,8 @@
 
 import { cn } from '@/lib/utils';
 import { useChat } from '@ai-sdk/react';
-import { Button } from '@comp/ui/button';
+import { EvidenceAutomationVersion } from '@trycompai/db';
+import { Button } from '@trycompai/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -10,7 +11,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
+} from '@trycompai/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,8 +19,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@comp/ui/dropdown-menu';
-import { EvidenceAutomationVersion } from '@trycompai/db';
+} from '@trycompai/ui/dropdown-menu';
 import { Code, Loader2, RotateCcw, Upload, Zap } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';

@@ -1,5 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { db, VendorCategory } from '@trycompai/db';
+import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
 import { VendorCategoryChart } from './category-chart';
 
 const VENDOR_CATEGORIES = Object.values(VendorCategory);

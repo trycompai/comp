@@ -1,8 +1,8 @@
-import { Button } from '@comp/ui/button';
-import { Calendar } from '@comp/ui/calendar';
-import { cn } from '@comp/ui/cn';
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
-import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
+import { Button } from '@trycompai/ui/button';
+import { Calendar } from '@trycompai/ui/calendar';
+import { cn } from '@trycompai/ui/cn';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
+import { Popover, PopoverContent, PopoverTrigger } from '@trycompai/ui/popover';
 import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 import type { Control } from 'react-hook-form';

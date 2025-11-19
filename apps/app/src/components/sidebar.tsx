@@ -1,8 +1,8 @@
 import { getFeatureFlags } from '@/app/posthog';
 import { getOrganizations } from '@/data/getOrganizations';
 import { auth } from '@/utils/auth';
-import { cn } from '@comp/ui/cn';
 import type { Organization } from '@trycompai/db';
+import { cn } from '@trycompai/ui/cn';
 import { cookies, headers } from 'next/headers';
 import { MainMenu } from './main-menu';
 import { OrganizationSwitcher } from './organization-switcher';

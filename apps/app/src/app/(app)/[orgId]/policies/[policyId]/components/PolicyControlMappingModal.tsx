@@ -1,5 +1,6 @@
-import { Badge } from '@comp/ui/badge';
-import { Button } from '@comp/ui/button';
+import { Control } from '@trycompai/db';
+import { Badge } from '@trycompai/ui/badge';
+import { Button } from '@trycompai/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -8,9 +9,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@comp/ui/dialog';
-import MultipleSelector, { Option } from '@comp/ui/multiple-selector';
-import { Control } from '@trycompai/db';
+} from '@trycompai/ui/dialog';
+import MultipleSelector, { Option } from '@trycompai/ui/multiple-selector';
 import { PlusIcon } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';

@@ -1,9 +1,9 @@
 import { getInitials } from '@/lib/utils';
 import { auth } from '@/utils/auth';
-import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
-import { ScrollArea } from '@comp/ui/scroll-area';
 import { db } from '@trycompai/db';
+import { Avatar, AvatarFallback, AvatarImage } from '@trycompai/ui/avatar';
+import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
+import { ScrollArea } from '@trycompai/ui/scroll-area';
 import { headers } from 'next/headers';
 import Link from 'next/link';
 import { cache } from 'react';

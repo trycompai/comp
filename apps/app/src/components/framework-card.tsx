@@ -1,8 +1,8 @@
 'use client';
 
-import { Checkbox } from '@comp/ui/checkbox';
-import { cn } from '@comp/ui/cn';
 import type { FrameworkEditorFramework } from '@trycompai/db';
+import { Checkbox } from '@trycompai/ui/checkbox';
+import { cn } from '@trycompai/ui/cn';
 
 type FrameworkCardProps = {
   framework: Pick<FrameworkEditorFramework, 'id' | 'name' | 'description' | 'version' | 'visible'>;

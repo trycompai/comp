@@ -1,5 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
-import { Skeleton } from '@comp/ui/skeleton';
+import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
+import { Skeleton } from '@trycompai/ui/skeleton';
 
 interface Props {
   amount: number;

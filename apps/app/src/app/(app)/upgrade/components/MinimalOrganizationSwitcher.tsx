@@ -1,14 +1,13 @@
 'use client';
 
 import { changeOrganizationAction } from '@/actions/change-organization';
-import { Button } from '@comp/ui/button';
+import { Button } from '@trycomp/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@comp/ui/dropdown-menu';
-import type { Organization } from '@trycompai/db';
+} from '@trycompai/ui/dropdown-menu';
 import { Check, ChevronsUpDown, Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';

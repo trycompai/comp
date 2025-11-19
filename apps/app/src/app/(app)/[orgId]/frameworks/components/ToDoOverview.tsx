@@ -1,11 +1,11 @@
 'use client';
 
 import { publishAllPoliciesAction } from '@/actions/policies/publish-all';
-import { Button } from '@comp/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
-import { ScrollArea } from '@comp/ui/scroll-area';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
 import { Policy, Task } from '@trycompai/db';
+import { Button } from '@trycompai/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
+import { ScrollArea } from '@trycompai/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/ui/tabs';
 import {
   ArrowRight,
   CheckCircle2,

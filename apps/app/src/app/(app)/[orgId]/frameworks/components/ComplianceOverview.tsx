@@ -1,8 +1,8 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
-import { Progress } from '@comp/ui/progress';
 import { FrameworkInstance } from '@trycompai/db';
+import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
+import { Progress } from '@trycompai/ui/progress';
 import { ComplianceProgressChart } from './ComplianceProgressChart';
 import { PoliciesChart } from './PoliciesChart';
 import { TasksChart } from './TasksChart';

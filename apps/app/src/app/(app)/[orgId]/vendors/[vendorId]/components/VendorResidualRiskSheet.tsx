@@ -1,12 +1,18 @@
 'use client';
 
 import { ResidualRiskForm } from '@/app/(app)/[orgId]/vendors/[vendorId]/forms/risks/ResidualRiskForm';
-import { Button } from '@comp/ui/button';
-import { Drawer, DrawerContent, DrawerTitle } from '@comp/ui/drawer';
-import { useMediaQuery } from '@comp/ui/hooks';
-import { ScrollArea } from '@comp/ui/scroll-area';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@comp/ui/sheet';
 import type { Vendor } from '@trycompai/db';
+import { Button } from '@trycompai/ui/button';
+import { Drawer, DrawerContent, DrawerTitle } from '@trycompai/ui/drawer';
+import { useMediaQuery } from '@trycompai/ui/hooks';
+import { ScrollArea } from '@trycompai/ui/scroll-area';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@trycompai/ui/sheet';
 import { X } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 

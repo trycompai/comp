@@ -1,12 +1,12 @@
 import { auth } from '@/app/lib/auth';
-import { Avatar, AvatarFallback, AvatarImageNext } from '@comp/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImageNext } from '@trycompai/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@comp/ui/dropdown-menu';
+} from '@trycompai/ui/dropdown-menu';
 import { headers } from 'next/headers';
 import { Logout } from './logout';
 import { ThemeSwitch } from './theme-switch';

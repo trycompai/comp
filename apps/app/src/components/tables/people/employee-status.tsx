@@ -1,5 +1,5 @@
 import { EMPLOYEE_STATUS_HEX_COLORS } from '@/app/(app)/[orgId]/people/[employeeId]/components/Fields/Status';
-import { cn } from '@comp/ui/cn';
+import { cn } from '@trycompai/ui/cn';
 
 // Define employee status types
 export const EMPLOYEE_STATUS_TYPES = ['active', 'inactive'] as const;

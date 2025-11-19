@@ -1,17 +1,17 @@
 'use client';
 
 import { api } from '@/lib/api-client';
-import { Badge } from '@comp/ui/badge';
-import { Button } from '@comp/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
+import { Badge } from '@trycompai/ui/badge';
+import { Button } from '@trycompai/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
-import { Skeleton } from '@comp/ui/skeleton';
+} from '@trycompai/ui/dialog';
+import { Skeleton } from '@trycompai/ui/skeleton';
 import { ArrowRight, CheckCircle2, Loader2, Plug, Sparkles, Zap } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';

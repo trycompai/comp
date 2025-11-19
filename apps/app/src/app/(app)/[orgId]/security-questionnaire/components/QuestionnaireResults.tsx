@@ -1,11 +1,11 @@
 'use client';
 
-import { ScrollArea } from '@comp/ui/scroll-area';
+import { ScrollArea } from '@trycompai/ui/scroll-area';
 import { Search } from 'lucide-react';
-import type { QuestionAnswer } from './types';
 import { QuestionnaireResultsCards } from './QuestionnaireResultsCards';
 import { QuestionnaireResultsHeader } from './QuestionnaireResultsHeader';
 import { QuestionnaireResultsTable } from './QuestionnaireResultsTable';
+import type { QuestionAnswer } from './types';
 
 interface QuestionnaireResultsProps {
   orgId: string;
@@ -105,15 +105,15 @@ export function QuestionnaireResults({
                         editingAnswer={editingAnswer}
                         onEditingAnswerChange={onEditingAnswerChange}
                         expandedSources={expandedSources}
-                      questionStatuses={questionStatuses}
-                      answeringQuestionIndex={answeringQuestionIndex}
-                      isAutoAnswering={isAutoAnswering}
-                      hasClickedAutoAnswer={hasClickedAutoAnswer}
-                      onEditAnswer={onEditAnswer}
-                      onSaveAnswer={onSaveAnswer}
-                      onCancelEdit={onCancelEdit}
-                      onAnswerSingleQuestion={onAnswerSingleQuestion}
-                      onToggleSource={onToggleSource}
+                        questionStatuses={questionStatuses}
+                        answeringQuestionIndex={answeringQuestionIndex}
+                        isAutoAnswering={isAutoAnswering}
+                        hasClickedAutoAnswer={hasClickedAutoAnswer}
+                        onEditAnswer={onEditAnswer}
+                        onSaveAnswer={onSaveAnswer}
+                        onCancelEdit={onCancelEdit}
+                        onAnswerSingleQuestion={onAnswerSingleQuestion}
+                        onToggleSource={onToggleSource}
                       />
                     </div>
 
@@ -151,4 +151,3 @@ export function QuestionnaireResults({
     </div>
   );
 }
-

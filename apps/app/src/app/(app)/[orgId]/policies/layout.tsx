@@ -1,4 +1,4 @@
-import { SecondaryMenu } from '@comp/ui/secondary-menu';
+import { SecondaryMenu } from '@trycompai/ui/secondary-menu';
 
 interface LayoutProps {
   children: React.ReactNode;

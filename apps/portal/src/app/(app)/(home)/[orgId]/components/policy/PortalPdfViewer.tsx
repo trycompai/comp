@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, CardContent } from '@comp/ui/card';
+import { Card, CardContent } from '@trycompai/ui/card';
 import { FileText, Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useEffect, useState } from 'react';

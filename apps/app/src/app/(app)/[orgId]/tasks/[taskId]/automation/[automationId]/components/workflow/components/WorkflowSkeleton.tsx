@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, CardContent } from '@comp/ui/card';
+import { Card, CardContent } from '@trycompai/ui/card';
 
 export function WorkflowSkeleton() {
   return (

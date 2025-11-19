@@ -1,5 +1,5 @@
-import { sendAllPolicyNotificationEmail } from '@comp/email/src';
 import { logger, queue, task } from '@trigger.dev/sdk';
+import { sendAllPolicyNotificationEmail } from '@trycompai/email';
 
 // Queue with concurrency limit to ensure rate limiting
 const allPolicyEmailQueue = queue({

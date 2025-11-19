@@ -1,17 +1,17 @@
 'use client';
 
-import { Badge } from '@comp/ui/badge';
-import { Button } from '@comp/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
-import { cn } from '@comp/ui/cn';
+import { Control, Task } from '@trycompai/db';
+import { Badge } from '@trycompai/ui/badge';
+import { Button } from '@trycompai/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
+import { cn } from '@trycompai/ui/cn';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@comp/ui/dropdown-menu';
-import { Progress } from '@comp/ui/progress';
-import { Control, Task } from '@trycompai/db';
+} from '@trycompai/ui/dropdown-menu';
+import { Progress } from '@trycompai/ui/progress';
 import { BarChart3, MoreVertical, Target, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { getControlStatus } from '../../lib/utils';

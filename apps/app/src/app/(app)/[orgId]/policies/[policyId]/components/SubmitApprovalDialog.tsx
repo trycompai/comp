@@ -1,7 +1,8 @@
 'use client';
 
 import { SelectAssignee } from '@/components/SelectAssignee';
-import { Button } from '@comp/ui/button';
+import { Member, User } from '@trycompai/db';
+import { Button } from '@trycompai/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -9,8 +10,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
-import { Member, User } from '@trycompai/db';
+} from '@trycompai/ui/dialog';
 import { Loader2 } from 'lucide-react';
 
 interface SubmitApprovalDialogProps {

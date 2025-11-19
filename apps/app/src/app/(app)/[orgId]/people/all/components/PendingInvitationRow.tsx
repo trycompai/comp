@@ -1,8 +1,9 @@
 'use client';
 
-import { Avatar, AvatarFallback } from '@comp/ui/avatar';
-import { Badge } from '@comp/ui/badge';
-import { Button } from '@comp/ui/button';
+import type { Invitation } from '@trycompai/db';
+import { Avatar, AvatarFallback } from '@trycompai/ui/avatar';
+import { Badge } from '@trycompai/ui/badge';
+import { Button } from '@trycompai/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -11,14 +12,13 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@comp/ui/dialog';
+} from '@trycompai/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@comp/ui/dropdown-menu';
-import type { Invitation } from '@trycompai/db';
+} from '@trycompai/ui/dropdown-menu';
 import { Clock, MoreHorizontal, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 

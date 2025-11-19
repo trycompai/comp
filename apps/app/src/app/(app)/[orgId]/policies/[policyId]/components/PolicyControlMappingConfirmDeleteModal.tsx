@@ -1,4 +1,5 @@
-import { Button } from '@comp/ui/button';
+import type { Control } from '@trycompai/db';
+import { Button } from '@trycompai/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -7,8 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@comp/ui/dialog';
-import type { Control } from '@trycompai/db';
+} from '@trycompai/ui/dialog';
 import { X } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';

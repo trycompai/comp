@@ -1,6 +1,6 @@
 import { PrismaClient } from '../prisma/generated/client';
-export * from '../prisma/generated/models';
+export * from '../prisma/generated/browser';
 
 const db = new PrismaClient();
 
-export default db;
+export { db };

@@ -4,14 +4,20 @@ import { updateTaskAction } from '@/actions/risk/task/update-task-action';
 import { updateTaskSchema } from '@/actions/schema';
 import { SelectUser } from '@/components/select-user';
 import { StatusIndicator } from '@/components/status-indicator';
-import { Button } from '@comp/ui/button';
-import { Calendar } from '@comp/ui/calendar';
-import { cn } from '@comp/ui/cn';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
-import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { type Task, TaskStatus, type User } from '@trycompai/db';
+import { Button } from '@trycompai/ui/button';
+import { Calendar } from '@trycompai/ui/calendar';
+import { cn } from '@trycompai/ui/cn';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
+import { Popover, PopoverContent, PopoverTrigger } from '@trycompai/ui/popover';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@trycompai/ui/select';
 import { format } from 'date-fns';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';

@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
+import { Button } from '@trycompai/ui/button';
 import { useRouter } from 'next/navigation';
 
 export function ErrorFallback() {

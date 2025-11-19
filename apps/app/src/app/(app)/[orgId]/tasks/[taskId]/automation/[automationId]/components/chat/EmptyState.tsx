@@ -6,9 +6,9 @@ import {
   PromptInputTextarea,
   PromptInputTools,
   usePromptInputController,
-} from '@comp/ui';
-import { Card, CardDescription, CardHeader } from '@comp/ui/card';
-import { Skeleton } from '@comp/ui/skeleton';
+} from '@trycompai/ui';
+import { Card, CardDescription, CardHeader } from '@trycompai/ui/card';
+import { Skeleton } from '@trycompai/ui/skeleton';
 import { useState } from 'react';
 import { AUTOMATION_EXAMPLES, AutomationExample } from '../../constants/automation-examples';
 

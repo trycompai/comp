@@ -1,8 +1,8 @@
 'use client';
 
-import { Badge } from '@comp/ui/badge';
-import { Card } from '@comp/ui/card';
 import type { Task } from '@trycompai/db';
+import { Badge } from '@trycompai/ui/badge';
+import { Card } from '@trycompai/ui/card';
 import { formatDistanceToNow } from 'date-fns';
 import { Activity, ArrowRight, CheckCircle2, Clock, Sparkles, XCircle } from 'lucide-react';
 import Link from 'next/link';

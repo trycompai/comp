@@ -1,7 +1,7 @@
 'use client';
 
 import { formatDate } from '@/lib/utils/format-date';
-import { cn } from '@comp/ui/cn';
+import { cn } from '@trycompai/ui/cn';
 
 interface StatusDateProps {
   date: Date;

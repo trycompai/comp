@@ -15,7 +15,7 @@ export const searchParamsCache = createSearchParamsCache({
   sort: getSortingStateParser<Policy>().withDefault([{ id: 'createdAt', desc: true }]),
   name: parseAsString.withDefault(''),
   status: parseAsArrayOf(z.nativeEnum(PolicyStatus)).withDefault([]),
-  createdAt: parseAsArrayOf(z.coerce.date()).withDefault([]),
+  createdAt: parseAsArrayOf(z.date()).withDefault([]),
   updatedAt: parseAsArrayOf(z.coerce.date()).withDefault([]),
   // advanced filter
   filters: getFiltersStateParser().withDefault([]),

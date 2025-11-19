@@ -11,16 +11,16 @@ import type { z } from 'zod';
 import { addFrameworksToOrganizationAction } from '@/actions/organization/add-frameworks-to-organization-action';
 import { addFrameworksSchema } from '@/actions/schema';
 import { FrameworkCard } from '@/components/framework-card';
-import { Button } from '@comp/ui/button';
+import type { FrameworkEditorFramework } from '@trycompai/db';
+import { Button } from '@trycompai/ui/button';
 import {
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
-import type { FrameworkEditorFramework } from '@trycompai/db';
+} from '@trycompai/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
 
 type Props = {
   onOpenChange: (isOpen: boolean) => void;

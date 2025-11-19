@@ -3,13 +3,13 @@
 import { JwtTokenManager } from '@/components/auth/jwt-token-manager';
 import { env } from '@/env.mjs';
 import { AnalyticsProvider } from '@comp/analytics';
-import { Toaster } from '@comp/ui/sooner';
 import { GoogleTagManager } from '@next/third-parties/google';
 import {
   defaultShouldDehydrateQuery,
   QueryClient,
   QueryClientProvider,
 } from '@tanstack/react-query';
+import { Toaster } from '@trycompai/ui/sooner';
 import { Session, User } from 'better-auth';
 import { ThemeProvider } from 'next-themes';
 import type { ReactNode } from 'react';
