@@ -2,6 +2,7 @@
 
 import { authActionClient } from '@/actions/safe-action';
 import { db } from '@db';
+import { Prisma } from '@prisma/client';
 import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -71,7 +72,7 @@ export const deleteQuestionnaireAnswer = authActionClient
         data: {
           answer: null,
           status: 'untouched',
-          sources: null,
+          sources: Prisma.JsonNull,
           generatedAt: null,
           updatedBy: null,
           updatedAt: new Date(),

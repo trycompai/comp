@@ -26,7 +26,8 @@ export const updateQuestionnaireAnswer = authActionClient
   })
   .action(async ({ parsedInput, ctx }) => {
     const { questionnaireId, questionAnswerId, answer } = parsedInput;
-    const { activeOrganizationId, userId } = ctx.session;
+    const { activeOrganizationId } = ctx.session;
+    const userId = ctx.user.id;
 
     if (!activeOrganizationId) {
       return {

@@ -316,7 +316,7 @@ export function usePersistGeneratedAnswers<TResults extends PersistedQuestionAns
         }
       });
 
-      return hasChanges ? updatedResults : prevResults;
+      return (hasChanges ? updatedResults : prevResults) as TResults;
     });
   }, [autoAnswerRun?.metadata, setQuestionStatuses, setResults]);
 }

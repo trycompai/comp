@@ -6,6 +6,7 @@ import { BookOpen, ChevronDown, ChevronUp, Link as LinkIcon, Loader2, Pencil } f
 import Link from 'next/link';
 import type { QuestionAnswer } from './types';
 import { deduplicateSources } from '../utils/deduplicate-sources';
+import { KnowledgeBaseDocumentLink } from './KnowledgeBaseDocumentLink';
 
 interface QuestionnaireResultsCardsProps {
   orgId: string;
@@ -201,6 +202,8 @@ export function QuestionnaireResultsCards({
                   <div className="mt-2 space-y-1 pl-4 border-l-2 border-muted/30">
                     {uniqueSources.map((source, sourceIndex) => {
                       const isPolicy = source.sourceType === 'policy' && source.sourceId;
+                      const isKnowledgeBaseDocument =
+                        source.sourceType === 'knowledge_base_document' && source.sourceId;
                       const sourceContent = source.sourceName || source.sourceType;
 
                       return (
@@ -216,6 +219,12 @@ export function QuestionnaireResultsCards({
                               {sourceContent}
                               <LinkIcon className="h-3 w-3" />
                             </Link>
+                          ) : isKnowledgeBaseDocument && source.sourceId ? (
+                            <KnowledgeBaseDocumentLink
+                              documentId={source.sourceId}
+                              sourceName={sourceContent}
+                              orgId={orgId}
+                            />
                           ) : (
                             <span className="font-medium text-muted-foreground">
                               {sourceContent}

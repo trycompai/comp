@@ -6,7 +6,14 @@
     "posthog-js": "^1.236.6",
     "posthog-node": "^5.8.2"
   },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "next": "^14.0.0 || ^15.0.0"
+  },
   "devDependencies": {
+    "@types/react": "^19.0.0",
+    "next": "^15.0.0",
+    "react": "^19.0.0",
     "tsup": "^8.5.0",
     "typescript": "^5.8.3"
   },
@@ -45,9 +52,9 @@
     "directory": "packages/analytics"
   },
   "scripts": {
-    "build": "tsup src/index.ts src/server.ts --format cjs,esm --dts",
+    "build": "tsup src/index.ts src/server.ts --format cjs,esm --dts --external react --external react/jsx-runtime --external next/navigation",
     "clean": "rm -rf .turbo node_modules dist",
-    "dev": "tsup src/index.ts src/server.ts --format cjs,esm --watch --dts",
+    "dev": "tsup src/index.ts src/server.ts --format cjs,esm --watch --dts --external react --external react/jsx-runtime --external next/navigation",
     "format": "prettier --write .",
     "lint": "prettier --check .",
     "typecheck": "tsc --noEmit"

@@ -71,14 +71,14 @@ export function QuestionnaireDetailClient({
           answer: r.answer,
           sources: r.sources,
           failedToGenerate: (r as any).failedToGenerate ?? false, // Preserve failedToGenerate from result
-          _originalIndex: r.originalIndex, // Preserve originalIndex for reference
+          _originalIndex: (r as any).originalIndex ?? index, // Preserve originalIndex for reference, fallback to map index
         }))}
         filteredResults={filteredResults?.map((r, index) => ({
           question: r.question,
           answer: r.answer,
           sources: r.sources,
           failedToGenerate: (r as any).failedToGenerate ?? false, // Preserve failedToGenerate from result
-          _originalIndex: r.originalIndex, // Preserve originalIndex for reference
+          _originalIndex: (r as any).originalIndex ?? index, // Preserve originalIndex for reference, fallback to map index
         }))}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}

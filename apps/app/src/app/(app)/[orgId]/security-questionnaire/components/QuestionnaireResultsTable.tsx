@@ -7,6 +7,7 @@ import { BookOpen, ChevronDown, ChevronUp, Link as LinkIcon, Loader2, Zap, Penci
 import Link from 'next/link';
 import type { QuestionAnswer } from './types';
 import { deduplicateSources } from '../utils/deduplicate-sources';
+import { KnowledgeBaseDocumentLink } from './KnowledgeBaseDocumentLink';
 
 interface QuestionnaireResultsTableProps {
   orgId: string;
@@ -214,6 +215,8 @@ export function QuestionnaireResultsTable({
                             <div className="mt-2 space-y-1.5 pl-4 border-l-2 border-muted">
                               {uniqueSources.map((source, sourceIndex) => {
                                 const isPolicy = source.sourceType === 'policy' && source.sourceId;
+                                const isKnowledgeBaseDocument =
+                                  source.sourceType === 'knowledge_base_document' && source.sourceId;
                                 const sourceContent = source.sourceName || source.sourceType;
 
                                 return (
@@ -231,6 +234,13 @@ export function QuestionnaireResultsTable({
                                         {sourceContent}
                                         <LinkIcon className="h-3 w-3" />
                                       </Link>
+                                    ) : isKnowledgeBaseDocument && source.sourceId ? (
+                                      <KnowledgeBaseDocumentLink
+                                        documentId={source.sourceId}
+                                        sourceName={sourceContent}
+                                        orgId={orgId}
+                                        className="text-primary hover:underline flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                                      />
                                     ) : (
                                       <span className="text-muted-foreground">{sourceContent}</span>
                                     )}

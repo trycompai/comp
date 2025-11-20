@@ -14,6 +14,7 @@ export interface Source {
   sourceName?: string;
   sourceId?: string;
   policyName?: string;
+  documentName?: string;
   score: number;
 }
 
@@ -56,11 +57,20 @@ export function deduplicateSources(sources: Source[]): Source[] {
     const existing = sourceMap.get(deduplicationKey);
     if (!existing || source.score > existing.score) {
       // Create a normalized source with appropriate sourceName
+      // Preserve documentName if available (it might be missing in some chunks)
       const normalizedSource: Source = {
         ...source,
-        sourceName: getSourceDisplayName(source),
+        documentName: source.documentName || existing?.documentName,
+        sourceName: getSourceDisplayName({
+          ...source,
+          documentName: source.documentName || existing?.documentName,
+        }),
       };
       sourceMap.set(deduplicationKey, normalizedSource);
+    } else if (existing && source.documentName && !existing.documentName) {
+      // If existing source doesn't have documentName but new one does, update it
+      existing.documentName = source.documentName;
+      existing.sourceName = getSourceDisplayName(existing);
     }
   }
 
@@ -82,6 +92,14 @@ function getSourceDisplayName(source: Source): string {
   
   if (source.sourceType === 'manual_answer') {
     return 'Manual Answer';
+  }
+  
+  if (source.sourceType === 'knowledge_base_document') {
+    // Show filename if available, otherwise just "Knowledge Base Document"
+    if (source.documentName) {
+      return `Knowledge Base Document (${source.documentName})`;
+    }
+    return 'Knowledge Base Document';
   }
   
   if (source.sourceName) {

@@ -1,4 +1,5 @@
 import { findSimilarContent } from '@/lib/vector';
+import type { SimilarContentResult } from '@/lib/vector';
 import { openai } from '@ai-sdk/openai';
 import { logger } from '@trigger.dev/sdk';
 import { generateText } from 'ai';
@@ -23,7 +24,7 @@ export async function generateAnswerWithRAG(
 ): Promise<AnswerWithSources> {
   try {
     // Find similar content from vector database
-    const similarContent = await findSimilarContent(question, organizationId, 5);
+    const similarContent = await findSimilarContent(question, organizationId, 5) as SimilarContentResult[];
 
     logger.info('Vector search results', {
       question: question.substring(0, 100),
@@ -38,29 +39,30 @@ export async function generateAnswerWithRAG(
 
     // Extract sources information and deduplicate using universal utility
     // Multiple chunks from the same source (same policy/context/manual answer/knowledge base document) should appear as a single source
+    // Note: sourceName is set for some types, but knowledge_base_document will be handled by deduplication function
     const sources = deduplicateSources(
       similarContent.map((result) => {
+        // Use any to avoid TypeScript narrowing issues, then assert correct type
+        const r = result as any as SimilarContentResult;
         let sourceName: string | undefined;
-        if (result.policyName) {
-          sourceName = `Policy: ${result.policyName}`;
-        } else if (result.vendorName && result.questionnaireQuestion) {
-          sourceName = `Questionnaire: ${result.vendorName}`;
-        } else if (result.contextQuestion) {
+        if (r.policyName) {
+          sourceName = `Policy: ${r.policyName}`;
+        } else if (r.vendorName && r.questionnaireQuestion) {
+          sourceName = `Questionnaire: ${r.vendorName}`;
+        } else if (r.contextQuestion) {
           sourceName = 'Context Q&A';
-        } else if (result.sourceType === 'manual_answer') {
+        } else if ((r.sourceType as string) === 'manual_answer') {
           sourceName = 'Manual Answer';
-        } else if (result.sourceType === 'knowledge_base_document' && result.documentName) {
-          sourceName = `Document: ${result.documentName}`;
-        } else if (result.sourceType === 'knowledge_base_document') {
-          sourceName = 'Knowledge Base Document';
         }
+        // Don't set sourceName for knowledge_base_document - let deduplication function handle it with filename
 
         return {
-          sourceType: result.sourceType,
+          sourceType: r.sourceType,
           sourceName,
-          sourceId: result.sourceId,
-          policyName: result.policyName,
-          score: result.score,
+          sourceId: r.sourceId,
+          policyName: r.policyName,
+          documentName: r.documentName,
+          score: r.score,
         };
       }),
     );
@@ -76,24 +78,31 @@ export async function generateAnswerWithRAG(
 
     // Build context from retrieved content
     const contextParts = similarContent.map((result, index) => {
+      // Use any to avoid TypeScript narrowing issues, then assert correct type
+      const r = result as any as SimilarContentResult;
       let sourceInfo = '';
-      if (result.policyName) {
-        sourceInfo = `Source: Policy "${result.policyName}"`;
-      } else if (result.vendorName && result.questionnaireQuestion) {
-        sourceInfo = `Source: Questionnaire from "${result.vendorName}"`;
-      } else if (result.contextQuestion) {
+      if (r.policyName) {
+        sourceInfo = `Source: Policy "${r.policyName}"`;
+      } else if (r.vendorName && r.questionnaireQuestion) {
+        sourceInfo = `Source: Questionnaire from "${r.vendorName}"`;
+      } else if (r.contextQuestion) {
         sourceInfo = `Source: Context Q&A`;
-      } else if (result.sourceType === 'knowledge_base_document' && result.documentName) {
-        sourceInfo = `Source: Knowledge Base Document "${result.documentName}"`;
-      } else if (result.sourceType === 'knowledge_base_document') {
+      } else if ((r.sourceType as string) === 'knowledge_base_document') {
+        const docName = r.documentName;
+        if (docName) {
+          sourceInfo = `Source: Knowledge Base Document "${docName}"`;
+        } else {
+          sourceInfo = `Source: Knowledge Base Document`;
+        }
+      } else if ((r.sourceType as string) === 'knowledge_base_document') {
         sourceInfo = `Source: Knowledge Base Document`;
-      } else if (result.sourceType === 'manual_answer') {
+      } else if ((r.sourceType as string) === 'manual_answer') {
         sourceInfo = `Source: Manual Answer`;
       } else {
-        sourceInfo = `Source: ${result.sourceType}`;
+        sourceInfo = `Source: ${r.sourceType}`;
       }
 
-      return `[${index + 1}] ${sourceInfo}\n${result.content}`;
+      return `[${index + 1}] ${sourceInfo}\n${r.content}`;
     });
 
     const context = contextParts.join('\n\n');

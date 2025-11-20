@@ -65,14 +65,16 @@ export const deleteKnowledgeBaseDocumentAction = authActionClient
       }
 
       // Delete embeddings from vector database first (async, non-blocking)
+      let vectorDeletionRunId: string | undefined;
       try {
-        await tasks.trigger<typeof deleteKnowledgeBaseDocumentTask>(
+        const handle = await tasks.trigger<typeof deleteKnowledgeBaseDocumentTask>(
           'delete-knowledge-base-document-from-vector',
           {
             documentId: document.id,
             organizationId: activeOrganizationId,
           },
         );
+        vectorDeletionRunId = handle.id;
       } catch (triggerError) {
         // Log error but continue with deletion
         console.error('Failed to trigger vector deletion task:', triggerError);
@@ -101,6 +103,7 @@ export const deleteKnowledgeBaseDocumentAction = authActionClient
 
       return {
         success: true,
+        vectorDeletionRunId, // Return run ID for tracking deletion progress
       };
     } catch (error) {
       console.error('Error deleting knowledge base document:', error);

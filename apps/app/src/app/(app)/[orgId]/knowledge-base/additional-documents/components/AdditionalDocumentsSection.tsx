@@ -24,6 +24,8 @@ import { processKnowledgeBaseDocumentsAction } from '../actions/process-document
 import { useRouter } from 'next/navigation';
 import { usePagination } from '../../hooks/usePagination';
 import { format } from 'date-fns';
+import { useDocumentProcessing } from '../hooks/useDocumentProcessing';
+import { Loader2 } from 'lucide-react';
 
 type KnowledgeBaseDocument = Awaited<
   ReturnType<typeof import('../../data/queries').getKnowledgeBaseDocuments>
@@ -48,6 +50,33 @@ export function AdditionalDocumentsSection({
   const [documentToDelete, setDocumentToDelete] = useState<{ id: string; name: string } | null>(
     null,
   );
+  
+  // Track processing and deletion run IDs
+  const [processingRunIds, setProcessingRunIds] = useState<Map<string, string>>(new Map()); // documentId -> runId
+  const [deletionRunIds, setDeletionRunIds] = useState<Map<string, string>>(new Map()); // documentId -> runId
+  
+  // Track processing/deletion progress for current document
+  const currentProcessingRunId = Array.from(processingRunIds.values())[0] || null;
+  const currentDeletionRunId = deletionRunIds.get(deletingId || '') || null;
+  
+  const { isProcessing, isDeleting, processingStatus, deletionStatus } = useDocumentProcessing({
+    processingRunId: currentProcessingRunId,
+    deletionRunId: currentDeletionRunId,
+    onProcessingComplete: () => {
+      // Clear processing run ID and refresh
+      setProcessingRunIds(new Map());
+      router.refresh();
+      toast.success('Document processed successfully');
+    },
+    onDeletionComplete: () => {
+      // Clear deletion run ID
+      const newDeletionRunIds = new Map(deletionRunIds);
+      if (deletingId) {
+        newDeletionRunIds.delete(deletingId);
+      }
+      setDeletionRunIds(newDeletionRunIds);
+    },
+  });
 
   const { currentPage, totalPages, paginatedItems, handlePageChange } = usePagination<KnowledgeBaseDocument>({
     items: documents,
@@ -124,6 +153,16 @@ export function AdditionalDocumentsSection({
           });
 
           if (result?.data?.success) {
+            // Store run ID for tracking progress
+            const runId = result.data.runId;
+            if (runId) {
+              const newProcessingRunIds = new Map(processingRunIds);
+              // For orchestrator, track all documents with the same run ID
+              uploadedDocumentIds.forEach((docId) => {
+                newProcessingRunIds.set(docId, runId);
+              });
+              setProcessingRunIds(newProcessingRunIds);
+            }
             toast.success(result.data.message || 'Processing documents...');
           } else {
             console.error('Failed to trigger document processing:', result?.data?.error);
@@ -200,6 +239,14 @@ export function AdditionalDocumentsSection({
       });
 
       if (result?.data?.success) {
+        // Store deletion run ID for tracking progress
+        const vectorDeletionRunId = result.data.vectorDeletionRunId;
+        if (vectorDeletionRunId) {
+          const newDeletionRunIds = new Map(deletionRunIds);
+          newDeletionRunIds.set(documentToDelete.id, vectorDeletionRunId);
+          setDeletionRunIds(newDeletionRunIds);
+        }
+        
         toast.success(`Successfully deleted ${documentToDelete.name}`);
         router.refresh();
       } else {
@@ -253,43 +300,53 @@ export function AdditionalDocumentsSection({
                   {paginatedItems.map((document: KnowledgeBaseDocument) => {
                     const isDownloading = downloadingIds.has(document.id);
                     const isDeleting = deletingId === document.id;
+                    const isProcessingDocument = processingRunIds.has(document.id);
+                    const isDeletingVector = deletionRunIds.has(document.id);
                     const formattedDate = format(new Date(document.createdAt), 'MMM dd, yyyy');
 
                     return (
                       <div
                         key={document.id}
-                        className={`group flex items-center gap-3 rounded-md border border-border bg-background p-3 transition-colors hover:bg-muted/50 hover:border-primary/50 ${
+                        className={`group flex flex-col gap-2 rounded-md border border-border bg-background p-3 transition-colors hover:bg-muted/50 hover:border-primary/50 ${
                           isDownloading || isDeleting ? 'opacity-50' : ''
                         }`}
                       >
-                        <div
-                          onClick={() => !isDownloading && !isDeleting && handleDownload(document.id, document.name)}
-                          className="flex flex-1 cursor-pointer items-center gap-3 min-w-0"
-                        >
-                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
-                            <FileText className="h-4 w-4 text-muted-foreground" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <h4 className="text-sm font-semibold text-foreground truncate">
-                                {document.name}
-                              </h4>
-                              <Download className="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                        <div className="flex items-center gap-3">
+                          <div
+                            onClick={() => !isDownloading && !isDeleting && handleDownload(document.id, document.name)}
+                            className="flex flex-1 cursor-pointer items-center gap-3 min-w-0"
+                          >
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
+                              <FileText className="h-4 w-4 text-muted-foreground" />
                             </div>
-                            <div className="mt-1 text-xs text-muted-foreground">
-                              <span>{formattedDate}</span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <h4 className="text-sm font-semibold text-foreground truncate">
+                                  {document.name}
+                                </h4>
+                                <Download className="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                              </div>
+                              <div className="mt-1 text-xs text-muted-foreground">
+                                <span>{formattedDate}</span>
+                              </div>
                             </div>
                           </div>
+                          {(isProcessingDocument || isDeletingVector) ? (
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center">
+                              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                            </div>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={(e) => handleDeleteClick(document.id, document.name, e)}
+                              disabled={isDeleting || isDownloading}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={(e) => handleDeleteClick(document.id, document.name, e)}
-                          disabled={isDeleting || isDownloading}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
                       </div>
                     );
                   })}

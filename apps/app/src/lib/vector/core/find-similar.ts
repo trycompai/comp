@@ -67,13 +67,13 @@ export async function findSimilarContent(
         return hasCorrectOrg && hasMinScore && isNotQuestionnaire;
       })
       .slice(0, limit) // Take only the top N after filtering
-      .map((result) => {
+      .map((result): SimilarContentResult => {
         const metadata = result.metadata as any;
         return {
           id: String(result.id),
           score: result.score,
           content: metadata?.content || '',
-          sourceType: metadata?.sourceType || 'policy',
+          sourceType: (metadata?.sourceType || 'policy') as SimilarContentResult['sourceType'],
           sourceId: metadata?.sourceId || '',
           policyName: metadata?.policyName,
           contextQuestion: metadata?.contextQuestion,

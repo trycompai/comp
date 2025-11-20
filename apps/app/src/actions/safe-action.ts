@@ -249,6 +249,7 @@ export const authWithOrgAccessClient = authActionClient.use(async ({ next, clien
 
   return next({
     ctx: {
+      ...ctx,
       member,
       organizationId,
     },
@@ -286,7 +287,7 @@ export const authActionClientWithoutOrg = actionClientWithMeta
 
     return result;
   })
-  .use(async ({ next, metadata }) => {
+  .use(async ({ next, metadata, ctx }) => {
     const headersList = await headers();
     let remaining: number | undefined;
 
@@ -304,6 +305,7 @@ export const authActionClientWithoutOrg = actionClientWithMeta
 
     return next({
       ctx: {
+        ...ctx,
         ip: headersList.get('x-forwarded-for'),
         userAgent: headersList.get('user-agent'),
         ratelimit: {
@@ -333,6 +335,7 @@ export const authActionClientWithoutOrg = actionClientWithMeta
 
     return next({
       ctx: {
+        ...ctx,
         user: session.user,
       },
     });

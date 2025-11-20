@@ -37,27 +37,32 @@ export const processKnowledgeBaseDocumentsAction = authActionClient
     }
 
     try {
+      let runId: string | undefined;
+      
       // Use orchestrator for multiple documents, individual task for single document
       if (documentIds.length > 1) {
-        await tasks.trigger<typeof processKnowledgeBaseDocumentsOrchestratorTask>(
+        const handle = await tasks.trigger<typeof processKnowledgeBaseDocumentsOrchestratorTask>(
           'process-knowledge-base-documents-orchestrator',
           {
             documentIds,
             organizationId,
           },
         );
+        runId = handle.id;
       } else {
-        await tasks.trigger<typeof processKnowledgeBaseDocumentTask>(
+        const handle = await tasks.trigger<typeof processKnowledgeBaseDocumentTask>(
           'process-knowledge-base-document',
           {
             documentId: documentIds[0]!,
             organizationId,
           },
         );
+        runId = handle.id;
       }
 
       return {
         success: true,
+        runId,
         message: documentIds.length > 1 
           ? `Processing ${documentIds.length} documents in parallel...`
           : 'Processing document...',

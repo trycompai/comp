@@ -70,6 +70,17 @@ export const uploadKnowledgeBaseDocumentAction = authActionClient
       const timestamp = Date.now();
       const s3Key = `${organizationId}/knowledge-base-documents/${timestamp}-${fileId}-${sanitizedFileName}`;
 
+      // Sanitize filename for S3 metadata
+      // S3 metadata values must be valid HTTP header values
+      // To be absolutely safe, we'll encode the filename using a safe character set
+      // Remove control characters and non-ASCII characters, keep only safe printable ASCII
+      const sanitizedMetadataFileName = Buffer.from(fileName, 'utf8')
+        .toString('ascii') // Convert to ASCII, replacing non-ASCII with '?'
+        .replace(/[\x00-\x1F\x7F]/g, '') // Remove control characters
+        .replace(/\?/g, '_') // Replace '?' (from non-ASCII conversion) with '_'
+        .trim()
+        .substring(0, 1024); // S3 metadata values have a 2KB limit per value
+
       // Upload to S3
       const putCommand = new PutObjectCommand({
         Bucket: APP_AWS_KNOWLEDGE_BASE_BUCKET,
@@ -77,7 +88,7 @@ export const uploadKnowledgeBaseDocumentAction = authActionClient
         Body: fileBuffer,
         ContentType: fileType,
         Metadata: {
-          originalFileName: fileName,
+          originalFileName: sanitizedMetadataFileName,
           organizationId,
         },
       });

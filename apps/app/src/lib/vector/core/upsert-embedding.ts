@@ -171,6 +171,7 @@ export async function batchUpsertEmbeddings(
             ...(item.metadata.questionnaireQuestion && {
               questionnaireQuestion: item.metadata.questionnaireQuestion,
             }),
+            ...(item.metadata.documentName && { documentName: item.metadata.documentName }),
             ...(item.metadata.updatedAt && { updatedAt: item.metadata.updatedAt }),
           },
         });

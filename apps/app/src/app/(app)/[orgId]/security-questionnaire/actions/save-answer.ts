@@ -19,6 +19,7 @@ const saveAnswerSchema = z.object({
         sourceName: z.string().optional(),
         sourceId: z.string().optional(),
         policyName: z.string().optional(),
+        documentName: z.string().optional(),
         score: z.number(),
       }),
     )
@@ -38,7 +39,8 @@ export const saveAnswerAction = authActionClient
   })
   .action(async ({ parsedInput, ctx }) => {
     const { questionnaireId, questionIndex, answer, sources, status } = parsedInput;
-    const { activeOrganizationId, userId } = ctx.session;
+    const { activeOrganizationId } = ctx.session;
+    const userId = ctx.user.id;
 
     if (!activeOrganizationId) {
       return {
