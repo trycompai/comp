@@ -17,17 +17,33 @@ Before setting up the Cloud Test, ensure you have:
 2. Admin access to your Comp AI workspace
 3. Permissions to create service accounts
 
+<Note>
+  Security Command Center must be enabled on your GCP account. 
+
+  GCP Console =\> Security =\> Risk Overview
+</Note>
+
 ### Configuration Steps
 
 1. Navigate to **Cloud Tests** in your Comp AI dashboard
 2. Click on **Connect** next to the GCP integration card
 3. Link Service Account
-   - Go to the [GCP Console → IAM & Admin → Service Accounts](https://console.cloud.google.com/iam-admin/serviceaccounts)
+   - In a Project, go to the [GCP Console → IAM & Admin → Service Accounts](https://console.cloud.google.com/iam-admin/serviceaccounts)
    - Click **“Create Service Account”** and give it a name like `comp-ai-integration`
    - Click **Continue**, then grant the following roles:
      - `Security Center Findings Viewer` (`roles/securitycenter.findingsViewer`)
-     - _(Optional)_ `Viewer` (`roles/viewer`)
+     - `Service Usage Consumer`
+     - `Viewer` (`roles/viewer`)
    - Complete the service account creation
+   - Copy the Service Account Email that was generated (this will be needed for the next step)
+
+     <img
+       src="/packages/docs/images/Screenshot2025-11-18at10.40.02AM.png"
+       alt="Screenshot 2025-11-18 at 10.40.02 AM.png"
+       title="Screenshot 2025-11-18 at 10.40.02 AM.png"
+       className="mx-auto"
+       style={{ width:"50%" }}
+     />
    - After creating the service account:
      - Go to the **“Keys”** tab
      - Click **“Add Key” → “Create new key”**, select **JSON**, then click **Create**
@@ -35,9 +51,33 @@ Before setting up the Cloud Test, ensure you have:
    - Go to the [API Library](https://console.cloud.google.com/apis/library) and enable:
      - **Security Command Center API**
      - **Cloud Resource Manager API**
-   - Open the downloaded JSON file, and copy its entire contents
-   - Paste it into the **Service Account Key** field in the Comp AI connection form
-4. Click **Save and Connect**
+4. At the Org level, go to the GCP Console → IAM & Admin → IAM
+   - Grant access
+   - Add the Service account email from the last step
+   - Grant the following role:
+     - `Security Center Findings Viewer` (`roles/securitycenter.findingsViewer`)
+
+<img
+  src="/packages/docs/images/Screenshot2025-11-18at10.50.37AM.png"
+  alt="Screenshot 2025-11-18 at 10.50.37 AM.png"
+  title="Screenshot 2025-11-18 at 10.50.37 AM.png"
+  className="mx-auto"
+  style={{ width:"52%" }}
+/>
+
+4. Add Credentials to GCP Cloud Test in Comp AI app
+   1. Copy & Paste the Organization Id (Not the project Id) from Google Cloud into the **Organization ID** field in the Comp AI connection form
+   1. Open the downloaded JSON file, and copy its entire contents
+   2. Paste it into the **Service Account Key** field in the Comp AI connection form
+
+      <img
+        src="/packages/docs/images/Screenshot2025-11-20at9.31.56AM.png"
+        alt="Screenshot 2025-11-20 at 9.31.56 AM.png"
+        title="Screenshot 2025-11-20 at 9.31.56 AM.png"
+        className="mx-auto"
+        style={{ width:"54%" }}
+      />
+1. Click Connect GCP
 
 ## Capabilities
 
