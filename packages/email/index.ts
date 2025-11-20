@@ -1,12 +1,9 @@
 // Email templates
-export * from './emails/access-granted';
-export * from './emails/access-reclaim';
 export * from './emails/all-policy-notification';
 export * from './emails/invite';
 export * from './emails/invite-portal';
 export * from './emails/magic-link';
 export * from './emails/marketing/welcome';
-export * from './emails/nda-signing';
 export * from './emails/otp';
 export * from './emails/policy-notification';
 export * from './emails/waitlist';
