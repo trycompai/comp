@@ -4,6 +4,27 @@ import { generateText } from 'ai';
 import * as XLSX from 'xlsx';
 import mammoth from 'mammoth';
 
+const htmlEntityMap = {
+  '&nbsp;': ' ',
+  '&amp;': '&',
+  '&lt;': '<',
+  '&gt;': '>',
+  '&quot;': '"',
+} as const;
+
+const decodeBasicHtmlEntities = (input: string) => {
+  const entityPattern = /&(nbsp|amp|lt|gt|quot);/g;
+  let decoded = input;
+  let previousValue: string;
+
+  do {
+    previousValue = decoded;
+    decoded = decoded.replace(entityPattern, (entity) => htmlEntityMap[entity as keyof typeof htmlEntityMap] ?? entity);
+  } while (decoded !== previousValue);
+
+  return decoded;
+};
+
 /**
  * Extracts content from a file using various methods based on file type
  * Supports: PDF, Excel (.xlsx, .xls), CSV, text files (.txt, .md), Word documents (.doc, .docx), images
@@ -119,14 +140,10 @@ export async function extractContentFromFile(
       
       // Convert HTML to plain text if needed (remove HTML tags)
       if (formattedResult.value) {
-        // Simple HTML tag removal - keep text content
-        const plainText = extractedText
-          .replace(/<[^>]*>/g, ' ') // Remove HTML tags
-          .replace(/&nbsp;/g, ' ') // Replace &nbsp; with space
-          .replace(/&amp;/g, '&') // Replace &amp; with &
-          .replace(/&lt;/g, '<') // Replace &lt; with <
-          .replace(/&gt;/g, '>') // Replace &gt; with >
-          .replace(/&quot;/g, '"') // Replace &quot; with "
+        // Simple HTML tag removal - keep text content and decode entities safely
+        const plainText = decodeBasicHtmlEntities(
+          extractedText.replace(/<[^>]*>/g, ' '),
+        )
           .replace(/\s+/g, ' ') // Replace multiple spaces with single space
           .trim();
         
