@@ -23,6 +23,8 @@ interface QuestionnaireResultsProps {
   isLoading: boolean;
   isAutoAnswering: boolean;
   isExporting: boolean;
+  isSaving?: boolean;
+  savingIndex?: number | null;
   showExitDialog: boolean;
   onShowExitDialogChange: (show: boolean) => void;
   onExit: () => void;
@@ -54,6 +56,8 @@ export function QuestionnaireResults({
   isLoading,
   isAutoAnswering,
   isExporting,
+  isSaving,
+  savingIndex,
   showExitDialog,
   onShowExitDialogChange,
   onExit,
@@ -109,6 +113,8 @@ export function QuestionnaireResults({
                       answeringQuestionIndex={answeringQuestionIndex}
                       isAutoAnswering={isAutoAnswering}
                       hasClickedAutoAnswer={hasClickedAutoAnswer}
+                      isSaving={isSaving}
+                      savingIndex={savingIndex}
                       onEditAnswer={onEditAnswer}
                       onSaveAnswer={onSaveAnswer}
                       onCancelEdit={onCancelEdit}
@@ -129,6 +135,8 @@ export function QuestionnaireResults({
                       answeringQuestionIndex={answeringQuestionIndex}
                       isAutoAnswering={isAutoAnswering}
                       hasClickedAutoAnswer={hasClickedAutoAnswer}
+                      isSaving={isSaving}
+                      savingIndex={savingIndex}
                       onEditAnswer={onEditAnswer}
                       onSaveAnswer={onSaveAnswer}
                       onCancelEdit={onCancelEdit}

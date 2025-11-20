@@ -2,9 +2,11 @@
 
 import { Button } from '@comp/ui/button';
 import { Textarea } from '@comp/ui/textarea';
-import { BookOpen, ChevronDown, ChevronUp, Link as LinkIcon, Loader2 } from 'lucide-react';
+import { BookOpen, ChevronDown, ChevronUp, Link as LinkIcon, Loader2, Pencil } from 'lucide-react';
 import Link from 'next/link';
 import type { QuestionAnswer } from './types';
+import { deduplicateSources } from '../utils/deduplicate-sources';
+import { KnowledgeBaseDocumentLink } from './KnowledgeBaseDocumentLink';
 
 interface QuestionnaireResultsCardsProps {
   orgId: string;
@@ -18,6 +20,8 @@ interface QuestionnaireResultsCardsProps {
   answeringQuestionIndex: number | null;
   isAutoAnswering: boolean;
   hasClickedAutoAnswer: boolean;
+  isSaving?: boolean;
+  savingIndex?: number | null;
   onEditAnswer: (index: number) => void;
   onSaveAnswer: (index: number) => void;
   onCancelEdit: () => void;
@@ -37,6 +41,8 @@ export function QuestionnaireResultsCards({
   answeringQuestionIndex,
   isAutoAnswering,
   hasClickedAutoAnswer,
+  isSaving,
+  savingIndex,
   onEditAnswer,
   onSaveAnswer,
   onCancelEdit,
@@ -46,19 +52,35 @@ export function QuestionnaireResultsCards({
   return (
     <div className="lg:hidden space-y-4">
       {filteredResults.map((qa, index) => {
-        const originalIndex = results.findIndex((r) => r === qa);
-        const isEditing = editingIndex === originalIndex;
-        const questionStatus = questionStatuses.get(originalIndex);
-        const isProcessing = questionStatus === 'processing';
+        // Use originalIndex if available (from detail page), otherwise find by question text
+        const originalIndex = (qa as any)._originalIndex !== undefined 
+          ? (qa as any)._originalIndex 
+          : results.findIndex((r) => r.question === qa.question);
+        // Fallback to index if not found (shouldn't happen, but safety check)
+        const safeIndex = originalIndex >= 0 ? originalIndex : index;
+        
+        // Deduplicate sources for this question
+        const uniqueSources = qa.sources ? deduplicateSources(qa.sources) : [];
+        const isEditing = editingIndex === safeIndex;
+        const questionStatus = questionStatuses.get(safeIndex);
+        // Determine if this question is being processed
+        // It's processing if:
+        // 1. Status is explicitly 'processing'
+        // 2. This is the single question being answered
+        // 3. Auto-answer is running and this question doesn't have an answer yet (or has empty answer)
+        const isProcessing = 
+          questionStatus === 'processing' || 
+          answeringQuestionIndex === safeIndex ||
+          (isAutoAnswering && hasClickedAutoAnswer && (!qa.answer || qa.answer.trim().length === 0) && questionStatus !== 'completed');
 
         return (
           <div
-            key={originalIndex}
+            key={`card-${safeIndex}-${qa.question.substring(0, 20)}`}
             className="flex flex-col gap-3 p-4 rounded-xs bg-muted/20 border border-border/30"
           >
             <div className="flex flex-col gap-2">
               <span className="text-xs font-medium text-muted-foreground tabular-nums">
-                Question {originalIndex + 1}
+                Question {safeIndex + 1}
               </span>
               <p className="text-sm font-medium text-foreground">{qa.question}</p>
             </div>
@@ -74,27 +96,47 @@ export function QuestionnaireResultsCards({
                     autoFocus
                   />
                   <div className="flex gap-2">
-                    <Button size="sm" onClick={() => onSaveAnswer(originalIndex)}>
-                      Save
+                    <Button 
+                      size="sm" 
+                      onClick={() => onSaveAnswer(safeIndex)}
+                      disabled={isSaving && savingIndex === safeIndex}
+                    >
+                      {isSaving && savingIndex === safeIndex ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        'Save'
+                      )}
                     </Button>
-                    <Button size="sm" onClick={onCancelEdit} variant="outline">
+                    <Button 
+                      size="sm" 
+                      onClick={onCancelEdit} 
+                      variant="outline"
+                      disabled={isSaving && savingIndex === safeIndex}
+                    >
                       Cancel
                     </Button>
                   </div>
                 </div>
               ) : (
                 <>
-                  {qa.answer ? (
+                  {qa.answer && qa.answer.trim().length > 0 ? (
                     <div
-                      className="rounded-xs p-3 bg-muted/30 border border-border/30 cursor-pointer hover:bg-muted/50 transition-colors"
-                      onClick={() => onEditAnswer(originalIndex)}
+                      className="group relative rounded-xs p-3 bg-muted/30 border border-border/30 cursor-pointer transition-colors duration-150 ease-in-out hover:bg-muted/50 hover:border-primary/40"
+                      onClick={() => onEditAnswer(safeIndex)}
+                      title="Click to edit"
                     >
-                      <p className="text-sm text-foreground">{qa.answer}</p>
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-sm text-foreground flex-1 leading-relaxed transition-colors duration-150 group-hover:text-foreground/90">{qa.answer}</p>
+                        <Pencil className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-70 transition-opacity duration-150 ease-in-out flex-shrink-0 mt-0.5" />
+                      </div>
                     </div>
                   ) : isProcessing ? (
-                    <div className="flex items-center gap-2 p-3 rounded-xs bg-muted/30 border border-border/30">
+                    <div className="flex items-center gap-2 p-3 rounded-xs bg-muted/30 border border-border/30 min-h-[44px]">
                       <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />
-                      <span className="text-sm text-muted-foreground">Generating answer...</span>
+                      <span className="text-sm text-muted-foreground">Finding answer...</span>
                     </div>
                   ) : (
                     <div className="flex flex-col gap-2">
@@ -103,10 +145,10 @@ export function QuestionnaireResultsCards({
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            onAnswerSingleQuestion(originalIndex);
+                            onAnswerSingleQuestion(safeIndex);
                           }}
                           disabled={
-                            answeringQuestionIndex === originalIndex ||
+                            answeringQuestionIndex === safeIndex ||
                             (isAutoAnswering && hasClickedAutoAnswer)
                           }
                           className="w-full justify-center"
@@ -124,7 +166,7 @@ export function QuestionnaireResultsCards({
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => onEditAnswer(originalIndex)}
+                        onClick={() => onEditAnswer(safeIndex)}
                         className="w-full justify-center"
                       >
                         Write Answer
@@ -135,31 +177,33 @@ export function QuestionnaireResultsCards({
               )}
             </div>
 
-            {qa.sources && qa.sources.length > 0 && (
-              <div className="pt-2 border-t border-border/30">
+            {uniqueSources.length > 0 && (
+              <div className="mt-3 pt-2 border-t border-border/30">
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => onToggleSource(originalIndex)}
+                  onClick={() => onToggleSource(safeIndex)}
                   className="h-auto p-1 text-xs text-muted-foreground hover:text-foreground w-full justify-start"
                 >
                   <BookOpen className="mr-1 h-3 w-3" />
-                  {expandedSources.has(originalIndex) ? (
+                  {expandedSources.has(safeIndex) ? (
                     <>
-                      Hide sources ({qa.sources.length})
+                      Hide sources ({uniqueSources.length})
                       <ChevronUp className="ml-1 h-3 w-3" />
                     </>
                   ) : (
                     <>
-                      Show sources ({qa.sources.length})
+                      Show sources ({uniqueSources.length})
                       <ChevronDown className="ml-1 h-3 w-3" />
                     </>
                   )}
                 </Button>
-                {expandedSources.has(originalIndex) && (
+                {expandedSources.has(safeIndex) && (
                   <div className="mt-2 space-y-1 pl-4 border-l-2 border-muted/30">
-                    {qa.sources.map((source, sourceIndex) => {
+                    {uniqueSources.map((source, sourceIndex) => {
                       const isPolicy = source.sourceType === 'policy' && source.sourceId;
+                      const isKnowledgeBaseDocument =
+                        source.sourceType === 'knowledge_base_document' && source.sourceId;
                       const sourceContent = source.sourceName || source.sourceType;
 
                       return (
@@ -175,6 +219,12 @@ export function QuestionnaireResultsCards({
                               {sourceContent}
                               <LinkIcon className="h-3 w-3" />
                             </Link>
+                          ) : isKnowledgeBaseDocument && source.sourceId ? (
+                            <KnowledgeBaseDocumentLink
+                              documentId={source.sourceId}
+                              sourceName={sourceContent}
+                              orgId={orgId}
+                            />
                           ) : (
                             <span className="font-medium text-muted-foreground">
                               {sourceContent}
