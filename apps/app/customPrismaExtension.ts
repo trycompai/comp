@@ -16,6 +16,10 @@ export type PrismaExtensionOptions = {
 };
 
 type ExtendedBuildContext = BuildContext & { workspaceDir?: string };
+type SchemaResolution = {
+  path?: string;
+  searched: string[];
+};
 
 export function prismaExtension(options: PrismaExtensionOptions = {}): PrismaExtension {
   return new PrismaExtension(options);
@@ -48,17 +52,17 @@ export class PrismaExtension implements BuildExtension {
 
     const resolution = this.tryResolveSchemaPath(context as ExtendedBuildContext);
 
-    if (!resolution) {
-      throw new Error(
-        `PrismaExtension could not find schema.prisma inside @trycompai/db. Looked in: ${this.buildSchemaCandidates(
-          context as ExtendedBuildContext,
-        ).join(', ')}`,
+    if (!resolution.path) {
+      context.logger.debug(
+        'Prisma schema not found during build start, likely before dependencies are installed.',
+        { searched: resolution.searched },
       );
+      return;
     }
 
-    this._resolvedSchemaPath = resolution;
-    context.logger.debug(`Resolved prisma schema to ${resolution}`);
-    await this.ensureLocalPrismaClient(context as ExtendedBuildContext, resolution);
+    this._resolvedSchemaPath = resolution.path;
+    context.logger.debug(`Resolved prisma schema to ${resolution.path}`);
+    await this.ensureLocalPrismaClient(context as ExtendedBuildContext, resolution.path);
   }
 
   async onBuildComplete(context: BuildContext, manifest: BuildManifest) {
@@ -85,6 +89,8 @@ export class PrismaExtension implements BuildExtension {
 
     assert(this._resolvedSchemaPath, 'Resolved schema path is not set');
     const schemaPath = this._resolvedSchemaPath;
+
+    await this.ensureLocalPrismaClient(context as ExtendedBuildContext, schemaPath);
 
     context.logger.debug('Looking for @prisma/client in the externals', {
       externals: manifest.externals,
@@ -191,13 +197,24 @@ export class PrismaExtension implements BuildExtension {
       return;
     }
 
-    context.logger.log('Prisma client missing. Generating before Trigger indexing.');
-    await this.runPrismaGenerate(context, schemaDestinationPath);
-  }
-
-  private runPrismaGenerate(context: ExtendedBuildContext, schemaPath: string): Promise<void> {
     const prismaBinary = this.resolvePrismaBinary(context.workingDir);
 
+    if (!prismaBinary) {
+      context.logger.debug(
+        'Prisma CLI not available yet, skipping local generate until install finishes.',
+      );
+      return;
+    }
+
+    context.logger.log('Prisma client missing. Generating before Trigger indexing.');
+    await this.runPrismaGenerate(context, prismaBinary, schemaDestinationPath);
+  }
+
+  private runPrismaGenerate(
+    context: ExtendedBuildContext,
+    prismaBinary: string,
+    schemaPath: string,
+  ): Promise<void> {
     return new Promise((resolvePromise, rejectPromise) => {
       const child = spawn(prismaBinary, ['generate', `--schema=${schemaPath}`], {
         cwd: context.workingDir,
@@ -229,22 +246,22 @@ export class PrismaExtension implements BuildExtension {
     });
   }
 
-  private resolvePrismaBinary(workingDir: string): string {
+  private resolvePrismaBinary(workingDir: string): string | undefined {
     const binDir = resolve(workingDir, 'node_modules', '.bin');
     const executable = process.platform === 'win32' ? 'prisma.cmd' : 'prisma';
     const binaryPath = resolve(binDir, executable);
 
     if (!existsSync(binaryPath)) {
-      throw new Error(
-        `prisma CLI not found at ${binaryPath}. Make sure "prisma" is installed in apps/app.`,
-      );
+      return undefined;
     }
 
     return binaryPath;
   }
 
-  private tryResolveSchemaPath(context: ExtendedBuildContext): string | undefined {
-    return this.buildSchemaCandidates(context).find((candidate) => existsSync(candidate));
+  private tryResolveSchemaPath(context: ExtendedBuildContext): SchemaResolution {
+    const candidates = this.buildSchemaCandidates(context);
+    const path = candidates.find((candidate) => existsSync(candidate));
+    return { path, searched: candidates };
   }
 
   private buildSchemaCandidates(context: ExtendedBuildContext): string[] {
