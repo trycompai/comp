@@ -70,7 +70,7 @@ export function ContextSection({ contextEntries }: ContextSectionProps) {
 
   const { currentPage, totalPages, paginatedItems, handlePageChange } = usePagination({
     items: validEntries,
-    itemsPerPage: 10,
+    itemsPerPage: 5,
   });
 
   const handleAccordionChange = (value: string) => {
@@ -87,7 +87,13 @@ export function ContextSection({ contextEntries }: ContextSectionProps) {
 
   return (
     <Card ref={sectionRef} id="context">
-      <Accordion type="single" collapsible className="w-full" onValueChange={handleAccordionChange}>
+      <Accordion
+        type="single"
+        collapsible
+        defaultValue="context"
+        className="w-full"
+        onValueChange={handleAccordionChange}
+      >
         <AccordionItem value="context" className="border-0">
           <AccordionTrigger className="px-6 py-4 hover:no-underline">
             <div className="flex items-center gap-2">
@@ -116,14 +122,17 @@ export function ContextSection({ contextEntries }: ContextSectionProps) {
                         rel="noopener noreferrer"
                         className="group rounded-md border border-border bg-background p-3 transition-colors hover:bg-muted/50 hover:border-primary/50"
                       >
-                        <div className="flex items-center gap-2 text-sm">
-                          <span className="font-semibold text-foreground group-hover:text-primary">
-                            {entry.question}
-                          </span>
-                          <span className="text-muted-foreground">—</span>
-                          <span className="text-muted-foreground line-clamp-1 flex-1">
-                            {formattedAnswer}
-                          </span>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-sm font-semibold text-foreground group-hover:text-primary">
+                              {entry.question}
+                            </h4>
+                            {formattedAnswer && (
+                              <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
+                                {formattedAnswer}
+                              </p>
+                            )}
+                          </div>
                           <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
                         </div>
                       </Link>

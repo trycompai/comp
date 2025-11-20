@@ -1,3 +1,4 @@
+import PageCore from '@/components/pages/PageCore.tsx';
 import { auth } from '@/utils/auth';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
@@ -6,6 +7,7 @@ import { ContextSection } from './context/components';
 import { ManualAnswersSection } from './manual-answers/components';
 import { PublishedPoliciesSection } from './published-policies/components';
 import { KnowledgeBaseHeader } from './components/KnowledgeBaseHeader';
+import { KnowledgeBaseBreadcrumb } from './components/KnowledgeBaseBreadcrumb';
 import {
   getContextEntries,
   getKnowledgeBaseDocuments,
@@ -34,24 +36,27 @@ export default async function KnowledgeBasePage() {
 
   return (
     <div className="mx-auto w-full max-w-[1200px] px-6 py-8">
-      <KnowledgeBaseHeader organizationId={organizationId} />
+      <PageCore>
+        <KnowledgeBaseBreadcrumb />
+        <KnowledgeBaseHeader organizationId={organizationId} />
 
-      <div className="flex flex-col gap-6">
-        {/* Published Policies Section */}
-        <PublishedPoliciesSection policies={policies} />
+        <div className="flex flex-col gap-6">
+          {/* Published Policies and Context Sections - Side by Side */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <PublishedPoliciesSection policies={policies} />
+            <ContextSection contextEntries={contextEntries} />
+          </div>
 
-        {/* Context Section */}
-        <ContextSection contextEntries={contextEntries} />
+          {/* Manual Answers Section */}
+          <ManualAnswersSection manualAnswers={manualAnswers} />
 
-        {/* Manual Answers Section */}
-        <ManualAnswersSection manualAnswers={manualAnswers} />
-
-        {/* Additional Documents Section */}
-        <AdditionalDocumentsSection
-          organizationId={organizationId}
-          documents={documents}
-        />
-      </div>
+          {/* Additional Documents Section */}
+          <AdditionalDocumentsSection
+            organizationId={organizationId}
+            documents={documents}
+          />
+        </div>
+      </PageCore>
     </div>
   );
 }

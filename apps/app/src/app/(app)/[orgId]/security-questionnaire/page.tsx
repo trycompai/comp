@@ -73,10 +73,12 @@ export default async function SecurityQuestionnairePage() {
   const questionnaires = await getQuestionnaires(organizationId);
 
   return (
-    <PageCore className="mt-10">
-      <SecurityQuestionnaireBreadcrumb />
-      <QuestionnaireOverview questionnaires={questionnaires} />
-    </PageCore>
+    <div className="mx-auto max-w-[1200px] px-6 py-8">
+      <PageCore>
+        <SecurityQuestionnaireBreadcrumb />
+        <QuestionnaireOverview questionnaires={questionnaires} />
+      </PageCore>
+    </div>
   );
 }
 

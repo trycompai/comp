@@ -23,7 +23,7 @@ export function QuestionnaireBreadcrumb({ filename, organizationId }: Questionna
             className="group flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:bg-muted hover:text-foreground"
           >
             <FileQuestion className="h-4 w-4 shrink-0 transition-colors group-hover:text-primary" />
-            <span className="whitespace-nowrap">Security Questionnaire</span>
+            <span className="whitespace-nowrap">Overview</span>
           </Link>
         </li>
 

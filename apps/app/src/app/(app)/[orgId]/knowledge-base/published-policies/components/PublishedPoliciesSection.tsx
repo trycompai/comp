@@ -20,7 +20,7 @@ export function PublishedPoliciesSection({ policies }: PublishedPoliciesSectionP
 
   const { currentPage, totalPages, paginatedItems, handlePageChange } = usePagination({
     items: policies,
-    itemsPerPage: 10,
+    itemsPerPage: 5,
   });
 
   const handleAccordionChange = (value: string) => {
