@@ -170,7 +170,7 @@ export function usePersistGeneratedAnswers<TResults extends PersistedQuestionAns
     }
 
     results.forEach((result) => {
-      if (!result.originalIndex) return;
+      if (result.originalIndex == null) return;
 
       const pendingForIndex = pendingUpdatesWaitingForIdRef.current.get(result.originalIndex);
 
