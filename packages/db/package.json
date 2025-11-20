@@ -14,7 +14,11 @@
     "typescript": "^5.9.2"
   },
   "exports": {
-    ".": "./dist/index.js"
+    ".": "./dist/index.js",
+    "./postinstall": "./dist/postinstall.js"
+  },
+  "bin": {
+    "comp-prisma-postinstall": "./dist/postinstall.js"
   },
   "files": [
     "dist",
