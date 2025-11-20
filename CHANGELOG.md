@@ -1,3 +1,10 @@
+# [1.61.0](https://github.com/trycompai/comp/compare/v1.60.1...v1.61.0) (2025-11-20)
+
+
+### Features
+
+* **attachments:** add drag and drop for task attachments ([#1805](https://github.com/trycompai/comp/issues/1805)) ([6c2844b](https://github.com/trycompai/comp/commit/6c2844bebd38a86afa183f33ac7056b7b801c090))
+
 ## [1.60.1](https://github.com/trycompai/comp/compare/v1.60.0...v1.60.1) (2025-11-20)
 
 
