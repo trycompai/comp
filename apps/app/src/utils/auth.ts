@@ -108,7 +108,7 @@ export const auth = betterAuth({
       },
     },
   },
-  secret: process.env.AUTH_SECRET!,
+  secret: process.env.BETTER_AUTH_SECRET || process.env.AUTH_SECRET!,
   plugins: [
     organization({
       membershipLimit: 100000000000,
