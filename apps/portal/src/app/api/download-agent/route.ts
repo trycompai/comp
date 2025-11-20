@@ -83,10 +83,6 @@ const handleDownload = async (req: NextRequest, isHead: boolean) => {
   const downloadInfo = await getDownloadToken(token);
 
   if (!downloadInfo) {
-    logger('Device agent download failed: invalid token', {
-      token: tokenSnippet,
-      method: isHead ? 'HEAD' : 'GET',
-    });
     return new NextResponse('Invalid or expired download token', { status: 403 });
   }
 
