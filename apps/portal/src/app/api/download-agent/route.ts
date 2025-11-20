@@ -1,114 +1,149 @@
 import { logger } from '@/utils/logger';
 import { s3Client } from '@/utils/s3';
-import { GetObjectCommand } from '@aws-sdk/client-s3';
+import { GetObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
 import { client as kv } from '@comp/kv';
 import { type NextRequest, NextResponse } from 'next/server';
 import { Readable } from 'stream';
+
+import { MAC_APPLE_SILICON_FILENAME, MAC_INTEL_FILENAME, WINDOWS_FILENAME } from './constants';
+import type { SupportedOS } from './types';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-// GET handler for direct browser downloads using token
-export async function GET(req: NextRequest) {
-  const searchParams = req.nextUrl.searchParams;
-  const token = searchParams.get('token');
-  const os = searchParams.get('os');
+interface DownloadTokenInfo {
+  orgId: string;
+  employeeId: string;
+  userId: string;
+  os: SupportedOS;
+  createdAt: number;
+}
 
-  if (!os) {
-    return new NextResponse('Missing OS', { status: 400 });
+interface DownloadTarget {
+  key: string;
+  filename: string;
+  contentType: string;
+}
+
+const getDownloadTarget = (os: SupportedOS): DownloadTarget => {
+  if (os === 'windows') {
+    return {
+      key: `windows/${WINDOWS_FILENAME}`,
+      filename: WINDOWS_FILENAME,
+      contentType: 'application/octet-stream',
+    };
   }
+
+  const isAppleSilicon = os === 'macos';
+  const filename = isAppleSilicon ? MAC_APPLE_SILICON_FILENAME : MAC_INTEL_FILENAME;
+
+  return {
+    key: `macos/${filename}`,
+    filename,
+    contentType: 'application/x-apple-diskimage',
+  };
+};
+
+const buildResponseHeaders = (
+  target: DownloadTarget,
+  contentLength?: number | null,
+): Record<string, string> => {
+  const headers: Record<string, string> = {
+    'Content-Type': target.contentType,
+    'Content-Disposition': `attachment; filename="${target.filename}"`,
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'X-Accel-Buffering': 'no',
+  };
+
+  if (typeof contentLength === 'number' && Number.isFinite(contentLength)) {
+    headers['Content-Length'] = contentLength.toString();
+  }
+
+  return headers;
+};
+
+const getDownloadToken = async (token: string): Promise<DownloadTokenInfo | null> => {
+  const info = await kv.get<DownloadTokenInfo>(`download:${token}`);
+  return info ?? null;
+};
+
+const ensureBucket = (): string | null => {
+  const bucket = process.env.FLEET_AGENT_BUCKET_NAME;
+  return bucket ?? null;
+};
+
+const handleDownload = async (req: NextRequest, isHead: boolean) => {
+  const token = req.nextUrl.searchParams.get('token');
 
   if (!token) {
     return new NextResponse('Missing download token', { status: 400 });
   }
 
-  // Retrieve download info from KV store
-  const downloadInfo = await kv.get(`download:${token}`);
+  const downloadInfo = await getDownloadToken(token);
 
   if (!downloadInfo) {
     return new NextResponse('Invalid or expired download token', { status: 403 });
   }
 
-  // Delete token after retrieval (one-time use)
-  await kv.del(`download:${token}`);
-
-  // Hardcoded device marker paths used by the setup scripts
-  const fleetBucketName = process.env.FLEET_AGENT_BUCKET_NAME;
+  const fleetBucketName = ensureBucket();
 
   if (!fleetBucketName) {
+    logger('Device agent download misconfigured: missing bucket');
     return new NextResponse('Server configuration error', { status: 500 });
   }
 
-  // For macOS, serve the DMG directly. For Windows, create a zip with script and installer.
-  if (os === 'macos' || os === 'macos-intel') {
-    try {
-      // Direct DMG download for macOS
-      const macosPackageFilename =
-        os === 'macos' ? 'Comp AI Agent-1.0.0-arm64.dmg' : 'Comp AI Agent-1.0.0.dmg';
-      const packageKey = `macos/${macosPackageFilename}`;
+  const target = getDownloadTarget(downloadInfo.os);
 
-      const getObjectCommand = new GetObjectCommand({
-        Bucket: fleetBucketName,
-        Key: packageKey,
-      });
-
-      const s3Response = await s3Client.send(getObjectCommand);
-
-      if (!s3Response.Body) {
-        return new NextResponse('DMG file not found', { status: 404 });
-      }
-
-      // Convert S3 stream to Web Stream for NextResponse
-      const s3Stream = s3Response.Body as Readable;
-      const webStream = Readable.toWeb(s3Stream) as unknown as ReadableStream;
-
-      // Return streaming response with headers that trigger browser download
-      return new NextResponse(webStream, {
-        headers: {
-          'Content-Type': 'application/x-apple-diskimage',
-          'Content-Disposition': `attachment; filename="${macosPackageFilename}"`,
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'X-Accel-Buffering': 'no',
-        },
-      });
-    } catch (error) {
-      logger('Error downloading macOS DMG', { error });
-      return new NextResponse('Failed to download macOS agent', { status: 500 });
-    }
-  }
-
-  // Windows flow: Generate script and create zip  const fleetDevicePath = fleetDevicePathWindows;
   try {
-    const windowsPackageFilename = 'Comp AI Agent 1.0.0.exe';
-    const packageKey = `windows/${windowsPackageFilename}`;
+    if (isHead) {
+      const headCommand = new HeadObjectCommand({
+        Bucket: fleetBucketName,
+        Key: target.key,
+      });
+
+      const headResult = await s3Client.send(headCommand);
+
+      return new NextResponse(null, {
+        headers: buildResponseHeaders(target, headResult.ContentLength ?? null),
+      });
+    }
 
     const getObjectCommand = new GetObjectCommand({
       Bucket: fleetBucketName,
-      Key: packageKey,
+      Key: target.key,
     });
 
     const s3Response = await s3Client.send(getObjectCommand);
 
     if (!s3Response.Body) {
-      return new NextResponse('Executable file not found', { status: 404 });
+      return new NextResponse('Installer file not found', { status: 404 });
     }
 
-    // Convert S3 stream to Web Stream for NextResponse
+    await kv.del(`download:${token}`);
+
     const s3Stream = s3Response.Body as Readable;
     const webStream = Readable.toWeb(s3Stream) as unknown as ReadableStream;
 
-    // Return streaming response with headers that trigger browser download
     return new NextResponse(webStream, {
-      headers: {
-        'Content-Type': 'application/octet-stream',
-        'Content-Disposition': `attachment; filename="${windowsPackageFilename}"`,
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'X-Accel-Buffering': 'no',
-      },
+      headers: buildResponseHeaders(target, s3Response.ContentLength ?? null),
     });
   } catch (error) {
-    logger('Error creating agent download', { error });
-    return new NextResponse('Failed to create download', { status: 500 });
+    logger('Error serving device agent download', {
+      error,
+      token,
+      os: downloadInfo.os,
+      method: isHead ? 'HEAD' : 'GET',
+    });
+
+    return new NextResponse('Failed to download agent', { status: 500 });
   }
+};
+
+export async function GET(req: NextRequest) {
+  return handleDownload(req, false);
+}
+
+export async function HEAD(req: NextRequest) {
+  return handleDownload(req, true);
 }
