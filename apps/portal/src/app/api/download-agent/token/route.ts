@@ -7,6 +7,11 @@ import { createFleetLabel } from '../fleet-label';
 import type { DownloadAgentRequest, SupportedOS } from '../types';
 import { detectOSFromUserAgent, validateMemberAndOrg } from '../utils';
 
+const SUPPORTED_OSES: SupportedOS[] = ['macos', 'macos-intel', 'windows'];
+
+const isSupportedOS = (value: unknown): value is SupportedOS =>
+  typeof value === 'string' && SUPPORTED_OSES.includes(value as SupportedOS);
+
 export async function POST(req: NextRequest) {
   // Authentication
   const session = await auth.api.getSession({
@@ -18,7 +23,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Validate request body
-  const { orgId, employeeId }: DownloadAgentRequest = await req.json();
+  const { orgId, employeeId, os }: DownloadAgentRequest = await req.json();
 
   if (!orgId || !employeeId) {
     return new NextResponse('Missing orgId or employeeId', { status: 400 });
@@ -30,13 +35,13 @@ export async function POST(req: NextRequest) {
     return new NextResponse('Member not found or organization invalid', { status: 404 });
   }
 
-  // Auto-detect OS from User-Agent
+  // Auto-detect OS from User-Agent, but allow explicit overrides from the client
   const userAgent = req.headers.get('user-agent');
-  const detectedOS = detectOSFromUserAgent(userAgent);
+  const detectedOS = isSupportedOS(os) ? os : detectOSFromUserAgent(userAgent);
 
   if (!detectedOS) {
     return new NextResponse(
-      'Could not detect OS from User-Agent. Please use a standard browser on macOS or Windows.',
+      'Could not determine operating system. Please select an OS and try again.',
       { status: 400 },
     );
   }
@@ -58,7 +63,7 @@ export async function POST(req: NextRequest) {
     await createFleetLabel({
       employeeId,
       memberId: member.id,
-      os: detectedOS as SupportedOS,
+      os: detectedOS,
       fleetDevicePathMac,
       fleetDevicePathWindows,
     });
