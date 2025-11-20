@@ -27,6 +27,9 @@ phases:
       - '[ -n "$BASE_URL" ] || { echo "❌ BASE_URL is not set"; exit 1; }'
       - '[ -n "$BETTER_AUTH_URL" ] || { echo "❌ BETTER_AUTH_URL is not set"; exit 1; }'
       - '[ -n "$TRUST_APP_URL" ] || { echo "❌ TRUST_APP_URL is not set"; exit 1; }'
+      - '[ -n "$APP_AWS_BUCKET_NAME" ] || { echo "❌ APP_AWS_BUCKET_NAME is not set"; exit 1; }'
+      - '[ -n "$APP_AWS_ACCESS_KEY_ID" ] || { echo "❌ APP_AWS_ACCESS_KEY_ID is not set"; exit 1; }'
+      - '[ -n "$APP_AWS_SECRET_ACCESS_KEY" ] || { echo "❌ APP_AWS_SECRET_ACCESS_KEY is not set"; exit 1; }'
 
       # Install only API workspace dependencies
       - echo "Installing API dependencies only..."
