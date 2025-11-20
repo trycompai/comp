@@ -7,6 +7,7 @@ export default defineConfig({
   datasource: {
     url: env("DATABASE_URL"),
   },
+
   schema: path.join("prisma", "schema"),
   migrations: {
     path: path.join("prisma", "migrations"),

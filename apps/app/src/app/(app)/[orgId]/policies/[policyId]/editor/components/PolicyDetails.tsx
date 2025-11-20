@@ -1,13 +1,13 @@
 "use client";
 
-import type { JSONContent } from "@tiptap/react";
 import { PolicyEditor } from "@/components/editor/policy-editor";
+import type { JSONContent } from "@tiptap/react";
 
 import type { PolicyDisplayFormat } from "@trycompai/db";
 import { Card, CardContent } from "@trycompai/ui/card";
 import { validateAndFixTipTapContent } from "@trycompai/ui/editor";
 
-import "@trycompai/ui/editor.css";
+import "@/styles/editor.css";
 
 import { useAction } from "next-safe-action/hooks";
 import { toast } from "sonner";

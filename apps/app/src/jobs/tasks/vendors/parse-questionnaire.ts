@@ -6,7 +6,7 @@ import { logger, task } from "@trigger.dev/sdk";
 import { generateObject, generateText, jsonSchema } from "ai";
 import * as XLSX from "xlsx";
 
-import { db } from "@trycompai/db";
+import { Prisma } from "@trycompai/db";
 
 // Sync moved to answer generation tasks for better performance
 
