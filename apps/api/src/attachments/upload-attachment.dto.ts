@@ -2,24 +2,28 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
   IsBase64,
-  IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
   MaxLength,
+  Matches,
 } from 'class-validator';
 
-const ALLOWED_FILE_TYPES = [
-  'image/jpeg',
-  'image/png',
-  'image/gif',
-  'image/webp',
-  'application/pdf',
-  'text/plain',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.ms-excel',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+// Block dangerous MIME types that could execute code
+const BLOCKED_MIME_TYPES = [
+  'application/x-msdownload', // .exe
+  'application/x-msdos-program',
+  'application/x-executable',
+  'application/x-sh', // Shell scripts
+  'application/x-bat', // Batch files
+  'text/x-sh',
+  'text/x-python',
+  'text/x-perl',
+  'text/x-ruby',
+  'application/x-httpd-php', // PHP files
+  'application/x-javascript', // Executable JS (not JSON)
+  'application/javascript',
+  'text/javascript',
 ];
 
 export class UploadAttachmentDto {
@@ -37,11 +41,11 @@ export class UploadAttachmentDto {
   @ApiProperty({
     description: 'MIME type of the file',
     example: 'application/pdf',
-    enum: ALLOWED_FILE_TYPES,
   })
   @IsString()
-  @IsIn(ALLOWED_FILE_TYPES, {
-    message: `File type must be one of: ${ALLOWED_FILE_TYPES.join(', ')}`,
+  @IsNotEmpty()
+  @Matches(/^[a-zA-Z0-9\-]+\/[a-zA-Z0-9\-\+\.]+$/, {
+    message: 'Invalid MIME type format',
   })
   fileType: string;
 
