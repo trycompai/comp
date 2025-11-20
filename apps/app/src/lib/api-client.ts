@@ -22,7 +22,23 @@ export class ApiClient {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
+    const rawBase = env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
+    this.baseUrl = rawBase.replace(/\/+$/, '');
+  }
+
+  /**
+   * Helper to safely join base URL and endpoint
+   */
+  private buildUrl(endpoint: string): string {
+    if (!endpoint) return this.baseUrl;
+
+    // If it's already an absolute URL, don't prefix baseUrl
+    if (/^https?:\/\//i.test(endpoint)) {
+      return endpoint;
+    }
+
+    const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    return `${this.baseUrl}${normalizedEndpoint}`;
   }
 
   /**
@@ -62,8 +78,10 @@ export class ApiClient {
       }
     }
 
+    const url = this.buildUrl(endpoint);
+
     try {
-      const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      const response = await fetch(url, {
         credentials: 'include',
         ...fetchOptions,
         headers,
@@ -83,7 +101,7 @@ export class ApiClient {
             Authorization: `Bearer ${newToken}`,
           };
 
-          const retryResponse = await fetch(`${this.baseUrl}${endpoint}`, {
+          const retryResponse = await fetch(url, {
             credentials: 'include',
             ...fetchOptions,
             headers: retryHeaders,
