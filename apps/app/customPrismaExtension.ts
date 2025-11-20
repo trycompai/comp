@@ -1,7 +1,8 @@
 import { binaryForRuntime, BuildContext, BuildExtension, BuildManifest } from '@trigger.dev/build';
 import assert from 'node:assert';
+import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { cp } from 'node:fs/promises';
+import { cp, mkdir } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 
 export type PrismaExtensionOptions = {
@@ -15,11 +16,6 @@ export type PrismaExtensionOptions = {
 };
 
 type ExtendedBuildContext = BuildContext & { workspaceDir?: string };
-
-type SchemaResolution = {
-  path?: string;
-  searched: string[];
-};
 
 export function prismaExtension(options: PrismaExtensionOptions = {}): PrismaExtension {
   return new PrismaExtension(options);
@@ -52,17 +48,17 @@ export class PrismaExtension implements BuildExtension {
 
     const resolution = this.tryResolveSchemaPath(context as ExtendedBuildContext);
 
-    if (resolution.path) {
-      this._resolvedSchemaPath = resolution.path;
-      context.logger.debug(
-        `Resolved the prisma schema from @trycompai/db package to: ${resolution.path}`,
-      );
-    } else {
-      context.logger.debug(
-        'Unable to locate prisma schema before dependencies are installed. Will retry after bundler installs packages.',
-        { searched: resolution.searched },
+    if (!resolution) {
+      throw new Error(
+        `PrismaExtension could not find schema.prisma inside @trycompai/db. Looked in: ${this.buildSchemaCandidates(
+          context as ExtendedBuildContext,
+        ).join(', ')}`,
       );
     }
+
+    this._resolvedSchemaPath = resolution;
+    context.logger.debug(`Resolved prisma schema to ${resolution}`);
+    await this.ensureLocalPrismaClient(context as ExtendedBuildContext, resolution);
   }
 
   async onBuildComplete(context: BuildContext, manifest: BuildManifest) {
@@ -70,25 +66,7 @@ export class PrismaExtension implements BuildExtension {
       return;
     }
 
-    if (!this._resolvedSchemaPath || !existsSync(this._resolvedSchemaPath)) {
-      const resolution = this.tryResolveSchemaPath(context as ExtendedBuildContext);
-
-      if (!resolution.path) {
-        throw new Error(
-          [
-            'PrismaExtension could not find the prisma schema. Make sure @trycompai/db is installed',
-            `with version ${this.options.dbPackageVersion || 'latest'} and that its dist files are built.`,
-            'Searched the following locations:',
-            ...resolution.searched.map((candidate) => ` - ${candidate}`),
-          ].join('\n'),
-        );
-      }
-
-      this._resolvedSchemaPath = resolution.path;
-    }
-
     assert(this._resolvedSchemaPath, 'Resolved schema path is not set');
-    const schemaPath = this._resolvedSchemaPath;
 
     context.logger.debug('Looking for @prisma/client in the externals', {
       externals: manifest.externals,
@@ -115,9 +93,9 @@ export class PrismaExtension implements BuildExtension {
     // Copy the prisma schema from the published package to the build output path
     const schemaDestinationPath = join(manifest.outputPath, 'prisma', 'schema.prisma');
     context.logger.debug(
-      `Copying the prisma schema from ${schemaPath} to ${schemaDestinationPath}`,
+      `Copying the prisma schema from ${this._resolvedSchemaPath} to ${schemaDestinationPath}`,
     );
-    await cp(schemaPath, schemaDestinationPath);
+    await cp(this._resolvedSchemaPath, schemaDestinationPath);
 
     // Add prisma generate command to generate the client from the copied schema
     commands.push(
@@ -178,22 +156,83 @@ export class PrismaExtension implements BuildExtension {
     });
   }
 
-  private tryResolveSchemaPath(context: ExtendedBuildContext): SchemaResolution {
-    const candidates = this.buildSchemaCandidates(context);
+  private async ensureLocalPrismaClient(
+    context: ExtendedBuildContext,
+    schemaSourcePath: string,
+  ): Promise<void> {
+    const schemaDir = resolve(context.workingDir, 'prisma');
+    const schemaDestinationPath = resolve(schemaDir, 'schema.prisma');
 
-    for (const candidate of candidates) {
-      if (existsSync(candidate)) {
-        return { path: candidate, searched: candidates };
-      }
+    await mkdir(schemaDir, { recursive: true });
+    await cp(schemaSourcePath, schemaDestinationPath);
+
+    const clientEntryPoint = resolve(context.workingDir, 'node_modules/.prisma/client/default.js');
+
+    if (existsSync(clientEntryPoint) && !process.env.TRIGGER_PRISMA_FORCE_GENERATE) {
+      context.logger.debug('Prisma client already generated locally, skipping regenerate.');
+      return;
     }
 
-    return { searched: candidates };
+    context.logger.log('Prisma client missing. Generating before Trigger indexing.');
+    await this.runPrismaGenerate(context, schemaDestinationPath);
+  }
+
+  private runPrismaGenerate(context: ExtendedBuildContext, schemaPath: string): Promise<void> {
+    const prismaBinary = this.resolvePrismaBinary(context.workingDir);
+
+    return new Promise((resolvePromise, rejectPromise) => {
+      const child = spawn(prismaBinary, ['generate', `--schema=${schemaPath}`], {
+        cwd: context.workingDir,
+        env: {
+          ...process.env,
+          PRISMA_HIDE_UPDATE_MESSAGE: '1',
+        },
+      });
+
+      child.stdout?.on('data', (data: Buffer) => {
+        context.logger.debug(data.toString().trim());
+      });
+
+      child.stderr?.on('data', (data: Buffer) => {
+        context.logger.warn(data.toString().trim());
+      });
+
+      child.on('error', (error) => {
+        rejectPromise(error);
+      });
+
+      child.on('close', (code) => {
+        if (code === 0) {
+          resolvePromise();
+        } else {
+          rejectPromise(new Error(`prisma generate exited with code ${code}`));
+        }
+      });
+    });
+  }
+
+  private resolvePrismaBinary(workingDir: string): string {
+    const binDir = resolve(workingDir, 'node_modules', '.bin');
+    const executable = process.platform === 'win32' ? 'prisma.cmd' : 'prisma';
+    const binaryPath = resolve(binDir, executable);
+
+    if (!existsSync(binaryPath)) {
+      throw new Error(
+        `prisma CLI not found at ${binaryPath}. Make sure "prisma" is installed in apps/app.`,
+      );
+    }
+
+    return binaryPath;
+  }
+
+  private tryResolveSchemaPath(context: ExtendedBuildContext): string | undefined {
+    return this.buildSchemaCandidates(context).find((candidate) => existsSync(candidate));
   }
 
   private buildSchemaCandidates(context: ExtendedBuildContext): string[] {
     const candidates = new Set<string>();
 
-    const addNodeModuleCandidates = (start?: string) => {
+    const addNodeModuleCandidates = (start: string | undefined) => {
       if (!start) {
         return;
       }
@@ -212,9 +251,8 @@ export class PrismaExtension implements BuildExtension {
     addNodeModuleCandidates(context.workingDir);
     addNodeModuleCandidates(context.workspaceDir);
 
-    const workspaceDir = context.workspaceDir ?? dirname(context.workingDir);
-    candidates.add(resolve(workspaceDir, 'packages/db/dist/schema.prisma'));
     candidates.add(resolve(context.workingDir, '../../packages/db/dist/schema.prisma'));
+    candidates.add(resolve(context.workingDir, '../packages/db/dist/schema.prisma'));
 
     return Array.from(candidates);
   }
