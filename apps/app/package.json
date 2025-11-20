@@ -164,6 +164,7 @@
     "dev": "bun i && bunx concurrently --kill-others --names \"next,trigger\" --prefix-colors \"yellow,blue\" \"next dev --turbo -p 3000\" \"bunx trigger.dev@4.0.6 dev\"",
     "lint": "next lint && prettier --check .",
     "prebuild": "bun run db:generate",
+    "postinstall": "prisma generate --schema=./prisma/schema.prisma || exit 0",
     "start": "next start",
     "test": "vitest",
     "test:all": "./scripts/test-all.sh",
