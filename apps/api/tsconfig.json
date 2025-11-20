@@ -1,31 +1,25 @@
 {
   "extends": "@trycompai/tsconfig/base.json",
-  
   "compilerOptions": {
-    "lib": ["es2022", "DOM", "DOM.Iterable"],
-
-    "moduleDetection": "force",
-
-    "noUncheckedIndexedAccess": true,
-    "resolveJsonModule": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "target": "ES2022",
-    "allowSyntheticDefaultImports": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["node", "jest"],
+    "verbatimModuleSyntax": false,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+    "rootDir": "src",
+    "jsx": "react-jsx",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "forceConsistentCasingInFileNames": false,
-    "incremental": true,
-    "module": "commonjs",
-    "moduleResolution": "Node10",
-    "noFallthroughCasesInSwitch": false,
-    "noImplicitAny": false,
-    "removeComments": true,
-
-    "sourceMap": true,
+    "strictPropertyInitialization": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "strictNullChecks": false,
-    "strictBindCallApply": false
+    "noImplicitAny": false,
+    "useUnknownInCatchVariables": false,
+    "noUncheckedIndexedAccess": false
   },
   "include": ["src"],
-  "exclude": ["node_modules"]
+  "exclude": ["dist", "node_modules"]
 }

@@ -1,8 +1,8 @@
 "use server";
 
-import { NextRequest, NextResponse } from "next/server";
-import { encrypt } from "@/lib/encryption";
 import { auth } from "@/utils/auth";
+import { encrypt } from "@trycompai/utils/encryption";
+import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { db } from "@trycompai/db";
@@ -14,7 +14,7 @@ const createSecretSchema = z.object({
     .max(100)
     .regex(
       /^[A-Z0-9_]+$/,
-      "Name must be uppercase letters, numbers, and underscores only",
+      "Name must be uppercase letters, numbers, and underscores only"
     ),
   value: z.string().min(1),
   // Optional in UI; accept undefined or null
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
   if (!organizationId) {
     return NextResponse.json(
       { error: "Organization ID is required" },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
     console.error("Error fetching secrets:", error);
     return NextResponse.json(
       { error: "Failed to fetch secrets" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
     if (existingSecret) {
       return NextResponse.json(
         { error: `Secret with name ${validatedData.name} already exists` },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -145,13 +145,13 @@ export async function POST(request: NextRequest) {
       console.error("Invalid input:", error.issues);
       return NextResponse.json(
         { error: "Invalid input", details: error.issues },
-        { status: 400 },
+        { status: 400 }
       );
     }
     console.error("Error creating secret:", error);
     return NextResponse.json(
       { error: "Failed to create secret" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

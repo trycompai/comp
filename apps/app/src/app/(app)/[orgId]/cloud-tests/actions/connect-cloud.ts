@@ -1,8 +1,8 @@
 "use server";
 
+import { encrypt } from "@trycompai/utils/encryption";
 import { revalidatePath } from "next/cache";
 import { cookies, headers } from "next/headers";
-import { encrypt } from "@/lib/encryption";
 import { z } from "zod";
 
 import { db } from "@trycompai/db";
@@ -51,7 +51,7 @@ export const connectCloudAction = authActionClient
           // Process credentials to the format expected by the handler
           const typedCredentials = await integrationHandler.processCredentials(
             credentials,
-            async (data: any) => data, // Pass through without encryption for validation
+            async (data: any) => data // Pass through without encryption for validation
           );
 
           // Validate by attempting to fetch (this will throw if credentials are invalid)
@@ -111,7 +111,7 @@ export const connectCloudAction = authActionClient
         if (runResult.success && runResult.publicAccessToken) {
           (await cookies()).set(
             "publicAccessToken",
-            runResult.publicAccessToken,
+            runResult.publicAccessToken
           );
         }
 
@@ -144,5 +144,5 @@ export const connectCloudAction = authActionClient
               : "Failed to connect cloud provider",
         };
       }
-    },
+    }
   );

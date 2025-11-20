@@ -171,7 +171,7 @@ pre {
 }
 
 .ProseMirror table {
-  @reference w-full border-collapse my-4 border border-border;
+  @reference w-full border-collapse my-4 border;
 }
 
 .ProseMirror th {

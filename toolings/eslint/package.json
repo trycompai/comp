@@ -23,5 +23,8 @@
     "globals": "^16.5.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.47.0"
+  },
+  "dependencies": {
+    "eslint-config-next": "^16.0.3"
   }
 }

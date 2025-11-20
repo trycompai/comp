@@ -1,107 +1,143 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
-@source "../../../../packages/ui/src/*.{ts,tsx}";
+@source "../../../../packages/ui/src/components/**/*.{ts,tsx}";
 
-@layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 165 100% 15%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 165 100% 15%;
-    --radius: 0.5rem;
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-primary: var(--chart-primary);
+  --color-chart-positive: var(--chart-positive);
+  --color-chart-neutral: var(--chart-neutral);
+  --color-chart-warning: var(--chart-warning);
+  --color-chart-destructive: var(--chart-destructive);
+  --color-chart-other: var(--chart-other);
+  --color-chart-closed: var(--chart-closed);
+  --color-chart-pending: var(--chart-pending);
+  --color-chart-open: var(--chart-open);
+  --color-chart-archived: var(--chart-archived);
+  --color-chart-needs_review: var(--chart-needs_review);
+  --radius: var(--radius);
+}
 
-    --chart-primary: 165 100% 15%;
-    --chart-positive: 163 64% 21%; /* Green: use for published, or reviewed = the items are in a good state */
-    --chart-neutral: 45 89% 53%; /* Yellow: use for draft(s) and actions that need reviewing soon */
-    --chart-warning: 220 14% 53%; /* Gray: deleted, archived - states that have been closed */
-    --chart-destructive: 0 85% 60%; /* Red: use for needs review, something that needs action immediately */
-    --chart-other: 196 80% 45%; /* Blue: use for other states */
+:root {
+  --background: hsl(0 0% 100%);
+  --foreground: hsl(0 0% 3.9%);
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(0 0% 3.9%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(0 0% 3.9%);
+  --primary: hsl(165 100% 15%);
+  --primary-foreground: hsl(0 0% 98%);
+  --secondary: hsl(0 0% 96.1%);
+  --secondary-foreground: hsl(0 0% 9%);
+  --muted: hsl(0 0% 96.1%);
+  --muted-foreground: hsl(0 0% 45.1%);
+  --accent: hsl(0 0% 96.1%);
+  --accent-foreground: hsl(0 0% 9%);
+  --destructive: hsl(0 84.2% 60.2%);
+  --destructive-foreground: hsl(0 0% 98%);
+  --border: hsl(0 0% 89.8%);
+  --input: hsl(0 0% 89.8%);
+  --ring: hsl(165 100% 15%);
+  --radius: 0.5rem;
 
-    --chart-closed: #004c3a;
-    --chart-pending: #0ba5e9;
-    --chart-open: #ffc007;
-    --chart-archived: #64748b;
-    --chart-needs_review: #ff0000;
+  --chart-primary: hsl(165 100% 15%);
+  --chart-positive: hsl(
+    163 64% 21%
+  ); /* Green: use for published, or reviewed = the items are in a good state */
+  --chart-neutral: hsl(
+    45 89% 53%
+  ); /* Yellow: use for draft(s) and actions that need reviewing soon */
+  --chart-warning: hsl(
+    220 14% 53%
+  ); /* Gray: deleted, archived - states that have been closed */
+  --chart-destructive: hsl(
+    0 85% 60%
+  ); /* Red: use for needs review, something that needs action immediately */
+  --chart-other: hsl(196 80% 45%); /* Blue: use for other states */
+
+  --chart-closed: #004c3a;
+  --chart-pending: #0ba5e9;
+  --chart-open: #ffc007;
+  --chart-archived: #64748b;
+  --chart-needs_review: #ff0000;
+}
+
+.dark {
+  --background: hsl(0 0% 100%);
+  --foreground: hsl(0 0% 3.9%);
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(0 0% 3.9%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(0 0% 3.9%);
+  --primary: hsl(165 100% 15%);
+  --primary-foreground: hsl(0 0% 98%);
+  --secondary: hsl(0 0% 96.1%);
+  --secondary-foreground: hsl(0 0% 9%);
+  --muted: hsl(0 0% 96.1%);
+  --muted-foreground: hsl(0 0% 45.1%);
+  --accent: hsl(0 0% 96.1%);
+  --accent-foreground: hsl(0 0% 9%);
+  --destructive: hsl(0 84.2% 60.2%);
+  --destructive-foreground: hsl(0 0% 98%);
+  --border: hsl(0 0% 89.8%);
+  --input: hsl(0 0% 89.8%);
+  --ring: hsl(165 100% 15%);
+  --radius: 0.5rem;
+
+  --chart-primary: hsl(165 100% 15%);
+  --chart-positive: hsl(
+    163 64% 21%
+  ); /* Green: use for published, or reviewed = the items are in a good state */
+  --chart-neutral: hsl(
+    45 89% 53%
+  ); /* Yellow: use for draft(s) and actions that need reviewing soon */
+  --chart-warning: hsl(
+    220 14% 53%
+  ); /* Gray: deleted, archived - states that have been closed */
+  --chart-destructive: hsl(
+    0 85% 60%
+  ); /* Red: use for needs review, something that needs action immediately */
+  --chart-other: hsl(196 80% 45%); /* Blue: use for other states */
+
+  --chart-closed: #004c3a;
+  --chart-pending: #0ba5e9;
+  --chart-open: #ffc007;
+  --chart-archived: #64748b;
+  --chart-needs_review: #ff0000;
+}
+
+@layer components {
+  .container-wrapper {
+    @apply w-full;
   }
 
-  .dark {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 165 100% 15%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 165 100% 15%;
-    --radius: 0.5rem;
-
-    --chart-primary: 165 100% 15%;
-    --chart-positive: 163 64% 21%; /* Green: use for published, or reviewed = the items are in a good state */
-    --chart-neutral: 45 89% 53%; /* Yellow: use for draft(s) and actions that need reviewing soon */
-    --chart-warning: 220 14% 53%; /* Gray: deleted, archived - states that have been closed */
-    --chart-destructive: 0 85% 60%; /* Red: use for needs review, something that needs action immediately */
-    --chart-other: 196 80% 45%; /* Blue: use for other states */
-
-    --chart-closed: #004c3a;
-    --chart-pending: #0ba5e9;
-    --chart-open: #ffc007;
-    --chart-archived: #64748b;
-    --chart-needs_review: #ff0000;
-  }
-
-  @layer components {
-    .border-grid {
-      @apply border-border;
-    }
-
-    .container-wrapper {
-      @apply w-full;
-    }
-
-    .container {
-      @apply mx-auto max-w-7xl px-4 sm:px-6 lg:px-8;
-    }
+  .container {
+    @apply mx-auto max-w-7xl px-4 sm:px-6 lg:px-8;
   }
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
   body {
     font-family: var(--font-sans), system-ui, sans-serif;
-    @apply bg-background text-foreground;
-  }
-  button:not(:disabled),
-  [role="button"]:not(:disabled) {
-    cursor: pointer;
   }
 }
 

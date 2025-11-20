@@ -1,7 +1,7 @@
 "use server";
 
+import { encrypt } from "@trycompai/utils/encryption";
 import { revalidatePath } from "next/cache";
-import { encrypt } from "@/lib/encryption";
 import { z } from "zod";
 
 import { db } from "@trycompai/db";

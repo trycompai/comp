@@ -3,9 +3,25 @@ import { Prisma, PrismaClient } from "../prisma/generated/client";
 
 export * from "../prisma/generated/browser";
 
+const globalForPrisma = global as unknown as {
+  prisma: PrismaClient;
+};
+
+const adapter = new PrismaPg({
+  // eslint-disable-next-line turbo/no-undeclared-env-vars
+  connectionString: process.env.DATABASE_URL,
+});
+
+const db =
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  globalForPrisma.prisma ||
+  new PrismaClient({
+    adapter,
+  });
+
 // eslint-disable-next-line turbo/no-undeclared-env-vars
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = db;
+}
 
-const db = new PrismaClient({ adapter });
-
-export { db, Prisma };
+export default { db, Prisma };

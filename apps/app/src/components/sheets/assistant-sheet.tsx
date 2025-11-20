@@ -4,7 +4,7 @@ import { Drawer, DrawerContent, DrawerTitle } from "@trycompai/ui/drawer";
 import { useMediaQuery } from "@trycompai/ui/hooks";
 import { Sheet, SheetContent } from "@trycompai/ui/sheet";
 
-import "@trycompai/ui/editor.css";
+import "@/styles/editor.css";
 
 import { useQueryState } from "nuqs";
 

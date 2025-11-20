@@ -1,4 +1,20 @@
 {
   "extends": "./tsconfig.json",
-  "exclude": ["node_modules", "test", "dist", "eslint.config.ts"]
+  "compilerOptions": {
+    "outDir": "./dist",
+    "sourceMap": true,
+    "inlineSources": true,
+    "incremental": true,
+    "tsBuildInfoFile": "./dist/tsconfig.build.tsbuildinfo",
+    "declaration": false
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": [
+    "dist",
+    "node_modules",
+    "test",
+    "**/*.spec.ts",
+    "**/*.e2e-spec.ts",
+    "eslint.config.ts"
+  ]
 }

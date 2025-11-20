@@ -1,15 +1,10 @@
-import nextPlugin from "@next/eslint-plugin-next";
+import nextVitals from "eslint-config-next/core-web-vitals";
 import { defineConfig } from "eslint/config";
 
 export const nextjsConfig = defineConfig({
   files: ["**/*.ts", "**/*.tsx"],
-  plugins: {
-    "@next/next": nextPlugin,
-  },
+  ...nextVitals,
   rules: {
-    ...nextPlugin.configs.recommended.rules,
-    ...nextPlugin.configs["core-web-vitals"].rules,
-    // TypeError: context.getAncestors is not a function
     "@next/next/no-duplicate-head": "off",
   },
 });

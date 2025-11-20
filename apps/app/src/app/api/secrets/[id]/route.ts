@@ -1,7 +1,7 @@
-import type { EncryptedData } from "@/lib/encryption";
-import { NextRequest, NextResponse } from "next/server";
-import { decrypt, encrypt } from "@/lib/encryption";
 import { auth } from "@/utils/auth";
+import type { EncryptedData } from "@trycompai/utils/encryption";
+import { decrypt, encrypt } from "@trycompai/utils/encryption";
+import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { db } from "@trycompai/db";
@@ -13,7 +13,7 @@ const updateSecretSchema = z.object({
     .max(100)
     .regex(
       /^[A-Z0-9_]+$/,
-      "Name must be uppercase letters, numbers, and underscores only",
+      "Name must be uppercase letters, numbers, and underscores only"
     )
     .optional(),
   value: z.string().min(1).optional(),
@@ -25,7 +25,7 @@ const updateSecretSchema = z.object({
 // GET /api/secrets/[id] - Get a specific secret (value is decrypted)
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const organizationId: string | null =
     request.nextUrl.searchParams.get("organizationId");
@@ -33,7 +33,7 @@ export async function GET(
   if (!organizationId) {
     return NextResponse.json(
       { error: "Organization ID is required" },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
@@ -59,7 +59,7 @@ export async function GET(
 
     // Decrypt the value before returning
     const decryptedValue = await decrypt(
-      JSON.parse(secret.value) as EncryptedData,
+      JSON.parse(secret.value) as EncryptedData
     );
 
     return NextResponse.json({
@@ -72,7 +72,7 @@ export async function GET(
     console.error("Error fetching secret:", error);
     return NextResponse.json(
       { error: "Failed to fetch secret" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -80,7 +80,7 @@ export async function GET(
 // PUT /api/secrets/[id] - Update a secret
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
@@ -135,7 +135,7 @@ export async function PUT(
       if (duplicateSecret) {
         return NextResponse.json(
           { error: `Secret with name ${validatedData.name} already exists` },
-          { status: 400 },
+          { status: 400 }
         );
       }
     }
@@ -170,13 +170,13 @@ export async function PUT(
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Invalid input", details: error.issues },
-        { status: 400 },
+        { status: 400 }
       );
     }
     console.error("Error updating secret:", error);
     return NextResponse.json(
       { error: "Failed to update secret" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -184,7 +184,7 @@ export async function PUT(
 // DELETE /api/secrets/[id] - Delete a secret
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const organizationId: string | null =
     request.nextUrl.searchParams.get("organizationId");
@@ -192,7 +192,7 @@ export async function DELETE(
   if (!organizationId) {
     return NextResponse.json(
       { error: "Organization ID is required" },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
@@ -245,7 +245,7 @@ export async function DELETE(
     console.error("Error deleting secret:", error);
     return NextResponse.json(
       { error: "Failed to delete secret" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

@@ -1,8 +1,8 @@
 "use server";
 
+import { encrypt } from "@trycompai/utils/encryption";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
-import { encrypt } from "@/lib/encryption";
 import { z } from "zod";
 
 import { db } from "@trycompai/db";
@@ -87,5 +87,5 @@ export const updateCloudCredentialsAction = authActionClient
               : "Failed to update cloud credentials",
         };
       }
-    },
+    }
   );

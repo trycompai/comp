@@ -8,7 +8,10 @@ const Card = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("bg-card text-card-foreground rounded-lg border", className)}
+    className={cn(
+      "bg-card text-card-foreground rounded-lg border border-border",
+      className
+    )}
     suppressHydrationWarning
     {...props}
   />

@@ -5,7 +5,7 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.mts",
-      "default": "./src/index.mjs"
+      "default": "./dist/index.mjs"
     }
   },
   "dependencies": {
