@@ -14,6 +14,13 @@ export type PrismaExtensionOptions = {
   dbPackageVersion?: string;
 };
 
+type ExtendedBuildContext = BuildContext & { workspaceDir?: string };
+
+type SchemaResolution = {
+  path?: string;
+  searched: string[];
+};
+
 export function prismaExtension(options: PrismaExtensionOptions = {}): PrismaExtension {
   return new PrismaExtension(options);
 }
@@ -43,41 +50,17 @@ export class PrismaExtension implements BuildExtension {
       return;
     }
 
-    // Resolve the path to the schema from the published @trycompai/db package
-    // In a monorepo, node_modules are typically hoisted to the workspace root
-    // Walk up the directory tree to find the workspace root (where node_modules/@trycompai/db exists)
-    let workspaceRoot = context.workingDir;
-    let dbPackagePath = resolve(workspaceRoot, 'node_modules/@trycompai/db/dist/schema.prisma');
+    const resolution = this.tryResolveSchemaPath(context as ExtendedBuildContext);
 
-    // If not found in working dir, try parent directories
-    while (!existsSync(dbPackagePath) && workspaceRoot !== dirname(workspaceRoot)) {
-      workspaceRoot = dirname(workspaceRoot);
-      dbPackagePath = resolve(workspaceRoot, 'node_modules/@trycompai/db/dist/schema.prisma');
-    }
-
-    this._resolvedSchemaPath = dbPackagePath;
-
-    context.logger.debug(`Workspace root: ${workspaceRoot}`);
-    context.logger.debug(
-      `Resolved the prisma schema from @trycompai/db package to: ${this._resolvedSchemaPath}`,
-    );
-
-    // Debug: List contents of the @trycompai/db package directory
-    const dbPackageDir = resolve(workspaceRoot, 'node_modules/@trycompai/db');
-    const dbDistDir = resolve(workspaceRoot, 'node_modules/@trycompai/db/dist');
-
-    try {
-      const { readdirSync } = require('node:fs');
-      context.logger.debug(`@trycompai/db package directory contents:`, readdirSync(dbPackageDir));
-      context.logger.debug(`@trycompai/db/dist directory contents:`, readdirSync(dbDistDir));
-    } catch (err) {
-      context.logger.debug(`Failed to list directory contents:`, err);
-    }
-
-    // Check that the prisma schema exists in the published package
-    if (!existsSync(this._resolvedSchemaPath)) {
-      throw new Error(
-        `PrismaExtension could not find the prisma schema at ${this._resolvedSchemaPath}. Make sure @trycompai/db package is installed with version ${this.options.dbPackageVersion || 'latest'}`,
+    if (resolution.path) {
+      this._resolvedSchemaPath = resolution.path;
+      context.logger.debug(
+        `Resolved the prisma schema from @trycompai/db package to: ${resolution.path}`,
+      );
+    } else {
+      context.logger.debug(
+        'Unable to locate prisma schema before dependencies are installed. Will retry after bundler installs packages.',
+        { searched: resolution.searched },
       );
     }
   }
@@ -87,7 +70,25 @@ export class PrismaExtension implements BuildExtension {
       return;
     }
 
+    if (!this._resolvedSchemaPath || !existsSync(this._resolvedSchemaPath)) {
+      const resolution = this.tryResolveSchemaPath(context as ExtendedBuildContext);
+
+      if (!resolution.path) {
+        throw new Error(
+          [
+            'PrismaExtension could not find the prisma schema. Make sure @trycompai/db is installed',
+            `with version ${this.options.dbPackageVersion || 'latest'} and that its dist files are built.`,
+            'Searched the following locations:',
+            ...resolution.searched.map((candidate) => ` - ${candidate}`),
+          ].join('\n'),
+        );
+      }
+
+      this._resolvedSchemaPath = resolution.path;
+    }
+
     assert(this._resolvedSchemaPath, 'Resolved schema path is not set');
+    const schemaPath = this._resolvedSchemaPath;
 
     context.logger.debug('Looking for @prisma/client in the externals', {
       externals: manifest.externals,
@@ -114,9 +115,9 @@ export class PrismaExtension implements BuildExtension {
     // Copy the prisma schema from the published package to the build output path
     const schemaDestinationPath = join(manifest.outputPath, 'prisma', 'schema.prisma');
     context.logger.debug(
-      `Copying the prisma schema from ${this._resolvedSchemaPath} to ${schemaDestinationPath}`,
+      `Copying the prisma schema from ${schemaPath} to ${schemaDestinationPath}`,
     );
-    await cp(this._resolvedSchemaPath, schemaDestinationPath);
+    await cp(schemaPath, schemaDestinationPath);
 
     // Add prisma generate command to generate the client from the copied schema
     commands.push(
@@ -175,5 +176,46 @@ export class PrismaExtension implements BuildExtension {
         env,
       },
     });
+  }
+
+  private tryResolveSchemaPath(context: ExtendedBuildContext): SchemaResolution {
+    const candidates = this.buildSchemaCandidates(context);
+
+    for (const candidate of candidates) {
+      if (existsSync(candidate)) {
+        return { path: candidate, searched: candidates };
+      }
+    }
+
+    return { searched: candidates };
+  }
+
+  private buildSchemaCandidates(context: ExtendedBuildContext): string[] {
+    const candidates = new Set<string>();
+
+    const addNodeModuleCandidates = (start?: string) => {
+      if (!start) {
+        return;
+      }
+
+      let current = start;
+      while (true) {
+        candidates.add(resolve(current, 'node_modules/@trycompai/db/dist/schema.prisma'));
+        const parent = dirname(current);
+        if (parent === current) {
+          break;
+        }
+        current = parent;
+      }
+    };
+
+    addNodeModuleCandidates(context.workingDir);
+    addNodeModuleCandidates(context.workspaceDir);
+
+    const workspaceDir = context.workspaceDir ?? dirname(context.workingDir);
+    candidates.add(resolve(workspaceDir, 'packages/db/dist/schema.prisma'));
+    candidates.add(resolve(context.workingDir, '../../packages/db/dist/schema.prisma'));
+
+    return Array.from(candidates);
   }
 }
