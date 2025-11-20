@@ -51,6 +51,69 @@ export class AttachmentsService {
     userId?: string,
   ): Promise<AttachmentResponseDto> {
     try {
+      // Blocked file extensions for security
+      const BLOCKED_EXTENSIONS = [
+        'exe',
+        'bat',
+        'cmd',
+        'com',
+        'scr',
+        'msi', // Windows executables
+        'js',
+        'vbs',
+        'vbe',
+        'wsf',
+        'wsh',
+        'ps1', // Scripts
+        'sh',
+        'bash',
+        'zsh', // Shell scripts
+        'dll',
+        'sys',
+        'drv', // System files
+        'app',
+        'deb',
+        'rpm', // Application packages
+        'jar', // Java archives (can execute)
+        'pif',
+        'lnk',
+        'cpl', // Shortcuts and control panel
+        'hta',
+        'reg', // HTML apps and registry
+      ];
+
+      // Blocked MIME types for security
+      const BLOCKED_MIME_TYPES = [
+        'application/x-msdownload', // .exe
+        'application/x-msdos-program',
+        'application/x-executable',
+        'application/x-sh', // Shell scripts
+        'application/x-bat', // Batch files
+        'text/x-sh',
+        'text/x-python',
+        'text/x-perl',
+        'text/x-ruby',
+        'application/x-httpd-php', // PHP files
+        'application/x-javascript', // Executable JS (not JSON)
+        'application/javascript',
+        'text/javascript',
+      ];
+
+      // Validate file extension
+      const fileExt = uploadDto.fileName.split('.').pop()?.toLowerCase();
+      if (fileExt && BLOCKED_EXTENSIONS.includes(fileExt)) {
+        throw new BadRequestException(
+          `File extension '.${fileExt}' is not allowed for security reasons`,
+        );
+      }
+
+      // Validate MIME type
+      if (BLOCKED_MIME_TYPES.includes(uploadDto.fileType.toLowerCase())) {
+        throw new BadRequestException(
+          `File type '${uploadDto.fileType}' is not allowed for security reasons`,
+        );
+      }
+
       // Validate file size
       const fileBuffer = Buffer.from(uploadDto.fileData, 'base64');
       if (fileBuffer.length > this.MAX_FILE_SIZE_BYTES) {
