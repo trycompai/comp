@@ -1,6 +1,5 @@
 {
   "lockfileVersion": 1,
-  "configVersion": 0,
   "workspaces": {
     "": {
       "name": "comp",
@@ -211,6 +210,7 @@
         "playwright-core": "^1.52.0",
         "posthog-js": "^1.236.6",
         "posthog-node": "^5.8.2",
+        "prisma": "^6.13.0",
         "puppeteer-core": "^24.7.2",
         "react": "^19.1.1",
         "react-dom": "^19.1.0",
@@ -260,7 +260,6 @@
         "glob": "^11.0.3",
         "jsdom": "^26.1.0",
         "postcss": "^8.5.4",
-        "prisma": "^6.13.0",
         "raw-loader": "^4.0.2",
         "tailwindcss": "^4.1.8",
         "typescript": "^5.8.3",
