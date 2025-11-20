@@ -164,8 +164,6 @@
     "dev": "bun i && bunx concurrently --kill-others --names \"next,trigger\" --prefix-colors \"yellow,blue\" \"next dev --turbo -p 3000\" \"bunx trigger.dev@4.0.6 dev\"",
     "lint": "next lint && prettier --check .",
     "prebuild": "bun run db:generate",
-    "postinstall": "node ../../node_modules/@trycompai/db/dist/postinstall.js",
-    "trigger:generate-prisma": "node ../../node_modules/@trycompai/db/dist/postinstall.js --force",
     "start": "next start",
     "test": "vitest",
     "test:all": "./scripts/test-all.sh",
