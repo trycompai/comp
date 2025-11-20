@@ -73,6 +73,8 @@ const ensureBucket = (): string | null => {
   return bucket ?? null;
 };
 
+const getTokenSnippet = (token: string) => `${token.slice(0, 8)}...`;
+
 const handleDownload = async (req: NextRequest, isHead: boolean) => {
   const token = req.nextUrl.searchParams.get('token');
 
@@ -80,20 +82,37 @@ const handleDownload = async (req: NextRequest, isHead: boolean) => {
     return new NextResponse('Missing download token', { status: 400 });
   }
 
+  const tokenSnippet = getTokenSnippet(token);
   const downloadInfo = await getDownloadToken(token);
 
   if (!downloadInfo) {
+    logger('Device agent download failed: invalid token', {
+      token: tokenSnippet,
+      method: isHead ? 'HEAD' : 'GET',
+    });
     return new NextResponse('Invalid or expired download token', { status: 403 });
   }
+
+  logger('Device agent download request received', {
+    token: tokenSnippet,
+    method: isHead ? 'HEAD' : 'GET',
+    os: downloadInfo.os,
+  });
 
   const fleetBucketName = ensureBucket();
 
   if (!fleetBucketName) {
-    logger('Device agent download misconfigured: missing bucket');
+    logger('Device agent download misconfigured: missing bucket', { token: tokenSnippet });
     return new NextResponse('Server configuration error', { status: 500 });
   }
 
   const target = getDownloadTarget(downloadInfo.os);
+  logger('Device agent download target resolved', {
+    token: tokenSnippet,
+    method: isHead ? 'HEAD' : 'GET',
+    bucket: fleetBucketName,
+    key: target.key,
+  });
 
   try {
     if (isHead) {
@@ -103,6 +122,12 @@ const handleDownload = async (req: NextRequest, isHead: boolean) => {
       });
 
       const headResult = await s3Client.send(headCommand);
+
+      logger('Device agent HEAD completed', {
+        token: tokenSnippet,
+        key: target.key,
+        contentLength: headResult.ContentLength ?? null,
+      });
 
       return new NextResponse(null, {
         headers: buildResponseHeaders(target, headResult.ContentLength ?? null),
@@ -117,6 +142,10 @@ const handleDownload = async (req: NextRequest, isHead: boolean) => {
     const s3Response = await s3Client.send(getObjectCommand);
 
     if (!s3Response.Body) {
+      logger('Device agent download failed: empty S3 body', {
+        token: tokenSnippet,
+        key: target.key,
+      });
       return new NextResponse('Installer file not found', { status: 404 });
     }
 
