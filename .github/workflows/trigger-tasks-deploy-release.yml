@@ -31,7 +31,7 @@ jobs:
       - name: Build DB package
         working-directory: ./packages/db
         run: bun run build
-      
+
       - name: Copy schema to app and generate client
         working-directory: ./apps/app
         run: |
