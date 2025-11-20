@@ -47,7 +47,7 @@ Debug failed tests with step-by-step execution traces.
 **Local viewer:**
 
 ```bash
-bunx playwright show-trace path/to/trace.zip
+pnpx playwright show-trace path/to/trace.zip
 ```
 
 ## 📊 What's Available

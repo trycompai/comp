@@ -48,19 +48,19 @@ jobs:
       - name: Generate Prisma client
         run: |
           cd packages/db
-          bunx prisma generate
+          pnpx prisma generate
 
       - name: Run database migrations
         run: |
           cd packages/db
-          bunx prisma migrate deploy
+          pnpx prisma migrate deploy
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
 
       - name: Run quick tests
         run: |
           cd apps/app
-          bunx vitest run src/middleware.test.ts src/lib/__tests__/
+          pnpx vitest run src/middleware.test.ts src/lib/__tests__/
         env:
           CI: true
           MOCK_REDIS: true

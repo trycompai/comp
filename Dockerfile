@@ -46,7 +46,7 @@ RUN cp -R packages/db/prisma/migrations node_modules/@trycompai/db/dist/
 
 # Run migrations against the combined schema published by @trycompai/db
 RUN echo "Running migrations against @trycompai/db combined schema"
-CMD ["bunx", "prisma", "migrate", "deploy", "--schema=node_modules/@trycompai/db/dist/schema.prisma"]
+CMD ["pnpx", "prisma", "migrate", "deploy", "--schema=node_modules/@trycompai/db/dist/schema.prisma"]
 
 # =============================================================================
 # STAGE 3: App Builder

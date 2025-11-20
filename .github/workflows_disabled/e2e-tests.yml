@@ -93,13 +93,13 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
         run: |
           cd packages/db
-          bunx prisma migrate deploy
-          bunx prisma db seed || true # Allow seed to fail
+          pnpx prisma migrate deploy
+          pnpx prisma db seed || true # Allow seed to fail
 
       - name: Generate Prisma client
         run: |
           cd packages/db
-          bunx prisma generate
+          pnpx prisma generate
 
       - name: Get Playwright version
         id: playwright-version
@@ -111,7 +111,7 @@ jobs:
           echo "version=$PLAYWRIGHT_VERSION" >> $GITHUB_OUTPUT
 
           # Also get Playwright's internal browser versions for better cache key
-          BROWSER_VERSIONS=$(bunx playwright --version | head -1 || echo "unknown")
+          BROWSER_VERSIONS=$(pnpx playwright --version | head -1 || echo "unknown")
           echo "Browser versions: $BROWSER_VERSIONS"
           echo "browser_versions=$BROWSER_VERSIONS" >> $GITHUB_OUTPUT
 
@@ -133,14 +133,14 @@ jobs:
           # Always run install - Playwright will skip downloading browsers that already exist
           # This is the safest approach to ensure browsers are properly installed
           echo "Installing Playwright browsers (will skip if already cached)..."
-          bunx playwright install chromium firefox webkit
+          pnpx playwright install chromium firefox webkit
 
       - name: Install Playwright system dependencies
         run: |
           cd apps/app
           # Install system dependencies separately - this is always needed on Ubuntu runners
           echo "Installing system dependencies..."
-          bunx playwright install-deps chromium firefox webkit
+          pnpx playwright install-deps chromium firefox webkit
 
       - name: Verify Playwright installation
         run: |
@@ -163,7 +163,7 @@ jobs:
 
           # Check Playwright's own cache directory
           echo "Playwright cache home:"
-          cd apps/app && bunx playwright install --help | grep -i cache || true
+          cd apps/app && pnpx playwright install --help | grep -i cache || true
 
           # Show disk usage
           echo "Disk usage of cache directories:"
@@ -179,13 +179,13 @@ jobs:
           ls -la ~/.cache/ms-playwright 2>/dev/null || echo "~/.cache/ms-playwright not found"
           du -sh ~/.cache/ms-playwright 2>/dev/null || echo "Cannot check size"
           echo "Playwright browsers installed:"
-          cd apps/app && bunx playwright --version
+          cd apps/app && pnpx playwright --version
 
       - name: Build app
         run: |
           cd apps/app
           export E2E_TEST_MODE=true
-          bunx next build
+          pnpx next build
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
           NEXTAUTH_URL: http://localhost:3000
@@ -285,7 +285,7 @@ jobs:
         run: |
           cd apps/app
           echo "Starting E2E tests for ${{ matrix.project }} with 2 workers..."
-          bunx playwright test --project=${{ matrix.project }}
+          pnpx playwright test --project=${{ matrix.project }}
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
           NEXTAUTH_URL: http://localhost:3000
@@ -366,7 +366,7 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "Or run locally:" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-            echo "bunx playwright show-trace path/to/trace.zip" >> $GITHUB_STEP_SUMMARY
+            echo "pnpx playwright show-trace path/to/trace.zip" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           fi
 

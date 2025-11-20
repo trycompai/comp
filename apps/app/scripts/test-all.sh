@@ -72,7 +72,7 @@ if ! curl -s http://localhost:3000 > /dev/null; then
 fi
 
 # Run E2E tests
-if bunx playwright test --project=chromium; then
+if pnpx playwright test --project=chromium; then
     echo -e "${GREEN}✓ E2E tests passed${NC}"
 else
     echo -e "${RED}✗ E2E tests failed${NC}"

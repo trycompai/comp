@@ -83,7 +83,7 @@ services:
       target: migrator
     env_file:
       - .env
-    command: sh -lc "bunx prisma generate --schema=node_modules/@trycompai/db/dist/schema.prisma && bun packages/db/prisma/seed/seed.js"
+    command: sh -lc "pnpx prisma generate --schema=node_modules/@trycompai/db/dist/schema.prisma && bun packages/db/prisma/seed/seed.js"
 
   app:
     build:
@@ -195,8 +195,8 @@ Steps:
 3. From your workstation (not inside Docker):
    ```bash
    cd apps/app
-   bunx trigger.dev@latest login
-   bunx trigger.dev@latest deploy
+   pnpx trigger.dev@latest login
+   pnpx trigger.dev@latest deploy
    ```
 4. Set `TRIGGER_SECRET_KEY` in the `app` service environment.
 

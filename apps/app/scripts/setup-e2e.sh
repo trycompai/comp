@@ -75,7 +75,7 @@ if [ -f "../../apps/app/.env.test.local" ]; then
     export $(grep DATABASE_URL ../../apps/app/.env.test.local | xargs)
 fi
 # Create database and push schema (will create DB if it doesn't exist)
-bunx prisma db push --skip-generate --accept-data-loss
+pnpx prisma db push --skip-generate --accept-data-loss
 cd ../../apps/app
 echo -e "${GREEN}✓ Migrations complete${NC}"
 
@@ -84,7 +84,7 @@ echo ""
 echo -e "${YELLOW}4. Checking Playwright browsers...${NC}"
 if [ ! -d "$HOME/.cache/ms-playwright" ]; then
     echo "Installing Playwright browsers..."
-    bunx playwright install --with-deps chromium
+    pnpx playwright install --with-deps chromium
     echo -e "${GREEN}✓ Installed Playwright browsers${NC}"
 else
     echo -e "${GREEN}✓ Playwright browsers already installed${NC}"

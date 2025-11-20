@@ -11,7 +11,7 @@ jobs:
       - name: Use Node.js 20.x
         uses: actions/setup-node@v4
         with:
-          node-version: "22.x" # Updated to match Node.js w/ Vercel
+          node-version: '22.x' # Updated to match Node.js w/ Vercel
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
       - name: Clear cache
@@ -26,7 +26,7 @@ jobs:
         run: bun install --frozen-lockfile --ignore-scripts
       - name: Generate Prisma client
         working-directory: ./packages/db
-        run: bunx prisma generate
+        run: pnpx prisma generate
       - name: 🚀 Deploy Trigger.dev
         working-directory: ./apps/app
         timeout-minutes: 20
@@ -36,4 +36,4 @@ jobs:
           VERCEL_ACCESS_TOKEN: ${{ secrets.VERCEL_ACCESS_TOKEN }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
-        run: bunx trigger.dev@4.0.6 deploy --env staging --log-level debug
+        run: pnpx trigger.dev@4.0.6 deploy --env staging --log-level debug

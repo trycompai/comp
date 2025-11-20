@@ -129,7 +129,7 @@ export class PrismaExtension implements BuildExtension {
         'Migration support not implemented for published package - please handle migrations separately',
       );
       // You could add migration commands here if needed
-      // commands.push(`${binaryForRuntime(manifest.runtime)} npx prisma migrate deploy`);
+      // commands.push(`${binaryForRuntime(manifest.runtime)} pnpx prisma migrate deploy`);
     }
 
     // Set up environment variables

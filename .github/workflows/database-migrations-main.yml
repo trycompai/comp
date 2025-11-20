@@ -25,4 +25,4 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL_DEV }}
         working-directory: packages/db
-        run: bunx prisma migrate deploy
+        run: pnpx prisma migrate deploy

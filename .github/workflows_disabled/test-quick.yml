@@ -58,7 +58,7 @@ jobs:
       - name: Generate Prisma Client
         run: |
           cd packages/db
-          bunx prisma generate
+          pnpx prisma generate
 
       - name: Type check
         run: |
@@ -73,7 +73,7 @@ jobs:
       - name: Run middleware tests (smoke test)
         run: |
           cd apps/app
-          bunx vitest middleware.test.ts --run
+          pnpx vitest middleware.test.ts --run
         env:
           CI: true
           AUTH_SECRET: test-auth-secret-for-ci
@@ -83,7 +83,7 @@ jobs:
         run: |
           cd apps/app
           # Quick build check without full optimization
-          bunx next build --experimental-build-mode=compile
+          pnpx next build --experimental-build-mode=compile
         env:
           SKIP_ENV_VALIDATION: true
           DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy

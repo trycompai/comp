@@ -180,7 +180,7 @@ DATABASE_URL=postgresql://user:pass@localhost:5432/test_db
 1. **View trace**: Tests save traces on failure
 
    ```bash
-   bunx playwright show-trace trace.zip
+   pnpx playwright show-trace trace.zip
    ```
 
 2. **Debug mode**: Step through tests interactively
@@ -230,7 +230,7 @@ The E2E workflow:
 ### Browser not installed
 
 - Run `bun run test:e2e:install`
-- Or install specific browser: `bunx playwright install chromium`
+- Or install specific browser: `pnpx playwright install chromium`
 
 ## 📊 Viewing Test Results
 
@@ -244,4 +244,4 @@ See [TEST_RESULTS_VIEWING.md](./TEST_RESULTS_VIEWING.md) for detailed instructio
 
 ## 🔧 Debugging Tests
 
-bunx playwright test --ui
+pnpx playwright test --ui

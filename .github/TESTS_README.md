@@ -48,8 +48,8 @@ bun run test:e2e:report
 bun run test:e2e:debug
 
 # Run specific test file
-bunx vitest specific-test.spec.ts
-bunx playwright test specific-e2e.spec.ts
+pnpx vitest specific-test.spec.ts
+pnpx playwright test specific-e2e.spec.ts
 ```
 
 ## Branch Protection
@@ -88,7 +88,7 @@ Add these to your repository settings → Secrets and variables → Actions:
 ## Maintenance
 
 - Workflows use `ubuntu-latest-custom` runner
-- Update Playwright browsers monthly: `bunx playwright install`
+- Update Playwright browsers monthly: `pnpx playwright install`
 - Check for action updates quarterly
 - Review test performance weekly
 

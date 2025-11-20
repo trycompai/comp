@@ -7,11 +7,13 @@ This package provides a combined Prisma schema file for your application.
 The `@trycompai/db` package provides a single, combined schema file that includes all our database models. You generate your own Prisma client from this schema.
 
 **What's included:**
+
 - 📄 Combined Prisma schema file
 - 🗂️ All database models and enums
 - 🔗 Proper relationships and constraints
 
 **Benefits:**
+
 - ✅ Always up-to-date with your Prisma version
 - ✅ No version conflicts
 - ✅ You control the generator configuration
@@ -48,7 +50,7 @@ generator client {
 }" >> prisma/schema.prisma
 
 # Generate the Prisma client
-npx prisma generate
+pnpx prisma generate
 ```
 
 Or create a setup script in your `package.json`:
@@ -108,7 +110,7 @@ Import and use the database client in your application:
 // Import the database client
 import { db } from '@trycompai/db';
 
-// Import types  
+// Import types
 import type { User, Organization, Departments } from '@trycompai/db/types';
 
 // Query examples
@@ -136,16 +138,16 @@ This package includes schemas for:
 
 ```bash
 # Generate Prisma client (if needed)
-bunx prisma generate --schema=src/db/schema.prisma
+pnpx prisma generate --schema=src/db/schema.prisma
 
 # View database in Prisma Studio
-bunx prisma studio --schema=src/db/schema.prisma
+pnpx prisma studio --schema=src/db/schema.prisma
 
 # Reset database (careful!)
-bunx prisma migrate reset --schema=src/db/schema.prisma
+pnpx prisma migrate reset --schema=src/db/schema.prisma
 
 # Push schema changes (development)
-bunx prisma db push --schema=src/db/schema.prisma
+pnpx prisma db push --schema=src/db/schema.prisma
 ```
 
 ## TypeScript Integration
@@ -172,14 +174,14 @@ import type {
 If the schema wasn't copied automatically, run:
 
 ```bash
-bunx @trycompai/db postinstall
+pnpx @trycompai/db postinstall
 ```
 
 ### Client generation fails
 
 ```bash
 # Manually generate the client
-bunx prisma generate --schema=src/db/schema.prisma
+pnpx prisma generate --schema=src/db/schema.prisma
 ```
 
 ### Generated files appearing in git
@@ -245,5 +247,5 @@ When the `@trycompai/db` package is updated with new schema changes:
 
 1. Update the package: `bun update @trycompai/db`
 2. The postinstall script will automatically update your schema
-3. Run `bunx prisma generate --schema=src/db/schema.prisma` to update your client
+3. Run `pnpx prisma generate --schema=src/db/schema.prisma` to update your client
 4. Update your application code if needed

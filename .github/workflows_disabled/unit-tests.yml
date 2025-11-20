@@ -60,7 +60,7 @@ jobs:
       - name: Generate Prisma Client
         run: |
           cd packages/db
-          bunx prisma generate
+          pnpx prisma generate
 
       - name: Run unit tests for ${{ matrix.app }}
         run: |

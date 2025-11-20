@@ -3,12 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "analyze-locale-usage": "bunx tsx src/locales/analyze-locale-usage.ts",
+    "analyze-locale-usage": "pnpx tsx src/locales/analyze-locale-usage.ts",
     "build": "next build",
     "build:docker": "next build",
     "clean": "rm -rf .next .turbo .trigger node_modules",
-    "deploy:trigger-prod": "npx trigger.dev@4.0.6 deploy",
-    "dev": "bun i && bunx concurrently --kill-others --names \"next,trigger\" --prefix-colors \"yellow,blue\" \"next dev --turbo -p 3000\" \"bunx trigger.dev@4.0.6 dev\"",
+    "deploy:trigger-prod": "pnpx trigger.dev@4.0.6 deploy",
+    "dev": "bun i && pnpx concurrently --kill-others --names \"next,trigger\" --prefix-colors \"yellow,blue\" \"next dev --turbo -p 3000\" \"pnpx trigger.dev@4.0.6 dev\"",
     "lint": "next lint && prettier --check .",
     "start": "next start",
     "test": "vitest",
@@ -170,10 +170,5 @@
   "peerDependencies": {
     "react": "^19.1.1",
     "react-dom": "^19.1.0"
-  },
-  "pnpm": {
-    "overrides": {
-      "tiptap-extension-global-drag-handle": "^0.1.18"
-    }
   }
 }
